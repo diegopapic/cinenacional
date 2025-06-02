@@ -695,10 +695,10 @@ export default function MoviePage() {
             </button>
           </div>
         </div>
-        /* Trailer */
+        {/* Trailer */}
         <TrailerSection 
-        trailerUrl="https://www.youtube.com/watch?v=Wm7DU4FBBVs" 
-        movieTitle="Relatos Salvajes"
+          trailerUrl="https://www.youtube.com/watch?v=Wm7DU4FBBVs" 
+          movieTitle="Relatos Salvajes"
         />
 
         {/* Similar Movies */}
