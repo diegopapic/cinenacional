@@ -1,11 +1,12 @@
-// Componente para mostrar el trailer de YouTube
+// src/app/components/TrailerSection.tsx
+
 interface TrailerSectionProps {
   trailerUrl?: string;
   movieTitle: string;
-  variant?: 'default' | 'minimal' | 'card';
+  variant?: 'default' | 'minimal' | 'card' | 'compact';
 }
 
-export function TrailerSection({ trailerUrl, movieTitle, variant = 'default' }: TrailerSectionProps) {
+export function TrailerSection({ trailerUrl, movieTitle, variant = 'compact' }: TrailerSectionProps) {
   if (!trailerUrl) return null;
 
   // Extraer el ID del video de YouTube de la URL
@@ -18,6 +19,42 @@ export function TrailerSection({ trailerUrl, movieTitle, variant = 'default' }: 
   const videoId = getYouTubeId(trailerUrl);
 
   if (!videoId) return null;
+
+  // Variante compacta (nueva, más pequeña y mejor integrada con tu diseño)
+  if (variant === 'compact') {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-gray-800">
+        <h2 className="serif-heading text-2xl text-white mb-6">Trailer</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-cine-gray shadow-2xl">
+              <iframe
+                className="absolute top-0 left-0 w-full h-full"
+                src={`https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0`}
+                title={`Trailer de ${movieTitle}`}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+          </div>
+          <div className="lg:col-span-1">
+            <div className="glass-effect rounded-lg p-6">
+              <h3 className="text-lg font-medium mb-3 text-cine-accent">Sobre el trailer</h3>
+              <p className="text-sm text-gray-300 mb-4">
+                Mira el trailer oficial de {movieTitle} y descubre por qué se convirtió en un fenómeno del cine argentino.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-cine-gray px-3 py-1 rounded-full text-xs text-white">Trailer Oficial</span>
+                <span className="bg-cine-gray px-3 py-1 rounded-full text-xs text-white">HD</span>
+                <span className="bg-cine-gray px-3 py-1 rounded-full text-xs text-white">Subtitulado</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Variante por defecto con fondo
   if (variant === 'default') {
@@ -86,63 +123,4 @@ export function TrailerSection({ trailerUrl, movieTitle, variant = 'default' }: 
   }
 
   return null;
-}
-
-// Ejemplo de integración completa en page.tsx para Relatos Salvajes
-export default function MoviePage() {
-  // Datos de la película (esto vendría de tu base de datos)
-  const movie = {
-    id: 1,
-    title: "Relatos Salvajes",
-    year: 2014,
-    synopsis: "Seis relatos que alternan entre la comedia y el drama, que exploran los temas de la venganza, el amor y la vulnerabilidad del ser humano en situaciones extraordinarias. Una película que retrata la condición humana cuando es llevada al límite.",
-    trailer: "https://www.youtube.com/watch?v=Wm7DU4FBBVs",
-    additionalVideos: [
-      {
-        url: "https://www.youtube.com/watch?v=Wm7DU4FBBVs",
-        title: "Trailer Oficial",
-        type: "trailer" as const
-      },
-      // Puedes agregar más videos aquí
-    ],
-    // ... resto de los datos
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* ... header y contenido principal ... */}
-      
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* ... información de la película ... */}
-        
-        {/* Galería de imágenes existente */}
-        <div className="bg-black/5 dark:bg-white/5 rounded-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Galería
-          </h2>
-          <div className="h-64 flex items-center justify-center text-gray-400">
-            Cargando imágenes...
-          </div>
-        </div>
-
-        {/* Trailer - Opción 1: Componente simple */}
-        <TrailerSection 
-          trailerUrl={movie.trailer} 
-          movieTitle={movie.title}
-          variant="card" // puedes usar 'default', 'minimal' o 'card'
-        />
-
-        {/* Trailer - Opción 2: Galería de videos si tienes múltiples */}
-        {/* <VideoGallery 
-          videos={movie.additionalVideos} 
-          movieTitle={movie.title}
-        /> */}
-
-        {/* Películas relacionadas */}
-        <div className="mt-8">
-          {/* ... código de películas relacionadas ... */}
-        </div>
-      </div>
-    </div>
-  );
 }

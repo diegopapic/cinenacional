@@ -699,6 +699,7 @@ export default function MoviePage() {
         <TrailerSection 
           trailerUrl="https://www.youtube.com/watch?v=Wm7DU4FBBVs" 
           movieTitle="Relatos Salvajes"
+          variant="compact"
         />
 
         {/* Similar Movies */}
