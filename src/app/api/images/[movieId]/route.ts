@@ -4,9 +4,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { movieId: string } }
+  { params }: { params: Promise<{ movieId: string }> }
 ) {
-  const { movieId } = params;
+  const { movieId } = await params;
   
   try {
     // Ruta al directorio de imágenes
