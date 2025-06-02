@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { TrailerSection } from "./components/TrailerSection";
 import Head from 'next/head';
 
 export default function MoviePage() {
@@ -694,6 +695,11 @@ export default function MoviePage() {
             </button>
           </div>
         </div>
+        /* Trailer */
+        <TrailerSection 
+        trailerUrl="https://www.youtube.com/watch?v=Wm7DU4FBBVs" 
+        movieTitle="Relatos Salvajes"
+        />
 
         {/* Similar Movies */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-gray-800">
