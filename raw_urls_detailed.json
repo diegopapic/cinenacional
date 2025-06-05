@@ -1,0 +1,142 @@
+[
+  {
+    "path": ".gitignore",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
+    "size": 245
+  },
+  {
+    "path": "README.md",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/README.md",
+    "size": 1450
+  },
+  {
+    "path": "eslint.config.mjs",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/eslint.config.mjs",
+    "size": 393
+  },
+  {
+    "path": "next-env.d.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next-env.d.ts",
+    "size": 211
+  },
+  {
+    "path": "next.config",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config",
+    "size": 327
+  },
+  {
+    "path": "next.config.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config.ts",
+    "size": 133
+  },
+  {
+    "path": "package-lock.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/package-lock.json",
+    "size": 230470
+  },
+  {
+    "path": "package.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/package.json",
+    "size": 588
+  },
+  {
+    "path": "postcss.config.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.js",
+    "size": 82
+  },
+  {
+    "path": "postcss.config.mjs",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.mjs",
+    "size": 81
+  },
+  {
+    "path": "public/file.svg",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/file.svg",
+    "size": 391
+  },
+  {
+    "path": "public/globe.svg",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/globe.svg",
+    "size": 1035
+  },
+  {
+    "path": "public/images/relatos-salvajes/relatossalvajes.jpeg",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/relatossalvajes.jpeg",
+    "size": 6588590
+  },
+  {
+    "path": "public/images/relatos-salvajes/rsalvajes1.jpg",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/rsalvajes1.jpg",
+    "size": 136628
+  },
+  {
+    "path": "public/images/relatos-salvajes/rsalvajes2.jpg",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/rsalvajes2.jpg",
+    "size": 181816
+  },
+  {
+    "path": "public/images/relatos-salvajes/rsalvajes3.jpg",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/rsalvajes3.jpg",
+    "size": 51639
+  },
+  {
+    "path": "public/images/relatos-salvajes/unnamed.jpg",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/unnamed.jpg",
+    "size": 59163
+  },
+  {
+    "path": "public/next.svg",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/next.svg",
+    "size": 1375
+  },
+  {
+    "path": "public/vercel.svg",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/vercel.svg",
+    "size": 128
+  },
+  {
+    "path": "public/window.svg",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/window.svg",
+    "size": 385
+  },
+  {
+    "path": "src/app/api/images/[movieId]/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/images/[movieId]/route.ts",
+    "size": 1491
+  },
+  {
+    "path": "src/app/components/TrailerSection.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/components/TrailerSection.tsx",
+    "size": 5101
+  },
+  {
+    "path": "src/app/favicon.ico",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/favicon.ico",
+    "size": 25931
+  },
+  {
+    "path": "src/app/globals.css",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/globals.css",
+    "size": 3756
+  },
+  {
+    "path": "src/app/layout.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/layout.tsx",
+    "size": 918
+  },
+  {
+    "path": "src/app/page.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/page.tsx",
+    "size": 48020
+  },
+  {
+    "path": "tailwind.config.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tailwind.config.js",
+    "size": 998
+  },
+  {
+    "path": "tsconfig.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tsconfig.json",
+    "size": 602
+  }
+]
