@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   const key = searchParams.get('key');
   
   // Cambia 'tu-clave-secreta' por algo único
-  if (key !== 'tu-clave-secreta' && !IS_DEV) {
+  if (key !== 'cinenacional2024' && !IS_DEV) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   
