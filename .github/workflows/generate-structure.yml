@@ -4,17 +4,18 @@ name: Generate Project Structure
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # Permite ejecutarlo manualmente
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   generate-structure:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/checkout@v3
     
     - name: Generate structure JSON
       run: |
@@ -27,12 +28,9 @@ jobs:
           const result = {};
           
           items.forEach(item => {
-            // Ignorar archivos y carpetas innecesarias
             if (item.startsWith('.') || 
                 item === 'node_modules' || 
                 item === '.next' ||
-                item === 'out' ||
-                item === 'coverage' ||
                 item === 'project-structure.json') return;
             
             const fullPath = path.join(dir, item);
@@ -46,12 +44,11 @@ jobs:
                 if (Object.keys(subResult).length > 0) {
                   result[item] = subResult;
                 }
-              } else if (item.match(/\.(ts|tsx|js|jsx|json|css|scss|md|sql|prisma|env\.example)$/)) {
-                // Generar URL de GitHub
-                result[item] = `https://raw.githubusercontent.com/${{ github.repository }}/main/${relativePath}`;
+              } else if (item.match(/\.(ts|tsx|js|jsx|json|css|scss|md)$/)) {
+                result[item] = `https://raw.githubusercontent.com/diegopapic/cinenacional/main/${relativePath}`;
               }
             } catch (error) {
-              console.error(`Error procesando ${fullPath}:`, error.message);
+              console.error(`Error: ${error.message}`);
             }
           });
           
@@ -60,22 +57,22 @@ jobs:
 
         const structure = {
           timestamp: new Date().toISOString(),
-          repository: "${{ github.repository }}",
+          repository: "diegopapic/cinenacional",
           branch: "main",
-          commit: "${{ github.sha }}",
-          structure: scanDirectory('.'),
-          instructions: "INSTRUCCIONES PARA CLAUDE: Este es un mapa completo del repositorio generado automáticamente. Cada archivo tiene una URL que puedes usar con web_fetch para leer su contenido."
+          structure: scanDirectory('.')
         };
 
         fs.writeFileSync('project-structure.json', JSON.stringify(structure, null, 2));
-        console.log('✅ Estructura generada exitosamente');
         EOF
 
         node generate-structure.js
 
-    - name: Commit and push if changed
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add project-structure.json
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update project structure [skip ci]" && git push)
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'Auto-update project structure'
+        title: 'Auto-update project structure'
+        body: 'This PR updates the project structure JSON file'
+        branch: update-project-structure
+        delete-branch: true
