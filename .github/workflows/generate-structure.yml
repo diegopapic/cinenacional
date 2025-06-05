@@ -6,16 +6,16 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
   generate-structure:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.PAT_TOKEN }}
+        persist-credentials: true
     
     - name: Generate structure JSON
       run: |
@@ -31,6 +31,8 @@ jobs:
             if (item.startsWith('.') || 
                 item === 'node_modules' || 
                 item === '.next' ||
+                item === 'out' ||
+                item === 'coverage' ||
                 item === 'project-structure.json') return;
             
             const fullPath = path.join(dir, item);
@@ -44,11 +46,11 @@ jobs:
                 if (Object.keys(subResult).length > 0) {
                   result[item] = subResult;
                 }
-              } else if (item.match(/\.(ts|tsx|js|jsx|json|css|scss|md)$/)) {
+              } else if (item.match(/\.(ts|tsx|js|jsx|json|css|scss|md|sql|prisma|env\.example)$/)) {
                 result[item] = `https://raw.githubusercontent.com/diegopapic/cinenacional/main/${relativePath}`;
               }
             } catch (error) {
-              console.error(`Error: ${error.message}`);
+              console.error(`Error procesando ${fullPath}:`, error.message);
             }
           });
           
@@ -59,20 +61,25 @@ jobs:
           timestamp: new Date().toISOString(),
           repository: "diegopapic/cinenacional",
           branch: "main",
-          structure: scanDirectory('.')
+          commit: "${{ github.sha }}",
+          structure: scanDirectory('.'),
+          instructions: "INSTRUCCIONES PARA CLAUDE: Este es un mapa completo del repositorio generado automáticamente. Cada archivo tiene una URL que puedes usar con web_fetch para leer su contenido."
         };
 
         fs.writeFileSync('project-structure.json', JSON.stringify(structure, null, 2));
+        console.log('✅ Estructura generada exitosamente');
         EOF
 
         node generate-structure.js
 
-    - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v5
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        commit-message: 'Auto-update project structure'
-        title: 'Auto-update project structure'
-        body: 'This PR updates the project structure JSON file'
-        branch: update-project-structure
-        delete-branch: true
+    - name: Commit and push if changed
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add project-structure.json
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Auto-update project structure [skip ci]"
+          git push
+        fi
