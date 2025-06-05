@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repository Reader</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #0366d6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0256c7;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f6f8fa;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .error {
+            color: #d73a49;
+            margin-top: 10px;
+        }
+        .info {
+            color: #0366d6;
+            margin-top: 10px;
+        }
+        .tree-item {
+            margin-left: 20px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .tree-item:hover {
+            background: #f0f0f0;
+        }
+        .file {
+            color: #0366d6;
+        }
+        .folder {
+            color: #6f42c1;
+            font-weight: bold;
+        }
+        .instructions {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .copy-btn {
+            background: #28a745;
+            margin-top: 10px;
+        }
+        .copy-btn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 GitHub Repository Reader para Claude</h1>
+        
+        <div class="instructions">
+            <strong>Instrucciones:</strong>
+            <ol>
+                <li>Ingresa el owner y nombre del repositorio (ej: diegopapic/cinenacional)</li>
+                <li>Opcionalmente, ingresa un token de GitHub para evitar límites de rate</li>
+                <li>Haz clic en "Leer Repositorio"</li>
+                <li>Copia el resultado y pégalo en Claude</li>
+            </ol>
+            <small>Nota: Sin token, el límite es 60 requests por hora. Con token, 5000 por hora.</small>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="repoInput" placeholder="owner/repository (ej: diegopapic/cinenacional)" value="diegopapic/cinenacional">
+            <input type="password" id="tokenInput" placeholder="GitHub Token (opcional)">
+            <button onclick="readRepository()">Leer Repositorio</button>
+        </div>
+
+        <div id="status"></div>
+        <div id="output" class="output" style="display:none;"></div>
+        <button id="copyBtn" class="copy-btn" style="display:none;" onclick="copyToClipboard()">📋 Copiar para Claude</button>
+    </div>
+
+    <script>
+        let repoData = {};
+
+        async function readRepository() {
+            const repoInput = document.getElementById('repoInput').value.trim();
+            const token = document.getElementById('tokenInput').value.trim();
+            const statusEl = document.getElementById('status');
+            const outputEl = document.getElementById('output');
+            const copyBtn = document.getElementById('copyBtn');
+            
+            if (!repoInput) {
+                statusEl.innerHTML = '<div class="error">Por favor ingresa owner/repository</div>';
+                return;
+            }
+
+            const [owner, repo] = repoInput.split('/');
+            if (!owner || !repo) {
+                statusEl.innerHTML = '<div class="error">Formato inválido. Usa: owner/repository</div>';
+                return;
+            }
+
+            statusEl.innerHTML = '<div class="info">🔄 Leyendo repositorio...</div>';
+            outputEl.style.display = 'none';
+            copyBtn.style.display = 'none';
+
+            try {
+                const headers = {
+                    'Accept': 'application/vnd.github.v3+json'
+                };
+                if (token) {
+                    headers['Authorization'] = `token ${token}`;
+                }
+
+                // Obtener el árbol completo del repositorio
+                const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+                if (!repoResponse.ok) throw new Error('No se pudo acceder al repositorio');
+                
+                const repoInfo = await repoResponse.json();
+                const defaultBranch = repoInfo.default_branch;
+
+                statusEl.innerHTML = '<div class="info">🌳 Obteniendo estructura de archivos...</div>';
+
+                // Obtener el SHA del último commit
+                const refResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${defaultBranch}`, { headers });
+                const refData = await refResponse.json();
+                const commitSha = refData.object.sha;
+
+                // Obtener el árbol completo
+                const treeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${commitSha}?recursive=1`, { headers });
+                const treeData = await treeResponse.json();
+
+                // Construir estructura
+                const structure = buildStructure(treeData.tree, owner, repo, defaultBranch);
+                
+                repoData = {
+                    timestamp: new Date().toISOString(),
+                    repository: `${owner}/${repo}`,
+                    branch: defaultBranch,
+                    structure: structure,
+                    instructions: "INSTRUCCIONES PARA CLAUDE: Este es un mapa completo del repositorio. Cada archivo tiene una URL que puedes usar con web_fetch para leer su contenido. La estructura muestra todos los directorios y archivos del proyecto."
+                };
+
+                outputEl.textContent = JSON.stringify(repoData, null, 2);
+                outputEl.style.display = 'block';
+                copyBtn.style.display = 'block';
+                
+                statusEl.innerHTML = `<div class="info">✅ Repositorio leído exitosamente. ${treeData.tree.length} elementos encontrados.</div>`;
+
+            } catch (error) {
+                statusEl.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        function buildStructure(tree, owner, repo, branch) {
+            const structure = {};
+            
+            // Filtrar solo archivos relevantes
+            const relevantFiles = tree.filter(item => {
+                if (item.type !== 'blob') return false;
+                if (item.path.includes('node_modules/')) return false;
+                if (item.path.includes('.next/')) return false;
+                if (item.path.includes('.git/')) return false;
+                
+                const ext = item.path.split('.').pop();
+                const relevantExts = ['js', 'jsx', 'ts', 'tsx', 'json', 'md', 'css', 'scss', 'html', 'yml', 'yaml', 'sql', 'prisma', 'env', 'gitignore'];
+                return relevantExts.includes(ext) || item.path.includes('package.json');
+            });
+
+            // Construir estructura jerárquica
+            relevantFiles.forEach(item => {
+                const parts = item.path.split('/');
+                let current = structure;
+                
+                for (let i = 0; i < parts.length - 1; i++) {
+                    if (!current[parts[i]]) {
+                        current[parts[i]] = {};
+                    }
+                    current = current[parts[i]];
+                }
+                
+                const fileName = parts[parts.length - 1];
+                current[fileName] = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${item.path}`;
+            });
+
+            return structure;
+        }
+
+        function copyToClipboard() {
+            const outputEl = document.getElementById('output');
+            const textArea = document.createElement('textarea');
+            textArea.value = outputEl.textContent;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            const copyBtn = document.getElementById('copyBtn');
+            copyBtn.textContent = '✅ Copiado!';
+            setTimeout(() => {
+                copyBtn.textContent = '📋 Copiar para Claude';
+            }, 2000);
+        }
+
+        // Permitir Enter para buscar
+        document.getElementById('repoInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') readRepository();
+        });
+        document.getElementById('tokenInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') readRepository();
+        });
+    </script>
+</body>
+</html>
