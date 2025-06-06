@@ -3,10 +3,10 @@
 interface TrailerSectionProps {
   trailerUrl?: string;
   movieTitle: string;
-  variant?: 'default' | 'minimal' | 'card' | 'compact';
+  variant?: 'default' | 'minimal' | 'card' | 'compact' | 'fullwidth';
 }
 
-export function TrailerSection({ trailerUrl, movieTitle, variant = 'compact' }: TrailerSectionProps) {
+export function TrailerSection({ trailerUrl, movieTitle, variant = 'fullwidth' }: TrailerSectionProps) {
   if (!trailerUrl) return null;
 
   // Extraer el ID del video de YouTube de la URL
@@ -20,7 +20,26 @@ export function TrailerSection({ trailerUrl, movieTitle, variant = 'compact' }: 
 
   if (!videoId) return null;
 
-  // Variante compacta (nueva, más pequeña y mejor integrada con tu diseño)
+  // Nueva variante fullwidth - ocupa todo el ancho sin el cuadro informativo
+  if (variant === 'fullwidth') {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-gray-800">
+        <h2 className="serif-heading text-2xl text-white mb-6">Trailer</h2>
+        <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-cine-gray shadow-2xl">
+          <iframe
+            className="absolute top-0 left-0 w-full h-full"
+            src={`https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0`}
+            title={`Trailer de ${movieTitle}`}
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Variante compacta (original con el cuadro lateral)
   if (variant === 'compact') {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-gray-800">
