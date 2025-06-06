@@ -595,7 +595,7 @@ export default function MoviePage() {
                     </div>
                     <div className="flex items-start">
                       <span className="text-gray-400 w-32 flex-shrink-0">Calificación:</span>
-                      <span className="ml-2 text-white">Solo apta para mayor de 16 años</span>
+                      <span className="ml-2 text-white">Solo apta para mayores de 16 años</span>
                     </div>
                     <div className="flex justify-end">
                       <span className="text-white">Color | Sonora</span>
