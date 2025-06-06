@@ -697,7 +697,7 @@ export default function MoviePage() {
         </div>
         {/* Trailer */}
         <TrailerSection 
-          trailerUrl="https://www.youtube.com/watch?v=Wm7DU4FBBVs" 
+          trailerUrl="https://youtu.be/3BxE9osMt5U?si=mLEH7dp-ll7ZJsXG" 
           movieTitle="Relatos Salvajes"
         />
 
