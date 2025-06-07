@@ -87,8 +87,10 @@ body {
   padding: 1rem;
 }
 
+/* Hero Background Container */
 .hero-background-container {
   height: 70vh;
+  min-height: 500px;
   background-color: #0f1419;
   position: relative;
   overflow: hidden;
@@ -97,44 +99,188 @@ body {
   justify-content: center;
 }
 
-.hero-image {
-  max-width: 1024px;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
+.hero-image-wrapper {
   position: relative;
-  z-index: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
 }
 
-.hero-image::before {
-  content: '';
+.hero-image {
+  max-width: 100%;
+  max-height: 100%;
+  height: auto;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* Contenedor de gradientes que se ajusta al tamaño de la imagen */
+.hero-gradients-container {
   position: absolute;
+  pointer-events: none;
+  overflow: hidden;
+  /* Las dimensiones se ajustan dinámicamente con JavaScript */
+}
+
+/* Gradientes estilo Letterboxd - más anchos y suaves */
+.hero-gradient-left,
+.hero-gradient-right,
+.hero-gradient-top,
+.hero-gradient-bottom-inner {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Gradiente izquierdo - más ancho y pronunciado */
+.hero-gradient-left {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 60%;
+  background: linear-gradient(90deg,
+    #0f1419 0%,
+    rgba(15, 20, 25, 0.98) 8%,
+    rgba(15, 20, 25, 0.95) 15%,
+    rgba(15, 20, 25, 0.91) 22%,
+    rgba(15, 20, 25, 0.86) 28%,
+    rgba(15, 20, 25, 0.80) 34%,
+    rgba(15, 20, 25, 0.73) 40%,
+    rgba(15, 20, 25, 0.65) 45%,
+    rgba(15, 20, 25, 0.56) 50%,
+    rgba(15, 20, 25, 0.46) 55%,
+    rgba(15, 20, 25, 0.36) 60%,
+    rgba(15, 20, 25, 0.26) 65%,
+    rgba(15, 20, 25, 0.17) 70%,
+    rgba(15, 20, 25, 0.10) 75%,
+    rgba(15, 20, 25, 0.05) 80%,
+    rgba(15, 20, 25, 0.02) 85%,
+    rgba(15, 20, 25, 0.01) 90%,
+    transparent 95%
+  );
+}
+
+/* Gradiente derecho - más ancho y pronunciado */
+.hero-gradient-right {
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 60%;
+  background: linear-gradient(270deg,
+    #0f1419 0%,
+    rgba(15, 20, 25, 0.98) 8%,
+    rgba(15, 20, 25, 0.95) 15%,
+    rgba(15, 20, 25, 0.91) 22%,
+    rgba(15, 20, 25, 0.86) 28%,
+    rgba(15, 20, 25, 0.80) 34%,
+    rgba(15, 20, 25, 0.73) 40%,
+    rgba(15, 20, 25, 0.65) 45%,
+    rgba(15, 20, 25, 0.56) 50%,
+    rgba(15, 20, 25, 0.46) 55%,
+    rgba(15, 20, 25, 0.36) 60%,
+    rgba(15, 20, 25, 0.26) 65%,
+    rgba(15, 20, 25, 0.17) 70%,
+    rgba(15, 20, 25, 0.10) 75%,
+    rgba(15, 20, 25, 0.05) 80%,
+    rgba(15, 20, 25, 0.02) 85%,
+    rgba(15, 20, 25, 0.01) 90%,
+    transparent 95%
+  );
+}
+
+/* Gradiente superior - más ancho y pronunciado */
+.hero-gradient-top {
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: 
-    linear-gradient(90deg, rgba(15, 20, 25, 0.8) 0%, transparent 15%),
-    linear-gradient(270deg, rgba(15, 20, 25, 0.8) 0%, transparent 15%);
-  pointer-events: none;
-  z-index: 2;
+  height: 40%;
+  background: linear-gradient(180deg,
+    #0f1419 0%,
+    rgba(15, 20, 25, 0.95) 10%,
+    rgba(15, 20, 25, 0.86) 20%,
+    rgba(15, 20, 25, 0.73) 30%,
+    rgba(15, 20, 25, 0.56) 40%,
+    rgba(15, 20, 25, 0.36) 50%,
+    rgba(15, 20, 25, 0.17) 60%,
+    rgba(15, 20, 25, 0.05) 70%,
+    rgba(15, 20, 25, 0.01) 80%,
+    transparent 90%
+  );
 }
 
-/* Gradiente lateral ultra-suave como Letterboxd */
-.hero-background-container::after {
-  content: '';
+/* Gradiente inferior dentro de la imagen - más ancho y pronunciado */
+.hero-gradient-bottom-inner {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(1024px, 100%);
-  height: 70vh;
-  background: 
-    linear-gradient(90deg, #0f1419 0%, rgba(15, 20, 25, 0.95) 1%, rgba(15, 20, 25, 0.85) 3%, rgba(15, 20, 25, 0.7) 6%, rgba(15, 20, 25, 0.5) 10%, rgba(15, 20, 25, 0.3) 15%, rgba(15, 20, 25, 0.15) 20%, rgba(15, 20, 25, 0.08) 25%, rgba(15, 20, 25, 0.03) 30%, rgba(15, 20, 25, 0.01) 35%, transparent 40%),
-    linear-gradient(270deg, #0f1419 0%, rgba(15, 20, 25, 0.95) 1%, rgba(15, 20, 25, 0.85) 3%, rgba(15, 20, 25, 0.7) 6%, rgba(15, 20, 25, 0.5) 10%, rgba(15, 20, 25, 0.3) 15%, rgba(15, 20, 25, 0.15) 20%, rgba(15, 20, 25, 0.08) 25%, rgba(15, 20, 25, 0.03) 30%, rgba(15, 20, 25, 0.01) 35%, transparent 40%);
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(15, 20, 25, 0.01) 10%,
+    rgba(15, 20, 25, 0.05) 20%,
+    rgba(15, 20, 25, 0.17) 30%,
+    rgba(15, 20, 25, 0.36) 40%,
+    rgba(15, 20, 25, 0.56) 50%,
+    rgba(15, 20, 25, 0.73) 60%,
+    rgba(15, 20, 25, 0.86) 70%,
+    rgba(15, 20, 25, 0.95) 80%,
+    rgba(15, 20, 25, 0.98) 90%,
+    #0f1419 100%
+  );
+}
+
+/* Gradiente inferior global del contenedor */
+.hero-gradient-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 35%;
   pointer-events: none;
-  z-index: 5;
+  z-index: 10;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(15, 20, 25, 0.03) 20%,
+    rgba(15, 20, 25, 0.10) 35%,
+    rgba(15, 20, 25, 0.25) 50%,
+    rgba(15, 20, 25, 0.45) 60%,
+    rgba(15, 20, 25, 0.65) 70%,
+    rgba(15, 20, 25, 0.82) 80%,
+    rgba(15, 20, 25, 0.93) 85%,
+    rgba(15, 20, 25, 0.97) 90%,
+    rgba(15, 20, 25, 0.99) 95%,
+    #0f1419 100%
+  );
+}
+
+/* Viñeta adicional sutil */
+.hero-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 11;
+  background: radial-gradient(ellipse at center,
+    transparent 0%,
+    transparent 30%,
+    rgba(15, 20, 25, 0.05) 45%,
+    rgba(15, 20, 25, 0.15) 60%,
+    rgba(15, 20, 25, 0.25) 75%,
+    rgba(15, 20, 25, 0.4) 90%,
+    rgba(15, 20, 25, 0.5) 100%
+  );
+}
+
+/* Contenido superpuesto */
+.hero-content {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
 }
 
 .animate-fade-in {

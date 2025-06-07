@@ -67,14 +67,68 @@ export default function MoviePage() {
     loadMovieImages(currentMovieId);
   }, []);
 
+  // Ajustar gradientes al tamaño real de la imagen
+  useEffect(() => {
+    const adjustGradients = () => {
+      const img = document.querySelector('.hero-image') as HTMLImageElement;
+      const container = document.querySelector('.hero-image-wrapper') as HTMLElement;
+      const gradientsContainer = document.querySelector('.hero-gradients-container') as HTMLElement;
+      
+      if (img && container && gradientsContainer && img.complete) {
+        const containerWidth = container.offsetWidth;
+        const containerHeight = container.offsetHeight;
+        const imgAspectRatio = img.naturalWidth / img.naturalHeight;
+        const containerAspectRatio = containerWidth / containerHeight;
+        
+        let displayWidth, displayHeight;
+        
+        if (imgAspectRatio > containerAspectRatio) {
+          // Imagen más ancha - se ajusta por ancho
+          displayWidth = containerWidth;
+          displayHeight = containerWidth / imgAspectRatio;
+        } else {
+          // Imagen más alta - se ajusta por altura
+          displayHeight = containerHeight;
+          displayWidth = containerHeight * imgAspectRatio;
+        }
+        
+        // Centrar y ajustar el contenedor de gradientes
+        gradientsContainer.style.width = `${displayWidth}px`;
+        gradientsContainer.style.height = `${displayHeight}px`;
+        gradientsContainer.style.left = `${(containerWidth - displayWidth) / 2}px`;
+        gradientsContainer.style.top = `${(containerHeight - displayHeight) / 2}px`;
+      }
+    };
+
+    // Ajustar cuando la imagen cambie
+    const img = document.querySelector('.hero-image') as HTMLImageElement;
+    if (img) {
+      img.addEventListener('load', adjustGradients);
+      // También ajustar al cambiar el tamaño de la ventana
+      window.addEventListener('resize', adjustGradients);
+      
+      // Ajustar inmediatamente si la imagen ya está cargada
+      if (img.complete) {
+        adjustGradients();
+      }
+    }
+
+    return () => {
+      if (img) {
+        img.removeEventListener('load', adjustGradients);
+      }
+      window.removeEventListener('resize', adjustGradients);
+    };
+  }, [movieGallery]);
+
   // Cambiar fondo cada 8 segundos
   useEffect(() => {
     if (movieGallery.length > 0) {
       const interval = setInterval(() => {
         const randomIndex = Math.floor(Math.random() * movieGallery.length);
-        const heroElement = document.getElementById('hero-background');
+        const heroElement = document.querySelector('.hero-image');
         if (heroElement) {
-          heroElement.style.backgroundImage = `url(${movieGallery[randomIndex]})`;
+          (heroElement as HTMLImageElement).src = movieGallery[randomIndex];
         }
       }, 8000);
       return () => clearInterval(interval);
@@ -159,21 +213,34 @@ export default function MoviePage() {
           </div>
         </nav>
 
-        {/* Movie Hero Background */}
+        {/* Movie Hero Background - ACTUALIZADO */}
         <div className="relative hero-background-container -mt-16 pt-16">
-          {/* Imagen real en lugar de background */}
-          {movieGallery.length > 0 && (
-            <img 
-              src={movieGallery[0]}
-              alt="Relatos Salvajes"
-              className="hero-image"
-            />
-          )}
+          {/* Wrapper de imagen con gradientes */}
+          <div className="hero-image-wrapper">
+            {movieGallery.length > 0 && (
+              <>
+                <img 
+                  src={movieGallery[0]}
+                  alt="Relatos Salvajes"
+                  className="hero-image"
+                />
+                {/* Contenedor de gradientes que se ajusta a la imagen */}
+                <div className="hero-gradients-container">
+                  <div className="hero-gradient-left"></div>
+                  <div className="hero-gradient-right"></div>
+                  <div className="hero-gradient-top"></div>
+                  <div className="hero-gradient-bottom-inner"></div>
+                </div>
+              </>
+            )}
+          </div>
           
-          {/* Fade inferior */}
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-cine-dark to-transparent z-10"></div>
-          {/* Título sobre la imagen */}
-          <div className="absolute inset-0 flex items-end justify-start z-20">
+          {/* Gradientes globales del contenedor */}
+          <div className="hero-gradient-bottom"></div>
+          <div className="hero-vignette"></div>
+          
+          {/* Contenido */}
+          <div className="hero-content">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 w-full">
               <h1 className="serif-heading text-5xl md:text-6xl lg:text-7xl text-white leading-tight drop-shadow-2xl">
                 Relatos Salvajes
@@ -595,7 +662,7 @@ export default function MoviePage() {
                     </div>
                     <div className="flex items-start">
                       <span className="text-gray-400 w-32 flex-shrink-0">Calificación:</span>
-                      <span className="ml-2 text-white">Solo apta para mayores de 16 años</span>
+                      <span className="ml-2 text-white">Solo apta para mayor de 16 años</span>
                     </div>
                     <div className="flex justify-end">
                       <span className="text-white">Color | Sonora</span>
@@ -697,8 +764,9 @@ export default function MoviePage() {
         </div>
         {/* Trailer */}
         <TrailerSection 
-          trailerUrl="https://youtu.be/3BxE9osMt5U?si=mLEH7dp-ll7ZJsXG" 
+          trailerUrl="https://www.youtube.com/watch?v=Wm7DU4FBBVs" 
           movieTitle="Relatos Salvajes"
+          variant="compact"
         />
 
         {/* Similar Movies */}
