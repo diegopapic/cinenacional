@@ -23,6 +23,3 @@ yarn-error.log*
 
 # Vercel
 .Vercel
-
-# Project structure
-project-structure.json
