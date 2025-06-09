@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import { TrailerSection } from "@/components/movies/TrailerSection";
 import { MovieHero } from "@/components/movies/MovieHero";
+import { CastSection } from "@/components/movies/CastSection";
 import Head from 'next/head';
 
 export default function MoviePage() {
   const [movieGallery, setMovieGallery] = useState<string[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [showFullCast, setShowFullCast] = useState(false);
   const [showFullCrew, setShowFullCrew] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<{src: string, alt: string, index: number} | null>(null);
   const currentMovieId = 'relatos-salvajes';
@@ -228,69 +228,24 @@ export default function MoviePage() {
               <h2 className="serif-heading text-2xl mb-6 text-white">Reparto y Equipo</h2>
               
               {/* Cast */}
-              <div className="mb-8">
-                <h3 className="text-lg font-medium mb-4 text-cine-accent">Reparto Principal</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {[
-                    { name: 'Ricardo Darín', character: 'Diego' },
-                    { name: 'Érica Rivas', character: 'Romina' },
-                    { name: 'Leonardo Sbaraglia', character: 'Cuenca' }
-                  ].map((actor, index) => (
-                    <div key={index} className="text-center">
-                      <div className="w-20 h-20 rounded-full person-placeholder mx-auto mb-2">
-                        <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                      </div>
-                      <p className="font-medium text-white">{actor.name}</p>
-                      <p className="text-sm text-gray-400">{actor.character}</p>
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Reparto completo */}
-                {showFullCast && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-4 animate-fade-in">
-                    {[
-                      { name: 'Oscar Martínez', character: 'Mauricio' },
-                      { name: 'Julieta Zylberberg', character: 'Isabel' },
-                      { name: 'Rita Cortese', character: 'Cocinera' },
-                      { name: 'Darío Grandinetti', character: 'Ariel' },
-                      { name: 'María Marull', character: 'Victoria' },
-                      { name: 'Mónica Villa', character: 'Novia' },
-                      { name: 'Diego Starosta', character: 'Novio' },
-                      { name: 'Nancy Dupláa', character: 'Mujer en ruta' },
-                      { name: 'Cesar Bordón', character: 'Hombre en ruta' },
-                      { name: 'Walter Donado', character: 'Piloto' }
-                    ].map((actor, index) => (
-                      <div key={index} className="text-center">
-                        <div className="w-16 h-16 rounded-full person-placeholder mx-auto mb-2">
-                          <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                          </svg>
-                        </div>
-                        <p className="font-medium text-white text-sm">{actor.name}</p>
-                        <p className="text-xs text-gray-400">{actor.character}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                <div className="mt-6">
-                  <button 
-                    onClick={() => setShowFullCast(!showFullCast)}
-                    className="text-cine-accent hover:text-blue-300 font-medium transition-colors flex items-center space-x-2"
-                  >
-                    <span>{showFullCast ? 'Ocultar reparto completo' : 'Ver reparto completo'}</span>
-                    <svg 
-                      className={`w-4 h-4 transition-transform duration-200 ${showFullCast ? 'rotate-180' : ''}`} 
-                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              <CastSection 
+                mainCast={[
+                  { name: 'Ricardo Darín', character: 'Diego' },
+                  { name: 'Érica Rivas', character: 'Romina' },
+                  { name: 'Leonardo Sbaraglia', character: 'Cuenca' }
+                ]} fullCast={[
+                  { name: 'Oscar Martínez', character: 'Mauricio' },
+                  { name: 'Julieta Zylberberg', character: 'Isabel' },
+                  { name: 'Rita Cortese', character: 'Cocinera' },
+                  { name: 'Darío Grandinetti', character: 'Ariel' },
+                  { name: 'María Marull', character: 'Victoria' },
+                  { name: 'Mónica Villa', character: 'Novia' },
+                  { name: 'Diego Starosta', character: 'Novio' },
+                  { name: 'Nancy Dupláa', character: 'Mujer en ruta' },
+                  { name: 'Cesar Bordón', character: 'Hombre en ruta' },
+                  { name: 'Walter Donado', character: 'Piloto' }
+                ]}
+              />
 
               {/* Crew */}
               <div>
