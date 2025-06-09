@@ -76,7 +76,7 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add project-structure.json
+        git add -f project-structure.json
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
