@@ -166,12 +166,12 @@ export default function PersonPage() {
                 <h1 className="serif-heading text-5xl md:text-6xl mb-4 text-white">{personData.name}</h1>
                 
                 <div className="space-y-3 text-gray-300">
-                  <div className="flex flex-wrap gap-6 text-sm">
+                  <div className="text-sm">
                     <div>
                       <span className="text-gray-500">Nació el </span>
-                      <span className="ml-2">{personData.birthDate}</span>
+                      <span>{personData.birthDate}</span>
                       <span className="text-gray-500"> en </span>
-                      <span className="ml-2">{personData.birthPlace}</span>
+                      <span>{personData.birthPlace}</span>
                     </div>
                   </div>
                   
