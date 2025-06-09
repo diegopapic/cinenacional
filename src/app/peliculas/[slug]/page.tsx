@@ -9,7 +9,7 @@ export default function MoviePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showFullCast, setShowFullCast] = useState(false);
   const [showFullCrew, setShowFullCrew] = useState(false);
-  const [lightboxImage, setLightboxImage] = useState<{src: string, alt: string} | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<{src: string, alt: string, index: number} | null>(null);
   const currentMovieId = 'relatos-salvajes';
 
   // Función para cargar imágenes desde la API
@@ -154,8 +154,8 @@ export default function MoviePage() {
     });
   };
 
-  const openLightbox = (src: string, alt: string) => {
-    setLightboxImage({ src, alt });
+  const openLightbox = (src: string, alt: string, index: number) => {
+    setLightboxImage({ src, alt, index });
     document.body.style.overflow = 'hidden';
   };
 
@@ -164,16 +164,47 @@ export default function MoviePage() {
     document.body.style.overflow = 'auto';
   };
 
-  // Cerrar lightbox con Escape
+  // Navegación en el lightbox
+  const navigateLightbox = (direction: 'prev' | 'next') => {
+    if (!lightboxImage || movieGallery.length === 0) return;
+    
+    let newIndex: number;
+    if (direction === 'next') {
+      newIndex = (lightboxImage.index + 1) % movieGallery.length;
+    } else {
+      newIndex = lightboxImage.index === 0 ? movieGallery.length - 1 : lightboxImage.index - 1;
+    }
+    
+    setLightboxImage({
+      src: movieGallery[newIndex],
+      alt: `Imagen ${newIndex + 1} - Relatos Salvajes`,
+      index: newIndex
+    });
+  };
+
+  // Cerrar lightbox con Escape y navegar con flechas
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && lightboxImage) {
-        closeLightbox();
+      if (!lightboxImage) return;
+      
+      switch(e.key) {
+        case 'Escape':
+          closeLightbox();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          navigateLightbox('prev');
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          navigateLightbox('next');
+          break;
       }
     };
+    
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [lightboxImage]);
+  }, [lightboxImage, movieGallery]);
 
   return (
     <>
@@ -681,7 +712,7 @@ export default function MoviePage() {
                     <div key={index} className="flex-shrink-0 w-1/3 px-2">
                       <div 
                         className="group cursor-pointer relative overflow-hidden rounded-lg aspect-video bg-cine-gray"
-                        onClick={() => openLightbox(imageSrc, `Imagen ${index + 1} - Relatos Salvajes`)}
+                        onClick={() => openLightbox(imageSrc, `Imagen ${index + 1} - Relatos Salvajes`, index)}
                       >
                         <img 
                           src={imageSrc}
@@ -776,22 +807,54 @@ export default function MoviePage() {
             style={{opacity: 1, visibility: 'visible'}}
             onClick={(e) => e.target === e.currentTarget && closeLightbox()}
           >
-            <div className="relative max-w-4xl max-h-[90vh] transform scale-80 transition-transform duration-300"
-                 style={{transform: 'scale(1)'}}>
+            <div className="relative max-w-4xl max-h-[90vh] w-full px-4 flex items-center justify-center">
+              {/* Flecha izquierda */}
               <button 
-                onClick={closeLightbox}
-                className="absolute -top-10 right-0 bg-black/50 hover:bg-cine-accent text-white text-2xl w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-300"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateLightbox('prev');
+                }}
+                className="absolute left-4 md:left-8 bg-black/50 hover:bg-cine-accent text-white p-3 rounded-full transition-all duration-300 z-10 hover:scale-110"
+                aria-label="Imagen anterior"
               >
-                ×
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
               </button>
-              <img 
-                src={lightboxImage.src} 
-                alt={lightboxImage.alt}
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-              />
-              <div className="absolute -bottom-12 left-0 right-0 text-center">
-                <p className="text-white text-base font-medium">{lightboxImage.alt}</p>
+
+              {/* Contenedor de imagen */}
+              <div className="relative max-w-full max-h-[90vh] transform scale-80 transition-transform duration-300"
+                   style={{transform: 'scale(1)'}}>
+                <button 
+                  onClick={closeLightbox}
+                  className="absolute -top-10 right-0 bg-black/50 hover:bg-cine-accent text-white text-2xl w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-300"
+                >
+                  ×
+                </button>
+                <img 
+                  src={lightboxImage.src} 
+                  alt={lightboxImage.alt}
+                  className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                />
+                <div className="absolute -bottom-12 left-0 right-0 text-center">
+                  <p className="text-white text-base font-medium">{lightboxImage.alt}</p>
+                  <p className="text-gray-400 text-sm mt-1">{lightboxImage.index + 1} de {movieGallery.length}</p>
+                </div>
               </div>
+
+              {/* Flecha derecha */}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateLightbox('next');
+                }}
+                className="absolute right-4 md:right-8 bg-black/50 hover:bg-cine-accent text-white p-3 rounded-full transition-all duration-300 z-10 hover:scale-110"
+                aria-label="Imagen siguiente"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </button>
             </div>
           </div>
         )}

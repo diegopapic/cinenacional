@@ -37,7 +37,7 @@ export default function HomePage() {
                   </Link>
                 </h4>
                 <p className="text-gray-600">2009 • Drama, Thriller</p>
-                <p className="text-sm text-blue-600 mt-2">
+                <p className="text-sm text-gray-500 mt-2">
                   Dir: Juan José Campanella
                 </p>
               </div>
@@ -47,7 +47,7 @@ export default function HomePage() {
             <article className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="h-64 bg-gray-300"></div>
               <div className="p-4">
-                <h4 className="font-semibold text-blue-600 text-lg mb-2">
+                <h4 className="text-blue-600 hover:text-blue-800">
                   Nueve reinas
                 </h4>
                 <p className="text-gray-600">2000 • Thriller, Crimen</p>
@@ -60,7 +60,7 @@ export default function HomePage() {
             <article className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="h-64 bg-gray-300"></div>
               <div className="p-4">
-                <h4 className="font-semibold text-blue-600 text-lg mb-2">
+                <h4 className="text-blue-600 hover:text-blue-800">
                   Relatos salvajes
                 </h4>
                 <p className="text-gray-600">2014 • Comedia negra</p>
