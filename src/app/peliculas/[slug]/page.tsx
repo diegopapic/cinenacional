@@ -70,7 +70,7 @@ export default function MoviePage() {
   useEffect(() => {
     loadMovieImages(currentMovieId);
   }, []);
-
+  //
   return (
     <>
       <Head>
