@@ -4,30 +4,33 @@ import { useState, useEffect } from 'react';
 import { TrailerSection } from "@/components/movies/TrailerSection";
 import { MovieHero } from "@/components/movies/MovieHero";
 import { CastSection } from "@/components/movies/CastSection";
+import { CrewSection } from "@/components/movies/CrewSection";
+import { MoviePoster } from "@/components/movies/MoviePoster";
+import { MovieInfo } from "@/components/movies/MovieInfo";
+import { MovieSidebar } from "@/components/movies/MovieSidebar";
+import { ImageGallery } from "@/components/movies/ImageGallery";
+import { SimilarMovies } from "@/components/movies/SimilarMovies";
 import Head from 'next/head';
 
 export default function MoviePage() {
   const [movieGallery, setMovieGallery] = useState<string[]>([]);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [showFullCrew, setShowFullCrew] = useState(false);
-  const [lightboxImage, setLightboxImage] = useState<{src: string, alt: string, index: number} | null>(null);
   const currentMovieId = 'relatos-salvajes';
 
   // Función para cargar imágenes desde la API
   const loadMovieImages = async (movieId: string) => {
     console.log(`🔍 Intentando cargar imágenes para: ${movieId}`);
-    
+
     try {
       const response = await fetch(`/api/images/${movieId}`);
       console.log(`📡 Respuesta de la API:`, response.status);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log(`📦 Datos recibidos:`, data);
-      
+
       if (data.images && data.images.length > 0) {
         // Optimizar URLs para resolución máxima de 1024px
         const images = data.images.map((img: any) => {
@@ -41,7 +44,7 @@ export default function MoviePage() {
           }
           return url;
         });
-        
+
         setMovieGallery(images);
         console.log(`✅ Cargadas ${data.count} imágenes optimizadas a 1024px:`, images);
       } else {
@@ -68,78 +71,6 @@ export default function MoviePage() {
     loadMovieImages(currentMovieId);
   }, []);
 
-  
-  // Slider functions
-  const nextSlide = () => {
-    const totalSlides = movieGallery.length;
-    const visibleSlides = 3;
-    setCurrentSlide(prev => {
-      const next = prev + 1;
-      return next > Math.max(0, totalSlides - visibleSlides) ? 0 : next;
-    });
-  };
-
-  const prevSlide = () => {
-    const totalSlides = movieGallery.length;
-    const visibleSlides = 3;
-    setCurrentSlide(prev => {
-      const next = prev - 1;
-      return next < 0 ? Math.max(0, totalSlides - visibleSlides) : next;
-    });
-  };
-
-  const openLightbox = (src: string, alt: string, index: number) => {
-    setLightboxImage({ src, alt, index });
-    document.body.style.overflow = 'hidden';
-  };
-
-  const closeLightbox = () => {
-    setLightboxImage(null);
-    document.body.style.overflow = 'auto';
-  };
-
-  // Navegación en el lightbox
-  const navigateLightbox = (direction: 'prev' | 'next') => {
-    if (!lightboxImage || movieGallery.length === 0) return;
-    
-    let newIndex: number;
-    if (direction === 'next') {
-      newIndex = (lightboxImage.index + 1) % movieGallery.length;
-    } else {
-      newIndex = lightboxImage.index === 0 ? movieGallery.length - 1 : lightboxImage.index - 1;
-    }
-    
-    setLightboxImage({
-      src: movieGallery[newIndex],
-      alt: `Imagen ${newIndex + 1} - Relatos Salvajes`,
-      index: newIndex
-    });
-  };
-
-  // Cerrar lightbox con Escape y navegar con flechas
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!lightboxImage) return;
-      
-      switch(e.key) {
-        case 'Escape':
-          closeLightbox();
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          navigateLightbox('prev');
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          navigateLightbox('next');
-          break;
-      }
-    };
-    
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [lightboxImage, movieGallery]);
-
   return (
     <>
       <Head>
@@ -149,10 +80,10 @@ export default function MoviePage() {
       </Head>
 
       <div className="bg-cine-dark text-white min-h-screen">
-        
+
 
         {/* Movie Hero Background - ACTUALIZADO */}
-        <MovieHero 
+        <MovieHero
           title="Relatos Salvajes"
           year={2014}
           duration={122}
@@ -167,54 +98,38 @@ export default function MoviePage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Poster */}
               <div className="lg:col-span-1">
-                <div className="aspect-[2/3] rounded-lg overflow-hidden poster-shadow">
-                  <div className="movie-placeholder w-full h-full">
-                    <svg className="w-16 h-16 text-cine-accent mb-4 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/>
-                    </svg>
-                    <p className="text-sm text-gray-400">Afiche no disponible</p>
-                  </div>
-                </div>
+                <MoviePoster
+                  title="Relatos Salvajes"
+                // imageUrl={movieData.posterUrl} // Cuando tengas la URL del poster
+                />
               </div>
-              
+
               {/* Movie Info */}
-              <div className="lg:col-span-2 space-y-6">
-                <div>
-                  <p className="serif-body text-lg text-gray-300 leading-relaxed">
-                    Seis relatos que alternan entre la comedia y el drama, que exploran los temas de la venganza, el amor y la vulnerabilidad del ser humano en situaciones extraordinarias. 
-                    Una película que retrata la condición humana cuando es llevada al límite.
-                  </p>
-                </div>
-
-                {/* Director */}
-                <div className="grid grid-cols-1 gap-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-3 text-cine-accent">Dirección</h3>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 rounded-full person-placeholder">
-                        <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="font-medium text-white">Damián Szifron</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-4">
-                  <button className="bg-cine-accent hover:bg-blue-600 px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 text-white">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M19 10a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <span>Ver Trailer</span>
-                  </button>
-                  <button className="border border-gray-600 hover:border-cine-accent px-6 py-3 rounded-lg font-medium transition-colors text-white">
-                    Compartir
-                  </button>
-                </div>
+              <div className="lg:col-span-2">
+                <MovieInfo
+                  synopsis="Seis relatos que alternan entre la comedia y el drama, que exploran los temas de la venganza, el amor y la vulnerabilidad del ser humano en situaciones extraordinarias. Una película que retrata la condición humana cuando es llevada al límite."
+                  director={{
+                    name: "Damián Szifron"
+                    // image: "url-de-la-imagen" // cuando tengas la imagen
+                  }}
+                  trailerUrl="https://youtu.be/3BxE9osMt5U?si=mLEH7dp-ll7ZJsXG"
+                  onTrailerClick={() => {
+                    // Aquí puedes hacer scroll a la sección del trailer
+                    // o abrir un modal con el video
+                    const trailerSection = document.querySelector('#trailer-section');
+                    trailerSection?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  onShareClick={() => {
+                    // Lógica para compartir
+                    if (navigator.share) {
+                      navigator.share({
+                        title: 'Relatos Salvajes',
+                        text: 'Mira esta película argentina increíble',
+                        url: window.location.href
+                      });
+                    }
+                  }}
+                />
               </div>
             </div>
           </div>
@@ -226,9 +141,9 @@ export default function MoviePage() {
             {/* Cast & Crew */}
             <div className="lg:col-span-2">
               <h2 className="serif-heading text-2xl mb-6 text-white">Reparto y Equipo</h2>
-              
+
               {/* Cast */}
-              <CastSection 
+              <CastSection
                 mainCast={[
                   { name: 'Ricardo Darín', character: 'Diego' },
                   { name: 'Érica Rivas', character: 'Romina' },
@@ -248,468 +163,145 @@ export default function MoviePage() {
               />
 
               {/* Crew */}
-              <div>
-                <h3 className="text-lg font-medium mb-4 text-cine-accent">Equipo Técnico</h3>
-                
-                {!showFullCrew ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-gray-400 font-medium mb-2">Dirección</h4>
-                        <div className="ml-4 space-y-1">
-                          <p className="text-white">Damián Szifron</p>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-gray-400 font-medium mb-2">Guión</h4>
-                        <div className="ml-4 space-y-1">
-                          <p className="text-white">Damián Szifron</p>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-gray-400 font-medium mb-2">Fotografía</h4>
-                        <div className="ml-4 space-y-1">
-                          <p className="text-white">Javier Juliá</p>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-gray-400 font-medium mb-2">Música</h4>
-                        <div className="ml-4 space-y-1">
-                          <p className="text-white">Gustavo Santaolalla</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-gray-400 font-medium mb-2">Montaje</h4>
-                        <div className="ml-4 space-y-1">
-                          <p className="text-white">Pablo Barbieri</p>
-                          <p className="text-white">Damián Szifrón</p>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-gray-400 font-medium mb-2">Dirección de Arte</h4>
-                        <div className="ml-4 space-y-1">
-                          <p className="text-white">Clara Notari</p>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-gray-400 font-medium mb-2">Producción</h4>
-                        <div className="ml-4 space-y-1">
-                          <p className="text-white">Hugo Sigman</p>
-                          <p className="text-white">Matías Mosteirín</p>
-                          <p className="text-white">Esther García</p>
-                          <p className="text-white">Pedro Almodóvar</p>
-                          <p className="text-white">Agustín Almodóvar</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm animate-fade-in">
-                    {/* Columna izquierda */}
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-gray-400 font-medium mb-2">Dirección</h4>
-                        <div className="ml-4 space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-white">Damián Szifrón</span>
-                            <span className="text-gray-400 text-xs">Director</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Cristian Trebotic</span>
-                            <span className="text-gray-400 text-xs">Asistente de Dirección</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Natalia Urruty</span>
-                            <span className="text-gray-400 text-xs">Asistente de Dirección</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Javier Braier</span>
-                            <span className="text-gray-400 text-xs">Dirección de casting</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Lorena Lisotti</span>
-                            <span className="text-gray-400 text-xs">Continuista</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Marcello Pozzo</span>
-                            <span className="text-gray-400 text-xs">Ayudante de dirección</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Agustín Arévalo</span>
-                            <span className="text-gray-400 text-xs">2do ayudante de dirección</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Lucila Frank</span>
-                            <span className="text-gray-400 text-xs">Refuerzo de dirección</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Iair Said</span>
-                            <span className="text-gray-400 text-xs">Asistente de casting</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Katia Szechtman</span>
-                            <span className="text-gray-400 text-xs">Asistente de casting</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h4 className="text-gray-400 font-medium mb-2">Guión</h4>
-                        <div className="ml-4 space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-white">Damián Szifron</span>
-                            <span className="text-gray-400 text-xs">Guionista</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h4 className="text-gray-400 font-medium mb-2">Fotografía</h4>
-                        <div className="ml-4 space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-white">Javier Juliá</span>
-                            <span className="text-gray-400 text-xs">Director de fotografía</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h4 className="text-gray-400 font-medium mb-2">Música</h4>
-                        <div className="ml-4 space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-white">Gustavo Santaolalla</span>
-                            <span className="text-gray-400 text-xs">Compositor</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Columna derecha */}
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-gray-400 font-medium mb-2">Producción</h4>
-                        <div className="ml-4 space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-white">Matías Mosteirín</span>
-                            <span className="text-gray-400 text-xs">Producción</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Esther García</span>
-                            <span className="text-gray-400 text-xs">Producción</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Hugo Sigman</span>
-                            <span className="text-gray-400 text-xs">Producción</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Pedro Almodóvar</span>
-                            <span className="text-gray-400 text-xs">Producción</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Agustín Almodóvar</span>
-                            <span className="text-gray-400 text-xs">Producción</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Claudio F. Belocopitt</span>
-                            <span className="text-gray-400 text-xs">Productor asociado</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Gerardo Rozín</span>
-                            <span className="text-gray-400 text-xs">Productor asociado</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Leticia Cristi</span>
-                            <span className="text-gray-400 text-xs">Producción ejecutiva</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Pola Zito</span>
-                            <span className="text-gray-400 text-xs">Producción ejecutiva</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Analía Castro</span>
-                            <span className="text-gray-400 text-xs">Jefe de Producción</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Axel Kuschevatzky</span>
-                            <span className="text-gray-400 text-xs">Coproducción</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Carolina Agunin</span>
-                            <span className="text-gray-400 text-xs">Coordinación de producción</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Covadonga R. Gamboa</span>
-                            <span className="text-gray-400 text-xs">Jefe de Producción</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h4 className="text-gray-400 font-medium mb-2">Montaje</h4>
-                        <div className="ml-4 space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-white">Pablo Barbieri</span>
-                            <span className="text-gray-400 text-xs">Editor</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Damián Szifrón</span>
-                            <span className="text-gray-400 text-xs">Editor</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h4 className="text-gray-400 font-medium mb-2">Dirección de Arte</h4>
-                        <div className="ml-4 space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-white">Clara Notari</span>
-                            <span className="text-gray-400 text-xs">Dirección de arte</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Ruth Fischerman</span>
-                            <span className="text-gray-400 text-xs">Vestuario</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-white">Marisa Amenta</span>
-                            <span className="text-gray-400 text-xs">Maquillaje</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                <div className="mt-6">
-                  <button 
-                    onClick={() => setShowFullCrew(!showFullCrew)}
-                    className="text-cine-accent hover:text-blue-300 font-medium transition-colors flex items-center space-x-2"
-                  >
-                    <span>{showFullCrew ? 'Ocultar equipo técnico completo' : 'Ver equipo técnico completo'}</span>
-                    <svg 
-                      className={`w-4 h-4 transition-transform duration-200 ${showFullCrew ? 'rotate-180' : ''}`} 
-                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              <CrewSection
+                basicCrew={{
+                  "Dirección": [
+                    { name: "Damián Szifron", role: "Director" }
+                  ],
+                  "Guión": [
+                    { name: "Damián Szifron", role: "Guionista" }
+                  ],
+                  "Fotografía": [
+                    { name: "Javier Juliá", role: "Director de fotografía" }
+                  ],
+                  "Música": [
+                    { name: "Gustavo Santaolalla", role: "Compositor" }
+                  ],
+                  "Montaje": [
+                    { name: "Pablo Barbieri", role: "Editor" },
+                    { name: "Damián Szifrón", role: "Editor" }
+                  ],
+                  "Dirección de Arte": [
+                    { name: "Clara Notari", role: "Dirección de arte" }
+                  ],
+                  "Producción": [
+                    { name: "Hugo Sigman", role: "Producción" },
+                    { name: "Matías Mosteirín", role: "Producción" },
+                    { name: "Esther García", role: "Producción" },
+                    { name: "Pedro Almodóvar", role: "Producción" },
+                    { name: "Agustín Almodóvar", role: "Producción" }
+                  ]
+                }}
+                fullCrew={{
+                  "Dirección": [
+                    { name: "Damián Szifrón", role: "Director" },
+                    { name: "Cristian Trebotic", role: "Asistente de Dirección" },
+                    { name: "Natalia Urruty", role: "Asistente de Dirección" },
+                    { name: "Javier Braier", role: "Dirección de casting" },
+                    { name: "Lorena Lisotti", role: "Continuista" },
+                    { name: "Marcello Pozzo", role: "Ayudante de dirección" },
+                    { name: "Agustín Arévalo", role: "2do ayudante de dirección" },
+                    { name: "Lucila Frank", role: "Refuerzo de dirección" },
+                    { name: "Iair Said", role: "Asistente de casting" },
+                    { name: "Katia Szechtman", role: "Asistente de casting" }
+                  ],
+                  "Guión": [
+                    { name: "Damián Szifron", role: "Guionista" }
+                  ],
+                  "Fotografía": [
+                    { name: "Javier Juliá", role: "Director de fotografía" }
+                  ],
+                  "Música": [
+                    { name: "Gustavo Santaolalla", role: "Compositor" }
+                  ],
+                  "Producción": [
+                    { name: "Matías Mosteirín", role: "Producción" },
+                    { name: "Esther García", role: "Producción" },
+                    { name: "Hugo Sigman", role: "Producción" },
+                    { name: "Pedro Almodóvar", role: "Producción" },
+                    { name: "Agustín Almodóvar", role: "Producción" },
+                    { name: "Claudio F. Belocopitt", role: "Productor asociado" },
+                    { name: "Gerardo Rozín", role: "Productor asociado" },
+                    { name: "Leticia Cristi", role: "Producción ejecutiva" },
+                    { name: "Pola Zito", role: "Producción ejecutiva" },
+                    { name: "Analía Castro", role: "Jefe de Producción" },
+                    { name: "Axel Kuschevatzky", role: "Coproducción" },
+                    { name: "Carolina Agunin", role: "Coordinación de producción" },
+                    { name: "Covadonga R. Gamboa", role: "Jefe de Producción" }
+                  ],
+                  "Montaje": [
+                    { name: "Pablo Barbieri", role: "Editor" },
+                    { name: "Damián Szifrón", role: "Editor" }
+                  ],
+                  "Dirección de Arte": [
+                    { name: "Clara Notari", role: "Dirección de arte" },
+                    { name: "Ruth Fischerman", role: "Vestuario" },
+                    { name: "Marisa Amenta", role: "Maquillaje" }
+                  ]
+                }}
+              />
             </div>
 
             {/* Sidebar Info */}
             <div className="lg:col-span-1">
-              <div className="glass-effect rounded-lg p-6 space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-4 text-cine-accent">Información</h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-start">
-                      <span className="text-gray-400 w-32 flex-shrink-0">Año:</span>
-                      <span className="ml-2 text-white">2014</span>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="text-gray-400 w-32 flex-shrink-0">Duración:</span>
-                      <span className="ml-2 text-white">122 min</span>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="text-gray-400 w-32 flex-shrink-0">País coproductor:</span>
-                      <span className="ml-2 text-white">Argentina</span>
-                    </div>
-                    <div className="flex items-start">
-                      <span className="text-gray-400 w-32 flex-shrink-0">Calificación:</span>
-                      <span className="ml-2 text-white">Solo apta para mayor de 16 años</span>
-                    </div>
-                    <div className="flex justify-end">
-                      <span className="text-white">Color | Sonora</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-medium mb-4 text-cine-accent">Géneros</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="bg-cine-gray px-3 py-1 rounded-full text-sm text-white">Comedia Negra</span>
-                    <span className="bg-cine-gray px-3 py-1 rounded-full text-sm text-white">Drama</span>
-                    <span className="bg-cine-gray px-3 py-1 rounded-full text-sm text-white">Thriller</span>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-medium mb-4 text-cine-accent">Temas</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="bg-cine-gray px-3 py-1 rounded-full text-sm text-white">Accidente automovilístico</span>
-                    <span className="bg-cine-gray px-3 py-1 rounded-full text-sm text-white">Aviones</span>
-                    <span className="bg-cine-gray px-3 py-1 rounded-full text-sm text-white">Casamiento</span>
-                    <span className="bg-cine-gray px-3 py-1 rounded-full text-sm text-white">Cocinero</span>
-                    <span className="bg-cine-gray px-3 py-1 rounded-full text-sm text-white">Ruta</span>
-                  </div>
-                </div>
-              </div>
+              <MovieSidebar
+                year={2014}
+                duration={122}
+                country="Argentina"
+                rating="Solo apta para mayor de 16 años"
+                format="Color | Sonora"
+                genres={["Comedia Negra", "Drama", "Thriller"]}
+                themes={[
+                  "Accidente automovilístico",
+                  "Aviones",
+                  "Casamiento",
+                  "Cocinero",
+                  "Ruta"
+                ]}
+              />
             </div>
           </div>
         </div>
 
         {/* Image Gallery */}
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-gray-800">
           <h2 className="serif-heading text-2xl text-white mb-6">Galería de Imágenes</h2>
-          <div className="relative">
-            <div className="overflow-hidden">
-              <div 
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{transform: `translateX(-${currentSlide * (100 / 3)}%)`}}
-              >
-                {movieGallery.length > 0 ? (
-                  movieGallery.map((imageSrc, index) => (
-                    <div key={index} className="flex-shrink-0 w-1/3 px-2">
-                      <div 
-                        className="group cursor-pointer relative overflow-hidden rounded-lg aspect-video bg-cine-gray"
-                        onClick={() => openLightbox(imageSrc, `Imagen ${index + 1} - Relatos Salvajes`, index)}
-                      >
-                        <img 
-                          src={imageSrc}
-                          alt={`Imagen ${index + 1} - Relatos Salvajes`}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                          loading="lazy"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=800&fit=crop&auto=format';
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
-                        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <p className="text-white text-sm font-medium">Imagen {index + 1}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="flex-shrink-0 w-1/3 px-2">
-                    <div className="group cursor-pointer relative overflow-hidden rounded-lg aspect-video bg-cine-gray">
-                      <div className="w-full h-full flex items-center justify-center">
-                        <div className="text-center">
-                          <svg className="w-8 h-8 text-cine-accent mx-auto mb-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                          </svg>
-                          <p className="text-sm text-gray-400">Cargando imágenes...</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Navigation arrows */}
-            <button 
-              onClick={prevSlide}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-cine-gray/90 hover:bg-cine-accent text-white p-3 rounded-full transition-colors duration-300 backdrop-blur-sm"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
-              </svg>
-            </button>
-            <button 
-              onClick={nextSlide}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-cine-gray/90 hover:bg-cine-accent text-white p-3 rounded-full transition-colors duration-300 backdrop-blur-sm"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-              </svg>
-            </button>
-          </div>
+          <ImageGallery
+            images={movieGallery}
+            movieTitle="Relatos Salvajes"
+          />
         </div>
         {/* Trailer */}
-        <TrailerSection 
-          trailerUrl="https://youtu.be/3BxE9osMt5U?si=mLEH7dp-ll7ZJsXG" 
+        <TrailerSection
+          trailerUrl="https://youtu.be/3BxE9osMt5U?si=mLEH7dp-ll7ZJsXG"
           movieTitle="Relatos Salvajes"
         />
-
         {/* Similar Movies */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-gray-800">
-          <h2 className="serif-heading text-2xl text-white mb-6">Películas Similares</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {[
-              { title: 'El Secreto de sus Ojos', year: '2009' },
-              { title: 'Nueve Reinas', year: '2000' },
-              { title: 'El Hijo de la Novia', year: '2001' },
-              { title: 'La Historia Oficial', year: '1985' }
-            ].map((movie, index) => (
-              <div key={index} className="group cursor-pointer">
-                <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform">
-                  <div className="placeholder-small w-full h-full">
-                    <svg className="w-8 h-8 text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/>
-                    </svg>
-                    <p className="text-xs text-gray-400 text-center">Sin imagen</p>
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-white">{movie.title}</p>
-                <p className="text-xs text-gray-400">{movie.year}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        
-
-        {/* Lightbox Modal */}
-        {lightboxImage && (
-          <div 
-            className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 opacity-0 invisible transition-all duration-300 animate-fade-in"
-            style={{opacity: 1, visibility: 'visible'}}
-            onClick={(e) => e.target === e.currentTarget && closeLightbox()}
-          >
-            <div className="relative max-w-4xl max-h-[90vh] w-full px-4 flex items-center justify-center">
-              {/* Flecha izquierda */}
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigateLightbox('prev');
-                }}
-                className="absolute left-4 md:left-8 bg-black/50 hover:bg-cine-accent text-white p-3 rounded-full transition-all duration-300 z-10 hover:scale-110"
-                aria-label="Imagen anterior"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-              </button>
-
-              {/* Contenedor de imagen */}
-              <div className="relative max-w-full max-h-[90vh] transform scale-80 transition-transform duration-300"
-                   style={{transform: 'scale(1)'}}>
-                <button 
-                  onClick={closeLightbox}
-                  className="absolute -top-10 right-0 bg-black/50 hover:bg-cine-accent text-white text-2xl w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-300"
-                >
-                  ×
-                </button>
-                <img 
-                  src={lightboxImage.src} 
-                  alt={lightboxImage.alt}
-                  className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
-                />
-                <div className="absolute -bottom-12 left-0 right-0 text-center">
-                  <p className="text-white text-base font-medium">{lightboxImage.alt}</p>
-                  <p className="text-gray-400 text-sm mt-1">{lightboxImage.index + 1} de {movieGallery.length}</p>
-                </div>
-              </div>
-
-              {/* Flecha derecha */}
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigateLightbox('next');
-                }}
-                className="absolute right-4 md:right-8 bg-black/50 hover:bg-cine-accent text-white p-3 rounded-full transition-all duration-300 z-10 hover:scale-110"
-                aria-label="Imagen siguiente"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
+        <SimilarMovies
+          movies={[
+            {
+              title: 'El Secreto de sus Ojos',
+              year: '2009',
+              slug: 'el-secreto-de-sus-ojos'
+            },
+            {
+              title: 'Nueve Reinas',
+              year: '2000',
+              slug: 'nueve-reinas'
+            },
+            {
+              title: 'El Hijo de la Novia',
+              year: '2001',
+              slug: 'el-hijo-de-la-novia'
+            },
+            {
+              title: 'La Historia Oficial',
+              year: '1985',
+              slug: 'la-historia-oficial'
+            }
+          ]}
+        />
       </div>
     </>
   );
