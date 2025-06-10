@@ -44,12 +44,13 @@ export default function MovieFormEnhanced({
   initialData
 }: MovieFormEnhancedProps) {
   // Estados para las listas disponibles
-  const [availableGenres, setAvailableGenres] = useState([])
-  const [availablePeople, setAvailablePeople] = useState([])
-  const [availableCountries, setAvailableCountries] = useState([])
-  const [availableLanguages, setAvailableLanguages] = useState([])
-  const [availableProductionCompanies, setAvailableProductionCompanies] = useState([])
-  const [availableDistributionCompanies, setAvailableDistributionCompanies] = useState([])
+
+const [availableGenres, setAvailableGenres] = useState<any[]>([])
+const [availablePeople, setAvailablePeople] = useState<any[]>([])
+const [availableCountries, setAvailableCountries] = useState<any[]>([])
+const [availableLanguages, setAvailableLanguages] = useState<any[]>([])
+const [availableProductionCompanies, setAvailableProductionCompanies] = useState<any[]>([])
+const [availableDistributionCompanies, setAvailableDistributionCompanies] = useState<any[]>([])
 
   // Estados para las selecciones
   const [selectedGenres, setSelectedGenres] = useState<number[]>([])
