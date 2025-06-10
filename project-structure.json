@@ -1,13 +1,13 @@
 {
-  "timestamp": "2025-06-10T21:49:40.150Z",
+  "timestamp": "2025-06-10T21:51:50.082Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "197d756398ff23ae2bf03ea7c94570ef9092e56b",
+  "commit": "0fe46799ab543c6035936ec7f0fee3b49078e258",
   "structure": {
     "README.md": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/README.md",
     "generate-structure.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/generate-structure.js",
     "next-env.d.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next-env.d.ts",
-    "next.config.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config.ts",
+    "next.config.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config.js",
     "package-lock.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/package-lock.json",
     "package.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/package.json",
     "postcss.config.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.js",
@@ -18,11 +18,43 @@
     "raw_urls_detailed.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/raw_urls_detailed.json",
     "src": {
       "app": {
+        "admin": {
+          "layout.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/layout.tsx",
+          "movies": {
+            "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/movies/page.tsx"
+          }
+        },
         "api": {
+          "companies": {
+            "distribution": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/companies/distribution/route.ts"
+            },
+            "production": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/companies/production/route.ts"
+            }
+          },
+          "countries": {
+            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/countries/route.ts"
+          },
+          "genres": {
+            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/genres/route.ts"
+          },
           "images": {
             "[movieId]": {
               "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/images/[movieId]/route.ts"
             }
+          },
+          "languages": {
+            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/languages/route.ts"
+          },
+          "movies": {
+            "[id]": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/movies/[id]/route.ts"
+            },
+            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/movies/route.ts"
+          },
+          "people": {
+            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/people/route.ts"
           },
           "project-structure": {
             "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/project-structure/route.ts"
@@ -51,6 +83,9 @@
         }
       },
       "components": {
+        "admin": {
+          "MovieFormEnhanced.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MovieFormEnhanced.tsx"
+        },
         "layout": {
           "Footer.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Footer.tsx",
           "Header.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Header.tsx"
@@ -66,6 +101,10 @@
           "SimilarMovies.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/SimilarMovies.tsx",
           "TrailerSection.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/TrailerSection.tsx"
         }
+      },
+      "lib": {
+        "prisma.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/prisma.ts",
+        "utils.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/utils.ts"
       }
     },
     "tailwind.config.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tailwind.config.js",
