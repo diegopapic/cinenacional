@@ -2,7 +2,7 @@
 
 import { z } from 'zod'
 
-const movieSchema = z.object({
+export const movieSchema = z.object({
   title: z.string().min(1, 'El título es requerido'),
   originalTitle: z.string().optional(),
   year: z.number().min(1895).max(new Date().getFullYear() + 5),
