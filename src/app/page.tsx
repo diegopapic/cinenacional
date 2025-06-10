@@ -17,29 +17,31 @@ export default function HomePage() {
 
   // Datos de ejemplo - en producción vendrían de tu API/DB
   const ultimosEstrenos = [
-    { id: 1, titulo: "Argentina, 1985", año: "2022" },
-    { id: 2, titulo: "El Empleado y el Patrón", año: "2021" },
-    { id: 3, titulo: "La Odisea de los Giles", año: "2019" },
-    { id: 4, titulo: "El Ángel", año: "2018" },
-    { id: 5, titulo: "Relatos Salvajes", año: "2014" },
-    { id: 6, titulo: "Elsa y Fred", año: "2005" },
+    { id: 1, titulo: "Argentina, 1985", fechaEstreno: "13 de octubre", director: "Santiago Mitre", genero: "Drama histórico" },
+    { id: 2, titulo: "El Empleado y el Patrón", fechaEstreno: "28 de abril", director: "Manuel Nieto Zas", genero: "Drama" },
+    { id: 3, titulo: "La Odisea de los Giles", fechaEstreno: "15 de agosto", director: "Sebastián Borensztein", genero: "Comedia dramática" },
+    { id: 4, titulo: "El Ángel", fechaEstreno: "9 de agosto", director: "Luis Ortega", genero: "Drama criminal" },
+    { id: 5, titulo: "Relatos Salvajes", fechaEstreno: "21 de agosto", director: "Damián Szifron", genero: "Comedia negra" },
+    { id: 6, titulo: "Elsa y Fred", fechaEstreno: "26 de mayo", director: "Marcos Carnevale", genero: "Romance" },
   ];
 
   const proximosEstrenos = [
-    { id: 1, titulo: "Título de la Película", fecha: "15 de Julio, 2025", director: "Director Nombre", genero: "Drama" },
-    { id: 2, titulo: "Otra Película", fecha: "22 de Julio, 2025", director: "Otro Director", genero: "Comedia" },
-    { id: 3, titulo: "Película Esperada", fecha: "5 de Agosto, 2025", director: "Director Conocido", genero: "Thriller" },
+    { id: 1, titulo: "Título de la Película", fecha: "15 de julio", director: "Director Nombre", genero: "Drama" },
+    { id: 2, titulo: "Otra Película", fecha: "22 de julio", director: "Otro Director", genero: "Comedia" },
+    { id: 3, titulo: "Película Esperada", fecha: "5 de agosto", director: "Director Conocido", genero: "Thriller" },
+    { id: 4, titulo: "Film Independiente", fecha: "12 de agosto", director: "Director Emergente", genero: "Drama social" },
+    { id: 5, titulo: "Película de Acción", fecha: "19 de agosto", director: "Director Acción", genero: "Acción" },
+    { id: 6, titulo: "Documental", fecha: "26 de agosto", director: "Documentalista", genero: "Documental" },
   ];
 
   const obituarios = [
-    { id: 1, nombre: "Luis Brandoni", rol: "Actor", años: "1940-2025", fecha: "5 de junio, 2025" },
-    { id: 2, nombre: "María Vaner", rol: "Actriz", años: "1935-2025", fecha: "28 de mayo, 2025" },
+    { id: 1, nombre: "Luis Brandoni", rol: "Actor", edad: "85 años", fecha: "5 de junio", imagen: "/images/persons/luis-brandoni.jpg" },
+    { id: 2, nombre: "María Vaner", rol: "Actriz", edad: "90 años", fecha: "28 de mayo", imagen: "/images/persons/maria-vaner.jpg" },
   ];
 
   const efemerides = [
-    { fecha: "10 de junio de 1985", evento: 'Estreno de "Camila" de María Luisa Bemberg', años: 40 },
-    { fecha: "10 de junio de 1975", evento: "Nace el director Juan José Campanella", años: 50 },
-    { fecha: "10 de junio de 2000", evento: 'Estreno de "Nueve Reinas" de Fabián Bielinsky', años: 25 },
+    { hace: "Hace 40 años", evento: 'se estrenaba "Camila" de María Luisa Bemberg', tipo: "pelicula", imagen: "/images/movies/camila.jpg" },
+    { hace: "Hace 50 años", evento: "nacía el director Juan José Campanella", tipo: "persona", imagen: "/images/persons/juan-jose-campanella.jpg" },
   ];
 
   const ultimasPeliculas = [
@@ -62,52 +64,111 @@ export default function HomePage() {
     { id: 6, nombre: "Érica Rivas", rol: "Actriz" },
   ];
 
-  // Rotar película del hero cada 8 segundos
+  // Ajustar gradientes al tamaño real de la imagen
   useEffect(() => {
-    const interval = setInterval(() => {
-      setPeliculaHeroIndex((prev) => (prev + 1) % peliculasHero.length);
-    }, 8000);
-    return () => clearInterval(interval);
-  }, [peliculasHero.length]);
+    const adjustGradients = () => {
+      const img = document.querySelector('.hero-image') as HTMLImageElement;
+      const container = document.querySelector('.hero-image-wrapper') as HTMLElement;
+      const gradientsContainer = document.querySelector('.hero-gradients-container') as HTMLElement;
+      
+      if (img && container && gradientsContainer && img.complete) {
+        const containerWidth = container.offsetWidth;
+        const containerHeight = container.offsetHeight;
+        const imgAspectRatio = img.naturalWidth / img.naturalHeight;
+        const containerAspectRatio = containerWidth / containerHeight;
+        
+        let displayWidth, displayHeight;
+        
+        if (imgAspectRatio > containerAspectRatio) {
+          // Imagen más ancha - se ajusta por ancho
+          displayWidth = containerWidth;
+          displayHeight = containerWidth / imgAspectRatio;
+        } else {
+          // Imagen más alta - se ajusta por altura
+          displayHeight = containerHeight;
+          displayWidth = containerHeight * imgAspectRatio;
+        }
+        
+        // Centrar y ajustar el contenedor de gradientes
+        gradientsContainer.style.width = `${displayWidth}px`;
+        gradientsContainer.style.height = `${displayHeight}px`;
+        gradientsContainer.style.left = `${(containerWidth - displayWidth) / 2}px`;
+        gradientsContainer.style.top = `${(containerHeight - displayHeight) / 2}px`;
+      }
+    };
+
+    // Ajustar cuando la imagen cambie
+    const img = document.querySelector('.hero-image') as HTMLImageElement;
+    if (img) {
+      img.addEventListener('load', adjustGradients);
+      // También ajustar al cambiar el tamaño de la ventana
+      window.addEventListener('resize', adjustGradients);
+      
+      // Ajustar inmediatamente si la imagen ya está cargada
+      if (img.complete) {
+        adjustGradients();
+      }
+    }
+
+    return () => {
+      if (img) {
+        img.removeEventListener('load', adjustGradients);
+      }
+      window.removeEventListener('resize', adjustGradients);
+    };
+  }, []);
+
+  // Cambiar imagen cada 8 segundos
+  useEffect(() => {
+    const imageUrls = peliculasHero.map(p => p.imagen);
+    if (imageUrls.length > 0) {
+      const interval = setInterval(() => {
+        const randomIndex = Math.floor(Math.random() * imageUrls.length);
+        const heroElement = document.querySelector('.hero-image');
+        if (heroElement) {
+          (heroElement as HTMLImageElement).src = imageUrls[randomIndex];
+        }
+      }, 8000);
+      return () => clearInterval(interval);
+    }
+  }, [peliculasHero]);
 
   const peliculaHeroActual = peliculasHero[peliculaHeroIndex];
 
   return (
     <div className="bg-cine-dark text-white min-h-screen">
-      {/* Hero Section con imagen rotativa */}
+      {/* Movie Hero Background - idéntico al componente MovieHero pero sin contenido */}
       <div className="relative hero-background-container -mt-16 pt-16">
-        {/* Imagen hero */}
-        <img 
-          src={peliculaHeroActual.imagen}
-          alt={peliculaHeroActual.titulo}
-          className="hero-image animate-fade-in"
-          key={peliculaHeroIndex}
-        />
-        
-        {/* Fade inferior */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-cine-dark to-transparent z-10"></div>
-        
-        {/* Información de la película */}
-        <div className="absolute inset-0 flex items-end justify-start z-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 w-full">
-            <h1 className="serif-heading text-5xl md:text-6xl lg:text-7xl text-white leading-tight drop-shadow-2xl">
-              {peliculaHeroActual.titulo}
-            </h1>
-            <div className="flex flex-wrap items-center gap-4 text-gray-200 mt-4">
-              <span className="bg-cine-accent/90 px-3 py-1 rounded-full text-sm font-medium text-white backdrop-blur-sm">
-                {peliculaHeroActual.año}
-              </span>
-              <span className="drop-shadow-lg">{peliculaHeroActual.genero}</span>
-              <span className="drop-shadow-lg">Dir: {peliculaHeroActual.director}</span>
-            </div>
-            <Link
-              href={`/pelicula/${peliculaHeroActual.id}`}
-              className="inline-block bg-cine-accent hover:bg-blue-600 px-6 py-3 rounded-lg font-medium transition-colors mt-4"
-            >
-              Ver ficha completa
-            </Link>
-          </div>
+        {/* Wrapper de imagen con gradientes */}
+        <div className="hero-image-wrapper">
+          {peliculaHeroActual && (
+            <>
+              <img 
+                src={peliculaHeroActual.imagen}
+                alt="Imagen destacada del cine argentino"
+                className="hero-image"
+              />
+              {/* Contenedor de gradientes que se ajusta a la imagen */}
+              <div className="hero-gradients-container">
+                <div className="hero-gradient-left"></div>
+                <div className="hero-gradient-right"></div>
+                <div className="hero-gradient-top"></div>
+                <div className="hero-gradient-bottom-inner"></div>
+                
+                {/* Epígrafe con título y año - dentro del contenedor de gradientes */}
+                <div className="absolute bottom-4 right-4 z-20">
+                  <p className="text-xs text-gray-400 drop-shadow-lg">
+                    {peliculaHeroActual.titulo} ({peliculaHeroActual.año})
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
+        
+        {/* Gradientes globales del contenedor */}
+        <div className="hero-gradient-bottom"></div>
+        <div className="hero-vignette"></div>
       </div>
 
       {/* Main Content */}
@@ -124,46 +185,73 @@ export default function HomePage() {
                   href={`/pelicula/${pelicula.id}`}
                   className="group cursor-pointer"
                 >
-                  <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform poster-shadow">
+                  <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform poster-shadow relative">
                     <div className="movie-placeholder w-full h-full">
                       <svg className="w-12 h-12 text-cine-accent mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/>
                       </svg>
                       <p className="text-xs text-gray-400">Afiche</p>
                     </div>
+                    {/* Badge de fecha sobre el afiche */}
+                    <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white">
+                      {pelicula.fechaEstreno}
+                    </div>
                   </div>
                   <h3 className="font-medium text-sm text-white line-clamp-2">{pelicula.titulo}</h3>
-                  <p className="text-gray-400 text-xs">{pelicula.año}</p>
+                  <p className="text-gray-400 text-xs">{pelicula.genero}</p>
+                  <p className="text-gray-400 text-xs">Dir: {pelicula.director}</p>
                 </Link>
               ))}
+            </div>
+            
+            {/* Botón Ver Más */}
+            <div className="mt-6 text-center">
+              <Link 
+                href="/estrenos" 
+                className="inline-block border border-cine-accent text-cine-accent hover:bg-cine-accent hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              >
+                Ver más estrenos
+              </Link>
             </div>
           </section>
 
           {/* Próximos Estrenos */}
           <section className="mb-12">
             <h2 className="serif-heading text-3xl mb-6 text-white">Próximos Estrenos</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {proximosEstrenos.map((pelicula) => (
-                <div key={pelicula.id} className="glass-effect rounded-lg p-4 flex space-x-4 hover:bg-cine-gray/90 transition-colors">
-                  <div className="w-20 h-28 rounded flex-shrink-0">
-                    <div className="placeholder-small w-full h-full">
-                      <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <Link
+                  key={pelicula.id}
+                  href={`/pelicula/${pelicula.id}`}
+                  className="group cursor-pointer"
+                >
+                  <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform poster-shadow relative">
+                    <div className="movie-placeholder w-full h-full">
+                      <svg className="w-12 h-12 text-cine-accent mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/>
                       </svg>
+                      <p className="text-xs text-gray-400">Afiche</p>
+                    </div>
+                    {/* Badge de fecha sobre el afiche */}
+                    <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white">
+                      {pelicula.fecha}
                     </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium mb-1 text-white">{pelicula.titulo}</h3>
-                    <p className="text-sm text-gray-400 mb-2 flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                      </svg>
-                      {pelicula.fecha}
-                    </p>
-                    <p className="text-sm text-gray-300">{pelicula.genero} • Dir: {pelicula.director}</p>
-                  </div>
-                </div>
+                  <h3 className="font-medium text-sm text-white line-clamp-2">{pelicula.titulo}</h3>
+                  <p className="text-gray-400 text-xs">{pelicula.genero}</p>
+                  <p className="text-gray-400 text-xs">Dir: {pelicula.director}</p>
+                </Link>
               ))}
+            </div>
+            
+            {/* Botón Ver Más */}
+            <div className="mt-6 text-center">
+              <Link 
+                href="/proximos-estrenos" 
+                className="inline-block border border-cine-accent text-cine-accent hover:bg-cine-accent hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              >
+                Ver más próximos estrenos
+              </Link>
             </div>
           </section>
 
@@ -176,19 +264,28 @@ export default function HomePage() {
                 <div className="space-y-4">
                   {obituarios.map((persona) => (
                     <div key={persona.id} className="flex items-center space-x-4 pb-4 border-b border-gray-700 last:border-0 last:pb-0">
-                      <div className="w-16 h-16 rounded-full person-placeholder">
-                        <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-24 h-24 rounded-full flex-shrink-0 person-placeholder">
+                        <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                         </svg>
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-white">{persona.nombre}</h3>
-                        <p className="text-sm text-gray-400">{persona.rol} • {persona.años}</p>
+                        <h3 className="font-medium text-white text-lg">{persona.nombre}</h3>
+                        <p className="text-sm text-gray-400">{persona.rol} • {persona.edad}</p>
                         <p className="text-sm text-gray-500">{persona.fecha}</p>
                       </div>
                     </div>
                   ))}
                 </div>
+              </div>
+              {/* Botón Ver Más */}
+              <div className="mt-6 text-center">
+                <Link 
+                  href="/obituarios" 
+                  className="inline-block border border-cine-accent text-cine-accent hover:bg-cine-accent hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Ver más obituarios
+                </Link>
               </div>
             </section>
 
@@ -198,17 +295,39 @@ export default function HomePage() {
               <div className="glass-effect rounded-lg p-6">
                 <div className="space-y-4">
                   {efemerides.map((item, index) => (
-                    <div key={index} className="pb-4 border-b border-gray-700 last:border-0 last:pb-0">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-medium text-cine-accent">{item.fecha}</h3>
-                          <p className="text-sm mt-1 text-gray-300">{item.evento}</p>
-                        </div>
-                        <span className="text-sm text-gray-500">{item.años} años</span>
+                    <div key={index} className="flex items-center space-x-4 pb-4 border-b border-gray-700 last:border-0 last:pb-0">
+                      {/* Contenedor de imagen con ancho fijo para alineación */}
+                      <div className="w-24 h-24 flex items-center justify-center flex-shrink-0">
+                        {item.tipo === "pelicula" ? (
+                          <div className="w-16 h-24 rounded movie-placeholder">
+                            <svg className="w-8 h-8 text-cine-accent opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/>
+                            </svg>
+                          </div>
+                        ) : (
+                          <div className="w-24 h-24 rounded-full person-placeholder">
+                            <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-cine-accent text-lg">{item.hace}</h3>
+                        <p className="text-sm mt-1 text-gray-300">... {item.evento}</p>
                       </div>
                     </div>
                   ))}
                 </div>
+              </div>
+              {/* Botón Ver Más */}
+              <div className="mt-6 text-center">
+                <Link 
+                  href="/efemerides" 
+                  className="inline-block border border-cine-accent text-cine-accent hover:bg-cine-accent hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Ver más efemérides
+                </Link>
               </div>
             </section>
           </div>
