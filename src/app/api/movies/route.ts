@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createSlug } from '@/lib/utils'
 import { z } from 'zod'
+import { movieSchema } from '@/lib/schemas'
 
 // Schema de validación para crear/actualizar películas
 const movieSchema = z.object({
