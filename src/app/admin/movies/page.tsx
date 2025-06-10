@@ -83,7 +83,15 @@ export default function AdminMoviesPage() {
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null)
   const [deletingMovieId, setDeletingMovieId] = useState<number | null>(null)
 
-  const [movieRelations, setMovieRelations] = useState({
+  const [movieRelations, setMovieRelations] = useState<{
+  genres: number[];
+  cast: any[];
+  crew: any[];
+  countries: number[];
+  languages: number[];
+  productionCompanies: number[];
+  distributionCompanies: number[];
+}>({
   genres: [],
   cast: [],
   crew: [],
