@@ -302,35 +302,6 @@ export default function PeopleListPage() {
     <>
       <style>{styles}</style>
       <div className="bg-cine-dark text-white min-h-screen">
-        {/* Header/Navigation */}
-        <nav className="bg-cine-gray/90 backdrop-blur-lg border-b border-gray-700 sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center space-x-8">
-                <h1 className="text-2xl serif-heading gradient-text">cinenacional.com</h1>
-                <div className="hidden md:flex space-x-6">
-                  <a href="#" className="hover:text-cine-accent transition-colors">Películas</a>
-                  <a href="#" className="text-white font-medium">Personas</a>
-                  <a href="#" className="hover:text-cine-accent transition-colors">Géneros</a>
-                  <a href="#" className="hover:text-cine-accent transition-colors">Años</a>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <input 
-                    type="text" 
-                    placeholder="Buscar películas, personas..." 
-                    className="bg-cine-dark border border-gray-600 rounded-full px-4 py-2 w-64 focus:outline-none focus:border-cine-accent transition-colors text-white placeholder-gray-400"
-                  />
-                  <svg className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
-        </nav>
-
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Page Header */}
@@ -579,77 +550,6 @@ export default function PeopleListPage() {
             </nav>
           </div>
         </main>
-
-        {/* Footer */}
-        <footer className="bg-cine-gray/50 border-t border-gray-700 mt-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div className="md:col-span-2">
-                <h3 className="serif-heading text-xl gradient-text mb-4">cinenacional.com</h3>
-                <p className="text-gray-400 text-sm leading-relaxed mb-4">
-                  La base de datos más completa sobre cine argentino.
-                </p>
-                <div className="flex space-x-4">
-                  <a href="#" className="text-gray-400 hover:text-cine-accent transition-colors">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                    </svg>
-                  </a>
-                  <a href="#" className="text-gray-400 hover:text-cine-accent transition-colors">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12.017 0C8.396 0 7.989.013 6.756.072 5.524.13 4.723.209 4.02.396c-.719.195-1.33.481-1.944.903-.614.422-1.141.824-1.564 1.438-.391.615-.677 1.226-.872 1.945C.187 5.478.108 6.279.05 7.511.013 8.744 0 9.151 0 12.017c0 2.867.013 3.273.072 4.506.058 1.232.137 2.033.324 2.736.195.719.48 1.33.903 1.944.421.614.823 1.141 1.437 1.564.615.391 1.226.677 1.945.872.703.187 1.504.266 2.736.324C8.744 23.987 9.151 24 12.017 24c2.867 0 3.273-.013 4.506-.072 1.232-.058 2.033-.137 2.736-.324.719-.195 1.33-.48 1.944-.903.614-.421 1.141-.823 1.564-1.437.391-.615.677-1.226.872-1.945.187-.703.266-1.504.324-2.736C23.987 15.256 24 14.849 24 11.983c0-2.867-.013-3.273-.072-4.506-.058-1.232-.137-2.033-.324-2.736-.195-.719-.48-1.33-.903-1.944-.421-.614-.823-1.141-1.437-1.564-.615-.391-1.226-.677-1.945-.872-.703-.187-1.504-.266-2.736-.324C15.256.013 14.849 0 11.983 0h.034zm-.717 2.169c.67-.003 1.257-.003 2.234-.003 2.822 0 3.156.011 4.27.067 1.03.047 1.589.218 1.96.362.493.192.845.422 1.215.792.37.37.6.722.792 1.215.144.371.315.93.362 1.96.056 1.114.067 1.448.067 4.27 0 2.822-.011 3.156-.067 4.27-.047 1.03-.218 1.589-.362 1.96-.192.493-.422.845-.792 1.215-.37.37-.722.6-1.215.792-.371.144-.93.315-1.96.362-1.114.056-1.448.067-4.27.067-2.822 0-3.156-.011-4.27-.067-1.03-.047-1.589-.218-1.96-.362-.493-.192-.845-.422-1.215-.792-.37-.37-.6-.722-.792-1.215-.144-.371-.315-.93-.362-1.96-.056-1.114-.067-1.448-.067-4.27 0-2.822.011-3.156.067-4.27.047-1.03.218-1.589.362-1.96.192-.493.422-.845.792-1.215.37-.37.722-.6 1.215-.792.371-.144.93-.315 1.96-.362 1.114-.056 1.448-.067 4.27-.067zm0 3.623c-2.986 0-5.406 2.42-5.406 5.406 0 2.986 2.42 5.406 5.406 5.406 2.986 0 5.406-2.42 5.406-5.406 0-2.986-2.42-5.406-5.406-5.406zm0 8.913c-1.937 0-3.507-1.57-3.507-3.507 0-1.937 1.57-3.507 3.507-3.507 1.937 0 3.507 1.57 3.507 3.507 0 1.937-1.57 3.507-3.507 3.507zM18.448 4.155c0 .698-.566 1.264-1.264 1.264-.698 0-1.264-.566-1.264-1.264 0-.698.566-1.264 1.264-1.264.698 0 1.264.566 1.264 1.264z"/>
-                    </svg>
-                  </a>
-                  <a href="#" className="text-gray-400 hover:text-cine-accent transition-colors">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                    </svg>
-                  </a>
-                  <a href="#" className="text-gray-400 hover:text-cine-accent transition-colors">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                    </svg>
-                  </a>
-                </div>
-              </div>
-              <div>
-                <h4 className="font-medium text-white mb-4">Explorar</h4>
-                <ul className="space-y-2 text-sm">
-                  <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Películas</a></li>
-                  <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Directores</a></li>
-                  <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Actores</a></li>
-                  <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Géneros</a></li>
-                  <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Décadas</a></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-medium text-white mb-4">Información</h4>
-                <ul className="space-y-2 text-sm">
-                  <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Acerca de</a></li>
-                  <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Contacto</a></li>
-                  <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Términos de uso</a></li>
-                  <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Política de privacidad</a></li>
-                  <li><a href="#" className="text-gray-400 hover:text-white transition-colors">API</a></li>
-                </ul>
-              </div>
-            </div>
-            
-            <div className="border-t border-gray-700 mt-8 pt-8">
-              <div className="flex flex-col md:flex-row justify-between items-center">
-                <p className="text-gray-400 text-sm">
-                  © 2025 cinenacional.com. Todos los derechos reservados.
-                </p>
-                <div className="flex items-center space-x-4 mt-4 md:mt-0">
-                  <span className="text-gray-500 text-xs">Desarrollado con</span>
-                  <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd"/>
-                  </svg>
-                  <span className="text-gray-500 text-xs">en Buenos Aires</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </footer>
       </div>
     </>
   );
