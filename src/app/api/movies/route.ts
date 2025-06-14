@@ -182,18 +182,18 @@ export async function POST(request: NextRequest) {
     } = validatedData
 
     // Transformar cast y crew para quitar la propiedad 'person'
-    const processedCast = cast?.map(({ person, ...castMember }) => ({
-      personId: castMember.personId,
-      characterName: castMember.characterName,
-      billingOrder: castMember.billingOrder,
-      isPrincipal: castMember.isPrincipal
+    const processedCast = cast?.map((item: any) => ({
+      personId: item.personId,
+      characterName: item.characterName,
+      billingOrder: item.billingOrder,
+      isPrincipal: item.isPrincipal
     }))
 
-    const processedCrew = crew?.map(({ person, ...crewMember }) => ({
-      personId: crewMember.personId,
-      role: crewMember.role,
-      department: crewMember.department,
-      billingOrder: crewMember.billingOrder
+    const processedCrew = crew?.map((item: any) => ({
+      personId: item.personId,
+      role: item.role,
+      department: item.department,
+      billingOrder: item.billingOrder
     }))
 
     // Crear película con relaciones
