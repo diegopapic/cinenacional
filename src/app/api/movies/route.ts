@@ -148,15 +148,21 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
+    // Agregar estos logs para debugging
+    console.log('=== RECEIVED DATA ===')
+    console.log('Cast:', JSON.stringify(body.cast, null, 2))
+    console.log('Crew:', JSON.stringify(body.crew, null, 2))
+    console.log('==================')
+
     // Validar datos
     const validatedData = movieSchema.parse(body)
-    
+
     // Generar slug único
     let slug = createSlug(validatedData.title)
     let slugExists = await prisma.movie.findUnique({ where: { slug } })
     let counter = 1
-    
+
     while (slugExists) {
       slug = `${createSlug(validatedData.title)}-${counter}`
       slugExists = await prisma.movie.findUnique({ where: { slug } })
@@ -174,6 +180,21 @@ export async function POST(request: NextRequest) {
       distributionCompanies,
       ...movieData
     } = validatedData
+
+    // Transformar cast y crew para quitar la propiedad 'person'
+    const processedCast = cast?.map(({ person, ...castMember }) => ({
+      personId: castMember.personId,
+      characterName: castMember.characterName,
+      billingOrder: castMember.billingOrder,
+      isPrincipal: castMember.isPrincipal
+    }))
+
+    const processedCrew = crew?.map(({ person, ...crewMember }) => ({
+      personId: crewMember.personId,
+      role: crewMember.role,
+      department: crewMember.department,
+      billingOrder: crewMember.billingOrder
+    }))
 
     // Crear película con relaciones
     const movie = await prisma.movie.create({
@@ -256,7 +277,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
+
     console.error('Error creating movie:', error)
     return NextResponse.json(
       { error: 'Error al crear la película' },
