@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
   Eye,
   Film,
   Calendar,
@@ -84,22 +84,22 @@ export default function AdminMoviesPage() {
   const [deletingMovieId, setDeletingMovieId] = useState<number | null>(null)
 
   const [movieRelations, setMovieRelations] = useState<{
-  genres: number[];
-  cast: any[];
-  crew: any[];
-  countries: number[];
-  languages: number[];
-  productionCompanies: number[];
-  distributionCompanies: number[];
-}>({
-  genres: [],
-  cast: [],
-  crew: [],
-  countries: [],
-  languages: [],
-  productionCompanies: [],
-  distributionCompanies: []
-})
+    genres: number[];
+    cast: any[];
+    crew: any[];
+    countries: number[];
+    languages: number[];
+    productionCompanies: number[];
+    distributionCompanies: number[];
+  }>({
+    genres: [],
+    cast: [],
+    crew: [],
+    countries: [],
+    languages: [],
+    productionCompanies: [],
+    distributionCompanies: []
+  })
 
   // Form
   const {
@@ -111,6 +111,35 @@ export default function AdminMoviesPage() {
   } = useForm<MovieFormData>({
     resolver: zodResolver(movieFormSchema)
   })
+
+  // Callbacks para MovieFormEnhanced
+  const handleGenresChange = useCallback((genres: number[]) => {
+    setMovieRelations(prev => ({ ...prev, genres }))
+  }, [])
+
+  const handleCastChange = useCallback((cast: any[]) => {
+    setMovieRelations(prev => ({ ...prev, cast }))
+  }, [])
+
+  const handleCrewChange = useCallback((crew: any[]) => {
+    setMovieRelations(prev => ({ ...prev, crew }))
+  }, [])
+
+  const handleCountriesChange = useCallback((countries: number[]) => {
+    setMovieRelations(prev => ({ ...prev, countries }))
+  }, [])
+
+  const handleLanguagesChange = useCallback((languages: number[]) => {
+    setMovieRelations(prev => ({ ...prev, languages }))
+  }, [])
+
+  const handleProductionCompaniesChange = useCallback((companies: number[]) => {
+    setMovieRelations(prev => ({ ...prev, productionCompanies: companies }))
+  }, [])
+
+  const handleDistributionCompaniesChange = useCallback((companies: number[]) => {
+    setMovieRelations(prev => ({ ...prev, distributionCompanies: companies }))
+  }, [])
 
   // Cargar películas
   const fetchMovies = async () => {
@@ -127,12 +156,22 @@ export default function AdminMoviesPage() {
       })
 
       const response = await fetch(`/api/movies?${params}`)
+
+      if (!response.ok) {
+        throw new Error('Error al cargar las películas')
+      }
+
       const data = await response.json()
-      
-      setMovies(data.movies)
-      setTotalPages(data.pagination.totalPages)
+
+      // Asegurar que siempre tengamos un array
+      setMovies(data.movies || [])
+      setTotalPages(data.pagination?.totalPages || 1)
     } catch (error) {
+      console.error('Error fetching movies:', error)
       toast.error('Error al cargar las películas')
+      // Asegurar que movies sea un array vacío en caso de error
+      setMovies([])
+      setTotalPages(1)
     } finally {
       setLoading(false)
     }
@@ -150,13 +189,16 @@ export default function AdminMoviesPage() {
         metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()) : [],
         ...movieRelations
       }
-
-      const url = editingMovie 
+      console.log('Movie relations:', movieRelations) // Agregar esta línea
+      console.log('Full movie data:', movieData) // Agregar esta línea
+      const url = editingMovie
         ? `/api/movies/${editingMovie.id}`
         : '/api/movies'
-      
+
       const method = editingMovie ? 'PUT' : 'POST'
-      
+
+      console.log('Sending movie data:', movieData)
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -166,8 +208,16 @@ export default function AdminMoviesPage() {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Error al guardar la película')
+        let errorMessage = 'Error al guardar la película'
+        try {
+          const error = await response.json()
+          errorMessage = error.error || error.message || errorMessage
+          console.error('Error response:', error)
+        } catch (e) {
+          console.error('Error parsing response:', e)
+        }
+        console.error('Request data:', movieData)
+        throw new Error(errorMessage)
       }
 
       toast.success(editingMovie ? 'Película actualizada' : 'Película creada')
@@ -185,9 +235,9 @@ export default function AdminMoviesPage() {
     try {
       const response = await fetch(`/api/movies/${movie.id}`)
       const fullMovie = await response.json()
-      
+
       setEditingMovie(movie)
-      
+
       // Llenar el formulario con los datos
       Object.keys(fullMovie).forEach((key) => {
         if (key === 'metaKeywords' && Array.isArray(fullMovie[key])) {
@@ -198,7 +248,10 @@ export default function AdminMoviesPage() {
           setValue(key as any, fullMovie[key])
         }
       })
-      
+
+      // NO establecer movieRelations aquí
+      // El MovieFormEnhanced se encargará de cargar los datos desde fullMovie
+
       setShowModal(true)
     } catch (error) {
       toast.error('Error al cargar los datos de la película')
@@ -208,7 +261,7 @@ export default function AdminMoviesPage() {
   // Eliminar película
   const handleDelete = async (id: number) => {
     if (!confirm('¿Estás seguro de eliminar esta película?')) return
-    
+
     try {
       setDeletingMovieId(id)
       const response = await fetch(`/api/movies/${id}`, {
@@ -259,7 +312,7 @@ export default function AdminMoviesPage() {
               <input
                 type="text"
                 placeholder="Buscar películas..."
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -267,7 +320,7 @@ export default function AdminMoviesPage() {
 
             {/* Filtro por estado */}
             <select
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
             >
@@ -279,7 +332,7 @@ export default function AdminMoviesPage() {
 
             {/* Filtro por año */}
             <select
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
             >
@@ -306,7 +359,7 @@ export default function AdminMoviesPage() {
             <div className="flex items-center justify-center h-64">
               <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
             </div>
-          ) : movies.length === 0 ? (
+          ) : movies && movies.length === 0 ? (
             <div className="text-center py-12">
               <Film className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">No se encontraron películas</p>
@@ -337,7 +390,7 @@ export default function AdminMoviesPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {movies.map((movie) => (
+                  {movies && movies.map((movie) => (
                     <tr key={movie.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -370,18 +423,17 @@ export default function AdminMoviesPage() {
                         {movie.year}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {movie.directors.map(d => d.name).join(', ') || '-'}
+                        {movie.directors?.map(d => d.name).join(', ') || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          movie.status === 'PUBLISHED' 
-                            ? 'bg-green-100 text-green-800'
-                            : movie.status === 'DRAFT'
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${movie.status === 'PUBLISHED'
+                          ? 'bg-green-100 text-green-800'
+                          : movie.status === 'DRAFT'
                             ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {movie.status === 'PUBLISHED' ? 'Publicado' : 
-                           movie.status === 'DRAFT' ? 'Borrador' : 'Archivado'}
+                          }`}>
+                          {movie.status === 'PUBLISHED' ? 'Publicado' :
+                            movie.status === 'DRAFT' ? 'Borrador' : 'Archivado'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -399,7 +451,7 @@ export default function AdminMoviesPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">
                           <a
-                            href={`/pelicula/${movie.slug}`}
+                            href={`/peliculas/${movie.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-gray-600 hover:text-gray-900 transition-colors"
@@ -514,7 +566,7 @@ export default function AdminMoviesPage() {
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
                     Información Básica
                   </h3>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Título *
@@ -522,7 +574,7 @@ export default function AdminMoviesPage() {
                     <input
                       type="text"
                       {...register('title')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     />
                     {errors.title && (
                       <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
@@ -536,7 +588,7 @@ export default function AdminMoviesPage() {
                     <input
                       type="text"
                       {...register('originalTitle')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     />
                   </div>
 
@@ -548,7 +600,7 @@ export default function AdminMoviesPage() {
                       <input
                         type="number"
                         {...register('year', { valueAsNumber: true })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                       />
                       {errors.year && (
                         <p className="mt-1 text-sm text-red-600">{errors.year.message}</p>
@@ -562,7 +614,7 @@ export default function AdminMoviesPage() {
                       <input
                         type="date"
                         {...register('releaseDate')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                       />
                     </div>
                   </div>
@@ -575,7 +627,7 @@ export default function AdminMoviesPage() {
                       <input
                         type="number"
                         {...register('duration', { valueAsNumber: true })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                       />
                     </div>
 
@@ -589,7 +641,7 @@ export default function AdminMoviesPage() {
                         min="0"
                         max="10"
                         {...register('rating', { valueAsNumber: true })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                       />
                     </div>
                   </div>
@@ -600,7 +652,7 @@ export default function AdminMoviesPage() {
                     </label>
                     <select
                       {...register('status')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     >
                       <option value="DRAFT">Borrador</option>
                       <option value="PUBLISHED">Publicado</option>
@@ -622,7 +674,7 @@ export default function AdminMoviesPage() {
                     <textarea
                       {...register('synopsis')}
                       rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     />
                   </div>
 
@@ -633,7 +685,7 @@ export default function AdminMoviesPage() {
                     <input
                       type="text"
                       {...register('tagline')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     />
                   </div>
 
@@ -644,7 +696,7 @@ export default function AdminMoviesPage() {
                     <input
                       type="url"
                       {...register('posterUrl')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     />
                   </div>
 
@@ -655,7 +707,7 @@ export default function AdminMoviesPage() {
                     <input
                       type="url"
                       {...register('backdropUrl')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     />
                   </div>
 
@@ -666,7 +718,7 @@ export default function AdminMoviesPage() {
                     <input
                       type="url"
                       {...register('trailerUrl')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     />
                   </div>
 
@@ -678,7 +730,7 @@ export default function AdminMoviesPage() {
                       type="text"
                       {...register('imdbId')}
                       placeholder="tt0123456"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     />
                   </div>
                 </div>
@@ -689,7 +741,7 @@ export default function AdminMoviesPage() {
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Información Técnica
                 </h3>
-                
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -697,7 +749,7 @@ export default function AdminMoviesPage() {
                     </label>
                     <select
                       {...register('filmFormat')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     >
                       <option value="">Seleccionar...</option>
                       <option value="35mm">35mm</option>
@@ -713,7 +765,7 @@ export default function AdminMoviesPage() {
                     </label>
                     <select
                       {...register('aspectRatio')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     >
                       <option value="">Seleccionar...</option>
                       <option value="1.37:1">1.37:1</option>
@@ -730,7 +782,7 @@ export default function AdminMoviesPage() {
                     </label>
                     <select
                       {...register('colorType')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     >
                       <option value="">Seleccionar...</option>
                       <option value="Color">Color</option>
@@ -745,7 +797,7 @@ export default function AdminMoviesPage() {
                     </label>
                     <select
                       {...register('soundType')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     >
                       <option value="">Seleccionar...</option>
                       <option value="Sonora">Sonora</option>
@@ -760,7 +812,7 @@ export default function AdminMoviesPage() {
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Clasificación
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -768,7 +820,7 @@ export default function AdminMoviesPage() {
                     </label>
                     <select
                       {...register('classification')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     >
                       <option value="">Seleccionar...</option>
                       <option value="Apta para todo público">Apta para todo público</option>
@@ -785,7 +837,7 @@ export default function AdminMoviesPage() {
                     <input
                       type="text"
                       {...register('certificateNumber')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                     />
                   </div>
                 </div>
@@ -797,7 +849,7 @@ export default function AdminMoviesPage() {
                   <textarea
                     {...register('classificationReason')}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   />
                 </div>
               </div>
@@ -807,7 +859,7 @@ export default function AdminMoviesPage() {
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   SEO y Metadatos
                 </h3>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Meta Descripción
@@ -815,7 +867,7 @@ export default function AdminMoviesPage() {
                   <textarea
                     {...register('metaDescription')}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   />
                 </div>
 
@@ -827,21 +879,21 @@ export default function AdminMoviesPage() {
                     type="text"
                     {...register('metaKeywords')}
                     placeholder="drama, argentina, buenos aires"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   />
                 </div>
               </div>
-                      {/* Relaciones */}
+              {/* Relaciones */}
               <div className="mt-6">
                 <MovieFormEnhanced
-                  onGenresChange={(genres) => setMovieRelations({...movieRelations, genres})}
-                  onCastChange={(cast) => setMovieRelations({...movieRelations, cast})}
-                  onCrewChange={(crew) => setMovieRelations({...movieRelations, crew})}
-                  onCountriesChange={(countries) => setMovieRelations({...movieRelations, countries})}
-                  onLanguagesChange={(languages) => setMovieRelations({...movieRelations, languages})}
-                  onProductionCompaniesChange={(companies) => setMovieRelations({...movieRelations, productionCompanies: companies})}
-                  onDistributionCompaniesChange={(companies) => setMovieRelations({...movieRelations, distributionCompanies: companies})}
-                  initialData={editingMovie ? movieRelations : undefined}
+                  onGenresChange={handleGenresChange}
+                  onCastChange={handleCastChange}
+                  onCrewChange={handleCrewChange}
+                  onCountriesChange={handleCountriesChange}
+                  onLanguagesChange={handleLanguagesChange}
+                  onProductionCompaniesChange={handleProductionCompaniesChange}
+                  onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                  initialData={undefined}  // Siempre undefined por ahora
                 />
               </div>
               {/* Botones */}

@@ -34,13 +34,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100" data-admin="true">
       {/* Sidebar móvil */}
       <div className={`fixed inset-0 z-40 md:hidden ${sidebarOpen ? '' : 'hidden'}`}>
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
         <nav className="fixed top-0 left-0 bottom-0 flex flex-col w-64 bg-white">
           <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold">CineNacional Admin</h2>
+            <h2 className="text-xl font-semibold text-gray-900">CineNacional Admin</h2>
             <button
               onClick={() => setSidebarOpen(false)}
               className="text-gray-500 hover:text-gray-700"
@@ -55,7 +55,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 href={item.href}
                 className="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-gray-100 text-gray-700"
               >
-                <item.icon className="w-5 h-5 mr-3" />
+                <item.icon className="w-5 h-5 mr-3 text-gray-600" />
                 {item.name}
               </Link>
             ))}
@@ -67,7 +67,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
         <nav className="flex-1 flex flex-col bg-white border-r border-gray-200">
           <div className="flex items-center h-16 px-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold">CineNacional Admin</h2>
+            <h2 className="text-xl font-semibold text-gray-900">CineNacional Admin</h2>
           </div>
           <div className="flex-1 px-4 py-4 space-y-1">
             {navigation.map((item) => (
@@ -76,7 +76,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 href={item.href}
                 className="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-gray-100 text-gray-700"
               >
-                <item.icon className="w-5 h-5 mr-3" />
+                <item.icon className="w-5 h-5 mr-3 text-gray-600" />
                 {item.name}
               </Link>
             ))}
@@ -107,7 +107,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
 
         {/* Contenido */}
-        <main>{children}</main>
+        <main className="text-gray-900">{children}</main>
       </div>
     </div>
   )

@@ -2,10 +2,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  Plus, 
-  X, 
-  Search, 
+import {
+  Plus,
+  X,
+  Search,
   UserPlus,
   Building,
   Globe,
@@ -45,12 +45,12 @@ export default function MovieFormEnhanced({
 }: MovieFormEnhancedProps) {
   // Estados para las listas disponibles
 
-const [availableGenres, setAvailableGenres] = useState<any[]>([])
-const [availablePeople, setAvailablePeople] = useState<any[]>([])
-const [availableCountries, setAvailableCountries] = useState<any[]>([])
-const [availableLanguages, setAvailableLanguages] = useState<any[]>([])
-const [availableProductionCompanies, setAvailableProductionCompanies] = useState<any[]>([])
-const [availableDistributionCompanies, setAvailableDistributionCompanies] = useState<any[]>([])
+  const [availableGenres, setAvailableGenres] = useState<any[]>([])
+  const [availablePeople, setAvailablePeople] = useState<any[]>([])
+  const [availableCountries, setAvailableCountries] = useState<any[]>([])
+  const [availableLanguages, setAvailableLanguages] = useState<any[]>([])
+  const [availableProductionCompanies, setAvailableProductionCompanies] = useState<any[]>([])
+  const [availableDistributionCompanies, setAvailableDistributionCompanies] = useState<any[]>([])
 
   // Estados para las selecciones
   const [selectedGenres, setSelectedGenres] = useState<number[]>([])
@@ -74,6 +74,8 @@ const [availableDistributionCompanies, setAvailableDistributionCompanies] = useS
     department: '',
     billingOrder: 0
   })
+
+  const [isInitialized, setIsInitialized] = useState(false)
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -105,62 +107,96 @@ const [availableDistributionCompanies, setAvailableDistributionCompanies] = useS
         setSelectedDistributionCompanies(initialData.distributionCompanies.map(c => c.companyId))
       }
     }
+    setIsInitialized(true)
   }, [initialData])
 
   // Notificar cambios al componente padre
   useEffect(() => {
-    onGenresChange(selectedGenres)
-  }, [selectedGenres])
+    if (isInitialized) {
+      onGenresChange(selectedGenres)
+    }
+  }, [selectedGenres, onGenresChange, isInitialized])  // <- Agregar onGenresChange
 
   useEffect(() => {
-    onCastChange(cast)
-  }, [cast])
+    if (isInitialized) {
+      onCastChange(cast)
+    }
+  }, [cast, onCastChange, isInitialized])
 
   useEffect(() => {
-    onCrewChange(crew)
-  }, [crew])
+    if (isInitialized) {
+      onCrewChange(crew)
+    }
+  }, [crew, onCrewChange, isInitialized])
 
   useEffect(() => {
-    onCountriesChange(selectedCountries)
-  }, [selectedCountries])
+    if (isInitialized) {
+      onCountriesChange(selectedCountries)
+    }
+  }, [selectedCountries, onCountriesChange, isInitialized])
 
   useEffect(() => {
-    onLanguagesChange(selectedLanguages)
-  }, [selectedLanguages])
+    if (isInitialized) {
+      onLanguagesChange(selectedLanguages)
+    }
+  }, [selectedLanguages, onLanguagesChange, isInitialized])
 
   useEffect(() => {
-    onProductionCompaniesChange(selectedProductionCompanies)
-  }, [selectedProductionCompanies])
+    if (isInitialized) {
+      onProductionCompaniesChange(selectedProductionCompanies)
+    }
+  }, [selectedProductionCompanies, onProductionCompaniesChange, isInitialized])
 
   useEffect(() => {
-    onDistributionCompaniesChange(selectedDistributionCompanies)
-  }, [selectedDistributionCompanies])
+    if (isInitialized) {
+      onDistributionCompaniesChange(selectedDistributionCompanies)
+    }
+  }, [selectedDistributionCompanies, onDistributionCompaniesChange, isInitialized])
 
   // Cargar datos de la API
   const fetchInitialData = async () => {
     try {
-      const [genres, countries, languages, prodCompanies, distCompanies] = await Promise.all([
-        fetch('/api/genres').then(r => r.json()),
-        fetch('/api/countries').then(r => r.json()),
-        fetch('/api/languages').then(r => r.json()),
-        fetch('/api/companies/production').then(r => r.json()),
-        fetch('/api/companies/distribution').then(r => r.json())
+      const [genresRes, countriesRes, languagesRes, prodCompaniesRes, distCompaniesRes] = await Promise.all([
+        fetch('/api/genres'),
+        fetch('/api/countries'),
+        fetch('/api/languages'),
+        fetch('/api/companies/production'),
+        fetch('/api/companies/distribution')
       ])
 
-      setAvailableGenres(genres)
-      setAvailableCountries(countries)
-      setAvailableLanguages(languages)
-      setAvailableProductionCompanies(prodCompanies)
-      setAvailableDistributionCompanies(distCompanies)
+      // Verificar que todas las respuestas sean OK
+      if (!genresRes.ok || !countriesRes.ok || !languagesRes.ok || !prodCompaniesRes.ok || !distCompaniesRes.ok) {
+        throw new Error('Error fetching data')
+      }
+
+      const [genres, countries, languages, prodCompanies, distCompanies] = await Promise.all([
+        genresRes.json(),
+        countriesRes.json(),
+        languagesRes.json(),
+        prodCompaniesRes.json(),
+        distCompaniesRes.json()
+      ])
+
+      // Asegurar que siempre sean arrays
+      setAvailableGenres(Array.isArray(genres) ? genres : [])
+      setAvailableCountries(Array.isArray(countries) ? countries : [])
+      setAvailableLanguages(Array.isArray(languages) ? languages : [])
+      setAvailableProductionCompanies(Array.isArray(prodCompanies) ? prodCompanies : [])
+      setAvailableDistributionCompanies(Array.isArray(distCompanies) ? distCompanies : [])
     } catch (error) {
       console.error('Error loading initial data:', error)
+      // Asegurar que los estados sean arrays vacíos en caso de error
+      setAvailableGenres([])
+      setAvailableCountries([])
+      setAvailableLanguages([])
+      setAvailableProductionCompanies([])
+      setAvailableDistributionCompanies([])
     }
   }
-
   // Buscar personas
   const searchPeople = async (search: string) => {
     if (search.length < 2) return
-    
+
     try {
       const response = await fetch(`/api/people?search=${encodeURIComponent(search)}&limit=10`)
       const data = await response.json()
@@ -193,6 +229,7 @@ const [availableDistributionCompanies, setAvailableDistributionCompanies] = useS
         department: newPerson.department,
         billingOrder: crew.filter(c => c.role === newPerson.role).length + 1
       }])
+
     }
 
     // Limpiar formulario
@@ -267,7 +304,7 @@ const [availableDistributionCompanies, setAvailableDistributionCompanies] = useS
           <UserPlus className="w-5 h-5" />
           Reparto
         </h3>
-        
+
         {cast.length > 0 && (
           <div className="mb-4 space-y-2">
             {cast.map((member, index) => (
@@ -309,7 +346,7 @@ const [availableDistributionCompanies, setAvailableDistributionCompanies] = useS
           <UserPlus className="w-5 h-5" />
           Equipo Técnico
         </h3>
-        
+
         {crew.length > 0 && (
           <div className="mb-4 space-y-2">
             {crew.map((member, index) => (
@@ -485,7 +522,7 @@ const [availableDistributionCompanies, setAvailableDistributionCompanies] = useS
                   />
                   <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
                 </div>
-                
+
                 {availablePeople.length > 0 && (
                   <div className="mt-2 border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
                     {availablePeople.map((person: any) => (
@@ -493,9 +530,8 @@ const [availableDistributionCompanies, setAvailableDistributionCompanies] = useS
                         key={person.id}
                         type="button"
                         onClick={() => setNewPerson({ ...newPerson, personId: person.id })}
-                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${
-                          newPerson.personId === person.id ? 'bg-blue-50' : ''
-                        }`}
+                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${newPerson.personId === person.id ? 'bg-blue-50' : ''
+                          }`}
                       >
                         {person.name}
                       </button>

@@ -296,3 +296,39 @@ body {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+
+/* Fix para las páginas de admin */
+/* Sobrescribe el color blanco global para el admin */
+[data-admin="true"] {
+  color: rgb(17 24 39); /* text-gray-900 */
+}
+
+[data-admin="true"] input,
+[data-admin="true"] textarea,
+[data-admin="true"] select {
+  color: rgb(17 24 39) !important; /* text-gray-900 */
+  background-color: rgb(255 255 255) !important; /* bg-white */
+}
+
+[data-admin="true"] input::placeholder,
+[data-admin="true"] textarea::placeholder {
+  color: rgb(156 163 175); /* text-gray-400 */
+}
+
+[data-admin="true"] select option {
+  color: rgb(17 24 39) !important; /* text-gray-900 */
+  background-color: rgb(255 255 255) !important; /* bg-white */
+}
+
+/* Asegurar que los inputs en modales también se vean bien */
+[data-admin="true"] .fixed input,
+[data-admin="true"] .fixed textarea,
+[data-admin="true"] .fixed select {
+  color: rgb(17 24 39) !important;
+  background-color: rgb(255 255 255) !important;
+}
+
+[data-admin="true"] .fixed select option {
+  color: rgb(17 24 39) !important;
+  background-color: rgb(255 255 255) !important;
+}
