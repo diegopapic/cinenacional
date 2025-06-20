@@ -1,0 +1,2457 @@
+// Archivos del admin - 2025-06-20T18:11:18.687Z
+// ==================
+
+
+
+// ==================================================
+// src/app/admin/layout.tsx
+// ==================================================
+// src/app/admin/layout.tsx
+'use client'
+
+import Link from 'next/link'
+import { 
+  Film, 
+  Users, 
+  Building2, 
+  Award, 
+  Globe, 
+  Languages, 
+  Home,
+  Menu,
+  X
+} from 'lucide-react'
+import { ReactNode, useState } from 'react'
+
+interface AdminLayoutProps {
+  children: ReactNode
+}
+
+export default function AdminLayout({ children }: AdminLayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const navigation = [
+    { name: 'Dashboard', href: '/admin', icon: Home },
+    { name: 'Películas', href: '/admin/movies', icon: Film },
+    { name: 'Personas', href: '/admin/people', icon: Users },
+    { name: 'Productoras', href: '/admin/companies/production', icon: Building2 },
+    { name: 'Distribuidoras', href: '/admin/companies/distribution', icon: Building2 },
+    { name: 'Premios', href: '/admin/awards', icon: Award },
+    { name: 'Países', href: '/admin/countries', icon: Globe },
+    { name: 'Idiomas', href: '/admin/languages', icon: Languages }
+  ]
+
+  return (
+    <div className="min-h-screen bg-gray-100" data-admin="true">
+      {/* Sidebar móvil */}
+      <div className={`fixed inset-0 z-40 md:hidden ${sidebarOpen ? '' : 'hidden'}`}>
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+        <nav className="fixed top-0 left-0 bottom-0 flex flex-col w-64 bg-white">
+          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900">CineNacional Admin</h2>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="flex-1 px-4 py-4 space-y-1">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-gray-100 text-gray-700"
+              >
+                <item.icon className="w-5 h-5 mr-3 text-gray-600" />
+                {item.name}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      </div>
+
+      {/* Sidebar desktop */}
+      <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
+        <nav className="flex-1 flex flex-col bg-white border-r border-gray-200">
+          <div className="flex items-center h-16 px-4 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900">CineNacional Admin</h2>
+          </div>
+          <div className="flex-1 px-4 py-4 space-y-1">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-gray-100 text-gray-700"
+              >
+                <item.icon className="w-5 h-5 mr-3 text-gray-600" />
+                {item.name}
+              </Link>
+            ))}
+          </div>
+          <div className="p-4 border-t border-gray-200">
+            <Link
+              href="/"
+              className="flex items-center px-3 py-2 text-sm font-medium rounded-lg hover:bg-gray-100 text-gray-700"
+            >
+              Volver al sitio
+            </Link>
+          </div>
+        </nav>
+      </div>
+
+      {/* Contenido principal */}
+      <div className="md:pl-64">
+        {/* Header móvil */}
+        <div className="sticky top-0 z-10 md:hidden bg-white shadow">
+          <div className="px-4 py-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+
+        {/* Contenido */}
+        <main className="text-gray-900">{children}</main>
+      </div>
+    </div>
+  )
+}
+
+// ==================================================
+// src/app/admin/movies/page.tsx
+// ==================================================
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Eye,
+  Film,
+  Calendar,
+  Clock,
+  Star,
+  X,
+  Save,
+  Loader2
+} from 'lucide-react'
+import { toast } from 'react-hot-toast'
+import { formatDate, formatDuration } from '@/lib/utils'
+import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
+
+// Schema de validación
+const movieFormSchema = z.object({
+  title: z.string().min(1, 'El título es requerido'),
+  originalTitle: z.string().optional(),
+  year: z.number().min(1895).max(new Date().getFullYear() + 5),
+  releaseDate: z.string().optional(),
+  duration: z.number().optional(),
+  synopsis: z.string().optional(),
+  tagline: z.string().optional(),
+  rating: z.number().min(0).max(10).optional(),
+  posterUrl: z.string().url().optional().or(z.literal('')),
+  backdropUrl: z.string().url().optional().or(z.literal('')),
+  trailerUrl: z.string().url().optional().or(z.literal('')),
+  imdbId: z.string().optional(),
+  aspectRatio: z.string().optional(),
+  colorType: z.string().optional(),
+  soundType: z.string().optional(),
+  filmFormat: z.string().optional(),
+  certificateNumber: z.string().optional(),
+  classification: z.string().optional(),
+  classificationReason: z.string().optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+  metaDescription: z.string().optional(),
+  metaKeywords: z.string().optional()
+})
+
+
+type MovieFormData = z.infer<typeof movieFormSchema>
+
+interface Movie {
+  id: number
+  slug: string
+  title: string
+  originalTitle?: string
+  year: number
+  releaseDate?: string
+  duration?: number
+  rating?: number
+  posterUrl?: string
+  status: string
+  genres: Array<{ id: number; name: string }>
+  directors: Array<{ id: number; name: string }>
+  mainCast: Array<{
+    person: { id: number; name: string }
+    character?: string
+  }>
+  country: string
+}
+
+export default function AdminMoviesPage() {
+  const [movies, setMovies] = useState<Movie[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedStatus, setSelectedStatus] = useState('')
+  const [selectedYear, setSelectedYear] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [showModal, setShowModal] = useState(false)
+  const [editingMovie, setEditingMovie] = useState<Movie | null>(null)
+  const [deletingMovieId, setDeletingMovieId] = useState<number | null>(null)
+
+  const [movieRelations, setMovieRelations] = useState<{
+    genres: number[];
+    cast: any[];
+    crew: any[];
+    countries: number[];
+    languages: number[];
+    productionCompanies: number[];
+    distributionCompanies: number[];
+  }>({
+    genres: [],
+    cast: [],
+    crew: [],
+    countries: [],
+    languages: [],
+    productionCompanies: [],
+    distributionCompanies: []
+  })
+
+  // Form
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors, isSubmitting }
+  } = useForm<MovieFormData>({
+    resolver: zodResolver(movieFormSchema)
+  })
+
+  // Callbacks para MovieFormEnhanced
+  const handleGenresChange = useCallback((genres: number[]) => {
+    setMovieRelations(prev => ({ ...prev, genres }))
+  }, [])
+
+  const handleCastChange = useCallback((cast: any[]) => {
+    setMovieRelations(prev => ({ ...prev, cast }))
+  }, [])
+
+  const handleCrewChange = useCallback((crew: any[]) => {
+    setMovieRelations(prev => ({ ...prev, crew }))
+  }, [])
+
+  const handleCountriesChange = useCallback((countries: number[]) => {
+    setMovieRelations(prev => ({ ...prev, countries }))
+  }, [])
+
+  const handleLanguagesChange = useCallback((languages: number[]) => {
+    setMovieRelations(prev => ({ ...prev, languages }))
+  }, [])
+
+  const handleProductionCompaniesChange = useCallback((companies: number[]) => {
+    setMovieRelations(prev => ({ ...prev, productionCompanies: companies }))
+  }, [])
+
+  const handleDistributionCompaniesChange = useCallback((companies: number[]) => {
+    setMovieRelations(prev => ({ ...prev, distributionCompanies: companies }))
+  }, [])
+
+  // Cargar películas
+  const fetchMovies = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: '20',
+        search: searchTerm,
+        status: selectedStatus,
+        year: selectedYear,
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      })
+
+      const response = await fetch(`/api/movies?${params}`)
+
+      if (!response.ok) {
+        throw new Error('Error al cargar las películas')
+      }
+
+      const data = await response.json()
+
+      // Asegurar que siempre tengamos un array
+      setMovies(data.movies || [])
+      setTotalPages(data.pagination?.totalPages || 1)
+    } catch (error) {
+      toast.error('Error al cargar las películas')
+      // Asegurar que movies sea un array vacío en caso de error
+      setMovies([])
+      setTotalPages(1)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchMovies()
+  }, [currentPage, searchTerm, selectedStatus, selectedYear])
+
+  // Crear o actualizar película
+  const onSubmit = async (data: MovieFormData) => {
+    try {
+      const movieData = {
+        ...data,
+        metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()) : [],
+        ...movieRelations
+      }
+      const url = editingMovie
+        ? `/api/movies/${editingMovie.id}`
+        : '/api/movies'
+
+      const method = editingMovie ? 'PUT' : 'POST'
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(movieData)
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'Error al guardar la película'
+        try {
+          const error = await response.json()
+          errorMessage = error.error || error.message || errorMessage
+        } catch (e) {
+        }
+        throw new Error(errorMessage)
+      }
+
+      toast.success(editingMovie ? 'Película actualizada' : 'Película creada')
+      setShowModal(false)
+      reset()
+      setEditingMovie(null)
+      fetchMovies()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al guardar')
+    }
+  }
+
+  // Editar película
+  const handleEdit = async (movie: Movie) => {
+    
+    try {
+      const response = await fetch(`/api/movies/${movie.id}`)
+    
+      const fullMovie = await response.json()
+    
+      setEditingMovie(movie)
+
+      // Llenar el formulario con los datos
+      Object.keys(fullMovie).forEach((key) => {
+        if (key === 'metaKeywords' && Array.isArray(fullMovie[key])) {
+          setValue(key as any, fullMovie[key].join(', '))
+        } else if (key === 'releaseDate' && fullMovie[key]) {
+          setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
+        } else {
+          setValue(key as any, fullMovie[key])
+        }
+      })
+      
+      setShowModal(true)
+
+      // Cargar las relaciones DESPUÉS de abrir el modal
+      setTimeout(() => {
+        console.log('Setting relations:', {
+          genres: fullMovie.genres?.map((g: any) => g.genreId) || [],
+          cast: fullMovie.cast || [],
+          crew: fullMovie.crew || [],
+          countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
+          languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
+          productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
+          distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
+        })
+        setMovieRelations({
+          genres: fullMovie.genres?.map((g: any) => g.genreId) || [],
+          cast: fullMovie.cast || [],
+          crew: fullMovie.crew || [],
+          countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
+          languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
+          productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
+          distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
+        })
+      }, 100)
+
+    } catch (error) {
+      toast.error('Error al cargar los datos de la película')
+    }
+  }
+
+  // Eliminar película
+  const handleDelete = async (id: number) => {
+    if (!confirm('¿Estás seguro de eliminar esta película?')) return
+
+    try {
+      setDeletingMovieId(id)
+      const response = await fetch(`/api/movies/${id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar')
+      }
+
+      toast.success('Película eliminada')
+      fetchMovies()
+    } catch (error) {
+      toast.error('Error al eliminar la película')
+    } finally {
+      setDeletingMovieId(null)
+    }
+  }
+
+  // Abrir modal para nueva película
+  const handleNewMovie = () => {
+    setEditingMovie(null)
+    reset()
+    // Limpiar las relaciones para nueva película
+    setMovieRelations({
+      genres: [],
+      cast: [],
+      crew: [],
+      countries: [],
+      languages: [],
+      productionCompanies: [],
+      distributionCompanies: []
+    })
+    setShowModal(true)
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="py-6">
+            <h1 className="text-3xl font-bold text-gray-900">
+              Administración de Películas
+            </h1>
+          </div>
+        </div>
+      </div>
+
+      {/* Contenido principal */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Filtros y acciones */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Búsqueda */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Buscar películas..."
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            {/* Filtro por estado */}
+            <select
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+            >
+              <option value="">Todos los estados</option>
+              <option value="DRAFT">Borrador</option>
+              <option value="PUBLISHED">Publicado</option>
+              <option value="ARCHIVED">Archivado</option>
+            </select>
+
+            {/* Filtro por año */}
+            <select
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+            >
+              <option value="">Todos los años</option>
+              {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+
+            {/* Botón nueva película */}
+            <button
+              onClick={handleNewMovie}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Nueva Película
+            </button>
+          </div>
+        </div>
+
+        {/* Lista de películas */}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            </div>
+          ) : movies && movies.length === 0 ? (
+            <div className="text-center py-12">
+              <Film className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No se encontraron películas</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Película
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Año
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Director
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Estado
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Rating
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {movies && movies.map((movie) => (
+                    <tr key={movie.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            {movie.posterUrl ? (
+                              <img
+                                className="h-10 w-10 rounded-lg object-cover"
+                                src={movie.posterUrl}
+                                alt={movie.title}
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                                <Film className="w-5 h-5 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {movie.title}
+                            </div>
+                            {movie.originalTitle && (
+                              <div className="text-sm text-gray-500">
+                                {movie.originalTitle}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {movie.year}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {movie.directors?.map(d => d.name).join(', ') || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${movie.status === 'PUBLISHED'
+                          ? 'bg-green-100 text-green-800'
+                          : movie.status === 'DRAFT'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                          }`}>
+                          {movie.status === 'PUBLISHED' ? 'Publicado' :
+                            movie.status === 'DRAFT' ? 'Borrador' : 'Archivado'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {movie.rating ? (
+                          <div className="flex items-center">
+                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                            <span className="ml-1 text-sm text-gray-900">
+                              {movie.rating}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end gap-2">
+                          <a
+                            href={`/peliculas/${movie.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-gray-600 hover:text-gray-900 transition-colors"
+                            title="Ver película"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </a>
+                          <button
+                            onClick={() => handleEdit(movie)}
+                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                            title="Editar"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(movie.id)}
+                            disabled={deletingMovieId === movie.id}
+                            className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50"
+                            title="Eliminar"
+                          >
+                            {deletingMovieId === movie.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Paginación */}
+        {totalPages > 1 && (
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Anterior
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Siguiente
+              </button>
+            </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Página <span className="font-medium">{currentPage}</span> de{' '}
+                  <span className="font-medium">{totalPages}</span>
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Siguiente
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modal de creación/edición */}
+      {showModal && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {editingMovie ? 'Editar Película' : 'Nueva Película'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowModal(false)
+                    reset()
+                    setEditingMovie(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Información básica */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    Información Básica
+                  </h3>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Título *
+                    </label>
+                    <input
+                      type="text"
+                      {...register('title')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    />
+                    {errors.title && (
+                      <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Título Original
+                    </label>
+                    <input
+                      type="text"
+                      {...register('originalTitle')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Año *
+                      </label>
+                      <input
+                        type="number"
+                        {...register('year', { valueAsNumber: true })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      />
+                      {errors.year && (
+                        <p className="mt-1 text-sm text-red-600">{errors.year.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Fecha de Estreno
+                      </label>
+                      <input
+                        type="date"
+                        {...register('releaseDate')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Duración (minutos)
+                      </label>
+                      <input
+                        type="number"
+                        {...register('duration', { valueAsNumber: true })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Rating
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="10"
+                        {...register('rating', { valueAsNumber: true })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Estado
+                    </label>
+                    <select
+                      {...register('status')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    >
+                      <option value="DRAFT">Borrador</option>
+                      <option value="PUBLISHED">Publicado</option>
+                      <option value="ARCHIVED">Archivado</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Información adicional */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    Información Adicional
+                  </h3>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Sinopsis
+                    </label>
+                    <textarea
+                      {...register('synopsis')}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tagline
+                    </label>
+                    <input
+                      type="text"
+                      {...register('tagline')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      URL del Poster
+                    </label>
+                    <input
+                      type="url"
+                      {...register('posterUrl')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      URL del Backdrop
+                    </label>
+                    <input
+                      type="url"
+                      {...register('backdropUrl')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      URL del Trailer
+                    </label>
+                    <input
+                      type="url"
+                      {...register('trailerUrl')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      IMDb ID
+                    </label>
+                    <input
+                      type="text"
+                      {...register('imdbId')}
+                      placeholder="tt0123456"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Información técnica */}
+              <div className="mt-6 space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Información Técnica
+                </h3>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Formato
+                    </label>
+                    <select
+                      {...register('filmFormat')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    >
+                      <option value="">Seleccionar...</option>
+                      <option value="35mm">35mm</option>
+                      <option value="16mm">16mm</option>
+                      <option value="Digital">Digital</option>
+                      <option value="70mm">70mm</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Aspecto
+                    </label>
+                    <select
+                      {...register('aspectRatio')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    >
+                      <option value="">Seleccionar...</option>
+                      <option value="1.37:1">1.37:1</option>
+                      <option value="1.66:1">1.66:1</option>
+                      <option value="1.85:1">1.85:1</option>
+                      <option value="2.35:1">2.35:1</option>
+                      <option value="2.39:1">2.39:1</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Color
+                    </label>
+                    <select
+                      {...register('colorType')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    >
+                      <option value="">Seleccionar...</option>
+                      <option value="Color">Color</option>
+                      <option value="Blanco y Negro">Blanco y Negro</option>
+                      <option value="Color y B&N">Color y B&N</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Sonido
+                    </label>
+                    <select
+                      {...register('soundType')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    >
+                      <option value="">Seleccionar...</option>
+                      <option value="Sonora">Sonora</option>
+                      <option value="Muda">Muda</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Clasificación */}
+              <div className="mt-6 space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Clasificación
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Clasificación
+                    </label>
+                    <select
+                      {...register('classification')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    >
+                      <option value="">Seleccionar...</option>
+                      <option value="Apta para todo público">Apta para todo público</option>
+                      <option value="Solo apta para mayores de 13 años">Solo apta para mayores de 13 años</option>
+                      <option value="Solo apta para mayores de 16 años">Solo apta para mayores de 16 años</option>
+                      <option value="Solo apta para mayores de 18 años">Solo apta para mayores de 18 años</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Número de Certificado
+                    </label>
+                    <input
+                      type="text"
+                      {...register('certificateNumber')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Razón de la Clasificación
+                  </label>
+                  <textarea
+                    {...register('classificationReason')}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  />
+                </div>
+              </div>
+
+              {/* SEO */}
+              <div className="mt-6 space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  SEO y Metadatos
+                </h3>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Meta Descripción
+                  </label>
+                  <textarea
+                    {...register('metaDescription')}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Palabras Clave (separadas por comas)
+                  </label>
+                  <input
+                    type="text"
+                    {...register('metaKeywords')}
+                    placeholder="drama, argentina, buenos aires"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  />
+                </div>
+              </div>
+              {/* Relaciones */}
+              <div className="mt-6">
+                <MovieFormEnhanced
+                  key={editingMovie?.id || 'new'}  // Agregar esta línea
+                  onGenresChange={handleGenresChange}
+                  onCastChange={handleCastChange}
+                  onCrewChange={handleCrewChange}
+                  onCountriesChange={handleCountriesChange}
+                  onLanguagesChange={handleLanguagesChange}
+                  onProductionCompaniesChange={handleProductionCompaniesChange}
+                  onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                  initialData={undefined}  // Siempre undefined por ahora
+                />
+              </div>
+              {/* Botones */}
+              <div className="mt-6 flex items-center justify-end gap-4 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false)
+                    reset()
+                    setEditingMovie(null)
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      {editingMovie ? 'Actualizar' : 'Crear'} Película
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ==================================================
+// src/app/api/movies/route.ts
+// ==================================================
+// src/app/api/movies/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { createSlug } from '@/lib/utils'
+import { z } from 'zod'
+import { movieSchema } from '@/lib/schemas'
+
+
+// GET /api/movies - Listar películas con filtros
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '20')
+    const search = searchParams.get('search') || ''
+    const genre = searchParams.get('genre') || ''
+    const year = searchParams.get('year') || ''
+    const status = searchParams.get('status') || ''
+    const sortBy = searchParams.get('sortBy') || 'createdAt'
+    const sortOrder = searchParams.get('sortOrder') || 'desc'
+
+    const skip = (page - 1) * limit
+
+    // Construir filtros
+    const where: any = {}
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { originalTitle: { contains: search, mode: 'insensitive' } },
+        { synopsis: { contains: search, mode: 'insensitive' } }
+      ]
+    }
+
+    if (genre) {
+      where.genres = {
+        some: {
+          genre: {
+            slug: genre
+          }
+        }
+      }
+    }
+
+    if (year) {
+      where.year = parseInt(year)
+    }
+
+    if (status) {
+      where.status = status
+    }
+
+    // Obtener total de registros
+    const total = await prisma.movie.count({ where })
+
+    // Obtener películas
+    const movies = await prisma.movie.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: {
+        [sortBy]: sortOrder
+      },
+      include: {
+        genres: {
+          include: {
+            genre: true
+          }
+        },
+        cast: {
+          where: {
+            isPrincipal: true
+          },
+          include: {
+            person: true
+          },
+          orderBy: {
+            billingOrder: 'asc'
+          },
+          take: 3
+        },
+        crew: {
+          where: {
+            role: 'Director'
+          },
+          include: {
+            person: true
+          }
+        },
+        countries: {
+          where: {
+            isPrimary: true
+          },
+          include: {
+            country: true
+          }
+        },
+        images: {
+          where: {
+            type: 'POSTER',
+            isPrimary: true
+          },
+          take: 1
+        }
+      }
+    })
+
+    // Formatear respuesta
+    const formattedMovies = movies.map(movie => ({
+      id: movie.id,
+      slug: movie.slug,
+      title: movie.title,
+      originalTitle: movie.originalTitle,
+      year: movie.year,
+      releaseDate: movie.releaseDate,
+      duration: movie.duration,
+      rating: movie.rating,
+      posterUrl: movie.posterUrl || movie.images[0]?.url,
+      status: movie.status,
+      genres: movie.genres.map(g => g.genre),
+      directors: movie.crew.map(c => c.person),
+      mainCast: movie.cast.map(c => ({
+        person: c.person,
+        character: c.characterName
+      })),
+      country: movie.countries[0]?.country.name || 'Argentina'
+    }))
+
+    return NextResponse.json({
+      movies: formattedMovies,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching movies:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener las películas' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST /api/movies - Crear nueva película
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+
+    // Agregar estos logs para debugging
+    console.log('=== RECEIVED DATA ===')
+    console.log('Cast:', JSON.stringify(body.cast, null, 2))
+    console.log('Crew:', JSON.stringify(body.crew, null, 2))
+    console.log('==================')
+
+    // Validar datos
+    const validatedData = movieSchema.parse(body)
+
+    // Generar slug único
+    let slug = createSlug(validatedData.title)
+    let slugExists = await prisma.movie.findUnique({ where: { slug } })
+    let counter = 1
+
+    while (slugExists) {
+      slug = `${createSlug(validatedData.title)}-${counter}`
+      slugExists = await prisma.movie.findUnique({ where: { slug } })
+      counter++
+    }
+
+    // Extraer relaciones del body
+    const {
+      genres,
+      cast,
+      crew,
+      countries,
+      languages,
+      productionCompanies,
+      distributionCompanies,
+      ...movieData
+    } = validatedData
+
+    // Transformar cast y crew para quitar la propiedad 'person'
+    const processedCast = cast?.map((item: any) => ({
+      personId: item.personId,
+      characterName: item.characterName,
+      billingOrder: item.billingOrder,
+      isPrincipal: item.isPrincipal
+    }))
+
+    const processedCrew = crew?.map((item: any) => ({
+      personId: item.personId,
+      role: item.role,
+      department: item.department,
+      billingOrder: item.billingOrder
+    }))
+
+    // Crear película con relaciones
+    const movie = await prisma.movie.create({
+      data: {
+        ...movieData,
+        slug,
+        releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
+        // Crear relaciones
+        genres: genres ? {
+          create: genres.map((genreId, index) => ({
+            genreId,
+            isPrimary: index === 0
+          }))
+        } : undefined,
+        cast: cast ? {
+          create: cast
+        } : undefined,
+        crew: crew ? {
+          create: crew
+        } : undefined,
+        countries: countries ? {
+          create: countries.map((countryId, index) => ({
+            countryId,
+            isPrimary: index === 0
+          }))
+        } : undefined,
+        languages: languages ? {
+          create: languages.map((languageId, index) => ({
+            languageId,
+            isPrimary: index === 0
+          }))
+        } : undefined,
+        productionCompanies: productionCompanies ? {
+          create: productionCompanies.map((companyId, index) => ({
+            companyId,
+            isPrimary: index === 0
+          }))
+        } : undefined,
+        distributionCompanies: distributionCompanies ? {
+          create: distributionCompanies.map(companyId => ({
+            companyId,
+            territory: 'Argentina'
+          }))
+        } : undefined
+      },
+      include: {
+        genres: {
+          include: {
+            genre: true
+          }
+        },
+        cast: {
+          include: {
+            person: true
+          }
+        },
+        crew: {
+          include: {
+            person: true
+          }
+        },
+        countries: {
+          include: {
+            country: true
+          }
+        },
+        languages: {
+          include: {
+            language: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json(movie, { status: 201 })
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: error.errors },
+        { status: 400 }
+      )
+    }
+
+    console.error('Error creating movie:', error)
+    return NextResponse.json(
+      { error: 'Error al crear la película' },
+      { status: 500 }
+    )
+  }
+}
+
+// ==================================================
+// src/app/api/movies/[id]/route.ts
+// ==================================================
+
+// ==================================================
+// src/app/api/movies/[id]/route.ts
+// ==================================================
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { z } from 'zod'
+import { movieSchema } from '@/lib/schemas'
+
+// GET /api/movies/[id] - Obtener película por ID o slug
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const idOrSlug = params.id
+    
+    // Determinar si es ID o slug
+    const isId = /^\d+$/.test(idOrSlug)
+    
+    const movie = await prisma.movie.findUnique({
+      where: isId ? { id: parseInt(idOrSlug) } : { slug: idOrSlug },
+      include: {
+        genres: {
+          include: {
+            genre: true
+          }
+        },
+        cast: {
+          include: {
+            person: true
+          },
+          orderBy: {
+            billingOrder: 'asc'
+          }
+        },
+        crew: {
+          include: {
+            person: true
+          },
+          orderBy: [
+            { department: 'asc' },
+            { billingOrder: 'asc' }
+          ]
+        },
+        countries: {
+          include: {
+            country: true
+          }
+        },
+        languages: {
+          include: {
+            language: true
+          }
+        },
+        productionCompanies: {
+          include: {
+            company: true
+          }
+        },
+        distributionCompanies: {
+          include: {
+            company: true
+          }
+        },
+        images: {
+          orderBy: {
+            displayOrder: 'asc'
+          }
+        },
+        videos: {
+          orderBy: {
+            isPrimary: 'desc'
+          }
+        },
+        awards: {
+          include: {
+            award: true,
+            recipient: true
+          }
+        },
+        themes: {
+          include: {
+            theme: true
+          }
+        },
+        filmingLocations: true
+      }
+    })
+
+    if (!movie) {
+      return NextResponse.json(
+        { error: 'Película no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(movie)
+  } catch (error) {
+    console.error('Error fetching movie:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener la película' },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT /api/movies/[id] - Actualizar película
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = parseInt(params.id)
+    const body = await request.json()
+    
+    // Validar datos
+    const validatedData = movieSchema.parse(body)
+    
+    // Verificar que la película existe
+    const existingMovie = await prisma.movie.findUnique({
+      where: { id }
+    })
+    
+    if (!existingMovie) {
+      return NextResponse.json(
+        { error: 'Película no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    // Extraer relaciones
+    const {
+      genres,
+      cast,
+      crew,
+      countries,
+      languages,
+      productionCompanies,
+      distributionCompanies,
+      ...movieData
+    } = validatedData
+
+    // Actualizar película y relaciones
+    const movie = await prisma.movie.update({
+      where: { id },
+      data: {
+        ...movieData,
+        releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
+        // Actualizar relaciones (primero eliminar, luego crear)
+        genres: genres ? {
+          deleteMany: {},
+          create: genres.map((genreId, index) => ({
+            genreId,
+            isPrimary: index === 0
+          }))
+        } : undefined,
+        cast: cast ? {
+          deleteMany: {},
+          create: cast
+        } : undefined,
+        crew: crew ? {
+          deleteMany: {},
+          create: crew
+        } : undefined,
+        countries: countries ? {
+          deleteMany: {},
+          create: countries.map((countryId, index) => ({
+            countryId,
+            isPrimary: index === 0
+          }))
+        } : undefined,
+        languages: languages ? {
+          deleteMany: {},
+          create: languages.map((languageId, index) => ({
+            languageId,
+            isPrimary: index === 0
+          }))
+        } : undefined,
+        productionCompanies: productionCompanies ? {
+          deleteMany: {},
+          create: productionCompanies.map((companyId, index) => ({
+            companyId,
+            isPrimary: index === 0
+          }))
+        } : undefined,
+        distributionCompanies: distributionCompanies ? {
+          deleteMany: {},
+          create: distributionCompanies.map(companyId => ({
+            companyId,
+            territory: 'Argentina'
+          }))
+        } : undefined
+      },
+      include: {
+        genres: {
+          include: {
+            genre: true
+          }
+        },
+        cast: {
+          include: {
+            person: true
+          }
+        },
+        crew: {
+          include: {
+            person: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json(movie)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: error.errors },
+        { status: 400 }
+      )
+    }
+    
+    console.error('Error updating movie:', error)
+    return NextResponse.json(
+      { error: 'Error al actualizar la película' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/movies/[id] - Eliminar película
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = parseInt(params.id)
+    
+    // Verificar que la película existe
+    const movie = await prisma.movie.findUnique({
+      where: { id }
+    })
+    
+    if (!movie) {
+      return NextResponse.json(
+        { error: 'Película no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    // Eliminar película (las relaciones se eliminan en cascada)
+    await prisma.movie.delete({
+      where: { id }
+    })
+
+    return NextResponse.json(
+      { message: 'Película eliminada exitosamente' },
+      { status: 200 }
+    )
+  } catch (error) {
+    console.error('Error deleting movie:', error)
+    return NextResponse.json(
+      { error: 'Error al eliminar la película' },
+      { status: 500 }
+    )
+  }
+}
+
+// ==================================================
+// src/app/api/people/route.ts
+// ==================================================
+// =====================================================
+// src/app/api/people/route.ts
+// =====================================================
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { createSlug } from '@/lib/utils'
+
+// GET /api/people - Listar personas con búsqueda
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const search = searchParams.get('search') || ''
+    const limit = parseInt(searchParams.get('limit') || '50')
+
+    const where = search ? {
+      OR: [
+        { name: { contains: search, mode: 'insensitive' as const } },
+        { birthName: { contains: search, mode: 'insensitive' as const } }
+      ]
+    } : {}
+
+    const people = await prisma.person.findMany({
+      where,
+      take: limit,
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        photoUrl: true,
+        birthDate: true,
+        nationality: true
+      }
+    })
+
+    return NextResponse.json(people)
+  } catch (error) {
+    console.error('Error fetching people:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener las personas' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST /api/people - Crear nueva persona
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    
+    // Generar slug único
+    let slug = createSlug(body.name)
+    let slugExists = await prisma.person.findUnique({ where: { slug } })
+    let counter = 1
+    
+    while (slugExists) {
+      slug = `${createSlug(body.name)}-${counter}`
+      slugExists = await prisma.person.findUnique({ where: { slug } })
+      counter++
+    }
+
+    const person = await prisma.person.create({
+      data: {
+        ...body,
+        slug,
+        birthDate: body.birthDate ? new Date(body.birthDate) : null,
+        deathDate: body.deathDate ? new Date(body.deathDate) : null
+      }
+    })
+
+    return NextResponse.json(person, { status: 201 })
+  } catch (error) {
+    console.error('Error creating person:', error)
+    return NextResponse.json(
+      { error: 'Error al crear la persona' },
+      { status: 500 }
+    )
+  }
+}
+
+
+// ==================================================
+// src/components/admin/MovieFormEnhanced.tsx
+// ==================================================
+// src/components/admin/MovieFormEnhanced.tsx
+'use client'
+
+import { useState, useEffect } from 'react'
+import {
+  Plus,
+  X,
+  Search,
+  UserPlus,
+  Building,
+  Globe,
+  Languages,
+  Hash,
+  Trash2
+} from 'lucide-react'
+
+interface MovieFormEnhancedProps {
+  onGenresChange: (genres: number[]) => void
+  onCastChange: (cast: any[]) => void
+  onCrewChange: (crew: any[]) => void
+  onCountriesChange: (countries: number[]) => void
+  onLanguagesChange: (languages: number[]) => void
+  onProductionCompaniesChange: (companies: number[]) => void
+  onDistributionCompaniesChange: (companies: number[]) => void
+  initialData?: {
+    genres?: any[]
+    cast?: any[]
+    crew?: any[]
+    countries?: any[]
+    languages?: any[]
+    productionCompanies?: any[]
+    distributionCompanies?: any[]
+  }
+}
+
+export default function MovieFormEnhanced({
+  onGenresChange,
+  onCastChange,
+  onCrewChange,
+  onCountriesChange,
+  onLanguagesChange,
+  onProductionCompaniesChange,
+  onDistributionCompaniesChange,
+  initialData
+}: MovieFormEnhancedProps) {
+  // Estados para las listas disponibles
+
+  const [availableGenres, setAvailableGenres] = useState<any[]>([])
+  const [availablePeople, setAvailablePeople] = useState<any[]>([])
+  const [availableCountries, setAvailableCountries] = useState<any[]>([])
+  const [availableLanguages, setAvailableLanguages] = useState<any[]>([])
+  const [availableProductionCompanies, setAvailableProductionCompanies] = useState<any[]>([])
+  const [availableDistributionCompanies, setAvailableDistributionCompanies] = useState<any[]>([])
+
+  // Estados para las selecciones
+  const [selectedGenres, setSelectedGenres] = useState<number[]>([])
+  const [cast, setCast] = useState<any[]>([])
+  const [crew, setCrew] = useState<any[]>([])
+  const [selectedCountries, setSelectedCountries] = useState<number[]>([])
+  const [selectedLanguages, setSelectedLanguages] = useState<number[]>([])
+  const [selectedProductionCompanies, setSelectedProductionCompanies] = useState<number[]>([])
+  const [selectedDistributionCompanies, setSelectedDistributionCompanies] = useState<number[]>([])
+
+  // Estados para búsqueda
+  const [personSearch, setPersonSearch] = useState('')
+  const [showPersonSearch, setShowPersonSearch] = useState(false)
+  const [addingType, setAddingType] = useState<'cast' | 'crew' | null>(null)
+
+  // Estado para nuevo actor/crew
+  const [newPerson, setNewPerson] = useState({
+    personId: 0,
+    characterName: '',
+    role: '',
+    department: '',
+    billingOrder: 0
+  })
+
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  // Cargar datos iniciales
+  useEffect(() => {
+    fetchInitialData()
+  }, [])
+
+  // Inicializar con datos existentes
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.genres) {
+        setSelectedGenres(initialData.genres.map(g => g.genreId))
+      }
+      if (initialData.cast) {
+        setCast(initialData.cast)
+      }
+      if (initialData.crew) {
+        setCrew(initialData.crew)
+      }
+      if (initialData.countries) {
+        setSelectedCountries(initialData.countries.map(c => c.countryId))
+      }
+      if (initialData.languages) {
+        setSelectedLanguages(initialData.languages.map(l => l.languageId))
+      }
+      if (initialData.productionCompanies) {
+        setSelectedProductionCompanies(initialData.productionCompanies.map(c => c.companyId))
+      }
+      if (initialData.distributionCompanies) {
+        setSelectedDistributionCompanies(initialData.distributionCompanies.map(c => c.companyId))
+      }
+    }
+    setIsInitialized(true)
+  }, [initialData])
+
+  // Notificar cambios al componente padre
+  useEffect(() => {
+    if (isInitialized) {
+      onGenresChange(selectedGenres)
+    }
+  }, [selectedGenres, onGenresChange, isInitialized])  // <- Agregar onGenresChange
+
+  useEffect(() => {
+    if (isInitialized) {
+      onCastChange(cast)
+    }
+  }, [cast, onCastChange, isInitialized])
+
+  useEffect(() => {
+    if (isInitialized) {
+      onCrewChange(crew)
+    }
+  }, [crew, onCrewChange, isInitialized])
+
+  useEffect(() => {
+    if (isInitialized) {
+      onCountriesChange(selectedCountries)
+    }
+  }, [selectedCountries, onCountriesChange, isInitialized])
+
+  useEffect(() => {
+    if (isInitialized) {
+      onLanguagesChange(selectedLanguages)
+    }
+  }, [selectedLanguages, onLanguagesChange, isInitialized])
+
+  useEffect(() => {
+    if (isInitialized) {
+      onProductionCompaniesChange(selectedProductionCompanies)
+    }
+  }, [selectedProductionCompanies, onProductionCompaniesChange, isInitialized])
+
+  useEffect(() => {
+    if (isInitialized) {
+      onDistributionCompaniesChange(selectedDistributionCompanies)
+    }
+  }, [selectedDistributionCompanies, onDistributionCompaniesChange, isInitialized])
+
+  // Cargar datos de la API
+  const fetchInitialData = async () => {
+    try {
+      const [genresRes, countriesRes, languagesRes, prodCompaniesRes, distCompaniesRes] = await Promise.all([
+        fetch('/api/genres'),
+        fetch('/api/countries'),
+        fetch('/api/languages'),
+        fetch('/api/companies/production'),
+        fetch('/api/companies/distribution')
+      ])
+
+      // Verificar que todas las respuestas sean OK
+      if (!genresRes.ok || !countriesRes.ok || !languagesRes.ok || !prodCompaniesRes.ok || !distCompaniesRes.ok) {
+        throw new Error('Error fetching data')
+      }
+
+      const [genres, countries, languages, prodCompanies, distCompanies] = await Promise.all([
+        genresRes.json(),
+        countriesRes.json(),
+        languagesRes.json(),
+        prodCompaniesRes.json(),
+        distCompaniesRes.json()
+      ])
+
+      // Asegurar que siempre sean arrays
+      setAvailableGenres(Array.isArray(genres) ? genres : [])
+      setAvailableCountries(Array.isArray(countries) ? countries : [])
+      setAvailableLanguages(Array.isArray(languages) ? languages : [])
+      setAvailableProductionCompanies(Array.isArray(prodCompanies) ? prodCompanies : [])
+      setAvailableDistributionCompanies(Array.isArray(distCompanies) ? distCompanies : [])
+    } catch (error) {
+      console.error('Error loading initial data:', error)
+      // Asegurar que los estados sean arrays vacíos en caso de error
+      setAvailableGenres([])
+      setAvailableCountries([])
+      setAvailableLanguages([])
+      setAvailableProductionCompanies([])
+      setAvailableDistributionCompanies([])
+    }
+  }
+  // Buscar personas
+  const searchPeople = async (search: string) => {
+    if (search.length < 2) return
+
+    try {
+      const response = await fetch(`/api/people?search=${encodeURIComponent(search)}&limit=10`)
+      const data = await response.json()
+      setAvailablePeople(data)
+    } catch (error) {
+      console.error('Error searching people:', error)
+    }
+  }
+
+  // Agregar persona al cast o crew
+  const addPerson = () => {
+    if (!newPerson.personId) return
+
+    const selectedPerson = availablePeople.find((p: any) => p.id === newPerson.personId)
+    if (!selectedPerson) return
+
+    if (addingType === 'cast') {
+      setCast([...cast, {
+        personId: newPerson.personId,
+        person: selectedPerson,
+        characterName: newPerson.characterName,
+        billingOrder: cast.length + 1,
+        isPrincipal: cast.length < 5
+      }])
+    } else if (addingType === 'crew') {
+      setCrew([...crew, {
+        personId: newPerson.personId,
+        person: selectedPerson,
+        role: newPerson.role,
+        department: newPerson.department,
+        billingOrder: crew.filter(c => c.role === newPerson.role).length + 1
+      }])
+
+    }
+
+    // Limpiar formulario
+    setNewPerson({
+      personId: 0,
+      characterName: '',
+      role: '',
+      department: '',
+      billingOrder: 0
+    })
+    setShowPersonSearch(false)
+    setAddingType(null)
+    setPersonSearch('')
+  }
+
+  // Crear nueva persona
+  const createNewPerson = async () => {
+    if (!personSearch) return
+
+    try {
+      const response = await fetch('/api/people', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: personSearch })
+      })
+
+      if (response.ok) {
+        const newPersonData = await response.json()
+        setAvailablePeople([newPersonData])
+        setNewPerson({ ...newPerson, personId: newPersonData.id })
+      }
+    } catch (error) {
+      console.error('Error creating person:', error)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Géneros */}
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+          <Hash className="w-5 h-5" />
+          Géneros
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          {availableGenres.map((genre: any) => (
+            <label
+              key={genre.id}
+              className="inline-flex items-center"
+            >
+              <input
+                type="checkbox"
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                checked={selectedGenres.includes(genre.id)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedGenres([...selectedGenres, genre.id])
+                  } else {
+                    setSelectedGenres(selectedGenres.filter(id => id !== genre.id))
+                  }
+                }}
+              />
+              <span className="ml-2 text-sm text-gray-700">{genre.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Cast */}
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+          <UserPlus className="w-5 h-5" />
+          Reparto
+        </h3>
+
+        {cast.length > 0 && (
+          <div className="mb-4 space-y-2">
+            {cast.map((member, index) => (
+              <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <span className="font-medium">{member.person.name}</span>
+                  {member.characterName && (
+                    <span className="text-gray-500"> como {member.characterName}</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCast(cast.filter((_, i) => i !== index))}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => {
+            setAddingType('cast')
+            setShowPersonSearch(true)
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+        >
+          <Plus className="w-4 h-4" />
+          Agregar Actor/Actriz
+        </button>
+      </div>
+
+      {/* Crew */}
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+          <UserPlus className="w-5 h-5" />
+          Equipo Técnico
+        </h3>
+
+        {crew.length > 0 && (
+          <div className="mb-4 space-y-2">
+            {crew.map((member, index) => (
+              <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <span className="font-medium">{member.person.name}</span>
+                  <span className="text-gray-500"> - {member.role}</span>
+                  {member.department && (
+                    <span className="text-gray-400"> ({member.department})</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCrew(crew.filter((_, i) => i !== index))}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => {
+            setAddingType('crew')
+            setShowPersonSearch(true)
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+        >
+          <Plus className="w-4 h-4" />
+          Agregar Miembro del Equipo
+        </button>
+      </div>
+
+      {/* Países */}
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+          <Globe className="w-5 h-5" />
+          Países Coproductores
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {availableCountries.map((country: any) => (
+            <label
+              key={country.id}
+              className="inline-flex items-center"
+            >
+              <input
+                type="checkbox"
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                checked={selectedCountries.includes(country.id)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedCountries([...selectedCountries, country.id])
+                  } else {
+                    setSelectedCountries(selectedCountries.filter(id => id !== country.id))
+                  }
+                }}
+              />
+              <span className="ml-2 text-sm text-gray-700">{country.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Idiomas */}
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+          <Languages className="w-5 h-5" />
+          Idiomas
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {availableLanguages.map((language: any) => (
+            <label
+              key={language.id}
+              className="inline-flex items-center"
+            >
+              <input
+                type="checkbox"
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                checked={selectedLanguages.includes(language.id)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedLanguages([...selectedLanguages, language.id])
+                  } else {
+                    setSelectedLanguages(selectedLanguages.filter(id => id !== language.id))
+                  }
+                }}
+              />
+              <span className="ml-2 text-sm text-gray-700">{language.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Productoras */}
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+          <Building className="w-5 h-5" />
+          Productoras
+        </h3>
+        <select
+          multiple
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          value={selectedProductionCompanies.map(String)}
+          onChange={(e) => {
+            const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value))
+            setSelectedProductionCompanies(selected)
+          }}
+        >
+          {availableProductionCompanies.map((company: any) => (
+            <option key={company.id} value={company.id}>
+              {company.name}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-sm text-gray-500">
+          Mantén presionado Ctrl/Cmd para seleccionar múltiples opciones
+        </p>
+      </div>
+
+      {/* Distribuidoras */}
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+          <Building className="w-5 h-5" />
+          Distribuidoras
+        </h3>
+        <select
+          multiple
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          value={selectedDistributionCompanies.map(String)}
+          onChange={(e) => {
+            const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value))
+            setSelectedDistributionCompanies(selected)
+          }}
+        >
+          {availableDistributionCompanies.map((company: any) => (
+            <option key={company.id} value={company.id}>
+              {company.name}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-sm text-gray-500">
+          Mantén presionado Ctrl/Cmd para seleccionar múltiples opciones
+        </p>
+      </div>
+
+      {/* Modal de búsqueda de personas */}
+      {showPersonSearch && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              {addingType === 'cast' ? 'Agregar Actor/Actriz' : 'Agregar Miembro del Equipo'}
+            </h3>
+
+            <div className="space-y-4">
+              {/* Búsqueda de persona */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Buscar Persona
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={personSearch}
+                    onChange={(e) => {
+                      setPersonSearch(e.target.value)
+                      searchPeople(e.target.value)
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Escriba el nombre..."
+                  />
+                  <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
+                </div>
+
+                {availablePeople.length > 0 && (
+                  <div className="mt-2 border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
+                    {availablePeople.map((person: any) => (
+                      <button
+                        key={person.id}
+                        type="button"
+                        onClick={() => setNewPerson({ ...newPerson, personId: person.id })}
+                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${newPerson.personId === person.id ? 'bg-blue-50' : ''
+                          }`}
+                      >
+                        {person.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {personSearch && availablePeople.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={createNewPerson}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    Crear nueva persona: "{personSearch}"
+                  </button>
+                )}
+              </div>
+
+              {/* Campos específicos según el tipo */}
+              {addingType === 'cast' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Personaje
+                  </label>
+                  <input
+                    type="text"
+                    value={newPerson.characterName}
+                    onChange={(e) => setNewPerson({ ...newPerson, characterName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Nombre del personaje"
+                  />
+                </div>
+              )}
+
+              {addingType === 'crew' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Rol
+                    </label>
+                    <select
+                      value={newPerson.role}
+                      onChange={(e) => setNewPerson({ ...newPerson, role: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Seleccionar...</option>
+                      <option value="Director">Director</option>
+                      <option value="Guionista">Guionista</option>
+                      <option value="Productor">Productor</option>
+                      <option value="Productor Ejecutivo">Productor Ejecutivo</option>
+                      <option value="Director de Fotografía">Director de Fotografía</option>
+                      <option value="Editor">Editor</option>
+                      <option value="Compositor">Compositor</option>
+                      <option value="Director de Arte">Director de Arte</option>
+                      <option value="Diseñador de Vestuario">Diseñador de Vestuario</option>
+                      <option value="Maquillador">Maquillador</option>
+                      <option value="Sonidista">Sonidista</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Departamento
+                    </label>
+                    <select
+                      value={newPerson.department}
+                      onChange={(e) => setNewPerson({ ...newPerson, department: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Seleccionar...</option>
+                      <option value="Dirección">Dirección</option>
+                      <option value="Guión">Guión</option>
+                      <option value="Producción">Producción</option>
+                      <option value="Fotografía">Fotografía</option>
+                      <option value="Montaje">Montaje</option>
+                      <option value="Música">Música</option>
+                      <option value="Arte">Arte</option>
+                      <option value="Vestuario">Vestuario</option>
+                      <option value="Maquillaje">Maquillaje</option>
+                      <option value="Sonido">Sonido</option>
+                      <option value="Efectos Especiales">Efectos Especiales</option>
+                    </select>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Botones de acción */}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPersonSearch(false)
+                  setAddingType(null)
+                  setPersonSearch('')
+                  setNewPerson({
+                    personId: 0,
+                    characterName: '',
+                    role: '',
+                    department: '',
+                    billingOrder: 0
+                  })
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={addPerson}
+                disabled={!newPerson.personId || (addingType === 'crew' && !newPerson.role)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ==================================================
+// src/lib/prisma.ts
+// ==================================================
+import { PrismaClient } from '@prisma/client'
+
+const globalForPrisma = global as unknown as { prisma: PrismaClient }
+
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  })
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+
+// ==================================================
+// src/lib/schemas.ts
+// ==================================================
+// Schema de validación para crear/actualizar películas
+
+import { z } from 'zod'
+
+export const movieSchema = z.object({
+  title: z.string().min(1, 'El título es requerido'),
+  originalTitle: z.string().optional(),
+  year: z.number().min(1895).max(new Date().getFullYear() + 5),
+  releaseDate: z.string().optional(),
+  duration: z.number().optional(),
+  synopsis: z.string().optional(),
+  tagline: z.string().optional(),
+  rating: z.number().min(0).max(10).optional(),
+  posterUrl: z.string().url().optional().or(z.literal('')),
+  backdropUrl: z.string().url().optional().or(z.literal('')),
+  trailerUrl: z.string().url().optional().or(z.literal('')),
+  imdbId: z.string().optional(),
+  aspectRatio: z.string().optional(),
+  colorType: z.string().optional(),
+  soundType: z.string().optional(),
+  filmFormat: z.string().optional(),
+  certificateNumber: z.string().optional(),
+  classification: z.string().optional(),
+  classificationReason: z.string().optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+  metaDescription: z.string().optional(),
+  metaKeywords: z.array(z.string()).optional(),
+  // Relaciones
+  genres: z.array(z.number()).optional(),
+  cast: z.array(z.object({
+    personId: z.number(),
+    characterName: z.string().optional(),
+    billingOrder: z.number().optional(),
+    isPrincipal: z.boolean().optional()
+  })).optional(),
+  crew: z.array(z.object({
+    personId: z.number(),
+    role: z.string(),
+    department: z.string().optional(),
+    jobTitle: z.string().optional(),
+    billingOrder: z.number().optional()
+  })).optional(),
+  countries: z.array(z.number()).optional(),
+  languages: z.array(z.number()).optional(),
+  productionCompanies: z.array(z.number()).optional(),
+  distributionCompanies: z.array(z.number()).optional()
+})
