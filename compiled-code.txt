@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 325b86ff6fa5bf79ccfbd8a26281aabcda4d4b1d
-// Fecha: 2025-06-20T21:42:52.262Z
+// Commit: b9f04bb9169cae36d03eb917309afa7f96ef0523
+// Fecha: 2025-06-20T21:48:50.201Z
 // ============================================
 
 
@@ -3547,11 +3547,7 @@ export default function HomePage() {
       </div>
     </div>
   );
-}// test 
-/ /  
- t e s t  
- a u t o m a t i c o  
- 
+}
 
 // ==================================================
 // src/app/peliculas/[slug]/page.tsx

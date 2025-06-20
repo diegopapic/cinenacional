@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-06-20T21:42:51.944Z",
+  "timestamp": "2025-06-20T21:48:49.889Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "325b86ff6fa5bf79ccfbd8a26281aabcda4d4b1d",
+  "commit": "b9f04bb9169cae36d03eb917309afa7f96ef0523",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".gitignore": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
@@ -139,7 +139,8 @@
     },
     "tailwind.config.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tailwind.config.js",
     "tsconfig.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tsconfig.json",
-    "urls_only.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/urls_only.txt"
+    "urls_only.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/urls_only.txt",
+    "vercel.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/vercel.json"
   },
   "instructions": "INSTRUCCIONES PARA CLAUDE: Este es un mapa completo del repositorio generado automáticamente. Cada archivo tiene una URL que puedes usar con web_fetch para leer su contenido."
 }

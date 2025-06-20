@@ -380,8 +380,4 @@ export default function HomePage() {
       </div>
     </div>
   );
-}// test 
-/ /  
- t e s t  
- a u t o m a t i c o  
- 
+}

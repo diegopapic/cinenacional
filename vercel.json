@@ -1,0 +1,15 @@
+{
+  "functions": {
+    "src/app/api/movies/route.ts": {
+      "maxDuration": 10
+    },
+    "src/app/api/movies/[id]/route.ts": {
+      "maxDuration": 10
+    },
+    "src/app/api/people/route.ts": {
+      "maxDuration": 10
+    }
+  },
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next"
+}
