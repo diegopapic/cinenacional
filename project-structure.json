@@ -1,53 +1,22 @@
 {
-  "timestamp": "2025-06-20T18:24:28.840Z",
+  "timestamp": "2025-06-20T18:24:47.979Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "0aa2a3dae873e1ce6f05f7e3fc7fc252f3438601",
+  "commit": "089530a2c7f5ee670645a1da21277fe632da2553",
   "structure": {
-    ".github": {
-      "workflows": {
-        "generate-structure.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/generate-structure.yml"
-      }
-    },
-    ".gitignore": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
+    "README.md": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/README.md",
     "compile-project-code.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/compile-project-code.js",
-    "eslint.config.mjs": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/eslint.config.mjs",
     "generate-structure.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/generate-structure.js",
-    "generate_prompt.py": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/generate_prompt.py",
-    "get_github_urls.py": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/get_github_urls.py",
-    "github_prompt.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/github_prompt.txt",
     "next-env.d.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next-env.d.ts",
-    "next.config": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config",
     "next.config.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config.js",
-    "nul": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/nul",
+    "package-lock.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/package-lock.json",
     "package.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/package.json",
     "postcss.config.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.js",
-    "postcss.config.mjs": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.mjs",
     "prisma": {
       "schema.prisma": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/schema.prisma"
     },
-    "project-structure.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/project-structure.json",
-    "public": {
-      "file.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/file.svg",
-      "globe.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/globe.svg",
-      "images": {
-        "relatos-salvajes": {
-          "relatossalvajes.jpeg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/relatossalvajes.jpeg",
-          "rsalvajes1.jpg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/rsalvajes1.jpg",
-          "rsalvajes2.jpg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/rsalvajes2.jpg",
-          "rsalvajes3.jpg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/rsalvajes3.jpg",
-          "unnamed.jpg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/unnamed.jpg"
-        }
-      },
-      "next.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/next.svg",
-      "vercel.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/vercel.svg",
-      "window.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/window.svg"
-    },
     "raw_urls.md": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/raw_urls.md",
-    "raw_urls.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/raw_urls.txt",
     "raw_urls_detailed.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/raw_urls_detailed.json",
-    "raw_urls_prompt.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/raw_urls_prompt.txt",
-    "README.md": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/README.md",
     "src": {
       "app": {
         "admin": {
@@ -80,10 +49,10 @@
             "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/languages/route.ts"
           },
           "movies": {
-            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/movies/route.ts",
             "[id]": {
               "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/movies/[id]/route.ts"
-            }
+            },
+            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/movies/route.ts"
           },
           "people": {
             "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/people/route.ts"
@@ -92,7 +61,6 @@
             "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/project-structure/route.ts"
           }
         },
-        "favicon.ico": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/favicon.ico",
         "globals.css": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/globals.css",
         "layout.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/layout.tsx",
         "listados": {
@@ -139,12 +107,10 @@
         "prisma.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/prisma.ts",
         "schemas.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/schemas.ts",
         "utils.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/utils.ts"
-      },
-      "listados.html": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/listados.html"
+      }
     },
     "tailwind.config.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tailwind.config.js",
-    "tsconfig.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tsconfig.json",
-    "urls_only.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/urls_only.txt"
+    "tsconfig.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tsconfig.json"
   },
   "instructions": "INSTRUCCIONES PARA CLAUDE: Este es un mapa completo del repositorio generado automáticamente. Cada archivo tiene una URL que puedes usar con web_fetch para leer su contenido."
 }
