@@ -82,6 +82,9 @@ export default function AdminMoviesPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null)
   const [deletingMovieId, setDeletingMovieId] = useState<number | null>(null)
+  
+  // Estado para los datos iniciales del formulario
+  const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
 
   const [movieRelations, setMovieRelations] = useState<{
     genres: number[];
@@ -215,6 +218,7 @@ export default function AdminMoviesPage() {
       setShowModal(false)
       reset()
       setEditingMovie(null)
+      setMovieFormInitialData(null)
       fetchMovies()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al guardar')
@@ -223,12 +227,10 @@ export default function AdminMoviesPage() {
 
   // Editar película
   const handleEdit = async (movie: Movie) => {
-    
     try {
       const response = await fetch(`/api/movies/${movie.id}`)
-    
       const fullMovie = await response.json()
-    
+      
       setEditingMovie(movie)
 
       // Llenar el formulario con los datos
@@ -242,29 +244,32 @@ export default function AdminMoviesPage() {
         }
       })
       
+      // Preparar los datos para MovieFormEnhanced
+      const initialData = {
+        genres: fullMovie.genres || [],
+        cast: fullMovie.cast || [],
+        crew: fullMovie.crew || [],
+        countries: fullMovie.countries || [],
+        languages: fullMovie.languages || [],
+        productionCompanies: fullMovie.productionCompanies || [],
+        distributionCompanies: fullMovie.distributionCompanies || []
+      }
+      
+      console.log('Setting initial data for MovieFormEnhanced:', initialData)
+      setMovieFormInitialData(initialData)
+      
+      // También actualizar movieRelations para el submit
+      setMovieRelations({
+        genres: fullMovie.genres?.map((g: any) => g.genreId) || [],
+        cast: fullMovie.cast || [],
+        crew: fullMovie.crew || [],
+        countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
+        languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
+        productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
+        distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
+      })
+      
       setShowModal(true)
-
-      // Cargar las relaciones DESPUÉS de abrir el modal
-      setTimeout(() => {
-        console.log('Setting relations:', {
-          genres: fullMovie.genres?.map((g: any) => g.genreId) || [],
-          cast: fullMovie.cast || [],
-          crew: fullMovie.crew || [],
-          countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
-          languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
-          productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
-          distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
-        })
-        setMovieRelations({
-          genres: fullMovie.genres?.map((g: any) => g.genreId) || [],
-          cast: fullMovie.cast || [],
-          crew: fullMovie.crew || [],
-          countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
-          languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
-          productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
-          distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
-        })
-      }, 100)
 
     } catch (error) {
       toast.error('Error al cargar los datos de la película')
@@ -298,6 +303,8 @@ export default function AdminMoviesPage() {
   const handleNewMovie = () => {
     setEditingMovie(null)
     reset()
+    // Limpiar los datos iniciales del formulario
+    setMovieFormInitialData(null)
     // Limpiar las relaciones para nueva película
     setMovieRelations({
       genres: [],
@@ -574,6 +581,7 @@ export default function AdminMoviesPage() {
                     setShowModal(false)
                     reset()
                     setEditingMovie(null)
+                    setMovieFormInitialData(null)
                   }}
                   className="text-gray-400 hover:text-gray-500"
                 >
@@ -909,7 +917,7 @@ export default function AdminMoviesPage() {
               {/* Relaciones */}
               <div className="mt-6">
                 <MovieFormEnhanced
-                  key={editingMovie?.id || 'new'}  // Agregar esta línea
+                  key={editingMovie?.id || 'new'}
                   onGenresChange={handleGenresChange}
                   onCastChange={handleCastChange}
                   onCrewChange={handleCrewChange}
@@ -917,7 +925,7 @@ export default function AdminMoviesPage() {
                   onLanguagesChange={handleLanguagesChange}
                   onProductionCompaniesChange={handleProductionCompaniesChange}
                   onDistributionCompaniesChange={handleDistributionCompaniesChange}
-                  initialData={undefined}  // Siempre undefined por ahora
+                  initialData={movieFormInitialData}
                 />
               </div>
               {/* Botones */}
@@ -928,6 +936,7 @@ export default function AdminMoviesPage() {
                     setShowModal(false)
                     reset()
                     setEditingMovie(null)
+                    setMovieFormInitialData(null)
                   }}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                 >
