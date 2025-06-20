@@ -230,6 +230,7 @@ export default function AdminMoviesPage() {
     try {
       const response = await fetch(`/api/movies/${movie.id}`)
       const fullMovie = await response.json()
+      console.log(fullMovie)
       
       setEditingMovie(movie)
 

@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: d7d18449450b58a93c12bf5ff0ee449aef310256
-// Fecha: 2025-06-20T20:52:50.792Z
+// Commit: cdf4e10f26f1abceadbb3c8b4572ec14e7eea9d8
+// Fecha: 2025-06-20T21:26:32.069Z
 // ============================================
 
 
@@ -368,6 +368,7 @@ export default function AdminMoviesPage() {
     try {
       const response = await fetch(`/api/movies/${movie.id}`)
       const fullMovie = await response.json()
+      console.log(fullMovie)
       
       setEditingMovie(movie)
 

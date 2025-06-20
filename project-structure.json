@@ -1,9 +1,10 @@
 {
-  "timestamp": "2025-06-20T20:52:50.476Z",
+  "timestamp": "2025-06-20T21:26:31.752Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "d7d18449450b58a93c12bf5ff0ee449aef310256",
+  "commit": "cdf4e10f26f1abceadbb3c8b4572ec14e7eea9d8",
   "structure": {
+    ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".gitignore": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
     "compile-project-code.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/compile-project-code.js",
     "eslint.config.mjs": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/eslint.config.mjs",
