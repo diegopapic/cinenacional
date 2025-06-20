@@ -1,142 +1,352 @@
 [
   {
-    "path": ".gitignore",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
-    "size": 245
+    "path": ".github/workflows/generate-structure.yml",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/generate-structure.yml",
+    "size": 0
   },
   {
-    "path": "README.md",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/README.md",
-    "size": 1450
+    "path": ".gitignore",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
+    "size": 0
+  },
+  {
+    "path": "compile-project-code.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/compile-project-code.js",
+    "size": 0
   },
   {
     "path": "eslint.config.mjs",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/eslint.config.mjs",
-    "size": 393
+    "size": 0
+  },
+  {
+    "path": "generate-structure.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/generate-structure.js",
+    "size": 0
+  },
+  {
+    "path": "generate_prompt.py",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/generate_prompt.py",
+    "size": 0
+  },
+  {
+    "path": "get_github_urls.py",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/get_github_urls.py",
+    "size": 0
+  },
+  {
+    "path": "github_prompt.txt",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/github_prompt.txt",
+    "size": 0
   },
   {
     "path": "next-env.d.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next-env.d.ts",
-    "size": 211
+    "size": 0
   },
   {
     "path": "next.config",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config",
-    "size": 327
+    "size": 0
   },
   {
-    "path": "next.config.ts",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config.ts",
-    "size": 133
-  },
-  {
-    "path": "package-lock.json",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/package-lock.json",
-    "size": 230470
+    "path": "next.config.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config.js",
+    "size": 0
   },
   {
     "path": "package.json",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/package.json",
-    "size": 588
+    "size": 0
   },
   {
     "path": "postcss.config.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.js",
-    "size": 82
+    "size": 0
   },
   {
     "path": "postcss.config.mjs",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.mjs",
-    "size": 81
+    "size": 0
+  },
+  {
+    "path": "prisma/schema.prisma",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/schema.prisma",
+    "size": 0
+  },
+  {
+    "path": "project-structure.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/project-structure.json",
+    "size": 0
   },
   {
     "path": "public/file.svg",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/file.svg",
-    "size": 391
+    "size": 0
   },
   {
     "path": "public/globe.svg",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/globe.svg",
-    "size": 1035
+    "size": 0
   },
   {
     "path": "public/images/relatos-salvajes/relatossalvajes.jpeg",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/relatossalvajes.jpeg",
-    "size": 6588590
+    "size": 0
   },
   {
     "path": "public/images/relatos-salvajes/rsalvajes1.jpg",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/rsalvajes1.jpg",
-    "size": 136628
+    "size": 0
   },
   {
     "path": "public/images/relatos-salvajes/rsalvajes2.jpg",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/rsalvajes2.jpg",
-    "size": 181816
+    "size": 0
   },
   {
     "path": "public/images/relatos-salvajes/rsalvajes3.jpg",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/rsalvajes3.jpg",
-    "size": 51639
+    "size": 0
   },
   {
     "path": "public/images/relatos-salvajes/unnamed.jpg",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/unnamed.jpg",
-    "size": 59163
+    "size": 0
   },
   {
     "path": "public/next.svg",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/next.svg",
-    "size": 1375
+    "size": 0
   },
   {
     "path": "public/vercel.svg",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/vercel.svg",
-    "size": 128
+    "size": 0
   },
   {
     "path": "public/window.svg",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/window.svg",
-    "size": 385
+    "size": 0
+  },
+  {
+    "path": "raw_urls.md",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/raw_urls.md",
+    "size": 0
+  },
+  {
+    "path": "raw_urls.txt",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/raw_urls.txt",
+    "size": 0
+  },
+  {
+    "path": "raw_urls_detailed.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/raw_urls_detailed.json",
+    "size": 0
+  },
+  {
+    "path": "raw_urls_prompt.txt",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/raw_urls_prompt.txt",
+    "size": 0
+  },
+  {
+    "path": "README.md",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/README.md",
+    "size": 0
+  },
+  {
+    "path": "src/app/admin/layout.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/layout.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/app/admin/movies/page.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/movies/page.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/companies/distribution/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/companies/distribution/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/companies/production/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/companies/production/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/countries/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/countries/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/genres/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/genres/route.ts",
+    "size": 0
   },
   {
     "path": "src/app/api/images/[movieId]/route.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/images/[movieId]/route.ts",
-    "size": 1491
+    "size": 0
   },
   {
-    "path": "src/app/components/TrailerSection.tsx",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/components/TrailerSection.tsx",
-    "size": 5101
+    "path": "src/app/api/languages/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/languages/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/movies/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/movies/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/movies/[id]/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/movies/[id]/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/people/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/people/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/project-structure/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/project-structure/route.ts",
+    "size": 0
   },
   {
     "path": "src/app/favicon.ico",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/favicon.ico",
-    "size": 25931
+    "size": 0
   },
   {
     "path": "src/app/globals.css",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/globals.css",
-    "size": 3756
+    "size": 0
   },
   {
     "path": "src/app/layout.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/layout.tsx",
-    "size": 918
+    "size": 0
+  },
+  {
+    "path": "src/app/listados/peliculas/page.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/listados/peliculas/page.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/app/listados/personas/page.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/listados/personas/page.tsx",
+    "size": 0
   },
   {
     "path": "src/app/page.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/page.tsx",
-    "size": 48020
+    "size": 0
+  },
+  {
+    "path": "src/app/peliculas/[slug]/page.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/peliculas/[slug]/page.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/app/personas/[slug]/page.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/personas/[slug]/page.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/admin/MovieFormEnhanced.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MovieFormEnhanced.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/layout/Footer.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Footer.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/layout/Header.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Header.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/movies/CastSection.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/CastSection.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/movies/CrewSection.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/CrewSection.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/movies/ImageGallery.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/ImageGallery.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/movies/MovieHero.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/MovieHero.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/movies/MovieInfo.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/MovieInfo.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/movies/MoviePoster.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/MoviePoster.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/movies/MovieSidebar.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/MovieSidebar.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/movies/SimilarMovies.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/SimilarMovies.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/movies/TrailerSection.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/TrailerSection.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/lib/prisma.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/prisma.ts",
+    "size": 0
+  },
+  {
+    "path": "src/lib/schemas.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/schemas.ts",
+    "size": 0
+  },
+  {
+    "path": "src/lib/utils.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/utils.ts",
+    "size": 0
+  },
+  {
+    "path": "src/listados.html",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/listados.html",
+    "size": 0
   },
   {
     "path": "tailwind.config.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tailwind.config.js",
-    "size": 998
+    "size": 0
   },
   {
     "path": "tsconfig.json",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tsconfig.json",
-    "size": 602
+    "size": 0
+  },
+  {
+    "path": "urls_only.txt",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/urls_only.txt",
+    "size": 0
   }
 ]
