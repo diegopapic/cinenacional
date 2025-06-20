@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-06-20T20:52:50.797Z
+// Archivos del admin - 2025-06-20T21:26:32.075Z
 // ==================
 
 
@@ -356,6 +356,7 @@ export default function AdminMoviesPage() {
     try {
       const response = await fetch(`/api/movies/${movie.id}`)
       const fullMovie = await response.json()
+      console.log(fullMovie)
       
       setEditingMovie(movie)
 
