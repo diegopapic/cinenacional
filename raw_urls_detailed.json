@@ -1,5 +1,10 @@
 [
   {
+    "path": ".gitattributes",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
+    "size": 0
+  },
+  {
     "path": ".gitignore",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
     "size": 0
