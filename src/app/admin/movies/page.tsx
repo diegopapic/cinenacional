@@ -167,7 +167,6 @@ export default function AdminMoviesPage() {
       setMovies(data.movies || [])
       setTotalPages(data.pagination?.totalPages || 1)
     } catch (error) {
-      console.error('Error fetching movies:', error)
       toast.error('Error al cargar las películas')
       // Asegurar que movies sea un array vacío en caso de error
       setMovies([])
@@ -189,16 +188,11 @@ export default function AdminMoviesPage() {
         metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()) : [],
         ...movieRelations
       }
-      console.log('Movie relations:', movieRelations) // Agregar esta línea
-      console.log('Full movie data:', movieData) // Agregar esta línea
       const url = editingMovie
         ? `/api/movies/${editingMovie.id}`
         : '/api/movies'
 
       const method = editingMovie ? 'PUT' : 'POST'
-
-      console.log('Sending movie data:', movieData)
-
       const response = await fetch(url, {
         method,
         headers: {
@@ -212,11 +206,8 @@ export default function AdminMoviesPage() {
         try {
           const error = await response.json()
           errorMessage = error.error || error.message || errorMessage
-          console.error('Error response:', error)
         } catch (e) {
-          console.error('Error parsing response:', e)
         }
-        console.error('Request data:', movieData)
         throw new Error(errorMessage)
       }
 
@@ -232,10 +223,12 @@ export default function AdminMoviesPage() {
 
   // Editar película
   const handleEdit = async (movie: Movie) => {
+    
     try {
       const response = await fetch(`/api/movies/${movie.id}`)
+    
       const fullMovie = await response.json()
-
+    
       setEditingMovie(movie)
 
       // Llenar el formulario con los datos
@@ -248,11 +241,31 @@ export default function AdminMoviesPage() {
           setValue(key as any, fullMovie[key])
         }
       })
-
-      // NO establecer movieRelations aquí
-      // El MovieFormEnhanced se encargará de cargar los datos desde fullMovie
-
+      
       setShowModal(true)
+
+      // Cargar las relaciones DESPUÉS de abrir el modal
+      setTimeout(() => {
+        console.log('Setting relations:', {
+          genres: fullMovie.genres?.map((g: any) => g.genreId) || [],
+          cast: fullMovie.cast || [],
+          crew: fullMovie.crew || [],
+          countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
+          languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
+          productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
+          distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
+        })
+        setMovieRelations({
+          genres: fullMovie.genres?.map((g: any) => g.genreId) || [],
+          cast: fullMovie.cast || [],
+          crew: fullMovie.crew || [],
+          countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
+          languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
+          productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
+          distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
+        })
+      }, 100)
+
     } catch (error) {
       toast.error('Error al cargar los datos de la película')
     }
@@ -285,6 +298,16 @@ export default function AdminMoviesPage() {
   const handleNewMovie = () => {
     setEditingMovie(null)
     reset()
+    // Limpiar las relaciones para nueva película
+    setMovieRelations({
+      genres: [],
+      cast: [],
+      crew: [],
+      countries: [],
+      languages: [],
+      productionCompanies: [],
+      distributionCompanies: []
+    })
     setShowModal(true)
   }
 
@@ -886,6 +909,7 @@ export default function AdminMoviesPage() {
               {/* Relaciones */}
               <div className="mt-6">
                 <MovieFormEnhanced
+                  key={editingMovie?.id || 'new'}  // Agregar esta línea
                   onGenresChange={handleGenresChange}
                   onCastChange={handleCastChange}
                   onCrewChange={handleCrewChange}
