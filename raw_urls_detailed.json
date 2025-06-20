@@ -1,10 +1,5 @@
 [
   {
-    "path": ".github/workflows/generate-structure.yml",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/generate-structure.yml",
-    "size": 0
-  },
-  {
     "path": ".gitignore",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
     "size": 0
@@ -52,11 +47,6 @@
   {
     "path": "next.config.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config.js",
-    "size": 0
-  },
-  {
-    "path": "nul",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/nul",
     "size": 0
   },
   {
