@@ -348,5 +348,10 @@
     "path": "urls_only.txt",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/urls_only.txt",
     "size": 0
+  },
+  {
+    "path": "vercel.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/vercel.json",
+    "size": 0
   }
 ]
