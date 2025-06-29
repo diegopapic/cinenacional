@@ -227,55 +227,61 @@ export default function AdminMoviesPage() {
 
   // Editar película
   const handleEdit = async (movie: Movie) => {
-    try {
-      const response = await fetch(`/api/movies/${movie.id}`)
-      const fullMovie = await response.json()
-      console.log(fullMovie)
-      
-      setEditingMovie(movie)
+  try {
+    const response = await fetch(`/api/movies/${movie.id}`)
+    const fullMovie = await response.json()
+    
+    setEditingMovie(movie)
 
-      // Llenar el formulario con los datos
-      Object.keys(fullMovie).forEach((key) => {
-        if (key === 'metaKeywords' && Array.isArray(fullMovie[key])) {
-          setValue(key as any, fullMovie[key].join(', '))
-        } else if (key === 'releaseDate' && fullMovie[key]) {
-          setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
-        } else {
-          setValue(key as any, fullMovie[key])
-        }
-      })
-      
-      // Preparar los datos para MovieFormEnhanced
-      const initialData = {
-        genres: fullMovie.genres || [],
-        cast: fullMovie.cast || [],
-        crew: fullMovie.crew || [],
-        countries: fullMovie.countries || [],
-        languages: fullMovie.languages || [],
-        productionCompanies: fullMovie.productionCompanies || [],
-        distributionCompanies: fullMovie.distributionCompanies || []
+    // Llenar el formulario
+    Object.keys(fullMovie).forEach((key) => {
+      if (key === 'metaKeywords' && Array.isArray(fullMovie[key])) {
+        setValue(key as any, fullMovie[key].join(', '))
+      } else if (key === 'releaseDate' && fullMovie[key]) {
+        setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
+      } else {
+        setValue(key as any, fullMovie[key])
       }
-      
-      console.log('Setting initial data for MovieFormEnhanced:', initialData)
-      setMovieFormInitialData(initialData)
-      
-      // También actualizar movieRelations para el submit
-      setMovieRelations({
-        genres: fullMovie.genres?.map((g: any) => g.genreId) || [],
-        cast: fullMovie.cast || [],
-        crew: fullMovie.crew || [],
-        countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
-        languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
-        productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
-        distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
-      })
-      
-      setShowModal(true)
+    })
+    
+    // Datos para MovieFormEnhanced (mantiene el formato completo para mostrar)
+    setMovieFormInitialData({
+      genres: fullMovie.genres || [],
+      cast: fullMovie.cast || [],
+      crew: fullMovie.crew || [],
+      countries: fullMovie.countries || [],
+      languages: fullMovie.languages || [],
+      productionCompanies: fullMovie.productionCompanies || [],
+      distributionCompanies: fullMovie.distributionCompanies || []
+    })
+    
+    // IMPORTANTE: Limpiar los datos para movieRelations
+    setMovieRelations({
+      genres: fullMovie.genres?.map((g: any) => g.genreId) || [],
+      cast: fullMovie.cast?.map((c: any) => ({
+        personId: c.personId,
+        characterName: c.characterName,
+        billingOrder: c.billingOrder,
+        isPrincipal: c.isPrincipal
+      })) || [],
+      crew: fullMovie.crew?.map((c: any) => ({
+        personId: c.personId,
+        role: c.role,
+        department: c.department,
+        billingOrder: c.billingOrder
+      })) || [],
+      countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
+      languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
+      productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
+      distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
+    })
+    
+    setShowModal(true)
 
-    } catch (error) {
-      toast.error('Error al cargar los datos de la película')
-    }
+  } catch (error) {
+    toast.error('Error al cargar los datos de la película')
   }
+}
 
   // Eliminar película
   const handleDelete = async (id: number) => {
