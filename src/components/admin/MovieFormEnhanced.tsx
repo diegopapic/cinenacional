@@ -117,17 +117,31 @@ export default function MovieFormEnhanced({
     }
   }, [selectedGenres, onGenresChange, isInitialized])  // <- Agregar onGenresChange
 
-  useEffect(() => {
-    if (isInitialized) {
-      onCastChange(cast)
-    }
-  }, [cast, onCastChange, isInitialized])
+useEffect(() => {
+  if (isInitialized) {
+    // Limpiar cast antes de enviar al padre
+    const cleanCast = cast.map(item => ({
+      personId: item.personId,
+      characterName: item.characterName,
+      billingOrder: item.billingOrder,
+      isPrincipal: item.isPrincipal
+    }))
+    onCastChange(cleanCast)
+  }
+}, [cast, onCastChange, isInitialized])
 
-  useEffect(() => {
-    if (isInitialized) {
-      onCrewChange(crew)
-    }
-  }, [crew, onCrewChange, isInitialized])
+useEffect(() => {
+  if (isInitialized) {
+    // Limpiar crew antes de enviar al padre
+    const cleanCrew = crew.map(item => ({
+      personId: item.personId,
+      role: item.role,
+      department: item.department,
+      billingOrder: item.billingOrder
+    }))
+    onCrewChange(cleanCrew)
+  }
+}, [crew, onCrewChange, isInitialized])
 
   useEffect(() => {
     if (isInitialized) {
