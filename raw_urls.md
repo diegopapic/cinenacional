@@ -5,6 +5,7 @@
 - [next-env.d.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/next-env.d.ts)
 - [next.config.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config.js)
 - [postcss.config.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.js)
+- [scripts/export-db-structure.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/export-db-structure.js)
 - [src/app/admin/layout.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/layout.tsx)
 - [src/app/admin/movies/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/movies/page.tsx)
 - [src/app/api/companies/distribution/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/companies/distribution/route.ts)
