@@ -1,2 +1,8 @@
 npm run update-docs 
 git add --sparse compiled-code.txt admin-code.txt project-structure.json raw_urls_detailed.json raw_urls.md
+
+# Exportar estructura de base de datos
+echo '🗄️ Exportando estructura de base de datos...'
+node scripts/export-db-structure.js
+git add database-structure.txt database-structure-meta.json
+echo '✅ Estructura de base de datos exportada'

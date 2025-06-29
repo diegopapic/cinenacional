@@ -18,7 +18,8 @@
     "db:generate": "prisma generate",
     "db:reset": "prisma migrate reset",
     "postinstall": "prisma generate",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:export": "node scripts/export-db-structure.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

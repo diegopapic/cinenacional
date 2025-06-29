@@ -15,6 +15,16 @@
     "size": 0
   },
   {
+    "path": "database-structure-meta.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/database-structure-meta.json",
+    "size": 0
+  },
+  {
+    "path": "database-structure.txt",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/database-structure.txt",
+    "size": 0
+  },
+  {
     "path": "eslint.config.mjs",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/eslint.config.mjs",
     "size": 0
@@ -152,6 +162,11 @@
   {
     "path": "README.md",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/README.md",
+    "size": 0
+  },
+  {
+    "path": "scripts/export-db-structure.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/export-db-structure.js",
     "size": 0
   },
   {
