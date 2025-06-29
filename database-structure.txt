@@ -1,0 +1,535 @@
+# Estructura de Base de Datos - CineNacional
+# Generado automáticamente el: 2025-06-29T23:31:08.199Z
+# ================================================
+
+## Schema Prisma
+
+```prisma
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================
+// MODELOS PRINCIPALES
+// =====================================================
+
+model Movie {
+  id               Int      @id @default(autoincrement())
+  slug             String   @unique @db.VarChar(255)
+  title            String   @db.VarChar(255)
+  originalTitle    String?  @map("original_title") @db.VarChar(255)
+  year             Int
+  releaseDate      DateTime? @map("release_date") @db.Date
+  duration         Int?     // en minutos
+  synopsis         String?  @db.Text
+  tagline          String?  @db.VarChar(500)
+  rating           Decimal? @db.Decimal(3, 1)
+  ratingCount      Int      @default(0) @map("rating_count")
+  posterUrl        String?  @map("poster_url") @db.VarChar(500)
+  backdropUrl      String?  @map("backdrop_url") @db.VarChar(500)
+  trailerUrl       String?  @map("trailer_url") @db.VarChar(500)
+  imdbId           String?  @map("imdb_id") @db.VarChar(20)
+  
+  // Información técnica
+  aspectRatio      String?  @map("aspect_ratio") @db.VarChar(20)
+  colorType        String?  @map("color_type") @db.VarChar(50)
+  soundType        String?  @map("sound_type") @db.VarChar(50)
+  filmFormat       String?  @map("film_format") @db.VarChar(50)
+  
+  // Información legal
+  certificateNumber String? @map("certificate_number") @db.VarChar(50)
+  classification    String? @db.VarChar(100)
+  classificationReason String? @map("classification_reason") @db.Text
+  
+  // Status y timestamps
+  status           MovieStatus @default(PUBLISHED)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  
+  // SEO
+  metaDescription  String?  @map("meta_description") @db.Text
+  metaKeywords     String[] @map("meta_keywords")
+  
+  // Relaciones
+  cast             MovieCast[]
+  crew             MovieCrew[]
+  genres           MovieGenre[]
+  productionCompanies MovieProductionCompany[]
+  distributionCompanies MovieDistributionCompany[]
+  images           MovieImage[]
+  videos           MovieVideo[]
+  awards           MovieAward[]
+  themes           MovieTheme[]
+  countries        MovieCountry[]
+  languages        MovieLanguage[]
+  filmingLocations FilmingLocation[]
+  userRatings      UserRating[]
+  watchlists       UserWatchlist[]
+  watchedBy        UserWatched[]
+  
+  @@map("movies")
+  @@index([slug])
+  @@index([title])
+  @@index([year])
+  @@index([rating])
+  @@index([status])
+}
+
+model Person {
+  id              Int      @id @default(autoincrement())
+  slug            String   @unique @db.VarChar(255)
+  name            String   @db.VarChar(255)
+  birthName       String?  @map("birth_name") @db.VarChar(255)
+  birthDate       DateTime? @map("birth_date") @db.Date
+  deathDate       DateTime? @map("death_date") @db.Date
+  birthPlace      String?  @map("birth_place") @db.VarChar(255)
+  nationality     String?  @db.VarChar(100)
+  biography       String?  @db.Text
+  photoUrl        String?  @map("photo_url") @db.VarChar(500)
+  gender          String?  @db.VarChar(20)
+  
+  // Links externos
+  imdbId          String?  @map("imdb_id") @db.VarChar(20)
+  wikipediaUrl    String?  @map("wikipedia_url") @db.VarChar(500)
+  officialWebsite String?  @map("official_website") @db.VarChar(500)
+  
+  // Redes sociales
+  instagramHandle String?  @map("instagram_handle") @db.VarChar(100)
+  twitterHandle   String?  @map("twitter_handle") @db.VarChar(100)
+  facebookUrl     String?  @map("facebook_url") @db.VarChar(500)
+  
+  // Timestamps
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relaciones
+  castRoles       MovieCast[]
+  crewRoles       MovieCrew[]
+  awards          MovieAward[]
+  
+  @@map("people")
+  @@index([slug])
+  @@index([name])
+}
+
+model Genre {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique @db.VarChar(100)
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  // Relaciones
+  movies      MovieGenre[]
+  
+  @@map("genres")
+}
+
+model ProductionCompany {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique @db.VarChar(255)
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  foundedYear Int?     @map("founded_year")
+  logoUrl     String?  @map("logo_url") @db.VarChar(500)
+  website     String?  @db.VarChar(500)
+  country     String?  @db.VarChar(100)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relaciones
+  movies      MovieProductionCompany[]
+  
+  @@map("production_companies")
+}
+
+model DistributionCompany {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique @db.VarChar(255)
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  logoUrl     String?  @map("logo_url") @db.VarChar(500)
+  website     String?  @db.VarChar(500)
+  country     String?  @db.VarChar(100)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relaciones
+  movies      MovieDistributionCompany[]
+  
+  @@map("distribution_companies")
+}
+
+// =====================================================
+// MODELOS DE RELACIÓN
+// =====================================================
+
+model MovieCast {
+  id            Int      @id @default(autoincrement())
+  movieId       Int      @map("movie_id")
+  personId      Int      @map("person_id")
+  characterName String?  @map("character_name") @db.VarChar(255)
+  billingOrder  Int?     @map("billing_order")
+  isPrincipal   Boolean  @default(false) @map("is_principal")
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+  
+  // Relaciones
+  movie         Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  person        Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  
+  @@unique([movieId, personId, characterName])
+  @@map("movie_cast")
+  @@index([movieId])
+  @@index([personId])
+}
+
+model MovieCrew {
+  id           Int      @id @default(autoincrement())
+  movieId      Int      @map("movie_id")
+  personId     Int      @map("person_id")
+  role         String   @db.VarChar(100) // 'Director', 'Guionista', etc.
+  department   String?  @db.VarChar(100)
+  jobTitle     String?  @map("job_title") @db.VarChar(255)
+  billingOrder Int?     @map("billing_order")
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  // Relaciones
+  movie        Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  person       Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  
+  @@unique([movieId, personId, role])
+  @@map("movie_crew")
+  @@index([movieId])
+  @@index([personId])
+  @@index([role])
+}
+
+model MovieGenre {
+  movieId   Int     @map("movie_id")
+  genreId   Int     @map("genre_id")
+  isPrimary Boolean @default(false) @map("is_primary")
+  
+  // Relaciones
+  movie     Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  genre     Genre   @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  
+  @@id([movieId, genreId])
+  @@map("movie_genres")
+}
+
+model MovieProductionCompany {
+  movieId   Int     @map("movie_id")
+  companyId Int     @map("company_id")
+  isPrimary Boolean @default(false) @map("is_primary")
+  
+  // Relaciones
+  movie     Movie             @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  company   ProductionCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@id([movieId, companyId])
+  @@map("movie_production_companies")
+}
+
+model MovieDistributionCompany {
+  movieId   Int    @map("movie_id")
+  companyId Int    @map("company_id")
+  territory String @default("Argentina") @db.VarChar(100)
+  
+  // Relaciones
+  movie     Movie               @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  company   DistributionCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@id([movieId, companyId, territory])
+  @@map("movie_distribution_companies")
+}
+
+// =====================================================
+// CONTENIDO MULTIMEDIA
+// =====================================================
+
+model MovieImage {
+  id           Int      @id @default(autoincrement())
+  movieId      Int      @map("movie_id")
+  url          String   @db.VarChar(500)
+  type         ImageType
+  width        Int?
+  height       Int?
+  caption      String?  @db.Text
+  photographer String?  @db.VarChar(255)
+  displayOrder Int      @default(0) @map("display_order")
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  // Relaciones
+  movie        Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  
+  @@map("movie_images")
+}
+
+model MovieVideo {
+  id        Int      @id @default(autoincrement())
+  movieId   Int      @map("movie_id")
+  url       String   @db.VarChar(500)
+  platform  String?  @db.VarChar(50)
+  videoKey  String?  @map("video_key") @db.VarChar(100)
+  type      VideoType
+  title     String?  @db.VarChar(255)
+  duration  Int?     // en segundos
+  language  String   @default("es") @db.VarChar(10)
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relaciones
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  
+  @@map("movie_videos")
+}
+
+// =====================================================
+// INFORMACIÓN ADICIONAL
+// =====================================================
+
+model Award {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(255)
+  organization String?  @db.VarChar(255)
+  country      String?  @db.VarChar(100)
+  description  String?  @db.Text
+  logoUrl      String?  @map("logo_url") @db.VarChar(500)
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  // Relaciones
+  movieAwards  MovieAward[]
+  
+  @@map("awards")
+}
+
+model MovieAward {
+  id                Int      @id @default(autoincrement())
+  movieId           Int      @map("movie_id")
+  awardId           Int      @map("award_id")
+  category          String   @db.VarChar(255)
+  year              Int
+  result            AwardResult
+  recipientPersonId Int?     @map("recipient_person_id")
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+  
+  // Relaciones
+  movie             Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  award             Award    @relation(fields: [awardId], references: [id], onDelete: Cascade)
+  recipient         Person?  @relation(fields: [recipientPersonId], references: [id])
+  
+  @@map("movie_awards")
+}
+
+model Theme {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique @db.VarChar(100)
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  // Relaciones
+  movies      MovieTheme[]
+  
+  @@map("themes")
+}
+
+model MovieTheme {
+  movieId   Int @map("movie_id")
+  themeId   Int @map("theme_id")
+  relevance Int @default(1) // 1-5
+  
+  // Relaciones
+  movie     Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  theme     Theme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  
+  @@id([movieId, themeId])
+  @@map("movie_themes")
+}
+
+model Country {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @db.VarChar(2)
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relaciones
+  movies    MovieCountry[]
+  
+  @@map("countries")
+}
+
+model MovieCountry {
+  movieId   Int     @map("movie_id")
+  countryId Int     @map("country_id")
+  isPrimary Boolean @default(false) @map("is_primary")
+  
+  // Relaciones
+  movie     Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  country   Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  
+  @@id([movieId, countryId])
+  @@map("movie_countries")
+}
+
+model Language {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @db.VarChar(10)
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relaciones
+  movies    MovieLanguage[]
+  
+  @@map("languages")
+}
+
+model MovieLanguage {
+  movieId    Int     @map("movie_id")
+  languageId Int     @map("language_id")
+  isPrimary  Boolean @default(false) @map("is_primary")
+  
+  // Relaciones
+  movie      Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  language   Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
+  
+  @@id([movieId, languageId])
+  @@map("movie_languages")
+}
+
+model FilmingLocation {
+  id           Int      @id @default(autoincrement())
+  movieId      Int      @map("movie_id")
+  locationName String   @map("location_name") @db.VarChar(255)
+  city         String?  @db.VarChar(100)
+  province     String?  @db.VarChar(100)
+  country      String?  @db.VarChar(100)
+  latitude     Decimal? @db.Decimal(10, 8)
+  longitude    Decimal? @db.Decimal(11, 8)
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  // Relaciones
+  movie        Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  
+  @@map("filming_locations")
+}
+
+// =====================================================
+// USUARIOS Y INTERACCIONES
+// =====================================================
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique @db.VarChar(255)
+  username     String   @unique @db.VarChar(100)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  displayName  String?  @map("display_name") @db.VarChar(255)
+  avatarUrl    String?  @map("avatar_url") @db.VarChar(500)
+  bio          String?  @db.Text
+  isActive     Boolean  @default(true) @map("is_active")
+  isAdmin      Boolean  @default(false) @map("is_admin")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  // Relaciones
+  ratings      UserRating[]
+  watchlist    UserWatchlist[]
+  watched      UserWatched[]
+  
+  @@map("users")
+}
+
+model UserRating {
+  userId     Int      @map("user_id")
+  movieId    Int      @map("movie_id")
+  rating     Decimal  @db.Decimal(3, 1)
+  reviewText String?  @map("review_text") @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  
+  // Relaciones
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie      Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  
+  @@id([userId, movieId])
+  @@map("user_ratings")
+}
+
+model UserWatchlist {
+  userId    Int      @map("user_id")
+  movieId   Int      @map("movie_id")
+  addedAt   DateTime @default(now()) @map("added_at")
+  
+  // Relaciones
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  
+  @@id([userId, movieId])
+  @@map("user_watchlist")
+}
+
+model UserWatched {
+  userId    Int      @map("user_id")
+  movieId   Int      @map("movie_id")
+  watchedAt DateTime @default(now()) @map("watched_at")
+  
+  // Relaciones
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  
+  @@id([userId, movieId])
+  @@map("user_watched")
+}
+
+// =====================================================
+// ENUMS
+// =====================================================
+
+enum MovieStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  
+  @@map("movie_status")
+}
+
+enum ImageType {
+  POSTER
+  BACKDROP
+  STILL
+  BEHIND_SCENES
+  
+  @@map("image_type")
+}
+
+enum VideoType {
+  TRAILER
+  TEASER
+  BEHIND_SCENES
+  INTERVIEW
+  CLIP
+  
+  @@map("video_type")
+}
+
+enum AwardResult {
+  WON
+  NOMINATED
+  
+  @@map("award_result")
+}
+```
+

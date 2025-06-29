@@ -1,12 +1,14 @@
 {
-  "timestamp": "2025-06-20T21:48:49.889Z",
+  "timestamp": "2025-06-29T23:31:07.677Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "b9f04bb9169cae36d03eb917309afa7f96ef0523",
+  "commit": "61474083da10c88c90001a1bfe8f50428ba4c15e",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".gitignore": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
     "compile-project-code.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/compile-project-code.js",
+    "database-structure-meta.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/database-structure-meta.json",
+    "database-structure.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/database-structure.txt",
     "eslint.config.mjs": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/eslint.config.mjs",
     "generate-structure.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/generate-structure.js",
     "generate_prompt.py": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/generate_prompt.py",
@@ -43,6 +45,9 @@
     "raw_urls_detailed.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/raw_urls_detailed.json",
     "raw_urls_prompt.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/raw_urls_prompt.txt",
     "README.md": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/README.md",
+    "scripts": {
+      "export-db-structure.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/export-db-structure.js"
+    },
     "src": {
       "app": {
         "admin": {
