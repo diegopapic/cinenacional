@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { CloudinaryUploadWidget } from '@/components/admin/CloudinaryUploadWidget'
+
 import { z } from 'zod'
 import {
   Plus,
@@ -82,7 +84,7 @@ export default function AdminMoviesPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null)
   const [deletingMovieId, setDeletingMovieId] = useState<number | null>(null)
-  
+
   // Estado para los datos iniciales del formulario
   const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
 
@@ -110,6 +112,7 @@ export default function AdminMoviesPage() {
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting }
   } = useForm<MovieFormData>({
     resolver: zodResolver(movieFormSchema)
@@ -227,61 +230,61 @@ export default function AdminMoviesPage() {
 
   // Editar película
   const handleEdit = async (movie: Movie) => {
-  try {
-    const response = await fetch(`/api/movies/${movie.id}`)
-    const fullMovie = await response.json()
-    
-    setEditingMovie(movie)
+    try {
+      const response = await fetch(`/api/movies/${movie.id}`)
+      const fullMovie = await response.json()
 
-    // Llenar el formulario
-    Object.keys(fullMovie).forEach((key) => {
-      if (key === 'metaKeywords' && Array.isArray(fullMovie[key])) {
-        setValue(key as any, fullMovie[key].join(', '))
-      } else if (key === 'releaseDate' && fullMovie[key]) {
-        setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
-      } else {
-        setValue(key as any, fullMovie[key])
-      }
-    })
-    
-    // Datos para MovieFormEnhanced (mantiene el formato completo para mostrar)
-    setMovieFormInitialData({
-      genres: fullMovie.genres || [],
-      cast: fullMovie.cast || [],
-      crew: fullMovie.crew || [],
-      countries: fullMovie.countries || [],
-      languages: fullMovie.languages || [],
-      productionCompanies: fullMovie.productionCompanies || [],
-      distributionCompanies: fullMovie.distributionCompanies || []
-    })
-    
-    // IMPORTANTE: Limpiar los datos para movieRelations
-    setMovieRelations({
-      genres: fullMovie.genres?.map((g: any) => g.genreId) || [],
-      cast: fullMovie.cast?.map((c: any) => ({
-        personId: c.personId,
-        characterName: c.characterName,
-        billingOrder: c.billingOrder,
-        isPrincipal: c.isPrincipal
-      })) || [],
-      crew: fullMovie.crew?.map((c: any) => ({
-        personId: c.personId,
-        role: c.role,
-        department: c.department,
-        billingOrder: c.billingOrder
-      })) || [],
-      countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
-      languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
-      productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
-      distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
-    })
-    
-    setShowModal(true)
+      setEditingMovie(movie)
 
-  } catch (error) {
-    toast.error('Error al cargar los datos de la película')
+      // Llenar el formulario
+      Object.keys(fullMovie).forEach((key) => {
+        if (key === 'metaKeywords' && Array.isArray(fullMovie[key])) {
+          setValue(key as any, fullMovie[key].join(', '))
+        } else if (key === 'releaseDate' && fullMovie[key]) {
+          setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
+        } else {
+          setValue(key as any, fullMovie[key])
+        }
+      })
+
+      // Datos para MovieFormEnhanced (mantiene el formato completo para mostrar)
+      setMovieFormInitialData({
+        genres: fullMovie.genres || [],
+        cast: fullMovie.cast || [],
+        crew: fullMovie.crew || [],
+        countries: fullMovie.countries || [],
+        languages: fullMovie.languages || [],
+        productionCompanies: fullMovie.productionCompanies || [],
+        distributionCompanies: fullMovie.distributionCompanies || []
+      })
+
+      // IMPORTANTE: Limpiar los datos para movieRelations
+      setMovieRelations({
+        genres: fullMovie.genres?.map((g: any) => g.genreId) || [],
+        cast: fullMovie.cast?.map((c: any) => ({
+          personId: c.personId,
+          characterName: c.characterName,
+          billingOrder: c.billingOrder,
+          isPrincipal: c.isPrincipal
+        })) || [],
+        crew: fullMovie.crew?.map((c: any) => ({
+          personId: c.personId,
+          role: c.role,
+          department: c.department,
+          billingOrder: c.billingOrder
+        })) || [],
+        countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
+        languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
+        productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
+        distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
+      })
+
+      setShowModal(true)
+
+    } catch (error) {
+      toast.error('Error al cargar los datos de la película')
+    }
   }
-}
 
   // Eliminar película
   const handleDelete = async (id: number) => {
@@ -727,14 +730,31 @@ export default function AdminMoviesPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      URL del Poster
-                    </label>
-                    <input
-                      type="url"
-                      {...register('posterUrl')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      Imágenes
+                    </h3>
+
+                    <CloudinaryUploadWidget
+                      value={watch('posterUrl')}
+                      onChange={(url, publicId) => {
+                        setValue('posterUrl', url)
+                        setValue('posterPublicId', publicId)
+                      }}
+                      label="Afiche de la Película"
+                      type="poster"
+                      movieId={editingMovie?.id}
+                    />
+
+                    <CloudinaryUploadWidget
+                      value={watch('backdropUrl')}
+                      onChange={(url, publicId) => {
+                        setValue('backdropUrl', url)
+                        setValue('backdropPublicId', publicId)
+                      }}
+                      label="Imagen de Fondo (Backdrop)"
+                      type="backdrop"
+                      movieId={editingMovie?.id}
                     />
                   </div>
 
