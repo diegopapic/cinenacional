@@ -8,7 +8,6 @@
 - [scripts/export-db-structure.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/export-db-structure.js)
 - [src/app/admin/layout.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/layout.tsx)
 - [src/app/admin/movies/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/movies/page.tsx)
-- [src/app/api/cloudinary/sign/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/cloudinary/sign/route.ts)
 - [src/app/api/companies/distribution/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/companies/distribution/route.ts)
 - [src/app/api/companies/production/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/companies/production/route.ts)
 - [src/app/api/countries/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/countries/route.ts)

@@ -180,11 +180,6 @@
     "size": 0
   },
   {
-    "path": "src/app/api/cloudinary/sign/route.ts",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/cloudinary/sign/route.ts",
-    "size": 0
-  },
-  {
     "path": "src/app/api/companies/distribution/route.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/companies/distribution/route.ts",
     "size": 0
