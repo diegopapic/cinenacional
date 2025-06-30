@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: e2332ad5b0a74af7bf26773fbd8cb7afb19c6873
-// Fecha: 2025-06-30T01:07:47.256Z
+// Commit: 0d0a1593dfa8b7a754e56c98e0712225844ee19d
+// Fecha: 2025-06-30T01:13:52.356Z
 // ============================================
 
 
@@ -1131,38 +1131,6 @@ export default function AdminMoviesPage() {
       )}
     </div>
   )
-}
-
-// ==================================================
-// src/app/api/cloudinary/sign/route.ts
-// ==================================================
-// src/app/api/cloudinary/sign/route.ts
-import { v2 as cloudinary } from 'cloudinary'
-import { NextRequest, NextResponse } from 'next/server'
-
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-})
-
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    const { paramsToSign } = body
-
-    const signature = cloudinary.utils.api_sign_request(
-      paramsToSign,
-      process.env.CLOUDINARY_API_SECRET!
-    )
-
-    return NextResponse.json({ signature })
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Error al generar firma' },
-      { status: 500 }
-    )
-  }
 }
 
 // ==================================================
