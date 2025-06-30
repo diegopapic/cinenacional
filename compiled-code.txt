@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: e0c2ddabc3f0628629da7eab080ab9ab7f48e6f1
-// Fecha: 2025-06-29T23:57:05.977Z
+// Commit: e2332ad5b0a74af7bf26773fbd8cb7afb19c6873
+// Fecha: 2025-06-30T01:07:47.256Z
 // ============================================
 
 
@@ -141,6 +141,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { CloudinaryUploadWidget } from '@/components/admin/CloudinaryUploadWidget'
+
 import { z } from 'zod'
 import {
   Plus,
@@ -220,7 +222,7 @@ export default function AdminMoviesPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null)
   const [deletingMovieId, setDeletingMovieId] = useState<number | null>(null)
-  
+
   // Estado para los datos iniciales del formulario
   const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
 
@@ -248,6 +250,7 @@ export default function AdminMoviesPage() {
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting }
   } = useForm<MovieFormData>({
     resolver: zodResolver(movieFormSchema)
@@ -365,61 +368,61 @@ export default function AdminMoviesPage() {
 
   // Editar película
   const handleEdit = async (movie: Movie) => {
-  try {
-    const response = await fetch(`/api/movies/${movie.id}`)
-    const fullMovie = await response.json()
-    
-    setEditingMovie(movie)
+    try {
+      const response = await fetch(`/api/movies/${movie.id}`)
+      const fullMovie = await response.json()
 
-    // Llenar el formulario
-    Object.keys(fullMovie).forEach((key) => {
-      if (key === 'metaKeywords' && Array.isArray(fullMovie[key])) {
-        setValue(key as any, fullMovie[key].join(', '))
-      } else if (key === 'releaseDate' && fullMovie[key]) {
-        setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
-      } else {
-        setValue(key as any, fullMovie[key])
-      }
-    })
-    
-    // Datos para MovieFormEnhanced (mantiene el formato completo para mostrar)
-    setMovieFormInitialData({
-      genres: fullMovie.genres || [],
-      cast: fullMovie.cast || [],
-      crew: fullMovie.crew || [],
-      countries: fullMovie.countries || [],
-      languages: fullMovie.languages || [],
-      productionCompanies: fullMovie.productionCompanies || [],
-      distributionCompanies: fullMovie.distributionCompanies || []
-    })
-    
-    // IMPORTANTE: Limpiar los datos para movieRelations
-    setMovieRelations({
-      genres: fullMovie.genres?.map((g: any) => g.genreId) || [],
-      cast: fullMovie.cast?.map((c: any) => ({
-        personId: c.personId,
-        characterName: c.characterName,
-        billingOrder: c.billingOrder,
-        isPrincipal: c.isPrincipal
-      })) || [],
-      crew: fullMovie.crew?.map((c: any) => ({
-        personId: c.personId,
-        role: c.role,
-        department: c.department,
-        billingOrder: c.billingOrder
-      })) || [],
-      countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
-      languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
-      productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
-      distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
-    })
-    
-    setShowModal(true)
+      setEditingMovie(movie)
 
-  } catch (error) {
-    toast.error('Error al cargar los datos de la película')
+      // Llenar el formulario
+      Object.keys(fullMovie).forEach((key) => {
+        if (key === 'metaKeywords' && Array.isArray(fullMovie[key])) {
+          setValue(key as any, fullMovie[key].join(', '))
+        } else if (key === 'releaseDate' && fullMovie[key]) {
+          setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
+        } else {
+          setValue(key as any, fullMovie[key])
+        }
+      })
+
+      // Datos para MovieFormEnhanced (mantiene el formato completo para mostrar)
+      setMovieFormInitialData({
+        genres: fullMovie.genres || [],
+        cast: fullMovie.cast || [],
+        crew: fullMovie.crew || [],
+        countries: fullMovie.countries || [],
+        languages: fullMovie.languages || [],
+        productionCompanies: fullMovie.productionCompanies || [],
+        distributionCompanies: fullMovie.distributionCompanies || []
+      })
+
+      // IMPORTANTE: Limpiar los datos para movieRelations
+      setMovieRelations({
+        genres: fullMovie.genres?.map((g: any) => g.genreId) || [],
+        cast: fullMovie.cast?.map((c: any) => ({
+          personId: c.personId,
+          characterName: c.characterName,
+          billingOrder: c.billingOrder,
+          isPrincipal: c.isPrincipal
+        })) || [],
+        crew: fullMovie.crew?.map((c: any) => ({
+          personId: c.personId,
+          role: c.role,
+          department: c.department,
+          billingOrder: c.billingOrder
+        })) || [],
+        countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
+        languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
+        productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
+        distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
+      })
+
+      setShowModal(true)
+
+    } catch (error) {
+      toast.error('Error al cargar los datos de la película')
+    }
   }
-}
 
   // Eliminar película
   const handleDelete = async (id: number) => {
@@ -865,14 +868,31 @@ export default function AdminMoviesPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      URL del Poster
-                    </label>
-                    <input
-                      type="url"
-                      {...register('posterUrl')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      Imágenes
+                    </h3>
+
+                    <CloudinaryUploadWidget
+                      value={watch('posterUrl')}
+                      onChange={(url, publicId) => {
+                        setValue('posterUrl', url)
+                        setValue('posterPublicId', publicId)
+                      }}
+                      label="Afiche de la Película"
+                      type="poster"
+                      movieId={editingMovie?.id}
+                    />
+
+                    <CloudinaryUploadWidget
+                      value={watch('backdropUrl')}
+                      onChange={(url, publicId) => {
+                        setValue('backdropUrl', url)
+                        setValue('backdropPublicId', publicId)
+                      }}
+                      label="Imagen de Fondo (Backdrop)"
+                      type="backdrop"
+                      movieId={editingMovie?.id}
                     />
                   </div>
 
@@ -1111,6 +1131,38 @@ export default function AdminMoviesPage() {
       )}
     </div>
   )
+}
+
+// ==================================================
+// src/app/api/cloudinary/sign/route.ts
+// ==================================================
+// src/app/api/cloudinary/sign/route.ts
+import { v2 as cloudinary } from 'cloudinary'
+import { NextRequest, NextResponse } from 'next/server'
+
+cloudinary.config({
+  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { paramsToSign } = body
+
+    const signature = cloudinary.utils.api_sign_request(
+      paramsToSign,
+      process.env.CLOUDINARY_API_SECRET!
+    )
+
+    return NextResponse.json({ signature })
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Error al generar firma' },
+      { status: 500 }
+    )
+  }
 }
 
 // ==================================================
@@ -4255,6 +4307,333 @@ export default function PersonPage() {
       `}</style>
     </>
   );
+}
+
+// ==================================================
+// src/app/test-env/page.tsx
+// ==================================================
+// src/app/test-env/page.tsx
+export default function TestEnv() {
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl mb-4">Variables de Cloudinary</h1>
+      <pre className="bg-gray-100 p-4 rounded">
+        {JSON.stringify({
+          CLOUD_NAME: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'NO DEFINIDO',
+          API_KEY: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY ? 'DEFINIDO' : 'NO DEFINIDO',
+          HAS_SECRET: process.env.CLOUDINARY_API_SECRET ? 'SI' : 'NO'
+        }, null, 2)}
+      </pre>
+    </div>
+  )
+}
+
+// ==================================================
+// src/components/admin/CloudinaryGallery.tsx
+// ==================================================
+// src/components/admin/CloudinaryGallery.tsx
+'use client'
+
+import { CldUploadWidget } from 'next-cloudinary'
+import { useState } from 'react'
+import { Plus, X } from 'lucide-react'
+import { CloudinaryImage } from '@/components/movies/CloudinaryImage'
+
+interface CloudinaryGalleryProps {
+  movieId: number
+  images: Array<{
+    url: string
+    publicId?: string
+  }>
+  onChange: (images: any[]) => void
+}
+
+export function CloudinaryGallery({ movieId, images, onChange }: CloudinaryGalleryProps) {
+  const [galleryImages, setGalleryImages] = useState(images)
+
+  const handleUploadSuccess = (result: any) => {
+    const newImage = {
+      url: result.info.secure_url,
+      publicId: result.info.public_id,
+      type: 'STILL'
+    }
+    
+    const updated = [...galleryImages, newImage]
+    setGalleryImages(updated)
+    onChange(updated)
+  }
+
+  const handleRemove = (index: number) => {
+    const updated = galleryImages.filter((_, i) => i !== index)
+    setGalleryImages(updated)
+    onChange(updated)
+  }
+
+  return (
+    <div>
+      <h3 className="text-lg font-medium text-gray-900 mb-4">
+        Galería de Imágenes
+      </h3>
+      
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {galleryImages.map((image, index) => (
+          <div key={index} className="relative group">
+            <CloudinaryImage
+              src={image.url}
+              alt={`Imagen ${index + 1}`}
+              width={300}
+              height={200}
+              className="w-full aspect-video object-cover rounded-lg"
+            />
+            <button
+              type="button"
+              onClick={() => handleRemove(index)}
+              className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+        
+        <CldUploadWidget
+          uploadPreset="cinenacional-unsigned"
+          options={{
+            folder: `cinenacional/gallery/${movieId}`,
+            sources: ['local', 'url'],
+            multiple: true,
+            maxFiles: 10
+          }}
+          onUpload={handleUploadSuccess}
+        >
+          {({ open }) => (
+            <button
+              type="button"
+              onClick={() => open()}
+              className="aspect-video border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center hover:border-gray-400 transition-colors"
+            >
+              <div className="text-center">
+                <Plus className="w-8 h-8 text-gray-400 mx-auto" />
+                <span className="text-sm text-gray-500 mt-2 block">
+                  Agregar imágenes
+                </span>
+              </div>
+            </button>
+          )}
+        </CldUploadWidget>
+      </div>
+    </div>
+  )
+}
+
+// ==================================================
+// src/components/admin/CloudinaryUploadWidget.tsx
+// ==================================================
+// src/components/admin/CloudinaryUploadWidget.tsx
+'use client'
+
+import { CldUploadWidget } from 'next-cloudinary'
+import { useState } from 'react'
+import { Upload, X, ImageIcon } from 'lucide-react'
+import Image from 'next/image'
+import { toast } from 'react-hot-toast'
+
+interface CloudinaryUploadWidgetProps {
+  value?: string
+  onChange: (url: string, publicId?: string) => void
+  label: string
+  type?: 'poster' | 'backdrop' | 'gallery'
+  movieId?: string | number
+  disabled?: boolean
+}
+
+export function CloudinaryUploadWidget({ 
+  value, 
+  onChange, 
+  label, 
+  type = 'poster',
+  movieId,
+  disabled = false
+}: CloudinaryUploadWidgetProps) {
+  const [imageUrl, setImageUrl] = useState(value || '')
+  
+  // Configuración según el tipo de imagen
+  const getUploadPreset = () => {
+    // Puedes crear estos presets en tu dashboard de Cloudinary
+    switch(type) {
+      case 'poster':
+        return {
+          folder: `cinenacional/posters${movieId ? `/${movieId}` : ''}`,
+          transformation: [
+            { width: 500, height: 750, crop: 'fill', gravity: 'auto' }
+          ],
+          format: 'auto',
+          quality: 'auto:best'
+        }
+      case 'backdrop':
+        return {
+          folder: `cinenacional/backdrops${movieId ? `/${movieId}` : ''}`,
+          transformation: [
+            { width: 1920, height: 1080, crop: 'fill', gravity: 'auto' }
+          ],
+          format: 'auto',
+          quality: 'auto:best'
+        }
+      default:
+        return {
+          folder: `cinenacional/gallery${movieId ? `/${movieId}` : ''}`,
+          transformation: [
+            { width: 1200, height: 1200, crop: 'limit' }
+          ],
+          format: 'auto',
+          quality: 'auto:good'
+        }
+    }
+  }
+
+  const handleUploadSuccess = (result: any) => {
+    const { secure_url, public_id } = result.info
+    setImageUrl(secure_url)
+    onChange(secure_url, public_id)
+    toast.success('Imagen subida exitosamente')
+  }
+
+  const handleRemove = () => {
+    setImageUrl('')
+    onChange('', '')
+  }
+
+  const aspectRatio = type === 'poster' ? '2/3' : type === 'backdrop' ? '16/9' : '1/1'
+  const dimensions = type === 'poster' ? '500x750px' : type === 'backdrop' ? '1920x1080px' : '1200x1200px'
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        {label}
+      </label>
+      
+      {!imageUrl ? (
+        <CldUploadWidget
+          uploadPreset="cinenacional-unsigned" // Crear este preset en Cloudinary
+          options={{
+            ...getUploadPreset(),
+            sources: ['local', 'url', 'google_drive', 'dropbox'],
+            multiple: false,
+            maxFiles: 1,
+            clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
+            maxFileSize: 10000000, // 10MB
+            language: 'es',
+            text: {
+              es: {
+                or: 'O',
+                menu: {
+                  files: 'Mis archivos',
+                  web: 'Dirección web',
+                },
+                selection_counter: {
+                  selected: 'Seleccionado'
+                },
+                actions: {
+                  upload: 'Subir',
+                  clear_all: 'Limpiar todo',
+                  log_out: 'Cerrar sesión'
+                },
+                messages: {
+                  max_files_limit: 'Solo puedes subir 1 archivo',
+                  min_files_limit: 'Debes subir al menos 1 archivo',
+                  max_file_size: 'El archivo es demasiado grande (máx. 10MB)',
+                  allowed_formats: 'Formato no permitido. Usa: JPG, PNG, WEBP',
+                  upload_successful: 'Subida exitosa',
+                  upload_failed: 'Error al subir'
+                },
+                local: {
+                  browse: 'Buscar',
+                  dd_title_single: 'Arrastra y suelta tu imagen aquí',
+                  drop_title_single: 'Suelta el archivo para subirlo',
+                }
+              }
+            }
+          }}
+          onUpload={(result: any) => handleUploadSuccess(result)}
+        >
+          {({ open }) => (
+            <button
+              type="button"
+              onClick={() => open()}
+              disabled={disabled}
+              className="relative block w-full border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Upload className="mx-auto h-12 w-12 text-gray-400" />
+              <p className="mt-2 text-sm font-medium text-gray-900">
+                Click para subir o arrastra una imagen aquí
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                JPG, PNG o WEBP hasta 10MB
+              </p>
+              <p className="mt-1 text-xs text-gray-400">
+                Tamaño recomendado: {dimensions}
+              </p>
+            </button>
+          )}
+        </CldUploadWidget>
+      ) : (
+        <div className="relative group">
+          <div 
+            className="relative rounded-lg overflow-hidden bg-gray-100 shadow-lg"
+            style={{ aspectRatio }}
+          >
+            <Image
+              src={imageUrl}
+              alt={label}
+              fill
+              className="object-cover"
+            />
+            
+            {/* Overlay con acciones */}
+            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <div className="flex items-center space-x-4">
+                <CldUploadWidget
+                  uploadPreset="cinenacional-unsigned"
+                  options={{
+                    ...getUploadPreset(),
+                    sources: ['local', 'url'],
+                    multiple: false,
+                    maxFiles: 1
+                  }}
+                  onUpload={(result: any) => handleUploadSuccess(result)}
+                >
+                  {({ open }) => (
+                    <button
+                      type="button"
+                      onClick={() => open()}
+                      className="bg-white text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <span className="flex items-center space-x-2">
+                        <ImageIcon className="w-4 h-4" />
+                        <span>Cambiar</span>
+                      </span>
+                    </button>
+                  )}
+                </CldUploadWidget>
+                
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Eliminar</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-2 text-xs text-gray-500">
+            Subida a Cloudinary ✓ • {dimensions}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ==================================================
