@@ -35,7 +35,9 @@ const movieFormSchema = z.object({
   tagline: z.string().optional(),
   rating: z.number().min(0).max(10).optional(),
   posterUrl: z.string().url().optional().or(z.literal('')),
+  posterPublicId: z.string().optional(),  // <-- AGREGAR ESTA LÍNEA
   backdropUrl: z.string().url().optional().or(z.literal('')),
+  backdropPublicId: z.string().optional(),  // <-- AGREGAR ESTA LÍNEA
   trailerUrl: z.string().url().optional().or(z.literal('')),
   imdbId: z.string().optional(),
   aspectRatio: z.string().optional(),

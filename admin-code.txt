@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-06-30T01:13:52.361Z
+// Archivos del admin - 2025-06-30T01:18:49.802Z
 // ==================
 
 
@@ -161,7 +161,9 @@ const movieFormSchema = z.object({
   tagline: z.string().optional(),
   rating: z.number().min(0).max(10).optional(),
   posterUrl: z.string().url().optional().or(z.literal('')),
+  posterPublicId: z.string().optional(),
   backdropUrl: z.string().url().optional().or(z.literal('')),
+  backdropPublicId: z.string().optional(),
   trailerUrl: z.string().url().optional().or(z.literal('')),
   imdbId: z.string().optional(),
   aspectRatio: z.string().optional(),
