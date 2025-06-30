@@ -305,6 +305,11 @@
     "size": 0
   },
   {
+    "path": "src/components/movies/CloudinaryImage.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/CloudinaryImage.tsx",
+    "size": 0
+  },
+  {
     "path": "src/components/movies/CrewSection.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/CrewSection.tsx",
     "size": 0

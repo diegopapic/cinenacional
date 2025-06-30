@@ -31,6 +31,7 @@
 - [src/components/layout/Footer.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Footer.tsx)
 - [src/components/layout/Header.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Header.tsx)
 - [src/components/movies/CastSection.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/CastSection.tsx)
+- [src/components/movies/CloudinaryImage.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/CloudinaryImage.tsx)
 - [src/components/movies/CrewSection.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/CrewSection.tsx)
 - [src/components/movies/ImageGallery.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/ImageGallery.tsx)
 - [src/components/movies/MovieHero.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/MovieHero.tsx)
