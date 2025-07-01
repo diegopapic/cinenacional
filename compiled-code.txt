@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 96317ba389c0b6df9f50eabd1d2ba37578c9c047
-// Fecha: 2025-07-01T01:30:13.961Z
+// Commit: 590848ef22ae2220fcf5772cdf6270504df2a335
+// Fecha: 2025-07-01T01:34:51.623Z
 // ============================================
 
 
@@ -1322,7 +1322,6 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
-        { originalTitle: { contains: search, mode: 'insensitive' } },
         { synopsis: { contains: search, mode: 'insensitive' } }
       ]
     }
@@ -1405,11 +1404,9 @@ export async function GET(request: NextRequest) {
       id: movie.id,
       slug: movie.slug,
       title: movie.title,
-      originalTitle: movie.originalTitle,
       year: movie.year,
       releaseDate: movie.releaseDate,
       duration: movie.duration,
-      rating: movie.rating,
       posterUrl: movie.posterUrl || movie.images[0]?.url,
       status: movie.status,
       genres: movie.genres.map(g => g.genre),
