@@ -11,7 +11,7 @@
     "structure": "node generate-structure.js",
     "update-docs": "npm run structure && npm run compile",
     "precommit": "npm run update-docs",
-    "db:push": "prisma db push",
+    "db:push": "dotenv -e .env.local -- prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",

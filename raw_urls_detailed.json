@@ -50,6 +50,11 @@
     "size": 0
   },
   {
+    "path": "migration.sql",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/migration.sql",
+    "size": 0
+  },
+  {
     "path": "next-env.d.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next-env.d.ts",
     "size": 0
@@ -372,6 +377,11 @@
   {
     "path": "tailwind.config.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tailwind.config.js",
+    "size": 0
+  },
+  {
+    "path": "test-field.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/test-field.js",
     "size": 0
   },
   {

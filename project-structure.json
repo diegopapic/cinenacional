@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-06-30T02:01:22.231Z",
+  "timestamp": "2025-07-01T01:30:13.632Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "156b98b529f0052950f100aa79b7386768de9712",
+  "commit": "96317ba389c0b6df9f50eabd1d2ba37578c9c047",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".gitignore": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
@@ -14,6 +14,7 @@
     "generate_prompt.py": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/generate_prompt.py",
     "get_github_urls.py": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/get_github_urls.py",
     "github_prompt.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/github_prompt.txt",
+    "migration.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/migration.sql",
     "next-env.d.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next-env.d.ts",
     "next.config": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config",
     "next.config.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config.js",
@@ -149,6 +150,7 @@
       "listados.html": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/listados.html"
     },
     "tailwind.config.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tailwind.config.js",
+    "test-field.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/test-field.js",
     "tsconfig.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tsconfig.json",
     "urls_only.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/urls_only.txt",
     "vercel.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/vercel.json"
