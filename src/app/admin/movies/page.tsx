@@ -623,18 +623,6 @@ export default function AdminMoviesPage() {
                       <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
                     )}
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Título Original
-                    </label>
-                    <input
-                      type="text"
-                      {...register('originalTitle')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                    />
-                  </div>
-
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -674,19 +662,6 @@ export default function AdminMoviesPage() {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Rating
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="10"
-                        {...register('rating', { valueAsNumber: true })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                      />
-                    </div>
                   </div>
 
                   <div>
@@ -747,30 +722,7 @@ export default function AdminMoviesPage() {
                       type="poster"
                       movieId={editingMovie?.id}
                     />
-
-                    <CloudinaryUploadWidget
-                      value={watch('backdropUrl')}
-                      onChange={(url, publicId) => {
-                        setValue('backdropUrl', url)
-                        setValue('backdropPublicId', publicId)
-                      }}
-                      label="Imagen de Fondo (Backdrop)"
-                      type="backdrop"
-                      movieId={editingMovie?.id}
-                    />
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      URL del Backdrop
-                    </label>
-                    <input
-                      type="url"
-                      {...register('backdropUrl')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                    />
-                  </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       URL del Trailer
@@ -803,39 +755,6 @@ export default function AdminMoviesPage() {
                 </h3>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Formato
-                    </label>
-                    <select
-                      {...register('filmFormat')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                    >
-                      <option value="">Seleccionar...</option>
-                      <option value="35mm">35mm</option>
-                      <option value="16mm">16mm</option>
-                      <option value="Digital">Digital</option>
-                      <option value="70mm">70mm</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Aspecto
-                    </label>
-                    <select
-                      {...register('aspectRatio')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                    >
-                      <option value="">Seleccionar...</option>
-                      <option value="1.37:1">1.37:1</option>
-                      <option value="1.66:1">1.66:1</option>
-                      <option value="1.85:1">1.85:1</option>
-                      <option value="2.35:1">2.35:1</option>
-                      <option value="2.39:1">2.39:1</option>
-                    </select>
-                  </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Color
@@ -889,47 +808,12 @@ export default function AdminMoviesPage() {
                       <option value="Solo apta para mayores de 18 años">Solo apta para mayores de 18 años</option>
                     </select>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Número de Certificado
-                    </label>
-                    <input
-                      type="text"
-                      {...register('certificateNumber')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                    />
-                  </div>
+                  
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Razón de la Clasificación
-                  </label>
-                  <textarea
-                    {...register('classificationReason')}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  />
-                </div>
               </div>
 
-              {/* SEO */}
               <div className="mt-6 space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  SEO y Metadatos
-                </h3>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Meta Descripción
-                  </label>
-                  <textarea
-                    {...register('metaDescription')}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  />
-                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

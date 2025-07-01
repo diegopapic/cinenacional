@@ -8,6 +8,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+ // directUrl = env("DIRECT_URL")
 }
 
 // =====================================================
@@ -18,29 +19,21 @@ model Movie {
   id               Int      @id @default(autoincrement())
   slug             String   @unique @db.VarChar(255)
   title            String   @db.VarChar(255)
-  originalTitle    String?  @map("original_title") @db.VarChar(255)
   year             Int
   releaseDate      DateTime? @map("release_date") @db.Date
   duration         Int?     // en minutos
   synopsis         String?  @db.Text
   tagline          String?  @db.VarChar(500)
-  rating           Decimal? @db.Decimal(3, 1)
-  ratingCount      Int      @default(0) @map("rating_count")
   posterUrl        String?  @map("poster_url") @db.VarChar(500)
-  backdropUrl      String?  @map("backdrop_url") @db.VarChar(500)
   trailerUrl       String?  @map("trailer_url") @db.VarChar(500)
   imdbId           String?  @map("imdb_id") @db.VarChar(20)
   
   // Información técnica
-  aspectRatio      String?  @map("aspect_ratio") @db.VarChar(20)
   colorType        String?  @map("color_type") @db.VarChar(50)
   soundType        String?  @map("sound_type") @db.VarChar(50)
-  filmFormat       String?  @map("film_format") @db.VarChar(50)
   
   // Información legal
-  certificateNumber String? @map("certificate_number") @db.VarChar(50)
   classification    String? @db.VarChar(100)
-  classificationReason String? @map("classification_reason") @db.Text
   
   // Status y timestamps
   status           MovieStatus @default(PUBLISHED)
@@ -72,7 +65,6 @@ model Movie {
   @@index([slug])
   @@index([title])
   @@index([year])
-  @@index([rating])
   @@index([status])
 }
 
