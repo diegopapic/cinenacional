@@ -8,6 +8,7 @@ export const movieSchema = z.object({
   year: z.number().min(1895).max(new Date().getFullYear() + 5),
   releaseDate: z.string().optional(),
   duration: z.number().optional(),
+  durationSeconds: z.number().min(0).max(59).optional(),
   synopsis: z.string().optional(),
   tagline: z.string().optional(),
   rating: z.number().min(0).max(10).optional(),

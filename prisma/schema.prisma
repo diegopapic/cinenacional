@@ -8,7 +8,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+ // directUrl = env("DIRECT_URL")
 }
 
 // =====================================================
@@ -22,6 +22,7 @@ model Movie {
   year             Int
   releaseDate      DateTime? @map("release_date") @db.Date
   duration         Int?     // en minutos
+  durationSeconds  Int?     @map("duration_seconds")
   synopsis         String?  @db.Text
   tagline          String?  @db.VarChar(500)
   posterUrl        String?  @map("poster_url") @db.VarChar(500)
