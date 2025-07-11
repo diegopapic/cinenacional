@@ -39,6 +39,7 @@ const movieFormSchema = z.object({
   year: z.number().min(1895).max(new Date().getFullYear() + 5),
   releaseDate: z.string().optional(),
   duration: z.number().optional(),
+  durationSeconds: z.number().min(0).max(59).optional(),
   synopsis: z.string().optional(),
   tagline: z.string().optional(),
   rating: z.number().min(0).max(10).optional(),
@@ -199,6 +200,8 @@ export default function AdminMoviesPage() {
   // Crear o actualizar película
   const onSubmit = async (data: MovieFormData) => {
     try {
+      console.log('Datos del formulario:', data) // AGREGAR ESTA LÍNEA
+      console.log('Duration seconds:', data.durationSeconds) // Y ESTA
       const movieData = {
         ...data,
         metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()) : [],
@@ -252,6 +255,8 @@ export default function AdminMoviesPage() {
           setValue(key as any, fullMovie[key].join(', '))
         } else if (key === 'releaseDate' && fullMovie[key]) {
           setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
+        } else if (key === 'durationSeconds') {
+          setValue(key as any, fullMovie[key] || 0) // Asegurar que tenga un valor por defecto
         } else {
           setValue(key as any, fullMovie[key])
         }
@@ -617,11 +622,10 @@ export default function AdminMoviesPage() {
                 <Tabs.List className="flex border-b border-gray-200 px-6 pt-4">
                   <Tabs.Trigger
                     value="basic"
-                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${
-                      activeTab === 'basic'
-                        ? 'text-blue-600 border-b-2 border-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'basic'
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <Info className="w-4 h-4" />
@@ -630,11 +634,10 @@ export default function AdminMoviesPage() {
                   </Tabs.Trigger>
                   <Tabs.Trigger
                     value="media"
-                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${
-                      activeTab === 'media'
-                        ? 'text-blue-600 border-b-2 border-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'media'
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <Image className="w-4 h-4" />
@@ -643,11 +646,10 @@ export default function AdminMoviesPage() {
                   </Tabs.Trigger>
                   <Tabs.Trigger
                     value="cast"
-                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${
-                      activeTab === 'cast'
-                        ? 'text-blue-600 border-b-2 border-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'cast'
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4" />
@@ -656,11 +658,10 @@ export default function AdminMoviesPage() {
                   </Tabs.Trigger>
                   <Tabs.Trigger
                     value="crew"
-                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${
-                      activeTab === 'crew'
-                        ? 'text-blue-600 border-b-2 border-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'crew'
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <Briefcase className="w-4 h-4" />
@@ -669,11 +670,10 @@ export default function AdminMoviesPage() {
                   </Tabs.Trigger>
                   <Tabs.Trigger
                     value="advanced"
-                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${
-                      activeTab === 'advanced'
-                        ? 'text-blue-600 border-b-2 border-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'advanced'
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <Settings className="w-4 h-4" />
@@ -743,7 +743,22 @@ export default function AdminMoviesPage() {
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                           />
                         </div>
-
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Duración (segundos)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            {...register('durationSeconds', { valueAsNumber: true })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                            placeholder="0-59"
+                          />
+                          {errors.durationSeconds && (
+                            <p className="mt-1 text-sm text-red-600">{errors.durationSeconds.message}</p>
+                          )}
+                        </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Estado
