@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-07-11T00:15:07.047Z
+# Generado automáticamente el: 2025-07-28T23:56:49.560Z
 # ================================================
 
 ## Schema Prisma
@@ -13,9 +13,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
- // directUrl = env("DIRECT_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")  // IMPORTANTE: Esto hace que use DIRECT_URL para migraciones
 }
 
 // =====================================================
@@ -30,6 +30,7 @@ model Movie {
   releaseDate      DateTime? @map("release_date") @db.Date
   duration         Int?     // en minutos
   durationSeconds  Int?     @map("duration_seconds")
+  tipoDuracion     String?  @map("tipo_duracion") @db.VarChar(20)
   synopsis         String?  @db.Text
   tagline          String?  @db.VarChar(500)
   posterUrl        String?  @map("poster_url") @db.VarChar(500)
@@ -74,6 +75,7 @@ model Movie {
   @@index([title])
   @@index([year])
   @@index([status])
+  @@index([tipoDuracion])
 }
 
 model Person {

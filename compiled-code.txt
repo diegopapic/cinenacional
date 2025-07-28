@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: e00670da5c1c8e0a3b38a955966f04533f55760f
-// Fecha: 2025-07-11T00:15:06.854Z
+// Commit: c8a528e3ab32372bf73a0d12df19c19a4e11064e
+// Fecha: 2025-07-28T23:56:49.411Z
 // ============================================
 
 
@@ -178,6 +178,7 @@ const movieFormSchema = z.object({
   releaseDate: z.string().optional(),
   duration: z.number().optional(),
   durationSeconds: z.number().min(0).max(59).optional(),
+  tipoDuracion: z.string().optional(), // NUEVO CAMPO
   synopsis: z.string().optional(),
   tagline: z.string().optional(),
   rating: z.number().min(0).max(10).optional(),
@@ -237,6 +238,14 @@ export default function AdminMoviesPage() {
   // Estado para los datos iniciales del formulario
   const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
 
+  // NUEVOS ESTADOS PARA TIPO DE DURACIÓN
+  const [tiposDuracion] = useState([
+    { value: 'largometraje', label: 'Largometraje' },
+    { value: 'mediometraje', label: 'Mediometraje' },
+    { value: 'cortometraje', label: 'Cortometraje' }
+  ])
+  const [tipoDuracionDisabled, setTipoDuracionDisabled] = useState(false)
+
   const [movieRelations, setMovieRelations] = useState<{
     genres: number[];
     cast: any[];
@@ -266,6 +275,57 @@ export default function AdminMoviesPage() {
   } = useForm<MovieFormData>({
     resolver: zodResolver(movieFormSchema)
   })
+
+  // FUNCIONES PARA TIPO DE DURACIÓN
+ const calcularTipoDuracion = (minutos: number | null | undefined, segundos: number | null | undefined = 0): string => {
+  // Convertir todo a minutos totales
+  const minutosReales = (minutos || 0)
+  const segundosReales = (segundos || 0)
+  const duracionTotalMinutos = minutosReales + (segundosReales / 60)
+  
+  // Si no hay duración total, retornar vacío
+  if (duracionTotalMinutos === 0) return ''
+  
+  if (duracionTotalMinutos >= 60) return 'largometraje'
+  if (duracionTotalMinutos >= 30) return 'mediometraje'
+  return 'cortometraje'
+}
+
+  const obtenerEtiquetaTipoDuracion = (tipo: string): string => {
+    const tipoObj = tiposDuracion.find(t => t.value === tipo)
+    return tipoObj ? tipoObj.label : ''
+  }
+
+  // EFECTO PARA OBSERVAR CAMBIOS EN DURACIÓN
+  useEffect(() => {
+  const subscription = watch((value, { name, type }) => {
+    // Ejecutar cuando cambien los campos 'duration' O 'durationSeconds'
+    if ((name === 'duration' || name === 'durationSeconds') && type === 'change') {
+      const minutos = value.duration
+      const segundos = value.durationSeconds
+      
+      // Verificar si hay alguna duración (minutos o segundos)
+      const hayDuracion = (minutos && minutos > 0) || (segundos && segundos > 0)
+      
+      if (hayDuracion) {
+        // Calcular automáticamente el tipo considerando ambos campos
+        const tipoCalculado = calcularTipoDuracion(minutos, segundos)
+        const tipoActual = value.tipoDuracion
+        
+        // Solo actualizar si el tipo calculado es diferente al actual
+        if (tipoCalculado !== tipoActual) {
+          setValue('tipoDuracion', tipoCalculado, { shouldValidate: false })
+        }
+        setTipoDuracionDisabled(true)
+      } else {
+        // Si no hay duración en ningún campo, habilitar el campo manual
+        setTipoDuracionDisabled(false)
+      }
+    }
+  })
+  
+  return () => subscription.unsubscribe()
+}, [watch, setValue])
 
   // Callbacks para MovieFormEnhanced
   const handleGenresChange = useCallback((genres: number[]) => {
@@ -384,7 +444,18 @@ export default function AdminMoviesPage() {
     try {
       const response = await fetch(`/api/movies/${movie.id}`)
       const fullMovie = await response.json()
+      const minutos = fullMovie.duration
+const segundos = fullMovie.durationSeconds
+const hayDuracion = (minutos && minutos > 0) || (segundos && segundos > 0)
 
+if (hayDuracion) {
+  const tipoCalculado = calcularTipoDuracion(minutos, segundos)
+  setValue('tipoDuracion', tipoCalculado)
+  setTipoDuracionDisabled(true)
+} else {
+  setValue('tipoDuracion', fullMovie.tipoDuracion || '')
+  setTipoDuracionDisabled(false)
+}
       setEditingMovie(movie)
 
       // Llenar el formulario
@@ -399,6 +470,16 @@ export default function AdminMoviesPage() {
           setValue(key as any, fullMovie[key])
         }
       })
+
+      // INICIALIZAR TIPO DE DURACIÓN AL EDITAR
+      if (fullMovie.duration && fullMovie.duration > 0) {
+        const tipoCalculado = calcularTipoDuracion(fullMovie.duration)
+        setValue('tipoDuracion', tipoCalculado)
+        setTipoDuracionDisabled(true)
+      } else {
+        setValue('tipoDuracion', fullMovie.tipoDuracion || '')
+        setTipoDuracionDisabled(false)
+      }
 
       // Datos para MovieFormEnhanced (mantiene el formato completo para mostrar)
       setMovieFormInitialData({
@@ -478,6 +559,8 @@ export default function AdminMoviesPage() {
       productionCompanies: [],
       distributionCompanies: []
     })
+    // RESETEAR ESTADO DEL TIPO DE DURACIÓN
+    setTipoDuracionDisabled(false)
     setActiveTab('basic') // Resetear a la primera pestaña
     setShowModal(true)
   }
@@ -897,6 +980,79 @@ export default function AdminMoviesPage() {
                             <p className="mt-1 text-sm text-red-600">{errors.durationSeconds.message}</p>
                           )}
                         </div>
+
+                        {/* NUEVO CAMPO TIPO DE DURACIÓN */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tipo de duración
+                            {tipoDuracionDisabled && (
+                              <span className="ml-2 text-xs text-green-600 font-normal">
+                                (Calculado automáticamente)
+                              </span>
+                            )}
+                          </label>
+                          <select
+                            {...register('tipoDuracion')}
+                            disabled={tipoDuracionDisabled}
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-colors ${
+                              tipoDuracionDisabled 
+                                ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                                : 'hover:border-gray-400'
+                            }`}
+                          >
+                            <option value="">Seleccionar tipo de duración...</option>
+                            {tiposDuracion.map((tipo) => (
+                              <option key={tipo.value} value={tipo.value}>
+                                {tipo.label}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="mt-1 text-xs text-gray-500">
+                            {tipoDuracionDisabled ? (
+                              <div className="flex items-center space-x-1">
+                                <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span>
+  <strong>{obtenerEtiquetaTipoDuracion(watch('tipoDuracion') || '')}</strong> 
+  {(() => {
+    const minutos = watch('duration') || 0
+    const segundos = watch('durationSeconds') || 0
+    if (minutos > 0 || segundos > 0) {
+      if (minutos > 0 && segundos > 0) {
+        return ` (${minutos}min ${segundos}s)`
+      } else if (minutos > 0) {
+        return ` (${minutos}min)`
+      } else {
+        return ` (${segundos}s)`
+      }
+    }
+    return ''
+  })()}
+</span>
+                              </div>
+                            ) : (
+                              <div>
+                                <p>Ingrese la duración para calcular automáticamente, o seleccione manualmente.</p>
+                                <div className="mt-1 space-y-1">
+                                  <div className="flex justify-between">
+                                    <span>Largometraje:</span>
+                                    <span className="font-mono text-gray-400">60+ min</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Mediometraje:</span>
+                                    <span className="font-mono text-gray-400">30-59 min</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Cortometraje:</span>
+                                    <span className="font-mono text-gray-400">&lt; 30 min</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Estado
@@ -7213,6 +7369,7 @@ export const movieSchema = z.object({
   releaseDate: z.string().optional(),
   duration: z.number().optional(),
   durationSeconds: z.number().min(0).max(59).optional(),
+  tipoDuracion: z.string().optional(),
   synopsis: z.string().optional(),
   tagline: z.string().optional(),
   rating: z.number().min(0).max(10).optional(),
