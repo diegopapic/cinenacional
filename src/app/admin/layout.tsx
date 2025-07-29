@@ -11,7 +11,8 @@ import {
   Languages, 
   Home,
   Menu,
-  X
+  X,
+  Hash
 } from 'lucide-react'
 import { ReactNode, useState } from 'react'
 
@@ -26,6 +27,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Dashboard', href: '/admin', icon: Home },
     { name: 'Películas', href: '/admin/movies', icon: Film },
     { name: 'Personas', href: '/admin/people', icon: Users },
+    { name: 'Géneros', href: '/admin/genres', icon: Hash },
     { name: 'Productoras', href: '/admin/companies/production', icon: Building2 },
     { name: 'Distribuidoras', href: '/admin/companies/distribution', icon: Building2 },
     { name: 'Premios', href: '/admin/awards', icon: Award },

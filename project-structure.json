@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-07-28T23:56:49.041Z",
+  "timestamp": "2025-07-29T00:47:37.051Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "c8a528e3ab32372bf73a0d12df19c19a4e11064e",
+  "commit": "d266d4269d0f2fd7d5ad9d58d6aa2814e27fa508",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".gitignore": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
@@ -57,6 +57,9 @@
     "src": {
       "app": {
         "admin": {
+          "genres": {
+            "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/genres/page.tsx"
+          },
           "layout.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/layout.tsx",
           "movies": {
             "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/movies/page.tsx"
@@ -75,7 +78,10 @@
             "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/countries/route.ts"
           },
           "genres": {
-            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/genres/route.ts"
+            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/genres/route.ts",
+            "[id]": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/genres/[id]/route.ts"
+            }
           },
           "images": {
             "[movieId]": {
