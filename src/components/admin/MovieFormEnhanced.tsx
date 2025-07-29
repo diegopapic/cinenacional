@@ -13,6 +13,7 @@ import {
   Hash,
   Trash2
 } from 'lucide-react'
+import { CountrySelector } from './CountrySelector'
 
 interface MovieFormEnhancedProps {
   onGenresChange: (genres: number[]) => void
@@ -322,34 +323,18 @@ export default function MovieFormEnhanced({
           </div>
         </div>
 
-        {/* Países */}
+        {/* Países - ACTUALIZADO CON EL NUEVO COMPONENTE */}
         <div>
           <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
             <Globe className="w-5 h-5" />
             Países Coproductores
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {availableCountries.map((country: any) => (
-              <label
-                key={country.id}
-                className="inline-flex items-center"
-              >
-                <input
-                  type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  checked={selectedCountries.includes(country.id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedCountries([...selectedCountries, country.id])
-                    } else {
-                      setSelectedCountries(selectedCountries.filter(id => id !== country.id))
-                    }
-                  }}
-                />
-                <span className="ml-2 text-sm text-gray-700">{country.name}</span>
-              </label>
-            ))}
-          </div>
+          <CountrySelector
+            availableCountries={availableCountries}
+            selectedCountries={selectedCountries}
+            onChange={setSelectedCountries}
+            placeholder="Buscar país coproductor..."
+          />
         </div>
 
         {/* Idiomas */}
