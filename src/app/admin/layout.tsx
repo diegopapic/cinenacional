@@ -34,7 +34,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Premios', href: '/admin/awards', icon: Award },
     { name: 'Países', href: '/admin/countries', icon: Globe },
     { name: 'Idiomas', href: '/admin/languages', icon: Languages },
-    { name: 'Themes', href: '/admin/themes', icon: Tag }
+    { name: 'Temas', href: '/admin/themes', icon: Tag },
+    { name: 'Calificaciones', href: '/admin/calificaciones', icon: Tag }
   ]
 
   return (

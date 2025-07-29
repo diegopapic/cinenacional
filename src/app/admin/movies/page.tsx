@@ -55,8 +55,7 @@ const movieFormSchema = z.object({
   soundType: z.string().optional(),
   filmFormat: z.string().optional(),
   certificateNumber: z.string().optional(),
-  classification: z.string().optional(),
-  classificationReason: z.string().optional(),
+  ratingId: z.number().optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
   metaDescription: z.string().optional(),
   metaKeywords: z.string().optional()
@@ -96,6 +95,7 @@ export default function AdminMoviesPage() {
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null)
   const [deletingMovieId, setDeletingMovieId] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState('basic') // Estado para la pestaña activa
+  const [availableRatings, setAvailableRatings] = useState<any[]>([])
 
   // Estado para los datos iniciales del formulario
   const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
@@ -191,6 +191,22 @@ export default function AdminMoviesPage() {
     return () => subscription.unsubscribe()
   }, [watch, setValue])
 
+  useEffect(() => {
+    const loadRatings = async () => {
+      try {
+        const response = await fetch('/api/calificaciones')
+        if (response.ok) {
+          const ratings = await response.json()
+          setAvailableRatings(ratings)
+        }
+      } catch (error) {
+        console.error('Error loading ratings:', error)
+      }
+    }
+
+    loadRatings()
+  }, [])
+
   // Callbacks para MovieFormEnhanced
   const handleGenresChange = useCallback((genres: number[]) => {
     setMovieRelations(prev => ({ ...prev, genres }))
@@ -217,8 +233,8 @@ export default function AdminMoviesPage() {
   }, [])
 
   const handleThemesChange = useCallback((themes: number[]) => {
-  setMovieRelations(prev => ({ ...prev, themes }))
-}, [])
+    setMovieRelations(prev => ({ ...prev, themes }))
+  }, [])
 
   const handleDistributionCompaniesChange = useCallback((companies: number[]) => {
     setMovieRelations(prev => ({ ...prev, distributionCompanies: companies }))
@@ -266,13 +282,13 @@ export default function AdminMoviesPage() {
   // Crear o actualizar película
   const onSubmit = async (data: MovieFormData) => {
     try {
-      
+
       const movieData = {
         ...data,
         metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()) : [],
         ...movieRelations
       }
-          
+
       const url = editingMovie
         ? `/api/movies/${editingMovie.id}`
         : '/api/movies'
@@ -309,7 +325,7 @@ export default function AdminMoviesPage() {
 
   // Editar película
   const handleEdit = async (movie: Movie) => {
-    
+
     try {
       const response = await fetch(`/api/movies/${movie.id}`)
       const fullMovie = await response.json()
@@ -349,6 +365,10 @@ export default function AdminMoviesPage() {
         setValue('tipoDuracion', fullMovie.tipoDuracion || '')
         setTipoDuracionDisabled(false)
       }
+
+      if (fullMovie.ratingId) {
+  setValue('ratingId', fullMovie.ratingId)
+}
 
       // Datos para MovieFormEnhanced (mantiene el formato completo para mostrar)
       setMovieFormInitialData({
@@ -613,7 +633,7 @@ export default function AdminMoviesPage() {
                             className="text-blue-600 hover:text-blue-900 transition-colors"
                             title="Editar"
                           >
-                            
+
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
@@ -868,8 +888,8 @@ export default function AdminMoviesPage() {
                             {...register('tipoDuracion')}
                             disabled={tipoDuracionDisabled}
                             className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-colors ${tipoDuracionDisabled
-                                ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                                : 'hover:border-gray-400'
+                              ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                              : 'hover:border-gray-400'
                               }`}
                           >
                             <option value="">Seleccionar tipo de duración...</option>
@@ -1113,26 +1133,29 @@ export default function AdminMoviesPage() {
                     </div>
 
                     {/* Clasificación */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">
-                        Clasificación
-                      </h3>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Clasificación
-                        </label>
-                        <select
-                          {...register('classification')}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                        >
-                          <option value="">Seleccionar...</option>
-                          <option value="Apta para todo público">Apta para todo público</option>
-                          <option value="Solo apta para mayores de 13 años">Solo apta para mayores de 13 años</option>
-                          <option value="Solo apta para mayores de 16 años">Solo apta para mayores de 16 años</option>
-                          <option value="Solo apta para mayores de 18 años">Solo apta para mayores de 18 años</option>
-                        </select>
-                      </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Calificación
+                      </label>
+                      <select
+                        {...register('ratingId', { valueAsNumber: true })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      >
+                        <option value="">Sin calificación</option>
+                        {availableRatings.map((rating) => (
+                          <option key={rating.id} value={rating.id}>
+                            {rating.name} {rating.abbreviation && `(${rating.abbreviation})`}
+                          </option>
+                        ))}
+                      </select>
+                      {(() => {
+                        const selectedRating = availableRatings.find(r => r.id === watch('ratingId'))
+                        return selectedRating?.description && (
+                          <p className="mt-1 text-sm text-gray-500">
+                            {selectedRating.description}
+                          </p>
+                        )
+                      })()}
                     </div>
 
                     {/* SEO */}
