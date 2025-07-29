@@ -1049,6 +1049,7 @@ export default function AdminMoviesPage() {
                       onLanguagesChange={handleLanguagesChange}
                       onProductionCompaniesChange={handleProductionCompaniesChange}
                       onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                      onThemesChange={handleThemesChange}
                       initialData={movieFormInitialData}
                       showOnlyCast={true}
                     />
@@ -1065,6 +1066,7 @@ export default function AdminMoviesPage() {
                       onLanguagesChange={handleLanguagesChange}
                       onProductionCompaniesChange={handleProductionCompaniesChange}
                       onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                      onThemesChange={handleThemesChange}
                       initialData={movieFormInitialData}
                       showOnlyCrew={true}
                     />
@@ -1162,6 +1164,7 @@ export default function AdminMoviesPage() {
                       onLanguagesChange={handleLanguagesChange}
                       onProductionCompaniesChange={handleProductionCompaniesChange}
                       onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                      onThemesChange={handleThemesChange}
                       initialData={movieFormInitialData}
                       showOnlyCompanies={true}
                     />
