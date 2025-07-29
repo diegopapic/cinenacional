@@ -17,6 +17,7 @@ interface Calificacion {
   id: number
   slug: string
   name: string
+  abbreviation?: string | null
   description?: string | null
   createdAt: string
   _count?: {
@@ -36,10 +37,12 @@ export default function AdminCalificacionesPage() {
   // Estado del formulario
   const [formData, setFormData] = useState({
     name: '',
+    abbreviation: '',
     description: ''
   })
   const [formErrors, setFormErrors] = useState({
-    name: ''
+    name: '',
+    abbreviation: ''
   })
 
   // Cargar calificaciones
@@ -69,12 +72,13 @@ export default function AdminCalificacionesPage() {
   // Filtrar calificaciones
   const filteredCalif = calificaciones.filter(calificacion =>
     calificacion.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (calificacion.abbreviation && calificacion.abbreviation.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (calificacion.description && calificacion.description.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   // Validar formulario
   const validateForm = () => {
-    const errors = { name: '' }
+    const errors = { name: '', abbreviation: '' }
     
     if (!formData.name.trim()) {
       errors.name = 'El nombre es requerido'
@@ -82,8 +86,12 @@ export default function AdminCalificacionesPage() {
       errors.name = 'El nombre no puede exceder 100 caracteres'
     }
     
+    if (formData.abbreviation && formData.abbreviation.length > 10) {
+      errors.abbreviation = 'La abreviatura no puede exceder 10 caracteres'
+    }
+    
     setFormErrors(errors)
-    return !errors.name
+    return !errors.name && !errors.abbreviation
   }
 
   // Crear o actualizar calificación
@@ -105,6 +113,7 @@ export default function AdminCalificacionesPage() {
         },
         body: JSON.stringify({
           name: formData.name.trim(),
+          abbreviation: formData.abbreviation.trim() || undefined,
           description: formData.description.trim() || undefined
         })
       })
@@ -131,8 +140,8 @@ export default function AdminCalificacionesPage() {
 
   // Resetear formulario
   const resetForm = () => {
-    setFormData({ name: '', description: '' })
-    setFormErrors({ name: '' })
+    setFormData({ name: '', abbreviation: '', description: '' })
+    setFormErrors({ name: '', abbreviation: '' })
     setEditingCalif(null)
   }
 
@@ -141,6 +150,7 @@ export default function AdminCalificacionesPage() {
     setEditingCalif(calificacion)
     setFormData({
       name: calificacion.name,
+      abbreviation: calificacion.abbreviation || '',
       description: calificacion.description || ''
     })
     setShowModal(true)
@@ -236,6 +246,9 @@ export default function AdminCalificacionesPage() {
                       Calificación
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Abreviatura
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Descripción
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -255,6 +268,17 @@ export default function AdminCalificacionesPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
                           {calificacion.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-700">
+                          {calificacion.abbreviation ? (
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md">
+                              {calificacion.abbreviation}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -344,6 +368,31 @@ export default function AdminCalificacionesPage() {
                   {formErrors.name && (
                     <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Abreviatura
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.abbreviation}
+                    onChange={(e) => {
+                      setFormData({ ...formData, abbreviation: e.target.value })
+                      if (formErrors.abbreviation) {
+                        setFormErrors({ ...formErrors, abbreviation: '' })
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    placeholder="Ej: ATP"
+                    maxLength={10}
+                  />
+                  {formErrors.abbreviation && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.abbreviation}</p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Máximo 10 caracteres. Se mostrará como etiqueta en las listas.
+                  </p>
                 </div>
 
                 <div>

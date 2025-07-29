@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { createSlug } from '@/lib/utils'
 
-// GET /api/calificaciones/[id] - Obtener calificación por ID
+// GET /api/calificaciones/[id] - Obtener una calificación por ID
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -10,25 +9,23 @@ export async function GET(
   try {
     const id = parseInt(params.id)
     
-    const calificacion = await prisma.rating.findUnique({
+    const rating = await prisma.rating.findUnique({
       where: { id },
       include: {
         _count: {
-          select: {
-            movies: true
-          }
+          select: { movies: true }
         }
       }
     })
-
-    if (!calificacion) {
+    
+    if (!rating) {
       return NextResponse.json(
         { error: 'Calificación no encontrada' },
         { status: 404 }
       )
     }
 
-    return NextResponse.json(calificacion)
+    return NextResponse.json(rating)
   } catch (error) {
     console.error('Error fetching rating:', error)
     return NextResponse.json(
@@ -47,52 +44,36 @@ export async function PUT(
     const id = parseInt(params.id)
     const body = await request.json()
     
+    // Validar datos requeridos
+    if (!body.name || !body.name.trim()) {
+      return NextResponse.json(
+        { error: 'El nombre es requerido' },
+        { status: 400 }
+      )
+    }
+
     // Verificar que la calificación existe
-    const existingCalif = await prisma.rating.findUnique({
+    const existingRating = await prisma.rating.findUnique({
       where: { id }
     })
     
-    if (!existingCalif) {
+    if (!existingRating) {
       return NextResponse.json(
         { error: 'Calificación no encontrada' },
         { status: 404 }
       )
     }
 
-    // Generar nuevo slug si cambió el nombre
-    let slug = existingCalif.slug
-    if (body.name && body.name !== existingCalif.name) {
-      slug = createSlug(body.name)
-      let slugExists = await prisma.rating.findFirst({
-        where: { 
-          slug,
-          NOT: { id }
-        }
-      })
-      let counter = 1
-      
-      while (slugExists) {
-        slug = `${createSlug(body.name)}-${counter}`
-        slugExists = await prisma.rating.findFirst({
-          where: { 
-            slug,
-            NOT: { id }
-          }
-        })
-        counter++
-      }
-    }
-
-    const calificacion = await prisma.rating.update({
+    const rating = await prisma.rating.update({
       where: { id },
       data: {
-        name: body.name,
-        slug,
-        description: body.description || null
+        name: body.name.trim(),
+        abbreviation: body.abbreviation?.trim() || null,
+        description: body.description?.trim() || null
       }
     })
 
-    return NextResponse.json(calificacion)
+    return NextResponse.json(rating)
   } catch (error) {
     console.error('Error updating rating:', error)
     return NextResponse.json(
@@ -111,18 +92,16 @@ export async function DELETE(
     const id = parseInt(params.id)
     
     // Verificar que la calificación existe
-    const calificacion = await prisma.rating.findUnique({
+    const rating = await prisma.rating.findUnique({
       where: { id },
       include: {
         _count: {
-          select: {
-            movies: true
-          }
+          select: { movies: true }
         }
       }
     })
     
-    if (!calificacion) {
+    if (!rating) {
       return NextResponse.json(
         { error: 'Calificación no encontrada' },
         { status: 404 }
@@ -130,9 +109,9 @@ export async function DELETE(
     }
 
     // Verificar si tiene películas asociadas
-    if (calificacion._count.movies > 0) {
+    if (rating._count.movies > 0) {
       return NextResponse.json(
-        { error: `No se puede eliminar la calificación porque tiene ${calificacion._count.movies} películas asociadas` },
+        { error: 'No se puede eliminar una calificación que tiene películas asociadas' },
         { status: 400 }
       )
     }

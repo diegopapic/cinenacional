@@ -5,18 +5,16 @@ import { createSlug } from '@/lib/utils'
 // GET /api/calificaciones - Listar todas las calificaciones
 export async function GET() {
   try {
-    const calificaciones = await prisma.rating.findMany({
+    const ratings = await prisma.rating.findMany({
+      orderBy: { name: 'asc' },
       include: {
         _count: {
-          select: {
-            movies: true
-          }
+          select: { movies: true }
         }
-      },
-      orderBy: { name: 'asc' }
+      }
     })
 
-    return NextResponse.json(calificaciones)
+    return NextResponse.json(ratings)
   } catch (error) {
     console.error('Error fetching ratings:', error)
     return NextResponse.json(
@@ -31,6 +29,14 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
+    // Validar datos requeridos
+    if (!body.name || !body.name.trim()) {
+      return NextResponse.json(
+        { error: 'El nombre es requerido' },
+        { status: 400 }
+      )
+    }
+
     // Generar slug único
     let slug = createSlug(body.name)
     let slugExists = await prisma.rating.findUnique({ where: { slug } })
@@ -42,15 +48,16 @@ export async function POST(request: NextRequest) {
       counter++
     }
 
-    const calificacion = await prisma.rating.create({
+    const rating = await prisma.rating.create({
       data: {
-        name: body.name,
-        slug,
-        description: body.description || null
+        name: body.name.trim(),
+        abbreviation: body.abbreviation?.trim() || null,
+        description: body.description?.trim() || null,
+        slug
       }
     })
 
-    return NextResponse.json(calificacion, { status: 201 })
+    return NextResponse.json(rating, { status: 201 })
   } catch (error) {
     console.error('Error creating rating:', error)
     return NextResponse.json(
