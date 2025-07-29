@@ -1,4 +1,3 @@
-
 // ==================================================
 // src/app/api/movies/[id]/route.ts
 // ==================================================
@@ -142,86 +141,172 @@ export async function PUT(
       ...movieData
     } = validatedData
     
-    
-    // Actualizar película y relaciones
-    const movie = await prisma.movie.update({
-      where: { id },
-      data: {
-        ...movieData,
-        releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
-        // Actualizar relaciones (primero eliminar, luego crear)
-        genres: genres ? {
-          deleteMany: {},
-          create: genres.map((genreId, index) => ({
-            genreId,
-            isPrimary: index === 0
-          }))
-        } : undefined,
-        cast: cast ? {
-          deleteMany: {},
-          create: cast
-        } : undefined,
-        crew: crew ? {
-          deleteMany: {},
-          create: crew
-        } : undefined,
-        countries: countries ? {
-          deleteMany: {},
-          create: countries.map((countryId, index) => ({
-            countryId,
-            isPrimary: index === 0
-          }))
-        } : undefined,
-        languages: languages ? {
-          deleteMany: {},
-          create: languages.map((languageId, index) => ({
-            languageId,
-            isPrimary: index === 0
-          }))
-        } : undefined,
-        productionCompanies: productionCompanies ? {
-          deleteMany: {},
-          create: productionCompanies.map((companyId, index) => ({
-            companyId,
-            isPrimary: index === 0
-          }))
-        } : undefined,
-        distributionCompanies: distributionCompanies ? {
-          deleteMany: {},
-          create: distributionCompanies.map(companyId => ({
-            companyId,
-            territory: 'Argentina'
-          }))
-        } : undefined,
-        themes: themes ? {
-          deleteMany: {},
-          create: themes.map(themeId => ({
-            themeId
-          }))
-        } : undefined
-      },
-      include: {
-        genres: {
-          include: {
-            genre: true
-          }
-        },
-        cast: {
-          include: {
-            person: true
-          }
-        },
-        crew: {
-          include: {
-            person: true
-          }
-        },
-        themes: {
-          include: {
-            theme: true
-          }
+    // Usar transacción para actualizar todo
+    const movie = await prisma.$transaction(async (tx) => {
+      // 1. Actualizar datos básicos de la película
+      const updatedMovie = await tx.movie.update({
+        where: { id },
+        data: {
+          ...movieData,
+          releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
+        }
+      })
+
+      // 2. Actualizar géneros
+      if (genres) {
+        await tx.movieGenre.deleteMany({ where: { movieId: id } })
+        if (genres.length > 0) {
+          await tx.movieGenre.createMany({
+            data: genres.map((genreId, index) => ({
+              movieId: id,
+              genreId,
+              isPrimary: index === 0
+            }))
+          })
         }
       }
+
+      // 3. Actualizar cast
+      if (cast) {
+        await tx.movieCast.deleteMany({ where: { movieId: id } })
+        if (cast.length > 0) {
+          await tx.movieCast.createMany({
+            data: cast.map(item => ({
+              movieId: id,
+              ...item
+            }))
+          })
+        }
+      }
+
+      // 4. Actualizar crew
+      if (crew) {
+        await tx.movieCrew.deleteMany({ where: { movieId: id } })
+        if (crew.length > 0) {
+          await tx.movieCrew.createMany({
+            data: crew.map(item => ({
+              movieId: id,
+              ...item
+            }))
+          })
+        }
+      }
+
+      // 5. Actualizar países
+      if (countries) {
+        await tx.movieCountry.deleteMany({ where: { movieId: id } })
+        if (countries.length > 0) {
+          await tx.movieCountry.createMany({
+            data: countries.map((countryId, index) => ({
+              movieId: id,
+              countryId,
+              isPrimary: index === 0
+            }))
+          })
+        }
+      }
+
+      // 6. Actualizar idiomas
+      if (languages) {
+        await tx.movieLanguage.deleteMany({ where: { movieId: id } })
+        if (languages.length > 0) {
+          await tx.movieLanguage.createMany({
+            data: languages.map((languageId, index) => ({
+              movieId: id,
+              languageId,
+              isPrimary: index === 0
+            }))
+          })
+        }
+      }
+
+      // 7. Actualizar productoras
+      if (productionCompanies) {
+        await tx.movieProductionCompany.deleteMany({ where: { movieId: id } })
+        if (productionCompanies.length > 0) {
+          await tx.movieProductionCompany.createMany({
+            data: productionCompanies.map((companyId, index) => ({
+              movieId: id,
+              companyId,
+              isPrimary: index === 0
+            }))
+          })
+        }
+      }
+
+      // 8. Actualizar distribuidoras
+      if (distributionCompanies) {
+        await tx.movieDistributionCompany.deleteMany({ where: { movieId: id } })
+        if (distributionCompanies.length > 0) {
+          await tx.movieDistributionCompany.createMany({
+            data: distributionCompanies.map(companyId => ({
+              movieId: id,
+              companyId,
+              territory: 'Argentina'
+            }))
+          })
+        }
+      }
+
+      // 9. Actualizar temas
+      if (themes) {
+        await tx.movieTheme.deleteMany({ where: { movieId: id } })
+        if (themes.length > 0) {
+          await tx.movieTheme.createMany({
+            data: themes.map(themeId => ({
+              movieId: id,
+              themeId
+            }))
+          })
+        }
+      }
+
+      // 10. Retornar la película actualizada con todas las relaciones
+      return await tx.movie.findUnique({
+        where: { id },
+        include: {
+          genres: {
+            include: {
+              genre: true
+            }
+          },
+          cast: {
+            include: {
+              person: true
+            }
+          },
+          crew: {
+            include: {
+              person: true
+            }
+          },
+          themes: {
+            include: {
+              theme: true
+            }
+          },
+          countries: {
+            include: {
+              country: true
+            }
+          },
+          languages: {
+            include: {
+              language: true
+            }
+          },
+          productionCompanies: {
+            include: {
+              company: true
+            }
+          },
+          distributionCompanies: {
+            include: {
+              company: true
+            }
+          }
+        }
+      })
     })
 
     return NextResponse.json(movie)
