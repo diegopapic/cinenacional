@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: d182275befc13450058335a2f45a13ef8f5b4e2b
-// Fecha: 2025-07-29T03:44:07.759Z
+// Commit: ec2ff195aec5cc7c298b53089552752c393c1cd5
+// Fecha: 2025-07-29T03:49:19.498Z
 // ============================================
 
 
@@ -3502,11 +3502,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    // Agregar estos logs para debugging
-    console.log('=== RECEIVED DATA ===')
-    console.log('Cast:', JSON.stringify(body.cast, null, 2))
-    console.log('Crew:', JSON.stringify(body.crew, null, 2))
-    console.log('==================')
+
 
     // Validar datos
     const validatedData = movieSchema.parse(body)
@@ -3531,6 +3527,7 @@ export async function POST(request: NextRequest) {
       languages,
       productionCompanies,
       distributionCompanies,
+      themes,
       ...movieData
     } = validatedData
 
@@ -3590,6 +3587,11 @@ export async function POST(request: NextRequest) {
           create: distributionCompanies.map(companyId => ({
             companyId,
             territory: 'Argentina'
+          }))
+        } : undefined,
+        themes: themes ? {
+          create: themes.map(themeId => ({
+            themeId
           }))
         } : undefined
       },

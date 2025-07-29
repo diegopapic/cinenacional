@@ -152,11 +152,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    // Agregar estos logs para debugging
-    console.log('=== RECEIVED DATA ===')
-    console.log('Cast:', JSON.stringify(body.cast, null, 2))
-    console.log('Crew:', JSON.stringify(body.crew, null, 2))
-    console.log('==================')
+
 
     // Validar datos
     const validatedData = movieSchema.parse(body)
@@ -181,6 +177,7 @@ export async function POST(request: NextRequest) {
       languages,
       productionCompanies,
       distributionCompanies,
+      themes,
       ...movieData
     } = validatedData
 
@@ -240,6 +237,11 @@ export async function POST(request: NextRequest) {
           create: distributionCompanies.map(companyId => ({
             companyId,
             territory: 'Argentina'
+          }))
+        } : undefined,
+        themes: themes ? {
+          create: themes.map(themeId => ({
+            themeId
           }))
         } : undefined
       },
