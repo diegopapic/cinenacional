@@ -200,6 +200,11 @@
     "size": 0
   },
   {
+    "path": "src/app/admin/themes/page.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/themes/page.tsx",
+    "size": 0
+  },
+  {
     "path": "src/app/api/companies/distribution/route.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/companies/distribution/route.ts",
     "size": 0
@@ -257,6 +262,16 @@
   {
     "path": "src/app/api/project-structure/route.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/project-structure/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/themes/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/themes/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/themes/[id]/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/themes/[id]/route.ts",
     "size": 0
   },
   {
@@ -322,6 +337,11 @@
   {
     "path": "src/components/admin/MovieFormEnhanced.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MovieFormEnhanced.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/admin/ThemeSelector.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/ThemeSelector.tsx",
     "size": 0
   },
   {

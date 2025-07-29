@@ -12,6 +12,7 @@ import {
   Home,
   Menu,
   X,
+  Tag,
   Hash
 } from 'lucide-react'
 import { ReactNode, useState } from 'react'
@@ -32,7 +33,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Distribuidoras', href: '/admin/companies/distribution', icon: Building2 },
     { name: 'Premios', href: '/admin/awards', icon: Award },
     { name: 'Países', href: '/admin/countries', icon: Globe },
-    { name: 'Idiomas', href: '/admin/languages', icon: Languages }
+    { name: 'Idiomas', href: '/admin/languages', icon: Languages },
+    { name: 'Themes', href: '/admin/themes', icon: Tag }
   ]
 
   return (

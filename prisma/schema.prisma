@@ -326,12 +326,15 @@ model Theme {
   slug        String   @unique @db.VarChar(100)
   name        String   @db.VarChar(100)
   description String?  @db.Text
+  usageCount  Int      @default(0) @map("usage_count") // NUEVO: contador de uso
   createdAt   DateTime @default(now()) @map("created_at")
   
   // Relaciones
   movies      MovieTheme[]
   
   @@map("themes")
+  @@index([slug])
+  @@index([name])
 }
 
 model MovieTheme {

@@ -94,6 +94,11 @@ export async function GET(request: NextRequest) {
             country: true
           }
         },
+        themes: {
+          include: {
+            theme: true
+          }
+        },
         images: {
           where: {
             type: 'POSTER',
@@ -120,7 +125,8 @@ export async function GET(request: NextRequest) {
         person: c.person,
         character: c.characterName
       })),
-      country: movie.countries[0]?.country.name || 'Argentina'
+      country: movie.countries[0]?.country.name || 'Argentina',
+      themes: movie.themes
     }))
 
     return NextResponse.json({
@@ -256,6 +262,11 @@ export async function POST(request: NextRequest) {
         countries: {
           include: {
             country: true
+          }
+        },
+        themes: {
+          include: {
+            theme: true
           }
         },
         languages: {

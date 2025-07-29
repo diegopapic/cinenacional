@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: bc9a72146be6bdf3bb9ae5f62a2ae008e2902194
-// Fecha: 2025-07-29T01:26:05.699Z
+// Commit: ffce0b8ba560cd902688c63c1fb7017a0a4a2eee
+// Fecha: 2025-07-29T03:33:21.130Z
 // ============================================
 
 
@@ -866,6 +866,7 @@ import {
   Home,
   Menu,
   X,
+  Tag,
   Hash
 } from 'lucide-react'
 import { ReactNode, useState } from 'react'
@@ -886,7 +887,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Distribuidoras', href: '/admin/companies/distribution', icon: Building2 },
     { name: 'Premios', href: '/admin/awards', icon: Award },
     { name: 'Países', href: '/admin/countries', icon: Globe },
-    { name: 'Idiomas', href: '/admin/languages', icon: Languages }
+    { name: 'Idiomas', href: '/admin/languages', icon: Languages },
+    { name: 'Themes', href: '/admin/themes', icon: Tag }
   ]
 
   return (
@@ -1090,6 +1092,7 @@ export default function AdminMoviesPage() {
     languages: number[];
     productionCompanies: number[];
     distributionCompanies: number[];
+    themes: number[];
   }>({
     genres: [],
     cast: [],
@@ -1097,7 +1100,8 @@ export default function AdminMoviesPage() {
     countries: [],
     languages: [],
     productionCompanies: [],
-    distributionCompanies: []
+    distributionCompanies: [],
+    themes: []
   })
 
   // Form
@@ -1113,19 +1117,19 @@ export default function AdminMoviesPage() {
   })
 
   // FUNCIONES PARA TIPO DE DURACIÓN
- const calcularTipoDuracion = (minutos: number | null | undefined, segundos: number | null | undefined = 0): string => {
-  // Convertir todo a minutos totales
-  const minutosReales = (minutos || 0)
-  const segundosReales = (segundos || 0)
-  const duracionTotalMinutos = minutosReales + (segundosReales / 60)
-  
-  // Si no hay duración total, retornar vacío
-  if (duracionTotalMinutos === 0) return ''
-  
-  if (duracionTotalMinutos >= 60) return 'largometraje'
-  if (duracionTotalMinutos >= 30) return 'mediometraje'
-  return 'cortometraje'
-}
+  const calcularTipoDuracion = (minutos: number | null | undefined, segundos: number | null | undefined = 0): string => {
+    // Convertir todo a minutos totales
+    const minutosReales = (minutos || 0)
+    const segundosReales = (segundos || 0)
+    const duracionTotalMinutos = minutosReales + (segundosReales / 60)
+
+    // Si no hay duración total, retornar vacío
+    if (duracionTotalMinutos === 0) return ''
+
+    if (duracionTotalMinutos >= 60) return 'largometraje'
+    if (duracionTotalMinutos >= 30) return 'mediometraje'
+    return 'cortometraje'
+  }
 
   const obtenerEtiquetaTipoDuracion = (tipo: string): string => {
     const tipoObj = tiposDuracion.find(t => t.value === tipo)
@@ -1134,34 +1138,34 @@ export default function AdminMoviesPage() {
 
   // EFECTO PARA OBSERVAR CAMBIOS EN DURACIÓN
   useEffect(() => {
-  const subscription = watch((value, { name, type }) => {
-    // Ejecutar cuando cambien los campos 'duration' O 'durationSeconds'
-    if ((name === 'duration' || name === 'durationSeconds') && type === 'change') {
-      const minutos = value.duration
-      const segundos = value.durationSeconds
-      
-      // Verificar si hay alguna duración (minutos o segundos)
-      const hayDuracion = (minutos && minutos > 0) || (segundos && segundos > 0)
-      
-      if (hayDuracion) {
-        // Calcular automáticamente el tipo considerando ambos campos
-        const tipoCalculado = calcularTipoDuracion(minutos, segundos)
-        const tipoActual = value.tipoDuracion
-        
-        // Solo actualizar si el tipo calculado es diferente al actual
-        if (tipoCalculado !== tipoActual) {
-          setValue('tipoDuracion', tipoCalculado, { shouldValidate: false })
+    const subscription = watch((value, { name, type }) => {
+      // Ejecutar cuando cambien los campos 'duration' O 'durationSeconds'
+      if ((name === 'duration' || name === 'durationSeconds') && type === 'change') {
+        const minutos = value.duration
+        const segundos = value.durationSeconds
+
+        // Verificar si hay alguna duración (minutos o segundos)
+        const hayDuracion = (minutos && minutos > 0) || (segundos && segundos > 0)
+
+        if (hayDuracion) {
+          // Calcular automáticamente el tipo considerando ambos campos
+          const tipoCalculado = calcularTipoDuracion(minutos, segundos)
+          const tipoActual = value.tipoDuracion
+
+          // Solo actualizar si el tipo calculado es diferente al actual
+          if (tipoCalculado !== tipoActual) {
+            setValue('tipoDuracion', tipoCalculado, { shouldValidate: false })
+          }
+          setTipoDuracionDisabled(true)
+        } else {
+          // Si no hay duración en ningún campo, habilitar el campo manual
+          setTipoDuracionDisabled(false)
         }
-        setTipoDuracionDisabled(true)
-      } else {
-        // Si no hay duración en ningún campo, habilitar el campo manual
-        setTipoDuracionDisabled(false)
       }
-    }
-  })
-  
-  return () => subscription.unsubscribe()
-}, [watch, setValue])
+    })
+
+    return () => subscription.unsubscribe()
+  }, [watch, setValue])
 
   // Callbacks para MovieFormEnhanced
   const handleGenresChange = useCallback((genres: number[]) => {
@@ -1187,6 +1191,10 @@ export default function AdminMoviesPage() {
   const handleProductionCompaniesChange = useCallback((companies: number[]) => {
     setMovieRelations(prev => ({ ...prev, productionCompanies: companies }))
   }, [])
+
+  const handleThemesChange = useCallback((themes: number[]) => {
+  setMovieRelations(prev => ({ ...prev, themes }))
+}, [])
 
   const handleDistributionCompaniesChange = useCallback((companies: number[]) => {
     setMovieRelations(prev => ({ ...prev, distributionCompanies: companies }))
@@ -1234,13 +1242,13 @@ export default function AdminMoviesPage() {
   // Crear o actualizar película
   const onSubmit = async (data: MovieFormData) => {
     try {
-      console.log('Datos del formulario:', data) // AGREGAR ESTA LÍNEA
-      console.log('Duration seconds:', data.durationSeconds) // Y ESTA
+      
       const movieData = {
         ...data,
         metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()) : [],
         ...movieRelations
       }
+          
       const url = editingMovie
         ? `/api/movies/${editingMovie.id}`
         : '/api/movies'
@@ -1277,21 +1285,22 @@ export default function AdminMoviesPage() {
 
   // Editar película
   const handleEdit = async (movie: Movie) => {
+    
     try {
       const response = await fetch(`/api/movies/${movie.id}`)
       const fullMovie = await response.json()
       const minutos = fullMovie.duration
-const segundos = fullMovie.durationSeconds
-const hayDuracion = (minutos && minutos > 0) || (segundos && segundos > 0)
+      const segundos = fullMovie.durationSeconds
+      const hayDuracion = (minutos && minutos > 0) || (segundos && segundos > 0)
 
-if (hayDuracion) {
-  const tipoCalculado = calcularTipoDuracion(minutos, segundos)
-  setValue('tipoDuracion', tipoCalculado)
-  setTipoDuracionDisabled(true)
-} else {
-  setValue('tipoDuracion', fullMovie.tipoDuracion || '')
-  setTipoDuracionDisabled(false)
-}
+      if (hayDuracion) {
+        const tipoCalculado = calcularTipoDuracion(minutos, segundos)
+        setValue('tipoDuracion', tipoCalculado)
+        setTipoDuracionDisabled(true)
+      } else {
+        setValue('tipoDuracion', fullMovie.tipoDuracion || '')
+        setTipoDuracionDisabled(false)
+      }
       setEditingMovie(movie)
 
       // Llenar el formulario
@@ -1325,7 +1334,8 @@ if (hayDuracion) {
         countries: fullMovie.countries || [],
         languages: fullMovie.languages || [],
         productionCompanies: fullMovie.productionCompanies || [],
-        distributionCompanies: fullMovie.distributionCompanies || []
+        distributionCompanies: fullMovie.distributionCompanies || [],
+        themes: fullMovie.themes || []
       })
 
       // IMPORTANTE: Limpiar los datos para movieRelations
@@ -1346,7 +1356,8 @@ if (hayDuracion) {
         countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
         languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
         productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
-        distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
+        distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
+        themes: fullMovie.themes?.map((t: any) => t.themeId) || []
       })
 
       setShowModal(true)
@@ -1577,6 +1588,7 @@ if (hayDuracion) {
                             className="text-blue-600 hover:text-blue-900 transition-colors"
                             title="Editar"
                           >
+                            
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
@@ -1830,11 +1842,10 @@ if (hayDuracion) {
                           <select
                             {...register('tipoDuracion')}
                             disabled={tipoDuracionDisabled}
-                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-colors ${
-                              tipoDuracionDisabled 
-                                ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-colors ${tipoDuracionDisabled
+                                ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                                 : 'hover:border-gray-400'
-                            }`}
+                              }`}
                           >
                             <option value="">Seleccionar tipo de duración...</option>
                             {tiposDuracion.map((tipo) => (
@@ -1850,22 +1861,22 @@ if (hayDuracion) {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                                 </svg>
                                 <span>
-  <strong>{obtenerEtiquetaTipoDuracion(watch('tipoDuracion') || '')}</strong> 
-  {(() => {
-    const minutos = watch('duration') || 0
-    const segundos = watch('durationSeconds') || 0
-    if (minutos > 0 || segundos > 0) {
-      if (minutos > 0 && segundos > 0) {
-        return ` (${minutos}min ${segundos}s)`
-      } else if (minutos > 0) {
-        return ` (${minutos}min)`
-      } else {
-        return ` (${segundos}s)`
-      }
-    }
-    return ''
-  })()}
-</span>
+                                  <strong>{obtenerEtiquetaTipoDuracion(watch('tipoDuracion') || '')}</strong>
+                                  {(() => {
+                                    const minutos = watch('duration') || 0
+                                    const segundos = watch('durationSeconds') || 0
+                                    if (minutos > 0 || segundos > 0) {
+                                      if (minutos > 0 && segundos > 0) {
+                                        return ` (${minutos}min ${segundos}s)`
+                                      } else if (minutos > 0) {
+                                        return ` (${minutos}min)`
+                                      } else {
+                                        return ` (${segundos}s)`
+                                      }
+                                    }
+                                    return ''
+                                  })()}
+                                </span>
                               </div>
                             ) : (
                               <div>
@@ -1955,6 +1966,7 @@ if (hayDuracion) {
                       onLanguagesChange={handleLanguagesChange}
                       onProductionCompaniesChange={handleProductionCompaniesChange}
                       onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                      onThemesChange={handleThemesChange}
                       initialData={movieFormInitialData}
                       showOnlyBasicInfo={true}
                     />
@@ -2160,6 +2172,405 @@ if (hayDuracion) {
                     <>
                       <Save className="w-4 h-4" />
                       {editingMovie ? 'Actualizar' : 'Crear'} Película
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ==================================================
+// src/app/admin/themes/page.tsx
+// ==================================================
+// src/app/admin/themes/page.tsx
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Tag,
+  X,
+  Save,
+  Loader2,
+  Hash
+} from 'lucide-react'
+import { toast } from 'react-hot-toast'
+
+// Schema de validación
+const themeFormSchema = z.object({
+  name: z.string().min(1, 'El nombre es requerido').max(100),
+  description: z.string().optional()
+})
+
+type ThemeFormData = z.infer<typeof themeFormSchema>
+
+interface Theme {
+  id: number
+  slug: string
+  name: string
+  description?: string
+  usageCount: number
+  movieCount?: number
+  createdAt: string
+}
+
+export default function AdminThemesPage() {
+  const [themes, setThemes] = useState<Theme[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sortBy, setSortBy] = useState('name')
+  const [showModal, setShowModal] = useState(false)
+  const [editingTheme, setEditingTheme] = useState<Theme | null>(null)
+  const [deletingThemeId, setDeletingThemeId] = useState<number | null>(null)
+
+  // Form
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors, isSubmitting }
+  } = useForm<ThemeFormData>({
+    resolver: zodResolver(themeFormSchema)
+  })
+
+  // Cargar themes
+  const fetchThemes = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams({
+        search: searchTerm,
+        sortBy: sortBy,
+        sortOrder: sortBy === 'usageCount' ? 'desc' : 'asc'
+      })
+
+      const response = await fetch(`/api/themes?${params}`)
+      if (!response.ok) throw new Error('Error al cargar los themes')
+
+      const data = await response.json()
+      setThemes(data || [])
+    } catch (error) {
+      toast.error('Error al cargar los themes')
+      setThemes([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchThemes()
+  }, [searchTerm, sortBy])
+
+  // Crear o actualizar theme
+  const onSubmit = async (data: ThemeFormData) => {
+    try {
+      const url = editingTheme
+        ? `/api/themes/${editingTheme.id}`
+        : '/api/themes'
+
+      const method = editingTheme ? 'PUT' : 'POST'
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Error al guardar')
+      }
+
+      toast.success(editingTheme ? 'Theme actualizado' : 'Theme creado')
+      setShowModal(false)
+      reset()
+      setEditingTheme(null)
+      fetchThemes()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al guardar')
+    }
+  }
+
+  // Editar theme
+  const handleEdit = (theme: Theme) => {
+    setEditingTheme(theme)
+    setValue('name', theme.name)
+    setValue('description', theme.description || '')
+    setShowModal(true)
+  }
+
+  // Eliminar theme
+  const handleDelete = async (id: number) => {
+    if (!confirm('¿Estás seguro de eliminar este theme?')) return
+
+    try {
+      setDeletingThemeId(id)
+      const response = await fetch(`/api/themes/${id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Error al eliminar')
+      }
+
+      toast.success('Theme eliminado')
+      fetchThemes()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al eliminar')
+    } finally {
+      setDeletingThemeId(null)
+    }
+  }
+
+  // Abrir modal para nuevo theme
+  const handleNewTheme = () => {
+    setEditingTheme(null)
+    reset()
+    setShowModal(true)
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="py-6">
+            <h1 className="text-3xl font-bold text-gray-900">
+              Administración de Themes/Keywords
+            </h1>
+            <p className="mt-2 text-gray-600">
+              Gestiona los temas y palabras clave para categorizar las películas
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Contenido principal */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Filtros y acciones */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Búsqueda */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Buscar themes..."
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            {/* Ordenar por */}
+            <select
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="name">Nombre</option>
+              <option value="usageCount">Más usadas</option>
+              <option value="createdAt">Más recientes</option>
+            </select>
+
+            {/* Botón nuevo theme */}
+            <button
+              onClick={handleNewTheme}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Nuevo Theme
+            </button>
+          </div>
+
+          {/* Estadísticas */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Total Themes</p>
+                  <p className="text-2xl font-bold text-gray-900">{themes.length}</p>
+                </div>
+                <Tag className="w-8 h-8 text-gray-400" />
+              </div>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Total Asignaciones</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {themes.reduce((sum, t) => sum + (t.movieCount || 0), 0)}
+                  </p>
+                </div>
+                <Hash className="w-8 h-8 text-gray-400" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Lista de themes */}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            </div>
+          ) : themes.length === 0 ? (
+            <div className="text-center py-12">
+              <Tag className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No se encontraron themes</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Theme
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Descripción
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Películas
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {themes.map((theme) => (
+                    <tr key={theme.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Tag className="w-5 h-5 text-gray-400 mr-3" />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {theme.name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              /{theme.slug}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm text-gray-500 line-clamp-2">
+                          {theme.description || '-'}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <span className="text-sm font-medium text-gray-900">
+                          {theme.movieCount || 0}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(theme)}
+                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                            title="Editar"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(theme.id)}
+                            disabled={deletingThemeId === theme.id || (theme.movieCount || 0) > 0}
+                            className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={theme.movieCount ? `En uso en ${theme.movieCount} películas` : 'Eliminar'}
+                          >
+                            {deletingThemeId === theme.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal de creación/edición */}
+      {showModal && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {editingTheme ? 'Editar Theme' : 'Nuevo Theme'}
+              </h2>
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre *
+                </label>
+                <input
+                  type="text"
+                  {...register('name')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  placeholder="Ej: Basada en hechos reales"
+                />
+                {errors.name && (
+                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Descripción
+                </label>
+                <textarea
+                  {...register('description')}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  placeholder="Descripción opcional del theme"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false)
+                    reset()
+                    setEditingTheme(null)
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      {editingTheme ? 'Actualizar' : 'Crear'} Theme
                     </>
                   )}
                 </button>
@@ -3029,6 +3440,11 @@ export async function GET(request: NextRequest) {
             country: true
           }
         },
+        themes: {
+          include: {
+            theme: true
+          }
+        },
         images: {
           where: {
             type: 'POSTER',
@@ -3055,7 +3471,8 @@ export async function GET(request: NextRequest) {
         person: c.person,
         character: c.characterName
       })),
-      country: movie.countries[0]?.country.name || 'Argentina'
+      country: movie.countries[0]?.country.name || 'Argentina',
+      themes: movie.themes
     }))
 
     return NextResponse.json({
@@ -3193,6 +3610,11 @@ export async function POST(request: NextRequest) {
             country: true
           }
         },
+        themes: {
+          include: {
+            theme: true
+          }
+        },
         languages: {
           include: {
             language: true
@@ -3237,10 +3659,10 @@ export async function GET(
 ) {
   try {
     const idOrSlug = params.id
-    
+
     // Determinar si es ID o slug
     const isId = /^\d+$/.test(idOrSlug)
-    
+
     const movie = await prisma.movie.findUnique({
       where: isId ? { id: parseInt(idOrSlug) } : { slug: idOrSlug },
       include: {
@@ -3344,7 +3766,7 @@ export async function PUT(
     const existingMovie = await prisma.movie.findUnique({
       where: { id }
     })
-    
+
     if (!existingMovie) {
       return NextResponse.json(
         { error: 'Película no encontrada' },
@@ -3361,9 +3783,11 @@ export async function PUT(
       languages,
       productionCompanies,
       distributionCompanies,
+      themes,
       ...movieData
     } = validatedData
-
+    
+    
     // Actualizar película y relaciones
     const movie = await prisma.movie.update({
       where: { id },
@@ -3413,6 +3837,12 @@ export async function PUT(
             companyId,
             territory: 'Argentina'
           }))
+        } : undefined,
+        themes: themes ? {
+          deleteMany: {},
+          create: themes.map(themeId => ({
+            themeId
+          }))
         } : undefined
       },
       include: {
@@ -3430,6 +3860,11 @@ export async function PUT(
           include: {
             person: true
           }
+        },
+        themes: {
+          include: {
+            theme: true
+          }
         }
       }
     })
@@ -3442,7 +3877,7 @@ export async function PUT(
         { status: 400 }
       )
     }
-    
+
     console.error('Error updating movie:', error)
     return NextResponse.json(
       { error: 'Error al actualizar la película' },
@@ -3458,12 +3893,12 @@ export async function DELETE(
 ) {
   try {
     const id = parseInt(params.id)
-    
+
     // Verificar que la película existe
     const movie = await prisma.movie.findUnique({
       where: { id }
     })
-    
+
     if (!movie) {
       return NextResponse.json(
         { error: 'Película no encontrada' },
@@ -3677,6 +4112,272 @@ function countFiles(obj: any): number {
     }
   }
   return count;
+}
+
+// ==================================================
+// src/app/api/themes/route.ts
+// ==================================================
+// src/app/api/themes/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { createSlug } from '@/lib/utils'
+
+// GET /api/themes - Listar todos los themes/keywords
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const search = searchParams.get('search') || ''
+    const sortBy = searchParams.get('sortBy') || 'name'
+    const sortOrder = searchParams.get('sortOrder') || 'asc'
+
+    const where = search ? {
+      OR: [
+        { name: { contains: search, mode: 'insensitive' as const } },
+        { description: { contains: search, mode: 'insensitive' as const } }
+      ]
+    } : {}
+
+    const themes = await prisma.theme.findMany({
+      where,
+      orderBy: {
+        [sortBy]: sortOrder
+      },
+      include: {
+        _count: {
+          select: { movies: true }
+        }
+      }
+    })
+
+    // Formatear respuesta con contador de películas
+    const formattedThemes = themes.map(theme => ({
+      ...theme,
+      movieCount: theme._count.movies
+    }))
+
+    return NextResponse.json(formattedThemes)
+  } catch (error) {
+    console.error('Error fetching themes:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener los themes' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST /api/themes - Crear nuevo theme/keyword
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    
+    // Validar datos requeridos
+    if (!body.name) {
+      return NextResponse.json(
+        { error: 'El nombre es requerido' },
+        { status: 400 }
+      )
+    }
+
+    // Generar slug único
+    let slug = createSlug(body.name)
+    let slugExists = await prisma.theme.findUnique({ where: { slug } })
+    let counter = 1
+    
+    while (slugExists) {
+      slug = `${createSlug(body.name)}-${counter}`
+      slugExists = await prisma.theme.findUnique({ where: { slug } })
+      counter++
+    }
+
+    const theme = await prisma.theme.create({
+      data: {
+        name: body.name,
+        slug,
+        description: body.description
+      }
+    })
+
+    return NextResponse.json(theme, { status: 201 })
+  } catch (error) {
+    console.error('Error creating theme:', error)
+    return NextResponse.json(
+      { error: 'Error al crear el theme' },
+      { status: 500 }
+    )
+  }
+}
+
+// ==================================================
+// src/app/api/themes/[id]/route.ts
+// ==================================================
+// src/app/api/themes/[id]/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { createSlug } from '@/lib/utils'
+
+// GET /api/themes/[id] - Obtener theme específico
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = parseInt(params.id)
+    
+    const theme = await prisma.theme.findUnique({
+      where: { id },
+      include: {
+        movies: {
+          include: {
+            movie: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                year: true,
+                posterUrl: true
+              }
+            }
+          }
+        },
+        _count: {
+          select: { movies: true }
+        }
+      }
+    })
+
+    if (!theme) {
+      return NextResponse.json(
+        { error: 'Theme no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({
+      ...theme,
+      movieCount: theme._count.movies
+    })
+  } catch (error) {
+    console.error('Error fetching theme:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener el theme' },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT /api/themes/[id] - Actualizar theme
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = parseInt(params.id)
+    const body = await request.json()
+    
+    // Verificar que existe
+    const existingTheme = await prisma.theme.findUnique({
+      where: { id }
+    })
+    
+    if (!existingTheme) {
+      return NextResponse.json(
+        { error: 'Theme no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    // Si se cambia el nombre, generar nuevo slug
+    let updateData: any = {
+      description: body.description
+    }
+
+    if (body.name && body.name !== existingTheme.name) {
+      let slug = createSlug(body.name)
+      let slugExists = await prisma.theme.findUnique({ 
+        where: { 
+          slug,
+          NOT: { id }
+        } 
+      })
+      let counter = 1
+      
+      while (slugExists) {
+        slug = `${createSlug(body.name)}-${counter}`
+        slugExists = await prisma.theme.findUnique({ 
+          where: { 
+            slug,
+            NOT: { id }
+          } 
+        })
+        counter++
+      }
+
+      updateData.name = body.name
+      updateData.slug = slug
+    }
+
+    const theme = await prisma.theme.update({
+      where: { id },
+      data: updateData
+    })
+
+    return NextResponse.json(theme)
+  } catch (error) {
+    console.error('Error updating theme:', error)
+    return NextResponse.json(
+      { error: 'Error al actualizar el theme' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/themes/[id] - Eliminar theme
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = parseInt(params.id)
+    
+    // Verificar que no esté en uso
+    const themeWithMovies = await prisma.theme.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { movies: true }
+        }
+      }
+    })
+    
+    if (!themeWithMovies) {
+      return NextResponse.json(
+        { error: 'Theme no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    if (themeWithMovies._count.movies > 0) {
+      return NextResponse.json(
+        { error: `No se puede eliminar el theme porque está asignado a ${themeWithMovies._count.movies} película(s)` },
+        { status: 400 }
+      )
+    }
+
+    await prisma.theme.delete({
+      where: { id }
+    })
+
+    return NextResponse.json(
+      { message: 'Theme eliminado exitosamente' },
+      { status: 200 }
+    )
+  } catch (error) {
+    console.error('Error deleting theme:', error)
+    return NextResponse.json(
+      { error: 'Error al eliminar el theme' },
+      { status: 500 }
+    )
+  }
 }
 
 // ==================================================
@@ -6422,6 +7123,8 @@ import {
   Trash2
 } from 'lucide-react'
 import { CountrySelector } from './CountrySelector'
+import { ThemeSelector } from './ThemeSelector'
+import { Tag } from 'lucide-react'
 
 interface MovieFormEnhancedProps {
   onGenresChange: (genres: number[]) => void
@@ -6431,6 +7134,7 @@ interface MovieFormEnhancedProps {
   onLanguagesChange: (languages: number[]) => void
   onProductionCompaniesChange: (companies: number[]) => void
   onDistributionCompaniesChange: (companies: number[]) => void
+  onThemesChange: (themes: number[]) => void
   initialData?: {
     genres?: any[]
     cast?: any[]
@@ -6439,6 +7143,7 @@ interface MovieFormEnhancedProps {
     languages?: any[]
     productionCompanies?: any[]
     distributionCompanies?: any[]
+    themes?: any[]
   }
   // Nuevas props para controlar qué mostrar
   showOnlyBasicInfo?: boolean
@@ -6455,6 +7160,7 @@ export default function MovieFormEnhanced({
   onLanguagesChange,
   onProductionCompaniesChange,
   onDistributionCompaniesChange,
+  onThemesChange,
   initialData,
   showOnlyBasicInfo = false,
   showOnlyCast = false,
@@ -6477,6 +7183,8 @@ export default function MovieFormEnhanced({
   const [selectedLanguages, setSelectedLanguages] = useState<number[]>([])
   const [selectedProductionCompanies, setSelectedProductionCompanies] = useState<number[]>([])
   const [selectedDistributionCompanies, setSelectedDistributionCompanies] = useState<number[]>([])
+  const [availableThemes, setAvailableThemes] = useState<any[]>([])
+  const [selectedThemes, setSelectedThemes] = useState<number[]>([])
 
   // Estados para búsqueda
   const [personSearch, setPersonSearch] = useState('')
@@ -6523,6 +7231,9 @@ export default function MovieFormEnhanced({
       if (initialData.distributionCompanies) {
         setSelectedDistributionCompanies(initialData.distributionCompanies.map(c => c.companyId))
       }
+      if (initialData.themes) {
+        setSelectedThemes(initialData.themes.map(t => t.themeId))
+      }
     }
     setIsInitialized(true)
   }, [initialData])
@@ -6568,6 +7279,12 @@ export default function MovieFormEnhanced({
 
   useEffect(() => {
     if (isInitialized) {
+      onThemesChange(selectedThemes)
+    }
+  }, [selectedThemes, onThemesChange, isInitialized])
+
+  useEffect(() => {
+    if (isInitialized) {
       onLanguagesChange(selectedLanguages)
     }
   }, [selectedLanguages, onLanguagesChange, isInitialized])
@@ -6584,28 +7301,32 @@ export default function MovieFormEnhanced({
     }
   }, [selectedDistributionCompanies, onDistributionCompaniesChange, isInitialized])
 
+  
+
   // Cargar datos de la API
   const fetchInitialData = async () => {
     try {
-      const [genresRes, countriesRes, languagesRes, prodCompaniesRes, distCompaniesRes] = await Promise.all([
+      const [genresRes, countriesRes, languagesRes, prodCompaniesRes, distCompaniesRes, themesRes] = await Promise.all([
         fetch('/api/genres'),
         fetch('/api/countries'),
         fetch('/api/languages'),
         fetch('/api/companies/production'),
-        fetch('/api/companies/distribution')
+        fetch('/api/companies/distribution'),
+        fetch('/api/themes')
       ])
 
       // Verificar que todas las respuestas sean OK
-      if (!genresRes.ok || !countriesRes.ok || !languagesRes.ok || !prodCompaniesRes.ok || !distCompaniesRes.ok) {
+      if (!genresRes.ok || !countriesRes.ok || !languagesRes.ok || !prodCompaniesRes.ok || !distCompaniesRes.ok || !themesRes.ok) {
         throw new Error('Error fetching data')
       }
 
-      const [genres, countries, languages, prodCompanies, distCompanies] = await Promise.all([
+      const [genres, countries, languages, prodCompanies, distCompanies, themes] = await Promise.all([
         genresRes.json(),
         countriesRes.json(),
         languagesRes.json(),
         prodCompaniesRes.json(),
-        distCompaniesRes.json()
+        distCompaniesRes.json(),
+        themesRes.json()
       ])
 
       // Asegurar que siempre sean arrays
@@ -6614,6 +7335,7 @@ export default function MovieFormEnhanced({
       setAvailableLanguages(Array.isArray(languages) ? languages : [])
       setAvailableProductionCompanies(Array.isArray(prodCompanies) ? prodCompanies : [])
       setAvailableDistributionCompanies(Array.isArray(distCompanies) ? distCompanies : [])
+      setAvailableThemes(Array.isArray(themes) ? themes : [])
     } catch (error) {
       console.error('Error loading initial data:', error)
       // Asegurar que los estados sean arrays vacíos en caso de error
@@ -6622,6 +7344,7 @@ export default function MovieFormEnhanced({
       setAvailableLanguages([])
       setAvailableProductionCompanies([])
       setAvailableDistributionCompanies([])
+      setAvailableThemes([])
     }
   }
 
@@ -6744,6 +7467,19 @@ export default function MovieFormEnhanced({
             placeholder="Buscar país coproductor..."
           />
         </div>
+        {/* Themes/Keywords */}
+<div>
+  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+    <Tag className="w-5 h-5" />
+    Themes / Keywords
+  </h3>
+  <ThemeSelector
+    availableThemes={availableThemes}
+    selectedThemes={selectedThemes}
+    onChange={setSelectedThemes}
+    placeholder="Buscar theme..."
+  />
+</div>
 
         {/* Idiomas */}
         <div>
@@ -7552,6 +8288,146 @@ export default function MovieFormEnhanced({
               </button>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ==================================================
+// src/components/admin/ThemeSelector.tsx
+// ==================================================
+// src/components/admin/ThemeSelector.tsx
+'use client'
+
+import { useState, useRef, useEffect } from 'react'
+import { X, Search, Tag } from 'lucide-react'
+
+interface Theme {
+  id: number
+  name: string
+  slug: string
+  movieCount?: number
+}
+
+interface ThemeSelectorProps {
+  availableThemes: Theme[]
+  selectedThemes: number[]
+  onChange: (themes: number[]) => void
+  placeholder?: string
+}
+
+export function ThemeSelector({
+  availableThemes,
+  selectedThemes,
+  onChange,
+  placeholder = "Buscar theme..."
+}: ThemeSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const filteredThemes = availableThemes.filter(theme =>
+    theme.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const selectedThemeObjects = availableThemes.filter(theme => 
+    selectedThemes.includes(theme.id)
+  )
+
+  const toggleTheme = (themeId: number) => {
+    if (selectedThemes.includes(themeId)) {
+      onChange(selectedThemes.filter(id => id !== themeId))
+    } else {
+      onChange([...selectedThemes, themeId])
+    }
+  }
+
+  const removeTheme = (themeId: number) => {
+    onChange(selectedThemes.filter(id => id !== themeId))
+  }
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Themes seleccionados */}
+      {selectedThemeObjects.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {selectedThemeObjects.map(theme => (
+            <span
+              key={theme.id}
+              className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+            >
+              <Tag className="w-3 h-3" />
+              {theme.name}
+              <button
+                type="button"
+                onClick={() => removeTheme(theme.id)}
+                className="ml-1 hover:text-blue-900"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      
+      <p className="text-sm text-gray-500 mb-2">
+        {selectedThemes.length} seleccionado{selectedThemes.length !== 1 ? 's' : ''}
+      </p>
+
+      {/* Input de búsqueda */}
+      <div className="relative">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onFocus={() => setIsOpen(true)}
+          placeholder={placeholder}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+        />
+        <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400 pointer-events-none" />
+      </div>
+
+      {/* Dropdown */}
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          {filteredThemes.length === 0 ? (
+            <p className="p-3 text-sm text-gray-500">No se encontraron themes</p>
+          ) : (
+            filteredThemes.map(theme => (
+              <button
+                key={theme.id}
+                type="button"
+                onClick={() => toggleTheme(theme.id)}
+                className={`w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${
+                  selectedThemes.includes(theme.id) ? 'bg-blue-50' : ''
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-gray-400" />
+                  {theme.name}
+                  {theme.movieCount !== undefined && theme.movieCount > 0 && (
+                    <span className="text-xs text-gray-500">({theme.movieCount})</span>
+                  )}
+                </span>
+                {selectedThemes.includes(theme.id) && (
+                  <span className="text-blue-600">✓</span>
+                )}
+              </button>
+            ))
+          )}
         </div>
       )}
     </div>
@@ -8919,7 +9795,8 @@ export const movieSchema = z.object({
   countries: z.array(z.number()).optional(),
   languages: z.array(z.number()).optional(),
   productionCompanies: z.array(z.number()).optional(),
-  distributionCompanies: z.array(z.number()).optional()
+  distributionCompanies: z.array(z.number()).optional(),
+   themes: z.array(z.number()).optional()
 })
 
 // ==================================================

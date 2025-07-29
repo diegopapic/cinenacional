@@ -45,5 +45,6 @@ export const movieSchema = z.object({
   countries: z.array(z.number()).optional(),
   languages: z.array(z.number()).optional(),
   productionCompanies: z.array(z.number()).optional(),
-  distributionCompanies: z.array(z.number()).optional()
+  distributionCompanies: z.array(z.number()).optional(),
+   themes: z.array(z.number()).optional()
 })

@@ -14,6 +14,8 @@ import {
   Trash2
 } from 'lucide-react'
 import { CountrySelector } from './CountrySelector'
+import { ThemeSelector } from './ThemeSelector'
+import { Tag } from 'lucide-react'
 
 interface MovieFormEnhancedProps {
   onGenresChange: (genres: number[]) => void
@@ -23,6 +25,7 @@ interface MovieFormEnhancedProps {
   onLanguagesChange: (languages: number[]) => void
   onProductionCompaniesChange: (companies: number[]) => void
   onDistributionCompaniesChange: (companies: number[]) => void
+  onThemesChange: (themes: number[]) => void
   initialData?: {
     genres?: any[]
     cast?: any[]
@@ -31,6 +34,7 @@ interface MovieFormEnhancedProps {
     languages?: any[]
     productionCompanies?: any[]
     distributionCompanies?: any[]
+    themes?: any[]
   }
   // Nuevas props para controlar qué mostrar
   showOnlyBasicInfo?: boolean
@@ -47,6 +51,7 @@ export default function MovieFormEnhanced({
   onLanguagesChange,
   onProductionCompaniesChange,
   onDistributionCompaniesChange,
+  onThemesChange,
   initialData,
   showOnlyBasicInfo = false,
   showOnlyCast = false,
@@ -69,6 +74,8 @@ export default function MovieFormEnhanced({
   const [selectedLanguages, setSelectedLanguages] = useState<number[]>([])
   const [selectedProductionCompanies, setSelectedProductionCompanies] = useState<number[]>([])
   const [selectedDistributionCompanies, setSelectedDistributionCompanies] = useState<number[]>([])
+  const [availableThemes, setAvailableThemes] = useState<any[]>([])
+  const [selectedThemes, setSelectedThemes] = useState<number[]>([])
 
   // Estados para búsqueda
   const [personSearch, setPersonSearch] = useState('')
@@ -115,6 +122,9 @@ export default function MovieFormEnhanced({
       if (initialData.distributionCompanies) {
         setSelectedDistributionCompanies(initialData.distributionCompanies.map(c => c.companyId))
       }
+      if (initialData.themes) {
+        setSelectedThemes(initialData.themes.map(t => t.themeId))
+      }
     }
     setIsInitialized(true)
   }, [initialData])
@@ -160,6 +170,12 @@ export default function MovieFormEnhanced({
 
   useEffect(() => {
     if (isInitialized) {
+      onThemesChange(selectedThemes)
+    }
+  }, [selectedThemes, onThemesChange, isInitialized])
+
+  useEffect(() => {
+    if (isInitialized) {
       onLanguagesChange(selectedLanguages)
     }
   }, [selectedLanguages, onLanguagesChange, isInitialized])
@@ -176,28 +192,32 @@ export default function MovieFormEnhanced({
     }
   }, [selectedDistributionCompanies, onDistributionCompaniesChange, isInitialized])
 
+  
+
   // Cargar datos de la API
   const fetchInitialData = async () => {
     try {
-      const [genresRes, countriesRes, languagesRes, prodCompaniesRes, distCompaniesRes] = await Promise.all([
+      const [genresRes, countriesRes, languagesRes, prodCompaniesRes, distCompaniesRes, themesRes] = await Promise.all([
         fetch('/api/genres'),
         fetch('/api/countries'),
         fetch('/api/languages'),
         fetch('/api/companies/production'),
-        fetch('/api/companies/distribution')
+        fetch('/api/companies/distribution'),
+        fetch('/api/themes')
       ])
 
       // Verificar que todas las respuestas sean OK
-      if (!genresRes.ok || !countriesRes.ok || !languagesRes.ok || !prodCompaniesRes.ok || !distCompaniesRes.ok) {
+      if (!genresRes.ok || !countriesRes.ok || !languagesRes.ok || !prodCompaniesRes.ok || !distCompaniesRes.ok || !themesRes.ok) {
         throw new Error('Error fetching data')
       }
 
-      const [genres, countries, languages, prodCompanies, distCompanies] = await Promise.all([
+      const [genres, countries, languages, prodCompanies, distCompanies, themes] = await Promise.all([
         genresRes.json(),
         countriesRes.json(),
         languagesRes.json(),
         prodCompaniesRes.json(),
-        distCompaniesRes.json()
+        distCompaniesRes.json(),
+        themesRes.json()
       ])
 
       // Asegurar que siempre sean arrays
@@ -206,6 +226,7 @@ export default function MovieFormEnhanced({
       setAvailableLanguages(Array.isArray(languages) ? languages : [])
       setAvailableProductionCompanies(Array.isArray(prodCompanies) ? prodCompanies : [])
       setAvailableDistributionCompanies(Array.isArray(distCompanies) ? distCompanies : [])
+      setAvailableThemes(Array.isArray(themes) ? themes : [])
     } catch (error) {
       console.error('Error loading initial data:', error)
       // Asegurar que los estados sean arrays vacíos en caso de error
@@ -214,6 +235,7 @@ export default function MovieFormEnhanced({
       setAvailableLanguages([])
       setAvailableProductionCompanies([])
       setAvailableDistributionCompanies([])
+      setAvailableThemes([])
     }
   }
 
@@ -336,6 +358,19 @@ export default function MovieFormEnhanced({
             placeholder="Buscar país coproductor..."
           />
         </div>
+        {/* Themes/Keywords */}
+<div>
+  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+    <Tag className="w-5 h-5" />
+    Themes / Keywords
+  </h3>
+  <ThemeSelector
+    availableThemes={availableThemes}
+    selectedThemes={selectedThemes}
+    onChange={setSelectedThemes}
+    placeholder="Buscar theme..."
+  />
+</div>
 
         {/* Idiomas */}
         <div>

@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-07-29T01:26:05.385Z",
+  "timestamp": "2025-07-29T03:33:20.814Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "bc9a72146be6bdf3bb9ae5f62a2ae008e2902194",
+  "commit": "ffce0b8ba560cd902688c63c1fb7017a0a4a2eee",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".gitignore": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
@@ -66,6 +66,9 @@
           "layout.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/layout.tsx",
           "movies": {
             "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/movies/page.tsx"
+          },
+          "themes": {
+            "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/themes/page.tsx"
           }
         },
         "api": {
@@ -108,6 +111,12 @@
           },
           "project-structure": {
             "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/project-structure/route.ts"
+          },
+          "themes": {
+            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/themes/route.ts",
+            "[id]": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/themes/[id]/route.ts"
+            }
           }
         },
         "favicon.ico": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/favicon.ico",
@@ -141,7 +150,8 @@
           "CloudinaryGallery.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/CloudinaryGallery.tsx",
           "CloudinaryUploadWidget.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/CloudinaryUploadWidget.tsx",
           "CountrySelector.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/CountrySelector.tsx",
-          "MovieFormEnhanced.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MovieFormEnhanced.tsx"
+          "MovieFormEnhanced.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MovieFormEnhanced.tsx",
+          "ThemeSelector.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/ThemeSelector.tsx"
         },
         "layout": {
           "Footer.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Footer.tsx",
