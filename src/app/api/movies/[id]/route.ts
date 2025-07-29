@@ -148,7 +148,6 @@ export async function PUT(
       where: { id },
       data: {
         ...movieData,
-        ratingId: movieData.ratingId || null,
         releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
         // Actualizar relaciones (primero eliminar, luego crear)
         genres: genres ? {
