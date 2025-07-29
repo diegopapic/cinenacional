@@ -428,7 +428,8 @@ export default function AdminMoviesPage() {
       countries: [],
       languages: [],
       productionCompanies: [],
-      distributionCompanies: []
+      distributionCompanies: [],
+      themes: []
     })
     // RESETEAR ESTADO DEL TIPO DE DURACIÓN
     setTipoDuracionDisabled(false)
