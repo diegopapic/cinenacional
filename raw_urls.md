@@ -1,11 +1,11 @@
 # URLs del Proyecto
 
-- [compile-project-code.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/compile-project-code.js)
-- [generate-structure.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/generate-structure.js)
 - [next-env.d.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/next-env.d.ts)
 - [next.config.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config.js)
 - [postcss.config.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.js)
+- [scripts/compile-project-code.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/compile-project-code.js)
 - [scripts/export-db-structure.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/export-db-structure.js)
+- [scripts/generate-structure.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/generate-structure.js)
 - [src/app/admin/calificaciones/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/calificaciones/page.tsx)
 - [src/app/admin/countries/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/countries/page.tsx)
 - [src/app/admin/genres/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/genres/page.tsx)
