@@ -40,7 +40,7 @@ const movieFormSchema = z.object({
   releaseDate: z.string().optional(),
   duration: z.number().optional(),
   durationSeconds: z.number().min(0).max(59).optional(),
-  tipoDuracion: z.string().optional(), // NUEVO CAMPO
+  tipoDuracion: z.string().optional(),
   synopsis: z.string().optional(),
   tagline: z.string().optional(),
   rating: z.number().min(0).max(10).optional(),
@@ -57,11 +57,43 @@ const movieFormSchema = z.object({
   certificateNumber: z.string().optional(),
   ratingId: z.number().optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+  dataCompleteness: z.enum([
+    'BASIC_PRESS_KIT',
+    'FULL_PRESS_KIT',
+    'MAIN_CAST',
+    'MAIN_CREW',
+    'FULL_CAST',
+    'FULL_CREW'
+  ]).optional().default('BASIC_PRESS_KIT'),
   metaDescription: z.string().optional(),
   metaKeywords: z.string().optional()
 })
 
 type MovieFormData = z.infer<typeof movieFormSchema>
+
+const getCompletenessLabel = (completeness: string) => {
+  const labels: Record<string, string> = {
+    BASIC_PRESS_KIT: 'Gacetilla básica',
+    FULL_PRESS_KIT: 'Gacetilla completa',
+    MAIN_CAST: 'Intérpretes principales',
+    MAIN_CREW: 'Técnicos principales',
+    FULL_CAST: 'Todos los intérpretes',
+    FULL_CREW: 'Todos los técnicos'
+  }
+  return labels[completeness] || completeness
+}
+
+const getCompletenessColor = (completeness: string) => {
+  const colors: Record<string, string> = {
+    BASIC_PRESS_KIT: 'bg-red-100 text-red-800',
+    FULL_PRESS_KIT: 'bg-orange-100 text-orange-800',
+    MAIN_CAST: 'bg-yellow-100 text-yellow-800',
+    MAIN_CREW: 'bg-green-100 text-green-800',
+    FULL_CAST: 'bg-green-100 text-green-800',
+    FULL_CREW: 'bg-blue-100 text-blue-800'
+  }
+  return colors[completeness] || 'bg-gray-100 text-gray-800'
+}
 
 interface Movie {
   id: number
@@ -74,6 +106,7 @@ interface Movie {
   rating?: number
   posterUrl?: string
   status: string
+  dataCompleteness?: string
   genres: Array<{ id: number; name: string }>
   directors: Array<{ id: number; name: string }>
   mainCast: Array<{
@@ -367,8 +400,8 @@ export default function AdminMoviesPage() {
       }
 
       if (fullMovie.ratingId) {
-  setValue('ratingId', fullMovie.ratingId)
-}
+        setValue('ratingId', fullMovie.ratingId)
+      }
 
       // Datos para MovieFormEnhanced (mantiene el formato completo para mostrar)
       setMovieFormInitialData({
@@ -403,6 +436,8 @@ export default function AdminMoviesPage() {
         distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
         themes: fullMovie.themes?.map((t: any) => t.themeId) || []
       })
+
+      setValue('dataCompleteness', fullMovie.dataCompleteness || 'BASIC_PRESS_KIT')
 
       setShowModal(true)
 
@@ -549,6 +584,9 @@ export default function AdminMoviesPage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Estado
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Completitud
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Rating
@@ -959,7 +997,25 @@ export default function AdminMoviesPage() {
                           </select>
                         </div>
                       </div>
-
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Nivel de información cargada *
+                        </label>
+                        <select
+                          {...register('dataCompleteness')}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        >
+                          <option value="BASIC_PRESS_KIT">📄 Gacetilla básica</option>
+                          <option value="FULL_PRESS_KIT">📋 Gacetilla completa</option>
+                          <option value="MAIN_CAST">👥 Intérpretes principales</option>
+                          <option value="MAIN_CREW">🔧 Técnicos principales</option>
+                          <option value="FULL_CAST">🎭 Todos los intérpretes</option>
+                          <option value="FULL_CREW">🎬 Todos los técnicos</option>
+                        </select>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Indica hasta qué nivel de detalle has cargado la información de esta película
+                        </p>
+                      </div>
                       <div className="space-y-4">
                         <h3 className="text-lg font-medium text-gray-900 mb-4">
                           Información Adicional
