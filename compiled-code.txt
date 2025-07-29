@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 623d7ec77fd60e0b46f5750b8f37a30acc30c411
-// Fecha: 2025-07-29T21:06:42.031Z
+// Commit: a586c2c7d2b971ee13cc1d58ec94e8d533c714fe
+// Fecha: 2025-07-29T21:27:47.749Z
 // ============================================
 
 
@@ -4451,10 +4451,10 @@ export async function PUT(
   try {
     const id = parseInt(params.id)
     const body = await request.json()
-    
+
     // Validar datos
     const validatedData = movieSchema.parse(body)
-    
+
     // Verificar que la película existe
     const existingMovie = await prisma.movie.findUnique({
       where: { id }
@@ -4479,7 +4479,7 @@ export async function PUT(
       themes,
       ...movieData
     } = validatedData
-    
+
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
       // 1. Actualizar datos básicos de la película
@@ -4647,6 +4647,9 @@ export async function PUT(
           }
         }
       })
+    }, {
+      maxWait: 10000, // Esperar máximo 10 segundos para iniciar
+      timeout: 30000, // Timeout de 30 segundos para la transacción
     })
 
     return NextResponse.json(movie)

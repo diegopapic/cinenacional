@@ -112,10 +112,10 @@ export async function PUT(
   try {
     const id = parseInt(params.id)
     const body = await request.json()
-    
+
     // Validar datos
     const validatedData = movieSchema.parse(body)
-    
+
     // Verificar que la película existe
     const existingMovie = await prisma.movie.findUnique({
       where: { id }
@@ -140,7 +140,7 @@ export async function PUT(
       themes,
       ...movieData
     } = validatedData
-    
+
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
       // 1. Actualizar datos básicos de la película
@@ -308,6 +308,9 @@ export async function PUT(
           }
         }
       })
+    }, {
+      maxWait: 10000, // Esperar máximo 10 segundos para iniciar
+      timeout: 30000, // Timeout de 30 segundos para la transacción
     })
 
     return NextResponse.json(movie)
