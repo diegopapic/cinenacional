@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-07-29T03:49:19.636Z
+# Generado automáticamente el: 2025-07-29T07:09:29.244Z
 # ================================================
 
 ## Schema Prisma
@@ -42,7 +42,8 @@ model Movie {
   soundType        String?  @map("sound_type") @db.VarChar(50)
   
   // Información legal
-  classification    String? @db.VarChar(100)
+  ratingId          Int?     @map("rating_id")
+  rating            Rating?  @relation(fields: [ratingId], references: [id])
   
   // Status y timestamps
   status           MovieStatus @default(PUBLISHED)
@@ -76,6 +77,7 @@ model Movie {
   @@index([year])
   @@index([status])
   @@index([tipoDuracion])
+  @@index([ratingId])
 }
 
 model Person {
@@ -342,6 +344,24 @@ model Theme {
   @@map("themes")
   @@index([slug])
   @@index([name])
+}
+
+model Rating {
+  id              Int      @id @default(autoincrement())
+  slug            String   @unique @db.VarChar(100)
+  name            String   @unique @db.VarChar(255)
+  abbreviation    String?  @db.VarChar(10)
+  description     String?  @db.Text
+  order           Int      @default(0)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  // Relaciones
+  movies          Movie[]
+  
+  @@map("ratings")
+  @@index([slug])
+  @@index([order])
 }
 
 model MovieTheme {

@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-07-29T03:49:19.183Z",
+  "timestamp": "2025-07-29T07:09:28.711Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "ec2ff195aec5cc7c298b53089552752c393c1cd5",
+  "commit": "8134fc9aad09a55a13b0f49aceccb44a192e0f1c",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".gitignore": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
@@ -57,6 +57,9 @@
     "src": {
       "app": {
         "admin": {
+          "calificaciones": {
+            "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/calificaciones/page.tsx"
+          },
           "countries": {
             "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/countries/page.tsx"
           },
@@ -72,6 +75,12 @@
           }
         },
         "api": {
+          "calificaciones": {
+            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/calificaciones/route.ts",
+            "[id]": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/calificaciones/[id]/route.ts"
+            }
+          },
           "companies": {
             "distribution": {
               "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/companies/distribution/route.ts"
