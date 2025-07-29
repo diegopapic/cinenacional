@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-07-29T20:37:15.566Z
+// Archivos del admin - 2025-07-29T20:42:28.896Z
 // ==================
 
 
@@ -3506,7 +3506,6 @@ export async function PUT(
       where: { id },
       data: {
         ...movieData,
-        ratingId: movieData.ratingId || null,
         releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
         // Actualizar relaciones (primero eliminar, luego crear)
         genres: genres ? {

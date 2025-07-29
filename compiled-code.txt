@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: edaa69a6d96a26ed62bcfcc43b9d3f8d0fa73339
-// Fecha: 2025-07-29T20:37:15.559Z
+// Commit: f29363313b33dbcab758d06c3c722d7b0ceb8318
+// Fecha: 2025-07-29T20:42:28.888Z
 // ============================================
 
 
@@ -4487,7 +4487,6 @@ export async function PUT(
       where: { id },
       data: {
         ...movieData,
-        ratingId: movieData.ratingId || null,
         releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
         // Actualizar relaciones (primero eliminar, luego crear)
         genres: genres ? {
