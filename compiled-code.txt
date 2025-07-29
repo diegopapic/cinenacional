@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: f34a1f9f80d38fdf9dbb0914a87a59f7eb174ca0
-// Fecha: 2025-07-29T22:52:18.128Z
+// Commit: e41a96ea27810ead86a35f997bf01c11c97341a2
+// Fecha: 2025-07-29T22:57:02.095Z
 // ============================================
 
 
@@ -1494,7 +1494,7 @@ const movieFormSchema = z.object({
     'MAIN_CREW',
     'FULL_CAST',
     'FULL_CREW'
-  ]).default('BASIC_PRESS_KIT'),
+  ]).optional(),
   metaDescription: z.string().optional(),
   metaKeywords: z.string().optional()
 })
@@ -1748,6 +1748,7 @@ export default function AdminMoviesPage() {
 
       const movieData = {
         ...data,
+        dataCompleteness: data.dataCompleteness || 'BASIC_PRESS_KIT',
         metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()) : [],
         ...movieRelations
       }
@@ -1818,7 +1819,7 @@ export default function AdminMoviesPage() {
           setValue(key as any, fullMovie[key])
         }
       })
-setValue('dataCompleteness', fullMovie.dataCompleteness || 'BASIC_PRESS_KIT')
+      setValue('dataCompleteness', fullMovie.dataCompleteness || 'BASIC_PRESS_KIT')
       // INICIALIZAR TIPO DE DURACIÓN AL EDITAR
       if (fullMovie.duration && fullMovie.duration > 0) {
         const tipoCalculado = calcularTipoDuracion(fullMovie.duration)

@@ -64,7 +64,7 @@ const movieFormSchema = z.object({
     'MAIN_CREW',
     'FULL_CAST',
     'FULL_CREW'
-  ]).default('BASIC_PRESS_KIT'),
+  ]).optional(),
   metaDescription: z.string().optional(),
   metaKeywords: z.string().optional()
 })
@@ -318,6 +318,7 @@ export default function AdminMoviesPage() {
 
       const movieData = {
         ...data,
+        dataCompleteness: data.dataCompleteness || 'BASIC_PRESS_KIT',
         metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()) : [],
         ...movieRelations
       }
@@ -388,7 +389,7 @@ export default function AdminMoviesPage() {
           setValue(key as any, fullMovie[key])
         }
       })
-setValue('dataCompleteness', fullMovie.dataCompleteness || 'BASIC_PRESS_KIT')
+      setValue('dataCompleteness', fullMovie.dataCompleteness || 'BASIC_PRESS_KIT')
       // INICIALIZAR TIPO DE DURACIÓN AL EDITAR
       if (fullMovie.duration && fullMovie.duration > 0) {
         const tipoCalculado = calcularTipoDuracion(fullMovie.duration)
