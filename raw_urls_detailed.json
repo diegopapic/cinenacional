@@ -180,6 +180,11 @@
     "size": 0
   },
   {
+    "path": "src/app/admin/countries/page.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/countries/page.tsx",
+    "size": 0
+  },
+  {
     "path": "src/app/admin/genres/page.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/genres/page.tsx",
     "size": 0
@@ -207,6 +212,11 @@
   {
     "path": "src/app/api/countries/route.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/countries/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/countries/[id]/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/countries/[id]/route.ts",
     "size": 0
   },
   {
