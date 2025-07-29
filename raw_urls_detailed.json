@@ -5,13 +5,13 @@
     "size": 0
   },
   {
-    "path": ".gitignore",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
+    "path": ".github/workflows/update-project-docs.yml",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/update-project-docs.yml",
     "size": 0
   },
   {
-    "path": "compile-project-code.js",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/compile-project-code.js",
+    "path": ".gitignore",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitignore",
     "size": 0
   },
   {
@@ -27,11 +27,6 @@
   {
     "path": "eslint.config.mjs",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/eslint.config.mjs",
-    "size": 0
-  },
-  {
-    "path": "generate-structure.js",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/generate-structure.js",
     "size": 0
   },
   {
@@ -87,6 +82,11 @@
   {
     "path": "prisma/migrations/[fecha]_add_duration_seconds/migration.sql",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/[fecha]_add_duration_seconds/migration.sql",
+    "size": 0
+  },
+  {
+    "path": "prisma/schema.introspected.prisma",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/schema.introspected.prisma",
     "size": 0
   },
   {
@@ -175,8 +175,18 @@
     "size": 0
   },
   {
+    "path": "scripts/compile-project-code.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/compile-project-code.js",
+    "size": 0
+  },
+  {
     "path": "scripts/export-db-structure.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/export-db-structure.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/generate-structure.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/generate-structure.js",
     "size": 0
   },
   {
