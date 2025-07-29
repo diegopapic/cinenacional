@@ -149,6 +149,7 @@ export async function PUT(
         data: {
           ...movieData,
           releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
+          ratingId: movieData.ratingId === null ? undefined : movieData.ratingId,
         }
       })
 
