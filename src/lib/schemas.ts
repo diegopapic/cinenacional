@@ -13,7 +13,7 @@ export const movieSchema = z.object({
   synopsis: z.string().optional(),
   tagline: z.string().optional(),
   rating: z.number().min(0).max(10).optional(),
-  ratingId: z.number().optional(),
+  ratingId: z.number().optional().nullable(),
   posterUrl: z.string().url().optional().or(z.literal('')),
   backdropUrl: z.string().url().optional().or(z.literal('')),
   trailerUrl: z.string().url().optional().or(z.literal('')),

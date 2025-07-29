@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: da59faeb9f97bd546683786f91f1847e749f0ed6
-// Fecha: 2025-07-29T20:46:59.512Z
+// Commit: 24e3b21e9bbb6329603845eb6ca029681fb232cc
+// Fecha: 2025-07-29T20:52:04.344Z
 // ============================================
 
 
@@ -10542,7 +10542,7 @@ export const movieSchema = z.object({
   synopsis: z.string().optional(),
   tagline: z.string().optional(),
   rating: z.number().min(0).max(10).optional(),
-  ratingId: z.number().optional(),
+  ratingId: z.number().optional().nullable(),
   posterUrl: z.string().url().optional().or(z.literal('')),
   backdropUrl: z.string().url().optional().or(z.literal('')),
   trailerUrl: z.string().url().optional().or(z.literal('')),
