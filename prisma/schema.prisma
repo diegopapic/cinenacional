@@ -42,6 +42,7 @@ model Movie {
   status           MovieStatus @default(PUBLISHED)
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
+  dataCompleteness DataCompleteness @default(BASIC_PRESS_KIT) @map("data_completeness")
   
   // SEO
   metaDescription  String?  @map("meta_description") @db.Text
@@ -156,6 +157,17 @@ model DistributionCompany {
   movies      MovieDistributionCompany[]
   
   @@map("distribution_companies")
+}
+
+enum DataCompleteness {
+  BASIC_PRESS_KIT     // Gacetilla básica
+  FULL_PRESS_KIT      // Gacetilla completa
+  MAIN_CAST           // Intérpretes principales
+  MAIN_CREW           // Técnicos principales  
+  FULL_CAST           // Todos los intérpretes
+  FULL_CREW           // Todos los técnicos
+  
+  @@map("data_completeness")
 }
 
 // =====================================================

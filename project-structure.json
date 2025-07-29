@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-07-29T21:59:24.722Z",
+  "timestamp": "2025-07-29T22:46:14.189Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "1219469768a27ffc52c6ff32eae26606b992aeb0",
+  "commit": "aa2aee3a3dac50c560f8edfb28b3dc321cc82438",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
@@ -26,6 +26,9 @@
     "postcss.config.mjs": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.mjs",
     "prisma": {
       "migrations": {
+        "20240729_add_data_completeness": {
+          "migration.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20240729_add_data_completeness/migration.sql"
+        },
         "[fecha]_add_duration_seconds": {
           "migration.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/[fecha]_add_duration_seconds/migration.sql"
         }
