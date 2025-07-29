@@ -21,7 +21,6 @@ export const movieSchema = z.object({
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
   metaDescription: z.string().optional(),
   metaKeywords: z.array(z.string()).optional(),
-  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
   dataCompleteness: z.enum([
     'BASIC_PRESS_KIT',
     'FULL_PRESS_KIT', 
