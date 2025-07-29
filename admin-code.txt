@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-07-29T20:46:59.519Z
+// Archivos del admin - 2025-07-29T20:52:04.351Z
 // ==================
 
 
@@ -5752,7 +5752,7 @@ export const movieSchema = z.object({
   synopsis: z.string().optional(),
   tagline: z.string().optional(),
   rating: z.number().min(0).max(10).optional(),
-  ratingId: z.number().optional(),
+  ratingId: z.number().optional().nullable(),
   posterUrl: z.string().url().optional().or(z.literal('')),
   backdropUrl: z.string().url().optional().or(z.literal('')),
   trailerUrl: z.string().url().optional().or(z.literal('')),
