@@ -116,6 +116,7 @@ export default function AdminMoviesPage() {
     languages: number[];
     productionCompanies: number[];
     distributionCompanies: number[];
+    themes: number[];
   }>({
     genres: [],
     cast: [],
@@ -123,7 +124,8 @@ export default function AdminMoviesPage() {
     countries: [],
     languages: [],
     productionCompanies: [],
-    distributionCompanies: []
+    distributionCompanies: [],
+    themes: []
   })
 
   // Form
@@ -139,19 +141,19 @@ export default function AdminMoviesPage() {
   })
 
   // FUNCIONES PARA TIPO DE DURACIÓN
- const calcularTipoDuracion = (minutos: number | null | undefined, segundos: number | null | undefined = 0): string => {
-  // Convertir todo a minutos totales
-  const minutosReales = (minutos || 0)
-  const segundosReales = (segundos || 0)
-  const duracionTotalMinutos = minutosReales + (segundosReales / 60)
-  
-  // Si no hay duración total, retornar vacío
-  if (duracionTotalMinutos === 0) return ''
-  
-  if (duracionTotalMinutos >= 60) return 'largometraje'
-  if (duracionTotalMinutos >= 30) return 'mediometraje'
-  return 'cortometraje'
-}
+  const calcularTipoDuracion = (minutos: number | null | undefined, segundos: number | null | undefined = 0): string => {
+    // Convertir todo a minutos totales
+    const minutosReales = (minutos || 0)
+    const segundosReales = (segundos || 0)
+    const duracionTotalMinutos = minutosReales + (segundosReales / 60)
+
+    // Si no hay duración total, retornar vacío
+    if (duracionTotalMinutos === 0) return ''
+
+    if (duracionTotalMinutos >= 60) return 'largometraje'
+    if (duracionTotalMinutos >= 30) return 'mediometraje'
+    return 'cortometraje'
+  }
 
   const obtenerEtiquetaTipoDuracion = (tipo: string): string => {
     const tipoObj = tiposDuracion.find(t => t.value === tipo)
@@ -160,34 +162,34 @@ export default function AdminMoviesPage() {
 
   // EFECTO PARA OBSERVAR CAMBIOS EN DURACIÓN
   useEffect(() => {
-  const subscription = watch((value, { name, type }) => {
-    // Ejecutar cuando cambien los campos 'duration' O 'durationSeconds'
-    if ((name === 'duration' || name === 'durationSeconds') && type === 'change') {
-      const minutos = value.duration
-      const segundos = value.durationSeconds
-      
-      // Verificar si hay alguna duración (minutos o segundos)
-      const hayDuracion = (minutos && minutos > 0) || (segundos && segundos > 0)
-      
-      if (hayDuracion) {
-        // Calcular automáticamente el tipo considerando ambos campos
-        const tipoCalculado = calcularTipoDuracion(minutos, segundos)
-        const tipoActual = value.tipoDuracion
-        
-        // Solo actualizar si el tipo calculado es diferente al actual
-        if (tipoCalculado !== tipoActual) {
-          setValue('tipoDuracion', tipoCalculado, { shouldValidate: false })
+    const subscription = watch((value, { name, type }) => {
+      // Ejecutar cuando cambien los campos 'duration' O 'durationSeconds'
+      if ((name === 'duration' || name === 'durationSeconds') && type === 'change') {
+        const minutos = value.duration
+        const segundos = value.durationSeconds
+
+        // Verificar si hay alguna duración (minutos o segundos)
+        const hayDuracion = (minutos && minutos > 0) || (segundos && segundos > 0)
+
+        if (hayDuracion) {
+          // Calcular automáticamente el tipo considerando ambos campos
+          const tipoCalculado = calcularTipoDuracion(minutos, segundos)
+          const tipoActual = value.tipoDuracion
+
+          // Solo actualizar si el tipo calculado es diferente al actual
+          if (tipoCalculado !== tipoActual) {
+            setValue('tipoDuracion', tipoCalculado, { shouldValidate: false })
+          }
+          setTipoDuracionDisabled(true)
+        } else {
+          // Si no hay duración en ningún campo, habilitar el campo manual
+          setTipoDuracionDisabled(false)
         }
-        setTipoDuracionDisabled(true)
-      } else {
-        // Si no hay duración en ningún campo, habilitar el campo manual
-        setTipoDuracionDisabled(false)
       }
-    }
-  })
-  
-  return () => subscription.unsubscribe()
-}, [watch, setValue])
+    })
+
+    return () => subscription.unsubscribe()
+  }, [watch, setValue])
 
   // Callbacks para MovieFormEnhanced
   const handleGenresChange = useCallback((genres: number[]) => {
@@ -213,6 +215,10 @@ export default function AdminMoviesPage() {
   const handleProductionCompaniesChange = useCallback((companies: number[]) => {
     setMovieRelations(prev => ({ ...prev, productionCompanies: companies }))
   }, [])
+
+  const handleThemesChange = useCallback((themes: number[]) => {
+  setMovieRelations(prev => ({ ...prev, themes }))
+}, [])
 
   const handleDistributionCompaniesChange = useCallback((companies: number[]) => {
     setMovieRelations(prev => ({ ...prev, distributionCompanies: companies }))
@@ -260,13 +266,13 @@ export default function AdminMoviesPage() {
   // Crear o actualizar película
   const onSubmit = async (data: MovieFormData) => {
     try {
-      console.log('Datos del formulario:', data) // AGREGAR ESTA LÍNEA
-      console.log('Duration seconds:', data.durationSeconds) // Y ESTA
+      
       const movieData = {
         ...data,
         metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()) : [],
         ...movieRelations
       }
+          
       const url = editingMovie
         ? `/api/movies/${editingMovie.id}`
         : '/api/movies'
@@ -303,21 +309,22 @@ export default function AdminMoviesPage() {
 
   // Editar película
   const handleEdit = async (movie: Movie) => {
+    
     try {
       const response = await fetch(`/api/movies/${movie.id}`)
       const fullMovie = await response.json()
       const minutos = fullMovie.duration
-const segundos = fullMovie.durationSeconds
-const hayDuracion = (minutos && minutos > 0) || (segundos && segundos > 0)
+      const segundos = fullMovie.durationSeconds
+      const hayDuracion = (minutos && minutos > 0) || (segundos && segundos > 0)
 
-if (hayDuracion) {
-  const tipoCalculado = calcularTipoDuracion(minutos, segundos)
-  setValue('tipoDuracion', tipoCalculado)
-  setTipoDuracionDisabled(true)
-} else {
-  setValue('tipoDuracion', fullMovie.tipoDuracion || '')
-  setTipoDuracionDisabled(false)
-}
+      if (hayDuracion) {
+        const tipoCalculado = calcularTipoDuracion(minutos, segundos)
+        setValue('tipoDuracion', tipoCalculado)
+        setTipoDuracionDisabled(true)
+      } else {
+        setValue('tipoDuracion', fullMovie.tipoDuracion || '')
+        setTipoDuracionDisabled(false)
+      }
       setEditingMovie(movie)
 
       // Llenar el formulario
@@ -351,7 +358,8 @@ if (hayDuracion) {
         countries: fullMovie.countries || [],
         languages: fullMovie.languages || [],
         productionCompanies: fullMovie.productionCompanies || [],
-        distributionCompanies: fullMovie.distributionCompanies || []
+        distributionCompanies: fullMovie.distributionCompanies || [],
+        themes: fullMovie.themes || []
       })
 
       // IMPORTANTE: Limpiar los datos para movieRelations
@@ -372,7 +380,8 @@ if (hayDuracion) {
         countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
         languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
         productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
-        distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || []
+        distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
+        themes: fullMovie.themes?.map((t: any) => t.themeId) || []
       })
 
       setShowModal(true)
@@ -603,6 +612,7 @@ if (hayDuracion) {
                             className="text-blue-600 hover:text-blue-900 transition-colors"
                             title="Editar"
                           >
+                            
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
@@ -856,11 +866,10 @@ if (hayDuracion) {
                           <select
                             {...register('tipoDuracion')}
                             disabled={tipoDuracionDisabled}
-                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-colors ${
-                              tipoDuracionDisabled 
-                                ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-colors ${tipoDuracionDisabled
+                                ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                                 : 'hover:border-gray-400'
-                            }`}
+                              }`}
                           >
                             <option value="">Seleccionar tipo de duración...</option>
                             {tiposDuracion.map((tipo) => (
@@ -876,22 +885,22 @@ if (hayDuracion) {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                                 </svg>
                                 <span>
-  <strong>{obtenerEtiquetaTipoDuracion(watch('tipoDuracion') || '')}</strong> 
-  {(() => {
-    const minutos = watch('duration') || 0
-    const segundos = watch('durationSeconds') || 0
-    if (minutos > 0 || segundos > 0) {
-      if (minutos > 0 && segundos > 0) {
-        return ` (${minutos}min ${segundos}s)`
-      } else if (minutos > 0) {
-        return ` (${minutos}min)`
-      } else {
-        return ` (${segundos}s)`
-      }
-    }
-    return ''
-  })()}
-</span>
+                                  <strong>{obtenerEtiquetaTipoDuracion(watch('tipoDuracion') || '')}</strong>
+                                  {(() => {
+                                    const minutos = watch('duration') || 0
+                                    const segundos = watch('durationSeconds') || 0
+                                    if (minutos > 0 || segundos > 0) {
+                                      if (minutos > 0 && segundos > 0) {
+                                        return ` (${minutos}min ${segundos}s)`
+                                      } else if (minutos > 0) {
+                                        return ` (${minutos}min)`
+                                      } else {
+                                        return ` (${segundos}s)`
+                                      }
+                                    }
+                                    return ''
+                                  })()}
+                                </span>
                               </div>
                             ) : (
                               <div>
@@ -981,6 +990,7 @@ if (hayDuracion) {
                       onLanguagesChange={handleLanguagesChange}
                       onProductionCompaniesChange={handleProductionCompaniesChange}
                       onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                      onThemesChange={handleThemesChange}
                       initialData={movieFormInitialData}
                       showOnlyBasicInfo={true}
                     />

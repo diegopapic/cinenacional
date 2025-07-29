@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-07-29T01:26:05.848Z
+# Generado automáticamente el: 2025-07-29T03:33:21.282Z
 # ================================================
 
 ## Schema Prisma
@@ -333,12 +333,15 @@ model Theme {
   slug        String   @unique @db.VarChar(100)
   name        String   @db.VarChar(100)
   description String?  @db.Text
+  usageCount  Int      @default(0) @map("usage_count") // NUEVO: contador de uso
   createdAt   DateTime @default(now()) @map("created_at")
   
   // Relaciones
   movies      MovieTheme[]
   
   @@map("themes")
+  @@index([slug])
+  @@index([name])
 }
 
 model MovieTheme {

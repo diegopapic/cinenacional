@@ -14,10 +14,10 @@ export async function GET(
 ) {
   try {
     const idOrSlug = params.id
-    
+
     // Determinar si es ID o slug
     const isId = /^\d+$/.test(idOrSlug)
-    
+
     const movie = await prisma.movie.findUnique({
       where: isId ? { id: parseInt(idOrSlug) } : { slug: idOrSlug },
       include: {
@@ -121,7 +121,7 @@ export async function PUT(
     const existingMovie = await prisma.movie.findUnique({
       where: { id }
     })
-    
+
     if (!existingMovie) {
       return NextResponse.json(
         { error: 'Película no encontrada' },
@@ -138,9 +138,11 @@ export async function PUT(
       languages,
       productionCompanies,
       distributionCompanies,
+      themes,
       ...movieData
     } = validatedData
-
+    
+    
     // Actualizar película y relaciones
     const movie = await prisma.movie.update({
       where: { id },
@@ -190,6 +192,12 @@ export async function PUT(
             companyId,
             territory: 'Argentina'
           }))
+        } : undefined,
+        themes: themes ? {
+          deleteMany: {},
+          create: themes.map(themeId => ({
+            themeId
+          }))
         } : undefined
       },
       include: {
@@ -207,6 +215,11 @@ export async function PUT(
           include: {
             person: true
           }
+        },
+        themes: {
+          include: {
+            theme: true
+          }
         }
       }
     })
@@ -219,7 +232,7 @@ export async function PUT(
         { status: 400 }
       )
     }
-    
+
     console.error('Error updating movie:', error)
     return NextResponse.json(
       { error: 'Error al actualizar la película' },
@@ -235,12 +248,12 @@ export async function DELETE(
 ) {
   try {
     const id = parseInt(params.id)
-    
+
     // Verificar que la película existe
     const movie = await prisma.movie.findUnique({
       where: { id }
     })
-    
+
     if (!movie) {
       return NextResponse.json(
         { error: 'Película no encontrada' },
