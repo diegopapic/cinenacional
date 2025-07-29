@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 01306c04a7c81cf10ae2fc7069721cacd0caacb1
-// Fecha: 2025-07-29T03:39:26.629Z
+// Commit: d182275befc13450058335a2f45a13ef8f5b4e2b
+// Fecha: 2025-07-29T03:44:07.759Z
 // ============================================
 
 
@@ -2025,6 +2025,7 @@ export default function AdminMoviesPage() {
                       onLanguagesChange={handleLanguagesChange}
                       onProductionCompaniesChange={handleProductionCompaniesChange}
                       onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                      onThemesChange={handleThemesChange}
                       initialData={movieFormInitialData}
                       showOnlyCast={true}
                     />
@@ -2041,6 +2042,7 @@ export default function AdminMoviesPage() {
                       onLanguagesChange={handleLanguagesChange}
                       onProductionCompaniesChange={handleProductionCompaniesChange}
                       onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                      onThemesChange={handleThemesChange}
                       initialData={movieFormInitialData}
                       showOnlyCrew={true}
                     />
@@ -2138,6 +2140,7 @@ export default function AdminMoviesPage() {
                       onLanguagesChange={handleLanguagesChange}
                       onProductionCompaniesChange={handleProductionCompaniesChange}
                       onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                      onThemesChange={handleThemesChange}
                       initialData={movieFormInitialData}
                       showOnlyCompanies={true}
                     />

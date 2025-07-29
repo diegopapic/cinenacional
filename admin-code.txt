@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-07-29T03:39:26.635Z
+// Archivos del admin - 2025-07-29T03:44:07.766Z
 // ==================
 
 
@@ -2013,6 +2013,7 @@ export default function AdminMoviesPage() {
                       onLanguagesChange={handleLanguagesChange}
                       onProductionCompaniesChange={handleProductionCompaniesChange}
                       onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                      onThemesChange={handleThemesChange}
                       initialData={movieFormInitialData}
                       showOnlyCast={true}
                     />
@@ -2029,6 +2030,7 @@ export default function AdminMoviesPage() {
                       onLanguagesChange={handleLanguagesChange}
                       onProductionCompaniesChange={handleProductionCompaniesChange}
                       onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                      onThemesChange={handleThemesChange}
                       initialData={movieFormInitialData}
                       showOnlyCrew={true}
                     />
@@ -2126,6 +2128,7 @@ export default function AdminMoviesPage() {
                       onLanguagesChange={handleLanguagesChange}
                       onProductionCompaniesChange={handleProductionCompaniesChange}
                       onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                      onThemesChange={handleThemesChange}
                       initialData={movieFormInitialData}
                       showOnlyCompanies={true}
                     />
