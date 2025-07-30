@@ -212,7 +212,6 @@ export async function POST(request: NextRequest) {
           }))
         } : undefined,
         alternativeTitles: alternativeTitles ? {
-          deleteMany: {},
           create: alternativeTitles
         } : undefined,
         cast: cast ? {
