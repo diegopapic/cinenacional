@@ -28,6 +28,7 @@ import {
 import { toast } from 'react-hot-toast'
 import { formatDate, formatDuration } from '@/lib/utils'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
+import AlternativeTitlesManager from '@/components/admin/AlternativeTitlesManager'
 
 // Importar Tabs de Radix UI
 import * as Tabs from '@radix-ui/react-tabs'
@@ -129,7 +130,7 @@ export default function AdminMoviesPage() {
   const [deletingMovieId, setDeletingMovieId] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState('basic') // Estado para la pestaña activa
   const [availableRatings, setAvailableRatings] = useState<any[]>([])
-
+  const [alternativeTitles, setAlternativeTitles] = useState<any[]>([])
   // Estado para los datos iniciales del formulario
   const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
 
@@ -320,7 +321,8 @@ export default function AdminMoviesPage() {
         ...data,
         dataCompleteness: data.dataCompleteness || 'BASIC_PRESS_KIT',
         metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()) : [],
-        ...movieRelations
+        ...movieRelations,
+        alternativeTitles
       }
 
       const url = editingMovie
@@ -374,6 +376,9 @@ export default function AdminMoviesPage() {
       } else {
         setValue('tipoDuracion', fullMovie.tipoDuracion || '')
         setTipoDuracionDisabled(false)
+      }
+      if (fullMovie.alternativeTitles) {
+        setAlternativeTitles(fullMovie.alternativeTitles)
       }
       setEditingMovie(movie)
 
@@ -494,6 +499,8 @@ export default function AdminMoviesPage() {
     // RESETEAR ESTADO DEL TIPO DE DURACIÓN
     setTipoDuracionDisabled(false)
     setActiveTab('basic') // Resetear a la primera pestaña
+    // Agregar al final:
+    setAlternativeTitles([])
     setShowModal(true)
   }
 
@@ -1078,6 +1085,7 @@ export default function AdminMoviesPage() {
                     />
                   </Tabs.Content>
 
+
                   {/* Pestaña de Multimedia */}
                   <Tabs.Content value="media" className="space-y-6">
                     <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -1237,7 +1245,13 @@ export default function AdminMoviesPage() {
                         />
                       </div>
                     </div>
-
+                    {/* Títulos Alternativos - AGREGAR AQUÍ */}
+                    <div className="mt-6">
+                      <AlternativeTitlesManager
+                        onChange={setAlternativeTitles}
+                        initialTitles={editingMovie ? alternativeTitles : []}
+                      />
+                    </div>
                     {/* Productoras y Distribuidoras */}
                     <MovieFormEnhanced
                       key={editingMovie?.id || 'new'}

@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-07-29T23:01:58.545Z
+// Archivos del admin - 2025-07-30T17:13:43.857Z
 // ==================
 
 
@@ -1446,6 +1446,7 @@ import {
 import { toast } from 'react-hot-toast'
 import { formatDate, formatDuration } from '@/lib/utils'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
+import AlternativeTitlesManager from '@/components/admin/AlternativeTitlesManager'
 
 // Importar Tabs de Radix UI
 import * as Tabs from '@radix-ui/react-tabs'
@@ -1547,7 +1548,7 @@ export default function AdminMoviesPage() {
   const [deletingMovieId, setDeletingMovieId] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState('basic') // Estado para la pestaña activa
   const [availableRatings, setAvailableRatings] = useState<any[]>([])
-
+  const [alternativeTitles, setAlternativeTitles] = useState<any[]>([])
   // Estado para los datos iniciales del formulario
   const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
 
@@ -1738,7 +1739,8 @@ export default function AdminMoviesPage() {
         ...data,
         dataCompleteness: data.dataCompleteness || 'BASIC_PRESS_KIT',
         metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()) : [],
-        ...movieRelations
+        ...movieRelations,
+        alternativeTitles
       }
 
       const url = editingMovie
@@ -1792,6 +1794,9 @@ export default function AdminMoviesPage() {
       } else {
         setValue('tipoDuracion', fullMovie.tipoDuracion || '')
         setTipoDuracionDisabled(false)
+      }
+      if (fullMovie.alternativeTitles) {
+        setAlternativeTitles(fullMovie.alternativeTitles)
       }
       setEditingMovie(movie)
 
@@ -1912,6 +1917,8 @@ export default function AdminMoviesPage() {
     // RESETEAR ESTADO DEL TIPO DE DURACIÓN
     setTipoDuracionDisabled(false)
     setActiveTab('basic') // Resetear a la primera pestaña
+    // Agregar al final:
+    setAlternativeTitles([])
     setShowModal(true)
   }
 
@@ -2496,6 +2503,7 @@ export default function AdminMoviesPage() {
                     />
                   </Tabs.Content>
 
+
                   {/* Pestaña de Multimedia */}
                   <Tabs.Content value="media" className="space-y-6">
                     <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -2655,7 +2663,13 @@ export default function AdminMoviesPage() {
                         />
                       </div>
                     </div>
-
+                    {/* Títulos Alternativos - AGREGAR AQUÍ */}
+                    <div className="mt-6">
+                      <AlternativeTitlesManager
+                        onChange={setAlternativeTitles}
+                        initialTitles={editingMovie ? alternativeTitles : []}
+                      />
+                    </div>
                     {/* Productoras y Distribuidoras */}
                     <MovieFormEnhanced
                       key={editingMovie?.id || 'new'}
@@ -3295,6 +3309,7 @@ export async function POST(request: NextRequest) {
       languages,
       productionCompanies,
       distributionCompanies,
+      alternativeTitles,
       themes,
       ...movieData
     } = validatedData
@@ -3319,6 +3334,7 @@ export async function POST(request: NextRequest) {
       data: {
         ...movieData,
         slug,
+
         releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
         // Crear relaciones
         genres: genres ? {
@@ -3326,6 +3342,10 @@ export async function POST(request: NextRequest) {
             genreId,
             isPrimary: index === 0
           }))
+        } : undefined,
+        alternativeTitles: alternativeTitles ? {
+          deleteMany: {},
+          create: alternativeTitles
         } : undefined,
         cast: cast ? {
           create: cast
@@ -3393,7 +3413,8 @@ export async function POST(request: NextRequest) {
           include: {
             language: true
           }
-        }
+        },
+        alternativeTitles: true
       }
     })
 
@@ -3557,6 +3578,7 @@ export async function PUT(
       productionCompanies,
       distributionCompanies,
       themes,
+      alternativeTitles,
       ...movieData
     } = validatedData
 
@@ -3676,6 +3698,20 @@ export async function PUT(
             data: themes.map(themeId => ({
               movieId: id,
               themeId
+            }))
+          })
+        }
+      }
+
+      // 10. Actualizar títulos alternativos
+      if (alternativeTitles !== undefined) {
+        await tx.movieAlternativeTitle.deleteMany({ where: { movieId: id } })
+        if (alternativeTitles && alternativeTitles.length > 0) {
+          await tx.movieAlternativeTitle.createMany({
+            data: alternativeTitles.map(title => ({
+              movieId: id,
+              title: title.title,
+              description: title.description || null
             }))
           })
         }
@@ -3869,6 +3905,180 @@ export async function POST(request: NextRequest) {
   }
 }
 
+
+// ==================================================
+// src/components/admin/AlternativeTitlesManager.tsx
+// ==================================================
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Plus, X, Edit2, Save } from 'lucide-react'
+
+interface AlternativeTitle {
+  id?: number
+  title: string
+  description?: string
+}
+
+interface AlternativeTitlesManagerProps {
+  onChange: (titles: AlternativeTitle[]) => void
+  initialTitles?: AlternativeTitle[]
+}
+
+export default function AlternativeTitlesManager({ 
+  onChange, 
+  initialTitles = [] 
+}: AlternativeTitlesManagerProps) {
+  const [titles, setTitles] = useState<AlternativeTitle[]>(initialTitles)
+  const [showForm, setShowForm] = useState(false)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [currentTitle, setCurrentTitle] = useState<AlternativeTitle>({
+    title: '',
+    description: ''
+  })
+
+  useEffect(() => {
+    onChange(titles)
+  }, [titles])
+
+  const handleAdd = () => {
+    if (!currentTitle.title.trim()) return
+    
+    if (editingIndex !== null) {
+      const updatedTitles = [...titles]
+      updatedTitles[editingIndex] = currentTitle
+      setTitles(updatedTitles)
+      setEditingIndex(null)
+    } else {
+      setTitles([...titles, currentTitle])
+    }
+    
+    setCurrentTitle({ title: '', description: '' })
+    setShowForm(false)
+  }
+
+  const handleEdit = (index: number) => {
+    setCurrentTitle(titles[index])
+    setEditingIndex(index)
+    setShowForm(true)
+  }
+
+  const handleDelete = (index: number) => {
+    setTitles(titles.filter((_, i) => i !== index))
+  }
+
+  const handleCancel = () => {
+    setCurrentTitle({ title: '', description: '' })
+    setEditingIndex(null)
+    setShowForm(false)
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium text-gray-900">Títulos Alternativos</h3>
+        {!showForm && (
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Agregar Título
+          </button>
+        )}
+      </div>
+
+      {/* Lista de títulos */}
+      {titles.length > 0 && (
+        <div className="space-y-2">
+          {titles.map((title, index) => (
+            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex-1">
+                <p className="font-medium text-gray-900">{title.title}</p>
+                {title.description && (
+                  <p className="text-sm text-gray-600 mt-1">{title.description}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleEdit(index)}
+                  className="text-blue-600 hover:text-blue-800 p-1"
+                  title="Editar"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(index)}
+                  className="text-red-600 hover:text-red-800 p-1"
+                  title="Eliminar"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Formulario */}
+      {showForm && (
+        <div className="border border-gray-200 rounded-lg p-4 space-y-4 bg-gray-50">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Título alternativo *
+            </label>
+            <input
+              type="text"
+              value={currentTitle.title}
+              onChange={(e) => setCurrentTitle({ ...currentTitle, title: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              placeholder="Ej: Wild Tales"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Descripción (opcional)
+            </label>
+            <input
+              type="text"
+              value={currentTitle.description || ''}
+              onChange={(e) => setCurrentTitle({ ...currentTitle, description: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              placeholder="Ej: Título de rodaje, Título internacional, Título abreviado, etc."
+            />
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={!currentTitle.title.trim()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              {editingIndex !== null ? 'Actualizar' : 'Agregar'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {titles.length === 0 && !showForm && (
+        <p className="text-sm text-gray-500 italic">No hay títulos alternativos agregados</p>
+      )}
+    </div>
+  )
+}
 
 // ==================================================
 // src/components/admin/CloudinaryGallery.tsx
@@ -5852,5 +6062,9 @@ export const movieSchema = z.object({
   languages: z.array(z.number()).optional(),
   productionCompanies: z.array(z.number()).optional(),
   distributionCompanies: z.array(z.number()).optional(),
-  themes: z.array(z.number()).optional()
+  themes: z.array(z.number()).optional(),
+  alternativeTitles: z.array(z.object({
+    title: z.string().min(1),
+    description: z.string().optional()
+  })).optional()
 })

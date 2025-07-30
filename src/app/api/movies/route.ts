@@ -177,6 +177,7 @@ export async function POST(request: NextRequest) {
       languages,
       productionCompanies,
       distributionCompanies,
+      alternativeTitles,
       themes,
       ...movieData
     } = validatedData
@@ -201,6 +202,7 @@ export async function POST(request: NextRequest) {
       data: {
         ...movieData,
         slug,
+
         releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
         // Crear relaciones
         genres: genres ? {
@@ -208,6 +210,10 @@ export async function POST(request: NextRequest) {
             genreId,
             isPrimary: index === 0
           }))
+        } : undefined,
+        alternativeTitles: alternativeTitles ? {
+          deleteMany: {},
+          create: alternativeTitles
         } : undefined,
         cast: cast ? {
           create: cast
@@ -275,7 +281,8 @@ export async function POST(request: NextRequest) {
           include: {
             language: true
           }
-        }
+        },
+        alternativeTitles: true
       }
     })
 

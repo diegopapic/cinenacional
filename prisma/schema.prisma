@@ -64,6 +64,7 @@ model Movie {
   userRatings      UserRating[]
   watchlists       UserWatchlist[]
   watchedBy        UserWatched[]
+  alternativeTitles MovieAlternativeTitle[]
   
   @@map("movies")
   @@index([slug])
@@ -72,6 +73,21 @@ model Movie {
   @@index([status])
   @@index([tipoDuracion])
   @@index([ratingId])
+}
+
+model MovieAlternativeTitle {
+  id          Int      @id @default(autoincrement())
+  movieId     Int      @map("movie_id")
+  title       String   @db.VarChar(255)
+  description String?  @db.Text // Descripción libre: "Título de rodaje", "Título abreviado", etc.
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  // Relación
+  movie       Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  
+  @@map("movie_alternative_titles")
+  @@index([movieId])
+  @@index([title])
 }
 
 model Person {
