@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 020b1a5fa3007bf4288d73113e863488cb7b2f62
-// Fecha: 2025-07-30T17:13:43.849Z
+// Commit: 64f0108bd24da6ffc0b48c53ee368d88a5e64c88
+// Fecha: 2025-07-30T17:15:43.996Z
 // ============================================
 
 
@@ -4325,7 +4325,6 @@ export async function POST(request: NextRequest) {
           }))
         } : undefined,
         alternativeTitles: alternativeTitles ? {
-          deleteMany: {},
           create: alternativeTitles
         } : undefined,
         cast: cast ? {
