@@ -116,6 +116,8 @@ export async function GET(request: NextRequest) {
       title: movie.title,
       year: movie.year,
       releaseDate: movie.releaseDate,
+      filmingStartDate: movie.filmingStartDate,
+      filmingEndDate: movie.filmingEndDate,
       duration: movie.duration,
       posterUrl: movie.posterUrl || movie.images[0]?.url,
       status: movie.status,

@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-07-30T17:15:44.148Z
+# Generado automáticamente el: 2025-07-30T18:28:51.611Z
 # ================================================
 
 ## Schema Prisma
@@ -44,6 +44,10 @@ model Movie {
   // Información legal
   ratingId          Int?     @map("rating_id")
   rating            Rating?  @relation(fields: [ratingId], references: [id])
+
+  // Fechas de rodaje
+  filmingStartDate DateTime? @map("filming_start_date") @db.Date
+  filmingEndDate   DateTime? @map("filming_end_date") @db.Date
   
   // Status y timestamps
   status           MovieStatus @default(PUBLISHED)
@@ -80,6 +84,8 @@ model Movie {
   @@index([status])
   @@index([tipoDuracion])
   @@index([ratingId])
+  @@index([filmingStartDate])
+  @@index([filmingEndDate])
 }
 
 model MovieAlternativeTitle {
@@ -615,6 +621,8 @@ CREATE TABLE "movies" (
     "color_type" VARCHAR(50),
     "sound_type" VARCHAR(50),
     "rating_id" INTEGER,
+    "filming_start_date" DATE,
+    "filming_end_date" DATE,
     "status" "movie_status" NOT NULL DEFAULT 'PUBLISHED',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -977,6 +985,12 @@ CREATE INDEX "movies_tipo_duracion_idx" ON "movies"("tipo_duracion");
 
 -- CreateIndex
 CREATE INDEX "movies_rating_id_idx" ON "movies"("rating_id");
+
+-- CreateIndex
+CREATE INDEX "movies_filming_start_date_idx" ON "movies"("filming_start_date");
+
+-- CreateIndex
+CREATE INDEX "movies_filming_end_date_idx" ON "movies"("filming_end_date");
 
 -- CreateIndex
 CREATE INDEX "movie_alternative_titles_movie_id_idx" ON "movie_alternative_titles"("movie_id");

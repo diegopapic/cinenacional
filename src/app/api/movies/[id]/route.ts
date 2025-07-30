@@ -150,6 +150,8 @@ export async function PUT(
         data: {
           ...movieData,
           releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
+          filmingStartDate: movieData.filmingStartDate ? new Date(movieData.filmingStartDate) : null,
+          filmingEndDate: movieData.filmingEndDate ? new Date(movieData.filmingEndDate) : null,
           ratingId: movieData.ratingId === null ? undefined : movieData.ratingId,
         }
       })
