@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-07-29T23:01:58.722Z
+# Generado automáticamente el: 2025-07-30T17:13:44.045Z
 # ================================================
 
 ## Schema Prisma
@@ -71,6 +71,7 @@ model Movie {
   userRatings      UserRating[]
   watchlists       UserWatchlist[]
   watchedBy        UserWatched[]
+  alternativeTitles MovieAlternativeTitle[]
   
   @@map("movies")
   @@index([slug])
@@ -79,6 +80,21 @@ model Movie {
   @@index([status])
   @@index([tipoDuracion])
   @@index([ratingId])
+}
+
+model MovieAlternativeTitle {
+  id          Int      @id @default(autoincrement())
+  movieId     Int      @map("movie_id")
+  title       String   @db.VarChar(255)
+  description String?  @db.Text // Descripción libre: "Título de rodaje", "Título abreviado", etc.
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  // Relación
+  movie       Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  
+  @@map("movie_alternative_titles")
+  @@index([movieId])
+  @@index([title])
 }
 
 model Person {
@@ -610,6 +626,17 @@ CREATE TABLE "movies" (
 );
 
 -- CreateTable
+CREATE TABLE "movie_alternative_titles" (
+    "id" SERIAL NOT NULL,
+    "movie_id" INTEGER NOT NULL,
+    "title" VARCHAR(255) NOT NULL,
+    "description" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "movie_alternative_titles_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "people" (
     "id" SERIAL NOT NULL,
     "slug" VARCHAR(255) NOT NULL,
@@ -952,6 +979,12 @@ CREATE INDEX "movies_tipo_duracion_idx" ON "movies"("tipo_duracion");
 CREATE INDEX "movies_rating_id_idx" ON "movies"("rating_id");
 
 -- CreateIndex
+CREATE INDEX "movie_alternative_titles_movie_id_idx" ON "movie_alternative_titles"("movie_id");
+
+-- CreateIndex
+CREATE INDEX "movie_alternative_titles_title_idx" ON "movie_alternative_titles"("title");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "people_slug_key" ON "people"("slug");
 
 -- CreateIndex
@@ -1025,6 +1058,9 @@ CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 
 -- AddForeignKey
 ALTER TABLE "movies" ADD CONSTRAINT "movies_rating_id_fkey" FOREIGN KEY ("rating_id") REFERENCES "ratings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "movie_alternative_titles" ADD CONSTRAINT "movie_alternative_titles_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "movie_cast" ADD CONSTRAINT "movie_cast_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;

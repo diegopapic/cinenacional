@@ -138,6 +138,7 @@ export async function PUT(
       productionCompanies,
       distributionCompanies,
       themes,
+      alternativeTitles,
       ...movieData
     } = validatedData
 
@@ -257,6 +258,20 @@ export async function PUT(
             data: themes.map(themeId => ({
               movieId: id,
               themeId
+            }))
+          })
+        }
+      }
+
+      // 10. Actualizar títulos alternativos
+      if (alternativeTitles !== undefined) {
+        await tx.movieAlternativeTitle.deleteMany({ where: { movieId: id } })
+        if (alternativeTitles && alternativeTitles.length > 0) {
+          await tx.movieAlternativeTitle.createMany({
+            data: alternativeTitles.map(title => ({
+              movieId: id,
+              title: title.title,
+              description: title.description || null
             }))
           })
         }

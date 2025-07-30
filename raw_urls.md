@@ -35,6 +35,7 @@
 - [src/app/peliculas/[slug]/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/peliculas/[slug]/page.tsx)
 - [src/app/personas/[slug]/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/personas/[slug]/page.tsx)
 - [src/app/test-env/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/test-env/page.tsx)
+- [src/components/admin/AlternativeTitlesManager.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/AlternativeTitlesManager.tsx)
 - [src/components/admin/CloudinaryGallery.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/CloudinaryGallery.tsx)
 - [src/components/admin/CloudinaryUploadWidget.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/CloudinaryUploadWidget.tsx)
 - [src/components/admin/CountrySelector.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/CountrySelector.tsx)
