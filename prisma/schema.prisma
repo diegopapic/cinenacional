@@ -37,6 +37,10 @@ model Movie {
   // Información legal
   ratingId          Int?     @map("rating_id")
   rating            Rating?  @relation(fields: [ratingId], references: [id])
+
+  // Fechas de rodaje
+  filmingStartDate DateTime? @map("filming_start_date") @db.Date
+  filmingEndDate   DateTime? @map("filming_end_date") @db.Date
   
   // Status y timestamps
   status           MovieStatus @default(PUBLISHED)
@@ -73,6 +77,8 @@ model Movie {
   @@index([status])
   @@index([tipoDuracion])
   @@index([ratingId])
+  @@index([filmingStartDate])
+  @@index([filmingEndDate])
 }
 
 model MovieAlternativeTitle {

@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 64f0108bd24da6ffc0b48c53ee368d88a5e64c88
-// Fecha: 2025-07-30T17:15:43.996Z
+// Commit: d2811d8a7f00b2927953e268006844e5bae8bd93
+// Fecha: 2025-07-30T18:28:51.453Z
 // ============================================
 
 
@@ -1469,6 +1469,8 @@ const movieFormSchema = z.object({
   originalTitle: z.string().optional(),
   year: z.number().min(1895).max(new Date().getFullYear() + 5),
   releaseDate: z.string().optional(),
+  filmingStartDate: z.string().optional(),
+  filmingEndDate: z.string().optional(),
   duration: z.number().optional(),
   durationSeconds: z.number().min(0).max(59).optional(),
   tipoDuracion: z.string().optional(),
@@ -1817,6 +1819,10 @@ export default function AdminMoviesPage() {
         if (key === 'metaKeywords' && Array.isArray(fullMovie[key])) {
           setValue(key as any, fullMovie[key].join(', '))
         } else if (key === 'releaseDate' && fullMovie[key]) {
+          setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
+        } else if (key === 'filmingStartDate' && fullMovie[key]) {
+          setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
+        } else if (key === 'filmingEndDate' && fullMovie[key]) {
           setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
         } else if (key === 'durationSeconds') {
           setValue(key as any, fullMovie[key] || 0) // Asegurar que tenga un valor por defecto
@@ -2324,6 +2330,30 @@ export default function AdminMoviesPage() {
                               {...register('releaseDate')}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                             />
+                          </div>
+                          {/* NUEVOS CAMPOS: Fechas de rodaje */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Fecha Inicio de Rodaje
+                              </label>
+                              <input
+                                type="date"
+                                {...register('filmingStartDate')}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Fecha Fin de Rodaje
+                              </label>
+                              <input
+                                type="date"
+                                {...register('filmingEndDate')}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                              />
+                            </div>
                           </div>
                         </div>
 
@@ -4229,6 +4259,8 @@ export async function GET(request: NextRequest) {
       title: movie.title,
       year: movie.year,
       releaseDate: movie.releaseDate,
+      filmingStartDate: movie.filmingStartDate,
+      filmingEndDate: movie.filmingEndDate,
       duration: movie.duration,
       posterUrl: movie.posterUrl || movie.images[0]?.url,
       status: movie.status,
@@ -4570,6 +4602,8 @@ export async function PUT(
         data: {
           ...movieData,
           releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
+          filmingStartDate: movieData.filmingStartDate ? new Date(movieData.filmingStartDate) : null,
+          filmingEndDate: movieData.filmingEndDate ? new Date(movieData.filmingEndDate) : null,
           ratingId: movieData.ratingId === null ? undefined : movieData.ratingId,
         }
       })
@@ -10825,7 +10859,7 @@ export const movieSchema = z.object({
   metaKeywords: z.array(z.string()).optional(),
   dataCompleteness: z.enum([
     'BASIC_PRESS_KIT',
-    'FULL_PRESS_KIT', 
+    'FULL_PRESS_KIT',
     'MAIN_CAST',
     'MAIN_CREW',
     'FULL_CAST',
@@ -10852,6 +10886,8 @@ export const movieSchema = z.object({
   productionCompanies: z.array(z.number()).optional(),
   distributionCompanies: z.array(z.number()).optional(),
   themes: z.array(z.number()).optional(),
+  filmingStartDate: z.string().optional(),
+  filmingEndDate: z.string().optional(),
   alternativeTitles: z.array(z.object({
     title: z.string().min(1),
     description: z.string().optional()

@@ -22,7 +22,7 @@ export const movieSchema = z.object({
   metaKeywords: z.array(z.string()).optional(),
   dataCompleteness: z.enum([
     'BASIC_PRESS_KIT',
-    'FULL_PRESS_KIT', 
+    'FULL_PRESS_KIT',
     'MAIN_CAST',
     'MAIN_CREW',
     'FULL_CAST',
@@ -49,6 +49,8 @@ export const movieSchema = z.object({
   productionCompanies: z.array(z.number()).optional(),
   distributionCompanies: z.array(z.number()).optional(),
   themes: z.array(z.number()).optional(),
+  filmingStartDate: z.string().optional(),
+  filmingEndDate: z.string().optional(),
   alternativeTitles: z.array(z.object({
     title: z.string().min(1),
     description: z.string().optional()

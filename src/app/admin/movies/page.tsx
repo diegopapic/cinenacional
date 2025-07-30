@@ -39,6 +39,8 @@ const movieFormSchema = z.object({
   originalTitle: z.string().optional(),
   year: z.number().min(1895).max(new Date().getFullYear() + 5),
   releaseDate: z.string().optional(),
+  filmingStartDate: z.string().optional(),
+  filmingEndDate: z.string().optional(),
   duration: z.number().optional(),
   durationSeconds: z.number().min(0).max(59).optional(),
   tipoDuracion: z.string().optional(),
@@ -387,6 +389,10 @@ export default function AdminMoviesPage() {
         if (key === 'metaKeywords' && Array.isArray(fullMovie[key])) {
           setValue(key as any, fullMovie[key].join(', '))
         } else if (key === 'releaseDate' && fullMovie[key]) {
+          setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
+        } else if (key === 'filmingStartDate' && fullMovie[key]) {
+          setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
+        } else if (key === 'filmingEndDate' && fullMovie[key]) {
           setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
         } else if (key === 'durationSeconds') {
           setValue(key as any, fullMovie[key] || 0) // Asegurar que tenga un valor por defecto
@@ -894,6 +900,30 @@ export default function AdminMoviesPage() {
                               {...register('releaseDate')}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                             />
+                          </div>
+                          {/* NUEVOS CAMPOS: Fechas de rodaje */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Fecha Inicio de Rodaje
+                              </label>
+                              <input
+                                type="date"
+                                {...register('filmingStartDate')}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Fecha Fin de Rodaje
+                              </label>
+                              <input
+                                type="date"
+                                {...register('filmingEndDate')}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                              />
+                            </div>
                           </div>
                         </div>
 
