@@ -35,6 +35,7 @@ interface MovieFormEnhancedProps {
     productionCompanies?: any[]
     distributionCompanies?: any[]
     themes?: any[]
+    colorType?: any
   }
   // Nuevas props para controlar qué mostrar
   showOnlyBasicInfo?: boolean

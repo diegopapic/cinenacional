@@ -15,7 +15,7 @@ export const movieSchema = z.object({
   posterUrl: z.string().url().optional().or(z.literal('')),
   trailerUrl: z.string().url().optional().or(z.literal('')),
   imdbId: z.string().optional(),
-  colorType: z.string().optional(),
+  colorTypeId: z.number().optional(),
   soundType: z.string().optional(),
   ratingId: z.number().optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
@@ -51,7 +51,7 @@ export const movieSchema = z.object({
   themes: z.array(z.number()).optional(),
   filmingStartDate: z.string().optional(),
   filmingEndDate: z.string().optional(),
-    links: z.array(z.object({
+  links: z.array(z.object({
     type: z.string(),
     url: z.string().url(),
     title: z.string().optional().nullable(),
