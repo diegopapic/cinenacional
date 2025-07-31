@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 4dd1859cbf75c72da08070d65d6689a01e712fbd
-// Fecha: 2025-07-31T00:14:23.867Z
+// Commit: 968d3a2a34841d351d6864adb8bf50675e2e532e
+// Fecha: 2025-07-31T00:17:33.568Z
 // ============================================
 
 
@@ -1893,8 +1893,7 @@ export default function AdminMoviesPage() {
         languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
         productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
         distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
-        themes: fullMovie.themes?.map((t: any) => t.themeId) || [],
-        links: fullMovie.links || []
+        themes: fullMovie.themes?.map((t: any) => t.themeId) || []
       })
 
       setValue('dataCompleteness', fullMovie.dataCompleteness || 'BASIC_PRESS_KIT')
