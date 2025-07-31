@@ -463,8 +463,7 @@ export default function AdminMoviesPage() {
         languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
         productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
         distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
-        themes: fullMovie.themes?.map((t: any) => t.themeId) || [],
-        links: fullMovie.links || []
+        themes: fullMovie.themes?.map((t: any) => t.themeId) || []
       })
 
       setValue('dataCompleteness', fullMovie.dataCompleteness || 'BASIC_PRESS_KIT')
