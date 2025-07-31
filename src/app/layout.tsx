@@ -1,12 +1,26 @@
 // src/app/layout.tsx
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Crimson_Text } from 'next/font/google'
 import './globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { Toaster } from 'react-hot-toast'
 
-const inter = Inter({ subsets: ['latin'] })
+// Configurar las fuentes
+const inter = Inter({ 
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+
+const crimsonText = Crimson_Text({ 
+  subsets: ['latin'],
+  weight: ['400', '600'],
+  style: ['normal', 'italic'],
+  variable: '--font-crimson',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'CineNacional - Base de Datos del Cine Argentino',
@@ -47,7 +61,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es" className="h-full">
+    <html lang="es" className={`h-full ${inter.variable} ${crimsonText.variable}`}>
       <body className={`${inter.className} min-h-full flex flex-col bg-zinc-950 text-white`}>
         <Header />
         <main className="flex-grow">

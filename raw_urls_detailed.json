@@ -15,6 +15,11 @@
     "size": 0
   },
   {
+    "path": "color-analysis.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/color-analysis.json",
+    "size": 0
+  },
+  {
     "path": "database-structure-meta.json",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/database-structure-meta.json",
     "size": 0
@@ -22,6 +27,21 @@
   {
     "path": "database-structure.txt",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/database-structure.txt",
+    "size": 0
+  },
+  {
+    "path": "dumps/movies-titles.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/dumps/movies-titles.json",
+    "size": 0
+  },
+  {
+    "path": "dumps/wp_postmeta.sql",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/dumps/wp_postmeta.sql",
+    "size": 0
+  },
+  {
+    "path": "dumps/wp_posts.sql",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/dumps/wp_posts.sql",
     "size": 0
   },
   {
@@ -97,6 +117,11 @@
   {
     "path": "prisma/migrations/20250130000820_add_movie_links/migration.sql",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250130000820_add_movie_links/migration.sql",
+    "size": 0
+  },
+  {
+    "path": "prisma/migrations/20250731181700_add_color_types/migration.sql",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250731181700_add_color_types/migration.sql",
     "size": 0
   },
   {
@@ -195,6 +220,16 @@
     "size": 0
   },
   {
+    "path": "scripts/analyze-wp-colors.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-colors.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/analyze-wp-completeness.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-completeness.js",
+    "size": 0
+  },
+  {
     "path": "scripts/compile-project-code.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/compile-project-code.js",
     "size": 0
@@ -205,8 +240,43 @@
     "size": 0
   },
   {
+    "path": "scripts/extract-titles-to-json.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/extract-titles-to-json.js",
+    "size": 0
+  },
+  {
     "path": "scripts/generate-structure.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/generate-structure.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/import-via-supabase-api.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/import-via-supabase-api.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/migrate-titles-simple.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-titles-simple.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/migrate-titles.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-titles.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/migrate-wp-titles-supabase.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-titles-supabase.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/migrate-wp-to-supabase-complete.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-to-supabase-complete.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/test-connection.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/test-connection.js",
     "size": 0
   },
   {
@@ -247,6 +317,11 @@
   {
     "path": "src/app/api/calificaciones/[id]/route.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/calificaciones/[id]/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/color-types/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/color-types/route.ts",
     "size": 0
   },
   {
@@ -482,6 +557,11 @@
   {
     "path": "tailwind.config.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tailwind.config.js",
+    "size": 0
+  },
+  {
+    "path": "test-env.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/test-env.js",
     "size": 0
   },
   {

@@ -35,32 +35,48 @@ import MovieLinksManager from '@/components/admin/MovieLinksManager'
 // Importar Tabs de Radix UI
 import * as Tabs from '@radix-ui/react-tabs'
 
-// Schema de validación
+// REEMPLAZAR TODO EL SCHEMA Y HELPERS CON ESTO:
+
+// Schema simple sin validaciones complejas para el formulario
 const movieFormSchema = z.object({
+  // Campos requeridos
   title: z.string().min(1, 'El título es requerido'),
-  originalTitle: z.string().optional(),
-  year: z.number().min(1895).max(new Date().getFullYear() + 5),
-  releaseDate: z.string().optional(),
-  filmingStartDate: z.string().optional(),
-  filmingEndDate: z.string().optional(),
-  duration: z.number().optional(),
-  durationSeconds: z.number().min(0).max(59).optional(),
-  tipoDuracion: z.string().optional(),
-  synopsis: z.string().optional(),
-  tagline: z.string().optional(),
-  rating: z.number().min(0).max(10).optional(),
-  posterUrl: z.string().url().optional().or(z.literal('')),
-  posterPublicId: z.string().optional(),
-  backdropUrl: z.string().url().optional().or(z.literal('')),
-  backdropPublicId: z.string().optional(),
-  trailerUrl: z.string().url().optional().or(z.literal('')),
-  imdbId: z.string().optional(),
-  aspectRatio: z.string().optional(),
-  colorType: z.string().optional(),
-  soundType: z.string().optional(),
-  filmFormat: z.string().optional(),
-  certificateNumber: z.string().optional(),
-  ratingId: z.number().optional(),
+  
+  // Todos los demás campos como strings opcionales o any
+  originalTitle: z.any().optional(),
+  synopsis: z.any().optional(),
+  tagline: z.any().optional(),
+  imdbId: z.any().optional(),
+  aspectRatio: z.any().optional(),
+  colorType: z.any().optional(),
+  soundType: z.any().optional(),
+  filmFormat: z.any().optional(),
+  certificateNumber: z.any().optional(),
+  tipoDuracion: z.any().optional(),
+  metaDescription: z.any().optional(),
+  metaKeywords: z.any().optional(),
+  
+  // Campos numéricos
+  year: z.any().optional(),
+  duration: z.any().optional(),
+  durationSeconds: z.any().optional(),
+  rating: z.any().optional(),
+  colorTypeId: z.any().optional(),
+  ratingId: z.any().optional(),
+  
+  // Campos de fecha
+  releaseDate: z.any().optional(),
+  filmingStartDate: z.any().optional(),
+  filmingEndDate: z.any().optional(),
+  
+  // URLs
+  posterUrl: z.any().optional(),
+  posterPublicId: z.any().optional(),
+  backdropUrl: z.any().optional(),
+  backdropPublicId: z.any().optional(),
+  trailerUrl: z.any().optional(),
+  
+  // Enums
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
   dataCompleteness: z.enum([
     'BASIC_PRESS_KIT',
@@ -69,12 +85,46 @@ const movieFormSchema = z.object({
     'MAIN_CREW',
     'FULL_CAST',
     'FULL_CREW'
-  ]).optional(),
-  metaDescription: z.string().optional(),
-  metaKeywords: z.string().optional()
+  ]).optional()
 })
 
 type MovieFormData = z.infer<typeof movieFormSchema>
+
+// Función mejorada para limpiar y validar los datos antes de enviar
+const prepareMovieData = (data: MovieFormData) => {
+  const prepared: any = {}
+  
+  Object.entries(data).forEach(([key, value]) => {
+    // Si es string vacío, null o undefined, lo dejamos como undefined
+    if (value === '' || value === null || value === undefined) {
+      prepared[key] = undefined
+    } 
+    // Si es un campo numérico y tiene valor
+    else if (['year', 'duration', 'durationSeconds', 'rating', 'colorTypeId', 'ratingId'].includes(key) && value !== '') {
+      const num = Number(value)
+      prepared[key] = isNaN(num) ? undefined : num
+    }
+    // Si es URL y tiene valor, validamos que sea URL válida
+    else if (['posterUrl', 'backdropUrl', 'trailerUrl'].includes(key) && value !== '') {
+      try {
+        new URL(value)
+        prepared[key] = value
+      } catch {
+        prepared[key] = undefined
+      }
+    }
+    // Para el resto de campos
+    else {
+      prepared[key] = value
+    }
+  })
+  
+  // Valores por defecto
+  prepared.status = prepared.status || 'PUBLISHED'
+  prepared.dataCompleteness = prepared.dataCompleteness || 'BASIC_PRESS_KIT'
+  
+  return prepared
+}
 
 const getCompletenessLabel = (completeness: string) => {
   const labels: Record<string, string> = {
@@ -136,6 +186,7 @@ export default function AdminMoviesPage() {
   const [availableRatings, setAvailableRatings] = useState<any[]>([])
   const [alternativeTitles, setAlternativeTitles] = useState<any[]>([])
   const [movieLinks, setMovieLinks] = useState<any[]>([])
+  const [availableColorTypes, setAvailableColorTypes] = useState<any[]>([])
 
   // Estado para los datos iniciales del formulario
   const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
@@ -319,59 +370,76 @@ export default function AdminMoviesPage() {
     }
   }
 
+  const fetchColorTypes = async () => {
+    try {
+      const response = await fetch('/api/color-types')
+      if (response.ok) {
+        const data = await response.json()
+        setAvailableColorTypes(data)
+      }
+    } catch (error) {
+      console.error('Error loading color types:', error)
+    }
+  }
+
   useEffect(() => {
     fetchMovies()
+    fetchColorTypes()
   }, [currentPage, searchTerm, selectedStatus, selectedYear])
 
   // Crear o actualizar película
   const onSubmit = async (data: MovieFormData) => {
-    try {
-
-      const movieData = {
-        ...data,
-        dataCompleteness: data.dataCompleteness || 'BASIC_PRESS_KIT',
-        metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()) : [],
-        ...movieRelations,
-        alternativeTitles,
-        links: movieLinks
-      }
-      console.log('=== DATOS ENVIADOS AL BACKEND ===');
-      console.log('movieLinks:', movieLinks);
-      console.log('movieData completo:', JSON.stringify(movieData, null, 2));
-      console.log('================================');
-      const url = editingMovie
-        ? `/api/movies/${editingMovie.id}`
-        : '/api/movies'
-
-      const method = editingMovie ? 'PUT' : 'POST'
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(movieData)
-      })
-
-      if (!response.ok) {
-        let errorMessage = 'Error al guardar la película'
-        try {
-          const error = await response.json()
-          errorMessage = error.error || error.message || errorMessage
-        } catch (e) {
-        }
-        throw new Error(errorMessage)
-      }
-
-      toast.success(editingMovie ? 'Película actualizada' : 'Película creada')
-      setShowModal(false)
-      reset()
-      setEditingMovie(null)
-      setMovieFormInitialData(null)
-      fetchMovies()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error al guardar')
+  try {
+    // Preparar los datos correctamente
+    const preparedData = prepareMovieData(data)
+    
+    const movieData = {
+      ...preparedData,
+      metaKeywords: preparedData.metaKeywords ? preparedData.metaKeywords.split(',').map((k: string) => k.trim()) : [],
+      ...movieRelations,
+      alternativeTitles,
+      links: movieLinks
     }
+    
+    console.log('=== DATOS ENVIADOS AL BACKEND ===');
+    console.log('movieData completo:', JSON.stringify(movieData, null, 2));
+    console.log('================================');
+    
+    const url = editingMovie
+      ? `/api/movies/${editingMovie.id}`
+      : '/api/movies'
+
+    const method = editingMovie ? 'PUT' : 'POST'
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(movieData)
+    })
+
+    if (!response.ok) {
+      let errorMessage = 'Error al guardar la película'
+      try {
+        const error = await response.json()
+        errorMessage = error.error || error.message || errorMessage
+      } catch (e) {
+        console.error('Error parsing response:', e)
+      }
+      throw new Error(errorMessage)
+    }
+
+    toast.success(editingMovie ? 'Película actualizada' : 'Película creada')
+    setShowModal(false)
+    reset()
+    setEditingMovie(null)
+    setMovieFormInitialData(null)
+    fetchMovies()
+  } catch (error) {
+    console.error('❌ Error in onSubmit:', error)
+    toast.error(error instanceof Error ? error.message : 'Error al guardar')
   }
+}
 
   // Editar película
   const handleEdit = async (movie: Movie) => {
@@ -408,6 +476,9 @@ export default function AdminMoviesPage() {
           setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
         } else if (key === 'durationSeconds') {
           setValue(key as any, fullMovie[key] || 0) // Asegurar que tenga un valor por defecto
+        } else if (key === 'colorType' && fullMovie[key]) {
+          // Si existe colorType, usar su ID
+          setValue('colorTypeId' as any, fullMovie[key].id)
         } else {
           setValue(key as any, fullMovie[key])
         }
@@ -526,6 +597,22 @@ export default function AdminMoviesPage() {
     // Agregar al final:
     setAlternativeTitles([])
     setShowModal(true)
+  }
+
+  // Función para limpiar los datos antes de enviar al backend
+  const cleanFormData = (data: MovieFormData) => {
+    const cleaned: any = {}
+
+    Object.entries(data).forEach(([key, value]) => {
+      // Convertir strings vacíos a undefined
+      if (value === '') {
+        cleaned[key] = undefined
+      } else {
+        cleaned[key] = value
+      }
+    })
+
+    return cleaned
   }
 
   return (
@@ -897,7 +984,7 @@ export default function AdminMoviesPage() {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Año *
+                              Año
                             </label>
                             <input
                               type="number"
@@ -1231,13 +1318,15 @@ export default function AdminMoviesPage() {
                             Color
                           </label>
                           <select
-                            {...register('colorType')}
+                            {...register('colorTypeId', { valueAsNumber: true })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                           >
                             <option value="">Seleccionar...</option>
-                            <option value="Color">Color</option>
-                            <option value="Blanco y Negro">Blanco y Negro</option>
-                            <option value="Color y B&N">Color y B&N</option>
+                            {availableColorTypes.map((colorType) => (
+                              <option key={colorType.id} value={colorType.id}>
+                                {colorType.name}
+                              </option>
+                            ))}
                           </select>
                         </div>
 
@@ -1340,6 +1429,11 @@ export default function AdminMoviesPage() {
                 >
                   Cancelar
                 </button>
+                {Object.keys(errors).length > 0 && (
+                  <div className="px-6 py-2 bg-red-50 text-red-800 text-sm">
+                    Errores: {Object.keys(errors).join(', ')}
+                  </div>
+                )}
                 <button
                   type="submit"
                   disabled={isSubmitting}

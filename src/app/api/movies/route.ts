@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
         [sortBy]: sortOrder
       },
       include: {
+        colorType: true,
         genres: {
           include: {
             genre: true
@@ -121,6 +122,7 @@ export async function GET(request: NextRequest) {
       duration: movie.duration,
       posterUrl: movie.posterUrl || movie.images[0]?.url,
       status: movie.status,
+      colorType: movie.colorType,
       genres: movie.genres.map(g => g.genre),
       directors: movie.crew.map(c => c.person),
       mainCast: movie.cast.map(c => ({
@@ -207,6 +209,7 @@ export async function POST(request: NextRequest) {
         slug,
 
         releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
+        colorTypeId: movieData.colorTypeId || null,
         // Crear relaciones
         genres: genres ? {
           create: genres.map((genreId, index) => ({

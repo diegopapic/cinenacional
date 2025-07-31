@@ -31,7 +31,8 @@ model Movie {
   imdbId           String?  @map("imdb_id") @db.VarChar(20)
   
   // Información técnica
-  colorType        String?  @map("color_type") @db.VarChar(50)
+  colorTypeId      Int?     @map("color_type_id")
+  colorType        ColorType? @relation(fields: [colorTypeId], references: [id]) //
   soundType        String?  @map("sound_type") @db.VarChar(50)
   
   // Información legal
@@ -80,6 +81,7 @@ model Movie {
   @@index([ratingId])
   @@index([filmingStartDate])
   @@index([filmingEndDate])
+  @@index([colorTypeId])
 }
 
 model MovieAlternativeTitle {
@@ -222,6 +224,15 @@ enum LinkType {
   @@map("link_type")
 }
 
+enum ColorCategory {
+  COLOR
+  BLACK_AND_WHITE
+  MIXED
+  UNKNOWN
+  
+  @@map("color_category")
+}
+
 // =====================================================
 // MODELOS DE RELACIÓN
 // =====================================================
@@ -305,6 +316,24 @@ model MovieDistributionCompany {
   
   @@id([movieId, companyId, territory])
   @@map("movie_distribution_companies")
+}
+
+model ColorType {
+  id            Int      @id @default(autoincrement())
+  name          String   @db.VarChar(50)
+  slug          String   @unique @db.VarChar(50)
+  category      ColorCategory
+  technicalName String?  @map("technical_name") @db.VarChar(50)
+  displayOrder  Int      @default(0) @map("display_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  // Relaciones
+  movies        Movie[]
+  
+  @@map("color_types")
+  @@index([category])
+  @@index([slug])
 }
 
 // =====================================================

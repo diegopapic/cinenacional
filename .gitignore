@@ -33,3 +33,6 @@ yarn-error.log*
 
 # Prisma
 prisma/migrations/dev/
+
+# Dumps de la base de datos de Wordpress
+dumps/

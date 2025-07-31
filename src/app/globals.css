@@ -2,10 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
+:root {
+  --font-inter: 'Inter', system-ui, sans-serif;
+  --font-crimson: 'Crimson Text', Georgia, serif;
+}
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-inter);
   font-weight: 300;
   letter-spacing: -0.01em;
   background-color: #0f1419;
@@ -13,13 +16,13 @@ body {
 }
 
 .serif-heading {
-  font-family: 'Crimson Text', Georgia, serif;
+  font-family: var(--font-crimson);
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
 .serif-body {
-  font-family: 'Crimson Text', Georgia, serif;
+  font-family: var(--font-crimson);
   font-weight: 400;
   line-height: 1.7;
 }

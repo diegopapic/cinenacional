@@ -20,6 +20,7 @@ export async function GET(
     const movie = await prisma.movie.findUnique({
       where: isId ? { id: parseInt(idOrSlug) } : { slug: idOrSlug },
       include: {
+        colorType: true,
         genres: {
           include: {
             genre: true
@@ -124,7 +125,7 @@ export async function PUT(
     console.log('=== DATOS RECIBIDOS EN BACKEND ===');
     console.log('body.links:', body.links);
     console.log('================================');
-    
+
     // Validar datos
     const validatedData = movieSchema.parse(body)
 
@@ -163,6 +164,7 @@ export async function PUT(
         data: {
           ...movieData,
           releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
+          colorTypeId: movieData.colorTypeId || null,
           filmingStartDate: movieData.filmingStartDate ? new Date(movieData.filmingStartDate) : null,
           filmingEndDate: movieData.filmingEndDate ? new Date(movieData.filmingEndDate) : null,
           ratingId: movieData.ratingId === null ? undefined : movieData.ratingId,
@@ -352,7 +354,8 @@ export async function PUT(
               company: true
             }
           },
-          links: true
+          links: true,
+          colorType: true,
         }
       })
     }, {
