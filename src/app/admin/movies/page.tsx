@@ -41,7 +41,7 @@ import * as Tabs from '@radix-ui/react-tabs'
 const movieFormSchema = z.object({
   // Campos requeridos
   title: z.string().min(1, 'El título es requerido'),
-  
+
   // Todos los demás campos como strings opcionales o any
   originalTitle: z.any().optional(),
   synopsis: z.any().optional(),
@@ -55,7 +55,7 @@ const movieFormSchema = z.object({
   tipoDuracion: z.any().optional(),
   metaDescription: z.any().optional(),
   metaKeywords: z.any().optional(),
-  
+
   // Campos numéricos
   year: z.any().optional(),
   duration: z.any().optional(),
@@ -63,19 +63,19 @@ const movieFormSchema = z.object({
   rating: z.any().optional(),
   colorTypeId: z.any().optional(),
   ratingId: z.any().optional(),
-  
+
   // Campos de fecha
   releaseDate: z.any().optional(),
   filmingStartDate: z.any().optional(),
   filmingEndDate: z.any().optional(),
-  
+
   // URLs
   posterUrl: z.any().optional(),
   posterPublicId: z.any().optional(),
   backdropUrl: z.any().optional(),
   backdropPublicId: z.any().optional(),
   trailerUrl: z.any().optional(),
-  
+
   // Enums
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
   dataCompleteness: z.enum([
@@ -93,12 +93,12 @@ type MovieFormData = z.infer<typeof movieFormSchema>
 // Función mejorada para limpiar y validar los datos antes de enviar
 const prepareMovieData = (data: MovieFormData) => {
   const prepared: any = {}
-  
+
   Object.entries(data).forEach(([key, value]) => {
     // Si es string vacío, null o undefined, lo dejamos como undefined
     if (value === '' || value === null || value === undefined) {
       prepared[key] = undefined
-    } 
+    }
     // Si es un campo numérico y tiene valor
     else if (['year', 'duration', 'durationSeconds', 'rating', 'colorTypeId', 'ratingId'].includes(key) && value !== '') {
       const num = Number(value)
@@ -118,11 +118,11 @@ const prepareMovieData = (data: MovieFormData) => {
       prepared[key] = value
     }
   })
-  
+
   // Valores por defecto
   prepared.status = prepared.status || 'PUBLISHED'
   prepared.dataCompleteness = prepared.dataCompleteness || 'BASIC_PRESS_KIT'
-  
+
   return prepared
 }
 
@@ -230,6 +230,13 @@ export default function AdminMoviesPage() {
   } = useForm<MovieFormData>({
     resolver: zodResolver(movieFormSchema)
   })
+
+  const getErrorMessage = (error: any): string => {
+    if (!error) return '';
+    if (typeof error === 'string') return error;
+    if (error?.message) return error.message;
+    return 'Este campo tiene un error';
+  }
 
   // FUNCIONES PARA TIPO DE DURACIÓN
   const calcularTipoDuracion = (minutos: number | null | undefined, segundos: number | null | undefined = 0): string => {
@@ -389,57 +396,57 @@ export default function AdminMoviesPage() {
 
   // Crear o actualizar película
   const onSubmit = async (data: MovieFormData) => {
-  try {
-    // Preparar los datos correctamente
-    const preparedData = prepareMovieData(data)
-    
-    const movieData = {
-      ...preparedData,
-      metaKeywords: preparedData.metaKeywords ? preparedData.metaKeywords.split(',').map((k: string) => k.trim()) : [],
-      ...movieRelations,
-      alternativeTitles,
-      links: movieLinks
-    }
-    
-    console.log('=== DATOS ENVIADOS AL BACKEND ===');
-    console.log('movieData completo:', JSON.stringify(movieData, null, 2));
-    console.log('================================');
-    
-    const url = editingMovie
-      ? `/api/movies/${editingMovie.id}`
-      : '/api/movies'
+    try {
+      // Preparar los datos correctamente
+      const preparedData = prepareMovieData(data)
 
-    const method = editingMovie ? 'PUT' : 'POST'
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(movieData)
-    })
-
-    if (!response.ok) {
-      let errorMessage = 'Error al guardar la película'
-      try {
-        const error = await response.json()
-        errorMessage = error.error || error.message || errorMessage
-      } catch (e) {
-        console.error('Error parsing response:', e)
+      const movieData = {
+        ...preparedData,
+        metaKeywords: preparedData.metaKeywords ? preparedData.metaKeywords.split(',').map((k: string) => k.trim()) : [],
+        ...movieRelations,
+        alternativeTitles,
+        links: movieLinks
       }
-      throw new Error(errorMessage)
-    }
 
-    toast.success(editingMovie ? 'Película actualizada' : 'Película creada')
-    setShowModal(false)
-    reset()
-    setEditingMovie(null)
-    setMovieFormInitialData(null)
-    fetchMovies()
-  } catch (error) {
-    console.error('❌ Error in onSubmit:', error)
-    toast.error(error instanceof Error ? error.message : 'Error al guardar')
+      console.log('=== DATOS ENVIADOS AL BACKEND ===');
+      console.log('movieData completo:', JSON.stringify(movieData, null, 2));
+      console.log('================================');
+
+      const url = editingMovie
+        ? `/api/movies/${editingMovie.id}`
+        : '/api/movies'
+
+      const method = editingMovie ? 'PUT' : 'POST'
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(movieData)
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'Error al guardar la película'
+        try {
+          const error = await response.json()
+          errorMessage = error.error || error.message || errorMessage
+        } catch (e) {
+          console.error('Error parsing response:', e)
+        }
+        throw new Error(errorMessage)
+      }
+
+      toast.success(editingMovie ? 'Película actualizada' : 'Película creada')
+      setShowModal(false)
+      reset()
+      setEditingMovie(null)
+      setMovieFormInitialData(null)
+      fetchMovies()
+    } catch (error) {
+      console.error('❌ Error in onSubmit:', error)
+      toast.error(error instanceof Error ? error.message : 'Error al guardar')
+    }
   }
-}
 
   // Editar película
   const handleEdit = async (movie: Movie) => {
@@ -977,8 +984,8 @@ export default function AdminMoviesPage() {
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                           />
                           {errors.title && (
-                            <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
-                          )}
+  <p className="mt-1 text-sm text-red-600">{getErrorMessage(errors.title)}</p>
+)}
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -992,7 +999,7 @@ export default function AdminMoviesPage() {
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                             />
                             {errors.year && (
-                              <p className="mt-1 text-sm text-red-600">{errors.year.message}</p>
+                              <p className="mt-1 text-sm text-red-600">{getErrorMessage(errors.year)}</p>
                             )}
                           </div>
 
@@ -1055,7 +1062,7 @@ export default function AdminMoviesPage() {
                             placeholder="0-59"
                           />
                           {errors.durationSeconds && (
-                            <p className="mt-1 text-sm text-red-600">{errors.durationSeconds.message}</p>
+                            <p className="mt-1 text-sm text-red-600">{getErrorMessage(errors.durationSeconds)}</p>
                           )}
                         </div>
 
