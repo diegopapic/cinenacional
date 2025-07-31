@@ -181,6 +181,7 @@ export async function POST(request: NextRequest) {
       distributionCompanies,
       alternativeTitles,
       themes,
+      links,
       ...movieData
     } = validatedData
 
@@ -250,6 +251,14 @@ export async function POST(request: NextRequest) {
           create: themes.map(themeId => ({
             themeId
           }))
+        } : undefined,
+        links: links ? {
+          create: links.map((link: any) => ({
+            type: link.type,
+            url: link.url,
+            title: link.title,
+            isActive: link.isActive !== false
+          }))
         } : undefined
       },
       include: {
@@ -283,7 +292,8 @@ export async function POST(request: NextRequest) {
             language: true
           }
         },
-        alternativeTitles: true
+        alternativeTitles: true,
+        links: true
       }
     })
 

@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-07-30T18:28:51.611Z
+# Generado automáticamente el: 2025-07-31T00:14:24.058Z
 # ================================================
 
 ## Schema Prisma
@@ -76,6 +76,7 @@ model Movie {
   watchlists       UserWatchlist[]
   watchedBy        UserWatched[]
   alternativeTitles MovieAlternativeTitle[]
+  links            MovieLink[]
   
   @@map("movies")
   @@index([slug])
@@ -101,6 +102,24 @@ model MovieAlternativeTitle {
   @@map("movie_alternative_titles")
   @@index([movieId])
   @@index([title])
+}
+
+model MovieLink {
+  id        Int      @id @default(autoincrement())
+  movieId   Int      @map("movie_id")
+  type      LinkType
+  url       String   @db.Text
+  title     String?  @db.VarChar(255)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // Relaciones
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  
+  @@map("movie_links")
+  @@index([movieId])
+  @@index([type])
 }
 
 model Person {
@@ -197,6 +216,17 @@ enum DataCompleteness {
   FULL_CREW           // Todos los técnicos
   
   @@map("data_completeness")
+}
+
+enum LinkType {
+  INSTAGRAM
+  TWITTER
+  FACEBOOK
+  TIKTOK
+  YOUTUBE
+  WEBSITE
+  
+  @@map("link_type")
 }
 
 // =====================================================
@@ -592,6 +622,9 @@ enum AwardResult {
 CREATE TYPE "data_completeness" AS ENUM ('BASIC_PRESS_KIT', 'FULL_PRESS_KIT', 'MAIN_CAST', 'MAIN_CREW', 'FULL_CAST', 'FULL_CREW');
 
 -- CreateEnum
+CREATE TYPE "link_type" AS ENUM ('INSTAGRAM', 'TWITTER', 'FACEBOOK', 'TIKTOK', 'YOUTUBE', 'WEBSITE');
+
+-- CreateEnum
 CREATE TYPE "movie_status" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
 
 -- CreateEnum
@@ -642,6 +675,20 @@ CREATE TABLE "movie_alternative_titles" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "movie_alternative_titles_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "movie_links" (
+    "id" SERIAL NOT NULL,
+    "movie_id" INTEGER NOT NULL,
+    "type" "link_type" NOT NULL,
+    "url" TEXT NOT NULL,
+    "title" VARCHAR(255),
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "movie_links_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -999,6 +1046,12 @@ CREATE INDEX "movie_alternative_titles_movie_id_idx" ON "movie_alternative_title
 CREATE INDEX "movie_alternative_titles_title_idx" ON "movie_alternative_titles"("title");
 
 -- CreateIndex
+CREATE INDEX "movie_links_movie_id_idx" ON "movie_links"("movie_id");
+
+-- CreateIndex
+CREATE INDEX "movie_links_type_idx" ON "movie_links"("type");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "people_slug_key" ON "people"("slug");
 
 -- CreateIndex
@@ -1075,6 +1128,9 @@ ALTER TABLE "movies" ADD CONSTRAINT "movies_rating_id_fkey" FOREIGN KEY ("rating
 
 -- AddForeignKey
 ALTER TABLE "movie_alternative_titles" ADD CONSTRAINT "movie_alternative_titles_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "movie_links" ADD CONSTRAINT "movie_links_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "movie_cast" ADD CONSTRAINT "movie_cast_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;

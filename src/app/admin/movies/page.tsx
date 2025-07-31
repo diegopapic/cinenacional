@@ -29,6 +29,8 @@ import { toast } from 'react-hot-toast'
 import { formatDate, formatDuration } from '@/lib/utils'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 import AlternativeTitlesManager from '@/components/admin/AlternativeTitlesManager'
+import MovieLinksManager from '@/components/admin/MovieLinksManager'
+
 
 // Importar Tabs de Radix UI
 import * as Tabs from '@radix-ui/react-tabs'
@@ -133,6 +135,8 @@ export default function AdminMoviesPage() {
   const [activeTab, setActiveTab] = useState('basic') // Estado para la pestaña activa
   const [availableRatings, setAvailableRatings] = useState<any[]>([])
   const [alternativeTitles, setAlternativeTitles] = useState<any[]>([])
+  const [movieLinks, setMovieLinks] = useState<any[]>([])
+
   // Estado para los datos iniciales del formulario
   const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
 
@@ -248,6 +252,10 @@ export default function AdminMoviesPage() {
     setMovieRelations(prev => ({ ...prev, genres }))
   }, [])
 
+  const handleLinksChange = useCallback((links: any[]) => {
+    setMovieLinks(links)
+  }, [])
+
   const handleCastChange = useCallback((cast: any[]) => {
     setMovieRelations(prev => ({ ...prev, cast }))
   }, [])
@@ -324,9 +332,13 @@ export default function AdminMoviesPage() {
         dataCompleteness: data.dataCompleteness || 'BASIC_PRESS_KIT',
         metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map(k => k.trim()) : [],
         ...movieRelations,
-        alternativeTitles
+        alternativeTitles,
+        links: movieLinks
       }
-
+      console.log('=== DATOS ENVIADOS AL BACKEND ===');
+      console.log('movieLinks:', movieLinks);
+      console.log('movieData completo:', JSON.stringify(movieData, null, 2));
+      console.log('================================');
       const url = editingMovie
         ? `/api/movies/${editingMovie.id}`
         : '/api/movies'
@@ -427,6 +439,11 @@ export default function AdminMoviesPage() {
         themes: fullMovie.themes || []
       })
 
+      if (fullMovie.links) {
+        setMovieLinks(fullMovie.links)
+      }
+
+
       // IMPORTANTE: Limpiar los datos para movieRelations
       setMovieRelations({
         genres: fullMovie.genres?.map((g: any) => g.genreId) || [],
@@ -446,7 +463,8 @@ export default function AdminMoviesPage() {
         languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
         productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
         distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
-        themes: fullMovie.themes?.map((t: any) => t.themeId) || []
+        themes: fullMovie.themes?.map((t: any) => t.themeId) || [],
+        links: fullMovie.links || []
       })
 
       setValue('dataCompleteness', fullMovie.dataCompleteness || 'BASIC_PRESS_KIT')
@@ -500,8 +518,10 @@ export default function AdminMoviesPage() {
       languages: [],
       productionCompanies: [],
       distributionCompanies: [],
-      themes: []
+      themes: [],
+      links: []
     })
+    setMovieLinks([])
     // RESETEAR ESTADO DEL TIPO DE DURACIÓN
     setTipoDuracionDisabled(false)
     setActiveTab('basic') // Resetear a la primera pestaña
@@ -1057,6 +1077,14 @@ export default function AdminMoviesPage() {
                         <p className="mt-1 text-xs text-gray-500">
                           Indica hasta qué nivel de detalle has cargado la información de esta película
                         </p>
+                      </div>
+                      {/* Links Oficiales */}
+                      <div className="mt-6">
+                        <MovieLinksManager
+                          key={`links-${editingMovie?.id || 'new'}-${movieLinks.length}`}
+                          initialLinks={movieLinks}
+                          onLinksChange={handleLinksChange}
+                        />
                       </div>
                       <div className="space-y-4">
                         <h3 className="text-lg font-medium text-gray-900 mb-4">
