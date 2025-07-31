@@ -51,6 +51,12 @@ export const movieSchema = z.object({
   themes: z.array(z.number()).optional(),
   filmingStartDate: z.string().optional(),
   filmingEndDate: z.string().optional(),
+    links: z.array(z.object({
+    type: z.string(),
+    url: z.string().url(),
+    title: z.string().optional().nullable(),
+    isActive: z.boolean().optional()
+  })).optional(),
   alternativeTitles: z.array(z.object({
     title: z.string().min(1),
     description: z.string().optional()

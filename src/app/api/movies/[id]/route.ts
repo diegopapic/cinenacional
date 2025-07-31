@@ -83,6 +83,14 @@ export async function GET(
             theme: true
           }
         },
+        links: {
+          where: {
+            isActive: true
+          },
+          orderBy: {
+            type: 'asc'
+          }
+        },
         filmingLocations: true
       }
     })
@@ -113,6 +121,10 @@ export async function PUT(
     const id = parseInt(params.id)
     const body = await request.json()
 
+    console.log('=== DATOS RECIBIDOS EN BACKEND ===');
+    console.log('body.links:', body.links);
+    console.log('================================');
+    
     // Validar datos
     const validatedData = movieSchema.parse(body)
 
@@ -139,6 +151,7 @@ export async function PUT(
       distributionCompanies,
       themes,
       alternativeTitles,
+      links,
       ...movieData
     } = validatedData
 
@@ -279,7 +292,23 @@ export async function PUT(
         }
       }
 
-      // 10. Retornar la película actualizada con todas las relaciones
+      // 11. Actualizar links oficiales
+      if (links !== undefined) {
+        await tx.movieLink.deleteMany({ where: { movieId: id } })
+        if (links && links.length > 0) {
+          await tx.movieLink.createMany({
+            data: links.map((link: any) => ({
+              movieId: id,
+              type: link.type,
+              url: link.url,
+              title: link.title || null,
+              isActive: link.isActive !== false
+            }))
+          })
+        }
+      }
+
+      // 12. Retornar la película actualizada con todas las relaciones
       return await tx.movie.findUnique({
         where: { id },
         include: {
@@ -322,7 +351,8 @@ export async function PUT(
             include: {
               company: true
             }
-          }
+          },
+          links: true
         }
       })
     }, {
