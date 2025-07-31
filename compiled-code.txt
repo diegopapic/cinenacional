@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 968d3a2a34841d351d6864adb8bf50675e2e532e
-// Fecha: 2025-07-31T00:17:33.568Z
+// Commit: e8b054576504f83a519de6e7111efe1bd550d0d2
+// Fecha: 2025-07-31T00:19:35.982Z
 // ============================================
 
 
@@ -1947,8 +1947,7 @@ export default function AdminMoviesPage() {
       languages: [],
       productionCompanies: [],
       distributionCompanies: [],
-      themes: [],
-      links: []
+      themes: []
     })
     setMovieLinks([])
     // RESETEAR ESTADO DEL TIPO DE DURACIÓN

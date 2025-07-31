@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-07-31T00:17:33.577Z
+// Archivos del admin - 2025-07-31T00:19:35.989Z
 // ==================
 
 
@@ -1935,8 +1935,7 @@ export default function AdminMoviesPage() {
       languages: [],
       productionCompanies: [],
       distributionCompanies: [],
-      themes: [],
-      links: []
+      themes: []
     })
     setMovieLinks([])
     // RESETEAR ESTADO DEL TIPO DE DURACIÓN

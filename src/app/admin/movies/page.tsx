@@ -517,8 +517,7 @@ export default function AdminMoviesPage() {
       languages: [],
       productionCompanies: [],
       distributionCompanies: [],
-      themes: [],
-      links: []
+      themes: []
     })
     setMovieLinks([])
     // RESETEAR ESTADO DEL TIPO DE DURACIÓN
