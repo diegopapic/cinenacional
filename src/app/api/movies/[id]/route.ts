@@ -43,7 +43,7 @@ export async function GET(
             { billingOrder: 'asc' }
           ]
         },
-        countries: {
+        movieCountries: {
           include: {
             country: true
           }
@@ -334,7 +334,7 @@ export async function PUT(
               theme: true
             }
           },
-          countries: {
+          movieCountries: {
             include: {
               country: true
             }

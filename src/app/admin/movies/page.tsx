@@ -510,7 +510,7 @@ export default function AdminMoviesPage() {
         genres: fullMovie.genres || [],
         cast: fullMovie.cast || [],
         crew: fullMovie.crew || [],
-        countries: fullMovie.countries || [],
+        countries: fullMovie.movieCountries || [],
         languages: fullMovie.languages || [],
         productionCompanies: fullMovie.productionCompanies || [],
         distributionCompanies: fullMovie.distributionCompanies || [],
@@ -537,7 +537,7 @@ export default function AdminMoviesPage() {
           department: c.department,
           billingOrder: c.billingOrder
         })) || [],
-        countries: fullMovie.countries?.map((c: any) => c.countryId) || [],
+        countries: fullMovie.movieCountries?.map((c: any) => c.countryId) || [],
         languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
         productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
         distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
@@ -984,8 +984,8 @@ export default function AdminMoviesPage() {
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                           />
                           {errors.title && (
-  <p className="mt-1 text-sm text-red-600">{getErrorMessage(errors.title)}</p>
-)}
+                            <p className="mt-1 text-sm text-red-600">{getErrorMessage(errors.title)}</p>
+                          )}
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -1348,6 +1348,7 @@ export default function AdminMoviesPage() {
                             <option value="">Seleccionar...</option>
                             <option value="Sonora">Sonora</option>
                             <option value="Muda">Muda</option>
+                            <option value="n/d">No disponible</option>
                           </select>
                         </div>
                       </div>
