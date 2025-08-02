@@ -32,12 +32,17 @@ model Movie {
   
   // Información técnica
   colorTypeId      Int?     @map("color_type_id")
-  colorType        ColorType? @relation(fields: [colorTypeId], references: [id]) //
+  colorType        ColorType? @relation(fields: [colorTypeId], references: [id])
   soundType        String?  @map("sound_type") @db.VarChar(50)
   
   // Información legal
   ratingId          Int?     @map("rating_id")
   rating            Rating?  @relation(fields: [ratingId], references: [id])
+
+  // Nuevos campos para países y tipo de producción
+  countries          String[]           @default(["Argentina"])
+  is_coproduction    Boolean            @default(false)
+  production_type    String             @default("national")
 
   // Fechas de rodaje
   filmingStartDate DateTime? @map("filming_start_date") @db.Date
@@ -63,7 +68,7 @@ model Movie {
   videos           MovieVideo[]
   awards           MovieAward[]
   themes           MovieTheme[]
-  countries        MovieCountry[]
+  movieCountries   MovieCountry[]  // Renombrado de "countries" a "movieCountries" para evitar conflicto
   languages        MovieLanguage[]
   filmingLocations FilmingLocation[]
   userRatings      UserRating[]
@@ -81,6 +86,8 @@ model Movie {
   @@index([ratingId])
   @@index([filmingStartDate])
   @@index([filmingEndDate])
+  @@index([is_coproduction])
+  @@index([production_type])
   @@index([colorTypeId])
 }
 
@@ -124,7 +131,8 @@ model Person {
   birthName       String?  @map("birth_name") @db.VarChar(255)
   birthDate       DateTime? @map("birth_date") @db.Date
   deathDate       DateTime? @map("death_date") @db.Date
-  birthPlace      String?  @map("birth_place") @db.VarChar(255)
+  birthLocationId Int?     @map("birth_location_id")           
+  deathLocationId Int?     @map("death_location_id")
   nationality     String?  @db.VarChar(100)
   biography       String?  @db.Text
   photoUrl        String?  @map("photo_url") @db.VarChar(500)
@@ -148,10 +156,14 @@ model Person {
   castRoles       MovieCast[]
   crewRoles       MovieCrew[]
   awards          MovieAward[]
+  birthLocation   Location?    @relation("BirthLocation", fields: [birthLocationId], references: [id])
+  deathLocation   Location?    @relation("DeathLocation", fields: [deathLocationId], references: [id])
   
   @@map("people")
   @@index([slug])
   @@index([name])
+  @@index([birthLocationId])
+  @@index([deathLocationId])
 }
 
 model Genre {
@@ -200,37 +212,6 @@ model DistributionCompany {
   movies      MovieDistributionCompany[]
   
   @@map("distribution_companies")
-}
-
-enum DataCompleteness {
-  BASIC_PRESS_KIT     // Gacetilla básica
-  FULL_PRESS_KIT      // Gacetilla completa
-  MAIN_CAST           // Intérpretes principales
-  MAIN_CREW           // Técnicos principales  
-  FULL_CAST           // Todos los intérpretes
-  FULL_CREW           // Todos los técnicos
-  
-  @@map("data_completeness")
-}
-
-enum LinkType {
-  INSTAGRAM
-  TWITTER
-  FACEBOOK
-  TIKTOK
-  YOUTUBE
-  WEBSITE
-  
-  @@map("link_type")
-}
-
-enum ColorCategory {
-  COLOR
-  BLACK_AND_WHITE
-  MIXED
-  UNKNOWN
-  
-  @@map("color_category")
 }
 
 // =====================================================
@@ -336,6 +317,33 @@ model ColorType {
   @@index([slug])
 }
 
+model Location {
+  id              Int       @id @default(autoincrement())
+  name            String    @db.VarChar(255)
+  slug            String?   @unique @db.VarChar(255)
+  type            String    @db.VarChar(50)
+  parentId        Int?      @map("parent_id")
+  countryId       Int       @map("country_id")
+  latitude        Decimal?  @db.Decimal(10, 8)
+  longitude       Decimal?  @db.Decimal(11, 8)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  // Relaciones
+  parent          Location? @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children        Location[] @relation("LocationHierarchy")
+  country         Country   @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  peopleBornHere  Person[]  @relation("BirthLocation")
+  peopleDiedHere  Person[]  @relation("DeathLocation")
+  
+  @@map("locations")
+  @@index([parentId])
+  @@index([countryId])
+  @@index([type])
+  @@index([name])
+  @@index([slug])
+}
+
 // =====================================================
 // CONTENIDO MULTIMEDIA
 // =====================================================
@@ -421,7 +429,7 @@ model Theme {
   slug        String   @unique @db.VarChar(100)
   name        String   @db.VarChar(100)
   description String?  @db.Text
-  usageCount  Int      @default(0) @map("usage_count") // NUEVO: contador de uso
+  usageCount  Int      @default(0) @map("usage_count")
   createdAt   DateTime @default(now()) @map("created_at")
   
   // Relaciones
@@ -471,7 +479,8 @@ model Country {
   
   // Relaciones
   movies    MovieCountry[]
-  
+  locations Location[]
+
   @@map("countries")
 }
 
@@ -634,4 +643,35 @@ enum AwardResult {
   NOMINATED
   
   @@map("award_result")
+}
+
+enum DataCompleteness {
+  BASIC_PRESS_KIT     // Gacetilla básica
+  FULL_PRESS_KIT      // Gacetilla completa
+  MAIN_CAST           // Intérpretes principales
+  MAIN_CREW           // Técnicos principales  
+  FULL_CAST           // Todos los intérpretes
+  FULL_CREW           // Todos los técnicos
+  
+  @@map("data_completeness")
+}
+
+enum LinkType {
+  INSTAGRAM
+  TWITTER
+  FACEBOOK
+  TIKTOK
+  YOUTUBE
+  WEBSITE
+  
+  @@map("link_type")
+}
+
+enum ColorCategory {
+  COLOR
+  BLACK_AND_WHITE
+  MIXED
+  UNKNOWN
+  
+  @@map("color_category")
 }

@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-07-31T22:35:17.892Z",
+  "timestamp": "2025-08-02T21:45:50.832Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "640a2678cf8dc1141e4483c83d51129771bb870d",
+  "commit": "398869079118d033a314bf8d555aa72c9acfbcfe",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
@@ -44,8 +44,14 @@
         "20250130000820_add_movie_links": {
           "migration.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250130000820_add_movie_links/migration.sql"
         },
+        "20250731120000_add_locations": {
+          "migration.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250731120000_add_locations/migration.sql"
+        },
         "20250731181700_add_color_types": {
           "migration.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250731181700_add_color_types/migration.sql"
+        },
+        "20250831005700__add_countries_and_production_type": {
+          "migration.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250831005700__add_countries_and_production_type/migration.sql"
         },
         "[fecha]_add_duration_seconds": {
           "migration.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/[fecha]_add_duration_seconds/migration.sql"
@@ -77,18 +83,47 @@
     "raw_urls_prompt.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/raw_urls_prompt.txt",
     "README.md": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/README.md",
     "scripts": {
+      "analyze-acf-classification.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-acf-classification.js",
+      "analyze-wp-classification.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-classification.js",
       "analyze-wp-colors.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-colors.js",
       "analyze-wp-completeness.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-completeness.js",
+      "analyze-wp-coproduction-deep.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-coproduction-deep.js",
+      "analyze-wp-coproduction.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-coproduction.js",
+      "analyze-wp-countries-mapping.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-countries-mapping.js",
+      "analyze-wp-countries.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-countries.js",
+      "analyze-wp-location-errors.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-location-errors.js",
+      "analyze-wp-locations-deep.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-locations-deep.js",
+      "analyze-wp-locations.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-locations.js",
+      "analyze-wp-sound-discrepancy.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-sound-discrepancy.js",
+      "analyze-wp-sound-migration-history.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-sound-migration-history.js",
+      "analyze-wp-sound-types.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-sound-types.js",
+      "check-classification-values.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-classification-values.js",
+      "check-supabase-structure.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-supabase-structure.js",
+      "check-taxonomy-confusion.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-taxonomy-confusion.js",
       "compile-project-code.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/compile-project-code.js",
+      "debug-wp-classification.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/debug-wp-classification.js",
+      "deep-analyze-wp-classification.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/deep-analyze-wp-classification.js",
       "export-db-structure.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/export-db-structure.js",
       "extract-titles-to-json.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/extract-titles-to-json.js",
+      "find-wp-locations-mystery.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/find-wp-locations-mystery.js",
       "generate-structure.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/generate-structure.js",
       "import-via-supabase-api.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/import-via-supabase-api.js",
+      "investigate-person-locations.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/investigate-person-locations.js",
+      "map-wp-classification.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/map-wp-classification.js",
+      "migrate-countries-final.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-countries-final.js",
+      "migrate-countries-simple.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-countries-simple.js",
       "migrate-titles-simple.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-titles-simple.js",
       "migrate-titles.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-titles.js",
+      "migrate-wp-countries-correct.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-countries-correct.js",
       "migrate-wp-titles-supabase.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-titles-supabase.js",
       "migrate-wp-to-supabase-complete.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-to-supabase-complete.js",
-      "test-connection.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/test-connection.js"
+      "migrate-wp-to-supabase-full.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-to-supabase-full.js",
+      "migrate-wp-to-supabase-with-coproduction.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-to-supabase-with-coproduction.js",
+      "script.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/script.js",
+      "search-tandil-everywhere.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/search-tandil-everywhere.js",
+      "test-connection.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/test-connection.js",
+      "test-locations.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/test-locations.js",
+      "update-movies-coproduction-fields.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/update-movies-coproduction-fields.js"
     },
     "src": {
       "app": {

@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
             person: true
           }
         },
-        countries: {
+        movieCountries: {  // CAMBIADO DE countries A movieCountries
           where: {
             isPrimary: true
           },
@@ -129,7 +129,10 @@ export async function GET(request: NextRequest) {
         person: c.person,
         character: c.characterName
       })),
-      country: movie.countries[0]?.country.name || 'Argentina',
+      country: movie.movieCountries[0]?.country.name || 'Argentina',  // CAMBIADO DE countries A movieCountries
+      countries: movie.countries || ['Argentina'],  // Campo array directo
+      isCoProduction: movie.is_coproduction || false,
+      productionType: movie.production_type || 'national',
       themes: movie.themes
     }))
 
@@ -155,8 +158,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-
-
 
     // Validar datos
     const validatedData = movieSchema.parse(body)
@@ -226,7 +227,7 @@ export async function POST(request: NextRequest) {
         crew: crew ? {
           create: crew
         } : undefined,
-        countries: countries ? {
+        movieCountries: countries ? {  // CAMBIADO DE countries A movieCountries
           create: countries.map((countryId, index) => ({
             countryId,
             isPrimary: index === 0
@@ -280,7 +281,7 @@ export async function POST(request: NextRequest) {
             person: true
           }
         },
-        countries: {
+        movieCountries: {  // CAMBIADO DE countries A movieCountries
           include: {
             country: true
           }

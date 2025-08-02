@@ -1,4 +1,4 @@
-// src/components/admin/MovieFormEnhanced.tsx - Versión actualizada para pestañas
+// src/components/admin/MovieFormEnhanced.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -11,11 +11,9 @@ import {
   Globe,
   Languages,
   Hash,
-  Trash2
+  Trash2,
+  Tag
 } from 'lucide-react'
-import { CountrySelector } from './CountrySelector'
-import { ThemeSelector } from './ThemeSelector'
-import { Tag } from 'lucide-react'
 
 interface MovieFormEnhancedProps {
   onGenresChange: (genres: number[]) => void
@@ -25,7 +23,7 @@ interface MovieFormEnhancedProps {
   onLanguagesChange: (languages: number[]) => void
   onProductionCompaniesChange: (companies: number[]) => void
   onDistributionCompaniesChange: (companies: number[]) => void
-  onThemesChange: (themes: number[]) => void
+  onThemesChange?: (themes: number[]) => void
   initialData?: {
     genres?: any[]
     cast?: any[]
@@ -35,9 +33,7 @@ interface MovieFormEnhancedProps {
     productionCompanies?: any[]
     distributionCompanies?: any[]
     themes?: any[]
-    colorType?: any
   }
-  // Nuevas props para controlar qué mostrar
   showOnlyBasicInfo?: boolean
   showOnlyCast?: boolean
   showOnlyCrew?: boolean
@@ -52,7 +48,7 @@ export default function MovieFormEnhanced({
   onLanguagesChange,
   onProductionCompaniesChange,
   onDistributionCompaniesChange,
-  onThemesChange,
+  onThemesChange = () => {},
   initialData,
   showOnlyBasicInfo = false,
   showOnlyCast = false,
@@ -66,6 +62,7 @@ export default function MovieFormEnhanced({
   const [availableLanguages, setAvailableLanguages] = useState<any[]>([])
   const [availableProductionCompanies, setAvailableProductionCompanies] = useState<any[]>([])
   const [availableDistributionCompanies, setAvailableDistributionCompanies] = useState<any[]>([])
+  const [availableThemes, setAvailableThemes] = useState<any[]>([])
 
   // Estados para las selecciones
   const [selectedGenres, setSelectedGenres] = useState<number[]>([])
@@ -75,7 +72,6 @@ export default function MovieFormEnhanced({
   const [selectedLanguages, setSelectedLanguages] = useState<number[]>([])
   const [selectedProductionCompanies, setSelectedProductionCompanies] = useState<number[]>([])
   const [selectedDistributionCompanies, setSelectedDistributionCompanies] = useState<number[]>([])
-  const [availableThemes, setAvailableThemes] = useState<any[]>([])
   const [selectedThemes, setSelectedThemes] = useState<number[]>([])
 
   // Estados para búsqueda
@@ -99,35 +95,61 @@ export default function MovieFormEnhanced({
     fetchInitialData()
   }, [])
 
-  // Inicializar con datos existentes
+  // Inicializar con datos existentes - CORREGIDO
   useEffect(() => {
-    if (initialData) {
+    if (initialData && !isInitialized) {
+      console.log('Inicializando MovieFormEnhanced con:', initialData)
+      
       if (initialData.genres) {
-        setSelectedGenres(initialData.genres.map(g => g.genreId))
+        const genreIds = initialData.genres.map(g => g.genreId || g.id)
+        setSelectedGenres(genreIds)
       }
+      
       if (initialData.cast) {
         setCast(initialData.cast)
       }
+      
       if (initialData.crew) {
         setCrew(initialData.crew)
       }
+      
+      // CORRECCIÓN IMPORTANTE: Manejar correctamente los países
       if (initialData.countries) {
-        setSelectedCountries(initialData.countries.map(c => c.countryId))
+        const countryIds = initialData.countries.map(c => {
+          // Manejar diferentes estructuras posibles
+          if (typeof c === 'number') return c
+          if (c.countryId) return c.countryId
+          if (c.id) return c.id
+          if (c.country && c.country.id) return c.country.id
+          return null
+        }).filter(id => id !== null)
+        
+        console.log('Country IDs extraídos:', countryIds)
+        setSelectedCountries(countryIds)
       }
+      
       if (initialData.languages) {
-        setSelectedLanguages(initialData.languages.map(l => l.languageId))
+        const languageIds = initialData.languages.map(l => l.languageId || l.id)
+        setSelectedLanguages(languageIds)
       }
+      
       if (initialData.productionCompanies) {
-        setSelectedProductionCompanies(initialData.productionCompanies.map(c => c.companyId))
+        const companyIds = initialData.productionCompanies.map(c => c.companyId || c.id || c.company?.id)
+        setSelectedProductionCompanies(companyIds)
       }
+      
       if (initialData.distributionCompanies) {
-        setSelectedDistributionCompanies(initialData.distributionCompanies.map(c => c.companyId))
+        const companyIds = initialData.distributionCompanies.map(c => c.companyId || c.id || c.company?.id)
+        setSelectedDistributionCompanies(companyIds)
       }
+      
       if (initialData.themes) {
-        setSelectedThemes(initialData.themes.map(t => t.themeId))
+        const themeIds = initialData.themes.map(t => t.themeId || t.id)
+        setSelectedThemes(themeIds)
       }
+      
+      setIsInitialized(true)
     }
-    setIsInitialized(true)
   }, [initialData])
 
   // Notificar cambios al componente padre
@@ -139,41 +161,22 @@ export default function MovieFormEnhanced({
 
   useEffect(() => {
     if (isInitialized) {
-      // Limpiar cast antes de enviar al padre
-      const cleanCast = cast.map(item => ({
-        personId: item.personId,
-        characterName: item.characterName,
-        billingOrder: item.billingOrder,
-        isPrincipal: item.isPrincipal
-      }))
-      onCastChange(cleanCast)
+      onCastChange(cast)
     }
   }, [cast, onCastChange, isInitialized])
 
   useEffect(() => {
     if (isInitialized) {
-      // Limpiar crew antes de enviar al padre
-      const cleanCrew = crew.map(item => ({
-        personId: item.personId,
-        role: item.role,
-        department: item.department,
-        billingOrder: item.billingOrder
-      }))
-      onCrewChange(cleanCrew)
+      onCrewChange(crew)
     }
   }, [crew, onCrewChange, isInitialized])
 
   useEffect(() => {
     if (isInitialized) {
+      console.log('Notificando cambio de países:', selectedCountries)
       onCountriesChange(selectedCountries)
     }
   }, [selectedCountries, onCountriesChange, isInitialized])
-
-  useEffect(() => {
-    if (isInitialized) {
-      onThemesChange(selectedThemes)
-    }
-  }, [selectedThemes, onThemesChange, isInitialized])
 
   useEffect(() => {
     if (isInitialized) {
@@ -193,7 +196,11 @@ export default function MovieFormEnhanced({
     }
   }, [selectedDistributionCompanies, onDistributionCompaniesChange, isInitialized])
 
-  
+  useEffect(() => {
+    if (isInitialized) {
+      onThemesChange(selectedThemes)
+    }
+  }, [selectedThemes, onThemesChange, isInitialized])
 
   // Cargar datos de la API
   const fetchInitialData = async () => {
@@ -204,11 +211,11 @@ export default function MovieFormEnhanced({
         fetch('/api/languages'),
         fetch('/api/companies/production'),
         fetch('/api/companies/distribution'),
-        fetch('/api/themes')
+        fetch('/api/themes').catch(() => ({ ok: false, json: () => [] }))
       ])
 
       // Verificar que todas las respuestas sean OK
-      if (!genresRes.ok || !countriesRes.ok || !languagesRes.ok || !prodCompaniesRes.ok || !distCompaniesRes.ok || !themesRes.ok) {
+      if (!genresRes.ok || !countriesRes.ok || !languagesRes.ok || !prodCompaniesRes.ok || !distCompaniesRes.ok) {
         throw new Error('Error fetching data')
       }
 
@@ -218,7 +225,7 @@ export default function MovieFormEnhanced({
         languagesRes.json(),
         prodCompaniesRes.json(),
         distCompaniesRes.json(),
-        themesRes.json()
+        themesRes.ok ? themesRes.json() : []
       ])
 
       // Asegurar que siempre sean arrays
@@ -228,6 +235,8 @@ export default function MovieFormEnhanced({
       setAvailableProductionCompanies(Array.isArray(prodCompanies) ? prodCompanies : [])
       setAvailableDistributionCompanies(Array.isArray(distCompanies) ? distCompanies : [])
       setAvailableThemes(Array.isArray(themes) ? themes : [])
+      
+      console.log('Países disponibles cargados:', countries)
     } catch (error) {
       console.error('Error loading initial data:', error)
       // Asegurar que los estados sean arrays vacíos en caso de error
@@ -312,7 +321,7 @@ export default function MovieFormEnhanced({
     }
   }
 
-  // Renderizar solo el contenido según las props
+  // Renderizar solo las secciones necesarias según las props
   if (showOnlyBasicInfo) {
     return (
       <div className="space-y-6">
@@ -346,32 +355,59 @@ export default function MovieFormEnhanced({
           </div>
         </div>
 
-        {/* Países - ACTUALIZADO CON EL NUEVO COMPONENTE */}
+        {/* Países */}
         <div>
           <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
             <Globe className="w-5 h-5" />
             Países Coproductores
           </h3>
-          <CountrySelector
-            availableCountries={availableCountries}
-            selectedCountries={selectedCountries}
-            onChange={setSelectedCountries}
-            placeholder="Buscar país coproductor..."
-          />
+          
+          {/* Tags de países seleccionados */}
+          {selectedCountries.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {selectedCountries.map(countryId => {
+                const country = availableCountries.find(c => c.id === countryId)
+                if (!country) return null
+                return (
+                  <span
+                    key={country.id}
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                  >
+                    {country.name}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCountries(selectedCountries.filter(id => id !== country.id))}
+                      className="ml-1 hover:text-blue-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )
+              })}
+            </div>
+          )}
+          
+          {/* Select para agregar países */}
+          <select
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value=""
+            onChange={(e) => {
+              const countryId = parseInt(e.target.value)
+              if (countryId && !selectedCountries.includes(countryId)) {
+                setSelectedCountries([...selectedCountries, countryId])
+              }
+            }}
+          >
+            <option value="">Seleccionar país...</option>
+            {availableCountries
+              .filter(country => !selectedCountries.includes(country.id))
+              .map((country: any) => (
+                <option key={country.id} value={country.id}>
+                  {country.name}
+                </option>
+              ))}
+          </select>
         </div>
-        {/* Themes/Keywords */}
-<div>
-  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-    <Tag className="w-5 h-5" />
-    Themes / Keywords
-  </h3>
-  <ThemeSelector
-    availableThemes={availableThemes}
-    selectedThemes={selectedThemes}
-    onChange={setSelectedThemes}
-    placeholder="Buscar theme..."
-  />
-</div>
 
         {/* Idiomas */}
         <div>
@@ -379,81 +415,112 @@ export default function MovieFormEnhanced({
             <Languages className="w-5 h-5" />
             Idiomas
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <select
+            multiple
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={selectedLanguages.map(String)}
+            onChange={(e) => {
+              const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value))
+              setSelectedLanguages(selected)
+            }}
+          >
             {availableLanguages.map((language: any) => (
-              <label
-                key={language.id}
-                className="inline-flex items-center"
-              >
-                <input
-                  type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  checked={selectedLanguages.includes(language.id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedLanguages([...selectedLanguages, language.id])
-                    } else {
-                      setSelectedLanguages(selectedLanguages.filter(id => id !== language.id))
-                    }
-                  }}
-                />
-                <span className="ml-2 text-sm text-gray-700">{language.name}</span>
-              </label>
+              <option key={language.id} value={language.id}>
+                {language.name}
+              </option>
             ))}
-          </div>
+          </select>
+          <p className="mt-1 text-sm text-gray-500">
+            Mantén presionado Ctrl/Cmd para seleccionar múltiples opciones
+          </p>
         </div>
+
+        {/* Temas */}
+        {availableThemes.length > 0 && (
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+              <Tag className="w-5 h-5" />
+              Temas
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {availableThemes.map((theme: any) => (
+                <label
+                  key={theme.id}
+                  className="inline-flex items-center"
+                >
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    checked={selectedThemes.includes(theme.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedThemes([...selectedThemes, theme.id])
+                      } else {
+                        setSelectedThemes(selectedThemes.filter(id => id !== theme.id))
+                      }
+                    }}
+                  />
+                  <span className="ml-2 text-sm text-gray-700">{theme.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     )
   }
 
   if (showOnlyCast) {
     return (
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-          <UserPlus className="w-5 h-5" />
-          Reparto
-        </h3>
+      <div className="space-y-6">
+        {/* Cast */}
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+            <UserPlus className="w-5 h-5" />
+            Reparto
+          </h3>
 
-        {cast.length > 0 && (
-          <div className="mb-4 space-y-2">
-            {cast.map((member, index) => (
-              <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <span className="font-medium">{member.person.name}</span>
-                  {member.characterName && (
-                    <span className="text-gray-500"> como {member.characterName}</span>
-                  )}
+          {cast.length > 0 && (
+            <div className="mb-4 space-y-2">
+              {cast.map((member, index) => (
+                <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <span className="font-medium">{member.person?.name || 'Sin nombre'}</span>
+                    {member.characterName && (
+                      <span className="text-gray-500"> como {member.characterName}</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCast(cast.filter((_, i) => i !== index))}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setCast(cast.filter((_, i) => i !== index))}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
 
-        <button
-          type="button"
-          onClick={() => {
-            setAddingType('cast')
-            setShowPersonSearch(true)
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-        >
-          <Plus className="w-4 h-4" />
-          Agregar Actor/Actriz
-        </button>
+          <button
+            type="button"
+            onClick={() => {
+              setAddingType('cast')
+              setShowPersonSearch(true)
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <Plus className="w-4 h-4" />
+            Agregar Actor/Actriz
+          </button>
+        </div>
 
         {/* Modal de búsqueda de personas */}
-        {showPersonSearch && addingType === 'cast' && (
+        {showPersonSearch && (
           <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg max-w-md w-full p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Agregar Actor/Actriz
+                {addingType === 'cast' ? 'Agregar Actor/Actriz' : 'Agregar Miembro del Equipo'}
               </h3>
 
               <div className="space-y-4">
@@ -483,8 +550,9 @@ export default function MovieFormEnhanced({
                           key={person.id}
                           type="button"
                           onClick={() => setNewPerson({ ...newPerson, personId: person.id })}
-                          className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${newPerson.personId === person.id ? 'bg-blue-50' : ''
-                            }`}
+                          className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${
+                            newPerson.personId === person.id ? 'bg-blue-50' : ''
+                          }`}
                         >
                           {person.name}
                         </button>
@@ -503,19 +571,73 @@ export default function MovieFormEnhanced({
                   )}
                 </div>
 
-                {/* Campo de personaje */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Personaje
-                  </label>
-                  <input
-                    type="text"
-                    value={newPerson.characterName}
-                    onChange={(e) => setNewPerson({ ...newPerson, characterName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Nombre del personaje"
-                  />
-                </div>
+                {/* Campos específicos según el tipo */}
+                {addingType === 'cast' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Personaje
+                    </label>
+                    <input
+                      type="text"
+                      value={newPerson.characterName}
+                      onChange={(e) => setNewPerson({ ...newPerson, characterName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Nombre del personaje"
+                    />
+                  </div>
+                )}
+
+                {addingType === 'crew' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Rol
+                      </label>
+                      <select
+                        value={newPerson.role}
+                        onChange={(e) => setNewPerson({ ...newPerson, role: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Director">Director</option>
+                        <option value="Guionista">Guionista</option>
+                        <option value="Productor">Productor</option>
+                        <option value="Productor Ejecutivo">Productor Ejecutivo</option>
+                        <option value="Director de Fotografía">Director de Fotografía</option>
+                        <option value="Editor">Editor</option>
+                        <option value="Compositor">Compositor</option>
+                        <option value="Director de Arte">Director de Arte</option>
+                        <option value="Diseñador de Vestuario">Diseñador de Vestuario</option>
+                        <option value="Maquillador">Maquillador</option>
+                        <option value="Sonidista">Sonidista</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Departamento
+                      </label>
+                      <select
+                        value={newPerson.department}
+                        onChange={(e) => setNewPerson({ ...newPerson, department: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Dirección">Dirección</option>
+                        <option value="Guión">Guión</option>
+                        <option value="Producción">Producción</option>
+                        <option value="Fotografía">Fotografía</option>
+                        <option value="Montaje">Montaje</option>
+                        <option value="Música">Música</option>
+                        <option value="Arte">Arte</option>
+                        <option value="Vestuario">Vestuario</option>
+                        <option value="Maquillaje">Maquillaje</option>
+                        <option value="Sonido">Sonido</option>
+                        <option value="Efectos Especiales">Efectos Especiales</option>
+                      </select>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Botones de acción */}
@@ -541,7 +663,7 @@ export default function MovieFormEnhanced({
                 <button
                   type="button"
                   onClick={addPerson}
-                  disabled={!newPerson.personId}
+                  disabled={!newPerson.personId || (addingType === 'crew' && !newPerson.role)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Agregar
@@ -556,53 +678,56 @@ export default function MovieFormEnhanced({
 
   if (showOnlyCrew) {
     return (
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-          <UserPlus className="w-5 h-5" />
-          Equipo Técnico
-        </h3>
+      <div className="space-y-6">
+        {/* Crew */}
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+            <UserPlus className="w-5 h-5" />
+            Equipo Técnico
+          </h3>
 
-        {crew.length > 0 && (
-          <div className="mb-4 space-y-2">
-            {crew.map((member, index) => (
-              <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <span className="font-medium">{member.person.name}</span>
-                  <span className="text-gray-500"> - {member.role}</span>
-                  {member.department && (
-                    <span className="text-gray-400"> ({member.department})</span>
-                  )}
+          {crew.length > 0 && (
+            <div className="mb-4 space-y-2">
+              {crew.map((member, index) => (
+                <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <span className="font-medium">{member.person?.name || 'Sin nombre'}</span>
+                    <span className="text-gray-500"> - {member.role}</span>
+                    {member.department && (
+                      <span className="text-gray-400"> ({member.department})</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCrew(crew.filter((_, i) => i !== index))}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setCrew(crew.filter((_, i) => i !== index))}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
 
-        <button
-          type="button"
-          onClick={() => {
-            setAddingType('crew')
-            setShowPersonSearch(true)
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-        >
-          <Plus className="w-4 h-4" />
-          Agregar Miembro del Equipo
-        </button>
+          <button
+            type="button"
+            onClick={() => {
+              setAddingType('crew')
+              setShowPersonSearch(true)
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <Plus className="w-4 h-4" />
+            Agregar Miembro del Equipo
+          </button>
+        </div>
 
-        {/* Modal de búsqueda de personas para crew */}
-        {showPersonSearch && addingType === 'crew' && (
+        {/* Modal de búsqueda de personas */}
+        {showPersonSearch && (
           <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg max-w-md w-full p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Agregar Miembro del Equipo
+                {addingType === 'cast' ? 'Agregar Actor/Actriz' : 'Agregar Miembro del Equipo'}
               </h3>
 
               <div className="space-y-4">
@@ -632,8 +757,9 @@ export default function MovieFormEnhanced({
                           key={person.id}
                           type="button"
                           onClick={() => setNewPerson({ ...newPerson, personId: person.id })}
-                          className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${newPerson.personId === person.id ? 'bg-blue-50' : ''
-                            }`}
+                          className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${
+                            newPerson.personId === person.id ? 'bg-blue-50' : ''
+                          }`}
                         >
                           {person.name}
                         </button>
@@ -652,54 +778,73 @@ export default function MovieFormEnhanced({
                   )}
                 </div>
 
-                {/* Campos específicos para crew */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Rol
-                  </label>
-                  <select
-                    value={newPerson.role}
-                    onChange={(e) => setNewPerson({ ...newPerson, role: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Seleccionar...</option>
-                    <option value="Director">Director</option>
-                    <option value="Guionista">Guionista</option>
-                    <option value="Productor">Productor</option>
-                    <option value="Productor Ejecutivo">Productor Ejecutivo</option>
-                    <option value="Director de Fotografía">Director de Fotografía</option>
-                    <option value="Editor">Editor</option>
-                    <option value="Compositor">Compositor</option>
-                    <option value="Director de Arte">Director de Arte</option>
-                    <option value="Diseñador de Vestuario">Diseñador de Vestuario</option>
-                    <option value="Maquillador">Maquillador</option>
-                    <option value="Sonidista">Sonidista</option>
-                  </select>
-                </div>
+                {/* Campos específicos según el tipo */}
+                {addingType === 'cast' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Personaje
+                    </label>
+                    <input
+                      type="text"
+                      value={newPerson.characterName}
+                      onChange={(e) => setNewPerson({ ...newPerson, characterName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Nombre del personaje"
+                    />
+                  </div>
+                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Departamento
-                  </label>
-                  <select
-                    value={newPerson.department}
-                    onChange={(e) => setNewPerson({ ...newPerson, department: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Seleccionar...</option>
-                    <option value="Dirección">Dirección</option>
-                    <option value="Guión">Guión</option>
-                    <option value="Producción">Producción</option>
-                    <option value="Fotografía">Fotografía</option>
-                    <option value="Montaje">Montaje</option>
-                    <option value="Música">Música</option>
-                    <option value="Arte">Arte</option>
-                    <option value="Vestuario">Vestuario</option>
-                    <option value="Maquillaje">Maquillaje</option>
-                    <option value="Sonido">Sonido</option>
-                    <option value="Efectos Especiales">Efectos Especiales</option>
-                  </select>
-                </div>
+                {addingType === 'crew' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Rol
+                      </label>
+                      <select
+                        value={newPerson.role}
+                        onChange={(e) => setNewPerson({ ...newPerson, role: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Director">Director</option>
+                        <option value="Guionista">Guionista</option>
+                        <option value="Productor">Productor</option>
+                        <option value="Productor Ejecutivo">Productor Ejecutivo</option>
+                        <option value="Director de Fotografía">Director de Fotografía</option>
+                        <option value="Editor">Editor</option>
+                        <option value="Compositor">Compositor</option>
+                        <option value="Director de Arte">Director de Arte</option>
+                        <option value="Diseñador de Vestuario">Diseñador de Vestuario</option>
+                        <option value="Maquillador">Maquillador</option>
+                        <option value="Sonidista">Sonidista</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Departamento
+                      </label>
+                      <select
+                        value={newPerson.department}
+                        onChange={(e) => setNewPerson({ ...newPerson, department: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="Dirección">Dirección</option>
+                        <option value="Guión">Guión</option>
+                        <option value="Producción">Producción</option>
+                        <option value="Fotografía">Fotografía</option>
+                        <option value="Montaje">Montaje</option>
+                        <option value="Música">Música</option>
+                        <option value="Arte">Arte</option>
+                        <option value="Vestuario">Vestuario</option>
+                        <option value="Maquillaje">Maquillaje</option>
+                        <option value="Sonido">Sonido</option>
+                        <option value="Efectos Especiales">Efectos Especiales</option>
+                      </select>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Botones de acción */}
@@ -725,7 +870,7 @@ export default function MovieFormEnhanced({
                 <button
                   type="button"
                   onClick={addPerson}
-                  disabled={!newPerson.personId || !newPerson.role}
+                  disabled={!newPerson.personId || (addingType === 'crew' && !newPerson.role)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Agregar
@@ -796,7 +941,7 @@ export default function MovieFormEnhanced({
     )
   }
 
-  // Si no se especifica ninguna prop de mostrar solo, mostrar todo (comportamiento original)
+  // Renderizar todo por defecto
   return (
     <div className="space-y-6">
       {/* Géneros */}
@@ -841,7 +986,7 @@ export default function MovieFormEnhanced({
             {cast.map((member, index) => (
               <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                 <div className="flex-1">
-                  <span className="font-medium">{member.person.name}</span>
+                  <span className="font-medium">{member.person?.name || 'Sin nombre'}</span>
                   {member.characterName && (
                     <span className="text-gray-500"> como {member.characterName}</span>
                   )}
@@ -883,7 +1028,7 @@ export default function MovieFormEnhanced({
             {crew.map((member, index) => (
               <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                 <div className="flex-1">
-                  <span className="font-medium">{member.person.name}</span>
+                  <span className="font-medium">{member.person?.name || 'Sin nombre'}</span>
                   <span className="text-gray-500"> - {member.role}</span>
                   {member.department && (
                     <span className="text-gray-400"> ({member.department})</span>
@@ -920,26 +1065,26 @@ export default function MovieFormEnhanced({
           <Globe className="w-5 h-5" />
           Países Coproductores
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        <div className="flex flex-wrap gap-2">
           {availableCountries.map((country: any) => (
-            <label
+            <button
               key={country.id}
-              className="inline-flex items-center"
+              type="button"
+              onClick={() => {
+                if (selectedCountries.includes(country.id)) {
+                  setSelectedCountries(selectedCountries.filter(id => id !== country.id))
+                } else {
+                  setSelectedCountries([...selectedCountries, country.id])
+                }
+              }}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                selectedCountries.includes(country.id)
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
             >
-              <input
-                type="checkbox"
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                checked={selectedCountries.includes(country.id)}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setSelectedCountries([...selectedCountries, country.id])
-                  } else {
-                    setSelectedCountries(selectedCountries.filter(id => id !== country.id))
-                  }
-                }}
-              />
-              <span className="ml-2 text-sm text-gray-700">{country.name}</span>
-            </label>
+              {country.name}
+            </button>
           ))}
         </div>
       </div>
@@ -950,28 +1095,24 @@ export default function MovieFormEnhanced({
           <Languages className="w-5 h-5" />
           Idiomas
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        <select
+          multiple
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          value={selectedLanguages.map(String)}
+          onChange={(e) => {
+            const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value))
+            setSelectedLanguages(selected)
+          }}
+        >
           {availableLanguages.map((language: any) => (
-            <label
-              key={language.id}
-              className="inline-flex items-center"
-            >
-              <input
-                type="checkbox"
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                checked={selectedLanguages.includes(language.id)}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setSelectedLanguages([...selectedLanguages, language.id])
-                  } else {
-                    setSelectedLanguages(selectedLanguages.filter(id => id !== language.id))
-                  }
-                }}
-              />
-              <span className="ml-2 text-sm text-gray-700">{language.name}</span>
-            </label>
+            <option key={language.id} value={language.id}>
+              {language.name}
+            </option>
           ))}
-        </div>
+        </select>
+        <p className="mt-1 text-sm text-gray-500">
+          Mantén presionado Ctrl/Cmd para seleccionar múltiples opciones
+        </p>
       </div>
 
       {/* Productoras */}
@@ -1061,8 +1202,9 @@ export default function MovieFormEnhanced({
                         key={person.id}
                         type="button"
                         onClick={() => setNewPerson({ ...newPerson, personId: person.id })}
-                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${newPerson.personId === person.id ? 'bg-blue-50' : ''
-                          }`}
+                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${
+                          newPerson.personId === person.id ? 'bg-blue-50' : ''
+                        }`}
                       >
                         {person.name}
                       </button>

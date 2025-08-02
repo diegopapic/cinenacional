@@ -34,6 +34,13 @@ const WP_COLOR_MAPPING = {
   '9229': 'n-d'                        // n/d
 };
 
+// Mapeo de valores de sonido desde postmeta
+const WP_SOUND_MAPPING = {
+  '3': 'sonora',    // Sonora (10,390 películas)
+  '2': 'muda',      // Muda (172 películas)
+  '1': 'n-d'        // n/d - no disponible (20 películas)
+};
+
 // Logger mejorado
 class MigrationLogger {
   constructor() {
@@ -42,6 +49,11 @@ class MigrationLogger {
       movies: [],
       errors: [],
       colors: {
+        mapped: 0,
+        notFound: 0,
+        errors: 0
+      },
+      sound: {
         mapped: 0,
         notFound: 0,
         errors: 0
@@ -64,6 +76,12 @@ class MigrationLogger {
     if (status === 'mapped') this.logs.colors.mapped++;
     else if (status === 'not_found') this.logs.colors.notFound++;
     else if (status === 'error') this.logs.colors.errors++;
+  }
+
+  logSound(movieTitle, soundValue, status) {
+    if (status === 'mapped') this.logs.sound.mapped++;
+    else if (status === 'not_found') this.logs.sound.notFound++;
+    else if (status === 'error') this.logs.sound.errors++;
   }
 
   save() {
@@ -179,8 +197,8 @@ async function migrateComplete() {
       console.log('✅ Tabla movies limpiada\n');
     }
     
-    // Obtener películas de MySQL con información de color
-    console.log('📊 Obteniendo películas de WordPress con datos de color...');
+    // Obtener películas de MySQL con información de color y sonido
+    console.log('📊 Obteniendo películas de WordPress con datos de color y sonido...');
     const [movies] = await connection.execute(`
       SELECT 
         p.*,
@@ -189,6 +207,7 @@ async function migrateComplete() {
         pm_duration.meta_value as duration_meta,
         pm_original.meta_value as original_title_meta,
         pm_release_date.meta_value as release_date_meta,
+        pm_sound.meta_value as sound_meta,
         -- Color desde taxonomía
         t_color.term_id as color_term_id,
         t_color.name as color_name,
@@ -203,6 +222,8 @@ async function migrateComplete() {
         ON p.ID = pm_original.post_id AND pm_original.meta_key = 'titulo_original'
       LEFT JOIN wp_postmeta pm_release_date 
         ON p.ID = pm_release_date.post_id AND pm_release_date.meta_key = 'fecha_de_estreno'
+      LEFT JOIN wp_postmeta pm_sound 
+        ON p.ID = pm_sound.post_id AND pm_sound.meta_key = 'sonido'
       -- Color taxonomy
       LEFT JOIN wp_term_relationships tr_color 
         ON p.ID = tr_color.object_id
@@ -285,6 +306,31 @@ async function migrateComplete() {
           logger.logColor(cleanedTitle, 'Sin color', 'mapped');
         }
         
+        // Determinar sound_type
+        let soundType = null;
+        if (movie.sound_meta) {
+          const mappedSound = WP_SOUND_MAPPING[movie.sound_meta.toString()];
+          if (mappedSound) {
+            // Capitalizar correctamente para que coincida con el dropdown del ABM
+            if (mappedSound === 'sonora') {
+              soundType = 'Sonora';
+            } else if (mappedSound === 'muda') {
+              soundType = 'Muda';
+            } else {
+              soundType = 'n/d'; // o podrías usar null si prefieres
+            }
+            logger.logSound(cleanedTitle, movie.sound_meta, 'mapped');
+          } else {
+            console.warn(`⚠️  Sonido no mapeado: valor ${movie.sound_meta}`);
+            logger.logSound(cleanedTitle, movie.sound_meta, 'not_found');
+            soundType = null; // Por defecto null si no se puede mapear
+          }
+        } else {
+          // Si no tiene sonido, dejar como null
+          soundType = null;
+          logger.logSound(cleanedTitle, 'Sin sonido', 'mapped');
+        }
+        
         // Datos para Supabase
         const movieData = {
           title: cleanedTitle,
@@ -301,6 +347,8 @@ async function migrateComplete() {
           duration: movie.duration_meta ? parseInt(movie.duration_meta) : null,
           // Color migrado
           color_type_id: colorTypeId,
+          // Sonido migrado
+          sound_type: soundType,
           // Valores por defecto
           duration_seconds: null,
           tipo_duracion: null,
@@ -308,7 +356,6 @@ async function migrateComplete() {
           poster_url: null,
           trailer_url: null,
           imdb_id: null,
-          sound_type: null,
           rating_id: null,
           data_completeness: 'BASIC_PRESS_KIT',
           filming_start_date: null,
@@ -321,6 +368,7 @@ async function migrateComplete() {
         console.log(`   - Slug: ${slug}`);
         console.log(`   - Año: ${movieData.year}`);
         console.log(`   - Color: ${movie.color_name || 'No disponible'}`);
+        console.log(`   - Sonido: ${soundType}`);
         console.log(`   - Fecha de estreno: ${releaseDate || 'No especificada'}`);
         
         // Insertar en Supabase
@@ -340,6 +388,7 @@ async function migrateComplete() {
         console.error(`   ❌ Error: ${error.message}`);
         logger.logMovie(movie, 'error', error);
         logger.logColor(movie.post_title, movie.color_name, 'error');
+        logger.logSound(movie.post_title, movie.sound_meta, 'error');
         errors++;
       }
     }
@@ -354,6 +403,10 @@ async function migrateComplete() {
     console.log(`   - Mapeados correctamente: ${logger.logs.colors.mapped}`);
     console.log(`   - No encontrados: ${logger.logs.colors.notFound}`);
     console.log(`   - Errores: ${logger.logs.colors.errors}`);
+    console.log('\n🔊 Sonido:');
+    console.log(`   - Mapeados correctamente: ${logger.logs.sound.mapped}`);
+    console.log(`   - No encontrados: ${logger.logs.sound.notFound}`);
+    console.log(`   - Errores: ${logger.logs.sound.errors}`);
     
     // Verificar distribución de colores
     console.log('\n📊 Verificando distribución de colores en Supabase...');
@@ -371,11 +424,31 @@ async function migrateComplete() {
       });
     }
     
+    // Verificar distribución de sonido
+    console.log('\n📊 Verificando distribución de sonido en Supabase...');
+    const { data: soundStats } = await supabase
+      .from('movies')
+      .select('sound_type')
+      .not('sound_type', 'is', null);
+      
+    if (soundStats) {
+      const soundCounts = soundStats.reduce((acc, movie) => {
+        acc[movie.sound_type] = (acc[movie.sound_type] || 0) + 1;
+        return acc;
+      }, {});
+      
+      console.log('\nDistribución de sonido:');
+      Object.entries(soundCounts).forEach(([type, count]) => {
+        console.log(`  - ${type}: ${count} películas`);
+      });
+    }
+    
     logger.logs.summary = {
       total: moviesMap.size,
       migrated,
       errors,
       colors: logger.logs.colors,
+      sound: logger.logs.sound,
       completed: new Date()
     };
     logger.save();
@@ -510,7 +583,7 @@ Migración Completa WordPress → Supabase
 Uso: node migrate-wp-to-supabase-complete.js [opciones]
 
 Opciones:
-  --migrate        Ejecutar migración completa (películas + colores)
+  --migrate        Ejecutar migración completa (películas + colores + sonido)
   --clean          Limpiar tabla movies antes de migrar
   --verify-colors  Verificar mapeo de colores
   --explore        Explorar estructura de WordPress

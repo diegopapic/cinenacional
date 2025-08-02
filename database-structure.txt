@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-07-31T22:35:18.376Z
+# Generado automáticamente el: 2025-08-02T21:45:51.398Z
 # ================================================
 
 ## Schema Prisma
@@ -39,12 +39,17 @@ model Movie {
   
   // Información técnica
   colorTypeId      Int?     @map("color_type_id")
-  colorType        ColorType? @relation(fields: [colorTypeId], references: [id]) //
+  colorType        ColorType? @relation(fields: [colorTypeId], references: [id])
   soundType        String?  @map("sound_type") @db.VarChar(50)
   
   // Información legal
   ratingId          Int?     @map("rating_id")
   rating            Rating?  @relation(fields: [ratingId], references: [id])
+
+  // Nuevos campos para países y tipo de producción
+  countries          String[]           @default(["Argentina"])
+  is_coproduction    Boolean            @default(false)
+  production_type    String             @default("national")
 
   // Fechas de rodaje
   filmingStartDate DateTime? @map("filming_start_date") @db.Date
@@ -70,7 +75,7 @@ model Movie {
   videos           MovieVideo[]
   awards           MovieAward[]
   themes           MovieTheme[]
-  countries        MovieCountry[]
+  movieCountries   MovieCountry[]  // Renombrado de "countries" a "movieCountries" para evitar conflicto
   languages        MovieLanguage[]
   filmingLocations FilmingLocation[]
   userRatings      UserRating[]
@@ -88,6 +93,8 @@ model Movie {
   @@index([ratingId])
   @@index([filmingStartDate])
   @@index([filmingEndDate])
+  @@index([is_coproduction])
+  @@index([production_type])
   @@index([colorTypeId])
 }
 
@@ -131,7 +138,8 @@ model Person {
   birthName       String?  @map("birth_name") @db.VarChar(255)
   birthDate       DateTime? @map("birth_date") @db.Date
   deathDate       DateTime? @map("death_date") @db.Date
-  birthPlace      String?  @map("birth_place") @db.VarChar(255)
+  birthLocationId Int?     @map("birth_location_id")           
+  deathLocationId Int?     @map("death_location_id")
   nationality     String?  @db.VarChar(100)
   biography       String?  @db.Text
   photoUrl        String?  @map("photo_url") @db.VarChar(500)
@@ -155,10 +163,14 @@ model Person {
   castRoles       MovieCast[]
   crewRoles       MovieCrew[]
   awards          MovieAward[]
+  birthLocation   Location?    @relation("BirthLocation", fields: [birthLocationId], references: [id])
+  deathLocation   Location?    @relation("DeathLocation", fields: [deathLocationId], references: [id])
   
   @@map("people")
   @@index([slug])
   @@index([name])
+  @@index([birthLocationId])
+  @@index([deathLocationId])
 }
 
 model Genre {
@@ -207,37 +219,6 @@ model DistributionCompany {
   movies      MovieDistributionCompany[]
   
   @@map("distribution_companies")
-}
-
-enum DataCompleteness {
-  BASIC_PRESS_KIT     // Gacetilla básica
-  FULL_PRESS_KIT      // Gacetilla completa
-  MAIN_CAST           // Intérpretes principales
-  MAIN_CREW           // Técnicos principales  
-  FULL_CAST           // Todos los intérpretes
-  FULL_CREW           // Todos los técnicos
-  
-  @@map("data_completeness")
-}
-
-enum LinkType {
-  INSTAGRAM
-  TWITTER
-  FACEBOOK
-  TIKTOK
-  YOUTUBE
-  WEBSITE
-  
-  @@map("link_type")
-}
-
-enum ColorCategory {
-  COLOR
-  BLACK_AND_WHITE
-  MIXED
-  UNKNOWN
-  
-  @@map("color_category")
 }
 
 // =====================================================
@@ -343,6 +324,33 @@ model ColorType {
   @@index([slug])
 }
 
+model Location {
+  id              Int       @id @default(autoincrement())
+  name            String    @db.VarChar(255)
+  slug            String?   @unique @db.VarChar(255)
+  type            String    @db.VarChar(50)
+  parentId        Int?      @map("parent_id")
+  countryId       Int       @map("country_id")
+  latitude        Decimal?  @db.Decimal(10, 8)
+  longitude       Decimal?  @db.Decimal(11, 8)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  // Relaciones
+  parent          Location? @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children        Location[] @relation("LocationHierarchy")
+  country         Country   @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  peopleBornHere  Person[]  @relation("BirthLocation")
+  peopleDiedHere  Person[]  @relation("DeathLocation")
+  
+  @@map("locations")
+  @@index([parentId])
+  @@index([countryId])
+  @@index([type])
+  @@index([name])
+  @@index([slug])
+}
+
 // =====================================================
 // CONTENIDO MULTIMEDIA
 // =====================================================
@@ -428,7 +436,7 @@ model Theme {
   slug        String   @unique @db.VarChar(100)
   name        String   @db.VarChar(100)
   description String?  @db.Text
-  usageCount  Int      @default(0) @map("usage_count") // NUEVO: contador de uso
+  usageCount  Int      @default(0) @map("usage_count")
   createdAt   DateTime @default(now()) @map("created_at")
   
   // Relaciones
@@ -478,7 +486,8 @@ model Country {
   
   // Relaciones
   movies    MovieCountry[]
-  
+  locations Location[]
+
   @@map("countries")
 }
 
@@ -642,6 +651,37 @@ enum AwardResult {
   
   @@map("award_result")
 }
+
+enum DataCompleteness {
+  BASIC_PRESS_KIT     // Gacetilla básica
+  FULL_PRESS_KIT      // Gacetilla completa
+  MAIN_CAST           // Intérpretes principales
+  MAIN_CREW           // Técnicos principales  
+  FULL_CAST           // Todos los intérpretes
+  FULL_CREW           // Todos los técnicos
+  
+  @@map("data_completeness")
+}
+
+enum LinkType {
+  INSTAGRAM
+  TWITTER
+  FACEBOOK
+  TIKTOK
+  YOUTUBE
+  WEBSITE
+  
+  @@map("link_type")
+}
+
+enum ColorCategory {
+  COLOR
+  BLACK_AND_WHITE
+  MIXED
+  UNKNOWN
+  
+  @@map("color_category")
+}
 ```
 
 ## SQL Generado
@@ -649,15 +689,6 @@ enum AwardResult {
 ```sql
 -- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
-
--- CreateEnum
-CREATE TYPE "public"."data_completeness" AS ENUM ('BASIC_PRESS_KIT', 'FULL_PRESS_KIT', 'MAIN_CAST', 'MAIN_CREW', 'FULL_CAST', 'FULL_CREW');
-
--- CreateEnum
-CREATE TYPE "public"."link_type" AS ENUM ('INSTAGRAM', 'TWITTER', 'FACEBOOK', 'TIKTOK', 'YOUTUBE', 'WEBSITE');
-
--- CreateEnum
-CREATE TYPE "public"."color_category" AS ENUM ('COLOR', 'BLACK_AND_WHITE', 'MIXED', 'UNKNOWN');
 
 -- CreateEnum
 CREATE TYPE "public"."movie_status" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
@@ -670,6 +701,15 @@ CREATE TYPE "public"."video_type" AS ENUM ('TRAILER', 'TEASER', 'BEHIND_SCENES',
 
 -- CreateEnum
 CREATE TYPE "public"."award_result" AS ENUM ('WON', 'NOMINATED');
+
+-- CreateEnum
+CREATE TYPE "public"."data_completeness" AS ENUM ('BASIC_PRESS_KIT', 'FULL_PRESS_KIT', 'MAIN_CAST', 'MAIN_CREW', 'FULL_CAST', 'FULL_CREW');
+
+-- CreateEnum
+CREATE TYPE "public"."link_type" AS ENUM ('INSTAGRAM', 'TWITTER', 'FACEBOOK', 'TIKTOK', 'YOUTUBE', 'WEBSITE');
+
+-- CreateEnum
+CREATE TYPE "public"."color_category" AS ENUM ('COLOR', 'BLACK_AND_WHITE', 'MIXED', 'UNKNOWN');
 
 -- CreateTable
 CREATE TABLE "public"."movies" (
@@ -689,6 +729,9 @@ CREATE TABLE "public"."movies" (
     "color_type_id" INTEGER,
     "sound_type" VARCHAR(50),
     "rating_id" INTEGER,
+    "countries" TEXT[] DEFAULT ARRAY['Argentina']::TEXT[],
+    "is_coproduction" BOOLEAN NOT NULL DEFAULT false,
+    "production_type" TEXT NOT NULL DEFAULT 'national',
     "filming_start_date" DATE,
     "filming_end_date" DATE,
     "status" "public"."movie_status" NOT NULL DEFAULT 'PUBLISHED',
@@ -734,7 +777,8 @@ CREATE TABLE "public"."people" (
     "birth_name" VARCHAR(255),
     "birth_date" DATE,
     "death_date" DATE,
-    "birth_place" VARCHAR(255),
+    "birth_location_id" INTEGER,
+    "death_location_id" INTEGER,
     "nationality" VARCHAR(100),
     "biography" TEXT,
     "photo_url" VARCHAR(500),
@@ -861,6 +905,22 @@ CREATE TABLE "public"."color_types" (
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "color_types_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."locations" (
+    "id" SERIAL NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "slug" VARCHAR(255),
+    "type" VARCHAR(50) NOT NULL,
+    "parent_id" INTEGER,
+    "country_id" INTEGER NOT NULL,
+    "latitude" DECIMAL(10,8),
+    "longitude" DECIMAL(11,8),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "locations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -1089,6 +1149,12 @@ CREATE INDEX "movies_filming_start_date_idx" ON "public"."movies"("filming_start
 CREATE INDEX "movies_filming_end_date_idx" ON "public"."movies"("filming_end_date");
 
 -- CreateIndex
+CREATE INDEX "movies_is_coproduction_idx" ON "public"."movies"("is_coproduction");
+
+-- CreateIndex
+CREATE INDEX "movies_production_type_idx" ON "public"."movies"("production_type");
+
+-- CreateIndex
 CREATE INDEX "movies_color_type_id_idx" ON "public"."movies"("color_type_id");
 
 -- CreateIndex
@@ -1111,6 +1177,12 @@ CREATE INDEX "people_slug_idx" ON "public"."people"("slug");
 
 -- CreateIndex
 CREATE INDEX "people_name_idx" ON "public"."people"("name");
+
+-- CreateIndex
+CREATE INDEX "people_birth_location_id_idx" ON "public"."people"("birth_location_id");
+
+-- CreateIndex
+CREATE INDEX "people_death_location_id_idx" ON "public"."people"("death_location_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "genres_slug_key" ON "public"."genres"("slug");
@@ -1150,6 +1222,24 @@ CREATE INDEX "color_types_category_idx" ON "public"."color_types"("category");
 
 -- CreateIndex
 CREATE INDEX "color_types_slug_idx" ON "public"."color_types"("slug");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "locations_slug_key" ON "public"."locations"("slug");
+
+-- CreateIndex
+CREATE INDEX "locations_parent_id_idx" ON "public"."locations"("parent_id");
+
+-- CreateIndex
+CREATE INDEX "locations_country_id_idx" ON "public"."locations"("country_id");
+
+-- CreateIndex
+CREATE INDEX "locations_type_idx" ON "public"."locations"("type");
+
+-- CreateIndex
+CREATE INDEX "locations_name_idx" ON "public"."locations"("name");
+
+-- CreateIndex
+CREATE INDEX "locations_slug_idx" ON "public"."locations"("slug");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "themes_slug_key" ON "public"."themes"("slug");
@@ -1197,6 +1287,12 @@ ALTER TABLE "public"."movie_alternative_titles" ADD CONSTRAINT "movie_alternativ
 ALTER TABLE "public"."movie_links" ADD CONSTRAINT "movie_links_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."people" ADD CONSTRAINT "people_birth_location_id_fkey" FOREIGN KEY ("birth_location_id") REFERENCES "public"."locations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."people" ADD CONSTRAINT "people_death_location_id_fkey" FOREIGN KEY ("death_location_id") REFERENCES "public"."locations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."movie_cast" ADD CONSTRAINT "movie_cast_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -1225,6 +1321,12 @@ ALTER TABLE "public"."movie_distribution_companies" ADD CONSTRAINT "movie_distri
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_distribution_companies" ADD CONSTRAINT "movie_distribution_companies_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."distribution_companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."locations" ADD CONSTRAINT "locations_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."locations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."locations" ADD CONSTRAINT "locations_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "public"."countries"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_images" ADD CONSTRAINT "movie_images_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
