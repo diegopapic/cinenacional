@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: bf90934cbea27ac86ffbaa8e94d24c7a5fbb7628
-// Fecha: 2025-08-02T22:01:26.919Z
+// Commit: 370cc7ed8abe672ff5b78cca893f8731abe8ced6
+// Fecha: 2025-08-02T22:32:21.383Z
 // ============================================
 
 
@@ -8485,8 +8485,11 @@ export default function MovieFormEnhanced({
   // Estados para búsqueda
   const [personSearch, setPersonSearch] = useState('')
   const [themeSearch, setThemeSearch] = useState('')
+  const [countrySearch, setCountrySearch] = useState('')
   const [showPersonSearch, setShowPersonSearch] = useState(false)
   const [addingType, setAddingType] = useState<'cast' | 'crew' | null>(null)
+
+  const [dataReady, setDataReady] = useState(false)
 
   // Estado para nuevo actor/crew
   const [newPerson, setNewPerson] = useState({
@@ -8504,6 +8507,10 @@ export default function MovieFormEnhanced({
     fetchInitialData()
   }, [])
 
+useEffect(() => {
+  setIsInitialized(false)  // Resetear cuando cambia initialData
+}, [initialData])
+  
   // Inicializar con datos existentes - CORREGIDO
   useEffect(() => {
     if (initialData && !isInitialized) {
@@ -8559,7 +8566,7 @@ export default function MovieFormEnhanced({
       
       setIsInitialized(true)
     }
-  }, [initialData])
+  }, [initialData, isInitialized])
 
   // Notificar cambios al componente padre
   useEffect(() => {
@@ -8765,30 +8772,85 @@ export default function MovieFormEnhanced({
         </div>
 
         {/* Países */}
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-            <Globe className="w-5 h-5" />
-            Países Coproductores
-          </h3>
-          <select
-            multiple
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={selectedCountries.map(String)}
-            onChange={(e) => {
-              const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value))
-              setSelectedCountries(selected)
-            }}
+<div>
+  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+    <Globe className="w-5 h-5" />
+    Países Coproductores
+  </h3>
+  
+  {/* Tags de países seleccionados */}
+  {selectedCountries.length > 0 && (
+    <div className="flex flex-wrap gap-2 mb-3">
+      {selectedCountries.map(countryId => {
+        const country = availableCountries.find(c => c.id === countryId)
+        if (!country) return null
+        return (
+          <span
+            key={country.id}
+            className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
           >
-            {availableCountries.map((country: any) => (
-              <option key={country.id} value={country.id}>
-                {country.name}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-sm text-gray-500">
-            Mantén presionado Ctrl/Cmd para seleccionar múltiples opciones
-          </p>
+            {country.name}
+            <button
+              type="button"
+              onClick={() => setSelectedCountries(selectedCountries.filter(id => id !== country.id))}
+              className="ml-1 hover:text-blue-600"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </span>
+        )
+      })}
+    </div>
+  )}
+  
+  {/* Buscador de países */}
+  <div className="relative">
+    <input
+      type="text"
+      placeholder="Buscar países..."
+      value={countrySearch}
+      onChange={(e) => setCountrySearch(e.target.value)}
+      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+    />
+    <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
+  </div>
+  
+  {/* Lista filtrada de países */}
+  {countrySearch && (
+    <div className="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+      {availableCountries
+        .filter((country: any) => 
+          country.name.toLowerCase().includes(countrySearch.toLowerCase()) &&
+          !selectedCountries.includes(country.id)
+        )
+        .map((country: any) => (
+          <button
+            key={country.id}
+            type="button"
+            onClick={() => {
+              setSelectedCountries([...selectedCountries, country.id])
+              setCountrySearch('')
+            }}
+            className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+          >
+            <span className="text-sm text-gray-700">{country.name}</span>
+          </button>
+        ))}
+      {availableCountries.filter((country: any) => 
+        country.name.toLowerCase().includes(countrySearch.toLowerCase()) &&
+        !selectedCountries.includes(country.id)
+      ).length === 0 && (
+        <div className="px-3 py-2 text-sm text-gray-500">
+          No se encontraron países
         </div>
+      )}
+    </div>
+  )}
+  
+  <p className="mt-1 text-xs text-gray-500">
+    Escribe para buscar y agregar países
+  </p>
+</div>
 
         {/* Idiomas */}
         <div>
