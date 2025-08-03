@@ -1217,10 +1217,41 @@ async function verifyColorMapping() {
         });
 
         console.log('================================');
-        console.log(`Total con estado: ${total} películas`);
-        console.log(`Sin estado: ${sinEstado[0].count} películas`);
-        console.log(`✅ Mapeadas: ${mapped}`);
+        console.log(`Total: ${colors.length} colores`);
+        console.log(`✅ Mapeados: ${mapped}`);
         console.log(`❌ Sin mapear: ${notMapped}`);
+
+    } finally {
+        if (connection) await connection.end();
+    }
+}
+
+// Función para verificar clasificaciones
+async function verifyClassifications() {
+    let connection;
+
+    try {
+        connection = await mysql.createConnection(MYSQL_CONFIG);
+
+        console.log('🔍 Verificando clasificaciones en WordPress...\n');
+
+        // Ver todas las clasificaciones únicas
+        const uniqueRatings = await getAllUniqueRatings(connection);
+
+        console.log('Clasificaciones encontradas:');
+        console.log('================================\n');
+
+        uniqueRatings.forEach(rating => {
+            console.log(`Valor original: "${rating.original_value}"`);
+            console.log(`  - Nombre: ${rating.name}`);
+            console.log(`  - Abreviación: ${rating.abbreviation}`);
+            console.log(`  - Fuente: ${rating.source}`);
+            console.log(`  - Uso: ${rating.usage_count} películas`);
+            console.log('');
+        });
+
+        console.log('================================');
+        console.log(`Total: ${uniqueRatings.length} clasificaciones únicas`);
 
     } finally {
         if (connection) await connection.end();
@@ -1347,7 +1378,6 @@ async function exploreStructure() {
 
 // Ejecutar
 const args = process.argv.slice(2);
-console.log('Debug - Argumentos recibidos:', args); // Temporal para debug
 
 if (args.includes('--help')) {
     console.log(`
@@ -1403,105 +1433,4 @@ Nota: Las películas sin estado se asignan como 'completed' por defecto.
 } else {
     console.log('Usa --help para ver las opciones disponibles');
     console.log('Para ejecutar la migración completa: node migrate-wp-to-supabase-complete.js --migrate');
-}console.log(`Total: ${colors.length} colores`);
-        console.log(`✅ Mapeados: ${mapped}`);
-        console.log(`❌ Sin mapear: ${notMapped}`);
-
-    } finally {
-        if (connection) await connection.end();
-    }
 }
-
-// Función para verificar clasificaciones
-async function verifyClassifications() {
-    let connection;
-
-    try {
-        connection = await mysql.createConnection(MYSQL_CONFIG);
-
-        console.log('🔍 Verificando clasificaciones en WordPress...\n');
-
-        // Ver todas las clasificaciones únicas
-        const uniqueRatings = await getAllUniqueRatings(connection);
-
-        console.log('Clasificaciones encontradas:');
-        console.log('================================\n');
-
-        uniqueRatings.forEach(rating => {
-            console.log(`Valor original: "${rating.original_value}"`);
-            console.log(`  - Nombre: ${rating.name}`);
-            console.log(`  - Abreviación: ${rating.abbreviation}`);
-            console.log(`  - Fuente: ${rating.source}`);
-            console.log(`  - Uso: ${rating.usage_count} películas`);
-            console.log('');
-        });
-
-        console.log('================================');
-        console.log(`Total: ${uniqueRatings.length} clasificaciones únicas`);
-
-    } finally {
-        if (connection) await connection.end();
-    }
-}
-
-// NUEVO: Función para verificar estados de producción
-async function verifyProductionStatus() {
-    let connection;
-
-    try {
-        connection = await mysql.createConnection(MYSQL_CONFIG);
-
-        console.log('🔍 Verificando estados de producción en WordPress...\n');
-
-        const [estados] = await connection.execute(`
-            SELECT 
-                pm.meta_value as estado,
-                COUNT(DISTINCT p.ID) as count
-            FROM wp_posts p
-            INNER JOIN wp_postmeta pm ON p.ID = pm.post_id
-            WHERE p.post_type = 'pelicula'
-            AND pm.meta_key = 'estado'
-            AND p.post_status IN ('publish', 'draft')
-            GROUP BY pm.meta_value
-            ORDER BY count DESC
-        `);
-
-        console.log('Estados encontrados en WordPress:');
-        console.log('================================\n');
-
-        let mapped = 0;
-        let notMapped = 0;
-        let total = 0;
-
-        estados.forEach(row => {
-            const mappedStatus = WP_STATUS_MAPPING[row.estado];
-            const status = mappedStatus ? '✅' : '❌';
-            
-            console.log(`${status} "${row.estado}"`);
-            console.log(`   Películas: ${row.count}`);
-            
-            if (mappedStatus) {
-                console.log(`   → Mapea a: ${mappedStatus}`);
-                mapped += row.count;
-            } else {
-                console.log(`   ⚠️  NO MAPEADO`);
-                notMapped += row.count;
-            }
-            console.log('');
-            total += row.count;
-        });
-
-        // Verificar películas sin estado
-        const [sinEstado] = await connection.execute(`
-            SELECT COUNT(DISTINCT p.ID) as count
-            FROM wp_posts p
-            LEFT JOIN wp_postmeta pm ON p.ID = pm.post_id AND pm.meta_key = 'estado'
-            WHERE p.post_type = 'pelicula'
-            AND p.post_status IN ('publish', 'draft')
-            AND pm.meta_value IS NULL
-        `);
-
-        console.log(`⚠️  Sin estado: ${sinEstado[0].count} películas`);
-        console.log('   → Se asignarán como "completed" por defecto\n');
-
-        console.log('================================');

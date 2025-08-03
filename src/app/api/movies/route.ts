@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const genre = searchParams.get('genre') || ''
     const year = searchParams.get('year') || ''
     const status = searchParams.get('status') || ''
+    const stage = searchParams.get('stage') || ''
     const sortBy = searchParams.get('sortBy') || 'createdAt'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
 
@@ -47,6 +48,10 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       where.status = status
+    }
+
+    if (stage) {
+      where.stage = stage
     }
 
     // Obtener total de registros
@@ -116,12 +121,21 @@ export async function GET(request: NextRequest) {
       slug: movie.slug,
       title: movie.title,
       year: movie.year,
-      releaseDate: movie.releaseDate,
+      releaseYear: movie.releaseYear,
+      releaseMonth: movie.releaseMonth,
+      releaseDay: movie.releaseDay,
+      // Opcionalmente, crear un campo de fecha formateada para mostrar
+      releaseDateFormatted: movie.releaseDay
+        ? `${movie.releaseYear}-${String(movie.releaseMonth).padStart(2, '0')}-${String(movie.releaseDay).padStart(2, '0')}`
+        : movie.releaseMonth
+          ? `${movie.releaseYear}-${String(movie.releaseMonth).padStart(2, '0')}`
+          : movie.releaseYear?.toString() || null,
       filmingStartDate: movie.filmingStartDate,
       filmingEndDate: movie.filmingEndDate,
       duration: movie.duration,
       posterUrl: movie.posterUrl || movie.images[0]?.url,
       status: movie.status,
+      stage: movie.stage,
       colorType: movie.colorType,
       genres: movie.genres.map(g => g.genre),
       directors: movie.crew.map(c => c.person),
@@ -208,8 +222,9 @@ export async function POST(request: NextRequest) {
       data: {
         ...movieData,
         slug,
-
-        releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
+        releaseYear: movieData.releaseYear || null,
+        releaseMonth: movieData.releaseMonth || null,
+        releaseDay: movieData.releaseDay || null,
         colorTypeId: movieData.colorTypeId || null,
         // Crear relaciones
         genres: genres ? {
