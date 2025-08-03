@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 370cc7ed8abe672ff5b78cca893f8731abe8ced6
-// Fecha: 2025-08-02T22:32:21.383Z
+// Commit: b50b5236f74533d8a8c9ba3c47b0212324c880e0
+// Fecha: 2025-08-03T17:44:38.701Z
 // ============================================
 
 
@@ -1465,7 +1465,15 @@ import MovieLinksManager from '@/components/admin/MovieLinksManager'
 // Importar Tabs de Radix UI
 import * as Tabs from '@radix-ui/react-tabs'
 
-// REEMPLAZAR TODO EL SCHEMA Y HELPERS CON ESTO:
+const MOVIE_STAGES = [
+  { value: 'COMPLETA', label: 'Completa', description: 'Película terminada y estrenada' },
+  { value: 'EN_DESARROLLO', label: 'En desarrollo', description: 'En etapa de desarrollo del proyecto' },
+  { value: 'EN_POSTPRODUCCION', label: 'En postproducción', description: 'En proceso de edición y postproducción' },
+  { value: 'EN_PREPRODUCCION', label: 'En preproducción', description: 'En preparación para el rodaje' },
+  { value: 'EN_RODAJE', label: 'En rodaje', description: 'Actualmente filmando' },
+  { value: 'INCONCLUSA', label: 'Inconclusa', description: 'Proyecto abandonado o sin terminar' },
+  { value: 'INEDITA', label: 'Inédita', description: 'Completa pero sin estrenar' }
+]
 
 // Schema simple sin validaciones complejas para el formulario
 const movieFormSchema = z.object({
@@ -1515,7 +1523,16 @@ const movieFormSchema = z.object({
     'MAIN_CREW',
     'FULL_CAST',
     'FULL_CREW'
-  ]).optional()
+  ]).optional(),
+  stage: z.enum([
+    'COMPLETA',
+    'EN_DESARROLLO',
+    'EN_POSTPRODUCCION',
+    'EN_PREPRODUCCION',
+    'EN_RODAJE',
+    'INCONCLUSA',
+    'INEDITA'
+  ]).optional(),
 })
 
 type MovieFormData = z.infer<typeof movieFormSchema>
@@ -1591,6 +1608,7 @@ interface Movie {
   rating?: number
   posterUrl?: string
   status: string
+  stage?: string
   dataCompleteness?: string
   genres: Array<{ id: number; name: string }>
   directors: Array<{ id: number; name: string }>
@@ -1606,6 +1624,7 @@ export default function AdminMoviesPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('')
+  const [selectedStage, setSelectedStage] = useState('')
   const [selectedYear, setSelectedYear] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -1617,6 +1636,11 @@ export default function AdminMoviesPage() {
   const [alternativeTitles, setAlternativeTitles] = useState<any[]>([])
   const [movieLinks, setMovieLinks] = useState<any[]>([])
   const [availableColorTypes, setAvailableColorTypes] = useState<any[]>([])
+  const [isPartialDate, setIsPartialDate] = useState(false)
+  const [partialReleaseDate, setPartialReleaseDate] = useState({
+    year: null as number | null,
+    month: null as number | null
+  })
 
   // Estado para los datos iniciales del formulario
   const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
@@ -1658,7 +1682,10 @@ export default function AdminMoviesPage() {
     watch,
     formState: { errors, isSubmitting }
   } = useForm<MovieFormData>({
-    resolver: zodResolver(movieFormSchema)
+    resolver: zodResolver(movieFormSchema),
+    defaultValues: {
+      stage: 'COMPLETA' // Valor por defecto
+    }
   })
 
   const getErrorMessage = (error: any): string => {
@@ -1666,6 +1693,35 @@ export default function AdminMoviesPage() {
     if (typeof error === 'string') return error;
     if (error?.message) return error.message;
     return 'Este campo tiene un error';
+  }
+
+  const currentStage = watch('stage')
+
+  const getStageColor = (stage?: string) => {
+    switch (stage) {
+      case 'COMPLETA':
+        return 'bg-green-100 text-green-800'
+      case 'EN_DESARROLLO':
+        return 'bg-blue-100 text-blue-800'
+      case 'EN_POSTPRODUCCION':
+        return 'bg-purple-100 text-purple-800'
+      case 'EN_PREPRODUCCION':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'EN_RODAJE':
+        return 'bg-orange-100 text-orange-800'
+      case 'INCONCLUSA':
+        return 'bg-red-100 text-red-800'
+      case 'INEDITA':
+        return 'bg-gray-100 text-gray-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getStageName = (stage?: string) => {
+    if (!stage) return '-'
+    const stageInfo = MOVIE_STAGES.find(s => s.value === stage)
+    return stageInfo ? stageInfo.label : stage
   }
 
   // FUNCIONES PARA TIPO DE DURACIÓN
@@ -1830,16 +1886,55 @@ export default function AdminMoviesPage() {
       // Preparar los datos correctamente
       const preparedData = prepareMovieData(data)
 
+      // Procesar fecha de estreno según el tipo
+      let releaseDateData = {}
+      if (isPartialDate) {
+        // Fecha parcial - enviar campos separados
+        releaseDateData = {
+          releaseYear: partialReleaseDate.year,
+          releaseMonth: partialReleaseDate.month,
+          releaseDay: null
+        }
+      } else if (data.releaseDate) {  // ← CAMBIO: usar data.releaseDate, no preparedData
+        // Fecha completa - convertir a campos separados
+        const [year, month, day] = data.releaseDate.split('-').map(Number)
+        releaseDateData = {
+    releaseYear: year,
+    releaseMonth: month,
+    releaseDay: day
+  }
+      } else {
+        // Sin fecha
+        releaseDateData = {
+          releaseYear: null,
+          releaseMonth: null,
+          releaseDay: null
+        }
+      }
+
+      // IMPORTANTE: Eliminar releaseDate del objeto preparado
+      delete preparedData.releaseDate;
+
       const movieData = {
         ...preparedData,
+        ...releaseDateData,
+        stage: data.stage || 'COMPLETA',
         metaKeywords: preparedData.metaKeywords ? preparedData.metaKeywords.split(',').map((k: string) => k.trim()) : [],
         ...movieRelations,
         alternativeTitles,
         links: movieLinks
       }
 
+      // Asegurarse de nuevo de que no se envíe releaseDate
+      delete movieData.releaseDate;
+
+      // MOVER LOS CONSOLE.LOG AQUÍ, ANTES del fetch
       console.log('=== DATOS ENVIADOS AL BACKEND ===');
       console.log('movieData completo:', JSON.stringify(movieData, null, 2));
+      console.log('=== DATOS DE FECHA ENVIADOS ===');
+      console.log('releaseYear:', movieData.releaseYear);
+      console.log('releaseMonth:', movieData.releaseMonth);
+      console.log('releaseDay:', movieData.releaseDay);
       console.log('================================');
 
       const url = editingMovie
@@ -1907,6 +2002,7 @@ export default function AdminMoviesPage() {
           setValue(key as any, fullMovie[key].join(', '))
         } else if (key === 'releaseDate' && fullMovie[key]) {
           setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
+          setIsPartialDate(false)
         } else if (key === 'filmingStartDate' && fullMovie[key]) {
           setValue(key as any, new Date(fullMovie[key]).toISOString().split('T')[0])
         } else if (key === 'filmingEndDate' && fullMovie[key]) {
@@ -1920,6 +2016,27 @@ export default function AdminMoviesPage() {
           setValue(key as any, fullMovie[key])
         }
       })
+      // Manejar campos de fecha parcial si existen
+      if (fullMovie.releaseYear && !fullMovie.releaseDate) {
+        setIsPartialDate(true)
+        setPartialReleaseDate({
+          year: fullMovie.releaseYear,
+          month: fullMovie.releaseMonth || null
+        })
+        // Si hay fecha completa (día incluido), usar el date picker normal
+        if (fullMovie.releaseDay) {
+          setIsPartialDate(false)
+          const dateStr = `${fullMovie.releaseYear}-${String(fullMovie.releaseMonth || 1).padStart(2, '0')}-${String(fullMovie.releaseDay || 1).padStart(2, '0')}`
+          setValue('releaseDate', dateStr)
+        }
+      } else if (!fullMovie.releaseYear && !fullMovie.releaseDate) {
+        // No hay fecha
+        setIsPartialDate(false)
+        setPartialReleaseDate({ year: null, month: null })
+      }
+      if (!fullMovie.stage) {
+        setValue('stage', 'COMPLETA')
+      }
       setValue('dataCompleteness', fullMovie.dataCompleteness || 'BASIC_PRESS_KIT')
       // INICIALIZAR TIPO DE DURACIÓN AL EDITAR
       if (fullMovie.duration && fullMovie.duration > 0) {
@@ -2009,6 +2126,7 @@ export default function AdminMoviesPage() {
   // Abrir modal para nueva película
   const handleNewMovie = () => {
     setEditingMovie(null)
+    reset({ stage: 'COMPLETA' })
     reset()
     // Limpiar los datos iniciales del formulario
     setMovieFormInitialData(null)
@@ -2016,6 +2134,9 @@ export default function AdminMoviesPage() {
       dataCompleteness: 'BASIC_PRESS_KIT', // Valor por defecto
       status: 'PUBLISHED' // y otros valores por defecto si quieres
     })
+    // Resetear estados de fecha
+    setIsPartialDate(false)
+    setPartialReleaseDate({ year: null, month: null })
     // Limpiar las relaciones para nueva película
     setMovieRelations({
       genres: [],
@@ -2437,11 +2558,73 @@ export default function AdminMoviesPage() {
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Fecha de Estreno
                             </label>
-                            <input
-                              type="date"
-                              {...register('releaseDate')}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                            />
+
+                            {/* Checkbox para fecha parcial */}
+                            <div className="mb-2">
+                              <label className="inline-flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={isPartialDate}
+                                  onChange={(e) => setIsPartialDate(e.target.checked)}
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="ml-2 text-sm text-gray-600">
+                                  Fecha incompleta (solo año o año/mes)
+                                </span>
+                              </label>
+                            </div>
+
+                            {/* Mostrar campos según el tipo de fecha */}
+                            {!isPartialDate ? (
+                              // Fecha completa - date picker normal
+                              <input
+                                type="date"
+                                {...register('releaseDate')}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                              />
+                            ) : (
+                              // Fecha parcial - campos separados
+                              <div className="flex gap-2">
+                                <div className="flex-1">
+                                  <input
+                                    type="number"
+                                    placeholder="Año"
+                                    min="1800"
+                                    max="2100"
+                                    value={partialReleaseDate.year || ''}
+                                    onChange={(e) => setPartialReleaseDate({
+                                      ...partialReleaseDate,
+                                      year: e.target.value ? parseInt(e.target.value) : null
+                                    })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <select
+                                    value={partialReleaseDate.month || ''}
+                                    onChange={(e) => setPartialReleaseDate({
+                                      ...partialReleaseDate,
+                                      month: e.target.value ? parseInt(e.target.value) : null
+                                    })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                  >
+                                    <option value="">Mes (opcional)</option>
+                                    <option value="1">Enero</option>
+                                    <option value="2">Febrero</option>
+                                    <option value="3">Marzo</option>
+                                    <option value="4">Abril</option>
+                                    <option value="5">Mayo</option>
+                                    <option value="6">Junio</option>
+                                    <option value="7">Julio</option>
+                                    <option value="8">Agosto</option>
+                                    <option value="9">Septiembre</option>
+                                    <option value="10">Octubre</option>
+                                    <option value="11">Noviembre</option>
+                                    <option value="12">Diciembre</option>
+                                  </select>
+                                </div>
+                              </div>
+                            )}
                           </div>
                           {/* NUEVOS CAMPOS: Fechas de rodaje */}
                           <div className="grid grid-cols-2 gap-4">
@@ -2600,55 +2783,81 @@ export default function AdminMoviesPage() {
                           Indica hasta qué nivel de detalle has cargado la información de esta película
                         </p>
                       </div>
-                      {/* Links Oficiales */}
-                      <div className="mt-6">
-                        <MovieLinksManager
-                          key={`links-${editingMovie?.id || 'new'}-${movieLinks.length}`}
-                          initialLinks={movieLinks}
-                          onLinksChange={handleLinksChange}
-                        />
-                      </div>
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">
-                          Información Adicional
-                        </h3>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Etapa de la Película
+                        </label>
+                        <select
+                          {...register('stage')}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        >
+                          {MOVIE_STAGES.map(stage => (
+                            <option key={stage.value} value={stage.value}>
+                              {stage.label}
+                            </option>
+                          ))}
+                        </select>
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Sinopsis
-                          </label>
-                          <textarea
-                            {...register('synopsis')}
-                            rows={4}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Tagline
-                          </label>
-                          <input
-                            type="text"
-                            {...register('tagline')}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            IMDb ID
-                          </label>
-                          <input
-                            type="text"
-                            {...register('imdbId')}
-                            placeholder="tt0123456"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                          />
-                        </div>
+                        {/* Mostrar descripción de la etapa seleccionada */}
+                        {currentStage && (
+                          <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                              <p className="text-xs text-blue-800">
+                                {MOVIE_STAGES.find(s => s.value === currentStage)?.description}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
+                    {/* Links Oficiales */}
+                    <div className="mt-6">
+                      <MovieLinksManager
+                        key={`links-${editingMovie?.id || 'new'}-${movieLinks.length}`}
+                        initialLinks={movieLinks}
+                        onLinksChange={handleLinksChange}
+                      />
+                    </div>
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">
+                        Información Adicional
+                      </h3>
 
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Sinopsis
+                        </label>
+                        <textarea
+                          {...register('synopsis')}
+                          rows={4}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Tagline
+                        </label>
+                        <input
+                          type="text"
+                          {...register('tagline')}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          IMDb ID
+                        </label>
+                        <input
+                          type="text"
+                          {...register('imdbId')}
+                          placeholder="tt0123456"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        />
+                      </div>
+                    </div>
                     {/* Géneros, Países e Idiomas */}
                     <MovieFormEnhanced
                       key={editingMovie?.id || 'new'}
@@ -2891,10 +3100,11 @@ export default function AdminMoviesPage() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-    </div>
+          </div >
+        </div >
+      )
+      }
+    </div >
   )
 }
 
@@ -4310,6 +4520,7 @@ export async function GET(request: NextRequest) {
     const genre = searchParams.get('genre') || ''
     const year = searchParams.get('year') || ''
     const status = searchParams.get('status') || ''
+    const stage = searchParams.get('stage') || ''
     const sortBy = searchParams.get('sortBy') || 'createdAt'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
 
@@ -4341,6 +4552,10 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       where.status = status
+    }
+
+    if (stage) {
+      where.stage = stage
     }
 
     // Obtener total de registros
@@ -4410,12 +4625,21 @@ export async function GET(request: NextRequest) {
       slug: movie.slug,
       title: movie.title,
       year: movie.year,
-      releaseDate: movie.releaseDate,
+      releaseYear: movie.releaseYear,
+      releaseMonth: movie.releaseMonth,
+      releaseDay: movie.releaseDay,
+      // Opcionalmente, crear un campo de fecha formateada para mostrar
+      releaseDateFormatted: movie.releaseDay
+        ? `${movie.releaseYear}-${String(movie.releaseMonth).padStart(2, '0')}-${String(movie.releaseDay).padStart(2, '0')}`
+        : movie.releaseMonth
+          ? `${movie.releaseYear}-${String(movie.releaseMonth).padStart(2, '0')}`
+          : movie.releaseYear?.toString() || null,
       filmingStartDate: movie.filmingStartDate,
       filmingEndDate: movie.filmingEndDate,
       duration: movie.duration,
       posterUrl: movie.posterUrl || movie.images[0]?.url,
       status: movie.status,
+      stage: movie.stage,
       colorType: movie.colorType,
       genres: movie.genres.map(g => g.genre),
       directors: movie.crew.map(c => c.person),
@@ -4502,8 +4726,9 @@ export async function POST(request: NextRequest) {
       data: {
         ...movieData,
         slug,
-
-        releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
+        releaseYear: movieData.releaseYear || null,
+        releaseMonth: movieData.releaseMonth || null,
+        releaseDay: movieData.releaseDay || null,
         colorTypeId: movieData.colorTypeId || null,
         // Crear relaciones
         genres: genres ? {
@@ -4746,6 +4971,8 @@ export async function PUT(
     // Validar datos
     const validatedData = movieSchema.parse(body)
 
+
+
     // Verificar que la película existe
     const existingMovie = await prisma.movie.findUnique({
       where: { id }
@@ -4772,7 +4999,12 @@ export async function PUT(
       links,
       ...movieData
     } = validatedData
-
+    console.log('=== DATOS DE FECHA RECIBIDOS EN BACKEND ===');
+    console.log('releaseYear:', validatedData.releaseYear);
+    console.log('releaseMonth:', validatedData.releaseMonth);
+    console.log('releaseDay:', validatedData.releaseDay);
+    console.log('movieData después de desestructuración:', movieData.releaseYear, movieData.releaseMonth, movieData.releaseDay);
+    console.log('================================');
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
       // 1. Actualizar datos básicos de la película
@@ -4780,7 +5012,9 @@ export async function PUT(
         where: { id },
         data: {
           ...movieData,
-          releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
+          releaseYear: movieData.releaseYear || null,
+          releaseMonth: movieData.releaseMonth || null,
+          releaseDay: movieData.releaseDay || null,
           colorTypeId: movieData.colorTypeId || null,
           filmingStartDate: movieData.filmingStartDate ? new Date(movieData.filmingStartDate) : null,
           filmingEndDate: movieData.filmingEndDate ? new Date(movieData.filmingEndDate) : null,
@@ -11585,7 +11819,9 @@ import { z } from 'zod'
 export const movieSchema = z.object({
   title: z.string().min(1, 'El título es requerido'),
   year: z.number().min(1895).max(new Date().getFullYear() + 5),
-  releaseDate: z.string().optional(),
+  releaseYear: z.number().optional().nullable(),
+  releaseMonth: z.number().optional().nullable(),
+  releaseDay: z.number().optional().nullable(),
   duration: z.number().optional(),
   durationSeconds: z.number().optional(),
   tipoDuracion: z.string().optional(),
@@ -11598,6 +11834,15 @@ export const movieSchema = z.object({
   soundType: z.string().optional(),
   ratingId: z.number().optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+  stage: z.enum([
+    'COMPLETA',
+    'EN_DESARROLLO',
+    'EN_POSTPRODUCCION',
+    'EN_PREPRODUCCION',
+    'EN_RODAJE',
+    'INCONCLUSA',
+    'INEDITA'
+  ]).optional(),
   metaKeywords: z.array(z.string()).optional(),
   dataCompleteness: z.enum([
     'BASIC_PRESS_KIT',

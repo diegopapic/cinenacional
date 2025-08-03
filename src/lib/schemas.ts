@@ -6,7 +6,9 @@ import { z } from 'zod'
 export const movieSchema = z.object({
   title: z.string().min(1, 'El título es requerido'),
   year: z.number().min(1895).max(new Date().getFullYear() + 5),
-  releaseDate: z.string().optional(),
+  releaseYear: z.number().optional().nullable(),
+  releaseMonth: z.number().optional().nullable(),
+  releaseDay: z.number().optional().nullable(),
   duration: z.number().optional(),
   durationSeconds: z.number().optional(),
   tipoDuracion: z.string().optional(),
@@ -19,6 +21,15 @@ export const movieSchema = z.object({
   soundType: z.string().optional(),
   ratingId: z.number().optional(),
   status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+  stage: z.enum([
+    'COMPLETA',
+    'EN_DESARROLLO',
+    'EN_POSTPRODUCCION',
+    'EN_PREPRODUCCION',
+    'EN_RODAJE',
+    'INCONCLUSA',
+    'INEDITA'
+  ]).optional(),
   metaKeywords: z.array(z.string()).optional(),
   dataCompleteness: z.enum([
     'BASIC_PRESS_KIT',

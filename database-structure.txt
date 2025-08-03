@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-02T22:32:21.542Z
+# Generado automáticamente el: 2025-08-03T17:44:38.915Z
 # ================================================
 
 ## Schema Prisma
@@ -27,7 +27,9 @@ model Movie {
   slug             String   @unique @db.VarChar(255)
   title            String   @db.VarChar(255)
   year             Int
-  releaseDate      DateTime? @map("release_date") @db.Date
+  releaseYear      Int?     @map("release_year")
+  releaseMonth     Int?     @map("release_month") @db.SmallInt
+  releaseDay       Int?     @map("release_day") @db.SmallInt
   duration         Int?     // en minutos
   durationSeconds  Int?     @map("duration_seconds")
   tipoDuracion     String?  @map("tipo_duracion") @db.VarChar(20)
@@ -36,7 +38,8 @@ model Movie {
   posterUrl        String?  @map("poster_url") @db.VarChar(500)
   trailerUrl       String?  @map("trailer_url") @db.VarChar(500)
   imdbId           String?  @map("imdb_id") @db.VarChar(20)
-  
+  stage            MovieStage  @default(COMPLETA)
+
   // Información técnica
   colorTypeId      Int?     @map("color_type_id")
   colorType        ColorType? @relation(fields: [colorTypeId], references: [id])
@@ -96,6 +99,9 @@ model Movie {
   @@index([is_coproduction])
   @@index([production_type])
   @@index([colorTypeId])
+  @@index([stage])
+  @@index([releaseYear])
+  @@index([releaseYear, releaseMonth])
 }
 
 model MovieAlternativeTitle {
@@ -682,6 +688,18 @@ enum ColorCategory {
   
   @@map("color_category")
 }
+
+enum MovieStage {
+  COMPLETA
+  EN_DESARROLLO
+  EN_POSTPRODUCCION
+  EN_PREPRODUCCION
+  EN_RODAJE
+  INCONCLUSA
+  INEDITA
+  
+  @@map("movie_stage")
+}
 ```
 
 ## SQL Generado
@@ -711,13 +729,18 @@ CREATE TYPE "public"."link_type" AS ENUM ('INSTAGRAM', 'TWITTER', 'FACEBOOK', 'T
 -- CreateEnum
 CREATE TYPE "public"."color_category" AS ENUM ('COLOR', 'BLACK_AND_WHITE', 'MIXED', 'UNKNOWN');
 
+-- CreateEnum
+CREATE TYPE "public"."movie_stage" AS ENUM ('COMPLETA', 'EN_DESARROLLO', 'EN_POSTPRODUCCION', 'EN_PREPRODUCCION', 'EN_RODAJE', 'INCONCLUSA', 'INEDITA');
+
 -- CreateTable
 CREATE TABLE "public"."movies" (
     "id" SERIAL NOT NULL,
     "slug" VARCHAR(255) NOT NULL,
     "title" VARCHAR(255) NOT NULL,
     "year" INTEGER NOT NULL,
-    "release_date" DATE,
+    "release_year" INTEGER,
+    "release_month" SMALLINT,
+    "release_day" SMALLINT,
     "duration" INTEGER,
     "duration_seconds" INTEGER,
     "tipo_duracion" VARCHAR(20),
@@ -726,6 +749,7 @@ CREATE TABLE "public"."movies" (
     "poster_url" VARCHAR(500),
     "trailer_url" VARCHAR(500),
     "imdb_id" VARCHAR(20),
+    "stage" "public"."movie_stage" NOT NULL DEFAULT 'COMPLETA',
     "color_type_id" INTEGER,
     "sound_type" VARCHAR(50),
     "rating_id" INTEGER,
@@ -1156,6 +1180,15 @@ CREATE INDEX "movies_production_type_idx" ON "public"."movies"("production_type"
 
 -- CreateIndex
 CREATE INDEX "movies_color_type_id_idx" ON "public"."movies"("color_type_id");
+
+-- CreateIndex
+CREATE INDEX "movies_stage_idx" ON "public"."movies"("stage");
+
+-- CreateIndex
+CREATE INDEX "movies_release_year_idx" ON "public"."movies"("release_year");
+
+-- CreateIndex
+CREATE INDEX "movies_release_year_release_month_idx" ON "public"."movies"("release_year", "release_month");
 
 -- CreateIndex
 CREATE INDEX "movie_alternative_titles_movie_id_idx" ON "public"."movie_alternative_titles"("movie_id");

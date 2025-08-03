@@ -129,6 +129,8 @@ export async function PUT(
     // Validar datos
     const validatedData = movieSchema.parse(body)
 
+
+
     // Verificar que la película existe
     const existingMovie = await prisma.movie.findUnique({
       where: { id }
@@ -155,7 +157,12 @@ export async function PUT(
       links,
       ...movieData
     } = validatedData
-
+    console.log('=== DATOS DE FECHA RECIBIDOS EN BACKEND ===');
+    console.log('releaseYear:', validatedData.releaseYear);
+    console.log('releaseMonth:', validatedData.releaseMonth);
+    console.log('releaseDay:', validatedData.releaseDay);
+    console.log('movieData después de desestructuración:', movieData.releaseYear, movieData.releaseMonth, movieData.releaseDay);
+    console.log('================================');
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
       // 1. Actualizar datos básicos de la película
@@ -163,7 +170,9 @@ export async function PUT(
         where: { id },
         data: {
           ...movieData,
-          releaseDate: movieData.releaseDate ? new Date(movieData.releaseDate) : null,
+          releaseYear: movieData.releaseYear || null,
+          releaseMonth: movieData.releaseMonth || null,
+          releaseDay: movieData.releaseDay || null,
           colorTypeId: movieData.colorTypeId || null,
           filmingStartDate: movieData.filmingStartDate ? new Date(movieData.filmingStartDate) : null,
           filmingEndDate: movieData.filmingEndDate ? new Date(movieData.filmingEndDate) : null,

@@ -20,7 +20,9 @@ model Movie {
   slug             String   @unique @db.VarChar(255)
   title            String   @db.VarChar(255)
   year             Int
-  releaseDate      DateTime? @map("release_date") @db.Date
+  releaseYear      Int?     @map("release_year")
+  releaseMonth     Int?     @map("release_month") @db.SmallInt
+  releaseDay       Int?     @map("release_day") @db.SmallInt
   duration         Int?     // en minutos
   durationSeconds  Int?     @map("duration_seconds")
   tipoDuracion     String?  @map("tipo_duracion") @db.VarChar(20)
@@ -29,7 +31,8 @@ model Movie {
   posterUrl        String?  @map("poster_url") @db.VarChar(500)
   trailerUrl       String?  @map("trailer_url") @db.VarChar(500)
   imdbId           String?  @map("imdb_id") @db.VarChar(20)
-  
+  stage            MovieStage  @default(COMPLETA)
+
   // Información técnica
   colorTypeId      Int?     @map("color_type_id")
   colorType        ColorType? @relation(fields: [colorTypeId], references: [id])
@@ -89,6 +92,9 @@ model Movie {
   @@index([is_coproduction])
   @@index([production_type])
   @@index([colorTypeId])
+  @@index([stage])
+  @@index([releaseYear])
+  @@index([releaseYear, releaseMonth])
 }
 
 model MovieAlternativeTitle {
@@ -674,4 +680,16 @@ enum ColorCategory {
   UNKNOWN
   
   @@map("color_category")
+}
+
+enum MovieStage {
+  COMPLETA
+  EN_DESARROLLO
+  EN_POSTPRODUCCION
+  EN_PREPRODUCCION
+  EN_RODAJE
+  INCONCLUSA
+  INEDITA
+  
+  @@map("movie_stage")
 }
