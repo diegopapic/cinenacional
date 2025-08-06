@@ -203,7 +203,6 @@ export async function PUT(
             filmingEndMonth: null,
             filmingEndDay: null
           }),
-          ratingId: movieData.ratingId === null ? undefined : movieData.ratingId,
         }
       })
 
