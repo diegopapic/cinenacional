@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-06T01:20:51.103Z
+# Generado automáticamente el: 2025-08-06T01:34:26.697Z
 # ================================================
 
 ## Schema Prisma
@@ -54,9 +54,13 @@ model Movie {
   is_coproduction    Boolean            @default(false)
   production_type    String             @default("national")
 
-  // Fechas de rodaje
-  filmingStartDate DateTime? @map("filming_start_date") @db.Date
-  filmingEndDate   DateTime? @map("filming_end_date") @db.Date
+  // Fechas de rodaje (campos separados como releaseDate)
+  filmingStartYear  Int? @map("filming_start_year")
+  filmingStartMonth Int? @map("filming_start_month") @db.SmallInt
+  filmingStartDay   Int? @map("filming_start_day") @db.SmallInt
+  filmingEndYear    Int? @map("filming_end_year")
+  filmingEndMonth   Int? @map("filming_end_month") @db.SmallInt
+  filmingEndDay     Int? @map("filming_end_day") @db.SmallInt
   
   // Status y timestamps
   status           MovieStatus @default(PUBLISHED)
@@ -94,8 +98,8 @@ model Movie {
   @@index([status])
   @@index([tipoDuracion])
   @@index([ratingId])
-  @@index([filmingStartDate])
-  @@index([filmingEndDate])
+  @@index([filmingStartYear])
+  @@index([filmingStartYear, filmingStartMonth])
   @@index([is_coproduction])
   @@index([production_type])
   @@index([colorTypeId])
@@ -756,8 +760,12 @@ CREATE TABLE "public"."movies" (
     "countries" TEXT[] DEFAULT ARRAY['Argentina']::TEXT[],
     "is_coproduction" BOOLEAN NOT NULL DEFAULT false,
     "production_type" TEXT NOT NULL DEFAULT 'national',
-    "filming_start_date" DATE,
-    "filming_end_date" DATE,
+    "filming_start_year" INTEGER,
+    "filming_start_month" SMALLINT,
+    "filming_start_day" SMALLINT,
+    "filming_end_year" INTEGER,
+    "filming_end_month" SMALLINT,
+    "filming_end_day" SMALLINT,
     "status" "public"."movie_status" NOT NULL DEFAULT 'PUBLISHED',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -1167,10 +1175,10 @@ CREATE INDEX "movies_tipo_duracion_idx" ON "public"."movies"("tipo_duracion");
 CREATE INDEX "movies_rating_id_idx" ON "public"."movies"("rating_id");
 
 -- CreateIndex
-CREATE INDEX "movies_filming_start_date_idx" ON "public"."movies"("filming_start_date");
+CREATE INDEX "movies_filming_start_year_idx" ON "public"."movies"("filming_start_year");
 
 -- CreateIndex
-CREATE INDEX "movies_filming_end_date_idx" ON "public"."movies"("filming_end_date");
+CREATE INDEX "movies_filming_start_year_filming_start_month_idx" ON "public"."movies"("filming_start_year", "filming_start_month");
 
 -- CreateIndex
 CREATE INDEX "movies_is_coproduction_idx" ON "public"."movies"("is_coproduction");
