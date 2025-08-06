@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: b50b5236f74533d8a8c9ba3c47b0212324c880e0
-// Fecha: 2025-08-03T17:44:38.701Z
+// Commit: cb003b0ff110cf5430f6708fbfada5334e0d6792
+// Fecha: 2025-08-06T01:10:56.310Z
 // ============================================
 
 
@@ -1460,164 +1460,41 @@ import { formatDate, formatDuration } from '@/lib/utils'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 import AlternativeTitlesManager from '@/components/admin/AlternativeTitlesManager'
 import MovieLinksManager from '@/components/admin/MovieLinksManager'
+import {
+  MOVIE_STAGES,
+  TIPOS_DURACION,
+  MONTHS,
+  MOVIE_STATUS,
+  DATA_COMPLETENESS_LEVELS
+} from '@/lib/movies/movieConstants'
 
+import {
+  calcularTipoDuracion,
+  prepareMovieData,
+  getCompletenessLabel,
+  getCompletenessColor,
+  getStageColor,
+  getStageName,
+  getStatusColor,
+  getStatusLabel,
+  getErrorMessage,
+  formatKeywords,
+  buildReleaseDateData,
+  shouldDisableDurationType
+} from '@/lib/movies/movieUtils'
+
+import {
+  movieFormSchema,
+  type MovieFormData,
+  type Movie,
+  type MovieRelations,
+  type PartialReleaseDate
+} from '@/lib/movies/movieTypes'
+
+import { SOUND_TYPES } from '@/lib/movies/movieConstants'
 
 // Importar Tabs de Radix UI
 import * as Tabs from '@radix-ui/react-tabs'
-
-const MOVIE_STAGES = [
-  { value: 'COMPLETA', label: 'Completa', description: 'Película terminada y estrenada' },
-  { value: 'EN_DESARROLLO', label: 'En desarrollo', description: 'En etapa de desarrollo del proyecto' },
-  { value: 'EN_POSTPRODUCCION', label: 'En postproducción', description: 'En proceso de edición y postproducción' },
-  { value: 'EN_PREPRODUCCION', label: 'En preproducción', description: 'En preparación para el rodaje' },
-  { value: 'EN_RODAJE', label: 'En rodaje', description: 'Actualmente filmando' },
-  { value: 'INCONCLUSA', label: 'Inconclusa', description: 'Proyecto abandonado o sin terminar' },
-  { value: 'INEDITA', label: 'Inédita', description: 'Completa pero sin estrenar' }
-]
-
-// Schema simple sin validaciones complejas para el formulario
-const movieFormSchema = z.object({
-  // Campos requeridos
-  title: z.string().min(1, 'El título es requerido'),
-
-  // Todos los demás campos como strings opcionales o any
-  originalTitle: z.any().optional(),
-  synopsis: z.any().optional(),
-  tagline: z.any().optional(),
-  imdbId: z.any().optional(),
-  aspectRatio: z.any().optional(),
-  colorType: z.any().optional(),
-  soundType: z.any().optional(),
-  filmFormat: z.any().optional(),
-  certificateNumber: z.any().optional(),
-  tipoDuracion: z.any().optional(),
-  metaDescription: z.any().optional(),
-  metaKeywords: z.any().optional(),
-
-  // Campos numéricos
-  year: z.any().optional(),
-  duration: z.any().optional(),
-  durationSeconds: z.any().optional(),
-  rating: z.any().optional(),
-  colorTypeId: z.any().optional(),
-  ratingId: z.any().optional(),
-
-  // Campos de fecha
-  releaseDate: z.any().optional(),
-  filmingStartDate: z.any().optional(),
-  filmingEndDate: z.any().optional(),
-
-  // URLs
-  posterUrl: z.any().optional(),
-  posterPublicId: z.any().optional(),
-  backdropUrl: z.any().optional(),
-  backdropPublicId: z.any().optional(),
-  trailerUrl: z.any().optional(),
-
-  // Enums
-  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
-  dataCompleteness: z.enum([
-    'BASIC_PRESS_KIT',
-    'FULL_PRESS_KIT',
-    'MAIN_CAST',
-    'MAIN_CREW',
-    'FULL_CAST',
-    'FULL_CREW'
-  ]).optional(),
-  stage: z.enum([
-    'COMPLETA',
-    'EN_DESARROLLO',
-    'EN_POSTPRODUCCION',
-    'EN_PREPRODUCCION',
-    'EN_RODAJE',
-    'INCONCLUSA',
-    'INEDITA'
-  ]).optional(),
-})
-
-type MovieFormData = z.infer<typeof movieFormSchema>
-
-// Función mejorada para limpiar y validar los datos antes de enviar
-const prepareMovieData = (data: MovieFormData) => {
-  const prepared: any = {}
-
-  Object.entries(data).forEach(([key, value]) => {
-    // Si es string vacío, null o undefined, lo dejamos como undefined
-    if (value === '' || value === null || value === undefined) {
-      prepared[key] = undefined
-    }
-    // Si es un campo numérico y tiene valor
-    else if (['year', 'duration', 'durationSeconds', 'rating', 'colorTypeId', 'ratingId'].includes(key) && value !== '') {
-      const num = Number(value)
-      prepared[key] = isNaN(num) ? undefined : num
-    }
-    // Si es URL y tiene valor, validamos que sea URL válida
-    else if (['posterUrl', 'backdropUrl', 'trailerUrl'].includes(key) && value !== '') {
-      try {
-        new URL(value)
-        prepared[key] = value
-      } catch {
-        prepared[key] = undefined
-      }
-    }
-    // Para el resto de campos
-    else {
-      prepared[key] = value
-    }
-  })
-
-  // Valores por defecto
-  prepared.status = prepared.status || 'PUBLISHED'
-  prepared.dataCompleteness = prepared.dataCompleteness || 'BASIC_PRESS_KIT'
-
-  return prepared
-}
-
-const getCompletenessLabel = (completeness: string) => {
-  const labels: Record<string, string> = {
-    BASIC_PRESS_KIT: 'Gacetilla básica',
-    FULL_PRESS_KIT: 'Gacetilla completa',
-    MAIN_CAST: 'Intérpretes principales',
-    MAIN_CREW: 'Técnicos principales',
-    FULL_CAST: 'Todos los intérpretes',
-    FULL_CREW: 'Todos los técnicos'
-  }
-  return labels[completeness] || completeness
-}
-
-const getCompletenessColor = (completeness: string) => {
-  const colors: Record<string, string> = {
-    BASIC_PRESS_KIT: 'bg-red-100 text-red-800',
-    FULL_PRESS_KIT: 'bg-orange-100 text-orange-800',
-    MAIN_CAST: 'bg-yellow-100 text-yellow-800',
-    MAIN_CREW: 'bg-green-100 text-green-800',
-    FULL_CAST: 'bg-green-100 text-green-800',
-    FULL_CREW: 'bg-blue-100 text-blue-800'
-  }
-  return colors[completeness] || 'bg-gray-100 text-gray-800'
-}
-
-interface Movie {
-  id: number
-  slug: string
-  title: string
-  originalTitle?: string
-  year: number
-  releaseDate?: string
-  duration?: number
-  rating?: number
-  posterUrl?: string
-  status: string
-  stage?: string
-  dataCompleteness?: string
-  genres: Array<{ id: number; name: string }>
-  directors: Array<{ id: number; name: string }>
-  mainCast: Array<{
-    person: { id: number; name: string }
-    character?: string
-  }>
-  country: string
-}
 
 export default function AdminMoviesPage() {
   const [movies, setMovies] = useState<Movie[]>([])
@@ -1637,20 +1514,14 @@ export default function AdminMoviesPage() {
   const [movieLinks, setMovieLinks] = useState<any[]>([])
   const [availableColorTypes, setAvailableColorTypes] = useState<any[]>([])
   const [isPartialDate, setIsPartialDate] = useState(false)
-  const [partialReleaseDate, setPartialReleaseDate] = useState({
-    year: null as number | null,
-    month: null as number | null
+  const [partialReleaseDate, setPartialReleaseDate] = useState<PartialReleaseDate>({
+    year: null,
+    month: null
   })
 
   // Estado para los datos iniciales del formulario
   const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
 
-  // NUEVOS ESTADOS PARA TIPO DE DURACIÓN
-  const [tiposDuracion] = useState([
-    { value: 'largometraje', label: 'Largometraje' },
-    { value: 'mediometraje', label: 'Mediometraje' },
-    { value: 'cortometraje', label: 'Cortometraje' }
-  ])
   const [tipoDuracionDisabled, setTipoDuracionDisabled] = useState(false)
 
   const [movieRelations, setMovieRelations] = useState<{
@@ -1688,61 +1559,7 @@ export default function AdminMoviesPage() {
     }
   })
 
-  const getErrorMessage = (error: any): string => {
-    if (!error) return '';
-    if (typeof error === 'string') return error;
-    if (error?.message) return error.message;
-    return 'Este campo tiene un error';
-  }
-
   const currentStage = watch('stage')
-
-  const getStageColor = (stage?: string) => {
-    switch (stage) {
-      case 'COMPLETA':
-        return 'bg-green-100 text-green-800'
-      case 'EN_DESARROLLO':
-        return 'bg-blue-100 text-blue-800'
-      case 'EN_POSTPRODUCCION':
-        return 'bg-purple-100 text-purple-800'
-      case 'EN_PREPRODUCCION':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'EN_RODAJE':
-        return 'bg-orange-100 text-orange-800'
-      case 'INCONCLUSA':
-        return 'bg-red-100 text-red-800'
-      case 'INEDITA':
-        return 'bg-gray-100 text-gray-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getStageName = (stage?: string) => {
-    if (!stage) return '-'
-    const stageInfo = MOVIE_STAGES.find(s => s.value === stage)
-    return stageInfo ? stageInfo.label : stage
-  }
-
-  // FUNCIONES PARA TIPO DE DURACIÓN
-  const calcularTipoDuracion = (minutos: number | null | undefined, segundos: number | null | undefined = 0): string => {
-    // Convertir todo a minutos totales
-    const minutosReales = (minutos || 0)
-    const segundosReales = (segundos || 0)
-    const duracionTotalMinutos = minutosReales + (segundosReales / 60)
-
-    // Si no hay duración total, retornar vacío
-    if (duracionTotalMinutos === 0) return ''
-
-    if (duracionTotalMinutos >= 60) return 'largometraje'
-    if (duracionTotalMinutos >= 30) return 'mediometraje'
-    return 'cortometraje'
-  }
-
-  const obtenerEtiquetaTipoDuracion = (tipo: string): string => {
-    const tipoObj = tiposDuracion.find(t => t.value === tipo)
-    return tipoObj ? tipoObj.label : ''
-  }
 
   // EFECTO PARA OBSERVAR CAMBIOS EN DURACIÓN
   useEffect(() => {
@@ -1899,10 +1716,10 @@ export default function AdminMoviesPage() {
         // Fecha completa - convertir a campos separados
         const [year, month, day] = data.releaseDate.split('-').map(Number)
         releaseDateData = {
-    releaseYear: year,
-    releaseMonth: month,
-    releaseDay: day
-  }
+          releaseYear: year,
+          releaseMonth: month,
+          releaseDay: day
+        }
       } else {
         // Sin fecha
         releaseDateData = {
@@ -2157,22 +1974,6 @@ export default function AdminMoviesPage() {
     setShowModal(true)
   }
 
-  // Función para limpiar los datos antes de enviar al backend
-  const cleanFormData = (data: MovieFormData) => {
-    const cleaned: any = {}
-
-    Object.entries(data).forEach(([key, value]) => {
-      // Convertir strings vacíos a undefined
-      if (value === '') {
-        cleaned[key] = undefined
-      } else {
-        cleaned[key] = value
-      }
-    })
-
-    return cleaned
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -2314,14 +2115,8 @@ export default function AdminMoviesPage() {
                         {movie.directors?.map(d => d.name).join(', ') || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${movie.status === 'PUBLISHED'
-                          ? 'bg-green-100 text-green-800'
-                          : movie.status === 'DRAFT'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-800'
-                          }`}>
-                          {movie.status === 'PUBLISHED' ? 'Publicado' :
-                            movie.status === 'DRAFT' ? 'Borrador' : 'Archivado'}
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(movie.status)}`}>
+                          {getStatusLabel(movie.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -2609,18 +2404,11 @@ export default function AdminMoviesPage() {
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                                   >
                                     <option value="">Mes (opcional)</option>
-                                    <option value="1">Enero</option>
-                                    <option value="2">Febrero</option>
-                                    <option value="3">Marzo</option>
-                                    <option value="4">Abril</option>
-                                    <option value="5">Mayo</option>
-                                    <option value="6">Junio</option>
-                                    <option value="7">Julio</option>
-                                    <option value="8">Agosto</option>
-                                    <option value="9">Septiembre</option>
-                                    <option value="10">Octubre</option>
-                                    <option value="11">Noviembre</option>
-                                    <option value="12">Diciembre</option>
+                                    {MONTHS.map(month => (
+                                      <option key={month.value} value={month.value}>
+                                        {month.label}
+                                      </option>
+                                    ))}
                                   </select>
                                 </div>
                               </div>
@@ -2698,7 +2486,7 @@ export default function AdminMoviesPage() {
                               }`}
                           >
                             <option value="">Seleccionar tipo de duración...</option>
-                            {tiposDuracion.map((tipo) => (
+                            {TIPOS_DURACION.map((tipo) => (
                               <option key={tipo.value} value={tipo.value}>
                                 {tipo.label}
                               </option>
@@ -2711,7 +2499,7 @@ export default function AdminMoviesPage() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                                 </svg>
                                 <span>
-                                  <strong>{obtenerEtiquetaTipoDuracion(watch('tipoDuracion') || '')}</strong>
+                                  <strong>{TIPOS_DURACION.find(t => t.value === watch('tipoDuracion'))?.label || ''}</strong>
                                   {(() => {
                                     const minutos = watch('duration') || 0
                                     const segundos = watch('durationSeconds') || 0
@@ -2985,9 +2773,11 @@ export default function AdminMoviesPage() {
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                           >
                             <option value="">Seleccionar...</option>
-                            <option value="Sonora">Sonora</option>
-                            <option value="Muda">Muda</option>
-                            <option value="n/d">No disponible</option>
+                            {SOUND_TYPES.map(sound => (
+                              <option key={sound.value} value={sound.value}>
+                                {sound.label}
+                              </option>
+                            ))}
                           </select>
                         </div>
                       </div>
@@ -4997,6 +4787,10 @@ export async function PUT(
       themes,
       alternativeTitles,
       links,
+      colorTypeId,
+      ratingId,
+      filmingStartDate,
+      filmingEndDate,
       ...movieData
     } = validatedData
     console.log('=== DATOS DE FECHA RECIBIDOS EN BACKEND ===');
@@ -5015,9 +4809,32 @@ export async function PUT(
           releaseYear: movieData.releaseYear || null,
           releaseMonth: movieData.releaseMonth || null,
           releaseDay: movieData.releaseDay || null,
-          colorTypeId: movieData.colorTypeId || null,
-          filmingStartDate: movieData.filmingStartDate ? new Date(movieData.filmingStartDate) : null,
-          filmingEndDate: movieData.filmingEndDate ? new Date(movieData.filmingEndDate) : null,
+          ...(colorTypeId && {
+            colorType: { connect: { id: colorTypeId } }
+          }),
+          ...(ratingId && {
+            rating: { connect: { id: ratingId } }
+          }),
+          // Convertir fecha de inicio de filmación
+          ...(filmingStartDate ? {
+            filmingStartYear: new Date(filmingStartDate).getFullYear(),
+            filmingStartMonth: new Date(filmingStartDate).getMonth() + 1,
+            filmingStartDay: new Date(filmingStartDate).getDate()
+          } : {
+            filmingStartYear: null,
+            filmingStartMonth: null,
+            filmingStartDay: null
+          }),
+          // Convertir fecha de fin de filmación
+          ...(filmingEndDate ? {
+            filmingEndYear: new Date(filmingEndDate).getFullYear(),
+            filmingEndMonth: new Date(filmingEndDate).getMonth() + 1,
+            filmingEndDay: new Date(filmingEndDate).getDate()
+          } : {
+            filmingEndYear: null,
+            filmingEndMonth: null,
+            filmingEndDay: null
+          }),
           ratingId: movieData.ratingId === null ? undefined : movieData.ratingId,
         }
       })
@@ -10358,6 +10175,1217 @@ export default function MovieLinksManager({
 }
 
 // ==================================================
+// src/components/admin/movies/MovieModal/index.tsx
+// ==================================================
+// src/components/admin/movies/MovieModal/index.tsx
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
+import { z } from 'zod'
+import { X, Save, Loader2, Info, Users, Briefcase, Settings, Image } from 'lucide-react'
+import * as Tabs from '@radix-ui/react-tabs'
+import CloudinaryUploadWidget from '@/components/admin/CloudinaryUploadWidget'
+import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
+import AlternativeTitlesManager from '@/components/admin/AlternativeTitlesManager'
+import MovieLinksManager from '@/components/admin/MovieLinksManager'
+import FlexibleDateField from '@/components/admin/FlexibleDateField'
+
+// Schema de validación
+const movieFormSchema = z.object({
+    title: z.string().min(1, 'El título es requerido'),
+    originalTitle: z.any().optional(),
+    synopsis: z.any().optional(),
+    tagline: z.any().optional(),
+    imdbId: z.any().optional(),
+    aspectRatio: z.any().optional(),
+    colorType: z.any().optional(),
+    soundType: z.any().optional(),
+    filmFormat: z.any().optional(),
+    certificateNumber: z.any().optional(),
+    tipoDuracion: z.any().optional(),
+    metaDescription: z.any().optional(),
+    metaKeywords: z.any().optional(),
+    year: z.any().optional(),
+    duration: z.any().optional(),
+    durationSeconds: z.any().optional(),
+    rating: z.any().optional(),
+    colorTypeId: z.any().optional(),
+    ratingId: z.any().optional(),
+    releaseDate: z.any().optional(),
+    filmingStartDate: z.any().optional(),
+    filmingEndDate: z.any().optional(),
+    posterUrl: z.any().optional(),
+    posterPublicId: z.any().optional(),
+    backdropUrl: z.any().optional(),
+    backdropPublicId: z.any().optional(),
+    trailerUrl: z.any().optional(),
+    status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+    dataCompleteness: z.enum([
+        'BASIC_PRESS_KIT',
+        'FULL_PRESS_KIT',
+        'MAIN_CAST',
+        'MAIN_CREW',
+        'FULL_CAST',
+        'FULL_CREW'
+    ]).optional(),
+    stage: z.enum([
+        'COMPLETA',
+        'EN_DESARROLLO',
+        'EN_POSTPRODUCCION',
+        'EN_PREPRODUCCION',
+        'EN_RODAJE',
+        'INCONCLUSA',
+        'INEDITA'
+    ]).optional(),
+})
+
+type MovieFormData = z.infer<typeof movieFormSchema>
+
+const MOVIE_STAGES = [
+    { value: 'COMPLETA', label: 'Completa', description: 'Película terminada y estrenada' },
+    { value: 'EN_DESARROLLO', label: 'En desarrollo', description: 'En etapa de desarrollo del proyecto' },
+    { value: 'EN_POSTPRODUCCION', label: 'En postproducción', description: 'En proceso de edición y postproducción' },
+    { value: 'EN_PREPRODUCCION', label: 'En preproducción', description: 'En preparación para el rodaje' },
+    { value: 'EN_RODAJE', label: 'En rodaje', description: 'Actualmente filmando' },
+    { value: 'INCONCLUSA', label: 'Inconclusa', description: 'Proyecto abandonado o sin terminar' },
+    { value: 'INEDITA', label: 'Inédita', description: 'Completa pero sin estrenar' }
+]
+
+interface MovieModalProps {
+    isOpen: boolean
+    onClose: () => void
+    editingMovie: any | null
+    onSubmit: (data: any) => Promise<void>
+    availableRatings: any[]
+    availableColorTypes: any[]
+    movieRelations: {
+        genres: number[]
+        cast: any[]
+        crew: any[]
+        countries: number[]
+        languages: number[]
+        productionCompanies: number[]
+        distributionCompanies: number[]
+        themes: number[]
+    }
+    onGenresChange: (genres: number[]) => void
+    onCastChange: (cast: any[]) => void
+    onCrewChange: (crew: any[]) => void
+    onCountriesChange: (countries: number[]) => void
+    onLanguagesChange: (languages: number[]) => void
+    onProductionCompaniesChange: (companies: number[]) => void
+    onDistributionCompaniesChange: (companies: number[]) => void
+    onThemesChange: (themes: number[]) => void
+    alternativeTitles: any[]
+    onAlternativeTitlesChange: (titles: any[]) => void
+    movieLinks: any[]
+    onLinksChange: (links: any[]) => void
+    movieFormInitialData: any
+    releaseDay: number | null
+    releaseMonth: number | null
+    releaseYear: number | null
+    onReleaseDateChange: (day: number | null, month: number | null, year: number | null) => void
+    filmingStartDay: number | null
+    filmingStartMonth: number | null
+    filmingStartYear: number | null
+    filmingEndDay: number | null
+    filmingEndMonth: number | null
+    filmingEndYear: number | null
+    onFilmingDatesChange: (
+        startDay: number | null,
+        startMonth: number | null,
+        startYear: number | null,
+        endDay: number | null,
+        endMonth: number | null,
+        endYear: number | null
+    ) => void
+}
+
+export default function MovieModal({
+    isOpen,
+    onClose,
+    editingMovie,
+    onSubmit,
+    availableRatings,
+    availableColorTypes,
+    movieRelations,
+    onGenresChange,
+    onCastChange,
+    onCrewChange,
+    onCountriesChange,
+    onLanguagesChange,
+    onProductionCompaniesChange,
+    onDistributionCompaniesChange,
+    onThemesChange,
+    alternativeTitles,
+    onAlternativeTitlesChange,
+    movieLinks,
+    onLinksChange,
+    movieFormInitialData,
+    releaseDay,
+    releaseMonth,
+    releaseYear,
+    onReleaseDateChange,
+    filmingStartDay,
+    filmingStartMonth,
+    filmingStartYear,
+    filmingEndDay,
+    filmingEndMonth,
+    filmingEndYear,
+    onFilmingDatesChange
+}: MovieModalProps) {
+    // TODO: Necesitarás pasar estos estados y funciones desde el componente padre
+    // Por ahora los definimos aquí para que compile
+    const [activeTab, setActiveTab] = useState('basic')
+    const [tipoDuracionDisabled, setTipoDuracionDisabled] = useState(false)
+
+    const tiposDuracion = [
+        { value: 'largometraje', label: 'Largometraje' },
+        { value: 'mediometraje', label: 'Mediometraje' },
+        { value: 'cortometraje', label: 'Cortometraje' }
+    ]
+
+    const {
+        register,
+        handleSubmit,
+        reset,
+        setValue,
+        watch,
+        formState: { errors, isSubmitting }
+    } = useForm<MovieFormData>({
+        resolver: zodResolver(movieFormSchema),
+        defaultValues: {
+            stage: 'COMPLETA'
+        }
+    })
+
+    const currentStage = watch('stage')
+
+    const getErrorMessage = (error: any): string => {
+        if (!error) return ''
+        if (typeof error === 'string') return error
+        if (error?.message) return error.message
+        return 'Este campo tiene un error'
+    }
+
+    // Función para formatear período de rodaje
+    const formatFilmingPeriod = (): string => {
+        const formatDate = (day: number | null, month: number | null, year: number | null) => {
+            if (!year) return 'Sin fecha'
+
+            const monthNames = [
+                'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+            ]
+
+            if (day && month) {
+                return `${day} de ${monthNames[month - 1]} de ${year}`
+            } else if (month) {
+                return `${monthNames[month - 1]} de ${year}`
+            } else {
+                return year.toString()
+            }
+        }
+
+        const start = formatDate(filmingStartDay, filmingStartMonth, filmingStartYear)
+        const end = formatDate(filmingEndDay, filmingEndMonth, filmingEndYear)
+
+        if (start === 'Sin fecha' && end === 'Sin fecha') {
+            return 'No especificado'
+        } else if (start === 'Sin fecha') {
+            return `Hasta ${end}`
+        } else if (end === 'Sin fecha') {
+            return `Desde ${start}`
+        } else {
+            return `${start} - ${end}`
+        }
+    }
+
+    if (!isOpen) return null
+
+    return (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-semibold text-gray-900">
+                            {editingMovie ? 'Editar Película' : 'Nueva Película'}
+                        </h2>
+                        <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+                </div>
+
+                <form onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto max-h-[calc(90vh-8rem)]">
+                    {/* AQUÍ VA TODO EL CONTENIDO DEL MODAL CON LAS TABS */}
+                    {/* Por brevedad no lo copio todo, pero aquí iría todo el contenido de las Tabs */}
+                    <div className="p-6">
+                        <p className="text-gray-500">
+
+                            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+                                <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                                    <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                                        <div className="flex items-center justify-between">
+                                            <h2 className="text-xl font-semibold text-gray-900">
+                                                {editingMovie ? 'Editar Película' : 'Nueva Película'}
+                                            </h2>
+                                            <button
+                                                onClick={() => {
+                                                    setShowModal(false)
+                                                    reset()
+                                                    setEditingMovie(null)
+                                                    setMovieFormInitialData(null)
+                                                }}
+                                                className="text-gray-400 hover:text-gray-500"
+                                            >
+                                                <X className="w-6 h-6" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <form onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto max-h-[calc(90vh-8rem)]">
+                                        <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="w-full">
+                                            {/* Lista de pestañas */}
+                                            <Tabs.List className="flex border-b border-gray-200 px-6 pt-4">
+                                                <Tabs.Trigger
+                                                    value="basic"
+                                                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'basic'
+                                                        ? 'text-blue-600 border-b-2 border-blue-600'
+                                                        : 'text-gray-500 hover:text-gray-700'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Info className="w-4 h-4" />
+                                                        Información Básica
+                                                    </div>
+                                                </Tabs.Trigger>
+                                                <Tabs.Trigger
+                                                    value="media"
+                                                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'media'
+                                                        ? 'text-blue-600 border-b-2 border-blue-600'
+                                                        : 'text-gray-500 hover:text-gray-700'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Image className="w-4 h-4" />
+                                                        Multimedia
+                                                    </div>
+                                                </Tabs.Trigger>
+                                                <Tabs.Trigger
+                                                    value="cast"
+                                                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'cast'
+                                                        ? 'text-blue-600 border-b-2 border-blue-600'
+                                                        : 'text-gray-500 hover:text-gray-700'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Users className="w-4 h-4" />
+                                                        Reparto
+                                                    </div>
+                                                </Tabs.Trigger>
+                                                <Tabs.Trigger
+                                                    value="crew"
+                                                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'crew'
+                                                        ? 'text-blue-600 border-b-2 border-blue-600'
+                                                        : 'text-gray-500 hover:text-gray-700'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Briefcase className="w-4 h-4" />
+                                                        Equipo Técnico
+                                                    </div>
+                                                </Tabs.Trigger>
+                                                <Tabs.Trigger
+                                                    value="advanced"
+                                                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'advanced'
+                                                        ? 'text-blue-600 border-b-2 border-blue-600'
+                                                        : 'text-gray-500 hover:text-gray-700'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Settings className="w-4 h-4" />
+                                                        Avanzado
+                                                    </div>
+                                                </Tabs.Trigger>
+                                            </Tabs.List>
+
+                                            {/* Contenido de las pestañas */}
+                                            <div className="p-6">
+                                                {/* Pestaña de Información Básica */}
+                                                <Tabs.Content value="basic" className="space-y-6">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        <div className="space-y-4">
+                                                            <h3 className="text-lg font-medium text-gray-900 mb-4">
+                                                                Información Principal
+                                                            </h3>
+
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    Título *
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    {...register('title')}
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                                                />
+                                                                {errors.title && (
+                                                                    <p className="mt-1 text-sm text-red-600">{getErrorMessage(errors.title)}</p>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                        Año
+                                                                    </label>
+                                                                    <input
+                                                                        type="number"
+                                                                        {...register('year', { valueAsNumber: true })}
+                                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                                                    />
+                                                                    {errors.year && (
+                                                                        <p className="mt-1 text-sm text-red-600">{getErrorMessage(errors.year)}</p>
+                                                                    )}
+                                                                </div>
+
+                                                                <div>
+                                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                        Fecha de Estreno
+                                                                    </label>
+
+                                                                    <FlexibleDateField
+                                                                        label="Fecha de estreno"
+                                                                        day={releaseDay}
+                                                                        month={releaseMonth}
+                                                                        year={releaseYear}
+                                                                        onChange={({ day, month, year }) => {
+                                                                            setReleaseDay(day)
+                                                                            setReleaseMonth(month)
+                                                                            setReleaseYear(year)
+                                                                        }}
+                                                                        disabled={isSubmitting}
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Fechas de rodaje con soporte para fechas incompletas */}
+                                                            <div className="mt-6 space-y-4">
+                                                                <h4 className="text-md font-medium text-gray-900">Fechas de Rodaje</h4>
+
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                    <FlexibleDateField
+                                                                        label="Fecha de inicio de rodaje"
+                                                                        day={filmingStartDay}
+                                                                        month={filmingStartMonth}
+                                                                        year={filmingStartYear}
+                                                                        onChange={({ day, month, year }) => {
+                                                                            setFilmingStartDay(day)
+                                                                            setFilmingStartMonth(month)
+                                                                            setFilmingStartYear(year)
+                                                                        }}
+                                                                    />
+
+                                                                    <FlexibleDateField
+                                                                        label="Fecha de fin de rodaje"
+                                                                        day={filmingEndDay}
+                                                                        month={filmingEndMonth}
+                                                                        year={filmingEndYear}
+                                                                        onChange={({ day, month, year }) => {
+                                                                            setFilmingEndDay(day)
+                                                                            setFilmingEndMonth(month)
+                                                                            setFilmingEndYear(year)
+                                                                        }}
+                                                                    />
+                                                                </div>
+
+                                                                {/* Mostrar período de rodaje si hay datos */}
+                                                                {(filmingStartYear || filmingEndYear) && (
+                                                                    <div className="mt-2 p-3 bg-blue-50 rounded-lg">
+                                                                        <p className="text-sm text-blue-800">
+                                                                            <strong>Período de rodaje:</strong> {formatFilmingPeriod()}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    Duración (minutos)
+                                                                </label>
+                                                                <input
+                                                                    type="number"
+                                                                    {...register('duration', { valueAsNumber: true })}
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                                                />
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    Estado
+                                                                </label>
+                                                                <select
+                                                                    {...register('status')}
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                                                >
+                                                                    <option value="DRAFT">Borrador</option>
+                                                                    <option value="PUBLISHED">Publicado</option>
+                                                                    <option value="ARCHIVED">Archivado</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-4">
+                                                            <h3 className="text-lg font-medium text-gray-900 mb-4">
+                                                                Información Adicional
+                                                            </h3>
+
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    Sinopsis
+                                                                </label>
+                                                                <textarea
+                                                                    {...register('synopsis')}
+                                                                    rows={4}
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                                                />
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    Tagline
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    {...register('tagline')}
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                                                />
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    IMDb ID
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    {...register('imdbId')}
+                                                                    placeholder="tt0123456"
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Géneros, Países e Idiomas */}
+                                                    <MovieFormEnhanced
+                                                        key={editingMovie?.id || 'new'}
+                                                        onGenresChange={onGenresChange}
+                                                        onCastChange={onCastChange}
+                                                        onCrewChange={onCrewChange}
+                                                        onCountriesChange={onCountriesChange}
+                                                        onLanguagesChange={onLanguagesChange}
+                                                        onProductionCompaniesChange={onProductionCompaniesChange}
+                                                        onDistributionCompaniesChange={onDistributionCompaniesChange}
+                                                        onThemesChange={onThemesChange}
+                                                        initialData={movieFormInitialData}
+                                                        showOnlyBasicInfo={true}
+                                                    />
+                                                </Tabs.Content>
+
+                                                {/* Pestaña de Multimedia */}
+                                                <Tabs.Content value="media" className="space-y-6">
+                                                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                                                        Imágenes y Videos
+                                                    </h3>
+
+                                                    <CloudinaryUploadWidget
+                                                        value={watch('posterUrl')}
+                                                        onChange={(url, publicId) => {
+                                                            setValue('posterUrl', url)
+                                                            setValue('posterPublicId', publicId)
+                                                        }}
+                                                        label="Afiche de la Película"
+                                                        type="poster"
+                                                        movieId={editingMovie?.id}
+                                                    />
+
+                                                    <CloudinaryUploadWidget
+                                                        value={watch('backdropUrl')}
+                                                        onChange={(url, publicId) => {
+                                                            setValue('backdropUrl', url)
+                                                            setValue('backdropPublicId', publicId)
+                                                        }}
+                                                        label="Imagen de Fondo"
+                                                        type="backdrop"
+                                                        movieId={editingMovie?.id}
+                                                    />
+
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            URL del Trailer
+                                                        </label>
+                                                        <input
+                                                            type="url"
+                                                            {...register('trailerUrl')}
+                                                            placeholder="https://youtube.com/watch?v=..."
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                                        />
+                                                    </div>
+                                                </Tabs.Content>
+
+                                                {/* Pestaña de Reparto */}
+                                                <Tabs.Content value="cast">
+                                                    <MovieFormEnhanced
+                                                        key={editingMovie?.id || 'new'}
+                                                        onGenresChange={onGenresChange}
+                                                        onCastChange={onCastChange}
+                                                        onCrewChange={onCrewChange}
+                                                        onCountriesChange={onCountriesChange}
+                                                        onLanguagesChange={onLanguagesChange}
+                                                        onProductionCompaniesChange={onProductionCompaniesChange}
+                                                        onDistributionCompaniesChange={onDistributionCompaniesChange}
+                                                        onThemesChange={onThemesChange}
+                                                        initialData={movieFormInitialData}
+                                                        showOnlyCast={true}
+                                                    />
+                                                </Tabs.Content>
+
+                                                {/* Pestaña de Equipo Técnico */}
+                                                <Tabs.Content value="crew">
+                                                    <MovieFormEnhanced
+                                                        key={editingMovie?.id || 'new'}
+                                                        onGenresChange={onGenresChange}
+                                                        onCastChange={onCastChange}
+                                                        onCrewChange={onCrewChange}
+                                                        onCountriesChange={onCountriesChange}
+                                                        onLanguagesChange={onLanguagesChange}
+                                                        onProductionCompaniesChange={onProductionCompaniesChange}
+                                                        onDistributionCompaniesChange={onDistributionCompaniesChange}
+                                                        onThemesChange={onThemesChange}
+                                                        initialData={movieFormInitialData}
+                                                        showOnlyCrew={true}
+                                                    />
+                                                </Tabs.Content>
+
+                                                {/* Pestaña de Configuración Avanzada */}
+                                                <Tabs.Content value="advanced" className="space-y-6">
+                                                    {/* Información técnica */}
+                                                    <div className="space-y-4">
+                                                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                                                            Información Técnica
+                                                        </h3>
+
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    Color
+                                                                </label>
+                                                                <select
+                                                                    {...register('colorTypeId', { valueAsNumber: true })}
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                                                >
+                                                                    <option value="">Seleccionar...</option>
+                                                                    {availableColorTypes.map((colorType) => (
+                                                                        <option key={colorType.id} value={colorType.id}>
+                                                                            {colorType.name}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                    Sonido
+                                                                </label>
+                                                                <select
+                                                                    {...register('soundType')}
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                                                >
+                                                                    <option value="">Seleccionar...</option>
+                                                                    <option value="Sonora">Sonora</option>
+                                                                    <option value="Muda">Muda</option>
+                                                                    <option value="n/d">No disponible</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Tipo de duración
+                                                                {tipoDuracionDisabled && (
+                                                                    <span className="ml-2 text-xs text-green-600 font-normal">
+                                                                        (Calculado automáticamente)
+                                                                    </span>
+                                                                )}
+                                                            </label>
+                                                            <select
+                                                                {...register('tipoDuracion')}
+                                                                disabled={tipoDuracionDisabled}
+                                                                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-colors ${tipoDuracionDisabled
+                                                                    ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                                                                    : 'hover:border-gray-400'
+                                                                    }`}
+                                                            >
+                                                                <option value="">Seleccionar tipo de duración...</option>
+                                                                {tiposDuracion.map((tipo) => (
+                                                                    <option key={tipo.value} value={tipo.value}>
+                                                                        {tipo.label}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Clasificación */}
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            Calificación
+                                                        </label>
+                                                        <select
+                                                            {...register('ratingId', { valueAsNumber: true })}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                                        >
+                                                            <option value="">Sin calificación</option>
+                                                            {availableRatings.map((rating) => (
+                                                                <option key={rating.id} value={rating.id}>
+                                                                    {rating.name} {rating.abbreviation && `(${rating.abbreviation})`}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+
+                                                    {/* Estado de la película */}
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            Etapa de la Película
+                                                        </label>
+                                                        <select
+                                                            {...register('stage')}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                                        >
+                                                            {MOVIE_STAGES.map(stage => (
+                                                                <option key={stage.value} value={stage.value}>
+                                                                    {stage.label}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+
+                                                        {currentStage && (
+                                                            <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+                                                                <div className="flex items-start gap-2">
+                                                                    <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                                                                    <p className="text-xs text-blue-800">
+                                                                        {MOVIE_STAGES.find(s => s.value === currentStage)?.description}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Nivel de información */}
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                            Nivel de información cargada
+                                                        </label>
+                                                        <select
+                                                            {...register('dataCompleteness')}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                                        >
+                                                            <option value="BASIC_PRESS_KIT">📄 Gacetilla básica</option>
+                                                            <option value="FULL_PRESS_KIT">📋 Gacetilla completa</option>
+                                                            <option value="MAIN_CAST">👥 Intérpretes principales</option>
+                                                            <option value="MAIN_CREW">🔧 Técnicos principales</option>
+                                                            <option value="FULL_CAST">🎭 Todos los intérpretes</option>
+                                                            <option value="FULL_CREW">🎬 Todos los técnicos</option>
+                                                        </select>
+                                                    </div>
+
+                                                    {/* SEO */}
+                                                    <div className="space-y-4">
+                                                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                                                            SEO y Palabras Clave
+                                                        </h3>
+
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Palabras Clave (separadas por comas)
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                {...register('metaKeywords')}
+                                                                placeholder="drama, argentina, buenos aires"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Links Oficiales */}
+                                                    <MovieLinksManager
+                                                        key={`links-${editingMovie?.id || 'new'}-${movieLinks.length}`}
+                                                        initialLinks={movieLinks}
+                                                        onLinksChange={onLinksChange}
+                                                    />
+
+                                                    {/* Títulos Alternativos */}
+                                                    <AlternativeTitlesManager
+                                                        onChange={onAlternativeTitlesChange}
+                                                        initialTitles={editingMovie ? alternativeTitles : []}
+                                                    />
+
+                                                    {/* Productoras y Distribuidoras */}
+                                                    <MovieFormEnhanced
+                                                        key={editingMovie?.id || 'new'}
+                                                        onGenresChange={onGenresChange}
+                                                        onCastChange={onCastChange}
+                                                        onCrewChange={onCrewChange}
+                                                        onCountriesChange={onCountriesChange}
+                                                        onLanguagesChange={onLanguagesChange}
+                                                        onProductionCompaniesChange={onProductionCompaniesChange}
+                                                        onDistributionCompaniesChange={onDistributionCompaniesChange}
+                                                        onThemesChange={onThemesChange}
+                                                        initialData={movieFormInitialData}
+                                                        showOnlyCompanies={true}
+                                                    />
+                                                </Tabs.Content>
+                                            </div>
+                                        </Tabs.Root>
+
+                                        {/* Botones */}
+                                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowModal(false)
+                                                    reset()
+                                                    setEditingMovie(null)
+                                                    setMovieFormInitialData(null)
+                                                }}
+                                                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                                            >
+                                                Cancelar
+                                            </button>
+                                            {Object.keys(errors).length > 0 && (
+                                                <div className="px-6 py-2 bg-red-50 text-red-800 text-sm">
+                                                    Errores: {Object.keys(errors).join(', ')}
+                                                </div>
+                                            )}
+                                            <button
+                                                type="submit"
+                                                disabled={isSubmitting}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                            >
+                                                {isSubmitting ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                        Guardando...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Save className="w-4 h-4" />
+                                                        {editingMovie ? 'Actualizar' : 'Crear'} Película
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                        </p>
+                    </div>
+
+                    {/* Botones */}
+                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Guardando...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4" />
+                                    {editingMovie ? 'Actualizar' : 'Crear'} Película
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    )
+}
+
+// ==================================================
+// src/components/admin/MoviesFilters.tsx
+// ==================================================
+// src/components/admin/movies/MoviesFilters.tsx
+import { Search, Plus } from 'lucide-react'
+
+interface MoviesFiltersProps {
+  searchTerm: string
+  onSearchChange: (value: string) => void
+  selectedStatus: string
+  onStatusChange: (value: string) => void
+  selectedStage: string
+  onStageChange: (value: string) => void
+  selectedYear: string
+  onYearChange: (value: string) => void
+  onNewMovie: () => void
+}
+
+export default function MoviesFilters({
+  searchTerm,
+  onSearchChange,
+  selectedStatus,
+  onStatusChange,
+  selectedStage,
+  onStageChange,
+  selectedYear,
+  onYearChange,
+  onNewMovie
+}: MoviesFiltersProps) {
+  // Generar array de años (últimos 50 años)
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Búsqueda */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Buscar películas..."
+            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </div>
+
+        {/* Filtro por estado */}
+        <select
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+          value={selectedStatus}
+          onChange={(e) => onStatusChange(e.target.value)}
+        >
+          <option value="">Todos los estados</option>
+          <option value="DRAFT">Borrador</option>
+          <option value="PUBLISHED">Publicado</option>
+          <option value="ARCHIVED">Archivado</option>
+        </select>
+
+        {/* Filtro por año */}
+        <select
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+          value={selectedYear}
+          onChange={(e) => onYearChange(e.target.value)}
+        >
+          <option value="">Todos los años</option>
+          {years.map(year => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+
+        {/* Botón nueva película */}
+        <button
+          onClick={onNewMovie}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          Nueva Película
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ==================================================
+// src/components/admin/MoviesPagination.tsx
+// ==================================================
+// src/components/admin/MoviesPagination.tsx
+interface MoviesPaginationProps {
+  currentPage: number
+  totalPages: number
+  onPageChange: (page: number) => void
+}
+
+export default function MoviesPagination({
+  currentPage,
+  totalPages,
+  onPageChange
+}: MoviesPaginationProps) {
+  // Si no hay múltiples páginas, no mostrar nada
+  if (totalPages <= 1) return null
+
+  const handlePrevious = () => {
+    onPageChange(Math.max(1, currentPage - 1))
+  }
+
+  const handleNext = () => {
+    onPageChange(Math.min(totalPages, currentPage + 1))
+  }
+
+  return (
+    <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow">
+      {/* Vista móvil */}
+      <div className="flex-1 flex justify-between sm:hidden">
+        <button
+          onClick={handlePrevious}
+          disabled={currentPage === 1}
+          className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Anterior
+        </button>
+        <button
+          onClick={handleNext}
+          disabled={currentPage === totalPages}
+          className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Siguiente
+        </button>
+      </div>
+
+      {/* Vista desktop */}
+      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-gray-700">
+            Página <span className="font-medium">{currentPage}</span> de{' '}
+            <span className="font-medium">{totalPages}</span>
+          </p>
+        </div>
+        <div>
+          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+            <button
+              onClick={handlePrevious}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Anterior
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={currentPage === totalPages}
+              className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ==================================================
+// src/components/admin/MoviesTable.tsx
+// ==================================================
+// src/components/admin/MoviesTable.tsx
+import { Film, Eye, Edit, Trash2, Loader2, Star } from 'lucide-react'
+
+interface Director {
+  id: number
+  name: string
+}
+
+interface Movie {
+  id: number
+  slug: string
+  title: string
+  originalTitle?: string
+  year: number
+  releaseDate?: string
+  duration?: number
+  rating?: number
+  posterUrl?: string
+  status: string
+  stage?: string
+  dataCompleteness?: string
+  directors?: Director[]
+}
+
+interface MoviesTableProps {
+  movies: Movie[]
+  loading: boolean
+  deletingMovieId: number | null
+  onEdit: (movie: Movie) => void
+  onDelete: (id: number) => void
+}
+
+export default function MoviesTable({
+  movies,
+  loading,
+  deletingMovieId,
+  onEdit,
+  onDelete
+}: MoviesTableProps) {
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!movies || movies.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="text-center py-12">
+          <Film className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500">No se encontraron películas</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Película
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Año
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Director
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Estado
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Completitud
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Rating
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Acciones
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {movies.map((movie) => (
+              <tr key={movie.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10">
+                      {movie.posterUrl ? (
+                        <img
+                          className="h-10 w-10 rounded-lg object-cover"
+                          src={movie.posterUrl}
+                          alt={movie.title}
+                        />
+                      ) : (
+                        <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                          <Film className="w-5 h-5 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="ml-4">
+                      <div className="text-sm font-medium text-gray-900">
+                        {movie.title}
+                      </div>
+                      {movie.originalTitle && (
+                        <div className="text-sm text-gray-500">
+                          {movie.originalTitle}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {movie.year}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {movie.directors?.map(d => d.name).join(', ') || '-'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    movie.status === 'PUBLISHED'
+                      ? 'bg-green-100 text-green-800'
+                      : movie.status === 'DRAFT'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {movie.status === 'PUBLISHED' ? 'Publicado' :
+                      movie.status === 'DRAFT' ? 'Borrador' : 'Archivado'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="text-sm text-gray-400">-</span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {movie.rating ? (
+                    <div className="flex items-center">
+                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                      <span className="ml-1 text-sm text-gray-900">
+                        {movie.rating}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-400">-</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex items-center justify-end gap-2">
+                    <a
+                      href={`/peliculas/${movie.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-600 hover:text-gray-900 transition-colors"
+                      title="Ver película"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </a>
+                    <button
+                      onClick={() => onEdit(movie)}
+                      className="text-blue-600 hover:text-blue-900 transition-colors"
+                      title="Editar"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(movie.id)}
+                      disabled={deletingMovieId === movie.id}
+                      className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50"
+                      title="Eliminar"
+                    >
+                      {deletingMovieId === movie.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ==================================================
 // src/components/admin/ThemeSelector.tsx
 // ==================================================
 // src/components/admin/ThemeSelector.tsx
@@ -11791,6 +12819,429 @@ export function TrailerSection({ trailerUrl, movieTitle, variant = 'fullwidth' }
   }
 
   return null;
+}
+
+// ==================================================
+// src/lib/movies/movieConstants.ts
+// ==================================================
+// src/lib/movies/movieConstants.ts
+
+export const MOVIE_STAGES = [
+  { value: 'COMPLETA', label: 'Completa', description: 'Película terminada y estrenada' },
+  { value: 'EN_DESARROLLO', label: 'En desarrollo', description: 'En etapa de desarrollo del proyecto' },
+  { value: 'EN_POSTPRODUCCION', label: 'En postproducción', description: 'En proceso de edición y postproducción' },
+  { value: 'EN_PREPRODUCCION', label: 'En preproducción', description: 'En preparación para el rodaje' },
+  { value: 'EN_RODAJE', label: 'En rodaje', description: 'Actualmente filmando' },
+  { value: 'INCONCLUSA', label: 'Inconclusa', description: 'Proyecto abandonado o sin terminar' },
+  { value: 'INEDITA', label: 'Inédita', description: 'Completa pero sin estrenar' }
+] as const
+
+export const TIPOS_DURACION = [
+  { value: 'largometraje', label: 'Largometraje' },
+  { value: 'mediometraje', label: 'Mediometraje' },
+  { value: 'cortometraje', label: 'Cortometraje' }
+] as const
+
+export const MOVIE_STATUS = [
+  { value: 'DRAFT', label: 'Borrador' },
+  { value: 'PUBLISHED', label: 'Publicado' },
+  { value: 'ARCHIVED', label: 'Archivado' }
+] as const
+
+export const DATA_COMPLETENESS_LEVELS = [
+  { value: 'BASIC_PRESS_KIT', label: 'Gacetilla básica', icon: '📄' },
+  { value: 'FULL_PRESS_KIT', label: 'Gacetilla completa', icon: '📋' },
+  { value: 'MAIN_CAST', label: 'Intérpretes principales', icon: '👥' },
+  { value: 'MAIN_CREW', label: 'Técnicos principales', icon: '🔧' },
+  { value: 'FULL_CAST', label: 'Todos los intérpretes', icon: '🎭' },
+  { value: 'FULL_CREW', label: 'Todos los técnicos', icon: '🎬' }
+] as const
+
+export const SOUND_TYPES = [
+  { value: 'Sonora', label: 'Sonora' },
+  { value: 'Muda', label: 'Muda' },
+  { value: 'n/d', label: 'No disponible' }
+] as const
+
+export const MONTHS = [
+  { value: 1, label: 'Enero' },
+  { value: 2, label: 'Febrero' },
+  { value: 3, label: 'Marzo' },
+  { value: 4, label: 'Abril' },
+  { value: 5, label: 'Mayo' },
+  { value: 6, label: 'Junio' },
+  { value: 7, label: 'Julio' },
+  { value: 8, label: 'Agosto' },
+  { value: 9, label: 'Septiembre' },
+  { value: 10, label: 'Octubre' },
+  { value: 11, label: 'Noviembre' },
+  { value: 12, label: 'Diciembre' }
+] as const
+
+// Duraciones en minutos
+export const DURATION_THRESHOLDS = {
+  LARGOMETRAJE: 60,
+  MEDIOMETRAJE: 30
+} as const
+
+// Colores para los badges
+export const STAGE_COLORS = {
+  COMPLETA: 'bg-green-100 text-green-800',
+  EN_DESARROLLO: 'bg-blue-100 text-blue-800',
+  EN_POSTPRODUCCION: 'bg-purple-100 text-purple-800',
+  EN_PREPRODUCCION: 'bg-yellow-100 text-yellow-800',
+  EN_RODAJE: 'bg-orange-100 text-orange-800',
+  INCONCLUSA: 'bg-red-100 text-red-800',
+  INEDITA: 'bg-gray-100 text-gray-800'
+} as const
+
+export const COMPLETENESS_COLORS = {
+  BASIC_PRESS_KIT: 'bg-red-100 text-red-800',
+  FULL_PRESS_KIT: 'bg-orange-100 text-orange-800',
+  MAIN_CAST: 'bg-yellow-100 text-yellow-800',
+  MAIN_CREW: 'bg-green-100 text-green-800',
+  FULL_CAST: 'bg-green-100 text-green-800',
+  FULL_CREW: 'bg-blue-100 text-blue-800'
+} as const
+
+export const STATUS_COLORS = {
+  PUBLISHED: 'bg-green-100 text-green-800',
+  DRAFT: 'bg-yellow-100 text-yellow-800',
+  ARCHIVED: 'bg-gray-100 text-gray-800'
+} as const
+
+// ==================================================
+// src/lib/movies/movieTypes.ts
+// ==================================================
+// src/lib/movies/movieTypes.ts
+
+import { z } from 'zod'
+
+// Schema del formulario
+export const movieFormSchema = z.object({
+  // Campos requeridos
+  title: z.string().min(1, 'El título es requerido'),
+
+  // Todos los demás campos como strings opcionales o any
+  originalTitle: z.any().optional(),
+  synopsis: z.any().optional(),
+  tagline: z.any().optional(),
+  imdbId: z.any().optional(),
+  aspectRatio: z.any().optional(),
+  colorType: z.any().optional(),
+  soundType: z.any().optional(),
+  filmFormat: z.any().optional(),
+  certificateNumber: z.any().optional(),
+  tipoDuracion: z.any().optional(),
+  metaDescription: z.any().optional(),
+  metaKeywords: z.any().optional(),
+
+  // Campos numéricos
+  year: z.any().optional(),
+  duration: z.any().optional(),
+  durationSeconds: z.any().optional(),
+  rating: z.any().optional(),
+  colorTypeId: z.any().optional(),
+  ratingId: z.any().optional(),
+
+  // Campos de fecha
+  releaseDate: z.any().optional(),
+  filmingStartDate: z.any().optional(),
+  filmingEndDate: z.any().optional(),
+
+  // URLs
+  posterUrl: z.any().optional(),
+  posterPublicId: z.any().optional(),
+  backdropUrl: z.any().optional(),
+  backdropPublicId: z.any().optional(),
+  trailerUrl: z.any().optional(),
+
+  // Enums
+  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+  dataCompleteness: z.enum([
+    'BASIC_PRESS_KIT',
+    'FULL_PRESS_KIT',
+    'MAIN_CAST',
+    'MAIN_CREW',
+    'FULL_CAST',
+    'FULL_CREW'
+  ]).optional(),
+  stage: z.enum([
+    'COMPLETA',
+    'EN_DESARROLLO',
+    'EN_POSTPRODUCCION',
+    'EN_PREPRODUCCION',
+    'EN_RODAJE',
+    'INCONCLUSA',
+    'INEDITA'
+  ]).optional(),
+})
+
+export type MovieFormData = z.infer<typeof movieFormSchema>
+
+// Interfaces
+export interface Movie {
+  id: number
+  slug: string
+  title: string
+  originalTitle?: string
+  year: number
+  releaseDate?: string
+  duration?: number
+  rating?: number
+  posterUrl?: string
+  status: string
+  stage?: string
+  dataCompleteness?: string
+  genres: Array<{ id: number; name: string }>
+  directors: Array<{ id: number; name: string }>
+  mainCast: Array<{
+    person: { id: number; name: string }
+    character?: string
+  }>
+  country: string
+}
+
+export interface MovieRelations {
+  genres: number[]
+  cast: any[]
+  crew: any[]
+  countries: number[]
+  languages: number[]
+  productionCompanies: number[]
+  distributionCompanies: number[]
+  themes: number[]
+}
+
+export interface PartialReleaseDate {
+  year: number | null
+  month: number | null
+}
+
+export interface MovieLink {
+  id?: number
+  type: string
+  url: string
+  description?: string
+}
+
+export interface AlternativeTitle {
+  id?: number
+  title: string
+  type?: string
+  language?: string
+}
+
+export interface Rating {
+  id: number
+  name: string
+  abbreviation?: string
+  description?: string
+}
+
+export interface ColorType {
+  id: number
+  name: string
+}
+
+// Tipos de constantes
+export type MovieStage = 
+  | 'COMPLETA' 
+  | 'EN_DESARROLLO' 
+  | 'EN_POSTPRODUCCION' 
+  | 'EN_PREPRODUCCION' 
+  | 'EN_RODAJE' 
+  | 'INCONCLUSA' 
+  | 'INEDITA'
+
+export type MovieStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+
+export type DataCompleteness = 
+  | 'BASIC_PRESS_KIT'
+  | 'FULL_PRESS_KIT'
+  | 'MAIN_CAST'
+  | 'MAIN_CREW'
+  | 'FULL_CAST'
+  | 'FULL_CREW'
+
+export type DurationType = 'largometraje' | 'mediometraje' | 'cortometraje'
+
+// ==================================================
+// src/lib/movies/movieUtils.ts
+// ==================================================
+// src/lib/movies/movieUtils.ts
+
+import { DURATION_THRESHOLDS, MOVIE_STAGES, COMPLETENESS_COLORS, STAGE_COLORS, DATA_COMPLETENESS_LEVELS, STATUS_COLORS } from './movieConstants'
+import type { MovieFormData } from './movieTypes'
+
+/**
+ * Calcula el tipo de duración basado en minutos y segundos
+ */
+export const calcularTipoDuracion = (
+  minutos: number | null | undefined, 
+  segundos: number | null | undefined = 0
+): string => {
+  // Convertir todo a minutos totales
+  const minutosReales = minutos || 0
+  const segundosReales = segundos || 0
+  const duracionTotalMinutos = minutosReales + (segundosReales / 60)
+
+  // Si no hay duración total, retornar vacío
+  if (duracionTotalMinutos === 0) return ''
+
+  if (duracionTotalMinutos >= DURATION_THRESHOLDS.LARGOMETRAJE) return 'largometraje'
+  if (duracionTotalMinutos >= DURATION_THRESHOLDS.MEDIOMETRAJE) return 'mediometraje'
+  return 'cortometraje'
+}
+
+/**
+ * Limpia y prepara los datos del formulario para enviar al backend
+ */
+export const prepareMovieData = (data: MovieFormData) => {
+  const prepared: any = {}
+
+  Object.entries(data).forEach(([key, value]) => {
+    // Si es string vacío, null o undefined, lo dejamos como undefined
+    if (value === '' || value === null || value === undefined) {
+      prepared[key] = undefined
+    }
+    // Si es un campo numérico y tiene valor
+    else if (['year', 'duration', 'durationSeconds', 'rating', 'colorTypeId', 'ratingId'].includes(key) && value !== '') {
+      const num = Number(value)
+      prepared[key] = isNaN(num) ? undefined : num
+    }
+    // Si es URL y tiene valor, validamos que sea URL válida
+    else if (['posterUrl', 'backdropUrl', 'trailerUrl'].includes(key) && value !== '') {
+      try {
+        new URL(value as string)
+        prepared[key] = value
+      } catch {
+        prepared[key] = undefined
+      }
+    }
+    // Para el resto de campos
+    else {
+      prepared[key] = value
+    }
+  })
+
+  // Valores por defecto
+  prepared.status = prepared.status || 'PUBLISHED'
+  prepared.dataCompleteness = prepared.dataCompleteness || 'BASIC_PRESS_KIT'
+
+  return prepared
+}
+
+/**
+ * Obtiene el label de completitud de datos
+ */
+export const getCompletenessLabel = (completeness: string): string => {
+  const level = DATA_COMPLETENESS_LEVELS.find(l => l.value === completeness)
+  return level ? level.label : completeness
+}
+
+/**
+ * Obtiene el color CSS para el nivel de completitud
+ */
+export const getCompletenessColor = (completeness: string): string => {
+  return COMPLETENESS_COLORS[completeness as keyof typeof COMPLETENESS_COLORS] || 'bg-gray-100 text-gray-800'
+}
+
+/**
+ * Obtiene el color CSS para la etapa de la película
+ */
+export const getStageColor = (stage?: string): string => {
+  if (!stage) return 'bg-gray-100 text-gray-800'
+  return STAGE_COLORS[stage as keyof typeof STAGE_COLORS] || 'bg-gray-100 text-gray-800'
+}
+
+/**
+ * Obtiene el nombre de la etapa
+ */
+export const getStageName = (stage?: string): string => {
+  if (!stage) return '-'
+  const stageInfo = MOVIE_STAGES.find(s => s.value === stage)
+  return stageInfo ? stageInfo.label : stage
+}
+
+/**
+ * Obtiene el color CSS para el estado de publicación
+ */
+export const getStatusColor = (status: string): string => {
+  return STATUS_COLORS[status as keyof typeof STATUS_COLORS] || 'bg-gray-100 text-gray-800'
+}
+
+/**
+ * Obtiene el label del estado
+ */
+export const getStatusLabel = (status: string): string => {
+  switch (status) {
+    case 'PUBLISHED': return 'Publicado'
+    case 'DRAFT': return 'Borrador'
+    case 'ARCHIVED': return 'Archivado'
+    default: return status
+  }
+}
+
+/**
+ * Obtiene un mensaje de error legible
+ */
+export const getErrorMessage = (error: any): string => {
+  if (!error) return ''
+  if (typeof error === 'string') return error
+  if (error?.message) return error.message
+  return 'Este campo tiene un error'
+}
+
+/**
+ * Formatea keywords para enviar al backend
+ */
+export const formatKeywords = (keywords: string): string[] => {
+  if (!keywords) return []
+  return keywords.split(',').map(k => k.trim()).filter(Boolean)
+}
+
+/**
+ * Construye los datos de fecha de estreno según el tipo (parcial o completa)
+ */
+export const buildReleaseDateData = (
+  isPartialDate: boolean,
+  releaseDate?: string,
+  partialReleaseDate?: { year: number | null; month: number | null }
+) => {
+  if (isPartialDate && partialReleaseDate) {
+    // Fecha parcial - enviar campos separados
+    return {
+      releaseYear: partialReleaseDate.year,
+      releaseMonth: partialReleaseDate.month,
+      releaseDay: null
+    }
+  } else if (releaseDate) {
+    // Fecha completa - convertir a campos separados
+    const [year, month, day] = releaseDate.split('-').map(Number)
+    return {
+      releaseYear: year,
+      releaseMonth: month,
+      releaseDay: day
+    }
+  } else {
+    // Sin fecha
+    return {
+      releaseYear: null,
+      releaseMonth: null,
+      releaseDay: null
+    }
+  }
+}
+
+/**
+ * Determina si el campo de tipo de duración debe estar deshabilitado
+ */
+export const shouldDisableDurationType = (
+  minutos: number | undefined | null,
+  segundos: number | undefined | null
+): boolean => {
+  return (minutos && minutos > 0) || (segundos && segundos > 0) ? true : false
 }
 
 // ==================================================

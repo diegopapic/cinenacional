@@ -30,164 +30,41 @@ import { formatDate, formatDuration } from '@/lib/utils'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 import AlternativeTitlesManager from '@/components/admin/AlternativeTitlesManager'
 import MovieLinksManager from '@/components/admin/MovieLinksManager'
+import {
+  MOVIE_STAGES,
+  TIPOS_DURACION,
+  MONTHS,
+  MOVIE_STATUS,
+  DATA_COMPLETENESS_LEVELS
+} from '@/lib/movies/movieConstants'
 
+import {
+  calcularTipoDuracion,
+  prepareMovieData,
+  getCompletenessLabel,
+  getCompletenessColor,
+  getStageColor,
+  getStageName,
+  getStatusColor,
+  getStatusLabel,
+  getErrorMessage,
+  formatKeywords,
+  buildReleaseDateData,
+  shouldDisableDurationType
+} from '@/lib/movies/movieUtils'
+
+import {
+  movieFormSchema,
+  type MovieFormData,
+  type Movie,
+  type MovieRelations,
+  type PartialReleaseDate
+} from '@/lib/movies/movieTypes'
+
+import { SOUND_TYPES } from '@/lib/movies/movieConstants'
 
 // Importar Tabs de Radix UI
 import * as Tabs from '@radix-ui/react-tabs'
-
-const MOVIE_STAGES = [
-  { value: 'COMPLETA', label: 'Completa', description: 'Película terminada y estrenada' },
-  { value: 'EN_DESARROLLO', label: 'En desarrollo', description: 'En etapa de desarrollo del proyecto' },
-  { value: 'EN_POSTPRODUCCION', label: 'En postproducción', description: 'En proceso de edición y postproducción' },
-  { value: 'EN_PREPRODUCCION', label: 'En preproducción', description: 'En preparación para el rodaje' },
-  { value: 'EN_RODAJE', label: 'En rodaje', description: 'Actualmente filmando' },
-  { value: 'INCONCLUSA', label: 'Inconclusa', description: 'Proyecto abandonado o sin terminar' },
-  { value: 'INEDITA', label: 'Inédita', description: 'Completa pero sin estrenar' }
-]
-
-// Schema simple sin validaciones complejas para el formulario
-const movieFormSchema = z.object({
-  // Campos requeridos
-  title: z.string().min(1, 'El título es requerido'),
-
-  // Todos los demás campos como strings opcionales o any
-  originalTitle: z.any().optional(),
-  synopsis: z.any().optional(),
-  tagline: z.any().optional(),
-  imdbId: z.any().optional(),
-  aspectRatio: z.any().optional(),
-  colorType: z.any().optional(),
-  soundType: z.any().optional(),
-  filmFormat: z.any().optional(),
-  certificateNumber: z.any().optional(),
-  tipoDuracion: z.any().optional(),
-  metaDescription: z.any().optional(),
-  metaKeywords: z.any().optional(),
-
-  // Campos numéricos
-  year: z.any().optional(),
-  duration: z.any().optional(),
-  durationSeconds: z.any().optional(),
-  rating: z.any().optional(),
-  colorTypeId: z.any().optional(),
-  ratingId: z.any().optional(),
-
-  // Campos de fecha
-  releaseDate: z.any().optional(),
-  filmingStartDate: z.any().optional(),
-  filmingEndDate: z.any().optional(),
-
-  // URLs
-  posterUrl: z.any().optional(),
-  posterPublicId: z.any().optional(),
-  backdropUrl: z.any().optional(),
-  backdropPublicId: z.any().optional(),
-  trailerUrl: z.any().optional(),
-
-  // Enums
-  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
-  dataCompleteness: z.enum([
-    'BASIC_PRESS_KIT',
-    'FULL_PRESS_KIT',
-    'MAIN_CAST',
-    'MAIN_CREW',
-    'FULL_CAST',
-    'FULL_CREW'
-  ]).optional(),
-  stage: z.enum([
-    'COMPLETA',
-    'EN_DESARROLLO',
-    'EN_POSTPRODUCCION',
-    'EN_PREPRODUCCION',
-    'EN_RODAJE',
-    'INCONCLUSA',
-    'INEDITA'
-  ]).optional(),
-})
-
-type MovieFormData = z.infer<typeof movieFormSchema>
-
-// Función mejorada para limpiar y validar los datos antes de enviar
-const prepareMovieData = (data: MovieFormData) => {
-  const prepared: any = {}
-
-  Object.entries(data).forEach(([key, value]) => {
-    // Si es string vacío, null o undefined, lo dejamos como undefined
-    if (value === '' || value === null || value === undefined) {
-      prepared[key] = undefined
-    }
-    // Si es un campo numérico y tiene valor
-    else if (['year', 'duration', 'durationSeconds', 'rating', 'colorTypeId', 'ratingId'].includes(key) && value !== '') {
-      const num = Number(value)
-      prepared[key] = isNaN(num) ? undefined : num
-    }
-    // Si es URL y tiene valor, validamos que sea URL válida
-    else if (['posterUrl', 'backdropUrl', 'trailerUrl'].includes(key) && value !== '') {
-      try {
-        new URL(value)
-        prepared[key] = value
-      } catch {
-        prepared[key] = undefined
-      }
-    }
-    // Para el resto de campos
-    else {
-      prepared[key] = value
-    }
-  })
-
-  // Valores por defecto
-  prepared.status = prepared.status || 'PUBLISHED'
-  prepared.dataCompleteness = prepared.dataCompleteness || 'BASIC_PRESS_KIT'
-
-  return prepared
-}
-
-const getCompletenessLabel = (completeness: string) => {
-  const labels: Record<string, string> = {
-    BASIC_PRESS_KIT: 'Gacetilla básica',
-    FULL_PRESS_KIT: 'Gacetilla completa',
-    MAIN_CAST: 'Intérpretes principales',
-    MAIN_CREW: 'Técnicos principales',
-    FULL_CAST: 'Todos los intérpretes',
-    FULL_CREW: 'Todos los técnicos'
-  }
-  return labels[completeness] || completeness
-}
-
-const getCompletenessColor = (completeness: string) => {
-  const colors: Record<string, string> = {
-    BASIC_PRESS_KIT: 'bg-red-100 text-red-800',
-    FULL_PRESS_KIT: 'bg-orange-100 text-orange-800',
-    MAIN_CAST: 'bg-yellow-100 text-yellow-800',
-    MAIN_CREW: 'bg-green-100 text-green-800',
-    FULL_CAST: 'bg-green-100 text-green-800',
-    FULL_CREW: 'bg-blue-100 text-blue-800'
-  }
-  return colors[completeness] || 'bg-gray-100 text-gray-800'
-}
-
-interface Movie {
-  id: number
-  slug: string
-  title: string
-  originalTitle?: string
-  year: number
-  releaseDate?: string
-  duration?: number
-  rating?: number
-  posterUrl?: string
-  status: string
-  stage?: string
-  dataCompleteness?: string
-  genres: Array<{ id: number; name: string }>
-  directors: Array<{ id: number; name: string }>
-  mainCast: Array<{
-    person: { id: number; name: string }
-    character?: string
-  }>
-  country: string
-}
 
 export default function AdminMoviesPage() {
   const [movies, setMovies] = useState<Movie[]>([])
@@ -207,20 +84,14 @@ export default function AdminMoviesPage() {
   const [movieLinks, setMovieLinks] = useState<any[]>([])
   const [availableColorTypes, setAvailableColorTypes] = useState<any[]>([])
   const [isPartialDate, setIsPartialDate] = useState(false)
-  const [partialReleaseDate, setPartialReleaseDate] = useState({
-    year: null as number | null,
-    month: null as number | null
+  const [partialReleaseDate, setPartialReleaseDate] = useState<PartialReleaseDate>({
+    year: null,
+    month: null
   })
 
   // Estado para los datos iniciales del formulario
   const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
 
-  // NUEVOS ESTADOS PARA TIPO DE DURACIÓN
-  const [tiposDuracion] = useState([
-    { value: 'largometraje', label: 'Largometraje' },
-    { value: 'mediometraje', label: 'Mediometraje' },
-    { value: 'cortometraje', label: 'Cortometraje' }
-  ])
   const [tipoDuracionDisabled, setTipoDuracionDisabled] = useState(false)
 
   const [movieRelations, setMovieRelations] = useState<{
@@ -258,61 +129,7 @@ export default function AdminMoviesPage() {
     }
   })
 
-  const getErrorMessage = (error: any): string => {
-    if (!error) return '';
-    if (typeof error === 'string') return error;
-    if (error?.message) return error.message;
-    return 'Este campo tiene un error';
-  }
-
   const currentStage = watch('stage')
-
-  const getStageColor = (stage?: string) => {
-    switch (stage) {
-      case 'COMPLETA':
-        return 'bg-green-100 text-green-800'
-      case 'EN_DESARROLLO':
-        return 'bg-blue-100 text-blue-800'
-      case 'EN_POSTPRODUCCION':
-        return 'bg-purple-100 text-purple-800'
-      case 'EN_PREPRODUCCION':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'EN_RODAJE':
-        return 'bg-orange-100 text-orange-800'
-      case 'INCONCLUSA':
-        return 'bg-red-100 text-red-800'
-      case 'INEDITA':
-        return 'bg-gray-100 text-gray-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getStageName = (stage?: string) => {
-    if (!stage) return '-'
-    const stageInfo = MOVIE_STAGES.find(s => s.value === stage)
-    return stageInfo ? stageInfo.label : stage
-  }
-
-  // FUNCIONES PARA TIPO DE DURACIÓN
-  const calcularTipoDuracion = (minutos: number | null | undefined, segundos: number | null | undefined = 0): string => {
-    // Convertir todo a minutos totales
-    const minutosReales = (minutos || 0)
-    const segundosReales = (segundos || 0)
-    const duracionTotalMinutos = minutosReales + (segundosReales / 60)
-
-    // Si no hay duración total, retornar vacío
-    if (duracionTotalMinutos === 0) return ''
-
-    if (duracionTotalMinutos >= 60) return 'largometraje'
-    if (duracionTotalMinutos >= 30) return 'mediometraje'
-    return 'cortometraje'
-  }
-
-  const obtenerEtiquetaTipoDuracion = (tipo: string): string => {
-    const tipoObj = tiposDuracion.find(t => t.value === tipo)
-    return tipoObj ? tipoObj.label : ''
-  }
 
   // EFECTO PARA OBSERVAR CAMBIOS EN DURACIÓN
   useEffect(() => {
@@ -469,10 +286,10 @@ export default function AdminMoviesPage() {
         // Fecha completa - convertir a campos separados
         const [year, month, day] = data.releaseDate.split('-').map(Number)
         releaseDateData = {
-    releaseYear: year,
-    releaseMonth: month,
-    releaseDay: day
-  }
+          releaseYear: year,
+          releaseMonth: month,
+          releaseDay: day
+        }
       } else {
         // Sin fecha
         releaseDateData = {
@@ -727,22 +544,6 @@ export default function AdminMoviesPage() {
     setShowModal(true)
   }
 
-  // Función para limpiar los datos antes de enviar al backend
-  const cleanFormData = (data: MovieFormData) => {
-    const cleaned: any = {}
-
-    Object.entries(data).forEach(([key, value]) => {
-      // Convertir strings vacíos a undefined
-      if (value === '') {
-        cleaned[key] = undefined
-      } else {
-        cleaned[key] = value
-      }
-    })
-
-    return cleaned
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -884,14 +685,8 @@ export default function AdminMoviesPage() {
                         {movie.directors?.map(d => d.name).join(', ') || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${movie.status === 'PUBLISHED'
-                          ? 'bg-green-100 text-green-800'
-                          : movie.status === 'DRAFT'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-800'
-                          }`}>
-                          {movie.status === 'PUBLISHED' ? 'Publicado' :
-                            movie.status === 'DRAFT' ? 'Borrador' : 'Archivado'}
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(movie.status)}`}>
+                          {getStatusLabel(movie.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1179,18 +974,11 @@ export default function AdminMoviesPage() {
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                                   >
                                     <option value="">Mes (opcional)</option>
-                                    <option value="1">Enero</option>
-                                    <option value="2">Febrero</option>
-                                    <option value="3">Marzo</option>
-                                    <option value="4">Abril</option>
-                                    <option value="5">Mayo</option>
-                                    <option value="6">Junio</option>
-                                    <option value="7">Julio</option>
-                                    <option value="8">Agosto</option>
-                                    <option value="9">Septiembre</option>
-                                    <option value="10">Octubre</option>
-                                    <option value="11">Noviembre</option>
-                                    <option value="12">Diciembre</option>
+                                    {MONTHS.map(month => (
+                                      <option key={month.value} value={month.value}>
+                                        {month.label}
+                                      </option>
+                                    ))}
                                   </select>
                                 </div>
                               </div>
@@ -1268,7 +1056,7 @@ export default function AdminMoviesPage() {
                               }`}
                           >
                             <option value="">Seleccionar tipo de duración...</option>
-                            {tiposDuracion.map((tipo) => (
+                            {TIPOS_DURACION.map((tipo) => (
                               <option key={tipo.value} value={tipo.value}>
                                 {tipo.label}
                               </option>
@@ -1281,7 +1069,7 @@ export default function AdminMoviesPage() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                                 </svg>
                                 <span>
-                                  <strong>{obtenerEtiquetaTipoDuracion(watch('tipoDuracion') || '')}</strong>
+                                  <strong>{TIPOS_DURACION.find(t => t.value === watch('tipoDuracion'))?.label || ''}</strong>
                                   {(() => {
                                     const minutos = watch('duration') || 0
                                     const segundos = watch('durationSeconds') || 0
@@ -1555,9 +1343,11 @@ export default function AdminMoviesPage() {
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                           >
                             <option value="">Seleccionar...</option>
-                            <option value="Sonora">Sonora</option>
-                            <option value="Muda">Muda</option>
-                            <option value="n/d">No disponible</option>
+                            {SOUND_TYPES.map(sound => (
+                              <option key={sound.value} value={sound.value}>
+                                {sound.label}
+                              </option>
+                            ))}
                           </select>
                         </div>
                       </div>

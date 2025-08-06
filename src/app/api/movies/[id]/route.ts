@@ -155,6 +155,10 @@ export async function PUT(
       themes,
       alternativeTitles,
       links,
+      colorTypeId,
+      ratingId,
+      filmingStartDate,
+      filmingEndDate,
       ...movieData
     } = validatedData
     console.log('=== DATOS DE FECHA RECIBIDOS EN BACKEND ===');
@@ -173,9 +177,32 @@ export async function PUT(
           releaseYear: movieData.releaseYear || null,
           releaseMonth: movieData.releaseMonth || null,
           releaseDay: movieData.releaseDay || null,
-          colorTypeId: movieData.colorTypeId || null,
-          filmingStartDate: movieData.filmingStartDate ? new Date(movieData.filmingStartDate) : null,
-          filmingEndDate: movieData.filmingEndDate ? new Date(movieData.filmingEndDate) : null,
+          ...(colorTypeId && {
+            colorType: { connect: { id: colorTypeId } }
+          }),
+          ...(ratingId && {
+            rating: { connect: { id: ratingId } }
+          }),
+          // Convertir fecha de inicio de filmación
+          ...(filmingStartDate ? {
+            filmingStartYear: new Date(filmingStartDate).getFullYear(),
+            filmingStartMonth: new Date(filmingStartDate).getMonth() + 1,
+            filmingStartDay: new Date(filmingStartDate).getDate()
+          } : {
+            filmingStartYear: null,
+            filmingStartMonth: null,
+            filmingStartDay: null
+          }),
+          // Convertir fecha de fin de filmación
+          ...(filmingEndDate ? {
+            filmingEndYear: new Date(filmingEndDate).getFullYear(),
+            filmingEndMonth: new Date(filmingEndDate).getMonth() + 1,
+            filmingEndDay: new Date(filmingEndDate).getDate()
+          } : {
+            filmingEndYear: null,
+            filmingEndMonth: null,
+            filmingEndDay: null
+          }),
           ratingId: movieData.ratingId === null ? undefined : movieData.ratingId,
         }
       })
