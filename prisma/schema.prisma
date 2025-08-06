@@ -47,9 +47,13 @@ model Movie {
   is_coproduction    Boolean            @default(false)
   production_type    String             @default("national")
 
-  // Fechas de rodaje
-  filmingStartDate DateTime? @map("filming_start_date") @db.Date
-  filmingEndDate   DateTime? @map("filming_end_date") @db.Date
+  // Fechas de rodaje (campos separados como releaseDate)
+  filmingStartYear  Int? @map("filming_start_year")
+  filmingStartMonth Int? @map("filming_start_month") @db.SmallInt
+  filmingStartDay   Int? @map("filming_start_day") @db.SmallInt
+  filmingEndYear    Int? @map("filming_end_year")
+  filmingEndMonth   Int? @map("filming_end_month") @db.SmallInt
+  filmingEndDay     Int? @map("filming_end_day") @db.SmallInt
   
   // Status y timestamps
   status           MovieStatus @default(PUBLISHED)
@@ -87,8 +91,8 @@ model Movie {
   @@index([status])
   @@index([tipoDuracion])
   @@index([ratingId])
-  @@index([filmingStartDate])
-  @@index([filmingEndDate])
+  @@index([filmingStartYear])
+  @@index([filmingStartYear, filmingStartMonth])
   @@index([is_coproduction])
   @@index([production_type])
   @@index([colorTypeId])
