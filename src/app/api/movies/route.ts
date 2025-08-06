@@ -130,8 +130,23 @@ export async function GET(request: NextRequest) {
         : movie.releaseMonth
           ? `${movie.releaseYear}-${String(movie.releaseMonth).padStart(2, '0')}`
           : movie.releaseYear?.toString() || null,
-      filmingStartDate: movie.filmingStartDate,
-      filmingEndDate: movie.filmingEndDate,
+      // Construir fecha de inicio de filmación si existe
+      filmingStartDate: movie.filmingStartYear
+        ? new Date(
+          movie.filmingStartYear,
+          (movie.filmingStartMonth || 1) - 1,
+          movie.filmingStartDay || 1
+        ).toISOString()
+        : null,
+
+      // Construir fecha de fin de filmación si existe  
+      filmingEndDate: movie.filmingEndYear
+        ? new Date(
+          movie.filmingEndYear,
+          (movie.filmingEndMonth || 1) - 1,
+          movie.filmingEndDay || 1
+        ).toISOString()
+        : null,
       duration: movie.duration,
       posterUrl: movie.posterUrl || movie.images[0]?.url,
       status: movie.status,
