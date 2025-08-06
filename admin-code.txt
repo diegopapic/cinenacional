@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-06T01:46:22.019Z
+// Archivos del admin - 2025-08-06T02:17:14.818Z
 // ==================
 
 
@@ -1448,6 +1448,8 @@ import { formatDate, formatDuration } from '@/lib/utils'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 import AlternativeTitlesManager from '@/components/admin/AlternativeTitlesManager'
 import MovieLinksManager from '@/components/admin/MovieLinksManager'
+import MoviesFilters, { type MovieFilters } from '@/components/admin/movies/MoviesFilters'
+import MoviesPagination from '@/components/admin/movies/MoviesPagination'
 import {
   MOVIE_STAGES,
   TIPOS_DURACION,
@@ -1487,11 +1489,6 @@ import * as Tabs from '@radix-ui/react-tabs'
 export default function AdminMoviesPage() {
   const [movies, setMovies] = useState<Movie[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedStatus, setSelectedStatus] = useState('')
-  const [selectedStage, setSelectedStage] = useState('')
-  const [selectedYear, setSelectedYear] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [showModal, setShowModal] = useState(false)
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null)
@@ -1506,6 +1503,19 @@ export default function AdminMoviesPage() {
     year: null,
     month: null
   })
+
+  // Consolidar los estados de filtros en un solo objeto
+  const [filters, setFilters] = useState<MovieFilters>({
+    searchTerm: '',
+    selectedStatus: '',
+    selectedStage: '',
+    selectedYear: '',
+    currentPage: 1
+  })
+
+  const handleFiltersChange = (newFilters: Partial<MovieFilters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }))
+  }
 
   // Estado para los datos iniciales del formulario
   const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
@@ -1638,11 +1648,11 @@ export default function AdminMoviesPage() {
     try {
       setLoading(true)
       const params = new URLSearchParams({
-        page: currentPage.toString(),
+        page: filters.currentPage.toString(),
         limit: '20',
-        search: searchTerm,
-        status: selectedStatus,
-        year: selectedYear,
+        search: filters.searchTerm,
+        status: filters.selectedStatus,
+        year: filters.selectedYear,
         sortBy: 'createdAt',
         sortOrder: 'desc'
       })
@@ -1682,8 +1692,11 @@ export default function AdminMoviesPage() {
 
   useEffect(() => {
     fetchMovies()
+  }, [filters])
+
+  useEffect(() => {
     fetchColorTypes()
-  }, [currentPage, searchTerm, selectedStatus, selectedYear])
+  }, [])
 
   // Crear o actualizar película
   const onSubmit = async (data: MovieFormData) => {
@@ -1978,911 +1991,830 @@ export default function AdminMoviesPage() {
       {/* Contenido principal */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filtros y acciones */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Búsqueda */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Buscar películas..."
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+          <MoviesFilters
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            onNewMovie={handleNewMovie}
+          />
 
-            {/* Filtro por estado */}
-            <select
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-            >
-              <option value="">Todos los estados</option>
-              <option value="DRAFT">Borrador</option>
-              <option value="PUBLISHED">Publicado</option>
-              <option value="ARCHIVED">Archivado</option>
-            </select>
-
-            {/* Filtro por año */}
-            <select
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-            >
-              <option value="">Todos los años</option>
-              {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </select>
-
-            {/* Botón nueva película */}
-            <button
-              onClick={handleNewMovie}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              Nueva Película
-            </button>
-          </div>
-        </div>
-
-        {/* Lista de películas */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-            </div>
-          ) : movies && movies.length === 0 ? (
-            <div className="text-center py-12">
-              <Film className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No se encontraron películas</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Película
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Año
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Director
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Estado
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Completitud
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Rating
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {movies && movies.map((movie) => (
-                    <tr key={movie.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            {movie.posterUrl ? (
-                              <img
-                                className="h-10 w-10 rounded-lg object-cover"
-                                src={movie.posterUrl}
-                                alt={movie.title}
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
-                                <Film className="w-5 h-5 text-gray-400" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
-                              {movie.title}
-                            </div>
-                            {movie.originalTitle && (
-                              <div className="text-sm text-gray-500">
-                                {movie.originalTitle}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {movie.year}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {movie.directors?.map(d => d.name).join(', ') || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(movie.status)}`}>
-                          {getStatusLabel(movie.status)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {movie.rating ? (
-                          <div className="flex items-center">
-                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                            <span className="ml-1 text-sm text-gray-900">
-                              {movie.rating}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end gap-2">
-                          <a
-                            href={`/peliculas/${movie.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-gray-600 hover:text-gray-900 transition-colors"
-                            title="Ver película"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </a>
-                          <button
-                            onClick={() => handleEdit(movie)}
-                            className="text-blue-600 hover:text-blue-900 transition-colors"
-                            title="Editar"
-                          >
-
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(movie.id)}
-                            disabled={deletingMovieId === movie.id}
-                            className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50"
-                            title="Eliminar"
-                          >
-                            {deletingMovieId === movie.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
-                      </td>
+          {/* Lista de películas */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+              </div>
+            ) : movies && movies.length === 0 ? (
+              <div className="text-center py-12">
+                <Film className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No se encontraron películas</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Película
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Año
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Director
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Estado
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Completitud
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Rating
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Acciones
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {movies && movies.map((movie) => (
+                      <tr key={movie.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10">
+                              {movie.posterUrl ? (
+                                <img
+                                  className="h-10 w-10 rounded-lg object-cover"
+                                  src={movie.posterUrl}
+                                  alt={movie.title}
+                                />
+                              ) : (
+                                <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                                  <Film className="w-5 h-5 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {movie.title}
+                              </div>
+                              {movie.originalTitle && (
+                                <div className="text-sm text-gray-500">
+                                  {movie.originalTitle}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {movie.year}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {movie.directors?.map(d => d.name).join(', ') || '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(movie.status)}`}>
+                            {getStatusLabel(movie.status)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {movie.rating ? (
+                            <div className="flex items-center">
+                              <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                              <span className="ml-1 text-sm text-gray-900">
+                                {movie.rating}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center justify-end gap-2">
+                            <a
+                              href={`/peliculas/${movie.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-gray-600 hover:text-gray-900 transition-colors"
+                              title="Ver película"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </a>
+                            <button
+                              onClick={() => handleEdit(movie)}
+                              className="text-blue-600 hover:text-blue-900 transition-colors"
+                              title="Editar"
+                            >
 
-        {/* Paginación */}
-        {totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Anterior
-              </button>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Siguiente
-              </button>
-            </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Página <span className="font-medium">{currentPage}</span> de{' '}
-                  <span className="font-medium">{totalPages}</span>
-                </p>
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(movie.id)}
+                              disabled={deletingMovieId === movie.id}
+                              className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50"
+                              title="Eliminar"
+                            >
+                              {deletingMovieId === movie.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Anterior
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Siguiente
-                  </button>
-                </nav>
-              </div>
-            </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Modal de creación/edición con pestañas */}
-      {showModal && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {editingMovie ? 'Editar Película' : 'Nueva Película'}
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowModal(false)
-                    reset()
-                    setEditingMovie(null)
-                    setMovieFormInitialData(null)
-                  }}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <MoviesPagination
+              currentPage={filters.currentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => handleFiltersChange({ currentPage: page })}
+            />
+          )}
+        
+
+        {/* Modal de creación/edición con pestañas */}
+        {showModal && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {editingMovie ? 'Editar Película' : 'Nueva Película'}
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setShowModal(false)
+                      reset()
+                      setEditingMovie(null)
+                      setMovieFormInitialData(null)
+                    }}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto max-h-[calc(90vh-8rem)]">
-              <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="w-full">
-                {/* Lista de pestañas */}
-                <Tabs.List className="flex border-b border-gray-200 px-6 pt-4">
-                  <Tabs.Trigger
-                    value="basic"
-                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'basic'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Info className="w-4 h-4" />
-                      Información Básica
-                    </div>
-                  </Tabs.Trigger>
-                  <Tabs.Trigger
-                    value="media"
-                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'media'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Image className="w-4 h-4" />
-                      Multimedia
-                    </div>
-                  </Tabs.Trigger>
-                  <Tabs.Trigger
-                    value="cast"
-                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'cast'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      Reparto
-                    </div>
-                  </Tabs.Trigger>
-                  <Tabs.Trigger
-                    value="crew"
-                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'crew'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="w-4 h-4" />
-                      Equipo Técnico
-                    </div>
-                  </Tabs.Trigger>
-                  <Tabs.Trigger
-                    value="advanced"
-                    className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'advanced'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Settings className="w-4 h-4" />
-                      Avanzado
-                    </div>
-                  </Tabs.Trigger>
-                </Tabs.List>
+              <form onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto max-h-[calc(90vh-8rem)]">
+                <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  {/* Lista de pestañas */}
+                  <Tabs.List className="flex border-b border-gray-200 px-6 pt-4">
+                    <Tabs.Trigger
+                      value="basic"
+                      className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'basic'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Info className="w-4 h-4" />
+                        Información Básica
+                      </div>
+                    </Tabs.Trigger>
+                    <Tabs.Trigger
+                      value="media"
+                      className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'media'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Image className="w-4 h-4" />
+                        Multimedia
+                      </div>
+                    </Tabs.Trigger>
+                    <Tabs.Trigger
+                      value="cast"
+                      className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'cast'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Reparto
+                      </div>
+                    </Tabs.Trigger>
+                    <Tabs.Trigger
+                      value="crew"
+                      className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'crew'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Briefcase className="w-4 h-4" />
+                        Equipo Técnico
+                      </div>
+                    </Tabs.Trigger>
+                    <Tabs.Trigger
+                      value="advanced"
+                      className={`px-4 py-2 -mb-px text-sm font-medium transition-colors ${activeTab === 'advanced'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Settings className="w-4 h-4" />
+                        Avanzado
+                      </div>
+                    </Tabs.Trigger>
+                  </Tabs.List>
 
-                {/* Contenido de las pestañas */}
-                <div className="p-6">
-                  {/* Pestaña de Información Básica */}
-                  <Tabs.Content value="basic" className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Contenido de las pestañas */}
+                  <div className="p-6">
+                    {/* Pestaña de Información Básica */}
+                    <Tabs.Content value="basic" className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium text-gray-900 mb-4">
+                            Información Principal
+                          </h3>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Título *
+                            </label>
+                            <input
+                              type="text"
+                              {...register('title')}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                            />
+                            {errors.title && (
+                              <p className="mt-1 text-sm text-red-600">{getErrorMessage(errors.title)}</p>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Año
+                              </label>
+                              <input
+                                type="number"
+                                {...register('year', { valueAsNumber: true })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                              />
+                              {errors.year && (
+                                <p className="mt-1 text-sm text-red-600">{getErrorMessage(errors.year)}</p>
+                              )}
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Fecha de Estreno
+                              </label>
+
+                              {/* Checkbox para fecha parcial */}
+                              <div className="mb-2">
+                                <label className="inline-flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={isPartialDate}
+                                    onChange={(e) => setIsPartialDate(e.target.checked)}
+                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <span className="ml-2 text-sm text-gray-600">
+                                    Fecha incompleta (solo año o año/mes)
+                                  </span>
+                                </label>
+                              </div>
+
+                              {/* Mostrar campos según el tipo de fecha */}
+                              {!isPartialDate ? (
+                                // Fecha completa - date picker normal
+                                <input
+                                  type="date"
+                                  {...register('releaseDate')}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                />
+                              ) : (
+                                // Fecha parcial - campos separados
+                                <div className="flex gap-2">
+                                  <div className="flex-1">
+                                    <input
+                                      type="number"
+                                      placeholder="Año"
+                                      min="1800"
+                                      max="2100"
+                                      value={partialReleaseDate.year || ''}
+                                      onChange={(e) => setPartialReleaseDate({
+                                        ...partialReleaseDate,
+                                        year: e.target.value ? parseInt(e.target.value) : null
+                                      })}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                    />
+                                  </div>
+                                  <div className="flex-1">
+                                    <select
+                                      value={partialReleaseDate.month || ''}
+                                      onChange={(e) => setPartialReleaseDate({
+                                        ...partialReleaseDate,
+                                        month: e.target.value ? parseInt(e.target.value) : null
+                                      })}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                    >
+                                      <option value="">Mes (opcional)</option>
+                                      {MONTHS.map(month => (
+                                        <option key={month.value} value={month.value}>
+                                          {month.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            {/* NUEVOS CAMPOS: Fechas de rodaje */}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Fecha Inicio de Rodaje
+                                </label>
+                                <input
+                                  type="date"
+                                  {...register('filmingStartDate')}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Fecha Fin de Rodaje
+                                </label>
+                                <input
+                                  type="date"
+                                  {...register('filmingEndDate')}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Duración (minutos)
+                            </label>
+                            <input
+                              type="number"
+                              {...register('duration', { valueAsNumber: true })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Duración (segundos)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max="59"
+                              {...register('durationSeconds', { valueAsNumber: true })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                              placeholder="0-59"
+                            />
+                            {errors.durationSeconds && (
+                              <p className="mt-1 text-sm text-red-600">{getErrorMessage(errors.durationSeconds)}</p>
+                            )}
+                          </div>
+
+                          {/* NUEVO CAMPO TIPO DE DURACIÓN */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Tipo de duración
+                              {tipoDuracionDisabled && (
+                                <span className="ml-2 text-xs text-green-600 font-normal">
+                                  (Calculado automáticamente)
+                                </span>
+                              )}
+                            </label>
+                            <select
+                              {...register('tipoDuracion')}
+                              disabled={tipoDuracionDisabled}
+                              className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-colors ${tipoDuracionDisabled
+                                ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                                : 'hover:border-gray-400'
+                                }`}
+                            >
+                              <option value="">Seleccionar tipo de duración...</option>
+                              {TIPOS_DURACION.map((tipo) => (
+                                <option key={tipo.value} value={tipo.value}>
+                                  {tipo.label}
+                                </option>
+                              ))}
+                            </select>
+                            <div className="mt-1 text-xs text-gray-500">
+                              {tipoDuracionDisabled ? (
+                                <div className="flex items-center space-x-1">
+                                  <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span>
+                                    <strong>{TIPOS_DURACION.find(t => t.value === watch('tipoDuracion'))?.label || ''}</strong>
+                                    {(() => {
+                                      const minutos = watch('duration') || 0
+                                      const segundos = watch('durationSeconds') || 0
+                                      if (minutos > 0 || segundos > 0) {
+                                        if (minutos > 0 && segundos > 0) {
+                                          return ` (${minutos}min ${segundos}s)`
+                                        } else if (minutos > 0) {
+                                          return ` (${minutos}min)`
+                                        } else {
+                                          return ` (${segundos}s)`
+                                        }
+                                      }
+                                      return ''
+                                    })()}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div>
+                                  <p>Ingrese la duración para calcular automáticamente, o seleccione manualmente.</p>
+                                  <div className="mt-1 space-y-1">
+                                    <div className="flex justify-between">
+                                      <span>Largometraje:</span>
+                                      <span className="font-mono text-gray-400">60+ min</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Mediometraje:</span>
+                                      <span className="font-mono text-gray-400">30-59 min</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Cortometraje:</span>
+                                      <span className="font-mono text-gray-400">&lt; 30 min</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Estado
+                            </label>
+                            <select
+                              {...register('status')}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                            >
+                              <option value="DRAFT">Borrador</option>
+                              <option value="PUBLISHED">Publicado</option>
+                              <option value="ARCHIVED">Archivado</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Nivel de información cargada *
+                          </label>
+                          <select
+                            {...register('dataCompleteness')}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                          >
+                            <option value="BASIC_PRESS_KIT">📄 Gacetilla básica</option>
+                            <option value="FULL_PRESS_KIT">📋 Gacetilla completa</option>
+                            <option value="MAIN_CAST">👥 Intérpretes principales</option>
+                            <option value="MAIN_CREW">🔧 Técnicos principales</option>
+                            <option value="FULL_CAST">🎭 Todos los intérpretes</option>
+                            <option value="FULL_CREW">🎬 Todos los técnicos</option>
+                          </select>
+                          <p className="mt-1 text-xs text-gray-500">
+                            Indica hasta qué nivel de detalle has cargado la información de esta película
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Etapa de la Película
+                          </label>
+                          <select
+                            {...register('stage')}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                          >
+                            {MOVIE_STAGES.map(stage => (
+                              <option key={stage.value} value={stage.value}>
+                                {stage.label}
+                              </option>
+                            ))}
+                          </select>
+
+                          {/* Mostrar descripción de la etapa seleccionada */}
+                          {currentStage && (
+                            <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                                <p className="text-xs text-blue-800">
+                                  {MOVIE_STAGES.find(s => s.value === currentStage)?.description}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {/* Links Oficiales */}
+                      <div className="mt-6">
+                        <MovieLinksManager
+                          key={`links-${editingMovie?.id || 'new'}-${movieLinks.length}`}
+                          initialLinks={movieLinks}
+                          onLinksChange={handleLinksChange}
+                        />
+                      </div>
                       <div className="space-y-4">
                         <h3 className="text-lg font-medium text-gray-900 mb-4">
-                          Información Principal
+                          Información Adicional
                         </h3>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Título *
+                            Sinopsis
+                          </label>
+                          <textarea
+                            {...register('synopsis')}
+                            rows={4}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tagline
                           </label>
                           <input
                             type="text"
-                            {...register('title')}
+                            {...register('tagline')}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                           />
-                          {errors.title && (
-                            <p className="mt-1 text-sm text-red-600">{getErrorMessage(errors.title)}</p>
-                          )}
                         </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            IMDb ID
+                          </label>
+                          <input
+                            type="text"
+                            {...register('imdbId')}
+                            placeholder="tt0123456"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                          />
+                        </div>
+                      </div>
+                      {/* Géneros, Países e Idiomas */}
+                      <MovieFormEnhanced
+                        key={editingMovie?.id || 'new'}
+                        onGenresChange={handleGenresChange}
+                        onCastChange={handleCastChange}
+                        onCrewChange={handleCrewChange}
+                        onCountriesChange={handleCountriesChange}
+                        onLanguagesChange={handleLanguagesChange}
+                        onProductionCompaniesChange={handleProductionCompaniesChange}
+                        onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                        onThemesChange={handleThemesChange}
+                        initialData={movieFormInitialData}
+                        showOnlyBasicInfo={true}
+                      />
+                    </Tabs.Content>
+
+
+                    {/* Pestaña de Multimedia */}
+                    <Tabs.Content value="media" className="space-y-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">
+                        Imágenes y Videos
+                      </h3>
+
+                      <CloudinaryUploadWidget
+                        value={watch('posterUrl')}
+                        onChange={(url, publicId) => {
+                          setValue('posterUrl', url)
+                          setValue('posterPublicId', publicId)
+                        }}
+                        label="Afiche de la Película"
+                        type="poster"
+                        movieId={editingMovie?.id}
+                      />
+
+                      <CloudinaryUploadWidget
+                        value={watch('backdropUrl')}
+                        onChange={(url, publicId) => {
+                          setValue('backdropUrl', url)
+                          setValue('backdropPublicId', publicId)
+                        }}
+                        label="Imagen de Fondo"
+                        type="backdrop"
+                        movieId={editingMovie?.id}
+                      />
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          URL del Trailer
+                        </label>
+                        <input
+                          type="url"
+                          {...register('trailerUrl')}
+                          placeholder="https://youtube.com/watch?v=..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                        />
+                      </div>
+                    </Tabs.Content>
+
+                    {/* Pestaña de Reparto */}
+                    <Tabs.Content value="cast">
+                      <MovieFormEnhanced
+                        key={editingMovie?.id || 'new'}
+                        onGenresChange={handleGenresChange}
+                        onCastChange={handleCastChange}
+                        onCrewChange={handleCrewChange}
+                        onCountriesChange={handleCountriesChange}
+                        onLanguagesChange={handleLanguagesChange}
+                        onProductionCompaniesChange={handleProductionCompaniesChange}
+                        onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                        onThemesChange={handleThemesChange}
+                        initialData={movieFormInitialData}
+                        showOnlyCast={true}
+                      />
+                    </Tabs.Content>
+
+                    {/* Pestaña de Equipo Técnico */}
+                    <Tabs.Content value="crew">
+                      <MovieFormEnhanced
+                        key={editingMovie?.id || 'new'}
+                        onGenresChange={handleGenresChange}
+                        onCastChange={handleCastChange}
+                        onCrewChange={handleCrewChange}
+                        onCountriesChange={handleCountriesChange}
+                        onLanguagesChange={handleLanguagesChange}
+                        onProductionCompaniesChange={handleProductionCompaniesChange}
+                        onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                        onThemesChange={handleThemesChange}
+                        initialData={movieFormInitialData}
+                        showOnlyCrew={true}
+                      />
+                    </Tabs.Content>
+
+                    {/* Pestaña de Configuración Avanzada */}
+                    <Tabs.Content value="advanced" className="space-y-6">
+                      {/* Información técnica */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                          Información Técnica
+                        </h3>
 
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Año
+                              Color
                             </label>
-                            <input
-                              type="number"
-                              {...register('year', { valueAsNumber: true })}
+                            <select
+                              {...register('colorTypeId', { valueAsNumber: true })}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                            />
-                            {errors.year && (
-                              <p className="mt-1 text-sm text-red-600">{getErrorMessage(errors.year)}</p>
-                            )}
+                            >
+                              <option value="">Seleccionar...</option>
+                              {availableColorTypes.map((colorType) => (
+                                <option key={colorType.id} value={colorType.id}>
+                                  {colorType.name}
+                                </option>
+                              ))}
+                            </select>
                           </div>
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Fecha de Estreno
+                              Sonido
                             </label>
-
-                            {/* Checkbox para fecha parcial */}
-                            <div className="mb-2">
-                              <label className="inline-flex items-center">
-                                <input
-                                  type="checkbox"
-                                  checked={isPartialDate}
-                                  onChange={(e) => setIsPartialDate(e.target.checked)}
-                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                />
-                                <span className="ml-2 text-sm text-gray-600">
-                                  Fecha incompleta (solo año o año/mes)
-                                </span>
-                              </label>
-                            </div>
-
-                            {/* Mostrar campos según el tipo de fecha */}
-                            {!isPartialDate ? (
-                              // Fecha completa - date picker normal
-                              <input
-                                type="date"
-                                {...register('releaseDate')}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                              />
-                            ) : (
-                              // Fecha parcial - campos separados
-                              <div className="flex gap-2">
-                                <div className="flex-1">
-                                  <input
-                                    type="number"
-                                    placeholder="Año"
-                                    min="1800"
-                                    max="2100"
-                                    value={partialReleaseDate.year || ''}
-                                    onChange={(e) => setPartialReleaseDate({
-                                      ...partialReleaseDate,
-                                      year: e.target.value ? parseInt(e.target.value) : null
-                                    })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                                  />
-                                </div>
-                                <div className="flex-1">
-                                  <select
-                                    value={partialReleaseDate.month || ''}
-                                    onChange={(e) => setPartialReleaseDate({
-                                      ...partialReleaseDate,
-                                      month: e.target.value ? parseInt(e.target.value) : null
-                                    })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                                  >
-                                    <option value="">Mes (opcional)</option>
-                                    {MONTHS.map(month => (
-                                      <option key={month.value} value={month.value}>
-                                        {month.label}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                            )}
+                            <select
+                              {...register('soundType')}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                            >
+                              <option value="">Seleccionar...</option>
+                              {SOUND_TYPES.map(sound => (
+                                <option key={sound.value} value={sound.value}>
+                                  {sound.label}
+                                </option>
+                              ))}
+                            </select>
                           </div>
-                          {/* NUEVOS CAMPOS: Fechas de rodaje */}
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Fecha Inicio de Rodaje
-                              </label>
-                              <input
-                                type="date"
-                                {...register('filmingStartDate')}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Fecha Fin de Rodaje
-                              </label>
-                              <input
-                                type="date"
-                                {...register('filmingEndDate')}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Duración (minutos)
-                          </label>
-                          <input
-                            type="number"
-                            {...register('duration', { valueAsNumber: true })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Duración (segundos)
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="59"
-                            {...register('durationSeconds', { valueAsNumber: true })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                            placeholder="0-59"
-                          />
-                          {errors.durationSeconds && (
-                            <p className="mt-1 text-sm text-red-600">{getErrorMessage(errors.durationSeconds)}</p>
-                          )}
-                        </div>
-
-                        {/* NUEVO CAMPO TIPO DE DURACIÓN */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Tipo de duración
-                            {tipoDuracionDisabled && (
-                              <span className="ml-2 text-xs text-green-600 font-normal">
-                                (Calculado automáticamente)
-                              </span>
-                            )}
-                          </label>
-                          <select
-                            {...register('tipoDuracion')}
-                            disabled={tipoDuracionDisabled}
-                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 transition-colors ${tipoDuracionDisabled
-                              ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                              : 'hover:border-gray-400'
-                              }`}
-                          >
-                            <option value="">Seleccionar tipo de duración...</option>
-                            {TIPOS_DURACION.map((tipo) => (
-                              <option key={tipo.value} value={tipo.value}>
-                                {tipo.label}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="mt-1 text-xs text-gray-500">
-                            {tipoDuracionDisabled ? (
-                              <div className="flex items-center space-x-1">
-                                <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>
-                                  <strong>{TIPOS_DURACION.find(t => t.value === watch('tipoDuracion'))?.label || ''}</strong>
-                                  {(() => {
-                                    const minutos = watch('duration') || 0
-                                    const segundos = watch('durationSeconds') || 0
-                                    if (minutos > 0 || segundos > 0) {
-                                      if (minutos > 0 && segundos > 0) {
-                                        return ` (${minutos}min ${segundos}s)`
-                                      } else if (minutos > 0) {
-                                        return ` (${minutos}min)`
-                                      } else {
-                                        return ` (${segundos}s)`
-                                      }
-                                    }
-                                    return ''
-                                  })()}
-                                </span>
-                              </div>
-                            ) : (
-                              <div>
-                                <p>Ingrese la duración para calcular automáticamente, o seleccione manualmente.</p>
-                                <div className="mt-1 space-y-1">
-                                  <div className="flex justify-between">
-                                    <span>Largometraje:</span>
-                                    <span className="font-mono text-gray-400">60+ min</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>Mediometraje:</span>
-                                    <span className="font-mono text-gray-400">30-59 min</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>Cortometraje:</span>
-                                    <span className="font-mono text-gray-400">&lt; 30 min</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Estado
-                          </label>
-                          <select
-                            {...register('status')}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                          >
-                            <option value="DRAFT">Borrador</option>
-                            <option value="PUBLISHED">Publicado</option>
-                            <option value="ARCHIVED">Archivado</option>
-                          </select>
                         </div>
                       </div>
+
+                      {/* Clasificación */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Nivel de información cargada *
+                          Calificación
                         </label>
                         <select
-                          {...register('dataCompleteness')}
+                          {...register('ratingId', { valueAsNumber: true })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                         >
-                          <option value="BASIC_PRESS_KIT">📄 Gacetilla básica</option>
-                          <option value="FULL_PRESS_KIT">📋 Gacetilla completa</option>
-                          <option value="MAIN_CAST">👥 Intérpretes principales</option>
-                          <option value="MAIN_CREW">🔧 Técnicos principales</option>
-                          <option value="FULL_CAST">🎭 Todos los intérpretes</option>
-                          <option value="FULL_CREW">🎬 Todos los técnicos</option>
-                        </select>
-                        <p className="mt-1 text-xs text-gray-500">
-                          Indica hasta qué nivel de detalle has cargado la información de esta película
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Etapa de la Película
-                        </label>
-                        <select
-                          {...register('stage')}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                        >
-                          {MOVIE_STAGES.map(stage => (
-                            <option key={stage.value} value={stage.value}>
-                              {stage.label}
+                          <option value="">Sin calificación</option>
+                          {availableRatings.map((rating) => (
+                            <option key={rating.id} value={rating.id}>
+                              {rating.name} {rating.abbreviation && `(${rating.abbreviation})`}
                             </option>
                           ))}
                         </select>
-
-                        {/* Mostrar descripción de la etapa seleccionada */}
-                        {currentStage && (
-                          <div className="mt-2 p-2 bg-blue-50 rounded-lg">
-                            <div className="flex items-start gap-2">
-                              <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                              <p className="text-xs text-blue-800">
-                                {MOVIE_STAGES.find(s => s.value === currentStage)?.description}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {/* Links Oficiales */}
-                    <div className="mt-6">
-                      <MovieLinksManager
-                        key={`links-${editingMovie?.id || 'new'}-${movieLinks.length}`}
-                        initialLinks={movieLinks}
-                        onLinksChange={handleLinksChange}
-                      />
-                    </div>
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">
-                        Información Adicional
-                      </h3>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Sinopsis
-                        </label>
-                        <textarea
-                          {...register('synopsis')}
-                          rows={4}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                        />
+                        {(() => {
+                          const selectedRating = availableRatings.find(r => r.id === watch('ratingId'))
+                          return selectedRating?.description && (
+                            <p className="mt-1 text-sm text-gray-500">
+                              {selectedRating.description}
+                            </p>
+                          )
+                        })()}
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Tagline
-                        </label>
-                        <input
-                          type="text"
-                          {...register('tagline')}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          IMDb ID
-                        </label>
-                        <input
-                          type="text"
-                          {...register('imdbId')}
-                          placeholder="tt0123456"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                        />
-                      </div>
-                    </div>
-                    {/* Géneros, Países e Idiomas */}
-                    <MovieFormEnhanced
-                      key={editingMovie?.id || 'new'}
-                      onGenresChange={handleGenresChange}
-                      onCastChange={handleCastChange}
-                      onCrewChange={handleCrewChange}
-                      onCountriesChange={handleCountriesChange}
-                      onLanguagesChange={handleLanguagesChange}
-                      onProductionCompaniesChange={handleProductionCompaniesChange}
-                      onDistributionCompaniesChange={handleDistributionCompaniesChange}
-                      onThemesChange={handleThemesChange}
-                      initialData={movieFormInitialData}
-                      showOnlyBasicInfo={true}
-                    />
-                  </Tabs.Content>
-
-
-                  {/* Pestaña de Multimedia */}
-                  <Tabs.Content value="media" className="space-y-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                      Imágenes y Videos
-                    </h3>
-
-                    <CloudinaryUploadWidget
-                      value={watch('posterUrl')}
-                      onChange={(url, publicId) => {
-                        setValue('posterUrl', url)
-                        setValue('posterPublicId', publicId)
-                      }}
-                      label="Afiche de la Película"
-                      type="poster"
-                      movieId={editingMovie?.id}
-                    />
-
-                    <CloudinaryUploadWidget
-                      value={watch('backdropUrl')}
-                      onChange={(url, publicId) => {
-                        setValue('backdropUrl', url)
-                        setValue('backdropPublicId', publicId)
-                      }}
-                      label="Imagen de Fondo"
-                      type="backdrop"
-                      movieId={editingMovie?.id}
-                    />
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        URL del Trailer
-                      </label>
-                      <input
-                        type="url"
-                        {...register('trailerUrl')}
-                        placeholder="https://youtube.com/watch?v=..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                      />
-                    </div>
-                  </Tabs.Content>
-
-                  {/* Pestaña de Reparto */}
-                  <Tabs.Content value="cast">
-                    <MovieFormEnhanced
-                      key={editingMovie?.id || 'new'}
-                      onGenresChange={handleGenresChange}
-                      onCastChange={handleCastChange}
-                      onCrewChange={handleCrewChange}
-                      onCountriesChange={handleCountriesChange}
-                      onLanguagesChange={handleLanguagesChange}
-                      onProductionCompaniesChange={handleProductionCompaniesChange}
-                      onDistributionCompaniesChange={handleDistributionCompaniesChange}
-                      onThemesChange={handleThemesChange}
-                      initialData={movieFormInitialData}
-                      showOnlyCast={true}
-                    />
-                  </Tabs.Content>
-
-                  {/* Pestaña de Equipo Técnico */}
-                  <Tabs.Content value="crew">
-                    <MovieFormEnhanced
-                      key={editingMovie?.id || 'new'}
-                      onGenresChange={handleGenresChange}
-                      onCastChange={handleCastChange}
-                      onCrewChange={handleCrewChange}
-                      onCountriesChange={handleCountriesChange}
-                      onLanguagesChange={handleLanguagesChange}
-                      onProductionCompaniesChange={handleProductionCompaniesChange}
-                      onDistributionCompaniesChange={handleDistributionCompaniesChange}
-                      onThemesChange={handleThemesChange}
-                      initialData={movieFormInitialData}
-                      showOnlyCrew={true}
-                    />
-                  </Tabs.Content>
-
-                  {/* Pestaña de Configuración Avanzada */}
-                  <Tabs.Content value="advanced" className="space-y-6">
-                    {/* Información técnica */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">
-                        Información Técnica
-                      </h3>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Color
-                          </label>
-                          <select
-                            {...register('colorTypeId', { valueAsNumber: true })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                          >
-                            <option value="">Seleccionar...</option>
-                            {availableColorTypes.map((colorType) => (
-                              <option key={colorType.id} value={colorType.id}>
-                                {colorType.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                      {/* SEO */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                          SEO y Palabras Clave
+                        </h3>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Sonido
+                            Palabras Clave (separadas por comas)
                           </label>
-                          <select
-                            {...register('soundType')}
+                          <input
+                            type="text"
+                            {...register('metaKeywords')}
+                            placeholder="drama, argentina, buenos aires"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                          >
-                            <option value="">Seleccionar...</option>
-                            {SOUND_TYPES.map(sound => (
-                              <option key={sound.value} value={sound.value}>
-                                {sound.label}
-                              </option>
-                            ))}
-                          </select>
+                          />
                         </div>
                       </div>
-                    </div>
-
-                    {/* Clasificación */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Calificación
-                      </label>
-                      <select
-                        {...register('ratingId', { valueAsNumber: true })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                      >
-                        <option value="">Sin calificación</option>
-                        {availableRatings.map((rating) => (
-                          <option key={rating.id} value={rating.id}>
-                            {rating.name} {rating.abbreviation && `(${rating.abbreviation})`}
-                          </option>
-                        ))}
-                      </select>
-                      {(() => {
-                        const selectedRating = availableRatings.find(r => r.id === watch('ratingId'))
-                        return selectedRating?.description && (
-                          <p className="mt-1 text-sm text-gray-500">
-                            {selectedRating.description}
-                          </p>
-                        )
-                      })()}
-                    </div>
-
-                    {/* SEO */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">
-                        SEO y Palabras Clave
-                      </h3>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Palabras Clave (separadas por comas)
-                        </label>
-                        <input
-                          type="text"
-                          {...register('metaKeywords')}
-                          placeholder="drama, argentina, buenos aires"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      {/* Títulos Alternativos - AGREGAR AQUÍ */}
+                      <div className="mt-6">
+                        <AlternativeTitlesManager
+                          onChange={setAlternativeTitles}
+                          initialTitles={editingMovie ? alternativeTitles : []}
                         />
                       </div>
-                    </div>
-                    {/* Títulos Alternativos - AGREGAR AQUÍ */}
-                    <div className="mt-6">
-                      <AlternativeTitlesManager
-                        onChange={setAlternativeTitles}
-                        initialTitles={editingMovie ? alternativeTitles : []}
+                      {/* Productoras y Distribuidoras */}
+                      <MovieFormEnhanced
+                        key={editingMovie?.id || 'new'}
+                        onGenresChange={handleGenresChange}
+                        onCastChange={handleCastChange}
+                        onCrewChange={handleCrewChange}
+                        onCountriesChange={handleCountriesChange}
+                        onLanguagesChange={handleLanguagesChange}
+                        onProductionCompaniesChange={handleProductionCompaniesChange}
+                        onDistributionCompaniesChange={handleDistributionCompaniesChange}
+                        onThemesChange={handleThemesChange}
+                        initialData={movieFormInitialData}
+                        showOnlyCompanies={true}
                       />
-                    </div>
-                    {/* Productoras y Distribuidoras */}
-                    <MovieFormEnhanced
-                      key={editingMovie?.id || 'new'}
-                      onGenresChange={handleGenresChange}
-                      onCastChange={handleCastChange}
-                      onCrewChange={handleCrewChange}
-                      onCountriesChange={handleCountriesChange}
-                      onLanguagesChange={handleLanguagesChange}
-                      onProductionCompaniesChange={handleProductionCompaniesChange}
-                      onDistributionCompaniesChange={handleDistributionCompaniesChange}
-                      onThemesChange={handleThemesChange}
-                      initialData={movieFormInitialData}
-                      showOnlyCompanies={true}
-                    />
-                  </Tabs.Content>
-                </div>
-              </Tabs.Root>
-
-              {/* Botones */}
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false)
-                    reset()
-                    setEditingMovie(null)
-                    setMovieFormInitialData(null)
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancelar
-                </button>
-                {Object.keys(errors).length > 0 && (
-                  <div className="px-6 py-2 bg-red-50 text-red-800 text-sm">
-                    Errores: {Object.keys(errors).join(', ')}
+                    </Tabs.Content>
                   </div>
-                )}
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Guardando...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      {editingMovie ? 'Actualizar' : 'Crear'} Película
-                    </>
+                </Tabs.Root>
+
+                {/* Botones */}
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowModal(false)
+                      reset()
+                      setEditingMovie(null)
+                      setMovieFormInitialData(null)
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  {Object.keys(errors).length > 0 && (
+                    <div className="px-6 py-2 bg-red-50 text-red-800 text-sm">
+                      Errores: {Object.keys(errors).join(', ')}
+                    </div>
                   )}
-                </button>
-              </div>
-            </form>
-          </div >
-        </div >
-      )
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        {editingMovie ? 'Actualizar' : 'Crear'} Película
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )
       }
-    </div >
+      </div>
+    </div>
   )
 }
 
@@ -6655,6 +6587,179 @@ export default function MovieLinksManager({
       )}
     </div>
   );
+}
+
+// ==================================================
+// src/components/admin/movies/MoviesFilters.tsx
+// ==================================================
+// src/components/admin/movies/MoviesFilters.tsx
+import { Search, Plus } from 'lucide-react'
+
+export interface MovieFilters {
+  searchTerm: string
+  selectedStatus: string
+  selectedStage: string
+  selectedYear: string
+  currentPage: number
+}
+
+interface MoviesFiltersProps {
+  filters: MovieFilters
+  onFiltersChange: (filters: Partial<MovieFilters>) => void
+  onNewMovie: () => void
+}
+
+export default function MoviesFilters({ 
+  filters, 
+  onFiltersChange, 
+  onNewMovie 
+}: MoviesFiltersProps) {
+  // Generar años desde el actual hasta 50 años atrás
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
+
+  const handleFilterChange = (key: keyof MovieFilters, value: string | number) => {
+    onFiltersChange({ 
+      [key]: value,
+      // Resetear a página 1 cuando cambian los filtros
+      currentPage: key !== 'currentPage' ? 1 : filters.currentPage 
+    })
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Búsqueda */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Buscar películas..."
+            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            value={filters.searchTerm}
+            onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
+          />
+        </div>
+
+        {/* Filtro por estado */}
+        <select
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+          value={filters.selectedStatus}
+          onChange={(e) => handleFilterChange('selectedStatus', e.target.value)}
+        >
+          <option value="">Todos los estados</option>
+          <option value="DRAFT">Borrador</option>
+          <option value="PUBLISHED">Publicado</option>
+          <option value="ARCHIVED">Archivado</option>
+        </select>
+
+        {/* Filtro por año */}
+        <select
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+          value={filters.selectedYear}
+          onChange={(e) => handleFilterChange('selectedYear', e.target.value)}
+        >
+          <option value="">Todos los años</option>
+          {years.map(year => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+
+        {/* Botón nueva película */}
+        <button
+          onClick={onNewMovie}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          Nueva Película
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ==================================================
+// src/components/admin/movies/MoviesPagination.tsx
+// ==================================================
+// src/components/admin/movies/MoviesPagination.tsx
+interface MoviesPaginationProps {
+  currentPage: number
+  totalPages: number
+  onPageChange: (page: number) => void
+}
+
+export default function MoviesPagination({
+  currentPage,
+  totalPages,
+  onPageChange
+}: MoviesPaginationProps) {
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      onPageChange(currentPage - 1)
+    }
+  }
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      onPageChange(currentPage + 1)
+    }
+  }
+
+  return (
+    <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow">
+      {/* Vista móvil */}
+      <div className="flex-1 flex justify-between sm:hidden">
+        <button
+          onClick={handlePrevious}
+          disabled={currentPage === 1}
+          className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Anterior
+        </button>
+        <button
+          onClick={handleNext}
+          disabled={currentPage === totalPages}
+          className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Siguiente
+        </button>
+      </div>
+
+      {/* Vista desktop */}
+      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-gray-700">
+            Página <span className="font-medium">{currentPage}</span> de{' '}
+            <span className="font-medium">{totalPages}</span>
+          </p>
+        </div>
+        <div>
+          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+            <button
+              onClick={handlePrevious}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center px-4 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Anterior
+            </button>
+            
+            {/* Números de página (opcional, para una versión más completa) */}
+            <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+              {currentPage}
+            </span>
+            
+            <button
+              onClick={handleNext}
+              disabled={currentPage === totalPages}
+              className="relative inline-flex items-center px-4 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Siguiente
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ==================================================
