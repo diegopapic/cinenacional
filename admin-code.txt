@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-06T01:10:56.326Z
+// Archivos del admin - 2025-08-06T01:14:18.655Z
 // ==================
 
 
@@ -3831,7 +3831,6 @@ export async function PUT(
             filmingEndMonth: null,
             filmingEndDay: null
           }),
-          ratingId: movieData.ratingId === null ? undefined : movieData.ratingId,
         }
       })
 
