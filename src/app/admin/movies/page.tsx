@@ -133,7 +133,7 @@ export default function AdminMoviesPage() {
             setEditingMovie(null)
           }}
           editingMovie={editingMovie}
-          onSubmit={movieForm.handleSubmit(movieForm.onSubmit)}
+          onSubmit={movieForm.onSubmit}
           isSubmitting={movieForm.formState.isSubmitting}
           
           // Props del formulario

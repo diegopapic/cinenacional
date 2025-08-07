@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 1f5fc8bf0adb7e9922fbf8b54f151999041b0928
-// Fecha: 2025-08-07T16:12:56.188Z
+// Commit: 540f023fbf40dfca3bd60613665fced070760aa0
+// Fecha: 2025-08-07T16:16:53.236Z
 // ============================================
 
 
@@ -1563,7 +1563,7 @@ export default function AdminMoviesPage() {
             setEditingMovie(null)
           }}
           editingMovie={editingMovie}
-          onSubmit={movieForm.handleSubmit(movieForm.onSubmit)}
+          onSubmit={movieForm.onSubmit}
           isSubmitting={movieForm.formState.isSubmitting}
           
           // Props del formulario
