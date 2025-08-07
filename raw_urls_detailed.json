@@ -875,6 +875,31 @@
     "size": 0
   },
   {
+    "path": "src/services/api-client.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/api-client.ts",
+    "size": 0
+  },
+  {
+    "path": "src/services/index.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/index.ts",
+    "size": 0
+  },
+  {
+    "path": "src/services/metadata.service.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/metadata.service.ts",
+    "size": 0
+  },
+  {
+    "path": "src/services/movies.service.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/movies.service.ts",
+    "size": 0
+  },
+  {
+    "path": "src/services/people.service.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/people.service.ts",
+    "size": 0
+  },
+  {
     "path": "tailwind.config.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tailwind.config.js",
     "size": 0
