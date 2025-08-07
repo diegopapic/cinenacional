@@ -755,6 +755,11 @@
     "size": 0
   },
   {
+    "path": "src/components/admin/movies/MoviesTable.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesTable.tsx",
+    "size": 0
+  },
+  {
     "path": "src/components/admin/MoviesFilters.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MoviesFilters.tsx",
     "size": 0

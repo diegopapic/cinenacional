@@ -19,7 +19,7 @@ model Movie {
   id               Int      @id @default(autoincrement())
   slug             String   @unique @db.VarChar(255)
   title            String   @db.VarChar(255)
-  year             Int
+  year             Int?
   releaseYear      Int?     @map("release_year")
   releaseMonth     Int?     @map("release_month") @db.SmallInt
   releaseDay       Int?     @map("release_day") @db.SmallInt
