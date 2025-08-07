@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-07T16:12:56.201Z
+// Archivos del admin - 2025-08-07T16:16:53.245Z
 // ==================
 
 
@@ -1551,7 +1551,7 @@ export default function AdminMoviesPage() {
             setEditingMovie(null)
           }}
           editingMovie={editingMovie}
-          onSubmit={movieForm.handleSubmit(movieForm.onSubmit)}
+          onSubmit={movieForm.onSubmit}
           isSubmitting={movieForm.formState.isSubmitting}
           
           // Props del formulario
