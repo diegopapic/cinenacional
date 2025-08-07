@@ -91,6 +91,7 @@
 - [src/components/admin/MovieLinksManager.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MovieLinksManager.tsx)
 - [src/components/admin/movies/MoviesFilters.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesFilters.tsx)
 - [src/components/admin/movies/MoviesPagination.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesPagination.tsx)
+- [src/components/admin/movies/MoviesTable.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesTable.tsx)
 - [src/components/admin/MoviesFilters.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MoviesFilters.tsx)
 - [src/components/admin/MoviesPagination.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MoviesPagination.tsx)
 - [src/components/admin/MoviesTable.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MoviesTable.tsx)

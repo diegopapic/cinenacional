@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-06T02:17:14.493Z",
+  "timestamp": "2025-08-07T03:21:13.868Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "6cdf3d9b08d380a978d561978000572e6f46efe7",
+  "commit": "3ab7ab8902224845da4ca90d025100ce40b69964",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
@@ -268,7 +268,8 @@
           "MovieLinksManager.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MovieLinksManager.tsx",
           "movies": {
             "MoviesFilters.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesFilters.tsx",
-            "MoviesPagination.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesPagination.tsx"
+            "MoviesPagination.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesPagination.tsx",
+            "MoviesTable.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesTable.tsx"
           },
           "MoviesFilters.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MoviesFilters.tsx",
           "MoviesPagination.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MoviesPagination.tsx",

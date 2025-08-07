@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-06T02:17:14.963Z
+# Generado automáticamente el: 2025-08-07T03:21:14.406Z
 # ================================================
 
 ## Schema Prisma
@@ -26,7 +26,7 @@ model Movie {
   id               Int      @id @default(autoincrement())
   slug             String   @unique @db.VarChar(255)
   title            String   @db.VarChar(255)
-  year             Int
+  year             Int?
   releaseYear      Int?     @map("release_year")
   releaseMonth     Int?     @map("release_month") @db.SmallInt
   releaseDay       Int?     @map("release_day") @db.SmallInt
@@ -741,7 +741,7 @@ CREATE TABLE "public"."movies" (
     "id" SERIAL NOT NULL,
     "slug" VARCHAR(255) NOT NULL,
     "title" VARCHAR(255) NOT NULL,
-    "year" INTEGER NOT NULL,
+    "year" INTEGER,
     "release_year" INTEGER,
     "release_month" SMALLINT,
     "release_day" SMALLINT,
