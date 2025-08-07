@@ -33,6 +33,8 @@ import MovieLinksManager from '@/components/admin/MovieLinksManager'
 import MoviesFilters, { type MovieFilters } from '@/components/admin/movies/MoviesFilters'
 import MoviesPagination from '@/components/admin/movies/MoviesPagination'
 import MoviesTable from '@/components/admin/movies/MoviesTable'
+import { moviesService, metadataService } from '@/services'
+
 import {
   MOVIE_STAGES,
   TIPOS_DURACION,
@@ -230,30 +232,11 @@ export default function AdminMoviesPage() {
   const fetchMovies = async () => {
     try {
       setLoading(true)
-      const params = new URLSearchParams({
-        page: filters.currentPage.toString(),
-        limit: '20',
-        search: filters.searchTerm,
-        status: filters.selectedStatus,
-        year: filters.selectedYear,
-        sortBy: 'createdAt',
-        sortOrder: 'desc'
-      })
-
-      const response = await fetch(`/api/movies?${params}`)
-
-      if (!response.ok) {
-        throw new Error('Error al cargar las películas')
-      }
-
-      const data = await response.json()
-
-      // Asegurar que siempre tengamos un array
-      setMovies(data.movies || [])
-      setTotalPages(data.pagination?.totalPages || 1)
+      const { movies, pagination } = await moviesService.getAll(filters)
+      setMovies(movies)
+      setTotalPages(pagination.totalPages)
     } catch (error) {
       toast.error('Error al cargar las películas')
-      // Asegurar que movies sea un array vacío en caso de error
       setMovies([])
       setTotalPages(1)
     } finally {
@@ -296,7 +279,7 @@ export default function AdminMoviesPage() {
           releaseMonth: partialReleaseDate.month,
           releaseDay: null
         }
-      } else if (data.releaseDate) {  // ← CAMBIO: usar data.releaseDate, no preparedData
+      } else if (data.releaseDate) {
         // Fecha completa - convertir a campos separados
         const [year, month, day] = data.releaseDate.split('-').map(Number)
         releaseDateData = {
@@ -329,7 +312,7 @@ export default function AdminMoviesPage() {
       // Asegurarse de nuevo de que no se envíe releaseDate
       delete movieData.releaseDate;
 
-      // MOVER LOS CONSOLE.LOG AQUÍ, ANTES del fetch
+      // MOVER LOS CONSOLE.LOG AQUÍ, ANTES del servicio
       console.log('=== DATOS ENVIADOS AL BACKEND ===');
       console.log('movieData completo:', JSON.stringify(movieData, null, 2));
       console.log('=== DATOS DE FECHA ENVIADOS ===');
@@ -338,31 +321,16 @@ export default function AdminMoviesPage() {
       console.log('releaseDay:', movieData.releaseDay);
       console.log('================================');
 
-      const url = editingMovie
-        ? `/api/movies/${editingMovie.id}`
-        : '/api/movies'
-
-      const method = editingMovie ? 'PUT' : 'POST'
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(movieData)
-      })
-
-      if (!response.ok) {
-        let errorMessage = 'Error al guardar la película'
-        try {
-          const error = await response.json()
-          errorMessage = error.error || error.message || errorMessage
-        } catch (e) {
-          console.error('Error parsing response:', e)
-        }
-        throw new Error(errorMessage)
+      // CAMBIO PRINCIPAL: Usar el servicio en lugar de fetch directo
+      if (editingMovie) {
+        await moviesService.update(editingMovie.id, movieData)
+        toast.success('Película actualizada')
+      } else {
+        await moviesService.create(movieData)
+        toast.success('Película creada')
       }
 
-      toast.success(editingMovie ? 'Película actualizada' : 'Película creada')
+      // Limpiar y actualizar
       setShowModal(false)
       reset()
       setEditingMovie(null)
@@ -378,8 +346,9 @@ export default function AdminMoviesPage() {
   const handleEdit = async (movie: Movie) => {
 
     try {
-      const response = await fetch(`/api/movies/${movie.id}`)
-      const fullMovie = await response.json()
+      console.log('Intentando cargar película con ID:', movie.id)
+      const fullMovie = await moviesService.getById(movie.id)
+      console.log('Película cargada:', fullMovie)
       const minutos = fullMovie.duration
       const segundos = fullMovie.durationSeconds
       const hayDuracion = (minutos && minutos > 0) || (segundos && segundos > 0)
@@ -497,22 +466,17 @@ export default function AdminMoviesPage() {
       setShowModal(true)
 
     } catch (error) {
+      console.error('Error completo en handleEdit:', error)
+      console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack')
       toast.error('Error al cargar los datos de la película')
     }
   }
 
   // Eliminar película
   const handleDelete = async (id: number) => {
-  const response = await fetch(`/api/movies/${id}`, {
-    method: 'DELETE'
-  })
-
-  if (!response.ok) {
-    throw new Error('Error al eliminar')
+    await moviesService.delete(id)
+    fetchMovies()
   }
-
-  fetchMovies()
-}
 
   // Abrir modal para nueva película
   const handleNewMovie = () => {

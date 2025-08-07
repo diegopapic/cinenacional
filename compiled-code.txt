@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 3ab7ab8902224845da4ca90d025100ce40b69964
-// Fecha: 2025-08-07T03:21:14.227Z
+// Commit: 4ed88157feb5e1404a174951c98e0774eea04220
+// Fecha: 2025-08-07T03:45:28.094Z
 // ============================================
 
 
@@ -1463,6 +1463,8 @@ import MovieLinksManager from '@/components/admin/MovieLinksManager'
 import MoviesFilters, { type MovieFilters } from '@/components/admin/movies/MoviesFilters'
 import MoviesPagination from '@/components/admin/movies/MoviesPagination'
 import MoviesTable from '@/components/admin/movies/MoviesTable'
+import { moviesService, metadataService } from '@/services'
+
 import {
   MOVIE_STAGES,
   TIPOS_DURACION,
@@ -1660,30 +1662,11 @@ export default function AdminMoviesPage() {
   const fetchMovies = async () => {
     try {
       setLoading(true)
-      const params = new URLSearchParams({
-        page: filters.currentPage.toString(),
-        limit: '20',
-        search: filters.searchTerm,
-        status: filters.selectedStatus,
-        year: filters.selectedYear,
-        sortBy: 'createdAt',
-        sortOrder: 'desc'
-      })
-
-      const response = await fetch(`/api/movies?${params}`)
-
-      if (!response.ok) {
-        throw new Error('Error al cargar las películas')
-      }
-
-      const data = await response.json()
-
-      // Asegurar que siempre tengamos un array
-      setMovies(data.movies || [])
-      setTotalPages(data.pagination?.totalPages || 1)
+      const { movies, pagination } = await moviesService.getAll(filters)
+      setMovies(movies)
+      setTotalPages(pagination.totalPages)
     } catch (error) {
       toast.error('Error al cargar las películas')
-      // Asegurar que movies sea un array vacío en caso de error
       setMovies([])
       setTotalPages(1)
     } finally {
@@ -1726,7 +1709,7 @@ export default function AdminMoviesPage() {
           releaseMonth: partialReleaseDate.month,
           releaseDay: null
         }
-      } else if (data.releaseDate) {  // ← CAMBIO: usar data.releaseDate, no preparedData
+      } else if (data.releaseDate) {
         // Fecha completa - convertir a campos separados
         const [year, month, day] = data.releaseDate.split('-').map(Number)
         releaseDateData = {
@@ -1759,7 +1742,7 @@ export default function AdminMoviesPage() {
       // Asegurarse de nuevo de que no se envíe releaseDate
       delete movieData.releaseDate;
 
-      // MOVER LOS CONSOLE.LOG AQUÍ, ANTES del fetch
+      // MOVER LOS CONSOLE.LOG AQUÍ, ANTES del servicio
       console.log('=== DATOS ENVIADOS AL BACKEND ===');
       console.log('movieData completo:', JSON.stringify(movieData, null, 2));
       console.log('=== DATOS DE FECHA ENVIADOS ===');
@@ -1768,31 +1751,16 @@ export default function AdminMoviesPage() {
       console.log('releaseDay:', movieData.releaseDay);
       console.log('================================');
 
-      const url = editingMovie
-        ? `/api/movies/${editingMovie.id}`
-        : '/api/movies'
-
-      const method = editingMovie ? 'PUT' : 'POST'
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(movieData)
-      })
-
-      if (!response.ok) {
-        let errorMessage = 'Error al guardar la película'
-        try {
-          const error = await response.json()
-          errorMessage = error.error || error.message || errorMessage
-        } catch (e) {
-          console.error('Error parsing response:', e)
-        }
-        throw new Error(errorMessage)
+      // CAMBIO PRINCIPAL: Usar el servicio en lugar de fetch directo
+      if (editingMovie) {
+        await moviesService.update(editingMovie.id, movieData)
+        toast.success('Película actualizada')
+      } else {
+        await moviesService.create(movieData)
+        toast.success('Película creada')
       }
 
-      toast.success(editingMovie ? 'Película actualizada' : 'Película creada')
+      // Limpiar y actualizar
       setShowModal(false)
       reset()
       setEditingMovie(null)
@@ -1808,8 +1776,9 @@ export default function AdminMoviesPage() {
   const handleEdit = async (movie: Movie) => {
 
     try {
-      const response = await fetch(`/api/movies/${movie.id}`)
-      const fullMovie = await response.json()
+      console.log('Intentando cargar película con ID:', movie.id)
+      const fullMovie = await moviesService.getById(movie.id)
+      console.log('Película cargada:', fullMovie)
       const minutos = fullMovie.duration
       const segundos = fullMovie.durationSeconds
       const hayDuracion = (minutos && minutos > 0) || (segundos && segundos > 0)
@@ -1927,22 +1896,17 @@ export default function AdminMoviesPage() {
       setShowModal(true)
 
     } catch (error) {
+      console.error('Error completo en handleEdit:', error)
+      console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack')
       toast.error('Error al cargar los datos de la película')
     }
   }
 
   // Eliminar película
   const handleDelete = async (id: number) => {
-  const response = await fetch(`/api/movies/${id}`, {
-    method: 'DELETE'
-  })
-
-  if (!response.ok) {
-    throw new Error('Error al eliminar')
+    await moviesService.delete(id)
+    fetchMovies()
   }
-
-  fetchMovies()
-}
 
   // Abrir modal para nueva película
   const handleNewMovie = () => {
@@ -12705,4 +12669,603 @@ export function formatDuration(minutes: number | null): string {
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60
   return `${hours}h ${mins}min`
+}
+
+// ==================================================
+// src/services/api-client.ts
+// ==================================================
+// src/services/api-client.ts
+
+interface RequestOptions extends RequestInit {
+  params?: Record<string, string>
+}
+
+class ApiClient {
+  private baseUrl: string
+
+  constructor(baseUrl: string = '') {
+    this.baseUrl = baseUrl
+  }
+
+  private async handleResponse<T>(response: Response): Promise<T> {
+    if (!response.ok) {
+      let errorMessage = `Error: ${response.status} ${response.statusText}`
+      
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorData.message || errorMessage
+      } catch {
+        // Si no se puede parsear el error, usar el mensaje por defecto
+      }
+      
+      throw new Error(errorMessage)
+    }
+
+    // Si la respuesta es 204 No Content, retornar null
+    if (response.status === 204) {
+      return null as T
+    }
+
+    return response.json()
+  }
+
+  private buildUrl(endpoint: string, params?: Record<string, string>): string {
+    const url = new URL(`${this.baseUrl}${endpoint}`, window.location.origin)
+    
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== '' && value !== undefined && value !== null) {
+          url.searchParams.append(key, value)
+        }
+      })
+    }
+    
+    return url.toString()
+  }
+
+  async get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
+    const { params, ...fetchOptions } = options || {}
+    const url = this.buildUrl(endpoint, params)
+    
+    const response = await fetch(url, {
+      ...fetchOptions,
+      method: 'GET'
+    })
+    
+    return this.handleResponse<T>(response)
+  }
+
+  async post<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
+    const { params, ...fetchOptions } = options || {}
+    const url = this.buildUrl(endpoint, params)
+    
+    const response = await fetch(url, {
+      ...fetchOptions,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...fetchOptions.headers
+      },
+      body: data ? JSON.stringify(data) : undefined
+    })
+    
+    return this.handleResponse<T>(response)
+  }
+
+  async put<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
+    const { params, ...fetchOptions } = options || {}
+    const url = this.buildUrl(endpoint, params)
+    
+    const response = await fetch(url, {
+      ...fetchOptions,
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...fetchOptions.headers
+      },
+      body: data ? JSON.stringify(data) : undefined
+    })
+    
+    return this.handleResponse<T>(response)
+  }
+
+  async patch<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
+    const { params, ...fetchOptions } = options || {}
+    const url = this.buildUrl(endpoint, params)
+    
+    const response = await fetch(url, {
+      ...fetchOptions,
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...fetchOptions.headers
+      },
+      body: data ? JSON.stringify(data) : undefined
+    })
+    
+    return this.handleResponse<T>(response)
+  }
+
+  async delete<T = void>(endpoint: string, options?: RequestOptions): Promise<T> {
+    const { params, ...fetchOptions } = options || {}
+    const url = this.buildUrl(endpoint, params)
+    
+    const response = await fetch(url, {
+      ...fetchOptions,
+      method: 'DELETE'
+    })
+    
+    return this.handleResponse<T>(response)
+  }
+}
+
+// Instancia por defecto para usar en toda la aplicación
+export const apiClient = new ApiClient('/api')
+
+// Exportar la clase por si se necesita crear instancias personalizadas
+export default ApiClient
+
+// ==================================================
+// src/services/index.ts
+// ==================================================
+// src/services/index.ts
+
+export { apiClient } from './api-client'
+export { moviesService } from './movies.service'
+export { metadataService } from './metadata.service'
+export { peopleService } from './people.service'
+
+// Re-exportar tipos útiles
+export type { default as ApiClient } from './api-client'
+
+// ==================================================
+// src/services/metadata.service.ts
+// ==================================================
+// src/services/metadata.service.ts
+
+interface Rating {
+  id: number
+  name: string
+  abbreviation?: string
+  description?: string
+}
+
+interface ColorType {
+  id: number
+  name: string
+}
+
+interface Genre {
+  id: number
+  name: string
+  slug: string
+}
+
+interface Country {
+  id: number
+  name: string
+  code: string
+}
+
+interface Language {
+  id: number
+  name: string
+  code: string
+}
+
+interface Company {
+  id: number
+  name: string
+  type: 'PRODUCTION' | 'DISTRIBUTION'
+}
+
+interface Theme {
+  id: number
+  name: string
+  slug: string
+}
+
+export const metadataService = {
+  /**
+   * Obtiene las calificaciones disponibles
+   */
+  async getRatings(): Promise<Rating[]> {
+    try {
+      const response = await fetch('/api/calificaciones')
+      if (!response.ok) throw new Error('Error loading ratings')
+      return response.json()
+    } catch (error) {
+      console.error('Error loading ratings:', error)
+      return []
+    }
+  },
+
+  /**
+   * Obtiene los tipos de color disponibles
+   */
+  async getColorTypes(): Promise<ColorType[]> {
+    try {
+      const response = await fetch('/api/color-types')
+      if (!response.ok) throw new Error('Error loading color types')
+      return response.json()
+    } catch (error) {
+      console.error('Error loading color types:', error)
+      return []
+    }
+  },
+
+  /**
+   * Obtiene todos los géneros
+   */
+  async getGenres(): Promise<Genre[]> {
+    try {
+      const response = await fetch('/api/genres')
+      if (!response.ok) throw new Error('Error loading genres')
+      return response.json()
+    } catch (error) {
+      console.error('Error loading genres:', error)
+      return []
+    }
+  },
+
+  /**
+   * Obtiene todos los países
+   */
+  async getCountries(): Promise<Country[]> {
+    try {
+      const response = await fetch('/api/countries')
+      if (!response.ok) throw new Error('Error loading countries')
+      return response.json()
+    } catch (error) {
+      console.error('Error loading countries:', error)
+      return []
+    }
+  },
+
+  /**
+   * Obtiene todos los idiomas
+   */
+  async getLanguages(): Promise<Language[]> {
+    try {
+      const response = await fetch('/api/languages')
+      if (!response.ok) throw new Error('Error loading languages')
+      return response.json()
+    } catch (error) {
+      console.error('Error loading languages:', error)
+      return []
+    }
+  },
+
+  /**
+   * Obtiene las productoras
+   */
+  async getProductionCompanies(): Promise<Company[]> {
+    try {
+      const response = await fetch('/api/companies/production')
+      if (!response.ok) throw new Error('Error loading production companies')
+      return response.json()
+    } catch (error) {
+      console.error('Error loading production companies:', error)
+      return []
+    }
+  },
+
+  /**
+   * Obtiene las distribuidoras
+   */
+  async getDistributionCompanies(): Promise<Company[]> {
+    try {
+      const response = await fetch('/api/companies/distribution')
+      if (!response.ok) throw new Error('Error loading distribution companies')
+      return response.json()
+    } catch (error) {
+      console.error('Error loading distribution companies:', error)
+      return []
+    }
+  },
+
+  /**
+   * Obtiene los temas/keywords
+   */
+  async getThemes(): Promise<Theme[]> {
+    try {
+      const response = await fetch('/api/themes')
+      if (!response.ok) throw new Error('Error loading themes')
+      return response.json()
+    } catch (error) {
+      console.error('Error loading themes:', error)
+      return []
+    }
+  },
+
+  /**
+   * Carga todos los metadatos necesarios para el formulario
+   */
+  async loadAllFormMetadata() {
+    try {
+      const [
+        genres,
+        countries,
+        languages,
+        prodCompanies,
+        distCompanies,
+        themes,
+        ratings,
+        colorTypes
+      ] = await Promise.all([
+        this.getGenres(),
+        this.getCountries(),
+        this.getLanguages(),
+        this.getProductionCompanies(),
+        this.getDistributionCompanies(),
+        this.getThemes(),
+        this.getRatings(),
+        this.getColorTypes()
+      ])
+
+      return {
+        genres: Array.isArray(genres) ? genres : [],
+        countries: Array.isArray(countries) ? countries : [],
+        languages: Array.isArray(languages) ? languages : [],
+        productionCompanies: Array.isArray(prodCompanies) ? prodCompanies : [],
+        distributionCompanies: Array.isArray(distCompanies) ? distCompanies : [],
+        themes: Array.isArray(themes) ? themes : [],
+        ratings: Array.isArray(ratings) ? ratings : [],
+        colorTypes: Array.isArray(colorTypes) ? colorTypes : []
+      }
+    } catch (error) {
+      console.error('Error loading form metadata:', error)
+      // Retornar objetos vacíos en caso de error
+      return {
+        genres: [],
+        countries: [],
+        languages: [],
+        productionCompanies: [],
+        distributionCompanies: [],
+        themes: [],
+        ratings: [],
+        colorTypes: []
+      }
+    }
+  }
+}
+
+// ==================================================
+// src/services/movies.service.ts
+// ==================================================
+// src/services/movies.service.ts
+import { MovieFilters } from '@/components/admin/movies/MoviesFilters'
+import { MovieFormData } from '@/lib/movies/movieTypes'
+
+interface MoviesResponse {
+  movies: any[]
+  pagination: {
+    totalPages: number
+    currentPage: number
+    totalItems: number
+  }
+}
+
+export const moviesService = {
+  /**
+   * Obtiene la lista de películas con filtros y paginación
+   */
+  async getAll(filters: MovieFilters): Promise<MoviesResponse> {
+    const params = new URLSearchParams({
+      page: filters.currentPage.toString(),
+      limit: '20',
+      search: filters.searchTerm,
+      status: filters.selectedStatus,
+      year: filters.selectedYear,
+      sortBy: 'createdAt',
+      sortOrder: 'desc'
+    })
+
+    const response = await fetch(`/api/movies?${params}`)
+
+    if (!response.ok) {
+      throw new Error('Error al cargar las películas')
+    }
+
+    const data = await response.json()
+    
+    return {
+      movies: data.movies || [],
+      pagination: data.pagination || { totalPages: 1, currentPage: 1, totalItems: 0 }
+    }
+  },
+
+  /**
+   * Obtiene una película por ID con todas sus relaciones
+   */
+  async getById(id: number): Promise<any> {
+    const response = await fetch(`/api/movies/${id}`)
+    
+    if (!response.ok) {
+      throw new Error('Error al cargar los datos de la película')
+    }
+
+    return response.json()
+  },
+
+  /**
+   * Crea una nueva película
+   */
+  async create(data: any): Promise<any> {
+    const response = await fetch('/api/movies', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+
+    if (!response.ok) {
+      let errorMessage = 'Error al crear la película'
+      try {
+        const error = await response.json()
+        errorMessage = error.error || error.message || errorMessage
+      } catch (e) {
+        console.error('Error parsing response:', e)
+      }
+      throw new Error(errorMessage)
+    }
+
+    return response.json()
+  },
+
+  /**
+   * Actualiza una película existente
+   */
+  async update(id: number, data: any): Promise<any> {
+    const response = await fetch(`/api/movies/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+
+    if (!response.ok) {
+      let errorMessage = 'Error al actualizar la película'
+      try {
+        const error = await response.json()
+        errorMessage = error.error || error.message || errorMessage
+      } catch (e) {
+        console.error('Error parsing response:', e)
+      }
+      throw new Error(errorMessage)
+    }
+
+    return response.json()
+  },
+
+  /**
+   * Elimina una película
+   */
+  async delete(id: number): Promise<void> {
+    const response = await fetch(`/api/movies/${id}`, {
+      method: 'DELETE'
+    })
+
+    if (!response.ok) {
+      throw new Error('Error al eliminar la película')
+    }
+  },
+
+  /**
+   * Busca películas por término de búsqueda (autocomplete)
+   */
+  async search(term: string, limit: number = 10): Promise<any[]> {
+    const params = new URLSearchParams({
+      search: term,
+      limit: limit.toString()
+    })
+
+    const response = await fetch(`/api/movies/search?${params}`)
+    
+    if (!response.ok) {
+      throw new Error('Error al buscar películas')
+    }
+
+    return response.json()
+  }
+}
+
+// ==================================================
+// src/services/people.service.ts
+// ==================================================
+// src/services/people.service.ts
+
+interface Person {
+  id: number
+  name: string
+  slug?: string
+  birthDate?: string
+  deathDate?: string
+  biography?: string
+  photoUrl?: string
+}
+
+interface PersonSearchResult {
+  id: number
+  name: string
+}
+
+export const peopleService = {
+  /**
+   * Busca personas por nombre
+   */
+  async search(query: string, limit: number = 10): Promise<PersonSearchResult[]> {
+    if (query.length < 2) return []
+
+    try {
+      const response = await fetch(`/api/people?search=${encodeURIComponent(query)}&limit=${limit}`)
+      if (!response.ok) throw new Error('Error searching people')
+      return response.json()
+    } catch (error) {
+      console.error('Error searching people:', error)
+      return []
+    }
+  },
+
+  /**
+   * Crea una nueva persona
+   */
+  async create(name: string): Promise<Person> {
+    const response = await fetch('/api/people', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    })
+
+    if (!response.ok) {
+      throw new Error('Error creating person')
+    }
+
+    return response.json()
+  },
+
+  /**
+   * Obtiene una persona por ID
+   */
+  async getById(id: number): Promise<Person> {
+    const response = await fetch(`/api/people/${id}`)
+    
+    if (!response.ok) {
+      throw new Error('Error loading person')
+    }
+
+    return response.json()
+  },
+
+  /**
+   * Actualiza una persona
+   */
+  async update(id: number, data: Partial<Person>): Promise<Person> {
+    const response = await fetch(`/api/people/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+
+    if (!response.ok) {
+      throw new Error('Error updating person')
+    }
+
+    return response.json()
+  },
+
+  /**
+   * Elimina una persona
+   */
+  async delete(id: number): Promise<void> {
+    const response = await fetch(`/api/people/${id}`, {
+      method: 'DELETE'
+    })
+
+    if (!response.ok) {
+      throw new Error('Error deleting person')
+    }
+  }
 }
