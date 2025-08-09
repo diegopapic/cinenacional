@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-07T16:16:52.919Z",
+  "timestamp": "2025-08-09T20:53:13.437Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "540f023fbf40dfca3bd60613665fced070760aa0",
+  "commit": "8e5a618f60638af93334006d963ebd451843a78e",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
@@ -267,7 +267,19 @@
           "MovieFormEnhanced.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MovieFormEnhanced.tsx",
           "MovieLinksManager.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MovieLinksManager.tsx",
           "movies": {
-            "MovieModal.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal.tsx",
+            "MovieModal": {
+              "index.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/index.tsx",
+              "MovieModalFooter.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/MovieModalFooter.tsx",
+              "MovieModalHeader.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/MovieModalHeader.tsx",
+              "MovieModalTabs.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/MovieModalTabs.tsx",
+              "tabs": {
+                "AdvancedTab.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/tabs/AdvancedTab.tsx",
+                "BasicInfoTab.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/tabs/BasicInfoTab.tsx",
+                "CastTab.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/tabs/CastTab.tsx",
+                "CrewTab.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/tabs/CrewTab.tsx",
+                "MediaTab.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/tabs/MediaTab.tsx"
+              }
+            },
             "MoviesFilters.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesFilters.tsx",
             "MoviesPagination.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesPagination.tsx",
             "MoviesTable.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesTable.tsx"

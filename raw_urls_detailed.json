@@ -745,8 +745,48 @@
     "size": 0
   },
   {
-    "path": "src/components/admin/movies/MovieModal.tsx",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal.tsx",
+    "path": "src/components/admin/movies/MovieModal/index.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/index.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/admin/movies/MovieModal/MovieModalFooter.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/MovieModalFooter.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/admin/movies/MovieModal/MovieModalHeader.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/MovieModalHeader.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/admin/movies/MovieModal/MovieModalTabs.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/MovieModalTabs.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/admin/movies/MovieModal/tabs/AdvancedTab.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/tabs/AdvancedTab.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/admin/movies/MovieModal/tabs/BasicInfoTab.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/tabs/BasicInfoTab.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/admin/movies/MovieModal/tabs/CastTab.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/tabs/CastTab.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/admin/movies/MovieModal/tabs/CrewTab.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/tabs/CrewTab.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/admin/movies/MovieModal/tabs/MediaTab.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/tabs/MediaTab.tsx",
     "size": 0
   },
   {
