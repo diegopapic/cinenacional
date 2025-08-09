@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-09T20:53:13.437Z",
+  "timestamp": "2025-08-09T23:05:32.789Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "8e5a618f60638af93334006d963ebd451843a78e",
+  "commit": "df65becb6f6f5ec20286373bc1678a66bc0782b1",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
@@ -280,6 +280,7 @@
                 "MediaTab.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/tabs/MediaTab.tsx"
               }
             },
+            "MovieModal.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal.tsx",
             "MoviesFilters.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesFilters.tsx",
             "MoviesPagination.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesPagination.tsx",
             "MoviesTable.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesTable.tsx"

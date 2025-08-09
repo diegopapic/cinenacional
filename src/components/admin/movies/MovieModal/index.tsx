@@ -1,7 +1,7 @@
 // src/components/admin/movies/MovieModal/index.tsx
 import * as Tabs from '@radix-ui/react-tabs'
 import { UseFormRegister, UseFormHandleSubmit, UseFormWatch, UseFormSetValue, UseFormReset, FieldErrors } from 'react-hook-form'
-import { MovieFormData, Movie, PartialReleaseDate } from '@/lib/movies/movieTypes'
+import { MovieFormData, Movie, PartialReleaseDate, PartialFilmingDate } from '@/lib/movies/movieTypes'
 
 // Componentes del modal
 import MovieModalHeader from './MovieModalHeader'
@@ -38,6 +38,17 @@ interface MovieModalProps {
   partialReleaseDate: PartialReleaseDate
   setPartialReleaseDate: (value: PartialReleaseDate) => void
   tipoDuracionDisabled: boolean
+
+  // Estados para fechas de rodaje
+  isPartialFilmingStartDate: boolean
+  setIsPartialFilmingStartDate: (value: boolean) => void
+  partialFilmingStartDate: PartialFilmingDate
+  setPartialFilmingStartDate: (value: PartialFilmingDate) => void
+  
+  isPartialFilmingEndDate: boolean
+  setIsPartialFilmingEndDate: (value: boolean) => void
+  partialFilmingEndDate: PartialFilmingDate
+  setPartialFilmingEndDate: (value: PartialFilmingDate) => void
 
   // Metadata
   availableRatings: any[]
@@ -80,6 +91,14 @@ export default function MovieModal({
   partialReleaseDate,
   setPartialReleaseDate,
   tipoDuracionDisabled,
+  isPartialFilmingStartDate,
+  setIsPartialFilmingStartDate,
+  partialFilmingStartDate,
+  setPartialFilmingStartDate,
+  isPartialFilmingEndDate,
+  setIsPartialFilmingEndDate,
+  partialFilmingEndDate,
+  setPartialFilmingEndDate,
   availableRatings,
   availableColorTypes,
   movieFormInitialData,
@@ -125,6 +144,14 @@ export default function MovieModal({
                   partialReleaseDate={partialReleaseDate}
                   setPartialReleaseDate={setPartialReleaseDate}
                   tipoDuracionDisabled={tipoDuracionDisabled}
+                  isPartialFilmingStartDate={isPartialFilmingStartDate}
+                  setIsPartialFilmingStartDate={setIsPartialFilmingStartDate}
+                  partialFilmingStartDate={partialFilmingStartDate}
+                  setPartialFilmingStartDate={setPartialFilmingStartDate}
+                  isPartialFilmingEndDate={isPartialFilmingEndDate}
+                  setIsPartialFilmingEndDate={setIsPartialFilmingEndDate}
+                  partialFilmingEndDate={partialFilmingEndDate}
+                  setPartialFilmingEndDate={setPartialFilmingEndDate}
                   movieFormInitialData={movieFormInitialData}
                   movieLinks={movieLinks}
                   handleGenresChange={handleGenresChange}

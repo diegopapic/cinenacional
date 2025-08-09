@@ -17,7 +17,7 @@ export default function AdminMoviesPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [showModal, setShowModal] = useState(false)
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null)
-  
+
   // Estados de filtros
   const [filters, setFilters] = useState<MovieFilters>({
     searchTerm: '',
@@ -26,7 +26,7 @@ export default function AdminMoviesPage() {
     selectedYear: '',
     currentPage: 1
   })
-  
+
   // Usar el custom hook
   const movieForm = useMovieForm({
     editingMovie,
@@ -135,7 +135,7 @@ export default function AdminMoviesPage() {
           editingMovie={editingMovie}
           onSubmit={movieForm.onSubmit}
           isSubmitting={movieForm.formState.isSubmitting}
-          
+
           // Props del formulario
           register={movieForm.register}
           handleSubmit={movieForm.handleSubmit}
@@ -143,7 +143,7 @@ export default function AdminMoviesPage() {
           setValue={movieForm.setValue}
           reset={movieForm.reset}
           errors={movieForm.formState.errors}
-          
+
           // Estados
           activeTab={movieForm.activeTab}
           setActiveTab={movieForm.setActiveTab}
@@ -152,17 +152,27 @@ export default function AdminMoviesPage() {
           partialReleaseDate={movieForm.partialReleaseDate}
           setPartialReleaseDate={movieForm.setPartialReleaseDate}
           tipoDuracionDisabled={movieForm.tipoDuracionDisabled}
-          
+
+          // Estados para fechas de rodaje
+          isPartialFilmingStartDate={movieForm.isPartialFilmingStartDate}
+          setIsPartialFilmingStartDate={movieForm.setIsPartialFilmingStartDate}
+          partialFilmingStartDate={movieForm.partialFilmingStartDate}
+          setPartialFilmingStartDate={movieForm.setPartialFilmingStartDate}
+          isPartialFilmingEndDate={movieForm.isPartialFilmingEndDate}
+          setIsPartialFilmingEndDate={movieForm.setIsPartialFilmingEndDate}
+          partialFilmingEndDate={movieForm.partialFilmingEndDate}
+          setPartialFilmingEndDate={movieForm.setPartialFilmingEndDate}
+
           // Metadata - ahora viene del hook
           availableRatings={movieForm.availableRatings}
           availableColorTypes={movieForm.availableColorTypes}
-          
+
           // Relaciones
           movieFormInitialData={movieForm.movieFormInitialData}
           alternativeTitles={movieForm.alternativeTitles}
           setAlternativeTitles={movieForm.setAlternativeTitles}
           movieLinks={movieForm.movieLinks}
-          
+
           // Callbacks
           handleGenresChange={movieForm.handleGenresChange}
           handleCastChange={movieForm.handleCastChange}

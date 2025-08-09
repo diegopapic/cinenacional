@@ -122,14 +122,12 @@ export async function PUT(
     const id = parseInt(params.id)
     const body = await request.json()
 
-    console.log('=== DATOS RECIBIDOS EN BACKEND ===');
-    console.log('body.links:', body.links);
-    console.log('================================');
+    console.log('=== BODY RECIBIDO EN BACKEND ===')
+    console.log(JSON.stringify(body, null, 2))
+    console.log('================================')
 
     // Validar datos
     const validatedData = movieSchema.parse(body)
-
-
 
     // Verificar que la película existe
     const existingMovie = await prisma.movie.findUnique({
@@ -143,7 +141,7 @@ export async function PUT(
       )
     }
 
-    // Extraer relaciones
+    // Extraer relaciones - EXACTAMENTE COMO EN EL POST
     const {
       genres,
       cast,
@@ -155,54 +153,32 @@ export async function PUT(
       themes,
       alternativeTitles,
       links,
-      colorTypeId,
-      ratingId,
-      filmingStartDate,
-      filmingEndDate,
       ...movieData
     } = validatedData
-    console.log('=== DATOS DE FECHA RECIBIDOS EN BACKEND ===');
-    console.log('releaseYear:', validatedData.releaseYear);
-    console.log('releaseMonth:', validatedData.releaseMonth);
-    console.log('releaseDay:', validatedData.releaseDay);
-    console.log('movieData después de desestructuración:', movieData.releaseYear, movieData.releaseMonth, movieData.releaseDay);
-    console.log('================================');
+
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
-      // 1. Actualizar datos básicos de la película
+      const { colorTypeId, ratingId, ...movieDataClean } = movieData
+      // 1. Actualizar datos básicos de la película - EXACTAMENTE COMO EN EL POST
       const updatedMovie = await tx.movie.update({
         where: { id },
         data: {
-          ...movieData,
+          ...movieDataClean,
           releaseYear: movieData.releaseYear || null,
           releaseMonth: movieData.releaseMonth || null,
           releaseDay: movieData.releaseDay || null,
-          ...(colorTypeId && {
-            colorType: { connect: { id: colorTypeId } }
-          }),
+          filmingStartYear: movieData.filmingStartYear || null,
+          filmingStartMonth: movieData.filmingStartMonth || null,
+          filmingStartDay: movieData.filmingStartDay || null,
+          filmingEndYear: movieData.filmingEndYear || null,
+          filmingEndMonth: movieData.filmingEndMonth || null,
+          filmingEndDay: movieData.filmingEndDay || null,
           ...(ratingId && {
-            rating: { connect: { id: ratingId } }
-          }),
-          // Convertir fecha de inicio de filmación
-          ...(filmingStartDate ? {
-            filmingStartYear: new Date(filmingStartDate).getFullYear(),
-            filmingStartMonth: new Date(filmingStartDate).getMonth() + 1,
-            filmingStartDay: new Date(filmingStartDate).getDate()
-          } : {
-            filmingStartYear: null,
-            filmingStartMonth: null,
-            filmingStartDay: null
-          }),
-          // Convertir fecha de fin de filmación
-          ...(filmingEndDate ? {
-            filmingEndYear: new Date(filmingEndDate).getFullYear(),
-            filmingEndMonth: new Date(filmingEndDate).getMonth() + 1,
-            filmingEndDay: new Date(filmingEndDate).getDate()
-          } : {
-            filmingEndYear: null,
-            filmingEndMonth: null,
-            filmingEndDay: null
-          }),
+  rating: { connect: { id: ratingId } }
+}),
+...(colorTypeId && {
+  colorType: { connect: { id: colorTypeId } }
+})
         }
       })
 
@@ -401,6 +377,9 @@ export async function PUT(
     return NextResponse.json(movie)
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.log('=== ERRORES DE VALIDACIÓN ZOD ===')
+      console.log(JSON.stringify(error.errors, null, 2))
+      console.log('=================================')
       return NextResponse.json(
         { error: 'Datos inválidos', details: error.errors },
         { status: 400 }
