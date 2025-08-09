@@ -97,6 +97,7 @@ export const moviesService = {
         const error = await response.json()
         errorMessage = error.error || error.message || errorMessage
       } catch (e) {
+        console.error('Error completo:', e)
         console.error('Error parsing response:', e)
       }
       throw new Error(errorMessage)

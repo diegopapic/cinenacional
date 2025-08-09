@@ -240,6 +240,12 @@ export async function POST(request: NextRequest) {
         releaseYear: movieData.releaseYear || null,
         releaseMonth: movieData.releaseMonth || null,
         releaseDay: movieData.releaseDay || null,
+        filmingStartYear: movieData.filmingStartYear || null,
+        filmingStartMonth: movieData.filmingStartMonth || null,
+        filmingStartDay: movieData.filmingStartDay || null,
+        filmingEndYear: movieData.filmingEndYear || null,
+        filmingEndMonth: movieData.filmingEndMonth || null,
+        filmingEndDay: movieData.filmingEndDay || null,
         colorTypeId: movieData.colorTypeId || null,
         // Crear relaciones
         genres: genres ? {
