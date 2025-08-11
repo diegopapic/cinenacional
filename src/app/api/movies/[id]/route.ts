@@ -156,27 +156,35 @@ export async function PUT(
       ...movieData
     } = validatedData
 
+    const mkInput = body.metaKeywords as string | string[] | undefined;
+    const metaKeywords =
+      Array.isArray(mkInput)
+        ? mkInput
+        : typeof mkInput === 'string'
+          ? mkInput.split(',').map(s => s.trim()).filter(Boolean)
+          : undefined;
+
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
       const { colorTypeId, ratingId, ...movieDataClean } = movieData
-      // Asegurar que metaKeywords sea array
-      if (movieDataClean.metaKeywords) {
-        if (typeof movieDataClean.metaKeywords === 'string') {
-          movieDataClean.metaKeywords = movieDataClean.metaKeywords
-            .split(',')
-            .map(k => k.trim())
-            .filter(k => k)
-        }
-        // Si ya es array, dejarlo como está
-      } else {
-        // Si no existe, crear array vacío
-        movieDataClean.metaKeywords = []
-      }
+// Normalizar metaKeywords sin cambiar el tipo de movieDataClean
+const mkRaw = movieDataClean.metaKeywords as string | string[] | undefined;
+const mkNormalized =
+  Array.isArray(mkRaw)
+    ? mkRaw.map(k => k.trim()).filter(Boolean)
+    : typeof mkRaw === 'string'
+      ? mkRaw.split(',').map(k => k.trim()).filter(Boolean)
+      : undefined;
+
+// Sacar metaKeywords del objeto que vas a spreadear
+const { metaKeywords, ...movieDataRest } = movieDataClean;
+
       // 1. Actualizar datos básicos de la película - EXACTAMENTE COMO EN EL POST
       const updatedMovie = await tx.movie.update({
         where: { id },
         data: {
-          ...movieDataClean,
+          ...(mkNormalized !== undefined ? { metaKeywords: { set: mkNormalized } } : {}),
+          ...movieDataRest,
           releaseYear: movieData.releaseYear || null,
           releaseMonth: movieData.releaseMonth || null,
           releaseDay: movieData.releaseDay || null,
