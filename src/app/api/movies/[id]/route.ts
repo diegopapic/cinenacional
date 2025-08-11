@@ -159,6 +159,19 @@ export async function PUT(
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
       const { colorTypeId, ratingId, ...movieDataClean } = movieData
+      // Asegurar que metaKeywords sea array
+      if (movieDataClean.metaKeywords) {
+        if (typeof movieDataClean.metaKeywords === 'string') {
+          movieDataClean.metaKeywords = movieDataClean.metaKeywords
+            .split(',')
+            .map(k => k.trim())
+            .filter(k => k)
+        }
+        // Si ya es array, dejarlo como está
+      } else {
+        // Si no existe, crear array vacío
+        movieDataClean.metaKeywords = []
+      }
       // 1. Actualizar datos básicos de la película - EXACTAMENTE COMO EN EL POST
       const updatedMovie = await tx.movie.update({
         where: { id },
@@ -174,11 +187,11 @@ export async function PUT(
           filmingEndMonth: movieData.filmingEndMonth || null,
           filmingEndDay: movieData.filmingEndDay || null,
           ...(ratingId && {
-  rating: { connect: { id: ratingId } }
-}),
-...(colorTypeId && {
-  colorType: { connect: { id: colorTypeId } }
-})
+            rating: { connect: { id: ratingId } }
+          }),
+          ...(colorTypeId && {
+            colorType: { connect: { id: colorTypeId } }
+          })
         }
       })
 

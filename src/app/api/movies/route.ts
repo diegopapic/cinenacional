@@ -246,7 +246,11 @@ export async function POST(request: NextRequest) {
         filmingEndYear: movieData.filmingEndYear || null,
         filmingEndMonth: movieData.filmingEndMonth || null,
         filmingEndDay: movieData.filmingEndDay || null,
-        colorTypeId: movieData.colorTypeId || null,
+        metaKeywords: Array.isArray(movieData.metaKeywords)
+          ? movieData.metaKeywords
+          : typeof movieData.metaKeywords === 'string'
+            ? movieData.metaKeywords.split(',').map(k => k.trim()).filter(k => k)
+            : [],
         // Crear relaciones
         genres: genres ? {
           create: genres.map((genreId, index) => ({

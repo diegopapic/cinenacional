@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-09T23:05:33.118Z
+// Archivos del admin - 2025-08-11T20:27:04.855Z
 // ==================
 
 
@@ -1455,6 +1455,8 @@ export default function AdminMoviesPage() {
     }
   })
 
+  console.log('movieForm keys:', Object.keys(movieForm))
+
   const handleFiltersChange = (newFilters: Partial<MovieFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }))
   }
@@ -2257,7 +2259,11 @@ export async function POST(request: NextRequest) {
         filmingEndYear: movieData.filmingEndYear || null,
         filmingEndMonth: movieData.filmingEndMonth || null,
         filmingEndDay: movieData.filmingEndDay || null,
-        colorTypeId: movieData.colorTypeId || null,
+        metaKeywords: Array.isArray(movieData.metaKeywords)
+          ? movieData.metaKeywords
+          : typeof movieData.metaKeywords === 'string'
+            ? movieData.metaKeywords.split(',').map(k => k.trim()).filter(k => k)
+            : [],
         // Crear relaciones
         genres: genres ? {
           create: genres.map((genreId, index) => ({
@@ -2529,6 +2535,19 @@ export async function PUT(
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
       const { colorTypeId, ratingId, ...movieDataClean } = movieData
+      // Asegurar que metaKeywords sea array
+      if (movieDataClean.metaKeywords) {
+        if (typeof movieDataClean.metaKeywords === 'string') {
+          movieDataClean.metaKeywords = movieDataClean.metaKeywords
+            .split(',')
+            .map(k => k.trim())
+            .filter(k => k)
+        }
+        // Si ya es array, dejarlo como está
+      } else {
+        // Si no existe, crear array vacío
+        movieDataClean.metaKeywords = []
+      }
       // 1. Actualizar datos básicos de la película - EXACTAMENTE COMO EN EL POST
       const updatedMovie = await tx.movie.update({
         where: { id },
@@ -2544,11 +2563,11 @@ export async function PUT(
           filmingEndMonth: movieData.filmingEndMonth || null,
           filmingEndDay: movieData.filmingEndDay || null,
           ...(ratingId && {
-  rating: { connect: { id: ratingId } }
-}),
-...(colorTypeId && {
-  colorType: { connect: { id: colorTypeId } }
-})
+            rating: { connect: { id: ratingId } }
+          }),
+          ...(colorTypeId && {
+            colorType: { connect: { id: colorTypeId } }
+          })
         }
       })
 
@@ -6480,7 +6499,7 @@ export default function MediaTab({
 }
 
 // ==================================================
-// src/components/admin/movies/MovieModal.tsx
+// src/components/admin/movies/MovieModal_old.tsx
 // ==================================================
 // src/components/admin/movies/MovieModal.tsx
 import { X, Save, Loader2, Info, Users, Briefcase, Settings, Image } from 'lucide-react'
@@ -8160,7 +8179,6 @@ export const movieSchema = z.object({
 
   // Información técnica
   aspectRatio: z.string().optional(),
-  colorType: z.string().optional(),
   colorTypeId: z.number().optional(),
   soundType: z.string().optional(),
   filmFormat: z.string().optional(),

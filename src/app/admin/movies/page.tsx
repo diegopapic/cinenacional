@@ -37,6 +37,8 @@ export default function AdminMoviesPage() {
     }
   })
 
+  console.log('movieForm keys:', Object.keys(movieForm))
+
   const handleFiltersChange = (newFilters: Partial<MovieFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }))
   }

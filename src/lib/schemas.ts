@@ -44,7 +44,6 @@ export const movieSchema = z.object({
 
   // Información técnica
   aspectRatio: z.string().optional(),
-  colorType: z.string().optional(),
   colorTypeId: z.number().optional(),
   soundType: z.string().optional(),
   filmFormat: z.string().optional(),
