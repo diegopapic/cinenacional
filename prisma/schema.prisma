@@ -56,7 +56,6 @@ model Movie {
   filmingEndDay     Int? @map("filming_end_day") @db.SmallInt
   
   // Status y timestamps
-  status           MovieStatus @default(PUBLISHED)
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
   dataCompleteness DataCompleteness @default(BASIC_PRESS_KIT) @map("data_completeness")
@@ -88,7 +87,6 @@ model Movie {
   @@index([slug])
   @@index([title])
   @@index([year])
-  @@index([status])
   @@index([tipoDuracion])
   @@index([ratingId])
   @@index([filmingStartYear])
@@ -620,14 +618,6 @@ model UserWatched {
 // =====================================================
 // ENUMS
 // =====================================================
-
-enum MovieStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-  
-  @@map("movie_status")
-}
 
 enum ImageType {
   POSTER

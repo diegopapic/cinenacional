@@ -42,7 +42,6 @@ export const movieFormSchema = z.object({
   trailerUrl: z.any().optional(),
 
   // Enums
-  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
   dataCompleteness: z.enum([
     'BASIC_PRESS_KIT',
     'FULL_PRESS_KIT',
@@ -143,8 +142,6 @@ export type MovieStage =
   | 'EN_RODAJE' 
   | 'INCONCLUSA' 
   | 'INEDITA'
-
-export type MovieStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
 
 export type DataCompleteness = 
   | 'BASIC_PRESS_KIT'

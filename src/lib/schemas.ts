@@ -53,7 +53,6 @@ export const movieSchema = z.object({
   certificateNumber: z.string().optional(),
 
   // Estado
-  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
   stage: z.enum([
     'COMPLETA',
     'EN_DESARROLLO',

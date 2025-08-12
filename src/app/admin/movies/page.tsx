@@ -21,7 +21,6 @@ export default function AdminMoviesPage() {
   // Estados de filtros
   const [filters, setFilters] = useState<MovieFilters>({
     searchTerm: '',
-    selectedStatus: '',
     selectedStage: '',
     selectedYear: '',
     currentPage: 1

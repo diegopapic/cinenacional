@@ -3,7 +3,6 @@ import { Search, Plus } from 'lucide-react'
 
 export interface MovieFilters {
   searchTerm: string
-  selectedStatus: string
   selectedStage: string
   selectedYear: string
   currentPage: number
@@ -46,18 +45,6 @@ export default function MoviesFilters({
             onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
           />
         </div>
-
-        {/* Filtro por estado */}
-        <select
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-          value={filters.selectedStatus}
-          onChange={(e) => handleFilterChange('selectedStatus', e.target.value)}
-        >
-          <option value="">Todos los estados</option>
-          <option value="DRAFT">Borrador</option>
-          <option value="PUBLISHED">Publicado</option>
-          <option value="ARCHIVED">Archivado</option>
-        </select>
 
         {/* Filtro por año */}
         <select

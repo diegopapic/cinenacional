@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-11T21:09:15.570Z
+// Archivos del admin - 2025-08-12T05:22:45.962Z
 // ==================
 
 
@@ -1439,7 +1439,6 @@ export default function AdminMoviesPage() {
   // Estados de filtros
   const [filters, setFilters] = useState<MovieFilters>({
     searchTerm: '',
-    selectedStatus: '',
     selectedStage: '',
     selectedYear: '',
     currentPage: 1
@@ -2028,7 +2027,6 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const genre = searchParams.get('genre') || ''
     const year = searchParams.get('year') || ''
-    const status = searchParams.get('status') || ''
     const stage = searchParams.get('stage') || ''
     const sortBy = searchParams.get('sortBy') || 'createdAt'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
@@ -2057,10 +2055,6 @@ export async function GET(request: NextRequest) {
 
     if (year) {
       where.year = parseInt(year)
-    }
-
-    if (status) {
-      where.status = status
     }
 
     if (stage) {
@@ -2162,7 +2156,6 @@ export async function GET(request: NextRequest) {
         : null,
       duration: movie.duration,
       posterUrl: movie.posterUrl || movie.images[0]?.url,
-      status: movie.status,
       stage: movie.stage,
       colorType: movie.colorType,
       genres: movie.genres.map(g => g.genre),
@@ -6265,22 +6258,6 @@ export default function BasicInfoTab({
             </select>
           </div>
 
-          {/* Estado */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Estado
-            </label>
-            <select
-              {...register('status')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            >
-              {MOVIE_STATUS.map(status => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
         {/* Columna derecha */}
@@ -7260,7 +7237,6 @@ import { Search, Plus } from 'lucide-react'
 
 export interface MovieFilters {
   searchTerm: string
-  selectedStatus: string
   selectedStage: string
   selectedYear: string
   currentPage: number
@@ -7303,18 +7279,6 @@ export default function MoviesFilters({
             onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
           />
         </div>
-
-        {/* Filtro por estado */}
-        <select
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-          value={filters.selectedStatus}
-          onChange={(e) => handleFilterChange('selectedStatus', e.target.value)}
-        >
-          <option value="">Todos los estados</option>
-          <option value="DRAFT">Borrador</option>
-          <option value="PUBLISHED">Publicado</option>
-          <option value="ARCHIVED">Archivado</option>
-        </select>
 
         {/* Filtro por año */}
         <select
@@ -7433,7 +7397,6 @@ import { useState } from 'react'
 import { Film, Edit, Trash2, Eye, Star, Loader2 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { type Movie } from '@/lib/movies/movieTypes'
-import { getStatusColor, getStatusLabel } from '@/lib/movies/movieUtils'
 
 interface MoviesTableProps {
   movies: Movie[]
@@ -7571,11 +7534,6 @@ function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         {movie.directors?.map(d => d.name).join(', ') || '-'}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(movie.status)}`}>
-          {getStatusLabel(movie.status)}
-        </span>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         {movie.rating ? (
@@ -8196,7 +8154,6 @@ export const movieSchema = z.object({
   certificateNumber: z.string().optional(),
 
   // Estado
-  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
   stage: z.enum([
     'COMPLETA',
     'EN_DESARROLLO',

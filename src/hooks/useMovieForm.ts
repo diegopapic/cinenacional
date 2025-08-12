@@ -541,7 +541,6 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         reset({
             stage: 'COMPLETA',
             dataCompleteness: 'BASIC_PRESS_KIT',
-            status: 'PUBLISHED'
         })
         setIsPartialDate(false)
         setPartialReleaseDate({ year: null, month: null })

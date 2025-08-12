@@ -16,12 +16,6 @@ export const TIPOS_DURACION = [
   { value: 'cortometraje', label: 'Cortometraje' }
 ] as const
 
-export const MOVIE_STATUS = [
-  { value: 'DRAFT', label: 'Borrador' },
-  { value: 'PUBLISHED', label: 'Publicado' },
-  { value: 'ARCHIVED', label: 'Archivado' }
-] as const
-
 export const DATA_COMPLETENESS_LEVELS = [
   { value: 'BASIC_PRESS_KIT', label: 'Gacetilla básica', icon: '📄' },
   { value: 'FULL_PRESS_KIT', label: 'Gacetilla completa', icon: '📋' },
@@ -76,10 +70,4 @@ export const COMPLETENESS_COLORS = {
   MAIN_CREW: 'bg-green-100 text-green-800',
   FULL_CAST: 'bg-green-100 text-green-800',
   FULL_CREW: 'bg-blue-100 text-blue-800'
-} as const
-
-export const STATUS_COLORS = {
-  PUBLISHED: 'bg-green-100 text-green-800',
-  DRAFT: 'bg-yellow-100 text-yellow-800',
-  ARCHIVED: 'bg-gray-100 text-gray-800'
 } as const
