@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { Film, Edit, Trash2, Eye, Star, Loader2 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { type Movie } from '@/lib/movies/movieTypes'
-import { getStatusColor, getStatusLabel } from '@/lib/movies/movieUtils'
 
 interface MoviesTableProps {
   movies: Movie[]
@@ -141,11 +140,6 @@ function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         {movie.directors?.map(d => d.name).join(', ') || '-'}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(movie.status)}`}>
-          {getStatusLabel(movie.status)}
-        </span>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         {movie.rating ? (

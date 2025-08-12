@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-11T21:09:15.777Z
+# Generado automáticamente el: 2025-08-12T05:22:46.141Z
 # ================================================
 
 ## Schema Prisma
@@ -63,7 +63,6 @@ model Movie {
   filmingEndDay     Int? @map("filming_end_day") @db.SmallInt
   
   // Status y timestamps
-  status           MovieStatus @default(PUBLISHED)
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
   dataCompleteness DataCompleteness @default(BASIC_PRESS_KIT) @map("data_completeness")
@@ -95,7 +94,6 @@ model Movie {
   @@index([slug])
   @@index([title])
   @@index([year])
-  @@index([status])
   @@index([tipoDuracion])
   @@index([ratingId])
   @@index([filmingStartYear])
@@ -628,14 +626,6 @@ model UserWatched {
 // ENUMS
 // =====================================================
 
-enum MovieStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-  
-  @@map("movie_status")
-}
-
 enum ImageType {
   POSTER
   BACKDROP
@@ -713,9 +703,6 @@ enum MovieStage {
 CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateEnum
-CREATE TYPE "public"."movie_status" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
-
--- CreateEnum
 CREATE TYPE "public"."image_type" AS ENUM ('POSTER', 'BACKDROP', 'STILL', 'BEHIND_SCENES');
 
 -- CreateEnum
@@ -766,7 +753,6 @@ CREATE TABLE "public"."movies" (
     "filming_end_year" INTEGER,
     "filming_end_month" SMALLINT,
     "filming_end_day" SMALLINT,
-    "status" "public"."movie_status" NOT NULL DEFAULT 'PUBLISHED',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
     "data_completeness" "public"."data_completeness" NOT NULL DEFAULT 'BASIC_PRESS_KIT',
@@ -1164,9 +1150,6 @@ CREATE INDEX "movies_title_idx" ON "public"."movies"("title");
 
 -- CreateIndex
 CREATE INDEX "movies_year_idx" ON "public"."movies"("year");
-
--- CreateIndex
-CREATE INDEX "movies_status_idx" ON "public"."movies"("status");
 
 -- CreateIndex
 CREATE INDEX "movies_tipo_duracion_idx" ON "public"."movies"("tipo_duracion");

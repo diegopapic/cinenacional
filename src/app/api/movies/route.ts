@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const genre = searchParams.get('genre') || ''
     const year = searchParams.get('year') || ''
-    const status = searchParams.get('status') || ''
     const stage = searchParams.get('stage') || ''
     const sortBy = searchParams.get('sortBy') || 'createdAt'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
@@ -44,10 +43,6 @@ export async function GET(request: NextRequest) {
 
     if (year) {
       where.year = parseInt(year)
-    }
-
-    if (status) {
-      where.status = status
     }
 
     if (stage) {
@@ -149,7 +144,6 @@ export async function GET(request: NextRequest) {
         : null,
       duration: movie.duration,
       posterUrl: movie.posterUrl || movie.images[0]?.url,
-      status: movie.status,
       stage: movie.stage,
       colorType: movie.colorType,
       genres: movie.genres.map(g => g.genre),

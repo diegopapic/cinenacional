@@ -20,7 +20,6 @@ export const moviesService = {
       page: filters.currentPage.toString(),
       limit: '20',
       search: filters.searchTerm,
-      status: filters.selectedStatus,
       year: filters.selectedYear,
       sortBy: 'createdAt',
       sortOrder: 'desc'

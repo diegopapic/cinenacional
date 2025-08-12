@@ -1,6 +1,6 @@
 // src/lib/movies/movieUtils.ts
 
-import { DURATION_THRESHOLDS, MOVIE_STAGES, COMPLETENESS_COLORS, STAGE_COLORS, DATA_COMPLETENESS_LEVELS, STATUS_COLORS } from './movieConstants'
+import { DURATION_THRESHOLDS, MOVIE_STAGES, COMPLETENESS_COLORS, STAGE_COLORS, DATA_COMPLETENESS_LEVELS } from './movieConstants'
 import type { MovieFormData } from './movieTypes'
 
 /**
@@ -55,7 +55,6 @@ export const prepareMovieData = (data: MovieFormData) => {
   })
 
   // Valores por defecto
-  prepared.status = prepared.status || 'PUBLISHED'
   prepared.dataCompleteness = prepared.dataCompleteness || 'BASIC_PRESS_KIT'
 
   return prepared
@@ -91,25 +90,6 @@ export const getStageName = (stage?: string): string => {
   if (!stage) return '-'
   const stageInfo = MOVIE_STAGES.find(s => s.value === stage)
   return stageInfo ? stageInfo.label : stage
-}
-
-/**
- * Obtiene el color CSS para el estado de publicación
- */
-export const getStatusColor = (status: string): string => {
-  return STATUS_COLORS[status as keyof typeof STATUS_COLORS] || 'bg-gray-100 text-gray-800'
-}
-
-/**
- * Obtiene el label del estado
- */
-export const getStatusLabel = (status: string): string => {
-  switch (status) {
-    case 'PUBLISHED': return 'Publicado'
-    case 'DRAFT': return 'Borrador'
-    case 'ARCHIVED': return 'Archivado'
-    default: return status
-  }
 }
 
 /**
