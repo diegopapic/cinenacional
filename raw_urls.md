@@ -98,7 +98,6 @@
 - [src/components/admin/movies/MovieModal/tabs/CastTab.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/tabs/CastTab.tsx)
 - [src/components/admin/movies/MovieModal/tabs/CrewTab.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/tabs/CrewTab.tsx)
 - [src/components/admin/movies/MovieModal/tabs/MediaTab.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/tabs/MediaTab.tsx)
-- [src/components/admin/movies/MovieModal_old.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal_old.tsx)
 - [src/components/admin/movies/MoviesFilters.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesFilters.tsx)
 - [src/components/admin/movies/MoviesPagination.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesPagination.tsx)
 - [src/components/admin/movies/MoviesTable.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesTable.tsx)

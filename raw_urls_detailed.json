@@ -790,11 +790,6 @@
     "size": 0
   },
   {
-    "path": "src/components/admin/movies/MovieModal_old.tsx",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal_old.tsx",
-    "size": 0
-  },
-  {
     "path": "src/components/admin/movies/MoviesFilters.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesFilters.tsx",
     "size": 0
