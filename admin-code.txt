@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-13T04:51:23.953Z
+// Archivos del admin - 2025-08-13T04:56:04.698Z
 // ==================
 
 
@@ -2503,14 +2503,6 @@ export async function PUT(
       links,
       ...movieData
     } = validatedData
-
-    const mkInput = body.metaKeywords as string | string[] | undefined;
-    const metaKeywords =
-      Array.isArray(mkInput)
-        ? mkInput
-        : typeof mkInput === 'string'
-          ? mkInput.split(',').map(s => s.trim()).filter(Boolean)
-          : undefined;
 
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {

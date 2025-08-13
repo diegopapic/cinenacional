@@ -151,14 +151,6 @@ export async function PUT(
       ...movieData
     } = validatedData
 
-    const mkInput = body.metaKeywords as string | string[] | undefined;
-    const metaKeywords =
-      Array.isArray(mkInput)
-        ? mkInput
-        : typeof mkInput === 'string'
-          ? mkInput.split(',').map(s => s.trim()).filter(Boolean)
-          : undefined;
-
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
       const { colorTypeId, ratingId, ...movieDataClean } = movieData

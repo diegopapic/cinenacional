@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: fc0e33517bf692953f4450d90d20e107eccc6136
-// Fecha: 2025-08-13T04:51:23.912Z
+// Commit: 1804a95f56f0713c87202bc4f0464de87d03bff0
+// Fecha: 2025-08-13T04:56:03.054Z
 // ============================================
 
 
@@ -3507,14 +3507,6 @@ export async function PUT(
       links,
       ...movieData
     } = validatedData
-
-    const mkInput = body.metaKeywords as string | string[] | undefined;
-    const metaKeywords =
-      Array.isArray(mkInput)
-        ? mkInput
-        : typeof mkInput === 'string'
-          ? mkInput.split(',').map(s => s.trim()).filter(Boolean)
-          : undefined;
 
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
