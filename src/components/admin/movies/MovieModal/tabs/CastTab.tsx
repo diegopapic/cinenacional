@@ -22,6 +22,7 @@ export default function CastTab({
       onProductionCompaniesChange={() => {}}
       onDistributionCompaniesChange={() => {}}
       onThemesChange={() => {}}
+      onScreeningVenuesChange={() => { }}
       initialData={movieFormInitialData}
       showOnlyCast={true}
     />

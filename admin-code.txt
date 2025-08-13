@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-13T22:21:08.606Z
+// Archivos del admin - 2025-08-13T22:22:36.277Z
 // ==================
 
 
@@ -7113,6 +7113,7 @@ export default function CastTab({
       onProductionCompaniesChange={() => {}}
       onDistributionCompaniesChange={() => {}}
       onThemesChange={() => {}}
+      onScreeningVenuesChange={() => { }}
       initialData={movieFormInitialData}
       showOnlyCast={true}
     />
@@ -7146,6 +7147,7 @@ export default function CrewTab({
       onProductionCompaniesChange={() => {}}
       onDistributionCompaniesChange={() => {}}
       onThemesChange={() => {}}
+      onScreeningVenuesChange={() => { }}
       initialData={movieFormInitialData}
       showOnlyCrew={true}
     />

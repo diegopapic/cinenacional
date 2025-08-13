@@ -22,6 +22,7 @@ export default function CrewTab({
       onProductionCompaniesChange={() => {}}
       onDistributionCompaniesChange={() => {}}
       onThemesChange={() => {}}
+      onScreeningVenuesChange={() => { }}
       initialData={movieFormInitialData}
       showOnlyCrew={true}
     />
