@@ -10,6 +10,7 @@ export const movieFormSchema = z.object({
   // Todos los demás campos como strings opcionales o any
   originalTitle: z.any().optional(),
   synopsis: z.any().optional(),
+  notes: z.string().optional(),
   tagline: z.any().optional(),
   imdbId: z.any().optional(),
   aspectRatio: z.any().optional(),

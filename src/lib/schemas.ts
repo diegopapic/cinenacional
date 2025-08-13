@@ -30,6 +30,7 @@ export const movieSchema = z.object({
 
   // Contenido
   synopsis: z.string().optional(),
+  notes: z.string().optional(),
   tagline: z.string().optional(),
 
   // Media
@@ -49,7 +50,11 @@ export const movieSchema = z.object({
   filmFormat: z.string().optional(),
 
   // Clasificación
-  ratingId: z.union([z.number(), z.null()]).optional(),
+  ratingId: z.union([
+    z.number().positive(),  // Solo números positivos
+    z.null(),               // O null
+    z.literal(0).transform(() => null)  // Transforma 0 a null
+  ]).optional(),
   certificateNumber: z.string().optional(),
 
   // Estado

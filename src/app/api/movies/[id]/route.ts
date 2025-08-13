@@ -118,6 +118,12 @@ export async function PUT(
     const id = parseInt(params.id)
     const body = await request.json()
 
+    // Limpiar datos antes de validar
+    const cleanedData = {
+      ...body,
+      ratingId: body.ratingId === 0 ? null : body.ratingId
+    };
+
     console.log('=== BODY RECIBIDO EN BACKEND ===')
     console.log(JSON.stringify(body, null, 2))
     console.log('================================')
@@ -129,7 +135,7 @@ export async function PUT(
     console.log('========================')
 
     // Validar datos
-    const validatedData = movieSchema.parse(body)
+    const validatedData = movieSchema.parse(cleanedData)
 
     // Verificar que la película existe
     const existingMovie = await prisma.movie.findUnique({
@@ -177,7 +183,7 @@ export async function PUT(
           filmingEndMonth: movieData.filmingEndMonth || null,
           filmingEndDay: movieData.filmingEndDay || null,
           ...(ratingId !== undefined && {
-            rating: ratingId === null
+            rating: (ratingId === null || ratingId === 0)  // Tratar 0 como null
               ? { disconnect: true }
               : { connect: { id: ratingId } }
           }),
