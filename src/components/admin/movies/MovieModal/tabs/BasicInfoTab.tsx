@@ -35,7 +35,6 @@ interface BasicInfoTabProps {
   movieLinks: any[]
   handleGenresChange: (genres: number[]) => void
   handleCountriesChange: (countries: number[]) => void
-  handleLanguagesChange: (languages: number[]) => void
   handleThemesChange: (themes: number[]) => void
   handleLinksChange: (links: any[]) => void
   
@@ -64,7 +63,6 @@ export default function BasicInfoTab({
   movieLinks,
   handleGenresChange,
   handleCountriesChange,
-  handleLanguagesChange,
   handleThemesChange,
   handleLinksChange,
   editingMovieId
@@ -435,7 +433,6 @@ export default function BasicInfoTab({
         onCastChange={() => {}}
         onCrewChange={() => {}}
         onCountriesChange={handleCountriesChange}
-        onLanguagesChange={handleLanguagesChange}
         onProductionCompaniesChange={() => {}}
         onDistributionCompaniesChange={() => {}}
         onThemesChange={handleThemesChange}

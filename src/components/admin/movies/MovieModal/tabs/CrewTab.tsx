@@ -19,7 +19,6 @@ export default function CrewTab({
       onCastChange={() => {}}
       onCrewChange={handleCrewChange}
       onCountriesChange={() => {}}
-      onLanguagesChange={() => {}}
       onProductionCompaniesChange={() => {}}
       onDistributionCompaniesChange={() => {}}
       onThemesChange={() => {}}

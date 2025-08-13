@@ -154,24 +154,13 @@ export async function PUT(
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
       const { colorTypeId, ratingId, ...movieDataClean } = movieData
-// Normalizar metaKeywords sin cambiar el tipo de movieDataClean
-const mkRaw = movieDataClean.metaKeywords as string | string[] | undefined;
-const mkNormalized =
-  Array.isArray(mkRaw)
-    ? mkRaw.map(k => k.trim()).filter(Boolean)
-    : typeof mkRaw === 'string'
-      ? mkRaw.split(',').map(k => k.trim()).filter(Boolean)
-      : undefined;
 
-// Sacar metaKeywords del objeto que vas a spreadear
-const { metaKeywords, ...movieDataRest } = movieDataClean;
 
       // 1. Actualizar datos básicos de la película - EXACTAMENTE COMO EN EL POST
       const updatedMovie = await tx.movie.update({
         where: { id },
         data: {
-          ...(mkNormalized !== undefined ? { metaKeywords: { set: mkNormalized } } : {}),
-          ...movieDataRest,
+          ...movieDataClean,
           releaseYear: movieData.releaseYear || null,
           releaseMonth: movieData.releaseMonth || null,
           releaseDay: movieData.releaseDay || null,
