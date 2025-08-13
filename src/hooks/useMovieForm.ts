@@ -67,6 +67,7 @@ interface UseMovieFormReturn {
     handleProductionCompaniesChange: (companies: number[]) => void
     handleDistributionCompaniesChange: (companies: number[]) => void
     handleThemesChange: (themes: number[]) => void
+    handleScreeningVenuesChange: (venues: number[]) => void
 
     // Funciones
     loadMovieData: (movie: Movie) => Promise<void>
