@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-12T05:27:21.673Z
+# Generado automáticamente el: 2025-08-13T04:51:24.132Z
 # ================================================
 
 ## Schema Prisma
@@ -82,7 +82,6 @@ model Movie {
   awards           MovieAward[]
   themes           MovieTheme[]
   movieCountries   MovieCountry[]  // Renombrado de "countries" a "movieCountries" para evitar conflicto
-  languages        MovieLanguage[]
   filmingLocations FilmingLocation[]
   userRatings      UserRating[]
   watchlists       UserWatchlist[]
@@ -518,23 +517,7 @@ model Language {
   name      String   @db.VarChar(100)
   createdAt DateTime @default(now()) @map("created_at")
   
-  // Relaciones
-  movies    MovieLanguage[]
-  
   @@map("languages")
-}
-
-model MovieLanguage {
-  movieId    Int     @map("movie_id")
-  languageId Int     @map("language_id")
-  isPrimary  Boolean @default(false) @map("is_primary")
-  
-  // Relaciones
-  movie      Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  language   Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
-  
-  @@id([movieId, languageId])
-  @@map("movie_languages")
 }
 
 model FilmingLocation {
@@ -1068,15 +1051,6 @@ CREATE TABLE "public"."languages" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."movie_languages" (
-    "movie_id" INTEGER NOT NULL,
-    "language_id" INTEGER NOT NULL,
-    "is_primary" BOOLEAN NOT NULL DEFAULT false,
-
-    CONSTRAINT "movie_languages_pkey" PRIMARY KEY ("movie_id","language_id")
-);
-
--- CreateTable
 CREATE TABLE "public"."filming_locations" (
     "id" SERIAL NOT NULL,
     "movie_id" INTEGER NOT NULL,
@@ -1378,12 +1352,6 @@ ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_movie_id_
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "public"."countries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."movie_languages" ADD CONSTRAINT "movie_languages_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."movie_languages" ADD CONSTRAINT "movie_languages_language_id_fkey" FOREIGN KEY ("language_id") REFERENCES "public"."languages"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."filming_locations" ADD CONSTRAINT "filming_locations_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;

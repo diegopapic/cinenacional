@@ -71,10 +71,6 @@ export const movieSchema = z.object({
     'FULL_CREW'
   ]).optional(),
 
-  // SEO
-  metaDescription: z.string().optional(),
-  metaKeywords: z.union([z.string(), z.array(z.string())]).optional(),
-
   // País y coproducción
   countries: z.array(z.number()).optional(),
   is_coproduction: z.boolean().optional(),
@@ -84,7 +80,6 @@ export const movieSchema = z.object({
   genres: z.array(z.number()).optional(),
   cast: z.array(z.any()).optional(),
   crew: z.array(z.any()).optional(),
-  languages: z.array(z.number()).optional(),
   productionCompanies: z.array(z.number()).optional(),
   distributionCompanies: z.array(z.number()).optional(),
   themes: z.array(z.number()).optional(),

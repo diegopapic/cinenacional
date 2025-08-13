@@ -75,7 +75,6 @@ model Movie {
   awards           MovieAward[]
   themes           MovieTheme[]
   movieCountries   MovieCountry[]  // Renombrado de "countries" a "movieCountries" para evitar conflicto
-  languages        MovieLanguage[]
   filmingLocations FilmingLocation[]
   userRatings      UserRating[]
   watchlists       UserWatchlist[]
@@ -511,23 +510,7 @@ model Language {
   name      String   @db.VarChar(100)
   createdAt DateTime @default(now()) @map("created_at")
   
-  // Relaciones
-  movies    MovieLanguage[]
-  
   @@map("languages")
-}
-
-model MovieLanguage {
-  movieId    Int     @map("movie_id")
-  languageId Int     @map("language_id")
-  isPrimary  Boolean @default(false) @map("is_primary")
-  
-  // Relaciones
-  movie      Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  language   Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
-  
-  @@id([movieId, languageId])
-  @@map("movie_languages")
 }
 
 model FilmingLocation {
