@@ -15,12 +15,12 @@ import {
     prepareMovieData
 } from '@/lib/movies/movieUtils'
 import { moviesService } from '@/services'
-import type { 
-  UseFormRegister, 
-  UseFormHandleSubmit, 
-  UseFormWatch, 
-  UseFormSetValue, 
-  UseFormReset 
+import type {
+    UseFormRegister,
+    UseFormHandleSubmit,
+    UseFormWatch,
+    UseFormSetValue,
+    UseFormReset
 } from 'react-hook-form'
 
 interface UseMovieFormProps {
@@ -127,6 +127,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         productionCompanies: number[];
         distributionCompanies: number[];
         themes: number[];
+        screeningVenues: number[];
     }>({
         genres: [],
         cast: [],
@@ -134,7 +135,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         countries: [],
         productionCompanies: [],
         distributionCompanies: [],
-        themes: []
+        themes: [],
+        screeningVenues: []
     })
 
     // Estados adicionales
@@ -209,6 +211,11 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
 
     const handleLinksChange = useCallback((links: any[]) => {
         setMovieLinks(links)
+    }, [])
+
+    const handleScreeningVenuesChange = useCallback((venueIds: number[]) => {
+        console.log('useMovieForm - handleScreeningVenuesChange recibió:', venueIds)
+        setMovieRelations(prev => ({ ...prev, screeningVenues: venueIds }))
     }, [])
 
     const handleCastChange = useCallback((cast: any[]) => {
@@ -349,7 +356,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 countries: fullMovie.movieCountries || [],
                 productionCompanies: fullMovie.productionCompanies || [],
                 distributionCompanies: fullMovie.distributionCompanies || [],
-                themes: fullMovie.themes || []
+                themes: fullMovie.themes || [],
+                screeningVenues: fullMovie.screenings?.map((s: any) => s.venueId) || [] // AGREGAR ESTA LÍNEA
             })
 
             if (fullMovie.links) {
@@ -374,7 +382,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 countries: fullMovie.movieCountries?.map((c: any) => c.countryId) || [],
                 productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
                 distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
-                themes: fullMovie.themes?.map((t: any) => t.themeId) || []
+                themes: fullMovie.themes?.map((t: any) => t.themeId) || [],
+                screeningVenues: fullMovie.screenings?.map((s: any) => s.venueId) || [] // AGREGAR ESTA LÍNEA
             })
 
         } catch (error) {
@@ -486,6 +495,12 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                         : preparedData.metaKeywords.split(',').map((k: string) => k.trim()).filter((k: string) => k)
                     : [],
                 ...movieRelations,
+                screeningVenues: movieRelations.screeningVenues.map((venueId, index) => ({
+                    venueId,
+                    screeningDate: data.releaseDate || new Date().toISOString().split('T')[0],
+                    isPremiere: index === 0, // La primera es premiere
+                    isExclusive: movieRelations.screeningVenues.length === 1 // Exclusiva si es la única
+                })),
                 alternativeTitles,
                 links: movieLinks
             }
@@ -496,18 +511,9 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
             delete movieData.filmingEndDate;
 
             console.log('=== DATOS ENVIADOS AL BACKEND ===');
+            console.log('movieRelations.screeningVenues:', movieRelations.screeningVenues);
+            console.log('movieData.screeningVenues:', movieData.screeningVenues);
             console.log('movieData completo:', JSON.stringify(movieData, null, 2));
-            console.log('=== DATOS DE FECHA ENVIADOS ===');
-            console.log('releaseYear:', movieData.releaseYear);
-            console.log('releaseMonth:', movieData.releaseMonth);
-            console.log('releaseDay:', movieData.releaseDay);
-            console.log('filmingStartYear:', movieData.filmingStartYear);
-            console.log('filmingStartMonth:', movieData.filmingStartMonth);
-            console.log('filmingStartDay:', movieData.filmingStartDay);
-            console.log('filmingEndYear:', movieData.filmingEndYear);
-            console.log('filmingEndMonth:', movieData.filmingEndMonth);
-            console.log('filmingEndDay:', movieData.filmingEndDay);
-            console.log('================================');
 
             // Usar el servicio para crear o actualizar
             if (editingMovie) {
@@ -547,7 +553,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
             countries: [],
             productionCompanies: [],
             distributionCompanies: [],
-            themes: []
+            themes: [],
+            screeningVenues: []
         })
         setMovieLinks([])
         setAlternativeTitles([])
@@ -596,6 +603,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         handleProductionCompaniesChange,
         handleDistributionCompaniesChange,
         handleThemesChange,
+        handleScreeningVenuesChange,
 
         // Funciones
         loadMovieData,

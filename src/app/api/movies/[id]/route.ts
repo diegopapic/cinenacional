@@ -88,9 +88,14 @@ export async function GET(
             type: 'asc'
           }
         },
-        filmingLocations: true
+        filmingLocations: true,
+        screenings: { 
+          include: {
+            venue: true
+          }
+        }
       }
-    })
+      })
 
     if (!movie) {
       return NextResponse.json(
@@ -137,6 +142,11 @@ export async function PUT(
     // Validar datos
     const validatedData = movieSchema.parse(cleanedData)
 
+    // AGREGAR ESTOS LOGS AQUÍ
+    console.log('=== SCREENING VENUES VALIDADAS ===')
+    console.log('screeningVenues:', validatedData.screeningVenues)
+    console.log('================================')
+
     // Verificar que la película existe
     const existingMovie = await prisma.movie.findUnique({
       where: { id }
@@ -160,6 +170,7 @@ export async function PUT(
       themes,
       alternativeTitles,
       links,
+      screeningVenues,
       ...movieData
     } = validatedData
 
@@ -318,7 +329,26 @@ export async function PUT(
         }
       }
 
-      // 12. Retornar la película actualizada con todas las relaciones
+      // 12. Actualizar screening venues
+      if (screeningVenues !== undefined) {
+        console.log('=== PROCESANDO SCREENING VENUES ===')
+        console.log('Cantidad:', screeningVenues?.length)
+        console.log('Datos:', screeningVenues)
+        await tx.movieScreening.deleteMany({ where: { movieId: id } })
+        if (screeningVenues && screeningVenues.length > 0) {
+          await tx.movieScreening.createMany({
+            data: screeningVenues.map((sv: any) => ({
+              movieId: id,
+              venueId: sv.venueId,
+              screeningDate: sv.screeningDate ? new Date(sv.screeningDate) : null,
+              isPremiere: sv.isPremiere || false,
+              isExclusive: sv.isExclusive || false
+            }))
+          })
+        }
+      }
+
+      // 13. Retornar la película actualizada con todas las relaciones
       return await tx.movie.findUnique({
         where: { id },
         include: {
@@ -358,6 +388,11 @@ export async function PUT(
             }
           },
           links: true,
+          screenings: {
+            include: {
+              venue: true
+            }
+          },
           colorType: true,
         }
       })

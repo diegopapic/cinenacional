@@ -13,6 +13,8 @@ import {
   Trash2,
   Tag
 } from 'lucide-react'
+import ScreeningVenueSelector from './ScreeningVenueSelector'
+
 
 interface MovieFormEnhancedProps {
   onGenresChange: (genres: number[]) => void
@@ -21,6 +23,7 @@ interface MovieFormEnhancedProps {
   onCountriesChange: (countries: number[]) => void
   onProductionCompaniesChange: (companies: number[]) => void
   onDistributionCompaniesChange: (companies: number[]) => void
+  onScreeningVenuesChange: (venues: any[]) => void
   onThemesChange?: (themes: number[]) => void
   initialData?: {
     genres?: any[]
@@ -30,6 +33,7 @@ interface MovieFormEnhancedProps {
     productionCompanies?: any[]
     distributionCompanies?: any[]
     themes?: any[]
+    screeningVenues?: any[]
   }
   showOnlyBasicInfo?: boolean
   showOnlyCast?: boolean
@@ -44,7 +48,8 @@ export default function MovieFormEnhanced({
   onCountriesChange,
   onProductionCompaniesChange,
   onDistributionCompaniesChange,
-  onThemesChange = () => {},
+  onScreeningVenuesChange,
+  onThemesChange = () => { },
   initialData,
   showOnlyBasicInfo = false,
   showOnlyCast = false,
@@ -67,6 +72,7 @@ export default function MovieFormEnhanced({
   const [selectedProductionCompanies, setSelectedProductionCompanies] = useState<number[]>([])
   const [selectedDistributionCompanies, setSelectedDistributionCompanies] = useState<number[]>([])
   const [selectedThemes, setSelectedThemes] = useState<number[]>([])
+  const [screeningVenues, setScreeningVenues] = useState<any[]>([])
 
   // Estados para búsqueda
   const [personSearch, setPersonSearch] = useState('')
@@ -93,28 +99,32 @@ export default function MovieFormEnhanced({
     fetchInitialData()
   }, [])
 
-useEffect(() => {
-  setIsInitialized(false)  // Resetear cuando cambia initialData
-}, [initialData])
-  
+  useEffect(() => {
+    setIsInitialized(false)  // Resetear cuando cambia initialData
+  }, [initialData])
+
   // Inicializar con datos existentes - CORREGIDO
   useEffect(() => {
     if (initialData && !isInitialized) {
       console.log('Inicializando MovieFormEnhanced con:', initialData)
-      
+
       if (initialData.genres) {
         const genreIds = initialData.genres.map(g => g.genreId || g.id)
         setSelectedGenres(genreIds)
       }
-      
+
       if (initialData.cast) {
         setCast(initialData.cast)
       }
-      
+
       if (initialData.crew) {
         setCrew(initialData.crew)
       }
-      
+
+      if (initialData.screeningVenues) {
+        setScreeningVenues(initialData.screeningVenues)
+      }
+
       // CORRECCIÓN IMPORTANTE: Manejar correctamente los países
       if (initialData.countries) {
         const countryIds = initialData.countries.map(c => {
@@ -125,26 +135,26 @@ useEffect(() => {
           if (c.country && c.country.id) return c.country.id
           return null
         }).filter(id => id !== null)
-        
+
         console.log('Country IDs extraídos:', countryIds)
         setSelectedCountries(countryIds)
       }
-      
+
       if (initialData.productionCompanies) {
         const companyIds = initialData.productionCompanies.map(c => c.companyId || c.id || c.company?.id)
         setSelectedProductionCompanies(companyIds)
       }
-      
+
       if (initialData.distributionCompanies) {
         const companyIds = initialData.distributionCompanies.map(c => c.companyId || c.id || c.company?.id)
         setSelectedDistributionCompanies(companyIds)
       }
-      
+
       if (initialData.themes) {
         const themeIds = initialData.themes.map(t => t.themeId || t.id)
         setSelectedThemes(themeIds)
       }
-      
+
       setIsInitialized(true)
     }
   }, [initialData, isInitialized])
@@ -155,6 +165,14 @@ useEffect(() => {
       onGenresChange(selectedGenres)
     }
   }, [selectedGenres, onGenresChange, isInitialized])
+
+  useEffect(() => {
+    console.log('MovieFormEnhanced - useEffect screeningVenues, isInitialized:', isInitialized, 'screeningVenues:', screeningVenues)
+    if (isInitialized) {
+      console.log('MovieFormEnhanced - notificando screeningVenues:', screeningVenues)
+      onScreeningVenuesChange(screeningVenues)
+    }
+  }, [screeningVenues, onScreeningVenuesChange, isInitialized])
 
   useEffect(() => {
     if (isInitialized) {
@@ -223,8 +241,7 @@ useEffect(() => {
       setAvailableProductionCompanies(Array.isArray(prodCompanies) ? prodCompanies : [])
       setAvailableDistributionCompanies(Array.isArray(distCompanies) ? distCompanies : [])
       setAvailableThemes(Array.isArray(themes) ? themes : [])
-      
-      console.log('Países disponibles cargados:', countries)
+
     } catch (error) {
       console.error('Error loading initial data:', error)
       // Asegurar que los estados sean arrays vacíos en caso de error
@@ -343,86 +360,100 @@ useEffect(() => {
         </div>
 
         {/* Países */}
-<div>
-  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-    <Globe className="w-5 h-5" />
-    Países Coproductores
-  </h3>
-  
-  {/* Tags de países seleccionados */}
-  {selectedCountries.length > 0 && (
-    <div className="flex flex-wrap gap-2 mb-3">
-      {selectedCountries.map(countryId => {
-        const country = availableCountries.find(c => c.id === countryId)
-        if (!country) return null
-        return (
-          <span
-            key={country.id}
-            className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
-          >
-            {country.name}
-            <button
-              type="button"
-              onClick={() => setSelectedCountries(selectedCountries.filter(id => id !== country.id))}
-              className="ml-1 hover:text-blue-600"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </span>
-        )
-      })}
-    </div>
-  )}
-  
-  {/* Buscador de países */}
-  <div className="relative">
-    <input
-      type="text"
-      placeholder="Buscar países..."
-      value={countrySearch}
-      onChange={(e) => setCountrySearch(e.target.value)}
-      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-    />
-    <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
-  </div>
-  
-  {/* Lista filtrada de países */}
-  {countrySearch && (
-    <div className="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
-      {availableCountries
-        .filter((country: any) => 
-          country.name.toLowerCase().includes(countrySearch.toLowerCase()) &&
-          !selectedCountries.includes(country.id)
-        )
-        .map((country: any) => (
-          <button
-            key={country.id}
-            type="button"
-            onClick={() => {
-              setSelectedCountries([...selectedCountries, country.id])
-              setCountrySearch('')
-            }}
-            className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-          >
-            <span className="text-sm text-gray-700">{country.name}</span>
-          </button>
-        ))}
-      {availableCountries.filter((country: any) => 
-        country.name.toLowerCase().includes(countrySearch.toLowerCase()) &&
-        !selectedCountries.includes(country.id)
-      ).length === 0 && (
-        <div className="px-3 py-2 text-sm text-gray-500">
-          No se encontraron países
-        </div>
-      )}
-    </div>
-  )}
-  
-  <p className="mt-1 text-xs text-gray-500">
-    Escribe para buscar y agregar países
-  </p>
-</div>
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+            <Globe className="w-5 h-5" />
+            Países Coproductores
+          </h3>
 
+          {/* Tags de países seleccionados */}
+          {selectedCountries.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {selectedCountries.map(countryId => {
+                const country = availableCountries.find(c => c.id === countryId)
+                if (!country) return null
+                return (
+                  <span
+                    key={country.id}
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                  >
+                    {country.name}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCountries(selectedCountries.filter(id => id !== country.id))}
+                      className="ml-1 hover:text-blue-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Buscador de países */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Buscar países..."
+              value={countrySearch}
+              onChange={(e) => setCountrySearch(e.target.value)}
+              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
+          </div>
+
+          {/* Lista filtrada de países */}
+          {countrySearch && (
+            <div className="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+              {availableCountries
+                .filter((country: any) =>
+                  country.name.toLowerCase().includes(countrySearch.toLowerCase()) &&
+                  !selectedCountries.includes(country.id)
+                )
+                .map((country: any) => (
+                  <button
+                    key={country.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCountries([...selectedCountries, country.id])
+                      setCountrySearch('')
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                  >
+                    <span className="text-sm text-gray-700">{country.name}</span>
+                  </button>
+                ))}
+              {availableCountries.filter((country: any) =>
+                country.name.toLowerCase().includes(countrySearch.toLowerCase()) &&
+                !selectedCountries.includes(country.id)
+              ).length === 0 && (
+                  <div className="px-3 py-2 text-sm text-gray-500">
+                    No se encontraron países
+                  </div>
+                )}
+            </div>
+          )}
+
+          <p className="mt-1 text-xs text-gray-500">
+            Escribe para buscar y agregar países
+          </p>
+        </div>
+        <div className="col-span-2 mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Pantallas de Estreno
+          </label>
+          <ScreeningVenueSelector
+            selectedVenueIds={screeningVenues}
+            onChange={(venues) => {
+              console.log('MovieFormEnhanced - onChange recibió:', venues)
+              setScreeningVenues(venues)
+            }}
+          />
+          <p className="mt-1 text-sm text-gray-500">
+            Selecciona las pantallas donde se estrenó o estrenará la película
+          </p>
+        </div>
         {/* Temas */}
         {availableThemes.length > 0 && (
           <div>
@@ -430,7 +461,7 @@ useEffect(() => {
               <Tag className="w-5 h-5" />
               Temas / Palabras Clave
             </h3>
-            
+
             {/* Tags de temas seleccionados */}
             {selectedThemes.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
@@ -455,7 +486,7 @@ useEffect(() => {
                 })}
               </div>
             )}
-            
+
             {/* Buscador de temas */}
             <div className="relative">
               <input
@@ -467,12 +498,12 @@ useEffect(() => {
               />
               <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
             </div>
-            
+
             {/* Lista filtrada de temas */}
             {themeSearch && (
               <div className="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
                 {availableThemes
-                  .filter((theme: any) => 
+                  .filter((theme: any) =>
                     theme.name.toLowerCase().includes(themeSearch.toLowerCase()) &&
                     !selectedThemes.includes(theme.id)
                   )
@@ -489,17 +520,17 @@ useEffect(() => {
                       <span className="text-sm text-gray-700">{theme.name}</span>
                     </button>
                   ))}
-                {availableThemes.filter((theme: any) => 
+                {availableThemes.filter((theme: any) =>
                   theme.name.toLowerCase().includes(themeSearch.toLowerCase()) &&
                   !selectedThemes.includes(theme.id)
                 ).length === 0 && (
-                  <div className="px-3 py-2 text-sm text-gray-500">
-                    No se encontraron temas
-                  </div>
-                )}
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      No se encontraron temas
+                    </div>
+                  )}
               </div>
             )}
-            
+
             <p className="mt-1 text-xs text-gray-500">
               Escribe para buscar y agregar temas
             </p>
@@ -589,9 +620,8 @@ useEffect(() => {
                           key={person.id}
                           type="button"
                           onClick={() => setNewPerson({ ...newPerson, personId: person.id })}
-                          className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${
-                            newPerson.personId === person.id ? 'bg-blue-50' : ''
-                          }`}
+                          className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${newPerson.personId === person.id ? 'bg-blue-50' : ''
+                            }`}
                         >
                           {person.name}
                         </button>
@@ -796,9 +826,8 @@ useEffect(() => {
                           key={person.id}
                           type="button"
                           onClick={() => setNewPerson({ ...newPerson, personId: person.id })}
-                          className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${
-                            newPerson.personId === person.id ? 'bg-blue-50' : ''
-                          }`}
+                          className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${newPerson.personId === person.id ? 'bg-blue-50' : ''
+                            }`}
                         >
                           {person.name}
                         </button>
@@ -1116,11 +1145,10 @@ useEffect(() => {
                   setSelectedCountries([...selectedCountries, country.id])
                 }
               }}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                selectedCountries.includes(country.id)
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${selectedCountries.includes(country.id)
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
             >
               {country.name}
             </button>
@@ -1135,7 +1163,7 @@ useEffect(() => {
             <Tag className="w-5 h-5" />
             Temas / Palabras Clave
           </h3>
-          
+
           {/* Tags de temas seleccionados */}
           {selectedThemes.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
@@ -1160,7 +1188,7 @@ useEffect(() => {
               })}
             </div>
           )}
-          
+
           {/* Buscador de temas */}
           <div className="relative">
             <input
@@ -1172,12 +1200,12 @@ useEffect(() => {
             />
             <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
           </div>
-          
+
           {/* Lista filtrada de temas */}
           {themeSearch && (
             <div className="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
               {availableThemes
-                .filter((theme: any) => 
+                .filter((theme: any) =>
                   theme.name.toLowerCase().includes(themeSearch.toLowerCase()) &&
                   !selectedThemes.includes(theme.id)
                 )
@@ -1194,17 +1222,17 @@ useEffect(() => {
                     <span className="text-sm text-gray-700">{theme.name}</span>
                   </button>
                 ))}
-              {availableThemes.filter((theme: any) => 
+              {availableThemes.filter((theme: any) =>
                 theme.name.toLowerCase().includes(themeSearch.toLowerCase()) &&
                 !selectedThemes.includes(theme.id)
               ).length === 0 && (
-                <div className="px-3 py-2 text-sm text-gray-500">
-                  No se encontraron temas
-                </div>
-              )}
+                  <div className="px-3 py-2 text-sm text-gray-500">
+                    No se encontraron temas
+                  </div>
+                )}
             </div>
           )}
-          
+
           <p className="mt-1 text-xs text-gray-500">
             Escribe para buscar y agregar temas
           </p>
@@ -1298,9 +1326,8 @@ useEffect(() => {
                         key={person.id}
                         type="button"
                         onClick={() => setNewPerson({ ...newPerson, personId: person.id })}
-                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${
-                          newPerson.personId === person.id ? 'bg-blue-50' : ''
-                        }`}
+                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${newPerson.personId === person.id ? 'bg-blue-50' : ''
+                          }`}
                       >
                         {person.name}
                       </button>
