@@ -25,7 +25,7 @@ export const movieFormSchema = z.object({
   durationSeconds: z.any().optional(),
   rating: z.any().optional(),
   colorTypeId: z.any().optional(),
-  ratingId: z.any().optional(),
+  ratingId: z.union([z.number(), z.null()]).optional(),
 
   // Campos de fecha
   releaseDate: z.any().optional(),

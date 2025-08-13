@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 1bd2d79ab59f24bd5072563e74909c437a585fd6
-// Fecha: 2025-08-13T14:27:34.787Z
+// Commit: 02cb0876a70c63a2e4ab921d64b48143f8421aa9
+// Fecha: 2025-08-13T17:08:42.664Z
 // ============================================
 
 
@@ -3378,7 +3378,7 @@ export async function GET(
             country: true
           }
         },
-        
+
         productionCompanies: {
           include: {
             company: true
@@ -3452,6 +3452,12 @@ export async function PUT(
     console.log(JSON.stringify(body, null, 2))
     console.log('================================')
 
+    console.log('=== RATING ID RECIBIDO ===')
+    console.log('ratingId:', body.ratingId)
+    console.log('tipo:', typeof body.ratingId)
+    console.log('es null?:', body.ratingId === null)
+    console.log('========================')
+
     // Validar datos
     const validatedData = movieSchema.parse(body)
 
@@ -3500,8 +3506,10 @@ export async function PUT(
           filmingEndYear: movieData.filmingEndYear || null,
           filmingEndMonth: movieData.filmingEndMonth || null,
           filmingEndDay: movieData.filmingEndDay || null,
-          ...(ratingId && {
-            rating: { connect: { id: ratingId } }
+          ...(ratingId !== undefined && {
+            rating: ratingId === null
+              ? { disconnect: true }
+              : { connect: { id: ratingId } }
           }),
           ...(colorTypeId && {
             colorType: { connect: { id: colorTypeId } }
@@ -9198,7 +9206,9 @@ export default function AdvancedTab({
           Calificación
         </label>
         <select
-          {...register('ratingId', { valueAsNumber: true })}
+          {...register('ratingId', {
+  setValueAs: (v) => v === '' ? null : Number(v)
+})}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
         >
           <option value="">Sin calificación</option>
@@ -12456,6 +12466,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 ...filmingStartDateData,
                 ...filmingEndDateData,
                 stage: data.stage || 'COMPLETA',
+                ratingId: preparedData.ratingId === '' || preparedData.ratingId === undefined ? null : preparedData.ratingId,
                 metaKeywords: preparedData.metaKeywords
                     ? Array.isArray(preparedData.metaKeywords)
                         ? preparedData.metaKeywords
@@ -12702,7 +12713,7 @@ export const movieFormSchema = z.object({
   durationSeconds: z.any().optional(),
   rating: z.any().optional(),
   colorTypeId: z.any().optional(),
-  ratingId: z.any().optional(),
+  ratingId: z.union([z.number(), z.null()]).optional(),
 
   // Campos de fecha
   releaseDate: z.any().optional(),
@@ -13054,7 +13065,7 @@ export const movieSchema = z.object({
   filmFormat: z.string().optional(),
 
   // Clasificación
-  ratingId: z.number().optional(),
+  ratingId: z.union([z.number(), z.null()]).optional(),
   certificateNumber: z.string().optional(),
 
   // Estado

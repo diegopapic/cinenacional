@@ -49,7 +49,7 @@ export const movieSchema = z.object({
   filmFormat: z.string().optional(),
 
   // Clasificación
-  ratingId: z.number().optional(),
+  ratingId: z.union([z.number(), z.null()]).optional(),
   certificateNumber: z.string().optional(),
 
   // Estado

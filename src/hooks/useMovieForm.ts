@@ -479,6 +479,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 ...filmingStartDateData,
                 ...filmingEndDateData,
                 stage: data.stage || 'COMPLETA',
+                ratingId: preparedData.ratingId === '' || preparedData.ratingId === undefined ? null : preparedData.ratingId,
                 metaKeywords: preparedData.metaKeywords
                     ? Array.isArray(preparedData.metaKeywords)
                         ? preparedData.metaKeywords
