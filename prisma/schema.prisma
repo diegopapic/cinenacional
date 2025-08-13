@@ -27,6 +27,7 @@ model Movie {
   durationSeconds  Int?     @map("duration_seconds")
   tipoDuracion     String?  @map("tipo_duracion") @db.VarChar(20)
   synopsis         String?  @db.Text
+  notes            String?  @db.Text
   tagline          String?  @db.VarChar(500)
   posterUrl        String?  @map("poster_url") @db.VarChar(500)
   trailerUrl       String?  @map("trailer_url") @db.VarChar(500)

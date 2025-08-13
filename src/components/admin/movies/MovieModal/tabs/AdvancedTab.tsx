@@ -8,20 +8,20 @@ import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 interface AdvancedTabProps {
   register: UseFormRegister<MovieFormData>
   watch: UseFormWatch<MovieFormData>
-  
+
   // Metadata
   availableRatings: any[]
   availableColorTypes: any[]
-  
+
   // Títulos alternativos
   alternativeTitles: any[]
   setAlternativeTitles: (titles: any[]) => void
-  
+
   // Compañías
   movieFormInitialData: any
   handleProductionCompaniesChange: (companies: number[]) => void
   handleDistributionCompaniesChange: (companies: number[]) => void
-  
+
   editingMovieId?: number
 }
 
@@ -89,8 +89,11 @@ export default function AdvancedTab({
         </label>
         <select
           {...register('ratingId', {
-  setValueAs: (v) => v === '' ? null : Number(v)
-})}
+    setValueAs: (v) => {
+      if (v === '' || v === '0' || v === 0) return null;
+      return Number(v);
+    }
+  })}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
         >
           <option value="">Sin calificación</option>
@@ -121,16 +124,31 @@ export default function AdvancedTab({
       {/* Productoras y Distribuidoras */}
       <MovieFormEnhanced
         key={editingMovieId || 'new'}
-        onGenresChange={() => {}}
-        onCastChange={() => {}}
-        onCrewChange={() => {}}
-        onCountriesChange={() => {}}
+        onGenresChange={() => { }}
+        onCastChange={() => { }}
+        onCrewChange={() => { }}
+        onCountriesChange={() => { }}
         onProductionCompaniesChange={handleProductionCompaniesChange}
         onDistributionCompaniesChange={handleDistributionCompaniesChange}
-        onThemesChange={() => {}}
+        onThemesChange={() => { }}
         initialData={movieFormInitialData}
         showOnlyCompanies={true}
       />
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Notas Internas
+        </label>
+        <textarea
+          {...register('notes')}  // 👈 Usar register como los otros campos
+          rows={4}
+          placeholder="Anotaciones internas sobre esta película. No se mostrarán públicamente."
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+        />
+        <p className="mt-1 text-sm text-gray-500">
+          Este campo es solo para uso interno del equipo editorial.
+        </p>
+      </div>
     </div>
   )
 }

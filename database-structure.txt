@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-13T17:08:42.898Z
+# Generado automáticamente el: 2025-08-13T17:39:44.318Z
 # ================================================
 
 ## Schema Prisma
@@ -34,6 +34,7 @@ model Movie {
   durationSeconds  Int?     @map("duration_seconds")
   tipoDuracion     String?  @map("tipo_duracion") @db.VarChar(20)
   synopsis         String?  @db.Text
+  notes            String?  @db.Text
   tagline          String?  @db.VarChar(500)
   posterUrl        String?  @map("poster_url") @db.VarChar(500)
   trailerUrl       String?  @map("trailer_url") @db.VarChar(500)
@@ -719,6 +720,7 @@ CREATE TABLE "public"."movies" (
     "duration_seconds" INTEGER,
     "tipo_duracion" VARCHAR(20),
     "synopsis" TEXT,
+    "notes" TEXT,
     "tagline" VARCHAR(500),
     "poster_url" VARCHAR(500),
     "trailer_url" VARCHAR(500),
