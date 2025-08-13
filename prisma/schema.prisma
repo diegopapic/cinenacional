@@ -135,7 +135,7 @@ model MovieScreening {
   id             Int      @id @default(autoincrement())
   movieId        Int      @map("movie_id")
   venueId        Int      @map("venue_id")
-  screeningDate  DateTime @map("screening_date") @db.Date
+  screeningDate  DateTime? @map("screening_date") @db.Date
   endDate        DateTime? @map("end_date") @db.Date
   isPremiere     Boolean  @default(false) @map("is_premiere")
   isExclusive    Boolean  @default(false) @map("is_exclusive")
