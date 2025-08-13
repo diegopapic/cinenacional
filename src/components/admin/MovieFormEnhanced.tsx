@@ -9,7 +9,6 @@ import {
   UserPlus,
   Building,
   Globe,
-  Languages,
   Hash,
   Trash2,
   Tag
@@ -20,7 +19,6 @@ interface MovieFormEnhancedProps {
   onCastChange: (cast: any[]) => void
   onCrewChange: (crew: any[]) => void
   onCountriesChange: (countries: number[]) => void
-  onLanguagesChange: (languages: number[]) => void
   onProductionCompaniesChange: (companies: number[]) => void
   onDistributionCompaniesChange: (companies: number[]) => void
   onThemesChange?: (themes: number[]) => void
@@ -29,7 +27,6 @@ interface MovieFormEnhancedProps {
     cast?: any[]
     crew?: any[]
     countries?: any[]
-    languages?: any[]
     productionCompanies?: any[]
     distributionCompanies?: any[]
     themes?: any[]
@@ -45,7 +42,6 @@ export default function MovieFormEnhanced({
   onCastChange,
   onCrewChange,
   onCountriesChange,
-  onLanguagesChange,
   onProductionCompaniesChange,
   onDistributionCompaniesChange,
   onThemesChange = () => {},
@@ -59,7 +55,6 @@ export default function MovieFormEnhanced({
   const [availableGenres, setAvailableGenres] = useState<any[]>([])
   const [availablePeople, setAvailablePeople] = useState<any[]>([])
   const [availableCountries, setAvailableCountries] = useState<any[]>([])
-  const [availableLanguages, setAvailableLanguages] = useState<any[]>([])
   const [availableProductionCompanies, setAvailableProductionCompanies] = useState<any[]>([])
   const [availableDistributionCompanies, setAvailableDistributionCompanies] = useState<any[]>([])
   const [availableThemes, setAvailableThemes] = useState<any[]>([])
@@ -69,7 +64,6 @@ export default function MovieFormEnhanced({
   const [cast, setCast] = useState<any[]>([])
   const [crew, setCrew] = useState<any[]>([])
   const [selectedCountries, setSelectedCountries] = useState<number[]>([])
-  const [selectedLanguages, setSelectedLanguages] = useState<number[]>([])
   const [selectedProductionCompanies, setSelectedProductionCompanies] = useState<number[]>([])
   const [selectedDistributionCompanies, setSelectedDistributionCompanies] = useState<number[]>([])
   const [selectedThemes, setSelectedThemes] = useState<number[]>([])
@@ -136,11 +130,6 @@ useEffect(() => {
         setSelectedCountries(countryIds)
       }
       
-      if (initialData.languages) {
-        const languageIds = initialData.languages.map(l => l.languageId || l.id)
-        setSelectedLanguages(languageIds)
-      }
-      
       if (initialData.productionCompanies) {
         const companyIds = initialData.productionCompanies.map(c => c.companyId || c.id || c.company?.id)
         setSelectedProductionCompanies(companyIds)
@@ -188,12 +177,6 @@ useEffect(() => {
 
   useEffect(() => {
     if (isInitialized) {
-      onLanguagesChange(selectedLanguages)
-    }
-  }, [selectedLanguages, onLanguagesChange, isInitialized])
-
-  useEffect(() => {
-    if (isInitialized) {
       onProductionCompaniesChange(selectedProductionCompanies)
     }
   }, [selectedProductionCompanies, onProductionCompaniesChange, isInitialized])
@@ -213,24 +196,22 @@ useEffect(() => {
   // Cargar datos de la API
   const fetchInitialData = async () => {
     try {
-      const [genresRes, countriesRes, languagesRes, prodCompaniesRes, distCompaniesRes, themesRes] = await Promise.all([
+      const [genresRes, countriesRes, prodCompaniesRes, distCompaniesRes, themesRes] = await Promise.all([
         fetch('/api/genres'),
         fetch('/api/countries'),
-        fetch('/api/languages'),
         fetch('/api/companies/production'),
         fetch('/api/companies/distribution'),
         fetch('/api/themes').catch(() => ({ ok: false, json: () => [] }))
       ])
 
       // Verificar que todas las respuestas sean OK
-      if (!genresRes.ok || !countriesRes.ok || !languagesRes.ok || !prodCompaniesRes.ok || !distCompaniesRes.ok) {
+      if (!genresRes.ok || !countriesRes.ok || !prodCompaniesRes.ok || !distCompaniesRes.ok) {
         throw new Error('Error fetching data')
       }
 
-      const [genres, countries, languages, prodCompanies, distCompanies, themes] = await Promise.all([
+      const [genres, countries, prodCompanies, distCompanies, themes] = await Promise.all([
         genresRes.json(),
         countriesRes.json(),
-        languagesRes.json(),
         prodCompaniesRes.json(),
         distCompaniesRes.json(),
         themesRes.ok ? themesRes.json() : []
@@ -239,7 +220,6 @@ useEffect(() => {
       // Asegurar que siempre sean arrays
       setAvailableGenres(Array.isArray(genres) ? genres : [])
       setAvailableCountries(Array.isArray(countries) ? countries : [])
-      setAvailableLanguages(Array.isArray(languages) ? languages : [])
       setAvailableProductionCompanies(Array.isArray(prodCompanies) ? prodCompanies : [])
       setAvailableDistributionCompanies(Array.isArray(distCompanies) ? distCompanies : [])
       setAvailableThemes(Array.isArray(themes) ? themes : [])
@@ -250,7 +230,6 @@ useEffect(() => {
       // Asegurar que los estados sean arrays vacíos en caso de error
       setAvailableGenres([])
       setAvailableCountries([])
-      setAvailableLanguages([])
       setAvailableProductionCompanies([])
       setAvailableDistributionCompanies([])
       setAvailableThemes([])
@@ -443,32 +422,6 @@ useEffect(() => {
     Escribe para buscar y agregar países
   </p>
 </div>
-
-        {/* Idiomas */}
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-            <Languages className="w-5 h-5" />
-            Idiomas
-          </h3>
-          <select
-            multiple
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={selectedLanguages.map(String)}
-            onChange={(e) => {
-              const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value))
-              setSelectedLanguages(selected)
-            }}
-          >
-            {availableLanguages.map((language: any) => (
-              <option key={language.id} value={language.id}>
-                {language.name}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-sm text-gray-500">
-            Mantén presionado Ctrl/Cmd para seleccionar múltiples opciones
-          </p>
-        </div>
 
         {/* Temas */}
         {availableThemes.length > 0 && (
@@ -1173,32 +1126,6 @@ useEffect(() => {
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Idiomas */}
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-          <Languages className="w-5 h-5" />
-          Idiomas
-        </h3>
-        <select
-          multiple
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          value={selectedLanguages.map(String)}
-          onChange={(e) => {
-            const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value))
-            setSelectedLanguages(selected)
-          }}
-        >
-          {availableLanguages.map((language: any) => (
-            <option key={language.id} value={language.id}>
-              {language.name}
-            </option>
-          ))}
-        </select>
-        <p className="mt-1 text-sm text-gray-500">
-          Mantén presionado Ctrl/Cmd para seleccionar múltiples opciones
-        </p>
       </div>
 
       {/* Temas */}

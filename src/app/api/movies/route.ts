@@ -202,7 +202,6 @@ export async function POST(request: NextRequest) {
       cast,
       crew,
       countries,
-      languages,
       productionCompanies,
       distributionCompanies,
       alternativeTitles,
@@ -240,11 +239,7 @@ export async function POST(request: NextRequest) {
         filmingEndYear: movieData.filmingEndYear || null,
         filmingEndMonth: movieData.filmingEndMonth || null,
         filmingEndDay: movieData.filmingEndDay || null,
-        metaKeywords: Array.isArray(movieData.metaKeywords)
-          ? movieData.metaKeywords
-          : typeof movieData.metaKeywords === 'string'
-            ? movieData.metaKeywords.split(',').map(k => k.trim()).filter(k => k)
-            : [],
+
         // Crear relaciones
         genres: genres ? {
           create: genres.map((genreId, index) => ({
@@ -264,12 +259,6 @@ export async function POST(request: NextRequest) {
         movieCountries: countries ? {  // CAMBIADO DE countries A movieCountries
           create: countries.map((countryId, index) => ({
             countryId,
-            isPrimary: index === 0
-          }))
-        } : undefined,
-        languages: languages ? {
-          create: languages.map((languageId, index) => ({
-            languageId,
             isPrimary: index === 0
           }))
         } : undefined,
@@ -323,11 +312,6 @@ export async function POST(request: NextRequest) {
         themes: {
           include: {
             theme: true
-          }
-        },
-        languages: {
-          include: {
-            language: true
           }
         },
         alternativeTitles: true,

@@ -48,11 +48,7 @@ export async function GET(
             country: true
           }
         },
-        languages: {
-          include: {
-            language: true
-          }
-        },
+        
         productionCompanies: {
           include: {
             company: true
@@ -147,7 +143,6 @@ export async function PUT(
       cast,
       crew,
       countries,
-      languages,
       productionCompanies,
       distributionCompanies,
       themes,
@@ -257,20 +252,6 @@ const { metaKeywords, ...movieDataRest } = movieDataClean;
         }
       }
 
-      // 6. Actualizar idiomas
-      if (languages) {
-        await tx.movieLanguage.deleteMany({ where: { movieId: id } })
-        if (languages.length > 0) {
-          await tx.movieLanguage.createMany({
-            data: languages.map((languageId, index) => ({
-              movieId: id,
-              languageId,
-              isPrimary: index === 0
-            }))
-          })
-        }
-      }
-
       // 7. Actualizar productoras
       if (productionCompanies) {
         await tx.movieProductionCompany.deleteMany({ where: { movieId: id } })
@@ -369,11 +350,6 @@ const { metaKeywords, ...movieDataRest } = movieDataClean;
           movieCountries: {
             include: {
               country: true
-            }
-          },
-          languages: {
-            include: {
-              language: true
             }
           },
           productionCompanies: {

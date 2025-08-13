@@ -18,8 +18,6 @@ export const movieFormSchema = z.object({
   filmFormat: z.any().optional(),
   certificateNumber: z.any().optional(),
   tipoDuracion: z.any().optional(),
-  metaDescription: z.any().optional(),
-  metaKeywords: z.any().optional(),
 
   // Campos numéricos
   year: z.any().optional(),
@@ -91,7 +89,6 @@ export interface MovieRelations {
   cast: any[]
   crew: any[]
   countries: number[]
-  languages: number[]
   productionCompanies: number[]
   distributionCompanies: number[]
   themes: number[]
