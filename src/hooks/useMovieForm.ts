@@ -215,7 +215,6 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
     }, [])
 
     const handleScreeningVenuesChange = useCallback((venueIds: number[]) => {
-        console.log('useMovieForm - handleScreeningVenuesChange recibió:', venueIds)
         setMovieRelations(prev => ({ ...prev, screeningVenues: venueIds }))
     }, [])
 
@@ -246,9 +245,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
     // Función para cargar datos de película existente
     const loadMovieData = useCallback(async (movie: Movie) => {
         try {
-            console.log('Intentando cargar película con ID:', movie.id)
             const fullMovie = await moviesService.getById(movie.id)
-            console.log('Película cargada:', fullMovie)
 
             // Configurar tipo de duración
             const minutos = fullMovie.duration
@@ -510,11 +507,6 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
             delete movieData.releaseDate;
             delete movieData.filmingStartDate;
             delete movieData.filmingEndDate;
-
-            console.log('=== DATOS ENVIADOS AL BACKEND ===');
-            console.log('movieRelations.screeningVenues:', movieRelations.screeningVenues);
-            console.log('movieData.screeningVenues:', movieData.screeningVenues);
-            console.log('movieData completo:', JSON.stringify(movieData, null, 2));
 
             // Usar el servicio para crear o actualizar
             if (editingMovie) {

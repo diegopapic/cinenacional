@@ -106,8 +106,6 @@ export default function MovieFormEnhanced({
   // Inicializar con datos existentes - CORREGIDO
   useEffect(() => {
     if (initialData && !isInitialized) {
-      console.log('Inicializando MovieFormEnhanced con:', initialData)
-
       if (initialData.genres) {
         const genreIds = initialData.genres.map(g => g.genreId || g.id)
         setSelectedGenres(genreIds)
@@ -136,7 +134,6 @@ export default function MovieFormEnhanced({
           return null
         }).filter(id => id !== null)
 
-        console.log('Country IDs extraídos:', countryIds)
         setSelectedCountries(countryIds)
       }
 
@@ -167,9 +164,7 @@ export default function MovieFormEnhanced({
   }, [selectedGenres, onGenresChange, isInitialized])
 
   useEffect(() => {
-    console.log('MovieFormEnhanced - useEffect screeningVenues, isInitialized:', isInitialized, 'screeningVenues:', screeningVenues)
     if (isInitialized) {
-      console.log('MovieFormEnhanced - notificando screeningVenues:', screeningVenues)
       onScreeningVenuesChange(screeningVenues)
     }
   }, [screeningVenues, onScreeningVenuesChange, isInitialized])
@@ -188,7 +183,6 @@ export default function MovieFormEnhanced({
 
   useEffect(() => {
     if (isInitialized) {
-      console.log('Notificando cambio de países:', selectedCountries)
       onCountriesChange(selectedCountries)
     }
   }, [selectedCountries, onCountriesChange, isInitialized])
@@ -446,7 +440,6 @@ export default function MovieFormEnhanced({
           <ScreeningVenueSelector
             selectedVenueIds={screeningVenues}
             onChange={(venues) => {
-              console.log('MovieFormEnhanced - onChange recibió:', venues)
               setScreeningVenues(venues)
             }}
           />

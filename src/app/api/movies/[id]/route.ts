@@ -89,13 +89,13 @@ export async function GET(
           }
         },
         filmingLocations: true,
-        screenings: { 
+        screenings: {
           include: {
             venue: true
           }
         }
       }
-      })
+    })
 
     if (!movie) {
       return NextResponse.json(
@@ -129,23 +129,9 @@ export async function PUT(
       ratingId: body.ratingId === 0 ? null : body.ratingId
     };
 
-    console.log('=== BODY RECIBIDO EN BACKEND ===')
-    console.log(JSON.stringify(body, null, 2))
-    console.log('================================')
-
-    console.log('=== RATING ID RECIBIDO ===')
-    console.log('ratingId:', body.ratingId)
-    console.log('tipo:', typeof body.ratingId)
-    console.log('es null?:', body.ratingId === null)
-    console.log('========================')
 
     // Validar datos
     const validatedData = movieSchema.parse(cleanedData)
-
-    // AGREGAR ESTOS LOGS AQUÍ
-    console.log('=== SCREENING VENUES VALIDADAS ===')
-    console.log('screeningVenues:', validatedData.screeningVenues)
-    console.log('================================')
 
     // Verificar que la película existe
     const existingMovie = await prisma.movie.findUnique({
@@ -331,9 +317,6 @@ export async function PUT(
 
       // 12. Actualizar screening venues
       if (screeningVenues !== undefined) {
-        console.log('=== PROCESANDO SCREENING VENUES ===')
-        console.log('Cantidad:', screeningVenues?.length)
-        console.log('Datos:', screeningVenues)
         await tx.movieScreening.deleteMany({ where: { movieId: id } })
         if (screeningVenues && screeningVenues.length > 0) {
           await tx.movieScreening.createMany({
