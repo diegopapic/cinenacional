@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-13T22:12:37.571Z
+# Generado automáticamente el: 2025-08-13T22:17:42.495Z
 # ================================================
 
 ## Schema Prisma
@@ -142,7 +142,7 @@ model MovieScreening {
   id             Int      @id @default(autoincrement())
   movieId        Int      @map("movie_id")
   venueId        Int      @map("venue_id")
-  screeningDate  DateTime @map("screening_date") @db.Date
+  screeningDate  DateTime? @map("screening_date") @db.Date
   endDate        DateTime? @map("end_date") @db.Date
   isPremiere     Boolean  @default(false) @map("is_premiere")
   isExclusive    Boolean  @default(false) @map("is_exclusive")
@@ -840,7 +840,7 @@ CREATE TABLE "public"."movie_screenings" (
     "id" SERIAL NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "venue_id" INTEGER NOT NULL,
-    "screening_date" DATE NOT NULL,
+    "screening_date" DATE,
     "end_date" DATE,
     "is_premiere" BOOLEAN NOT NULL DEFAULT false,
     "is_exclusive" BOOLEAN NOT NULL DEFAULT false,
