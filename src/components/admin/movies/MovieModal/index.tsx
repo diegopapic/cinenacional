@@ -44,12 +44,12 @@ interface MovieModalProps {
   setIsPartialFilmingStartDate: (value: boolean) => void
   partialFilmingStartDate: PartialFilmingDate
   setPartialFilmingStartDate: (value: PartialFilmingDate) => void
-  
+
   isPartialFilmingEndDate: boolean
   setIsPartialFilmingEndDate: (value: boolean) => void
   partialFilmingEndDate: PartialFilmingDate
   setPartialFilmingEndDate: (value: PartialFilmingDate) => void
-
+  handleScreeningVenuesChange: (venues: number[]) => void
   // Metadata
   availableRatings: any[]
   availableColorTypes: any[]
@@ -110,6 +110,7 @@ export default function MovieModal({
   handleCountriesChange,
   handleProductionCompaniesChange,
   handleDistributionCompaniesChange,
+  handleScreeningVenuesChange,
   handleThemesChange,
   handleLinksChange
 }: MovieModalProps) {
@@ -118,16 +119,16 @@ export default function MovieModal({
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
-        <MovieModalHeader 
-          isEditing={!!editingMovie} 
-          onClose={onClose} 
+        <MovieModalHeader
+          isEditing={!!editingMovie}
+          onClose={onClose}
         />
 
         <form onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto max-h-[calc(90vh-8rem)]">
           <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <MovieModalTabs 
-              activeTab={activeTab} 
-              onTabChange={setActiveTab} 
+            <MovieModalTabs
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
             />
 
             <div className="p-6">
@@ -156,6 +157,7 @@ export default function MovieModal({
                   handleCountriesChange={handleCountriesChange}
                   handleThemesChange={handleThemesChange}
                   handleLinksChange={handleLinksChange}
+                  handleScreeningVenuesChange={handleScreeningVenuesChange}
                   editingMovieId={editingMovie?.id}
                 />
               </Tabs.Content>

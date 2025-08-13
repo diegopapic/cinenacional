@@ -36,8 +36,7 @@ export default function AdminMoviesPage() {
     }
   })
 
-  console.log('movieForm keys:', Object.keys(movieForm))
-
+  
   const handleFiltersChange = (newFilters: Partial<MovieFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }))
   }
@@ -153,6 +152,9 @@ export default function AdminMoviesPage() {
           partialReleaseDate={movieForm.partialReleaseDate}
           setPartialReleaseDate={movieForm.setPartialReleaseDate}
           tipoDuracionDisabled={movieForm.tipoDuracionDisabled}
+
+          handleScreeningVenuesChange={movieForm.handleScreeningVenuesChange}
+
 
           // Estados para fechas de rodaje
           isPartialFilmingStartDate={movieForm.isPartialFilmingStartDate}

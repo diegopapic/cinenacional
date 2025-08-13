@@ -106,6 +106,7 @@
 - [src/components/admin/MoviesFilters.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MoviesFilters.tsx)
 - [src/components/admin/MoviesPagination.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MoviesPagination.tsx)
 - [src/components/admin/MoviesTable.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MoviesTable.tsx)
+- [src/components/admin/ScreeningVenueSelector.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/ScreeningVenueSelector.tsx)
 - [src/components/admin/ThemeSelector.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/ThemeSelector.tsx)
 - [src/components/layout/Footer.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Footer.tsx)
 - [src/components/layout/Header.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Header.tsx)

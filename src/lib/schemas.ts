@@ -89,7 +89,13 @@ export const movieSchema = z.object({
   distributionCompanies: z.array(z.number()).optional(),
   themes: z.array(z.number()).optional(),
   alternativeTitles: z.array(z.any()).optional(),
-  links: z.array(z.any()).optional()
+  links: z.array(z.any()).optional(),
+  screeningVenues: z.array(z.object({
+  venueId: z.number(),
+  screeningDate: z.string().optional().nullable(),
+  isPremiere: z.boolean().optional(),
+  isExclusive: z.boolean().optional()
+})).optional()
 })
 
 export type MovieFormData = z.infer<typeof movieSchema>

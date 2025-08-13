@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 6e2d5544d1516ee20a094753cb7525f2ee953af5
-// Fecha: 2025-08-13T18:53:05.227Z
+// Commit: f70fc4f31bf5a081759128761ab933de8552b84c
+// Fecha: 2025-08-13T22:10:07.888Z
 // ============================================
 
 
@@ -1466,8 +1466,7 @@ export default function AdminMoviesPage() {
     }
   })
 
-  console.log('movieForm keys:', Object.keys(movieForm))
-
+  
   const handleFiltersChange = (newFilters: Partial<MovieFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }))
   }
@@ -1583,6 +1582,9 @@ export default function AdminMoviesPage() {
           partialReleaseDate={movieForm.partialReleaseDate}
           setPartialReleaseDate={movieForm.setPartialReleaseDate}
           tipoDuracionDisabled={movieForm.tipoDuracionDisabled}
+
+          handleScreeningVenuesChange={movieForm.handleScreeningVenuesChange}
+
 
           // Estados para fechas de rodaje
           isPartialFilmingStartDate={movieForm.isPartialFilmingStartDate}
@@ -4210,9 +4212,14 @@ export async function GET(
             type: 'asc'
           }
         },
-        filmingLocations: true
+        filmingLocations: true,
+        screenings: { 
+          include: {
+            venue: true
+          }
+        }
       }
-    })
+      })
 
     if (!movie) {
       return NextResponse.json(
@@ -4259,6 +4266,11 @@ export async function PUT(
     // Validar datos
     const validatedData = movieSchema.parse(cleanedData)
 
+    // AGREGAR ESTOS LOGS AQUÍ
+    console.log('=== SCREENING VENUES VALIDADAS ===')
+    console.log('screeningVenues:', validatedData.screeningVenues)
+    console.log('================================')
+
     // Verificar que la película existe
     const existingMovie = await prisma.movie.findUnique({
       where: { id }
@@ -4282,6 +4294,7 @@ export async function PUT(
       themes,
       alternativeTitles,
       links,
+      screeningVenues,
       ...movieData
     } = validatedData
 
@@ -4440,7 +4453,26 @@ export async function PUT(
         }
       }
 
-      // 12. Retornar la película actualizada con todas las relaciones
+      // 12. Actualizar screening venues
+      if (screeningVenues !== undefined) {
+        console.log('=== PROCESANDO SCREENING VENUES ===')
+        console.log('Cantidad:', screeningVenues?.length)
+        console.log('Datos:', screeningVenues)
+        await tx.movieScreening.deleteMany({ where: { movieId: id } })
+        if (screeningVenues && screeningVenues.length > 0) {
+          await tx.movieScreening.createMany({
+            data: screeningVenues.map((sv: any) => ({
+              movieId: id,
+              venueId: sv.venueId,
+              screeningDate: sv.screeningDate ? new Date(sv.screeningDate) : null,
+              isPremiere: sv.isPremiere || false,
+              isExclusive: sv.isExclusive || false
+            }))
+          })
+        }
+      }
+
+      // 13. Retornar la película actualizada con todas las relaciones
       return await tx.movie.findUnique({
         where: { id },
         include: {
@@ -4480,6 +4512,11 @@ export async function PUT(
             }
           },
           links: true,
+          screenings: {
+            include: {
+              venue: true
+            }
+          },
           colorType: true,
         }
       })
@@ -8216,6 +8253,8 @@ import {
   Trash2,
   Tag
 } from 'lucide-react'
+import ScreeningVenueSelector from './ScreeningVenueSelector'
+
 
 interface MovieFormEnhancedProps {
   onGenresChange: (genres: number[]) => void
@@ -8224,6 +8263,7 @@ interface MovieFormEnhancedProps {
   onCountriesChange: (countries: number[]) => void
   onProductionCompaniesChange: (companies: number[]) => void
   onDistributionCompaniesChange: (companies: number[]) => void
+  onScreeningVenuesChange: (venues: any[]) => void
   onThemesChange?: (themes: number[]) => void
   initialData?: {
     genres?: any[]
@@ -8233,6 +8273,7 @@ interface MovieFormEnhancedProps {
     productionCompanies?: any[]
     distributionCompanies?: any[]
     themes?: any[]
+    screeningVenues?: any[]
   }
   showOnlyBasicInfo?: boolean
   showOnlyCast?: boolean
@@ -8247,7 +8288,8 @@ export default function MovieFormEnhanced({
   onCountriesChange,
   onProductionCompaniesChange,
   onDistributionCompaniesChange,
-  onThemesChange = () => {},
+  onScreeningVenuesChange,
+  onThemesChange = () => { },
   initialData,
   showOnlyBasicInfo = false,
   showOnlyCast = false,
@@ -8270,6 +8312,7 @@ export default function MovieFormEnhanced({
   const [selectedProductionCompanies, setSelectedProductionCompanies] = useState<number[]>([])
   const [selectedDistributionCompanies, setSelectedDistributionCompanies] = useState<number[]>([])
   const [selectedThemes, setSelectedThemes] = useState<number[]>([])
+  const [screeningVenues, setScreeningVenues] = useState<any[]>([])
 
   // Estados para búsqueda
   const [personSearch, setPersonSearch] = useState('')
@@ -8296,28 +8339,32 @@ export default function MovieFormEnhanced({
     fetchInitialData()
   }, [])
 
-useEffect(() => {
-  setIsInitialized(false)  // Resetear cuando cambia initialData
-}, [initialData])
-  
+  useEffect(() => {
+    setIsInitialized(false)  // Resetear cuando cambia initialData
+  }, [initialData])
+
   // Inicializar con datos existentes - CORREGIDO
   useEffect(() => {
     if (initialData && !isInitialized) {
       console.log('Inicializando MovieFormEnhanced con:', initialData)
-      
+
       if (initialData.genres) {
         const genreIds = initialData.genres.map(g => g.genreId || g.id)
         setSelectedGenres(genreIds)
       }
-      
+
       if (initialData.cast) {
         setCast(initialData.cast)
       }
-      
+
       if (initialData.crew) {
         setCrew(initialData.crew)
       }
-      
+
+      if (initialData.screeningVenues) {
+        setScreeningVenues(initialData.screeningVenues)
+      }
+
       // CORRECCIÓN IMPORTANTE: Manejar correctamente los países
       if (initialData.countries) {
         const countryIds = initialData.countries.map(c => {
@@ -8328,26 +8375,26 @@ useEffect(() => {
           if (c.country && c.country.id) return c.country.id
           return null
         }).filter(id => id !== null)
-        
+
         console.log('Country IDs extraídos:', countryIds)
         setSelectedCountries(countryIds)
       }
-      
+
       if (initialData.productionCompanies) {
         const companyIds = initialData.productionCompanies.map(c => c.companyId || c.id || c.company?.id)
         setSelectedProductionCompanies(companyIds)
       }
-      
+
       if (initialData.distributionCompanies) {
         const companyIds = initialData.distributionCompanies.map(c => c.companyId || c.id || c.company?.id)
         setSelectedDistributionCompanies(companyIds)
       }
-      
+
       if (initialData.themes) {
         const themeIds = initialData.themes.map(t => t.themeId || t.id)
         setSelectedThemes(themeIds)
       }
-      
+
       setIsInitialized(true)
     }
   }, [initialData, isInitialized])
@@ -8358,6 +8405,14 @@ useEffect(() => {
       onGenresChange(selectedGenres)
     }
   }, [selectedGenres, onGenresChange, isInitialized])
+
+  useEffect(() => {
+    console.log('MovieFormEnhanced - useEffect screeningVenues, isInitialized:', isInitialized, 'screeningVenues:', screeningVenues)
+    if (isInitialized) {
+      console.log('MovieFormEnhanced - notificando screeningVenues:', screeningVenues)
+      onScreeningVenuesChange(screeningVenues)
+    }
+  }, [screeningVenues, onScreeningVenuesChange, isInitialized])
 
   useEffect(() => {
     if (isInitialized) {
@@ -8426,8 +8481,7 @@ useEffect(() => {
       setAvailableProductionCompanies(Array.isArray(prodCompanies) ? prodCompanies : [])
       setAvailableDistributionCompanies(Array.isArray(distCompanies) ? distCompanies : [])
       setAvailableThemes(Array.isArray(themes) ? themes : [])
-      
-      console.log('Países disponibles cargados:', countries)
+
     } catch (error) {
       console.error('Error loading initial data:', error)
       // Asegurar que los estados sean arrays vacíos en caso de error
@@ -8546,86 +8600,100 @@ useEffect(() => {
         </div>
 
         {/* Países */}
-<div>
-  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-    <Globe className="w-5 h-5" />
-    Países Coproductores
-  </h3>
-  
-  {/* Tags de países seleccionados */}
-  {selectedCountries.length > 0 && (
-    <div className="flex flex-wrap gap-2 mb-3">
-      {selectedCountries.map(countryId => {
-        const country = availableCountries.find(c => c.id === countryId)
-        if (!country) return null
-        return (
-          <span
-            key={country.id}
-            className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
-          >
-            {country.name}
-            <button
-              type="button"
-              onClick={() => setSelectedCountries(selectedCountries.filter(id => id !== country.id))}
-              className="ml-1 hover:text-blue-600"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </span>
-        )
-      })}
-    </div>
-  )}
-  
-  {/* Buscador de países */}
-  <div className="relative">
-    <input
-      type="text"
-      placeholder="Buscar países..."
-      value={countrySearch}
-      onChange={(e) => setCountrySearch(e.target.value)}
-      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-    />
-    <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
-  </div>
-  
-  {/* Lista filtrada de países */}
-  {countrySearch && (
-    <div className="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
-      {availableCountries
-        .filter((country: any) => 
-          country.name.toLowerCase().includes(countrySearch.toLowerCase()) &&
-          !selectedCountries.includes(country.id)
-        )
-        .map((country: any) => (
-          <button
-            key={country.id}
-            type="button"
-            onClick={() => {
-              setSelectedCountries([...selectedCountries, country.id])
-              setCountrySearch('')
-            }}
-            className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-          >
-            <span className="text-sm text-gray-700">{country.name}</span>
-          </button>
-        ))}
-      {availableCountries.filter((country: any) => 
-        country.name.toLowerCase().includes(countrySearch.toLowerCase()) &&
-        !selectedCountries.includes(country.id)
-      ).length === 0 && (
-        <div className="px-3 py-2 text-sm text-gray-500">
-          No se encontraron países
-        </div>
-      )}
-    </div>
-  )}
-  
-  <p className="mt-1 text-xs text-gray-500">
-    Escribe para buscar y agregar países
-  </p>
-</div>
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+            <Globe className="w-5 h-5" />
+            Países Coproductores
+          </h3>
 
+          {/* Tags de países seleccionados */}
+          {selectedCountries.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {selectedCountries.map(countryId => {
+                const country = availableCountries.find(c => c.id === countryId)
+                if (!country) return null
+                return (
+                  <span
+                    key={country.id}
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                  >
+                    {country.name}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCountries(selectedCountries.filter(id => id !== country.id))}
+                      className="ml-1 hover:text-blue-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Buscador de países */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Buscar países..."
+              value={countrySearch}
+              onChange={(e) => setCountrySearch(e.target.value)}
+              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
+          </div>
+
+          {/* Lista filtrada de países */}
+          {countrySearch && (
+            <div className="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+              {availableCountries
+                .filter((country: any) =>
+                  country.name.toLowerCase().includes(countrySearch.toLowerCase()) &&
+                  !selectedCountries.includes(country.id)
+                )
+                .map((country: any) => (
+                  <button
+                    key={country.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCountries([...selectedCountries, country.id])
+                      setCountrySearch('')
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                  >
+                    <span className="text-sm text-gray-700">{country.name}</span>
+                  </button>
+                ))}
+              {availableCountries.filter((country: any) =>
+                country.name.toLowerCase().includes(countrySearch.toLowerCase()) &&
+                !selectedCountries.includes(country.id)
+              ).length === 0 && (
+                  <div className="px-3 py-2 text-sm text-gray-500">
+                    No se encontraron países
+                  </div>
+                )}
+            </div>
+          )}
+
+          <p className="mt-1 text-xs text-gray-500">
+            Escribe para buscar y agregar países
+          </p>
+        </div>
+        <div className="col-span-2 mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Pantallas de Estreno
+          </label>
+          <ScreeningVenueSelector
+            selectedVenueIds={screeningVenues}
+            onChange={(venues) => {
+              console.log('MovieFormEnhanced - onChange recibió:', venues)
+              setScreeningVenues(venues)
+            }}
+          />
+          <p className="mt-1 text-sm text-gray-500">
+            Selecciona las pantallas donde se estrenó o estrenará la película
+          </p>
+        </div>
         {/* Temas */}
         {availableThemes.length > 0 && (
           <div>
@@ -8633,7 +8701,7 @@ useEffect(() => {
               <Tag className="w-5 h-5" />
               Temas / Palabras Clave
             </h3>
-            
+
             {/* Tags de temas seleccionados */}
             {selectedThemes.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-3">
@@ -8658,7 +8726,7 @@ useEffect(() => {
                 })}
               </div>
             )}
-            
+
             {/* Buscador de temas */}
             <div className="relative">
               <input
@@ -8670,12 +8738,12 @@ useEffect(() => {
               />
               <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
             </div>
-            
+
             {/* Lista filtrada de temas */}
             {themeSearch && (
               <div className="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
                 {availableThemes
-                  .filter((theme: any) => 
+                  .filter((theme: any) =>
                     theme.name.toLowerCase().includes(themeSearch.toLowerCase()) &&
                     !selectedThemes.includes(theme.id)
                   )
@@ -8692,17 +8760,17 @@ useEffect(() => {
                       <span className="text-sm text-gray-700">{theme.name}</span>
                     </button>
                   ))}
-                {availableThemes.filter((theme: any) => 
+                {availableThemes.filter((theme: any) =>
                   theme.name.toLowerCase().includes(themeSearch.toLowerCase()) &&
                   !selectedThemes.includes(theme.id)
                 ).length === 0 && (
-                  <div className="px-3 py-2 text-sm text-gray-500">
-                    No se encontraron temas
-                  </div>
-                )}
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      No se encontraron temas
+                    </div>
+                  )}
               </div>
             )}
-            
+
             <p className="mt-1 text-xs text-gray-500">
               Escribe para buscar y agregar temas
             </p>
@@ -8792,9 +8860,8 @@ useEffect(() => {
                           key={person.id}
                           type="button"
                           onClick={() => setNewPerson({ ...newPerson, personId: person.id })}
-                          className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${
-                            newPerson.personId === person.id ? 'bg-blue-50' : ''
-                          }`}
+                          className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${newPerson.personId === person.id ? 'bg-blue-50' : ''
+                            }`}
                         >
                           {person.name}
                         </button>
@@ -8999,9 +9066,8 @@ useEffect(() => {
                           key={person.id}
                           type="button"
                           onClick={() => setNewPerson({ ...newPerson, personId: person.id })}
-                          className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${
-                            newPerson.personId === person.id ? 'bg-blue-50' : ''
-                          }`}
+                          className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${newPerson.personId === person.id ? 'bg-blue-50' : ''
+                            }`}
                         >
                           {person.name}
                         </button>
@@ -9319,11 +9385,10 @@ useEffect(() => {
                   setSelectedCountries([...selectedCountries, country.id])
                 }
               }}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                selectedCountries.includes(country.id)
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${selectedCountries.includes(country.id)
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
             >
               {country.name}
             </button>
@@ -9338,7 +9403,7 @@ useEffect(() => {
             <Tag className="w-5 h-5" />
             Temas / Palabras Clave
           </h3>
-          
+
           {/* Tags de temas seleccionados */}
           {selectedThemes.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
@@ -9363,7 +9428,7 @@ useEffect(() => {
               })}
             </div>
           )}
-          
+
           {/* Buscador de temas */}
           <div className="relative">
             <input
@@ -9375,12 +9440,12 @@ useEffect(() => {
             />
             <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
           </div>
-          
+
           {/* Lista filtrada de temas */}
           {themeSearch && (
             <div className="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
               {availableThemes
-                .filter((theme: any) => 
+                .filter((theme: any) =>
                   theme.name.toLowerCase().includes(themeSearch.toLowerCase()) &&
                   !selectedThemes.includes(theme.id)
                 )
@@ -9397,17 +9462,17 @@ useEffect(() => {
                     <span className="text-sm text-gray-700">{theme.name}</span>
                   </button>
                 ))}
-              {availableThemes.filter((theme: any) => 
+              {availableThemes.filter((theme: any) =>
                 theme.name.toLowerCase().includes(themeSearch.toLowerCase()) &&
                 !selectedThemes.includes(theme.id)
               ).length === 0 && (
-                <div className="px-3 py-2 text-sm text-gray-500">
-                  No se encontraron temas
-                </div>
-              )}
+                  <div className="px-3 py-2 text-sm text-gray-500">
+                    No se encontraron temas
+                  </div>
+                )}
             </div>
           )}
-          
+
           <p className="mt-1 text-xs text-gray-500">
             Escribe para buscar y agregar temas
           </p>
@@ -9501,9 +9566,8 @@ useEffect(() => {
                         key={person.id}
                         type="button"
                         onClick={() => setNewPerson({ ...newPerson, personId: person.id })}
-                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${
-                          newPerson.personId === person.id ? 'bg-blue-50' : ''
-                        }`}
+                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${newPerson.personId === person.id ? 'bg-blue-50' : ''
+                          }`}
                       >
                         {person.name}
                       </button>
@@ -9894,12 +9958,12 @@ interface MovieModalProps {
   setIsPartialFilmingStartDate: (value: boolean) => void
   partialFilmingStartDate: PartialFilmingDate
   setPartialFilmingStartDate: (value: PartialFilmingDate) => void
-  
+
   isPartialFilmingEndDate: boolean
   setIsPartialFilmingEndDate: (value: boolean) => void
   partialFilmingEndDate: PartialFilmingDate
   setPartialFilmingEndDate: (value: PartialFilmingDate) => void
-
+  handleScreeningVenuesChange: (venues: number[]) => void
   // Metadata
   availableRatings: any[]
   availableColorTypes: any[]
@@ -9960,6 +10024,7 @@ export default function MovieModal({
   handleCountriesChange,
   handleProductionCompaniesChange,
   handleDistributionCompaniesChange,
+  handleScreeningVenuesChange,
   handleThemesChange,
   handleLinksChange
 }: MovieModalProps) {
@@ -9968,16 +10033,16 @@ export default function MovieModal({
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
-        <MovieModalHeader 
-          isEditing={!!editingMovie} 
-          onClose={onClose} 
+        <MovieModalHeader
+          isEditing={!!editingMovie}
+          onClose={onClose}
         />
 
         <form onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto max-h-[calc(90vh-8rem)]">
           <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <MovieModalTabs 
-              activeTab={activeTab} 
-              onTabChange={setActiveTab} 
+            <MovieModalTabs
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
             />
 
             <div className="p-6">
@@ -10006,6 +10071,7 @@ export default function MovieModal({
                   handleCountriesChange={handleCountriesChange}
                   handleThemesChange={handleThemesChange}
                   handleLinksChange={handleLinksChange}
+                  handleScreeningVenuesChange={handleScreeningVenuesChange}
                   editingMovieId={editingMovie?.id}
                 />
               </Tabs.Content>
@@ -10369,25 +10435,27 @@ interface BasicInfoTabProps {
   watch: UseFormWatch<MovieFormData>
   setValue: UseFormSetValue<MovieFormData>
   errors: FieldErrors<MovieFormData>
-  
+
   // Estados específicos
   isPartialDate: boolean
   setIsPartialDate: (value: boolean) => void
   partialReleaseDate: PartialReleaseDate
   setPartialReleaseDate: (value: PartialReleaseDate) => void
   tipoDuracionDisabled: boolean
-  
+
   // Estados para fechas de rodaje
   isPartialFilmingStartDate: boolean
   setIsPartialFilmingStartDate: (value: boolean) => void
   partialFilmingStartDate: PartialFilmingDate
   setPartialFilmingStartDate: (value: PartialFilmingDate) => void
-  
+
   isPartialFilmingEndDate: boolean
   setIsPartialFilmingEndDate: (value: boolean) => void
   partialFilmingEndDate: PartialFilmingDate
   setPartialFilmingEndDate: (value: PartialFilmingDate) => void
-  
+
+  handleScreeningVenuesChange: (venues: number[]) => void
+
   // Datos y callbacks
   movieFormInitialData: any
   movieLinks: any[]
@@ -10395,7 +10463,7 @@ interface BasicInfoTabProps {
   handleCountriesChange: (countries: number[]) => void
   handleThemesChange: (themes: number[]) => void
   handleLinksChange: (links: any[]) => void
-  
+
   editingMovieId?: number
 }
 
@@ -10417,6 +10485,7 @@ export default function BasicInfoTab({
   setIsPartialFilmingEndDate,
   partialFilmingEndDate,
   setPartialFilmingEndDate,
+  handleScreeningVenuesChange,
   movieFormInitialData,
   movieLinks,
   handleGenresChange,
@@ -10425,6 +10494,8 @@ export default function BasicInfoTab({
   handleLinksChange,
   editingMovieId
 }: BasicInfoTabProps) {
+  console.log('movieFormInitialData:', movieFormInitialData)
+  console.log('screeningVenues:', movieFormInitialData?.screeningVenues)
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -10528,6 +10599,8 @@ export default function BasicInfoTab({
               )}
             </div>
           </div>
+
+
 
           {/* Fechas de rodaje */}
           <div className="space-y-4">
@@ -10699,9 +10772,8 @@ export default function BasicInfoTab({
             <select
               {...register('tipoDuracion')}
               disabled={tipoDuracionDisabled}
-              className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${
-                tipoDuracionDisabled ? 'bg-gray-100' : ''
-              }`}
+              className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${tipoDuracionDisabled ? 'bg-gray-100' : ''
+                }`}
             >
               <option value="">Seleccionar tipo...</option>
               {TIPOS_DURACION.map((tipo) => (
@@ -10788,12 +10860,13 @@ export default function BasicInfoTab({
       <MovieFormEnhanced
         key={editingMovieId || 'new'}
         onGenresChange={handleGenresChange}
-        onCastChange={() => {}}
-        onCrewChange={() => {}}
+        onCastChange={() => { }}
+        onCrewChange={() => { }}
         onCountriesChange={handleCountriesChange}
-        onProductionCompaniesChange={() => {}}
-        onDistributionCompaniesChange={() => {}}
+        onProductionCompaniesChange={() => { }}
+        onDistributionCompaniesChange={() => { }}
         onThemesChange={handleThemesChange}
+        onScreeningVenuesChange={handleScreeningVenuesChange}
         initialData={movieFormInitialData}
         showOnlyBasicInfo={true}
       />
@@ -11644,6 +11717,223 @@ export default function MoviesTable({
       </div>
     </div>
   )
+}
+
+// ==================================================
+// src/components/admin/ScreeningVenueSelector.tsx
+// ==================================================
+// src/components/admin/ScreeningVenueSelector.tsx - VERSIÓN SIMPLIFICADA
+'use client'
+
+import { useState, useEffect } from 'react'
+import { X, Search, Building, Globe, Tv, Film } from 'lucide-react'
+
+interface ScreeningVenue {
+    id: number
+    name: string
+    type: string
+    city?: string
+    isActive: boolean
+}
+
+interface ScreeningVenueSelectorProps {
+    selectedVenueIds: number[]  // Solo IDs
+    onChange: (venueIds: number[]) => void
+    releaseDate?: string  // Fecha de estreno de la película
+}
+
+const venueTypeIcons = {
+    CINEMA: Building,
+    STREAMING: Globe,
+    TV_CHANNEL: Tv,
+    OTHER: Film
+}
+
+const venueTypeLabels = {
+    CINEMA: 'Cine',
+    STREAMING: 'Streaming',
+    TV_CHANNEL: 'Canal de TV',
+    OTHER: 'Otro'
+}
+
+export default function ScreeningVenueSelector({
+    selectedVenueIds,
+    onChange,
+    releaseDate
+}: ScreeningVenueSelectorProps) {
+    console.log('ScreeningVenueSelector - selectedVenueIds:', selectedVenueIds, typeof selectedVenueIds)
+
+    const [venues, setVenues] = useState<ScreeningVenue[]>([])
+    const [filteredVenues, setFilteredVenues] = useState<ScreeningVenue[]>([])
+    const [searchTerm, setSearchTerm] = useState('')
+    const [showDropdown, setShowDropdown] = useState(false)
+    const [loading, setLoading] = useState(false)
+
+    // Cargar todas las pantallas activas
+    useEffect(() => {
+        fetchVenues()
+    }, [])
+
+    const fetchVenues = async () => {
+        try {
+            setLoading(true)
+            const response = await fetch('/api/screening-venues?isActive=true&limit=100')
+            const data = await response.json()
+            setVenues(data.venues || [])
+            setFilteredVenues(data.venues || [])
+        } catch (error) {
+            console.error('Error loading screening venues:', error)
+            setVenues([])
+            setFilteredVenues([])
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Filtrar pantallas según búsqueda
+    useEffect(() => {
+        if (searchTerm) {
+            const filtered = venues.filter(venue =>
+                venue.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                venueTypeLabels[venue.type as keyof typeof venueTypeLabels]?.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+            setFilteredVenues(filtered)
+        } else {
+            setFilteredVenues(venues)
+        }
+    }, [searchTerm, venues])
+
+    // Agregar pantalla
+    const addVenue = (venueId: number) => {
+        console.log('ScreeningVenueSelector - addVenue llamado con:', venueId)
+    console.log('ScreeningVenueSelector - selectedVenueIds actual:', selectedVenueIds)
+        if (!selectedVenueIds.includes(venueId)) {
+            console.log('ScreeningVenueSelector - llamando onChange con:', [...selectedVenueIds, venueId])
+            onChange([...selectedVenueIds, venueId])
+        }
+        setSearchTerm('')
+        setShowDropdown(false)
+    }
+
+    // Eliminar pantalla
+    const removeVenue = (venueId: number) => {
+        onChange(selectedVenueIds.filter(id => id !== venueId))
+    }
+
+    // Obtener venue por ID
+    const getVenueById = (id: number) => venues.find(v => v.id === id)
+
+    // Agrupar pantallas por tipo
+    const groupedVenues = filteredVenues.reduce((groups, venue) => {
+        const type = venue.type || 'OTHER'
+        if (!groups[type]) groups[type] = []
+        groups[type].push(venue)
+        return groups
+    }, {} as Record<string, ScreeningVenue[]>)
+
+    return (
+        <div className="space-y-3">
+            {/* Pantallas seleccionadas */}
+            {selectedVenueIds.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                    {selectedVenueIds.map(venueId => {
+                        const venue = getVenueById(venueId)
+                        if (!venue) return null
+
+                        const Icon = venueTypeIcons[venue.type as keyof typeof venueTypeIcons] || Film
+
+                        return (
+                            <span
+                                key={venueId}
+                                className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                            >
+                                <Icon className="w-3 h-3" />
+                                {venue.name}
+                                {venue.city && (
+                                    <span className="text-xs opacity-75">({venue.city})</span>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => removeVenue(venueId)}
+                                    className="ml-1 hover:text-blue-600"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </span>
+                        )
+                    })}
+                </div>
+            )}
+
+            {/* Buscador */}
+            <div className="relative">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                        type="text"
+                        placeholder="Buscar pantalla de estreno..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onFocus={() => setShowDropdown(true)}
+                        className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    />
+                </div>
+
+                {/* Dropdown */}
+                {showDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {loading ? (
+                            <div className="p-4 text-center text-gray-500">Cargando...</div>
+                        ) : Object.entries(groupedVenues).length === 0 ? (
+                            <div className="p-4 text-center text-gray-500">
+                                {searchTerm ? 'No se encontraron pantallas' : 'No hay pantallas disponibles'}
+                            </div>
+                        ) : (
+                            Object.entries(groupedVenues).map(([type, venuesInType]) => (
+                                <div key={type}>
+                                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50">
+                                        {venueTypeLabels[type as keyof typeof venueTypeLabels]}
+                                    </div>
+                                    {venuesInType.map((venue) => {
+                                        const Icon = venueTypeIcons[venue.type as keyof typeof venueTypeIcons] || Film
+                                        const isSelected = selectedVenueIds.includes(venue.id)
+
+                                        return (
+                                            <button
+                                                key={venue.id}
+                                                type="button"
+                                                onClick={() => !isSelected && addVenue(venue.id)}
+                                                disabled={isSelected}
+                                                className={`w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 ${isSelected ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''
+                                                    }`}
+                                            >
+                                                <Icon className="w-4 h-4 text-gray-400" />
+                                                <span className="text-sm text-gray-900">{venue.name}</span>
+                                                {venue.city && (
+                                                    <span className="text-xs text-gray-500">- {venue.city}</span>
+                                                )}
+                                                {isSelected && (
+                                                    <span className="ml-auto text-xs text-gray-500">Ya agregada</span>
+                                                )}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Click fuera para cerrar */}
+            {showDropdown && (
+                <div
+                    className="fixed inset-0 z-0"
+                    onClick={() => setShowDropdown(false)}
+                />
+            )}
+        </div>
+    )
 }
 
 // ==================================================
@@ -13102,12 +13392,12 @@ import {
     prepareMovieData
 } from '@/lib/movies/movieUtils'
 import { moviesService } from '@/services'
-import type { 
-  UseFormRegister, 
-  UseFormHandleSubmit, 
-  UseFormWatch, 
-  UseFormSetValue, 
-  UseFormReset 
+import type {
+    UseFormRegister,
+    UseFormHandleSubmit,
+    UseFormWatch,
+    UseFormSetValue,
+    UseFormReset
 } from 'react-hook-form'
 
 interface UseMovieFormProps {
@@ -13214,6 +13504,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         productionCompanies: number[];
         distributionCompanies: number[];
         themes: number[];
+        screeningVenues: number[];
     }>({
         genres: [],
         cast: [],
@@ -13221,7 +13512,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         countries: [],
         productionCompanies: [],
         distributionCompanies: [],
-        themes: []
+        themes: [],
+        screeningVenues: []
     })
 
     // Estados adicionales
@@ -13296,6 +13588,11 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
 
     const handleLinksChange = useCallback((links: any[]) => {
         setMovieLinks(links)
+    }, [])
+
+    const handleScreeningVenuesChange = useCallback((venueIds: number[]) => {
+        console.log('useMovieForm - handleScreeningVenuesChange recibió:', venueIds)
+        setMovieRelations(prev => ({ ...prev, screeningVenues: venueIds }))
     }, [])
 
     const handleCastChange = useCallback((cast: any[]) => {
@@ -13436,7 +13733,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 countries: fullMovie.movieCountries || [],
                 productionCompanies: fullMovie.productionCompanies || [],
                 distributionCompanies: fullMovie.distributionCompanies || [],
-                themes: fullMovie.themes || []
+                themes: fullMovie.themes || [],
+                screeningVenues: fullMovie.screenings?.map((s: any) => s.venueId) || [] // AGREGAR ESTA LÍNEA
             })
 
             if (fullMovie.links) {
@@ -13461,7 +13759,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 countries: fullMovie.movieCountries?.map((c: any) => c.countryId) || [],
                 productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
                 distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
-                themes: fullMovie.themes?.map((t: any) => t.themeId) || []
+                themes: fullMovie.themes?.map((t: any) => t.themeId) || [],
+                screeningVenues: fullMovie.screenings?.map((s: any) => s.venueId) || [] // AGREGAR ESTA LÍNEA
             })
 
         } catch (error) {
@@ -13573,6 +13872,12 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                         : preparedData.metaKeywords.split(',').map((k: string) => k.trim()).filter((k: string) => k)
                     : [],
                 ...movieRelations,
+                screeningVenues: movieRelations.screeningVenues.map((venueId, index) => ({
+                    venueId,
+                    screeningDate: data.releaseDate || new Date().toISOString().split('T')[0],
+                    isPremiere: index === 0, // La primera es premiere
+                    isExclusive: movieRelations.screeningVenues.length === 1 // Exclusiva si es la única
+                })),
                 alternativeTitles,
                 links: movieLinks
             }
@@ -13583,18 +13888,9 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
             delete movieData.filmingEndDate;
 
             console.log('=== DATOS ENVIADOS AL BACKEND ===');
+            console.log('movieRelations.screeningVenues:', movieRelations.screeningVenues);
+            console.log('movieData.screeningVenues:', movieData.screeningVenues);
             console.log('movieData completo:', JSON.stringify(movieData, null, 2));
-            console.log('=== DATOS DE FECHA ENVIADOS ===');
-            console.log('releaseYear:', movieData.releaseYear);
-            console.log('releaseMonth:', movieData.releaseMonth);
-            console.log('releaseDay:', movieData.releaseDay);
-            console.log('filmingStartYear:', movieData.filmingStartYear);
-            console.log('filmingStartMonth:', movieData.filmingStartMonth);
-            console.log('filmingStartDay:', movieData.filmingStartDay);
-            console.log('filmingEndYear:', movieData.filmingEndYear);
-            console.log('filmingEndMonth:', movieData.filmingEndMonth);
-            console.log('filmingEndDay:', movieData.filmingEndDay);
-            console.log('================================');
 
             // Usar el servicio para crear o actualizar
             if (editingMovie) {
@@ -13634,7 +13930,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
             countries: [],
             productionCompanies: [],
             distributionCompanies: [],
-            themes: []
+            themes: [],
+            screeningVenues: []
         })
         setMovieLinks([])
         setAlternativeTitles([])
@@ -13683,6 +13980,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         handleProductionCompaniesChange,
         handleDistributionCompaniesChange,
         handleThemesChange,
+        handleScreeningVenuesChange,
 
         // Funciones
         loadMovieData,
@@ -14206,7 +14504,13 @@ export const movieSchema = z.object({
   distributionCompanies: z.array(z.number()).optional(),
   themes: z.array(z.number()).optional(),
   alternativeTitles: z.array(z.any()).optional(),
-  links: z.array(z.any()).optional()
+  links: z.array(z.any()).optional(),
+  screeningVenues: z.array(z.object({
+  venueId: z.number(),
+  screeningDate: z.string().optional().nullable(),
+  isPremiere: z.boolean().optional(),
+  isExclusive: z.boolean().optional()
+})).optional()
 })
 
 export type MovieFormData = z.infer<typeof movieSchema>

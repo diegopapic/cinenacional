@@ -11,25 +11,27 @@ interface BasicInfoTabProps {
   watch: UseFormWatch<MovieFormData>
   setValue: UseFormSetValue<MovieFormData>
   errors: FieldErrors<MovieFormData>
-  
+
   // Estados específicos
   isPartialDate: boolean
   setIsPartialDate: (value: boolean) => void
   partialReleaseDate: PartialReleaseDate
   setPartialReleaseDate: (value: PartialReleaseDate) => void
   tipoDuracionDisabled: boolean
-  
+
   // Estados para fechas de rodaje
   isPartialFilmingStartDate: boolean
   setIsPartialFilmingStartDate: (value: boolean) => void
   partialFilmingStartDate: PartialFilmingDate
   setPartialFilmingStartDate: (value: PartialFilmingDate) => void
-  
+
   isPartialFilmingEndDate: boolean
   setIsPartialFilmingEndDate: (value: boolean) => void
   partialFilmingEndDate: PartialFilmingDate
   setPartialFilmingEndDate: (value: PartialFilmingDate) => void
-  
+
+  handleScreeningVenuesChange: (venues: number[]) => void
+
   // Datos y callbacks
   movieFormInitialData: any
   movieLinks: any[]
@@ -37,7 +39,7 @@ interface BasicInfoTabProps {
   handleCountriesChange: (countries: number[]) => void
   handleThemesChange: (themes: number[]) => void
   handleLinksChange: (links: any[]) => void
-  
+
   editingMovieId?: number
 }
 
@@ -59,6 +61,7 @@ export default function BasicInfoTab({
   setIsPartialFilmingEndDate,
   partialFilmingEndDate,
   setPartialFilmingEndDate,
+  handleScreeningVenuesChange,
   movieFormInitialData,
   movieLinks,
   handleGenresChange,
@@ -67,6 +70,8 @@ export default function BasicInfoTab({
   handleLinksChange,
   editingMovieId
 }: BasicInfoTabProps) {
+  console.log('movieFormInitialData:', movieFormInitialData)
+  console.log('screeningVenues:', movieFormInitialData?.screeningVenues)
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -170,6 +175,8 @@ export default function BasicInfoTab({
               )}
             </div>
           </div>
+
+
 
           {/* Fechas de rodaje */}
           <div className="space-y-4">
@@ -341,9 +348,8 @@ export default function BasicInfoTab({
             <select
               {...register('tipoDuracion')}
               disabled={tipoDuracionDisabled}
-              className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${
-                tipoDuracionDisabled ? 'bg-gray-100' : ''
-              }`}
+              className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${tipoDuracionDisabled ? 'bg-gray-100' : ''
+                }`}
             >
               <option value="">Seleccionar tipo...</option>
               {TIPOS_DURACION.map((tipo) => (
@@ -430,12 +436,13 @@ export default function BasicInfoTab({
       <MovieFormEnhanced
         key={editingMovieId || 'new'}
         onGenresChange={handleGenresChange}
-        onCastChange={() => {}}
-        onCrewChange={() => {}}
+        onCastChange={() => { }}
+        onCrewChange={() => { }}
         onCountriesChange={handleCountriesChange}
-        onProductionCompaniesChange={() => {}}
-        onDistributionCompaniesChange={() => {}}
+        onProductionCompaniesChange={() => { }}
+        onDistributionCompaniesChange={() => { }}
         onThemesChange={handleThemesChange}
+        onScreeningVenuesChange={handleScreeningVenuesChange}
         initialData={movieFormInitialData}
         showOnlyBasicInfo={true}
       />
