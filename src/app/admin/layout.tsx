@@ -8,7 +8,7 @@ import {
   Building2, 
   Award, 
   Globe, 
-  Languages, 
+  Tv,
   Home,
   Menu,
   X,
@@ -31,9 +31,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Géneros', href: '/admin/genres', icon: Hash },
     { name: 'Productoras', href: '/admin/companies/production', icon: Building2 },
     { name: 'Distribuidoras', href: '/admin/companies/distribution', icon: Building2 },
+    { name: 'Pantallas de Estreno', href: '/admin/screening-venues', icon: Tv },
     { name: 'Premios', href: '/admin/awards', icon: Award },
     { name: 'Países', href: '/admin/countries', icon: Globe },
-    { name: 'Idiomas', href: '/admin/languages', icon: Languages },
     { name: 'Temas', href: '/admin/themes', icon: Tag },
     { name: 'Calificaciones', href: '/admin/calificaciones', icon: Tag }
   ]

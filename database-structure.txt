@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-13T17:39:44.318Z
+# Generado automáticamente el: 2025-08-13T18:53:05.431Z
 # ================================================
 
 ## Schema Prisma
@@ -89,6 +89,7 @@ model Movie {
   watchedBy        UserWatched[]
   alternativeTitles MovieAlternativeTitle[]
   links            MovieLink[]
+  screenings       MovieScreening[]
   
   @@map("movies")
   @@index([slug])
@@ -104,6 +105,59 @@ model Movie {
   @@index([stage])
   @@index([releaseYear])
   @@index([releaseYear, releaseMonth])
+}
+
+model ScreeningVenue {
+  id          Int       @id @default(autoincrement())
+  slug        String    @unique @db.VarChar(255)
+  name        String    @db.VarChar(255)
+  type        VenueType
+  description String?   @db.Text
+  logoUrl     String?   @map("logo_url") @db.VarChar(500)
+  website     String?   @db.VarChar(500)
+  
+  // Ubicación física (para cines)
+  address     String?   @db.VarChar(500)
+  city        String?   @db.VarChar(100)
+  province    String?   @db.VarChar(100)
+  country     String?   @default("Argentina") @db.VarChar(100)
+  latitude    Decimal?  @db.Decimal(10, 8)
+  longitude   Decimal?  @db.Decimal(11, 8)
+  
+  // Estado y timestamps
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  // Relaciones
+  screenings  MovieScreening[]
+  
+  @@map("screening_venues")
+  @@index([name])
+  @@index([type])
+  @@index([isActive])
+}
+
+model MovieScreening {
+  id             Int      @id @default(autoincrement())
+  movieId        Int      @map("movie_id")
+  venueId        Int      @map("venue_id")
+  screeningDate  DateTime @map("screening_date") @db.Date
+  endDate        DateTime? @map("end_date") @db.Date
+  isPremiere     Boolean  @default(false) @map("is_premiere")
+  isExclusive    Boolean  @default(false) @map("is_exclusive")
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+  
+  // Relaciones
+  movie          Movie           @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  venue          ScreeningVenue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  
+  @@unique([movieId, venueId, screeningDate])
+  @@map("movie_screenings")
+  @@index([movieId])
+  @@index([venueId])
+  @@index([screeningDate])
 }
 
 model MovieAlternativeTitle {
@@ -619,6 +673,15 @@ enum ImageType {
   @@map("image_type")
 }
 
+enum VenueType {
+  CINEMA
+  STREAMING
+  TV_CHANNEL
+  OTHER
+  
+  @@map("venue_type")
+}
+
 enum VideoType {
   TRAILER
   TEASER
@@ -690,6 +753,9 @@ CREATE SCHEMA IF NOT EXISTS "public";
 CREATE TYPE "public"."image_type" AS ENUM ('POSTER', 'BACKDROP', 'STILL', 'BEHIND_SCENES');
 
 -- CreateEnum
+CREATE TYPE "public"."venue_type" AS ENUM ('CINEMA', 'STREAMING', 'TV_CHANNEL', 'OTHER');
+
+-- CreateEnum
 CREATE TYPE "public"."video_type" AS ENUM ('TRAILER', 'TEASER', 'BEHIND_SCENES', 'INTERVIEW', 'CLIP');
 
 -- CreateEnum
@@ -745,6 +811,43 @@ CREATE TABLE "public"."movies" (
     "meta_keywords" TEXT[],
 
     CONSTRAINT "movies_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."screening_venues" (
+    "id" SERIAL NOT NULL,
+    "slug" VARCHAR(255) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "type" "public"."venue_type" NOT NULL,
+    "description" TEXT,
+    "logo_url" VARCHAR(500),
+    "website" VARCHAR(500),
+    "address" VARCHAR(500),
+    "city" VARCHAR(100),
+    "province" VARCHAR(100),
+    "country" VARCHAR(100) DEFAULT 'Argentina',
+    "latitude" DECIMAL(10,8),
+    "longitude" DECIMAL(11,8),
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "screening_venues_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."movie_screenings" (
+    "id" SERIAL NOT NULL,
+    "movie_id" INTEGER NOT NULL,
+    "venue_id" INTEGER NOT NULL,
+    "screening_date" DATE NOT NULL,
+    "end_date" DATE,
+    "is_premiere" BOOLEAN NOT NULL DEFAULT false,
+    "is_exclusive" BOOLEAN NOT NULL DEFAULT false,
+    "notes" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "movie_screenings_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -1158,6 +1261,30 @@ CREATE INDEX "movies_release_year_idx" ON "public"."movies"("release_year");
 CREATE INDEX "movies_release_year_release_month_idx" ON "public"."movies"("release_year", "release_month");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "screening_venues_slug_key" ON "public"."screening_venues"("slug");
+
+-- CreateIndex
+CREATE INDEX "screening_venues_name_idx" ON "public"."screening_venues"("name");
+
+-- CreateIndex
+CREATE INDEX "screening_venues_type_idx" ON "public"."screening_venues"("type");
+
+-- CreateIndex
+CREATE INDEX "screening_venues_is_active_idx" ON "public"."screening_venues"("is_active");
+
+-- CreateIndex
+CREATE INDEX "movie_screenings_movie_id_idx" ON "public"."movie_screenings"("movie_id");
+
+-- CreateIndex
+CREATE INDEX "movie_screenings_venue_id_idx" ON "public"."movie_screenings"("venue_id");
+
+-- CreateIndex
+CREATE INDEX "movie_screenings_screening_date_idx" ON "public"."movie_screenings"("screening_date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "movie_screenings_movie_id_venue_id_screening_date_key" ON "public"."movie_screenings"("movie_id", "venue_id", "screening_date");
+
+-- CreateIndex
 CREATE INDEX "movie_alternative_titles_movie_id_idx" ON "public"."movie_alternative_titles"("movie_id");
 
 -- CreateIndex
@@ -1279,6 +1406,12 @@ ALTER TABLE "public"."movies" ADD CONSTRAINT "movies_color_type_id_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "public"."movies" ADD CONSTRAINT "movies_rating_id_fkey" FOREIGN KEY ("rating_id") REFERENCES "public"."ratings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."movie_screenings" ADD CONSTRAINT "movie_screenings_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."movie_screenings" ADD CONSTRAINT "movie_screenings_venue_id_fkey" FOREIGN KEY ("venue_id") REFERENCES "public"."screening_venues"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_alternative_titles" ADD CONSTRAINT "movie_alternative_titles_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
