@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: f70fc4f31bf5a081759128761ab933de8552b84c
-// Fecha: 2025-08-13T22:10:07.888Z
+// Commit: 0970c070d03bacbde708cfe327d0eb7ee4572fd8
+// Fecha: 2025-08-13T22:12:37.421Z
 // ============================================
 
 
@@ -13444,6 +13444,7 @@ interface UseMovieFormReturn {
     handleProductionCompaniesChange: (companies: number[]) => void
     handleDistributionCompaniesChange: (companies: number[]) => void
     handleThemesChange: (themes: number[]) => void
+    handleScreeningVenuesChange: (venues: number[]) => void
 
     // Funciones
     loadMovieData: (movie: Movie) => Promise<void>
