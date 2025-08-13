@@ -48,7 +48,7 @@ export async function GET(
             country: true
           }
         },
-        
+
         productionCompanies: {
           include: {
             company: true
@@ -122,6 +122,12 @@ export async function PUT(
     console.log(JSON.stringify(body, null, 2))
     console.log('================================')
 
+    console.log('=== RATING ID RECIBIDO ===')
+    console.log('ratingId:', body.ratingId)
+    console.log('tipo:', typeof body.ratingId)
+    console.log('es null?:', body.ratingId === null)
+    console.log('========================')
+
     // Validar datos
     const validatedData = movieSchema.parse(body)
 
@@ -170,8 +176,10 @@ export async function PUT(
           filmingEndYear: movieData.filmingEndYear || null,
           filmingEndMonth: movieData.filmingEndMonth || null,
           filmingEndDay: movieData.filmingEndDay || null,
-          ...(ratingId && {
-            rating: { connect: { id: ratingId } }
+          ...(ratingId !== undefined && {
+            rating: ratingId === null
+              ? { disconnect: true }
+              : { connect: { id: ratingId } }
           }),
           ...(colorTypeId && {
             colorType: { connect: { id: colorTypeId } }
