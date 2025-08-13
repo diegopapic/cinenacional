@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-13T17:39:43.857Z",
+  "timestamp": "2025-08-13T18:53:04.894Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "527d0c8625343b52f6357b0c424d773f0c65cccf",
+  "commit": "6e2d5544d1516ee20a094753cb7525f2ee953af5",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
@@ -171,6 +171,9 @@
           "movies": {
             "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/movies/page.tsx"
           },
+          "screening-venues": {
+            "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/screening-venues/page.tsx"
+          },
           "themes": {
             "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/themes/page.tsx"
           }
@@ -221,6 +224,12 @@
           },
           "project-structure": {
             "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/project-structure/route.ts"
+          },
+          "screening-venues": {
+            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/screening-venues/route.ts",
+            "[id]": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/screening-venues/[id]/route.ts"
+            }
           },
           "themes": {
             "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/themes/route.ts",
