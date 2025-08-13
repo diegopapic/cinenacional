@@ -37,8 +37,6 @@ export default function ScreeningVenueSelector({
     onChange,
     releaseDate
 }: ScreeningVenueSelectorProps) {
-    console.log('ScreeningVenueSelector - selectedVenueIds:', selectedVenueIds, typeof selectedVenueIds)
-
     const [venues, setVenues] = useState<ScreeningVenue[]>([])
     const [filteredVenues, setFilteredVenues] = useState<ScreeningVenue[]>([])
     const [searchTerm, setSearchTerm] = useState('')
@@ -81,10 +79,7 @@ export default function ScreeningVenueSelector({
 
     // Agregar pantalla
     const addVenue = (venueId: number) => {
-        console.log('ScreeningVenueSelector - addVenue llamado con:', venueId)
-    console.log('ScreeningVenueSelector - selectedVenueIds actual:', selectedVenueIds)
         if (!selectedVenueIds.includes(venueId)) {
-            console.log('ScreeningVenueSelector - llamando onChange con:', [...selectedVenueIds, venueId])
             onChange([...selectedVenueIds, venueId])
         }
         setSearchTerm('')

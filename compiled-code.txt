@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 9e0b948f49226790ba6539548a949bc8a51d3717
-// Fecha: 2025-08-13T22:22:36.267Z
+// Commit: 5013e7ebeb374b47047b97a8c631240a6ccb9ada
+// Fecha: 2025-08-13T22:39:28.708Z
 // ============================================
 
 
@@ -4213,13 +4213,13 @@ export async function GET(
           }
         },
         filmingLocations: true,
-        screenings: { 
+        screenings: {
           include: {
             venue: true
           }
         }
       }
-      })
+    })
 
     if (!movie) {
       return NextResponse.json(
@@ -4253,23 +4253,9 @@ export async function PUT(
       ratingId: body.ratingId === 0 ? null : body.ratingId
     };
 
-    console.log('=== BODY RECIBIDO EN BACKEND ===')
-    console.log(JSON.stringify(body, null, 2))
-    console.log('================================')
-
-    console.log('=== RATING ID RECIBIDO ===')
-    console.log('ratingId:', body.ratingId)
-    console.log('tipo:', typeof body.ratingId)
-    console.log('es null?:', body.ratingId === null)
-    console.log('========================')
 
     // Validar datos
     const validatedData = movieSchema.parse(cleanedData)
-
-    // AGREGAR ESTOS LOGS AQUÍ
-    console.log('=== SCREENING VENUES VALIDADAS ===')
-    console.log('screeningVenues:', validatedData.screeningVenues)
-    console.log('================================')
 
     // Verificar que la película existe
     const existingMovie = await prisma.movie.findUnique({
@@ -4455,9 +4441,6 @@ export async function PUT(
 
       // 12. Actualizar screening venues
       if (screeningVenues !== undefined) {
-        console.log('=== PROCESANDO SCREENING VENUES ===')
-        console.log('Cantidad:', screeningVenues?.length)
-        console.log('Datos:', screeningVenues)
         await tx.movieScreening.deleteMany({ where: { movieId: id } })
         if (screeningVenues && screeningVenues.length > 0) {
           await tx.movieScreening.createMany({
@@ -8346,8 +8329,6 @@ export default function MovieFormEnhanced({
   // Inicializar con datos existentes - CORREGIDO
   useEffect(() => {
     if (initialData && !isInitialized) {
-      console.log('Inicializando MovieFormEnhanced con:', initialData)
-
       if (initialData.genres) {
         const genreIds = initialData.genres.map(g => g.genreId || g.id)
         setSelectedGenres(genreIds)
@@ -8376,7 +8357,6 @@ export default function MovieFormEnhanced({
           return null
         }).filter(id => id !== null)
 
-        console.log('Country IDs extraídos:', countryIds)
         setSelectedCountries(countryIds)
       }
 
@@ -8407,9 +8387,7 @@ export default function MovieFormEnhanced({
   }, [selectedGenres, onGenresChange, isInitialized])
 
   useEffect(() => {
-    console.log('MovieFormEnhanced - useEffect screeningVenues, isInitialized:', isInitialized, 'screeningVenues:', screeningVenues)
     if (isInitialized) {
-      console.log('MovieFormEnhanced - notificando screeningVenues:', screeningVenues)
       onScreeningVenuesChange(screeningVenues)
     }
   }, [screeningVenues, onScreeningVenuesChange, isInitialized])
@@ -8428,7 +8406,6 @@ export default function MovieFormEnhanced({
 
   useEffect(() => {
     if (isInitialized) {
-      console.log('Notificando cambio de países:', selectedCountries)
       onCountriesChange(selectedCountries)
     }
   }, [selectedCountries, onCountriesChange, isInitialized])
@@ -8686,7 +8663,6 @@ export default function MovieFormEnhanced({
           <ScreeningVenueSelector
             selectedVenueIds={screeningVenues}
             onChange={(venues) => {
-              console.log('MovieFormEnhanced - onChange recibió:', venues)
               setScreeningVenues(venues)
             }}
           />
@@ -10495,8 +10471,6 @@ export default function BasicInfoTab({
   handleLinksChange,
   editingMovieId
 }: BasicInfoTabProps) {
-  console.log('movieFormInitialData:', movieFormInitialData)
-  console.log('screeningVenues:', movieFormInitialData?.screeningVenues)
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -11764,8 +11738,6 @@ export default function ScreeningVenueSelector({
     onChange,
     releaseDate
 }: ScreeningVenueSelectorProps) {
-    console.log('ScreeningVenueSelector - selectedVenueIds:', selectedVenueIds, typeof selectedVenueIds)
-
     const [venues, setVenues] = useState<ScreeningVenue[]>([])
     const [filteredVenues, setFilteredVenues] = useState<ScreeningVenue[]>([])
     const [searchTerm, setSearchTerm] = useState('')
@@ -11808,10 +11780,7 @@ export default function ScreeningVenueSelector({
 
     // Agregar pantalla
     const addVenue = (venueId: number) => {
-        console.log('ScreeningVenueSelector - addVenue llamado con:', venueId)
-    console.log('ScreeningVenueSelector - selectedVenueIds actual:', selectedVenueIds)
         if (!selectedVenueIds.includes(venueId)) {
-            console.log('ScreeningVenueSelector - llamando onChange con:', [...selectedVenueIds, venueId])
             onChange([...selectedVenueIds, venueId])
         }
         setSearchTerm('')
@@ -13595,7 +13564,6 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
     }, [])
 
     const handleScreeningVenuesChange = useCallback((venueIds: number[]) => {
-        console.log('useMovieForm - handleScreeningVenuesChange recibió:', venueIds)
         setMovieRelations(prev => ({ ...prev, screeningVenues: venueIds }))
     }, [])
 
@@ -13626,9 +13594,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
     // Función para cargar datos de película existente
     const loadMovieData = useCallback(async (movie: Movie) => {
         try {
-            console.log('Intentando cargar película con ID:', movie.id)
             const fullMovie = await moviesService.getById(movie.id)
-            console.log('Película cargada:', fullMovie)
 
             // Configurar tipo de duración
             const minutos = fullMovie.duration
@@ -13890,11 +13856,6 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
             delete movieData.releaseDate;
             delete movieData.filmingStartDate;
             delete movieData.filmingEndDate;
-
-            console.log('=== DATOS ENVIADOS AL BACKEND ===');
-            console.log('movieRelations.screeningVenues:', movieRelations.screeningVenues);
-            console.log('movieData.screeningVenues:', movieData.screeningVenues);
-            console.log('movieData completo:', JSON.stringify(movieData, null, 2));
 
             // Usar el servicio para crear o actualizar
             if (editingMovie) {
