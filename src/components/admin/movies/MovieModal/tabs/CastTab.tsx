@@ -19,7 +19,6 @@ export default function CastTab({
       onCastChange={handleCastChange}
       onCrewChange={() => {}}
       onCountriesChange={() => {}}
-      onLanguagesChange={() => {}}
       onProductionCompaniesChange={() => {}}
       onDistributionCompaniesChange={() => {}}
       onThemesChange={() => {}}

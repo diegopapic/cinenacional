@@ -64,7 +64,6 @@ interface UseMovieFormReturn {
     handleCastChange: (cast: any[]) => void
     handleCrewChange: (crew: any[]) => void
     handleCountriesChange: (countries: number[]) => void
-    handleLanguagesChange: (languages: number[]) => void
     handleProductionCompaniesChange: (companies: number[]) => void
     handleDistributionCompaniesChange: (companies: number[]) => void
     handleThemesChange: (themes: number[]) => void
@@ -125,7 +124,6 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         cast: any[];
         crew: any[];
         countries: number[];
-        languages: number[];
         productionCompanies: number[];
         distributionCompanies: number[];
         themes: number[];
@@ -134,7 +132,6 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         cast: [],
         crew: [],
         countries: [],
-        languages: [],
         productionCompanies: [],
         distributionCompanies: [],
         themes: []
@@ -224,10 +221,6 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
 
     const handleCountriesChange = useCallback((countries: number[]) => {
         setMovieRelations(prev => ({ ...prev, countries }))
-    }, [])
-
-    const handleLanguagesChange = useCallback((languages: number[]) => {
-        setMovieRelations(prev => ({ ...prev, languages }))
     }, [])
 
     const handleProductionCompaniesChange = useCallback((companies: number[]) => {
@@ -354,7 +347,6 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 cast: fullMovie.cast || [],
                 crew: fullMovie.crew || [],
                 countries: fullMovie.movieCountries || [],
-                languages: fullMovie.languages || [],
                 productionCompanies: fullMovie.productionCompanies || [],
                 distributionCompanies: fullMovie.distributionCompanies || [],
                 themes: fullMovie.themes || []
@@ -380,7 +372,6 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                     billingOrder: c.billingOrder
                 })) || [],
                 countries: fullMovie.movieCountries?.map((c: any) => c.countryId) || [],
-                languages: fullMovie.languages?.map((l: any) => l.languageId) || [],
                 productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
                 distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
                 themes: fullMovie.themes?.map((t: any) => t.themeId) || []
@@ -553,7 +544,6 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
             cast: [],
             crew: [],
             countries: [],
-            languages: [],
             productionCompanies: [],
             distributionCompanies: [],
             themes: []
@@ -602,7 +592,6 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         handleCastChange,
         handleCrewChange,
         handleCountriesChange,
-        handleLanguagesChange,
         handleProductionCompaniesChange,
         handleDistributionCompaniesChange,
         handleThemesChange,

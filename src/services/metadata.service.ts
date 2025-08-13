@@ -24,12 +24,6 @@ interface Country {
   code: string
 }
 
-interface Language {
-  id: number
-  name: string
-  code: string
-}
-
 interface Company {
   id: number
   name: string
@@ -99,21 +93,7 @@ export const metadataService = {
     }
   },
 
-  /**
-   * Obtiene todos los idiomas
-   */
-  async getLanguages(): Promise<Language[]> {
-    try {
-      const response = await fetch('/api/languages')
-      if (!response.ok) throw new Error('Error loading languages')
-      return response.json()
-    } catch (error) {
-      console.error('Error loading languages:', error)
-      return []
-    }
-  },
-
-  /**
+   /**
    * Obtiene las productoras
    */
   async getProductionCompanies(): Promise<Company[]> {
@@ -163,7 +143,6 @@ export const metadataService = {
       const [
         genres,
         countries,
-        languages,
         prodCompanies,
         distCompanies,
         themes,
@@ -172,7 +151,6 @@ export const metadataService = {
       ] = await Promise.all([
         this.getGenres(),
         this.getCountries(),
-        this.getLanguages(),
         this.getProductionCompanies(),
         this.getDistributionCompanies(),
         this.getThemes(),
@@ -183,7 +161,6 @@ export const metadataService = {
       return {
         genres: Array.isArray(genres) ? genres : [],
         countries: Array.isArray(countries) ? countries : [],
-        languages: Array.isArray(languages) ? languages : [],
         productionCompanies: Array.isArray(prodCompanies) ? prodCompanies : [],
         distributionCompanies: Array.isArray(distCompanies) ? distCompanies : [],
         themes: Array.isArray(themes) ? themes : [],
@@ -196,7 +173,6 @@ export const metadataService = {
       return {
         genres: [],
         countries: [],
-        languages: [],
         productionCompanies: [],
         distributionCompanies: [],
         themes: [],

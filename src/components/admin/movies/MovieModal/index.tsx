@@ -65,7 +65,6 @@ interface MovieModalProps {
   handleCastChange: (cast: any[]) => void
   handleCrewChange: (crew: any[]) => void
   handleCountriesChange: (countries: number[]) => void
-  handleLanguagesChange: (languages: number[]) => void
   handleProductionCompaniesChange: (companies: number[]) => void
   handleDistributionCompaniesChange: (companies: number[]) => void
   handleThemesChange: (themes: number[]) => void
@@ -109,7 +108,6 @@ export default function MovieModal({
   handleCastChange,
   handleCrewChange,
   handleCountriesChange,
-  handleLanguagesChange,
   handleProductionCompaniesChange,
   handleDistributionCompaniesChange,
   handleThemesChange,
@@ -156,7 +154,6 @@ export default function MovieModal({
                   movieLinks={movieLinks}
                   handleGenresChange={handleGenresChange}
                   handleCountriesChange={handleCountriesChange}
-                  handleLanguagesChange={handleLanguagesChange}
                   handleThemesChange={handleThemesChange}
                   handleLinksChange={handleLinksChange}
                   editingMovieId={editingMovie?.id}

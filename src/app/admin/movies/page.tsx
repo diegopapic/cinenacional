@@ -179,7 +179,6 @@ export default function AdminMoviesPage() {
           handleCastChange={movieForm.handleCastChange}
           handleCrewChange={movieForm.handleCrewChange}
           handleCountriesChange={movieForm.handleCountriesChange}
-          handleLanguagesChange={movieForm.handleLanguagesChange}
           handleProductionCompaniesChange={movieForm.handleProductionCompaniesChange}
           handleDistributionCompaniesChange={movieForm.handleDistributionCompaniesChange}
           handleThemesChange={movieForm.handleThemesChange}
