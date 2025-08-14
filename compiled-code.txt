@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 2f53d720ad67dc8eaab103f11fc17af07af7462b
-// Fecha: 2025-08-14T23:02:12.141Z
+// Commit: 6b6cc97ebb906b10b9832283767f3426b804b6ee
+// Fecha: 2025-08-14T23:06:29.480Z
 // ============================================
 
 
@@ -18436,7 +18436,7 @@ export const shouldDisableDurationType = (
 // ==================================================
 // src/lib/people/peopleConstants.ts
 
-import { Gender, PersonLinkType } from './peopleTypes';
+import { Gender, PersonLinkType, PersonFormData } from './peopleTypes';
 
 // Opciones de género
 export const GENDER_OPTIONS = [
@@ -18503,7 +18503,7 @@ export const LINK_CATEGORIES = {
 } as const;
 
 // Valores por defecto para formularios
-export const DEFAULT_PERSON_FORM_VALUES = {
+export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
   firstName: '',
   lastName: '',
   realName: '',
@@ -18517,7 +18517,7 @@ export const DEFAULT_PERSON_FORM_VALUES = {
   hideAge: false,
   isActive: true,
   links: [],
-} as const;
+};
 
 // Valores por defecto para un nuevo link
 export const DEFAULT_PERSON_LINK = {
