@@ -36,3 +36,7 @@ prisma/migrations/dev/
 
 # Dumps de la base de datos de Wordpress
 dumps/
+
+# PostgreSQL
+
+pgsql/

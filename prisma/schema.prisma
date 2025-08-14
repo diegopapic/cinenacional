@@ -189,26 +189,23 @@ model MovieLink {
 model Person {
   id              Int      @id @default(autoincrement())
   slug            String   @unique @db.VarChar(255)
-  name            String   @db.VarChar(255)
-  birthName       String?  @map("birth_name") @db.VarChar(255)
+  firstName       String   @map("first_name") @db.VarChar(255)
+  lastName        String   @map("last_name") @db.VarChar(255)
+  realName        String?  @map("real_name") @db.VarChar(255)
   birthDate       DateTime? @map("birth_date") @db.Date
   deathDate       DateTime? @map("death_date") @db.Date
-  birthLocationId Int?     @map("birth_location_id")           
+  birthLocationId Int?     @map("birth_location_id")
   deathLocationId Int?     @map("death_location_id")
-  nationality     String?  @db.VarChar(100)
   biography       String?  @db.Text
   photoUrl        String?  @map("photo_url") @db.VarChar(500)
-  gender          String?  @db.VarChar(20)
+  gender          Gender?
+  hideAge         Boolean  @default(false) @map("hide_age")
   
-  // Links externos
-  imdbId          String?  @map("imdb_id") @db.VarChar(20)
-  wikipediaUrl    String?  @map("wikipedia_url") @db.VarChar(500)
-  officialWebsite String?  @map("official_website") @db.VarChar(500)
+  // Campos de búsqueda rápida (opcional, para optimización)
+  hasLinks        Boolean  @default(false) @map("has_links")
   
-  // Redes sociales
-  instagramHandle String?  @map("instagram_handle") @db.VarChar(100)
-  twitterHandle   String?  @map("twitter_handle") @db.VarChar(100)
-  facebookUrl     String?  @map("facebook_url") @db.VarChar(500)
+  // Status
+  isActive        Boolean  @default(true) @map("is_active")
   
   // Timestamps
   createdAt       DateTime @default(now()) @map("created_at")
@@ -220,12 +217,51 @@ model Person {
   awards          MovieAward[]
   birthLocation   Location?    @relation("BirthLocation", fields: [birthLocationId], references: [id])
   deathLocation   Location?    @relation("DeathLocation", fields: [deathLocationId], references: [id])
+  nationalities   PersonNationality[]
+  links           PersonLink[]
   
   @@map("people")
   @@index([slug])
-  @@index([name])
+  @@index([firstName])
+  @@index([lastName])
   @@index([birthLocationId])
   @@index([deathLocationId])
+  @@index([isActive])
+}
+
+model PersonNationality {
+  personId    Int     @map("person_id")
+  countryId   Int     @map("country_id")
+  isPrimary   Boolean @default(false) @map("is_primary")
+  
+  // Relaciones
+  person      Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
+  country     Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  
+  @@id([personId, countryId])
+  @@map("person_nationalities")
+}
+
+model PersonLink {
+  id           Int      @id @default(autoincrement())
+  personId     Int      @map("person_id")
+  type         PersonLinkType
+  url          String   @db.VarChar(500)
+  title        String?  @db.VarChar(255)
+  displayOrder Int      @default(0) @map("display_order")
+  isVerified   Boolean  @default(false) @map("is_verified")
+  isActive     Boolean  @default(true) @map("is_active")
+  lastChecked  DateTime? @map("last_checked")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  // Relaciones
+  person       Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  
+  @@map("person_links")
+  @@index([personId])
+  @@index([type])
+  @@index([isActive])
 }
 
 model Genre {
@@ -542,6 +578,7 @@ model Country {
   // Relaciones
   movies    MovieCountry[]
   locations Location[]
+  personNationalities PersonNationality[]
 
   @@map("countries")
 }
@@ -664,6 +701,52 @@ enum ImageType {
   BEHIND_SCENES
   
   @@map("image_type")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  
+  @@map("gender")
+}
+
+enum PersonLinkType {
+  // Bases de datos de cine
+  IMDB
+  TMDB
+  CINENACIONAL
+  
+  // Enciclopedias
+  WIKIPEDIA
+  
+  // Sitios web
+  OFFICIAL_WEBSITE
+  PORTFOLIO
+  BLOG
+  
+  // Redes sociales principales
+  INSTAGRAM
+  TWITTER
+  FACEBOOK
+  YOUTUBE
+  TIKTOK
+  LINKEDIN
+  
+  // Plataformas de contenido
+  VIMEO
+  LETTERBOXD
+  
+  // Streaming/Podcasts
+  SPOTIFY
+  PODCAST
+  
+  // Otros
+  INTERVIEW
+  ARTICLE
+  OTHER
+  
+  @@map("person_link_type")
 }
 
 enum VenueType {
