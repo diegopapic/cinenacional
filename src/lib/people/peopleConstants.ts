@@ -1,6 +1,6 @@
 // src/lib/people/peopleConstants.ts
 
-import { Gender, PersonLinkType } from './peopleTypes';
+import { Gender, PersonLinkType, PersonFormData } from './peopleTypes';
 
 // Opciones de género
 export const GENDER_OPTIONS = [
@@ -67,7 +67,7 @@ export const LINK_CATEGORIES = {
 } as const;
 
 // Valores por defecto para formularios
-export const DEFAULT_PERSON_FORM_VALUES = {
+export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
   firstName: '',
   lastName: '',
   realName: '',
@@ -81,7 +81,7 @@ export const DEFAULT_PERSON_FORM_VALUES = {
   hideAge: false,
   isActive: true,
   links: [],
-} as const;
+};
 
 // Valores por defecto para un nuevo link
 export const DEFAULT_PERSON_LINK = {
