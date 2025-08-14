@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-14T23:00:19.711Z
+// Archivos del admin - 2025-08-14T23:02:12.151Z
 // ==================
 
 
@@ -10635,7 +10635,7 @@ export function PeopleTable() {
                         <div>
                           {person._count?.castRoles || 0} como actor
                           {((person._count?.crewRoles || 0) > 0) && (
-                            <>, {person._count.crewRoles || 0} como crew</>
+                            <>, {person._count?.crewRoles || 0} como crew</>
                           )}
                         </div>
                       ) : (
