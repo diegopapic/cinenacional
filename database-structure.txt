@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-13T22:39:28.862Z
+# Generado automáticamente el: 2025-08-14T20:03:19.457Z
 # ================================================
 
 ## Schema Prisma
@@ -196,26 +196,23 @@ model MovieLink {
 model Person {
   id              Int      @id @default(autoincrement())
   slug            String   @unique @db.VarChar(255)
-  name            String   @db.VarChar(255)
-  birthName       String?  @map("birth_name") @db.VarChar(255)
+  firstName       String   @map("first_name") @db.VarChar(255)
+  lastName        String   @map("last_name") @db.VarChar(255)
+  realName        String?  @map("real_name") @db.VarChar(255)
   birthDate       DateTime? @map("birth_date") @db.Date
   deathDate       DateTime? @map("death_date") @db.Date
-  birthLocationId Int?     @map("birth_location_id")           
+  birthLocationId Int?     @map("birth_location_id")
   deathLocationId Int?     @map("death_location_id")
-  nationality     String?  @db.VarChar(100)
   biography       String?  @db.Text
   photoUrl        String?  @map("photo_url") @db.VarChar(500)
-  gender          String?  @db.VarChar(20)
+  gender          Gender?
+  hideAge         Boolean  @default(false) @map("hide_age")
   
-  // Links externos
-  imdbId          String?  @map("imdb_id") @db.VarChar(20)
-  wikipediaUrl    String?  @map("wikipedia_url") @db.VarChar(500)
-  officialWebsite String?  @map("official_website") @db.VarChar(500)
+  // Campos de búsqueda rápida (opcional, para optimización)
+  hasLinks        Boolean  @default(false) @map("has_links")
   
-  // Redes sociales
-  instagramHandle String?  @map("instagram_handle") @db.VarChar(100)
-  twitterHandle   String?  @map("twitter_handle") @db.VarChar(100)
-  facebookUrl     String?  @map("facebook_url") @db.VarChar(500)
+  // Status
+  isActive        Boolean  @default(true) @map("is_active")
   
   // Timestamps
   createdAt       DateTime @default(now()) @map("created_at")
@@ -227,12 +224,51 @@ model Person {
   awards          MovieAward[]
   birthLocation   Location?    @relation("BirthLocation", fields: [birthLocationId], references: [id])
   deathLocation   Location?    @relation("DeathLocation", fields: [deathLocationId], references: [id])
+  nationalities   PersonNationality[]
+  links           PersonLink[]
   
   @@map("people")
   @@index([slug])
-  @@index([name])
+  @@index([firstName])
+  @@index([lastName])
   @@index([birthLocationId])
   @@index([deathLocationId])
+  @@index([isActive])
+}
+
+model PersonNationality {
+  personId    Int     @map("person_id")
+  countryId   Int     @map("country_id")
+  isPrimary   Boolean @default(false) @map("is_primary")
+  
+  // Relaciones
+  person      Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
+  country     Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  
+  @@id([personId, countryId])
+  @@map("person_nationalities")
+}
+
+model PersonLink {
+  id           Int      @id @default(autoincrement())
+  personId     Int      @map("person_id")
+  type         PersonLinkType
+  url          String   @db.VarChar(500)
+  title        String?  @db.VarChar(255)
+  displayOrder Int      @default(0) @map("display_order")
+  isVerified   Boolean  @default(false) @map("is_verified")
+  isActive     Boolean  @default(true) @map("is_active")
+  lastChecked  DateTime? @map("last_checked")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  // Relaciones
+  person       Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  
+  @@map("person_links")
+  @@index([personId])
+  @@index([type])
+  @@index([isActive])
 }
 
 model Genre {
@@ -549,6 +585,7 @@ model Country {
   // Relaciones
   movies    MovieCountry[]
   locations Location[]
+  personNationalities PersonNationality[]
 
   @@map("countries")
 }
@@ -673,6 +710,52 @@ enum ImageType {
   @@map("image_type")
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  
+  @@map("gender")
+}
+
+enum PersonLinkType {
+  // Bases de datos de cine
+  IMDB
+  TMDB
+  CINENACIONAL
+  
+  // Enciclopedias
+  WIKIPEDIA
+  
+  // Sitios web
+  OFFICIAL_WEBSITE
+  PORTFOLIO
+  BLOG
+  
+  // Redes sociales principales
+  INSTAGRAM
+  TWITTER
+  FACEBOOK
+  YOUTUBE
+  TIKTOK
+  LINKEDIN
+  
+  // Plataformas de contenido
+  VIMEO
+  LETTERBOXD
+  
+  // Streaming/Podcasts
+  SPOTIFY
+  PODCAST
+  
+  // Otros
+  INTERVIEW
+  ARTICLE
+  OTHER
+  
+  @@map("person_link_type")
+}
+
 enum VenueType {
   CINEMA
   STREAMING
@@ -751,6 +834,12 @@ CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateEnum
 CREATE TYPE "public"."image_type" AS ENUM ('POSTER', 'BACKDROP', 'STILL', 'BEHIND_SCENES');
+
+-- CreateEnum
+CREATE TYPE "public"."gender" AS ENUM ('MALE', 'FEMALE', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "public"."person_link_type" AS ENUM ('IMDB', 'TMDB', 'CINENACIONAL', 'WIKIPEDIA', 'OFFICIAL_WEBSITE', 'PORTFOLIO', 'BLOG', 'INSTAGRAM', 'TWITTER', 'FACEBOOK', 'YOUTUBE', 'TIKTOK', 'LINKEDIN', 'VIMEO', 'LETTERBOXD', 'SPOTIFY', 'PODCAST', 'INTERVIEW', 'ARTICLE', 'OTHER');
 
 -- CreateEnum
 CREATE TYPE "public"."venue_type" AS ENUM ('CINEMA', 'STREAMING', 'TV_CHANNEL', 'OTHER');
@@ -879,26 +968,49 @@ CREATE TABLE "public"."movie_links" (
 CREATE TABLE "public"."people" (
     "id" SERIAL NOT NULL,
     "slug" VARCHAR(255) NOT NULL,
-    "name" VARCHAR(255) NOT NULL,
-    "birth_name" VARCHAR(255),
+    "first_name" VARCHAR(255) NOT NULL,
+    "last_name" VARCHAR(255) NOT NULL,
+    "real_name" VARCHAR(255),
     "birth_date" DATE,
     "death_date" DATE,
     "birth_location_id" INTEGER,
     "death_location_id" INTEGER,
-    "nationality" VARCHAR(100),
     "biography" TEXT,
     "photo_url" VARCHAR(500),
-    "gender" VARCHAR(20),
-    "imdb_id" VARCHAR(20),
-    "wikipedia_url" VARCHAR(500),
-    "official_website" VARCHAR(500),
-    "instagram_handle" VARCHAR(100),
-    "twitter_handle" VARCHAR(100),
-    "facebook_url" VARCHAR(500),
+    "gender" "public"."gender",
+    "hide_age" BOOLEAN NOT NULL DEFAULT false,
+    "has_links" BOOLEAN NOT NULL DEFAULT false,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "people_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."person_nationalities" (
+    "person_id" INTEGER NOT NULL,
+    "country_id" INTEGER NOT NULL,
+    "is_primary" BOOLEAN NOT NULL DEFAULT false,
+
+    CONSTRAINT "person_nationalities_pkey" PRIMARY KEY ("person_id","country_id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."person_links" (
+    "id" SERIAL NOT NULL,
+    "person_id" INTEGER NOT NULL,
+    "type" "public"."person_link_type" NOT NULL,
+    "url" VARCHAR(500) NOT NULL,
+    "title" VARCHAR(255),
+    "display_order" INTEGER NOT NULL DEFAULT 0,
+    "is_verified" BOOLEAN NOT NULL DEFAULT false,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "last_checked" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "person_links_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -1303,13 +1415,28 @@ CREATE UNIQUE INDEX "people_slug_key" ON "public"."people"("slug");
 CREATE INDEX "people_slug_idx" ON "public"."people"("slug");
 
 -- CreateIndex
-CREATE INDEX "people_name_idx" ON "public"."people"("name");
+CREATE INDEX "people_first_name_idx" ON "public"."people"("first_name");
+
+-- CreateIndex
+CREATE INDEX "people_last_name_idx" ON "public"."people"("last_name");
 
 -- CreateIndex
 CREATE INDEX "people_birth_location_id_idx" ON "public"."people"("birth_location_id");
 
 -- CreateIndex
 CREATE INDEX "people_death_location_id_idx" ON "public"."people"("death_location_id");
+
+-- CreateIndex
+CREATE INDEX "people_is_active_idx" ON "public"."people"("is_active");
+
+-- CreateIndex
+CREATE INDEX "person_links_person_id_idx" ON "public"."person_links"("person_id");
+
+-- CreateIndex
+CREATE INDEX "person_links_type_idx" ON "public"."person_links"("type");
+
+-- CreateIndex
+CREATE INDEX "person_links_is_active_idx" ON "public"."person_links"("is_active");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "genres_slug_key" ON "public"."genres"("slug");
@@ -1424,6 +1551,15 @@ ALTER TABLE "public"."people" ADD CONSTRAINT "people_birth_location_id_fkey" FOR
 
 -- AddForeignKey
 ALTER TABLE "public"."people" ADD CONSTRAINT "people_death_location_id_fkey" FOREIGN KEY ("death_location_id") REFERENCES "public"."locations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."person_nationalities" ADD CONSTRAINT "person_nationalities_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."person_nationalities" ADD CONSTRAINT "person_nationalities_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "public"."countries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."person_links" ADD CONSTRAINT "person_links_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_cast" ADD CONSTRAINT "movie_cast_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;

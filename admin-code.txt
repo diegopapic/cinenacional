@@ -1,6 +1,1696 @@
-// Archivos del admin - 2025-08-13T22:39:28.717Z
+// Archivos del admin - 2025-08-14T20:03:18.942Z
 // ==================
 
+
+
+// ==================================================
+// pgsql/pgAdmin 4/web/pgadmin/static/js/components/PgTree/FileTreeItem/index.tsx
+// ==================================================
+/////////////////////////////////////////////////////////////
+//
+// pgAdmin 4 - PostgreSQL Tools
+//
+// Copyright (C) 2013 - 2025, The pgAdmin Development Team
+// This software is released under the PostgreSQL Licence
+//
+//////////////////////////////////////////////////////////////
+
+import cn from 'classnames';
+import * as React from 'react';
+import { ClasslistComposite } from 'aspen-decorations';
+import { Directory, FileEntry, IItemRendererProps, ItemType, RenamePromptHandle, FileType, FileOrDir} from 'react-aspen';
+import {IFileTreeXTriggerEvents, FileTreeXEvent } from '../types';
+import { Notificar } from 'notificar';
+import _ from 'lodash';
+import DoubleClickHandler from './DoubleClickHandler';
+interface IItemRendererXProps {
+    /**
+     * In this implementation, decoration are null when item is `PromptHandle`
+     *
+     * If you would like decorations for `PromptHandle`s, then get them using `DecorationManager#getDecorations(<target>)`.
+     * Where `<target>` can be either `NewFilePromptHandle.parent` or `RenamePromptHandle.target` depending on type of `PromptHandle`
+     *
+     * To determine the type of `PromptHandle`, use `IItemRendererProps.itemType`
+     */
+    decorations: ClasslistComposite
+    onClick: (ev: React.MouseEvent, item: FileEntry | Directory, type: ItemType) => void
+    onContextMenu: (ev: React.MouseEvent, item: FileEntry | Directory) => void
+    onMouseEnter: (ev: React.MouseEvent, item: FileEntry | Directory) => void
+    onMouseLeave: (ev: React.MouseEvent, item: FileEntry | Directory) => void
+    onItemHovered: (ev: React.MouseEvent, item: FileEntry | Directory, type: ItemType) => void
+    events: Notificar<FileTreeXEvent>
+}
+
+// DO NOT EXTEND FROM PureComponent!!! You might miss critical changes made deep within `item` prop
+// as far as efficiency is concerned, `react-aspen` works hard to ensure unnecessary updates are ignored
+export class FileTreeItem extends React.Component<IItemRendererXProps & IItemRendererProps> {
+  public static getBoundingClientRectForItem(item: FileEntry | Directory): DOMRect {
+    const divRef = FileTreeItem.itemIdToRefMap.get(item.id);
+    if (divRef) {
+      return divRef.getBoundingClientRect();
+    }
+    return null;
+  }
+
+  // ensure this syncs up with what goes in CSS, (em, px, % etc.) and what ultimately renders on the page
+  public static readonly renderHeight: number = 24;
+  private static readonly itemIdToRefMap: Map<number, HTMLDivElement> = new Map();
+  private static readonly refToItemIdMap: Map<number, HTMLDivElement> = new Map();
+  private readonly fileTreeEvent: IFileTreeXTriggerEvents;
+
+  constructor(props) {
+    super(props);
+    // used to apply decoration changes, you're welcome to use setState or other mechanisms as you see fit
+    this.forceUpdate = this.forceUpdate.bind(this);
+  }
+
+  public render() {
+    const { item, itemType, decorations } = this.props;
+    const isRenamePrompt = itemType === ItemType.RenamePrompt;
+    const isNewPrompt = itemType === ItemType.NewDirectoryPrompt || itemType === ItemType.NewFilePrompt;
+    const isDirExpanded = itemType === ItemType.Directory
+      ? (item as Directory).expanded
+      : itemType === ItemType.RenamePrompt && (item as RenamePromptHandle).target.type === FileType.Directory
+        ? ((item as RenamePromptHandle).target as Directory).expanded
+        : false;
+
+    const fileOrDir =
+            (itemType === ItemType.File ||
+                itemType === ItemType.NewFilePrompt ||
+                (itemType === ItemType.RenamePrompt && (item as RenamePromptHandle).target.constructor === FileEntry))
+              ? 'file'
+              : 'directory';
+
+    if (this.props.item.parent?.parent && this.props.item.parent?.path) {
+      this.props.item.resolvedPathCache = this.props.item.parent.path + '/' + this.props.item._metadata.data.id;
+    }
+
+    const itemChildren = item.children && item.children.length > 0 && item._metadata.data._type.indexOf('coll-') !== -1 ? '(' + item.children.length + ')' : '';
+    const extraClasses = item._metadata.data.extraClasses ? item._metadata.data.extraClasses.join(' ') : '';
+
+    const tags = item._metadata.data?.tags ?? [];
+
+    return (
+      <DoubleClickHandler onDoubleClick={this.handleDoubleClick} onSingleClick={this.handleClick}>
+        <div
+          className={cn('file-entry', {
+            renaming: isRenamePrompt,
+            prompt: isRenamePrompt || isNewPrompt,
+            new: isNewPrompt,
+          }, fileOrDir, decorations ? decorations.classlist : null, `depth-${item.depth}`, extraClasses)}
+          data-depth={item.depth}
+          onContextMenu={this.handleContextMenu}
+          onDragStart={this.handleDragStartItem}
+          onMouseEnter={this.handleMouseEnter}
+          onMouseLeave={this.handleMouseLeave}
+          onKeyDown={()=>{/* taken care by parent */}}
+          // required for rendering context menus when opened through context menu button on keyboard
+          ref={this.handleDivRef}
+          draggable={true}>
+
+          {!isNewPrompt && fileOrDir === 'directory' ?
+            <i className={cn('directory-toggle', isDirExpanded ? 'open' : '')} />
+            : null
+          }
+
+          <span className='file-label'>{
+            item._metadata?.data?.icon ?
+              <i className={cn('file-icon', item._metadata?.data?.icon ? item._metadata.data.icon : fileOrDir)} /> : null
+          }
+          <span className='file-name'>
+            { _.unescape(this.props.item.getMetadata('data')._label)}
+          </span>
+          <span className='children-count'>{itemChildren}</span>
+          {tags.map((tag)=>(
+            <div key={tag.text} className='file-tag' style={{'--tag-color': tag.color} as React.CSSProperties}>
+              {tag.text}
+            </div>
+          ))}
+          </span>
+        </div>
+      </DoubleClickHandler>
+    );
+  }
+
+  public componentDidMount() {
+    this.events = this.props.events;
+    this.props.item.resolvedPathCache = this.props.item.parent.path + '/' + this.props.item._metadata.data.id;
+    if (this.props.decorations) {
+      this.props.decorations.addChangeListener(this.forceUpdate);
+    }
+    this.setFileLoaded(this.props.item);
+  }
+
+  private readonly setFileLoaded = async (FileOrDir): Promise<void> => {
+    this.props.changeDirectoryCount(FileOrDir.parent);
+    if(FileOrDir._loaded !== true) {
+      this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'added', FileOrDir);
+    }
+    FileOrDir._loaded = true;
+  };
+
+  public componentWillUnmount() {
+    if (this.props.decorations) {
+      this.props.decorations.removeChangeListener(this.forceUpdate);
+    }
+  }
+
+  public componentDidUpdate(prevProps: IItemRendererXProps) {
+    if (prevProps.decorations) {
+      prevProps.decorations.removeChangeListener(this.forceUpdate);
+    }
+    if (this.props.decorations) {
+      this.props.decorations.addChangeListener(this.forceUpdate);
+    }
+  }
+
+  private readonly handleDivRef = (r: HTMLDivElement) => {
+    if (r === null) {
+      FileTreeItem.itemIdToRefMap.delete(this.props.item.id);
+    } else {
+      FileTreeItem.itemIdToRefMap.set(this.props.item.id, r);
+      FileTreeItem.refToItemIdMap.set(r, this.props.item);
+    }
+  };
+
+  private readonly handleContextMenu = (ev: React.MouseEvent) => {
+    const { item, itemType, onContextMenu } = this.props;
+    if (itemType === ItemType.File || itemType === ItemType.Directory) {
+      onContextMenu(ev, item as FileOrDir);
+    }
+  };
+
+  private readonly handleClick = (ev: React.MouseEvent) => {
+    const { item, itemType, onClick } = this.props;
+    if (itemType === ItemType.File || itemType === ItemType.Directory) {
+      onClick(ev, item as FileEntry, itemType);
+    }
+  };
+
+  private readonly handleDoubleClick = (ev: React.MouseEvent) => {
+    const { item, itemType, onDoubleClick } = this.props;
+    if (itemType === ItemType.File || itemType === ItemType.Directory) {
+      onDoubleClick(ev, item as FileEntry, itemType);
+    }
+  };
+
+  private readonly handleMouseEnter = (ev: React.MouseEvent) => {
+    const { item, itemType, onMouseEnter } = this.props;
+    if (itemType === ItemType.File || itemType === ItemType.Directory) {
+      onMouseEnter?.(ev, item as FileEntry);
+    }
+  };
+
+  private readonly handleMouseLeave = (ev: React.MouseEvent) => {
+    const { item, itemType, onMouseLeave } = this.props;
+    if (itemType === ItemType.File || itemType === ItemType.Directory) {
+      onMouseLeave?.(ev, item as FileEntry);
+    }
+  };
+
+  private readonly handleDragStartItem = (e: React.DragEvent) => {
+    const { item, itemType, events } = this.props;
+    if (itemType === ItemType.File || itemType === ItemType.Directory) {
+      const ref = FileTreeItem.itemIdToRefMap.get(item.id);
+      if (ref) {
+        events.dispatch(FileTreeXEvent.onTreeEvents, e, 'dragstart', item);
+      }
+    }
+  };
+}
+
+
+// ==================================================
+// pgsql/pgAdmin 4/web/pgadmin/static/js/components/PgTree/FileTreeX/index.tsx
+// ==================================================
+/////////////////////////////////////////////////////////////
+//
+// pgAdmin 4 - PostgreSQL Tools
+//
+// Copyright (C) 2013 - 2025, The pgAdmin Development Team
+// This software is released under the PostgreSQL Licence
+//
+//////////////////////////////////////////////////////////////
+import * as React from 'react';
+import {
+  FileTree,
+  Directory,
+  FileEntry,
+  ItemType,
+  IFileTreeHandle,
+  WatchEvent,
+  FileType,
+  IItemRendererProps,
+  FileOrDir
+} from 'react-aspen';
+import { Decoration, TargetMatchMode } from 'aspen-decorations';
+import { FileTreeItem } from '../FileTreeItem';
+import { Notificar, DisposablesComposite } from 'notificar';
+import { IFileTreeXHandle, IFileTreeXProps, FileTreeXEvent, IFileTreeXTriggerEvents } from '../types';
+import { KeyboardHotkeys } from '../services/keyboardHotkeys';
+import { TreeModelX } from '../TreeModelX';
+import AutoSizer from 'react-virtualized-auto-sizer';
+
+export class FileTreeX extends React.Component<IFileTreeXProps> {
+  private fileTreeHandle: IFileTreeXHandle;
+  private readonly activeFileDec: Decoration;
+  private readonly pseudoActiveFileDec: Decoration;
+  private activeFile: FileOrDir;
+  private pseudoActiveFile: FileOrDir;
+  private readonly wrapperRef: React.RefObject<HTMLDivElement> = React.createRef();
+  private readonly events: Notificar<FileTreeXEvent>;
+  private readonly disposables: DisposablesComposite;
+  private keyboardHotkeys: KeyboardHotkeys;
+  private fileTreeEvent: IFileTreeXTriggerEvents;
+  private readonly hoverTimeoutId: React.RefObject<number|null> = React.createRef<number|null>();
+  private readonly hoverDispatchId: React.RefObject<number|null> = React.createRef<number|null>();
+  constructor(props: IFileTreeXProps) {
+    super(props);
+    this.events = new Notificar();
+    this.disposables = new DisposablesComposite();
+    this.activeFileDec = new Decoration('active');
+    this.pseudoActiveFileDec = new Decoration('pseudo-active');
+  }
+
+  render() {
+    const { height, model, disableCache } = this.props;
+    const { decorations } = model;
+
+    return <div
+      onKeyDown={this.handleKeyDown}
+      className='file-tree'
+      onBlur={this.handleBlur}
+      onClick={this.handleClick}
+      onScroll={this.props.onScroll}
+      ref={this.wrapperRef}
+      style={{
+        height: height || 'calc(100vh - 60px)',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1
+      }}
+      tabIndex={-1}>
+      <AutoSizer onResize={this.onResize}>
+        {({ width, height }) => (
+          <FileTree
+            height={height}
+            width={width}
+            model={model}
+            itemHeight={FileTreeItem.renderHeight}
+            onReady={this.handleTreeReady}
+            disableCache={disableCache || false}
+          >
+            {(props: IItemRendererProps) => <FileTreeItem
+              item={props.item}
+              itemType={props.itemType}
+              decorations={decorations.getDecorations(props.item as FileEntry|Directory)}
+              onClick={this.handleItemClicked}
+              onDoubleClick={this.handleItemDoubleClicked}
+              onContextMenu={this.handleItemCtxMenu}
+              onMouseEnter={this.onItemMouseEnter}
+              onMouseLeave={this.onItemMouseLeave}
+              changeDirectoryCount={this.changeDirectoryCount}
+              events={this.events}/>}
+          </FileTree>
+        )}
+      </AutoSizer>
+    </div>;
+  }
+
+  public componentDidMount() {
+    for(const child of this.props.model.root.children) {
+      this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'loaded', child);
+    }
+  }
+
+  componentWillUnmount() {
+    const { model } = this.props;
+    model.decorations.removeDecoration(this.activeFileDec);
+    model.decorations.removeDecoration(this.pseudoActiveFileDec);
+    this.disposables.dispose();
+  }
+
+  private readonly handleTreeEvent = () => {
+    this.fileTreeEvent = this.props.onEvent;
+  };
+
+  private readonly handleTreeReady = (handle: IFileTreeHandle) => {
+    const { onReady, model } = this.props;
+    const scrollDiv = this.wrapperRef.current?.querySelector('div')?.querySelector('div');
+    if(this.props.onScroll) {
+      scrollDiv?.addEventListener('scroll', (ev: any)=>this.props.onScroll?.(ev));
+    }
+
+    this.fileTreeHandle = {
+      ...handle,
+      getModel: () => this.props.model,
+      getActiveFile: () => this.activeFile,
+      setActiveFile: this.setActiveFile,
+      getPseudoActiveFile: () => this.pseudoActiveFile,
+      setPseudoActiveFile: this.setPseudoActiveFile,
+      toggleDirectory: this.toggleDirectory,
+      closeDir: this.closeDir,
+      newFile: async (dirOrPath: Directory | string) => this.supervisePrompt(await handle.promptNewFile(dirOrPath as string)),
+      newFolder: async (dirOrPath: Directory | string) => this.supervisePrompt(await handle.promptNewDirectory(dirOrPath as string)),
+      onBlur: (callback) => this.events.add(FileTreeXEvent.OnBlur, callback),
+      hasDirectFocus: () => this.wrapperRef.current === document.activeElement,
+      first: this.first,
+      parent: this.parent,
+      hasParent: this.hasParent,
+      isOpen: this.isOpen,
+      isClosed: this.isClosed,
+      itemData: this.itemData,
+      children: this.children,
+      getItemFromDOM: this.getItemFromDOM,
+      getDOMFromItem: this.getDOMFromItem,
+      onTreeEvents: (callback) => this.events.add(FileTreeXEvent.onTreeEvents, callback),
+      addIcon: this.addIcon,
+      addCssClass: this.addCssClass,
+      create: this.create,
+      remove: this.remove,
+      update: this.update,
+      refresh: this.refresh,
+      setLabel: this.setLabel,
+      unload: this.unload,
+      deSelectActiveFile: this.deSelectActiveFile,
+      resize: this.resize,
+      showLoader: this.showLoader,
+      hideLoader: this.hideLoader,
+    };
+
+    model.decorations.addDecoration(this.activeFileDec);
+    model.decorations.addDecoration(this.pseudoActiveFileDec);
+
+    this.disposables.add(this.fileTreeHandle.onDidChangeModel((prevModel: TreeModelX, newModel: TreeModelX) => {
+      this.setActiveFile(null);
+      this.setPseudoActiveFile(null);
+      prevModel.decorations.removeDecoration(this.activeFileDec);
+      prevModel.decorations.removeDecoration(this.pseudoActiveFileDec);
+      newModel.decorations.addDecoration(this.activeFileDec);
+      newModel.decorations.addDecoration(this.pseudoActiveFileDec);
+    }));
+
+    this.disposables.add(this.fileTreeHandle.onBlur(() => {
+      this.setPseudoActiveFile(null);
+    }));
+
+    this.keyboardHotkeys = new KeyboardHotkeys(this.fileTreeHandle, this.events);
+
+    if (typeof onReady === 'function') {
+      onReady(this.fileTreeHandle);
+    }
+  };
+
+  private readonly onItemMouseEnter = (ev: React.MouseEvent, item: FileEntry | Directory) => {
+    clearTimeout(this.hoverDispatchId.current??undefined);
+    (this.hoverDispatchId as any).current = setTimeout(()=>{
+      clearTimeout(this.hoverTimeoutId.current??undefined);
+      this.events.dispatch(FileTreeXEvent.onTreeEvents, ev, 'hovered', item);
+    }, 500);
+  };
+
+  private readonly onItemMouseLeave = (ev: React.MouseEvent) => {
+    clearTimeout(this.hoverTimeoutId.current??undefined);
+    clearTimeout(this.hoverDispatchId.current??undefined);
+    (this.hoverTimeoutId as any).current = setTimeout(()=>{
+      this.events.dispatch(FileTreeXEvent.onTreeEvents, ev, 'hovered', null);
+    }, 100);
+  };
+
+  private readonly setActiveFile = async (fileOrDirOrPath: FileOrDir | string, ensureVisible, align): Promise<void> => {
+    const fileH = typeof fileOrDirOrPath === 'string'
+      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
+      : fileOrDirOrPath;
+
+    if (fileH === this.props.model.root) { return; }
+    if (this.activeFile !== fileH) {
+      if (this.activeFile) {
+        this.activeFileDec.removeTarget(this.activeFile);
+      }
+      if (fileH) {
+        this.activeFileDec.addTarget(fileH as Directory, TargetMatchMode.Self);
+      }
+      this.activeFile = fileH;
+      this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'selected', fileH);
+
+      if (fileH && ensureVisible === true) {
+        const alignTree = align ?? 'auto';
+        await this.fileTreeHandle.ensureVisible(fileH, alignTree);
+      }
+    }
+  };
+
+  private readonly ensureVisible = async (fileOrDirOrPath: FileOrDir | string): Promise<void> => {
+    const fileH = typeof fileOrDirOrPath === 'string'
+      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
+      : fileOrDirOrPath;
+
+    if (fileH) {
+      await this.fileTreeHandle.ensureVisible(fileH);
+    }
+  };
+
+  private readonly deSelectActiveFile = async (fileOrDirOrPath: FileOrDir | string): Promise<void> => {
+    const fileH = typeof fileOrDirOrPath === 'string'
+      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
+      : fileOrDirOrPath;
+
+    if (fileH === this.props.model.root) { return; }
+    if (this.activeFile === fileH) {
+      this.activeFileDec.removeTarget(this.activeFile);
+      this.activeFile = null;
+    }
+
+    this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'deselected', fileH);
+  };
+
+  private readonly setPseudoActiveFile = async (fileOrDirOrPath: FileOrDir | string): Promise<void> => {
+    const fileH = typeof fileOrDirOrPath === 'string'
+      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
+      : fileOrDirOrPath;
+
+    if (fileH === this.props.model.root) { return; }
+    if (this.pseudoActiveFile !== fileH) {
+      if (this.pseudoActiveFile) {
+        this.pseudoActiveFileDec.removeTarget(this.pseudoActiveFile);
+      }
+      if (fileH) {
+        this.pseudoActiveFileDec.addTarget(fileH as Directory, TargetMatchMode.Self);
+      }
+      this.pseudoActiveFile = fileH;
+    }
+    if (fileH) {
+      await this.fileTreeHandle.ensureVisible(fileH);
+    }
+    this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'selected', fileH);
+  };
+
+  private readonly create = async (parentDir, itemData): Promise<void> => {
+    if (parentDir == undefined || parentDir == null) {
+      parentDir = this.props.model.root;
+    }
+    const {create, model } = this.props;
+    const isOpen = parentDir.isExpanded;
+    let maybeFile = undefined;
+
+    if (isOpen && (parentDir._children == null || parentDir._children.length == 0)) {
+      await this.fileTreeHandle.closeDirectory(parentDir as Directory);
+    }
+    if (!parentDir.isExpanded && (parentDir._children == null || parentDir._children.length == 0)) {
+      await this.fileTreeHandle.openDirectory(parentDir as Directory);
+    } else {
+      await this.fileTreeHandle.openDirectory(parentDir as Directory);
+      maybeFile = await create(parentDir.path, itemData);
+      if (maybeFile?.type && maybeFile?.name) {
+        model.root.inotify({
+          type: WatchEvent.Added,
+          directory: parentDir.path,
+          file: maybeFile,
+        });
+      }
+    }
+    this.changeDirectoryCount(parentDir);
+    const newItem = parentDir._children.find((c) => c._metadata.data.id === itemData.id);
+    newItem.resolvedPathCache = newItem.parent.path + '/' + newItem._metadata.data.id;
+    return newItem;
+  };
+
+  private readonly update = async (item, itemData): Promise<void> => {
+    item._metadata.data = itemData;
+    await this.props.update(item.path, itemData);
+    this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'updated', item);
+  };
+
+  private readonly refresh = async (item): Promise<void> => {
+    const isOpen = item.isExpanded;
+    if (item.children && item.children.length > 0) {
+      for(const entry of item.children) {
+        await this.remove(entry).then(() => {/*intentional*/}, () => {console.warn('Error removing item');});
+      }
+    }
+    if (isOpen) {
+      const ref = FileTreeItem.itemIdToRefMap.get(item.id);
+
+      if (ref) {
+        this.showLoader(ref);
+      }
+
+      await this.fileTreeHandle.closeDirectory(item as Directory);
+      await this.fileTreeHandle.openDirectory(item as Directory);
+      await this.changeResolvePath(item as Directory);
+      this.changeDirectoryCount(item);
+
+      if (ref) {
+        this.hideLoader(ref);
+      }
+    }
+  };
+
+  private readonly unload = async (item): Promise<void> => {
+    const isOpen = item.isExpanded;
+    if (item.children && item.children.length > 0) {
+      for(const entry of item.children) {
+        await this.remove(entry).then(() => {/*intentional*/}, error => {console.warn(error);});
+      }
+    }
+    if (isOpen) {
+      await this.fileTreeHandle.closeDirectory(item as Directory);
+      this.changeDirectoryCount(item);
+    }
+  };
+
+  private readonly remove = async (item): Promise<void> => {
+    const {remove, model } = this.props;
+    const path = item.path;
+    await remove(path, false);
+    const dirName = model.root.pathfx.dirname(path);
+    const fileName = model.root.pathfx.basename(path);
+    const parent = item.parent;
+    if (dirName === parent.path) {
+      const item_1 = parent._children.find((c) => c._metadata && c._metadata.data.id === fileName);
+      if (item_1) {
+        parent.unlinkItem(item_1);
+        if (parent._children.length == 0) { parent._children = null; }
+        this.changeDirectoryCount(parent);
+        this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'removed', item);
+      }
+      else {
+        console.warn('Item not found');
+      }
+    }
+  };
+
+  private readonly first = async (fileOrDirOrPath: FileOrDir | string) => {
+    const fileH = typeof fileOrDirOrPath === 'string'
+      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
+      : fileOrDirOrPath;
+
+    if (fileH === undefined || fileH === null) { return this.props.model.root.children[0]; }
+
+    if (fileH.branchSize > 0) {
+      return fileH.children[0];
+    }
+    return null;
+  };
+
+  private readonly parent = async (fileOrDirOrPath: FileOrDir | string) => {
+    const fileH = typeof fileOrDirOrPath === 'string'
+      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
+      : fileOrDirOrPath;
+
+    if (fileH === FileType.Directory || fileH === FileType.File) {
+      return fileH.parent;
+    }
+
+    return null;
+  };
+
+
+  private readonly hasParent = async (fileOrDirOrPath: FileOrDir | string) => {
+    const fileH = typeof fileOrDirOrPath === 'string'
+      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
+      : fileOrDirOrPath;
+
+    if (fileH === FileType.Directory || fileH === FileType.File) {
+      return fileH.parent;
+    }
+
+    return false;
+  };
+
+  private readonly children = async (fileOrDirOrPath: FileOrDir | string) => {
+    const fileH = typeof fileOrDirOrPath === 'string'
+      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
+      : fileOrDirOrPath;
+
+    if (fileH === FileType.Directory) {
+      return fileH.children;
+    }
+
+    return null;
+  };
+
+
+  private readonly isOpen = async (fileOrDirOrPath: FileOrDir | string) => {
+    const fileH = typeof fileOrDirOrPath === 'string'
+      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
+      : fileOrDirOrPath;
+
+    if (fileH === FileType.Directory) {
+      return fileH.isExpanded;
+    }
+
+    return false;
+  };
+
+  private readonly isClosed = async (fileOrDirOrPath: FileOrDir | string) => {
+    const fileH = typeof fileOrDirOrPath === 'string'
+      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
+      : fileOrDirOrPath;
+
+    if (fileH === FileType.Directory || fileH === FileType.File) {
+      return !fileH.isExpanded;
+    }
+
+    return false;
+  };
+
+  private readonly itemData = async (fileOrDirOrPath: FileOrDir | string) => {
+    const fileH = typeof fileOrDirOrPath === 'string'
+      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
+      : fileOrDirOrPath;
+
+    if (fileH === FileType.Directory || fileH === FileType.File) {
+      return fileH._metadata.data;
+    }
+
+    return null;
+  };
+
+  private readonly setLabel = async(pathOrDir: string | Directory, label: string): Promise<void> => {
+    const dir = typeof pathOrDir === 'string'
+      ? await this.fileTreeHandle.getFileHandle(pathOrDir)
+      : pathOrDir;
+
+    const ref = FileTreeItem.itemIdToRefMap.get(dir.id);
+    if (ref) {
+      ref.style.background = 'none';
+      const label$ = ref.querySelector('span.file-name') as HTMLDivElement;
+
+      if (label$) {
+        if (typeof(label) == 'object' && label.label) {
+          label = label.label;
+        }
+        label$.innerHTML = label;
+      }
+
+    }
+
+  };
+
+  private readonly changeDirectoryCount = async(pathOrDir: string | Directory): Promise<void> => {
+    const dir = typeof pathOrDir === 'string'
+      ? await this.fileTreeHandle.getFileHandle(pathOrDir)
+      : pathOrDir;
+
+    if (dir.type === FileType.Directory && dir._metadata.data && dir._metadata.data.is_collection === true) {
+      const ref = FileTreeItem.itemIdToRefMap.get(dir.id);
+      if (ref) {
+        ref.style.background = 'none';
+        const label$ = ref.querySelector('span.children-count') as HTMLDivElement;
+        if(dir.children && dir.children.length > 0) {
+          label$.innerHTML = '(' + dir.children.length + ')';
+        } else {
+          label$.innerHTML = '';
+        }
+      }
+    }
+
+  };
+
+  private readonly closeDir = async (pathOrDir: string | Directory) => {
+    const dir = typeof pathOrDir === 'string'
+      ? await this.fileTreeHandle.getFileHandle(pathOrDir)
+      : pathOrDir;
+
+    if (dir.type === FileType.Directory) {
+      if ((dir as Directory).expanded) {
+        this.fileTreeHandle.closeDirectory(dir as Directory);
+        this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'closed', dir);
+
+      }
+    }
+  };
+
+  private readonly toggleDirectory = async (pathOrDir: string | Directory) => {
+    const dir = typeof pathOrDir === 'string'
+      ? await this.fileTreeHandle.getFileHandle(pathOrDir)
+      : pathOrDir;
+
+    if (dir.type === FileType.Directory) {
+      if ((dir as Directory).expanded) {
+        this.fileTreeHandle.closeDirectory(dir as Directory);
+        this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'closed', dir);
+
+      } else {
+        const ref = FileTreeItem.itemIdToRefMap.get(dir.id);
+        if (ref) {
+          this.showLoader(ref);
+        }
+
+        await this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'beforeopen', dir);
+        await this.fileTreeHandle.openDirectory(dir as Directory);
+        await this.changeResolvePath(dir as Directory);
+
+        if (ref) {
+          this.hideLoader(ref);
+        }
+
+        this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'opened', dir);
+      }
+    }
+  };
+
+  private readonly addIcon = async (pathOrDir: string | Directory, icon) => {
+    const dir = typeof pathOrDir === 'string'
+      ? await this.fileTreeHandle.getFileHandle(pathOrDir)
+      : pathOrDir;
+
+    const ref = FileTreeItem.itemIdToRefMap.get(dir.id);
+    if (ref) {
+      const label$ = ref.querySelector('.file-label i') as HTMLDivElement;
+      label$.className = icon.icon;
+    }
+
+  };
+
+  private readonly addCssClass = async (pathOrDir: string | Directory, cssClass) => {
+    const dir = typeof pathOrDir === 'string'
+      ? await this.fileTreeHandle.getFileHandle(pathOrDir)
+      : pathOrDir;
+
+    const ref = FileTreeItem.itemIdToRefMap.get(dir.id);
+    if (ref) {
+      ref.classList.add(cssClass);
+      if (!dir._metadata.data.extraClasses)
+        dir._metadata.data.extraClasses = [];
+
+      dir._metadata.data.extraClasses.push(cssClass);
+    }
+
+  };
+
+  private readonly showLoader = (ref: HTMLDivElement) => {
+    // get label ref and add loading class
+    ref.style.background = 'none';
+    const label$ = ref.querySelector('i.directory-toggle') as HTMLDivElement;
+    if (label$)  label$.classList.add('loading');
+  };
+
+  private readonly hideLoader = (ref: HTMLDivElement) => {
+    // remove loading class.
+    ref.style.background = 'none';
+    const label$ = ref.querySelector('i.directory-toggle') as HTMLDivElement;
+    if (label$) label$.classList.remove('loading');
+  };
+
+  private readonly handleBlur = () => {
+    this.events.dispatch(FileTreeXEvent.OnBlur);
+  };
+
+  private readonly handleItemClicked = async (ev: React.MouseEvent, item: FileOrDir, type: ItemType) => {
+    if (type === ItemType.Directory && ev.target.className.includes('directory-toggle')) {
+      await this.toggleDirectory(item as Directory);
+    }
+    await this.setActiveFile(item as FileEntry);
+
+  };
+
+  private readonly handleItemDoubleClicked = async (ev: React.MouseEvent, item: FileOrDir) => {
+    await this.toggleDirectory(item as Directory);
+    await this.setActiveFile(item as FileEntry);
+
+  };
+
+  private readonly getItemFromDOM = (clientReact) => {
+    return FileTreeItem.refToItemIdMap.get(clientReact);
+  };
+
+  private readonly getDOMFromItem = (item: FileOrDir) => {
+    return FileTreeItem.itemIdToRefMap.get(item.id);
+  };
+
+  private readonly handleClick = (ev: React.MouseEvent) => {
+    // clicked in "blank space"
+    if (ev.currentTarget === ev.target) {
+      this.setPseudoActiveFile(null);
+    }
+  };
+
+  private readonly handleItemCtxMenu = (ev: React.MouseEvent, item: FileOrDir) => {
+    return this.props.onContextMenu?.(ev, item);
+  };
+
+  private readonly handleKeyDown = (ev: React.KeyboardEvent) => {
+    return this.keyboardHotkeys.handleKeyDown(ev);
+  };
+
+  private readonly onResize = () => {
+    if (this.wrapperRef.current != null) {
+      this.resize();
+    }
+  };
+
+  private readonly resize = (scrollX, scrollY) => {
+    const scrollXPos = scrollX || 0;
+    const scrollYPos = scrollY || this.props.model.state.scrollOffset;
+    const div = this.wrapperRef.current.querySelector('div').querySelector('div') as HTMLDivElement;
+    if (div) {
+      div.scroll(scrollXPos, scrollYPos);
+    }
+
+  };
+
+  private readonly changeResolvePath = async (item: FileOrDir): Promise<void> => {
+    // Change the path as per pgAdmin requirement: Item Id wise
+    if (item.type === FileType.File) {
+      item.resolvedPathCache = item.parent.path + '/' + item._metadata.data.id;
+    }
+    if (item.type === FileType.Directory && item.children && item.children.length > 0) {
+      for(const entry of item.children) {
+        entry.resolvedPathCache = entry.parent.path + '/' + entry._metadata.data.id;
+      }
+    }
+  };
+}
+
+export { IFileTreeXHandle, IFileTreeXProps };
+
+
+// ==================================================
+// pgsql/pgAdmin 4/web/pgadmin/static/js/components/PgTree/index.ts
+// ==================================================
+export { FileTreeX } from './FileTreeX';
+export { TreeModelX } from './TreeModelX';
+export { IFileTreeXHandle, IFileTreeXProps, FileTreeXEvent, IFileTreeXTriggerEvents } from './types';
+
+
+// ==================================================
+// pgsql/pgAdmin 4/web/pgadmin/static/js/components/PgTree/services/keyboardHotkeys.ts
+// ==================================================
+import { Notificar } from 'notificar';
+import { FileEntry, Directory, FileType } from 'react-aspen';
+import { FileTreeXEvent, IFileTreeXHandle } from '../types';
+
+export class KeyboardHotkeys {
+  private readonly hotkeyActions = {
+    'ArrowUp': () => this.jumpToPrevItem(),
+    'ArrowDown': () => this.jumpToNextItem(),
+    'ArrowRight': () => this.expandOrJumpToFirstChild(),
+    'ArrowLeft': () => this.collapseOrJumpToFirstParent(),
+    'Space': () => this.toggleDirectoryExpand(),
+    'Enter': () => this.selectFileOrToggleDirState(),
+    'Home': () => this.jumpToFirstItem(),
+    'End': () => this.jumpToLastItem(),
+    'Escape': () => this.resetSteppedOrSelectedItem(),
+    'Ctrl+KeyC': () => this.copyEntry(),
+  };
+
+  constructor(private readonly fileTreeX: IFileTreeXHandle, private readonly events: Notificar<FileTreeXEvent>) { }
+
+  public handleKeyDown = (ev: React.KeyboardEvent) => {
+    if (!this.fileTreeX.hasDirectFocus()) {
+      return false;
+    }
+    let { code } = ev.nativeEvent;
+
+    if((ev.nativeEvent.ctrlKey || ev.nativeEvent.metaKey) && ev.nativeEvent.key !== 'Control') {
+      code = `Ctrl+${code}`;
+    }
+    if (code in this.hotkeyActions) {
+      ev.preventDefault();
+      this.hotkeyActions[code]();
+      return true;
+    }
+  };
+
+  private readonly jumpToFirstItem = (): void => {
+    const { root } = this.fileTreeX.getModel();
+    this.fileTreeX.setActiveFile(root.getFileEntryAtIndex(0), true);
+  };
+
+  private readonly jumpToLastItem = (): void => {
+    const { root } = this.fileTreeX.getModel();
+    this.fileTreeX.setActiveFile(root.getFileEntryAtIndex(root.branchSize - 1), true);
+  };
+
+  private readonly jumpToNextItem = (): void => {
+    const { root } = this.fileTreeX.getModel();
+    let currentPseudoActive = this.fileTreeX.getActiveFile();
+    if (!currentPseudoActive) {
+      const selectedFile = this.fileTreeX.getActiveFile();
+      if (selectedFile) {
+        currentPseudoActive = selectedFile;
+      } else {
+        return this.jumpToFirstItem();
+      }
+    }
+    const idx = root.getIndexAtFileEntry(currentPseudoActive);
+    if (idx + 1 > root.branchSize) {
+      return this.jumpToFirstItem();
+    } else if (idx > -1) {
+      this.fileTreeX.setActiveFile(root.getFileEntryAtIndex(idx + 1), true);
+    }
+  };
+
+  private readonly jumpToPrevItem = (): void => {
+    const { root } = this.fileTreeX.getModel();
+    let currentPseudoActive = this.fileTreeX.getActiveFile();
+    if (!currentPseudoActive) {
+      const selectedFile = this.fileTreeX.getActiveFile();
+      if (selectedFile) {
+        currentPseudoActive = selectedFile;
+      } else {
+        return this.jumpToLastItem();
+      }
+    }
+    const idx = root.getIndexAtFileEntry(currentPseudoActive);
+    if (idx - 1 < 0) {
+      return this.jumpToLastItem();
+    } else if (idx > -1) {
+      this.fileTreeX.setActiveFile(root.getFileEntryAtIndex(idx - 1), true);
+    }
+  };
+
+  private expandOrJumpToFirstChild(): void {
+    const currentPseudoActive = this.fileTreeX.getActiveFile();
+    if (currentPseudoActive && currentPseudoActive.type === FileType.Directory) {
+      if ((currentPseudoActive as Directory).expanded) {
+        return this.jumpToNextItem();
+      } else {
+        this.fileTreeX.openDirectory(currentPseudoActive as Directory);
+      }
+    }
+  }
+
+  private collapseOrJumpToFirstParent(): void {
+    const currentPseudoActive = this.fileTreeX.getActiveFile();
+    if (currentPseudoActive) {
+      if (currentPseudoActive.type === FileType.Directory && (currentPseudoActive as Directory).expanded) {
+        return this.fileTreeX.closeDirectory(currentPseudoActive as Directory);
+      }
+      this.fileTreeX.setActiveFile(currentPseudoActive.parent, true);
+    }
+  }
+
+  private readonly selectFileOrToggleDirState = (): void => {
+    const currentPseudoActive = this.fileTreeX.getActiveFile();
+    if (!currentPseudoActive) { return; }
+    if (currentPseudoActive.type === FileType.Directory) {
+      this.fileTreeX.toggleDirectory(currentPseudoActive as Directory);
+    } else if (currentPseudoActive.type === FileType.File) {
+      this.fileTreeX.setActiveFile(currentPseudoActive as FileEntry, true);
+    }
+  };
+
+  private readonly toggleDirectoryExpand = (): void => {
+    const currentPseudoActive = this.fileTreeX.getActiveFile();
+    if (!currentPseudoActive) { return; }
+    if (currentPseudoActive.type === FileType.Directory) {
+      this.fileTreeX.toggleDirectory(currentPseudoActive as Directory);
+    }
+  };
+
+  private readonly resetSteppedOrSelectedItem = (): void => {
+    const currentPseudoActive = this.fileTreeX.getActiveFile();
+    if (currentPseudoActive) {
+      return this.resetSteppedItem();
+    }
+    this.fileTreeX.setActiveFile(null);
+  };
+
+  private readonly resetSteppedItem = () => {
+    this.fileTreeX.setActiveFile(null);
+  };
+
+  private readonly copyEntry = () => {
+    const currentPseudoActive = this.fileTreeX.getActiveFile();
+    this.events.dispatch(FileTreeXEvent.onTreeEvents, null, 'copied', currentPseudoActive);
+  };
+}
+
+
+// ==================================================
+// pgsql/pgAdmin 4/web/pgadmin/static/js/components/PgTree/TreeModelX/index.ts
+// ==================================================
+import { TreeModel, IBasicFileSystemHost, Root } from 'react-aspen';
+import { DecorationsManager } from 'aspen-decorations';
+
+export class TreeModelX extends TreeModel {
+  public readonly decorations: DecorationsManager;
+  constructor(host: IBasicFileSystemHost, mountPath: string) {
+    super(host, mountPath);
+    this.decorations = new DecorationsManager(this.root as Root);
+  }
+}
+
+
+// ==================================================
+// pgsql/pgAdmin 4/web/pgadmin/static/js/components/PgTree/types.ts
+// ==================================================
+import { IFileTreeHandle, FileEntry, Directory, FileType, IFileEntryItem, IItemRenderer, FileOrDir } from 'react-aspen';
+import { IDisposable } from 'notificar';
+import { TreeModelX } from './TreeModelX';
+import React from 'react';
+
+
+export interface IFileTreeXTriggerEvents {
+    onEvent(event: string, path: string): boolean | Promise<boolean>
+}
+
+export interface IItemRendererX extends IItemRenderer {
+    getBoundingClientRectForItem(item: FileEntry | Directory): DOMRect
+}
+
+// Here imagination is your limit! IFileTreeHandle has core low-level features you can build on top of as your application needs
+export interface IFileTreeXHandle extends IFileTreeHandle {
+    getActiveFile(): FileEntry | Directory
+    setActiveFile(path: string)
+    setActiveFile(file: FileEntry)
+    setActiveFile(dir: Directory)
+
+    getPseudoActiveFile(): FileEntry | Directory
+    setPseudoActiveFile(path: string)
+    setPseudoActiveFile(file: FileEntry)
+    setPseudoActiveFile(dir: Directory)
+
+    rename(path: string)
+    rename(file: FileEntry)
+    rename(dir: Directory)
+
+    newFile(dirpath: string)
+    newFile(dir: Directory)
+    newFolder(dirpath: string)
+    newFolder(dir: Directory)
+    toggleDirectory(path: string)
+    toggleDirectory(dir: Directory)
+
+    first(file: FileEntry): FileEntry | Directory
+    first(dir: Directory): FileEntry | Directory
+    first(): FileEntry | Directory
+
+    parent(file: FileEntry): Directory
+    parent(dir: Directory): Directory
+
+    hasParent(file: FileEntry): boolean
+    hasParent(dir: Directory): boolean
+
+    isOpen(file: FileEntry): boolean
+    isOpen(dir: Directory): boolean
+
+    isClosed(file: FileEntry): boolean
+    isClosed(dir: Directory): boolean
+
+    itemData(file: FileEntry): array
+    itemData(dir: Directory): array
+
+    children(file: FileEntry): array
+    children(dir: Directory): array
+
+    getModel(): TreeModelX
+    /**
+     * If document.activeElement === filetree wrapper element
+     */
+    hasDirectFocus(): boolean
+
+    // events
+    onBlur(callback: () => void): IDisposable
+}
+
+export interface IFileTreeXProps {
+    height: number
+    width: number
+    model: TreeModelX
+
+    /**
+     * Same as unix's `mv` command as in `mv [SOURCE] [DEST]`
+     */
+    mv: (oldPath: string, newPath: string) => boolean | Promise<boolean>
+
+    /**
+     * Amalgam of unix's `mkdir` and `touch` command
+     */
+    create: (path: string, type: FileType) => IFileEntryItem | Promise<IFileEntryItem>
+    onReady?: (handle: IFileTreeXHandle) => void
+    onEvent?: (event: IFileTreeXTriggerEvents) => void
+    onContextMenu?: (ev: React.MouseEvent, item?: FileOrDir) => void
+    onScroll?: (ev: React.UIEvent<HTMLDivElement>) => void
+}
+
+export enum FileTreeXEvent {
+    OnBlur,
+    onTreeEvents,
+}
+
+
+// ==================================================
+// pgsql/pgAdmin 4/web/pgadmin/static/js/tree/preference_nodes.ts
+// ==================================================
+/////////////////////////////////////////////////////////////
+//
+// pgAdmin 4 - PostgreSQL Tools
+//
+// Copyright (C) 2013 - 2025, The pgAdmin Development Team
+// This software is released under the PostgreSQL Licence
+//
+//////////////////////////////////////////////////////////////
+
+import * as BrowserFS from 'browserfs';
+import pgAdmin from 'sources/pgadmin';
+import _ from 'lodash';
+import { FileType } from 'react-aspen';
+import { findInTree } from './tree';
+
+export class ManagePreferenceTreeNodes {
+  constructor(data) {
+    this.tree = {};
+    this.tempTree = new TreeNode(undefined, {});
+    this.treeData = data || [];
+  }
+
+  public init = (_root: string) => new Promise((res) => {
+    const node = { parent: null, children: [], data: null };
+    this.tree = {};
+    this.tree[_root] = { name: 'root', type: FileType.Directory, metadata: node };
+    res();
+  });
+
+  public updateNode = (_path, _data) => new Promise((res) => {
+    const item = this.findNode(_path);
+    if (item) {
+      item.name = _data.label;
+      item.metadata.data = _data;
+    }
+    res(true);
+  });
+
+  public removeNode = async (_path) => {
+    const item = this.findNode(_path);
+
+    if (item?.parentNode) {
+      item.children = [];
+      item.parentNode.children.splice(item.parentNode.children.indexOf(item), 1);
+    }
+    return true;
+  };
+
+  findNode(path) {
+    if (path === null || path === undefined || path.length === 0 || path == '/preferences') {
+      return this.tempTree;
+    }
+
+    return findInTree(this.tempTree, path);
+  }
+
+  public addNode = (_parent: string, _path: string, _data: []) => new Promise((res) => {
+    _data.type = _data.inode ? FileType.Directory : FileType.File;
+    _data._label = _data.label;
+    _data.label = _.escape(_data.label);
+
+    _data.is_collection = isCollectionNode(_data._type);
+    const nodeData = { parent: _parent, children: _data?.children ? _data.children : [], data: _data };
+
+    const tmpParentNode = this.findNode(_parent);
+    const treeNode = new TreeNode(_data.id, _data, {}, tmpParentNode, nodeData, _data.type);
+
+    if (tmpParentNode !== null && tmpParentNode !== undefined) tmpParentNode.children.push(treeNode);
+
+    res(treeNode);
+  });
+
+  public readNode = (_path: string) => new Promise<string[]>((res, rej) => {
+    const temp_tree_path = _path,
+      node = this.findNode(_path);
+    node.children = [];
+
+    if (node && node.children.length > 0) {
+      if (!node.type === FileType.File) {
+        rej(new Error('It\'s a leaf node'));
+      }
+      else if (node?.children.length != 0) {
+        res(node.children);
+      }
+    }
+
+    const self = this;
+
+    async function loadData() {
+      const Path = BrowserFS.BFSRequire('path');
+      const fill = async (tree) => {
+        for (const idx in tree) {
+          const _node = tree[idx];
+          const _pathl = Path.join(_path, _node.id);
+          await self.addNode(temp_tree_path, _pathl, _node);
+        }
+      };
+
+      if (node && !_.isUndefined(node.id)) {
+        const _data = self.treeData.find((el) => el.id == node.id);
+        const subNodes = [];
+
+        _data.childrenNodes.forEach(element => {
+          subNodes.push(element);
+        });
+
+        await fill(subNodes);
+      } else {
+        await fill(self.treeData);
+      }
+
+      self.returnChildrens(node, res);
+    }
+    loadData();
+  });
+
+  public returnChildrens = (node: any, res: any)  =>{
+    if (node?.children.length > 0) return res(node.children);
+    else return res(null);
+  };
+}
+
+
+
+export class TreeNode {
+  constructor(id, data, domNode, parent, metadata, type) {
+    this.id = id;
+    this.data = data;
+    this.setParent(parent);
+    this.children = [];
+    this.domNode = domNode;
+    this.metadata = metadata;
+    this.name = metadata ? metadata.data.label : '';
+    this.type = type || undefined;
+  }
+
+  hasParent() {
+    return this.parentNode !== null && this.parentNode !== undefined;
+  }
+
+  parent() {
+    return this.parentNode;
+  }
+
+  setParent(parent) {
+    this.parentNode = parent;
+    this.path = this.id;
+    if (this.id)
+      if (parent !== null && parent !== undefined && parent.path !== undefined) {
+        this.path = parent.path + '/' + this.id;
+      } else {
+        this.path = '/preferences/' + this.id;
+      }
+  }
+
+  getData() {
+    if (this.data === undefined) {
+      return undefined;
+    } else if (this.data === null) {
+      return null;
+    }
+    return {...this.data};
+  }
+
+  getHtmlIdentifier() {
+    return this.domNode;
+  }
+
+  /*
+   * Find the ancestor with matches this condition
+   */
+  ancestorNode(condition) {
+    let node;
+
+    while (this.hasParent()) {
+      node = this.parent();
+      if (condition(node)) {
+        return node;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Given a condition returns true if the current node
+   * or any of the parent nodes condition result is true
+   */
+  anyFamilyMember(condition) {
+    if (condition(this)) {
+      return true;
+    }
+
+    return this.ancestorNode(condition) !== null;
+  }
+  anyParent(condition) {
+    return this.ancestorNode(condition) !== null;
+  }
+
+  reload(tree) {
+    return new Promise((resolve) => {
+      this.unload(tree)
+        .then(() => {
+          tree.setInode(this.domNode);
+          tree.deselect(this.domNode);
+          setTimeout(() => {
+            tree.selectNode(this.domNode);
+          }, 0);
+          resolve();
+        });
+    });
+  }
+
+  unload(tree) {
+    return new Promise((resolve, reject) => {
+      this.children = [];
+      tree.unload(this.domNode)
+        .then(
+          () => {
+            resolve(true);
+          },
+          () => {
+            reject(new Error());
+          });
+    });
+  }
+
+
+  open(tree, suppressNoDom) {
+    return new Promise((resolve, reject) => {
+      if (suppressNoDom && (this.domNode == null || typeof (this.domNode) === 'undefined')) {
+        resolve(true);
+      } else if (tree.isOpen(this.domNode)) {
+        resolve(true);
+      } else {
+        tree.open(this.domNode).then(() => resolve(true), () => reject(new Error(true)));
+      }
+    });
+  }
+
+}
+
+export function isCollectionNode(node) {
+  if (pgAdmin.Browser.Nodes && node in pgAdmin.Browser.Nodes) {
+    if (pgAdmin.Browser.Nodes[node].is_collection !== undefined) return pgAdmin.Browser.Nodes[node].is_collection;
+    else return false;
+  }
+  return false;
+}
+
+
+// ==================================================
+// pgsql/pgAdmin 4/web/pgadmin/static/js/tree/tree_nodes.ts
+// ==================================================
+/////////////////////////////////////////////////////////////
+//
+// pgAdmin 4 - PostgreSQL Tools
+//
+// Copyright (C) 2013 - 2025, The pgAdmin Development Team
+// This software is released under the PostgreSQL Licence
+//
+//////////////////////////////////////////////////////////////
+
+import * as BrowserFS from 'browserfs';
+import url_for from 'sources/url_for';
+import pgAdmin from 'sources/pgadmin';
+import _ from 'lodash';
+import { FileType } from 'react-aspen';
+import { findInTree } from './tree';
+import gettext from 'sources/gettext';
+
+import { unix } from 'path-fx';
+import getApiInstance, { parseApiError } from '../api_instance';
+
+export class ManageTreeNodes {
+  constructor() {
+    this.tree = {};
+    this.tempTree = new TreeNode(undefined, {});
+  }
+
+  public init = (_root: string) => new Promise((res) => {
+    const node = {parent: null, children: [], data: null};
+    this.tree = {};
+    this.tree[_root] = {name: 'root', type: FileType.Directory, metadata: node};
+    res();
+  });
+
+  public updateNode = (_path, _data)  => new Promise((res) => {
+    const item = this.findNode(_path);
+    if (item) {
+      item.data = {...item.data, ..._data};
+      item.name = _data.label;
+      item.metadata.data = _data;
+    }
+    res(true);
+  });
+
+  public removeNode = async (_path)  => {
+    const item = this.findNode(_path);
+
+    if (item?.parentNode) {
+      item.children = [];
+      item.parentNode.children.splice(item.parentNode.children.indexOf(item), 1);
+    }
+    return true;
+  };
+
+  findNode(path) {
+    if (path === null || path === undefined || path.length === 0 || path == '/browser') {
+      return this.tempTree;
+    }
+    return findInTree(this.tempTree, path);
+  }
+
+  public addNode = (_parent: string, _path: string, _data: []) => new Promise((res) => {
+    _data.type = _data.inode ? FileType.Directory : FileType.File;
+    _data._label = _data.label;
+    _data.label = _.escape(_data.label);
+
+    _data.is_collection = isCollectionNode(_data._type);
+    const nodeData = {parent: _parent, children: [], data: _data};
+
+    const tmpParentNode = this.findNode(_parent);
+    const treeNode = new TreeNode(_data.id, _data, {}, tmpParentNode, nodeData, _data.type);
+
+    if (tmpParentNode !== null && tmpParentNode !== undefined) tmpParentNode.children.push(treeNode);
+
+    res(treeNode);
+  });
+
+  public readNode = async (_path: string) => {
+    let temp_tree_path = _path;
+    const node = this.findNode(_path);
+    const base_url = pgAdmin.Browser.URL;
+    const api = getApiInstance();
+
+    if (node && node.children.length > 0) {
+      if (node.type !== FileType.File) {
+        console.error(node, 'It\'s a leaf node');
+        return [];
+      }
+      else if (node.children.length != 0) {
+        return node.children;
+      }
+    }
+
+    const self = this;
+    let url = '';
+    if (_path == '/browser') {
+      url = url_for('browser.nodes');
+    } else {
+      const _parent_url = self.generate_url(_path);
+      if (node.metadata.data._pid == null ) {
+        url = node.metadata.data._type + '/children/' + node.metadata.data._id;
+      }
+      else if (node.metadata.data._type.includes('coll-')) {
+        const _type = node.metadata.data._type.replace('coll-', '');
+        url = _type + '/nodes/' + _parent_url + '/';
+      }
+      else {
+        url = node.metadata.data._type + '/children/' + _parent_url + '/' + node.metadata.data._id;
+      }
+
+      url = base_url + url;
+
+      temp_tree_path = node.path;
+
+      if (node.metadata.data._type == 'server' && !node.metadata.data.connected) {
+        url = null;
+      }
+    }
+
+    let treeData = [];
+    if (url) {
+      try {
+        const res = await api.get(url);
+        treeData = res.data.data;
+      } catch (error) {
+        /* react-aspen does not handle reject case */
+        console.error(error);
+        pgAdmin.Browser.notifier.error(parseApiError(error)||'Node Load Error...');
+        return [];
+      }
+    }
+
+    const Path = BrowserFS.BFSRequire('path');
+    for (const idx in treeData) {
+      const _node: any = treeData[idx];
+      const _pathl = Path.join(_path, _node.id);
+      await self.addNode(temp_tree_path, _pathl, _node);
+    }
+    if (node.children.length > 0) return node.children;
+    else {
+      if (node.data && node.data._type == 'server' && node.data.connected) {
+        pgAdmin.Browser.notifier.info(gettext('Server children are not available.'
+        +' Please check these nodes are not hidden through the preferences setting `Browser > Nodes`.'), null);
+      }
+      return [];
+    }
+  };
+
+  public generate_url = (path: string) => {
+    let _path = path;
+    const _parent_path = [];
+    let _partitions = [];
+    while(_path != '/') {
+      const node = this.findNode(_path);
+      const _parent = unix.dirname(_path);
+      if(node.parentNode && node.parentNode.path == _parent) {
+        if (node.parentNode.metadata.data !== null && !node.parentNode.metadata.data._type.includes('coll-'))
+          if(node.parentNode.metadata.data._type.includes('partition')) {
+            _partitions.push(node.parentNode.metadata.data._id);
+          } else {
+            _parent_path.push(node.parentNode.metadata.data._id);
+          }
+      }
+      _path = _parent;
+    }
+    _partitions = _partitions.reverse();
+    // Replace the table with the last partition as in reality partition node is not child of the table
+    if(_partitions.length > 0) _parent_path[0]  = _partitions[_partitions.length-1];
+
+    _parent_path.reverse();
+    return _parent_path.join('/');
+  };
+}
+
+
+
+export class TreeNode {
+  constructor(id, data, domNode, parent, metadata, type) {
+    this.id = id;
+    this.data = data;
+    this.setParent(parent);
+    this.children = [];
+    this.domNode = domNode;
+    this.metadata = metadata;
+    this.name = metadata ? metadata.data.label : '';
+    this.type = type || undefined;
+  }
+
+  hasParent() {
+    return this.parentNode !== null && this.parentNode !== undefined;
+  }
+
+  parent() {
+    return this.parentNode;
+  }
+
+  setParent(parent) {
+    this.parentNode = parent;
+    this.path = this.id;
+    if (this.id)
+      if (parent !== null && parent !== undefined && parent.path !== undefined) {
+        this.path = parent.path + '/' + this.id;
+      } else {
+        this.path =  '/browser/' + this.id;
+      }
+  }
+
+  getData() {
+    if (this.data === undefined) {
+      return undefined;
+    } else if (this.data === null) {
+      return null;
+    }
+    return {...this.data};
+  }
+
+  getHtmlIdentifier() {
+    return this.domNode;
+  }
+
+  /*
+   * Find the ancestor with matches this condition
+   */
+  ancestorNode(condition) {
+    let node = this;
+
+    while (node.hasParent()) {
+      node = node.parent();
+      if (condition(node)) {
+        return node;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Given a condition returns true if the current node
+   * or any of the parent nodes condition result is true
+   */
+  anyFamilyMember(condition) {
+    if(condition(this)) {
+      return true;
+    }
+
+    return this.ancestorNode(condition) !== null;
+  }
+  anyParent(condition) {
+    return this.ancestorNode(condition) !== null;
+  }
+
+  reload(tree) {
+    return new Promise((resolve)=>{
+      this.unload(tree)
+        .then(()=>{
+          tree.setInode(this.domNode);
+          tree.deselect(this.domNode);
+          setTimeout(() => {
+            tree.selectNode(this.domNode);
+          }, 0);
+          resolve();
+        });
+    });
+  }
+
+  unload(tree) {
+    return new Promise((resolve, reject)=>{
+      this.children = [];
+      tree.unload(this.domNode)
+        .then(
+          ()=>{
+            resolve(true);
+          },
+          ()=>{
+            reject(new Error());
+          });
+    });
+  }
+
+
+  open(tree, suppressNoDom) {
+    return new Promise((resolve, reject)=>{
+      if(suppressNoDom && (this.domNode == null || typeof(this.domNode) === 'undefined')) {
+        resolve(true);
+      } else if(tree.isOpen(this.domNode)) {
+        resolve(true);
+      } else {
+        tree.open(this.domNode).then(() => resolve(true), () => reject(new Error(true)));
+      }
+    });
+  }
+
+}
+
+export function isCollectionNode(node) {
+  if (pgAdmin.Browser.Nodes && node in pgAdmin.Browser.Nodes) {
+    if (pgAdmin.Browser.Nodes[node].is_collection !== undefined) return pgAdmin.Browser.Nodes[node].is_collection;
+    else return false;
+  }
+  return false;
+}
 
 
 // ==================================================
