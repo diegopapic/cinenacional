@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 0b0546ee00212d639695aaca02b6618f6a723870
-// Fecha: 2025-08-14T22:57:33.426Z
+// Commit: 74c991fef6278965f49f466be763a84f141c2631
+// Fecha: 2025-08-14T23:00:19.700Z
 // ============================================
 
 
@@ -14424,7 +14424,7 @@ export function PeopleTable() {
                         <div>
                           {person._count?.castRoles || 0} como actor
                           {((person._count?.crewRoles || 0) > 0) && (
-                            <>, {person._count.crewRoles} como crew</>
+                            <>, {person._count.crewRoles || 0} como crew</>
                           )}
                         </div>
                       ) : (
