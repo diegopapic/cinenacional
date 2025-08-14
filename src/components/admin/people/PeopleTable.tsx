@@ -198,7 +198,7 @@ export function PeopleTable() {
                         <div>
                           {person._count?.castRoles || 0} como actor
                           {((person._count?.crewRoles || 0) > 0) && (
-                            <>, {person._count.crewRoles || 0} como crew</>
+                            <>, {person._count?.crewRoles || 0} como crew</>
                           )}
                         </div>
                       ) : (
