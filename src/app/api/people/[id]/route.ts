@@ -195,7 +195,7 @@ export async function DELETE(
 
     // Eliminar la persona (los links se eliminan en cascada)
     await prisma.person.delete({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
     });
 
     return NextResponse.json({ message: 'Persona eliminada correctamente' });

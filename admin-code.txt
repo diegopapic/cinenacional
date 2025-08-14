@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-14T22:49:49.954Z
+// Archivos del admin - 2025-08-14T22:57:33.480Z
 // ==================
 
 
@@ -6183,7 +6183,7 @@ export async function DELETE(
 
     // Eliminar la persona (los links se eliminan en cascada)
     await prisma.person.delete({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
     });
 
     return NextResponse.json({ message: 'Persona eliminada correctamente' });
