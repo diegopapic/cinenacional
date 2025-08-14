@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 433a1622d479619536ee98b57dcd03bd19e64a14
-// Fecha: 2025-08-14T20:03:18.882Z
+// Commit: 1e88e9e768e68f3d429ca65b96a917d9846b35b6
+// Fecha: 2025-08-14T22:49:49.934Z
 // ============================================
 
 
@@ -3312,6 +3312,538 @@ export default function AdminMoviesPage() {
 }
 
 // ==================================================
+// src/app/admin/people/new/page.tsx
+// ==================================================
+// src/app/admin/people/new/page.tsx
+
+import { Metadata } from 'next';
+import Link from 'next/link';
+import { PersonForm } from '@/components/admin/people/PersonForm';
+import { ArrowLeft, UserPlus } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Nueva Persona | Admin',
+  description: 'Crear nueva persona en el sistema',
+};
+
+export default function NewPersonPage() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 max-w-5xl">
+        {/* Header */}
+        <div className="mb-6">
+          <Link 
+            href="/admin/people"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver al listado
+          </Link>
+          
+          <div className="flex items-center gap-3">
+            <UserPlus className="h-8 w-8 text-gray-700" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Nueva Persona</h1>
+              <p className="text-gray-600 mt-1">
+                Complete los datos para agregar una nueva persona al sistema
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Formulario */}
+        <PersonForm />
+      </div>
+    </div>
+  );
+}
+
+// ==================================================
+// src/app/admin/people/page.tsx
+// ==================================================
+// src/app/admin/people/page.tsx
+
+import { Suspense } from 'react';
+import { Metadata } from 'next';
+import { PeopleTable } from '@/components/admin/people/PeopleTable';
+import Link from 'next/link';
+import { Plus, Users, Loader2 } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Gestión de Personas | Admin',
+  description: 'Administración de personas del cine argentino',
+};
+
+export default function PeoplePage() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <Users className="h-8 w-8 text-gray-700" />
+                Gestión de Personas
+              </h1>
+              <p className="mt-2 text-gray-600">
+                Administra el registro de actores, directores y personal técnico del cine argentino
+              </p>
+            </div>
+            
+            <div className="mt-4 sm:mt-0">
+              <Link 
+                href="/admin/people/new"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Nueva Persona
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Cards (opcional - comentado por ahora) */}
+        {/* 
+        <div className="grid gap-4 md:grid-cols-3 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Personas</p>
+                <p className="text-2xl font-bold text-gray-900">-</p>
+              </div>
+              <Users className="h-8 w-8 text-gray-400" />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Actores</p>
+                <p className="text-2xl font-bold text-gray-900">-</p>
+              </div>
+              <Users className="h-8 w-8 text-gray-400" />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Directores</p>
+                <p className="text-2xl font-bold text-gray-900">-</p>
+              </div>
+              <Users className="h-8 w-8 text-gray-400" />
+            </div>
+          </div>
+        </div>
+        */}
+        
+        {/* Tabla */}
+        <Suspense fallback={
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            </div>
+          </div>
+        }>
+          <PeopleTable />
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+
+// ==================================================
+// src/app/admin/people/[id]/edit/page.tsx
+// ==================================================
+// src/app/admin/people/[id]/edit/page.tsx
+
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter, useParams } from 'next/navigation';
+import { PersonForm } from '@/components/admin/people/PersonForm';
+import { ArrowLeft, Edit, Loader2, AlertCircle } from 'lucide-react';
+import { usePerson } from '@/hooks/usePeople';
+
+export default function EditPersonPage() {
+  const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
+  const { person, loading, error } = usePerson(id);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 max-w-5xl">
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !person) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 max-w-5xl">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <div className="flex">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  {error?.message || 'No se pudo cargar la información de la persona'}
+                </h3>
+              </div>
+            </div>
+          </div>
+          <Link 
+            href="/admin/people"
+            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver al listado
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 max-w-5xl">
+        {/* Header */}
+        <div className="mb-6">
+          <Link 
+            href="/admin/people"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver al listado
+          </Link>
+          
+          <div className="flex items-center gap-3">
+            <Edit className="h-8 w-8 text-gray-700" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Editar Persona
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Modificando: {person.firstName} {person.lastName}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Formulario */}
+        <PersonForm 
+          personId={parseInt(id)} 
+          initialData={person}
+          onSuccess={() => router.push('/admin/people')}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ==================================================
+// src/app/admin/people/[id]/page.tsx
+// ==================================================
+// src/app/admin/people/[id]/page.tsx
+
+'use client';
+
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { 
+  ArrowLeft, 
+  Edit, 
+  ExternalLink, 
+  Calendar,
+  MapPin,
+  Film,
+  Award,
+  Loader2,
+  AlertCircle,
+  User
+} from 'lucide-react';
+import { usePerson } from '@/hooks/usePeople';
+import { formatPersonName, formatGender, formatBirthInfo } from '@/lib/people/peopleUtils';
+import { PERSON_LINK_TYPES } from '@/lib/people/peopleConstants';
+
+export default function PersonDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
+  const { person, loading, error } = usePerson(id);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 max-w-6xl">
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !person) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 max-w-6xl">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <div className="flex">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  {error?.message || 'No se pudo cargar la información de la persona'}
+                </h3>
+              </div>
+            </div>
+          </div>
+          <Link 
+            href="/admin/people"
+            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver al listado
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const fullName = formatPersonName(person);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 max-w-6xl">
+        {/* Header */}
+        <div className="mb-6 flex items-center justify-between">
+          <Link 
+            href="/admin/people"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver al listado
+          </Link>
+          
+          <Link 
+            href={`/admin/people/${id}/edit`}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Edit className="w-4 h-4" />
+            Editar
+          </Link>
+        </div>
+
+        {/* Info principal */}
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Columna izquierda - Foto y datos básicos */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="space-y-4">
+                {/* Foto */}
+                <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-gray-100">
+                  {person.photoUrl ? (
+                    <Image
+                      src={person.photoUrl}
+                      alt={fullName}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <User className="h-16 w-16 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Nombre y estado */}
+                <div className="text-center">
+                  <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
+                  {person.realName && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      {person.realName}
+                    </p>
+                  )}
+                  <div className="mt-3">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                      person.isActive 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {person.isActive ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Datos básicos */}
+                <div className="space-y-3 text-sm">
+                  {person.gender && (
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-700">{formatGender(person.gender)}</span>
+                    </div>
+                  )}
+                  
+                  {person.birthDate && (
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-700">{formatBirthInfo(person)}</span>
+                    </div>
+                  )}
+                  
+                  {person.birthLocation && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-700">Nacido en {person.birthLocation.name}</span>
+                    </div>
+                  )}
+                  
+                  {person.deathDate && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-gray-400" />
+                        <span className="text-gray-700">
+                          Fallecido el {new Date(person.deathDate).toLocaleDateString('es-AR')}
+                        </span>
+                      </div>
+                      {person.deathLocation && (
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-gray-400" />
+                          <span className="text-gray-700">en {person.deathLocation.name}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Estadísticas */}
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">
+                      {(person._count?.castRoles || 0) + (person._count?.crewRoles || 0)}
+                    </p>
+                    <p className="text-xs text-gray-500">Películas</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">{person._count?.awards || 0}</p>
+                    <p className="text-xs text-gray-500">Premios</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Enlaces */}
+            {person.links && person.links.length > 0 && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Enlaces</h3>
+                <div className="space-y-2">
+                  {person.links
+                    .filter(link => link.isActive)
+                    .map((link) => (
+                      <a
+                        key={link.id}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        {link.title || PERSON_LINK_TYPES[link.type] || link.type}
+                        {link.isVerified && (
+                          <span className="ml-auto px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">
+                            Verificado
+                          </span>
+                        )}
+                      </a>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Columna derecha - Contenido principal */}
+          <div className="md:col-span-2 space-y-6">
+            {/* Biografía */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Biografía</h3>
+              {person.biography ? (
+                <div className="prose prose-sm max-w-none">
+                  {person.biography.split('\n').map((paragraph, index) => (
+                    <p key={index} className="mb-4 text-gray-700">{paragraph}</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">
+                  No hay biografía disponible
+                </p>
+              )}
+            </div>
+
+            {/* Filmografía */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                <Film className="h-5 w-5" />
+                Filmografía
+              </h3>
+              <div className="space-y-4">
+                {person._count?.castRoles && person._count.castRoles > 0 && (
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-2">Como Actor/Actriz</h4>
+                    <p className="text-gray-600">
+                      {person._count.castRoles} películas
+                    </p>
+                  </div>
+                )}
+                
+                {person._count?.crewRoles && person._count.crewRoles > 0 && (
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-2">Como Equipo Técnico</h4>
+                    <p className="text-gray-600">
+                      {person._count.crewRoles} películas
+                    </p>
+                  </div>
+                )}
+                
+                {(!person._count?.castRoles && !person._count?.crewRoles) && (
+                  <p className="text-gray-500">
+                    No hay películas asociadas
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Premios */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Premios y Reconocimientos
+              </h3>
+              {person._count?.awards && person._count.awards > 0 ? (
+                <p className="text-gray-600">
+                  {person._count.awards} premios registrados
+                </p>
+              ) : (
+                <p className="text-gray-500">
+                  No hay premios registrados
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================================================
 // src/app/admin/screening-venues/page.tsx
 // ==================================================
 // src/app/admin/screening-venues/page.tsx
@@ -6259,85 +6791,388 @@ export async function DELETE(
 // ==================================================
 // src/app/api/people/route.ts
 // ==================================================
-// =====================================================
 // src/app/api/people/route.ts
-// =====================================================
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { createSlug } from '@/lib/utils'
 
-// GET /api/people - Listar personas con búsqueda
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { generatePersonSlug } from '@/lib/people/peopleUtils';
+
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams
-    const search = searchParams.get('search') || ''
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const searchParams = request.nextUrl.searchParams;
+    const search = searchParams.get('search');
+    const gender = searchParams.get('gender');
+    const isActive = searchParams.get('isActive');
+    const hasLinks = searchParams.get('hasLinks');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
 
-    const where = search ? {
-      OR: [
-        { name: { contains: search, mode: 'insensitive' as const } },
-        { birthName: { contains: search, mode: 'insensitive' as const } }
-      ]
-    } : {}
-
-    const people = await prisma.person.findMany({
-      where,
-      take: limit,
-      orderBy: { name: 'asc' },
-      select: {
-        id: true,
-        name: true,
-        photoUrl: true,
-        birthDate: true,
-        nationality: true
-      }
-    })
-
-    return NextResponse.json(people)
-  } catch (error) {
-    console.error('Error fetching people:', error)
-    return NextResponse.json(
-      { error: 'Error al obtener las personas' },
-      { status: 500 }
-    )
-  }
-}
-
-// POST /api/people - Crear nueva persona
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
+    // Construir where clause
+    const where: any = {};
     
-    // Generar slug único
-    let slug = createSlug(body.name)
-    let slugExists = await prisma.person.findUnique({ where: { slug } })
-    let counter = 1
-    
-    while (slugExists) {
-      slug = `${createSlug(body.name)}-${counter}`
-      slugExists = await prisma.person.findUnique({ where: { slug } })
-      counter++
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { realName: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
-    const person = await prisma.person.create({
-      data: {
-        ...body,
-        slug,
-        birthDate: body.birthDate ? new Date(body.birthDate) : null,
-        deathDate: body.deathDate ? new Date(body.deathDate) : null
-      }
-    })
+    if (gender) {
+      where.gender = gender;
+    }
 
-    return NextResponse.json(person, { status: 201 })
+    if (isActive !== null && isActive !== '') {
+      where.isActive = isActive === 'true';
+    }
+
+    if (hasLinks !== null && hasLinks !== '') {
+      where.hasLinks = hasLinks === 'true';
+    }
+
+    // Obtener total para paginación
+    const totalCount = await prisma.person.count({ where });
+
+    // Obtener personas con paginación
+    const people = await prisma.person.findMany({
+      where,
+      include: {
+        _count: {
+          select: {
+            links: true,
+            castRoles: true,
+            crewRoles: true,
+          },
+        },
+      },
+      orderBy: [
+        { lastName: 'asc' },
+        { firstName: 'asc' },
+      ],
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return NextResponse.json({
+      data: people,
+      totalCount,
+      page,
+      totalPages,
+      hasMore: page < totalPages,
+    });
   } catch (error) {
-    console.error('Error creating person:', error)
+    console.error('Error fetching people:', error);
     return NextResponse.json(
-      { error: 'Error al crear la persona' },
+      { message: 'Error al obtener personas' },
       { status: 500 }
-    )
+    );
   }
 }
 
+export async function POST(request: NextRequest) {
+  try {
+    const data = await request.json();
+    
+    // Si es una creación rápida (solo con nombre)
+    if (data.name && !data.firstName && !data.lastName) {
+      // Dividir el nombre en firstName y lastName
+      const nameParts = data.name.trim().split(' ');
+      data.firstName = nameParts[0];
+      data.lastName = nameParts.slice(1).join(' ') || null;
+    }
+    
+    // Generar slug único basado en firstName y lastName
+    let baseSlug = generatePersonSlug(data.firstName, data.lastName);
+    let slug = baseSlug;
+    let counter = 1;
+    
+    // Verificar si el slug ya existe y generar uno único
+    while (await prisma.person.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
+    // Preparar los datos de la persona
+    const personData: any = {
+      slug,
+      firstName: data.firstName || null,
+      lastName: data.lastName || null,
+      realName: data.realName || null,
+      birthDate: data.birthDate ? new Date(data.birthDate) : null,
+      deathDate: data.deathDate ? new Date(data.deathDate) : null,
+      biography: data.biography || null,
+      photoUrl: data.photoUrl || null,
+      gender: data.gender || null,
+      hideAge: data.hideAge || false,
+      isActive: data.isActive ?? true,
+      hasLinks: data.links && data.links.length > 0,
+    };
+
+    // TODO: Manejar ubicaciones birthLocation y deathLocation
+    // Por ahora solo guardamos el texto en la biografía o notas
+
+    // Crear la persona y sus links en una transacción
+    const person = await prisma.$transaction(async (tx) => {
+      // Crear la persona
+      const newPerson = await tx.person.create({
+        data: personData,
+      });
+
+      // Si hay links, crearlos
+      if (data.links && data.links.length > 0) {
+        await tx.personLink.createMany({
+          data: data.links.map((link: any, index: number) => ({
+            personId: newPerson.id,
+            type: link.type,
+            url: link.url,
+            title: link.title || null,
+            displayOrder: link.displayOrder ?? index,
+            isVerified: link.isVerified || false,
+            isActive: link.isActive ?? true,
+          })),
+        });
+      }
+
+      // Retornar la persona con sus relaciones
+      return tx.person.findUnique({
+        where: { id: newPerson.id },
+        include: {
+          links: true,
+          _count: {
+            select: {
+              links: true,
+              castRoles: true,
+              crewRoles: true,
+            },
+          },
+        },
+      });
+    });
+
+    return NextResponse.json(person, { status: 201 });
+  } catch (error) {
+    console.error('Error creating person:', error);
+    return NextResponse.json(
+      { message: 'Error al crear persona' },
+      { status: 500 }
+    );
+  }
+}
+
+// ==================================================
+// src/app/api/people/[id]/route.ts
+// ==================================================
+// src/app/api/people/[id]/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { generatePersonSlug } from '@/lib/people/peopleUtils';
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const person = await prisma.person.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        links: {
+          orderBy: { displayOrder: 'asc' },
+        },
+        birthLocation: true,
+        deathLocation: true,
+        _count: {
+          select: {
+            castRoles: true,
+            crewRoles: true,
+            awards: true,
+          },
+        },
+      },
+    });
+
+    if (!person) {
+      return NextResponse.json(
+        { message: 'Persona no encontrada' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(person);
+  } catch (error) {
+    console.error('Error fetching person:', error);
+    return NextResponse.json(
+      { message: 'Error al obtener persona' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const data = await request.json();
+    const personId = parseInt(id);
+    
+    // Verificar si necesitamos actualizar el slug
+    let slug = undefined;
+    const currentPerson = await prisma.person.findUnique({
+      where: { id: personId },
+      select: { firstName: true, lastName: true, slug: true },
+    });
+
+    if (currentPerson) {
+      const nameChanged = 
+        currentPerson.firstName !== data.firstName || 
+        currentPerson.lastName !== data.lastName;
+      
+      if (nameChanged) {
+        // Generar nuevo slug si cambió el nombre
+        let baseSlug = generatePersonSlug(data.firstName, data.lastName);
+        slug = baseSlug;
+        let counter = 1;
+        
+        // Verificar que el nuevo slug no exista (excepto para la persona actual)
+        while (true) {
+          const existing = await prisma.person.findUnique({
+            where: { slug },
+            select: { id: true },
+          });
+          
+          if (!existing || existing.id === personId) break;
+          
+          slug = `${baseSlug}-${counter}`;
+          counter++;
+        }
+      }
+    }
+
+    // Preparar datos de actualización
+    const updateData: any = {
+      ...(slug && { slug }),
+      firstName: data.firstName || null,
+      lastName: data.lastName || null,
+      realName: data.realName || null,
+      birthDate: data.birthDate ? new Date(data.birthDate) : null,
+      deathDate: data.deathDate ? new Date(data.deathDate) : null,
+      biography: data.biography || null,
+      photoUrl: data.photoUrl || null,
+      gender: data.gender || null,
+      hideAge: data.hideAge || false,
+      isActive: data.isActive ?? true,
+      hasLinks: data.links && data.links.length > 0,
+    };
+
+    // Actualizar persona y links en una transacción
+    const person = await prisma.$transaction(async (tx) => {
+      // Actualizar la persona
+      const updatedPerson = await tx.person.update({
+        where: { id: personId },
+        data: updateData,
+      });
+
+      // Eliminar links existentes
+      await tx.personLink.deleteMany({
+        where: { personId },
+      });
+
+      // Crear nuevos links si existen
+      if (data.links && data.links.length > 0) {
+        await tx.personLink.createMany({
+          data: data.links.map((link: any, index: number) => ({
+            personId,
+            type: link.type,
+            url: link.url,
+            title: link.title || null,
+            displayOrder: link.displayOrder ?? index,
+            isVerified: link.isVerified || false,
+            isActive: link.isActive ?? true,
+          })),
+        });
+      }
+
+      // Retornar la persona actualizada con sus relaciones
+      return tx.person.findUnique({
+        where: { id: personId },
+        include: {
+          links: true,
+          _count: {
+            select: {
+              links: true,
+              castRoles: true,
+              crewRoles: true,
+            },
+          },
+        },
+      });
+    });
+
+    return NextResponse.json(person);
+  } catch (error) {
+    console.error('Error updating person:', error);
+    return NextResponse.json(
+      { message: 'Error al actualizar persona' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    // Verificar si la persona tiene películas asociadas
+    const person = await prisma.person.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        _count: {
+          select: {
+            castRoles: true,
+            crewRoles: true,
+          },
+        },
+      },
+    });
+
+    if (!person) {
+      return NextResponse.json(
+        { message: 'Persona no encontrada' },
+        { status: 404 }
+      );
+    }
+
+    const totalRoles = person._count.castRoles + person._count.crewRoles;
+    if (totalRoles > 0) {
+      return NextResponse.json(
+        { 
+          message: `No se puede eliminar esta persona porque está asociada a ${totalRoles} película(s)` 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Eliminar la persona (los links se eliminan en cascada)
+    await prisma.person.delete({
+      where: { id: parseInt(params.id) },
+    });
+
+    return NextResponse.json({ message: 'Persona eliminada correctamente' });
+  } catch (error) {
+    console.error('Error deleting person:', error);
+    return NextResponse.json(
+      { message: 'Error al eliminar persona' },
+      { status: 500 }
+    );
+  }
+}
 
 // ==================================================
 // src/app/api/project-structure/route.ts
@@ -13387,6 +14222,1039 @@ export default function MoviesTable({
 }
 
 // ==================================================
+// src/components/admin/people/PeopleTable.tsx
+// ==================================================
+// src/components/admin/people/PeopleTable.tsx
+
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { 
+  Edit, 
+  Trash2, 
+  Search, 
+  Eye, 
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Users
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { usePeople } from '@/hooks/usePeople';
+import { formatPersonName, formatGender, getPersonSummary } from '@/lib/people/peopleUtils';
+import { GENDER_OPTIONS, PEOPLE_PAGINATION } from '@/lib/people/peopleConstants';
+
+export function PeopleTable() {
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteName, setDeleteName] = useState<string>('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
+  const {
+    people,
+    totalCount,
+    currentPage,
+    totalPages,
+    loading,
+    filters,
+    updateFilter,
+    deletePerson,
+    exportToCSV,
+    goToNextPage,
+    goToPreviousPage,
+    canGoNext,
+    canGoPrevious,
+  } = usePeople();
+
+  const handleDelete = async () => {
+    if (deleteId) {
+      try {
+        await deletePerson(deleteId);
+        setShowDeleteDialog(false);
+        setDeleteId(null);
+      } catch (error) {
+        // El error ya se maneja en el hook
+      }
+    }
+  };
+
+  const handleDeleteClick = (person: any) => {
+    setDeleteId(person.id);
+    setDeleteName(formatPersonName(person));
+    setShowDeleteDialog(true);
+  };
+
+  return (
+    <>
+      {/* Filtros */}
+      <div className="mb-4 flex flex-wrap gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar por nombre..."
+            value={filters.search || ''}
+            onChange={(e) => updateFilter('search', e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+          />
+        </div>
+        
+        <select
+          value={filters.gender || ''}
+          onChange={(e) => updateFilter('gender', e.target.value as any)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+        >
+          <option value="">Todos los géneros</option>
+          {GENDER_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={String(filters.isActive ?? '')}
+          onChange={(e) => updateFilter('isActive', e.target.value === '' ? '' : e.target.value === 'true')}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+        >
+          <option value="">Todos</option>
+          <option value="true">Activos</option>
+          <option value="false">Inactivos</option>
+        </select>
+
+        <button
+          onClick={exportToCSV}
+          disabled={loading}
+          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+        >
+          <Download className="w-4 h-4" />
+          Exportar CSV
+        </button>
+      </div>
+
+      {/* Tabla */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Nombre
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Nombre Real
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Información
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Género
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Links
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Películas
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Estado
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-12">
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
+                    <p className="mt-2 text-gray-500">Cargando personas...</p>
+                  </td>
+                </tr>
+              ) : people?.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-12">
+                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">
+                      {filters.search 
+                        ? 'No se encontraron personas con ese criterio de búsqueda' 
+                        : 'No hay personas registradas'}
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                people?.map((person) => (
+                  <tr key={person.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {formatPersonName(person)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {person.realName || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {person.birthDate ? (
+                        person.hideAge ? (
+                          <span className="italic">Fecha oculta</span>
+                        ) : (
+                          getPersonSummary(person)
+                        )
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatGender(person.gender)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {person._count?.links ? (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {person._count.links} {person._count.links === 1 ? 'link' : 'links'}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {(person._count?.castRoles || 0) + (person._count?.crewRoles || 0) > 0 ? (
+                        <div>
+                          {person._count?.castRoles || 0} como actor
+                          {((person._count?.crewRoles || 0) > 0) && (
+                            <>, {person._count.crewRoles} como crew</>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        person.isActive 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {person.isActive ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link 
+                          href={`/admin/people/${person.id}`}
+                          className="text-gray-600 hover:text-gray-900 transition-colors"
+                          title="Ver detalles"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <Link 
+                          href={`/admin/people/${person.id}/edit`}
+                          className="text-blue-600 hover:text-blue-900 transition-colors"
+                          title="Editar"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Link>
+                        <button
+                          onClick={() => handleDeleteClick(person)}
+                          disabled={
+                            (person._count?.castRoles || 0) + (person._count?.crewRoles || 0) > 0
+                          }
+                          className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={
+                            (person._count?.castRoles || 0) + (person._count?.crewRoles || 0) > 0
+                              ? "No se puede eliminar porque tiene películas asociadas"
+                              : "Eliminar"
+                          }
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Información y paginación */}
+      {people && people.length > 0 && totalPages > 1 && (
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow">
+          {/* Vista móvil */}
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button
+              onClick={goToPreviousPage}
+              disabled={!canGoPrevious || loading}
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Anterior
+            </button>
+            <button
+              onClick={goToNextPage}
+              disabled={!canGoNext || loading}
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente
+            </button>
+          </div>
+
+          {/* Vista desktop */}
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Mostrando <span className="font-medium">
+                  {((currentPage - 1) * PEOPLE_PAGINATION.DEFAULT_LIMIT) + 1}
+                </span> - <span className="font-medium">
+                  {Math.min(currentPage * PEOPLE_PAGINATION.DEFAULT_LIMIT, totalCount)}
+                </span> de <span className="font-medium">{totalCount}</span> personas
+              </p>
+            </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                <button
+                  onClick={goToPreviousPage}
+                  disabled={!canGoPrevious || loading}
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                  Anterior
+                </button>
+                
+                <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                  Página {currentPage} de {totalPages}
+                </span>
+                
+                <button
+                  onClick={goToNextPage}
+                  disabled={!canGoNext || loading}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Siguiente
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación de eliminación */}
+      {showDeleteDialog && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              ¿Estás seguro?
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Esta acción no se puede deshacer. Se eliminará permanentemente a{' '}
+              <span className="font-semibold">{deleteName}</span> del sistema.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteDialog(false);
+                  setDeleteId(null);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ==================================================
+// src/components/admin/people/PersonForm.tsx
+// ==================================================
+// src/components/admin/people/PersonForm.tsx
+
+'use client';
+
+import { useEffect } from 'react';
+import { Save, Loader2, AlertCircle } from 'lucide-react';
+import { usePeopleForm } from '@/hooks/usePeopleForm';
+import { PersonWithRelations } from '@/lib/people/peopleTypes';
+
+// Importar sub-componentes del formulario
+import { BasicInfoFields } from './PersonFormFields/BasicInfoFields';
+import { BiographyFields } from './PersonFormFields/BiographyFields';
+import { LocationFields } from './PersonFormFields/LocationFields';
+import { LinksSection } from './PersonFormFields/LinksSection';
+
+interface PersonFormProps {
+  personId?: number;
+  initialData?: PersonWithRelations;
+  onSuccess?: (person: PersonWithRelations) => void;
+  onCancel?: () => void;
+}
+
+export function PersonForm({ 
+  personId, 
+  initialData, 
+  onSuccess,
+  onCancel 
+}: PersonFormProps) {
+  const {
+    formData,
+    loading,
+    saving,
+    errors,
+    isDirty,
+    isEdit,
+    updateField,
+    updateFields,
+    addLink,
+    updateLink,
+    removeLink,
+    save,
+    cancel,
+  } = usePeopleForm({ personId, onSuccess });
+
+  // Si hay datos iniciales y no es edición, cargarlos
+  useEffect(() => {
+    if (initialData && !personId) {
+      updateFields({
+        firstName: initialData.firstName || '',
+        lastName: initialData.lastName || '',
+        realName: initialData.realName || '',
+        gender: initialData.gender || '',
+      });
+    }
+  }, [initialData, personId, updateFields]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await save();
+  };
+
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    } else {
+      cancel();
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Mostrar errores si hay */}
+      {errors.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex">
+            <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">
+                Se encontraron los siguientes errores:
+              </h3>
+              <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
+                {errors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Información básica */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-6">
+          Información Personal
+        </h3>
+        <BasicInfoFields
+          formData={formData}
+          updateField={updateField}
+          isEdit={isEdit}
+        />
+      </div>
+
+      {/* Ubicaciones */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-6">
+          Ubicaciones
+        </h3>
+        <LocationFields
+          formData={formData}
+          updateField={updateField}
+        />
+      </div>
+
+      {/* Biografía e información adicional */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-6">
+          Información Adicional
+        </h3>
+        <BiographyFields
+          formData={formData}
+          updateField={updateField}
+        />
+      </div>
+
+      {/* Links */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-6">
+          Enlaces
+        </h3>
+        <LinksSection
+          links={formData.links}
+          onAddLink={addLink}
+          onUpdateLink={updateLink}
+          onRemoveLink={removeLink}
+        />
+      </div>
+
+      {/* Botones de acción */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-gray-500">
+            {isDirty && (
+              <span className="text-orange-600">
+                * Hay cambios sin guardar
+              </span>
+            )}
+          </div>
+          
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            
+            <button
+              type="submit"
+              disabled={saving || loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  {isEdit ? 'Actualizar' : 'Crear'} Persona
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+// ==================================================
+// src/components/admin/people/PersonFormFields/BasicInfoFields.tsx
+// ==================================================
+// src/components/admin/people/PersonFormFields/BasicInfoFields.tsx
+
+import { PersonFormData } from '@/lib/people/peopleTypes';
+import { GENDER_OPTIONS } from '@/lib/people/peopleConstants';
+
+interface BasicInfoFieldsProps {
+  formData: PersonFormData;
+  updateField: <K extends keyof PersonFormData>(field: K, value: PersonFormData[K]) => void;
+  isEdit?: boolean;
+}
+
+export function BasicInfoFields({ formData, updateField, isEdit }: BasicInfoFieldsProps) {
+  return (
+    <div className="space-y-6">
+      {/* Nombre y Apellido */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+            Nombre <span className="text-gray-400">(opcional)</span>
+          </label>
+          <input
+            type="text"
+            id="firstName"
+            value={formData.firstName}
+            onChange={(e) => updateField('firstName', e.target.value)}
+            placeholder="Ej: Juan"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+          />
+        </div>
+        
+        <div>
+          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+            Apellido <span className="text-gray-400">(opcional)</span>
+          </label>
+          <input
+            type="text"
+            id="lastName"
+            value={formData.lastName}
+            onChange={(e) => updateField('lastName', e.target.value)}
+            placeholder="Ej: Pérez"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+          />
+        </div>
+      </div>
+      
+      <p className="text-sm text-gray-500">
+        Debe ingresar al menos el nombre o el apellido
+      </p>
+
+      {/* Nombre Real */}
+      <div>
+        <label htmlFor="realName" className="block text-sm font-medium text-gray-700 mb-1">
+          Nombre Real
+          <span className="text-gray-400 ml-1">(si es diferente al artístico)</span>
+        </label>
+        <input
+          type="text"
+          id="realName"
+          value={formData.realName}
+          onChange={(e) => updateField('realName', e.target.value)}
+          placeholder="Ej: Juan Carlos Pérez González"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+        />
+      </div>
+
+      {/* Género */}
+      <div>
+        <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
+          Género
+        </label>
+        <select
+          id="gender"
+          value={formData.gender}
+          onChange={(e) => updateField('gender', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+        >
+          <option value="">Seleccionar género</option>
+          {GENDER_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Fechas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-1">
+            Fecha de Nacimiento
+          </label>
+          <input
+            type="date"
+            id="birthDate"
+            value={formData.birthDate}
+            onChange={(e) => updateField('birthDate', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+          />
+        </div>
+        
+        <div>
+          <label htmlFor="deathDate" className="block text-sm font-medium text-gray-700 mb-1">
+            Fecha de Fallecimiento
+          </label>
+          <input
+            type="date"
+            id="deathDate"
+            value={formData.deathDate}
+            onChange={(e) => updateField('deathDate', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+          />
+        </div>
+      </div>
+
+      {/* Ocultar edad */}
+      <div className="flex items-center">
+        <input
+          type="checkbox"
+          id="hideAge"
+          checked={formData.hideAge}
+          onChange={(e) => updateField('hideAge', e.target.checked)}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+        />
+        <label htmlFor="hideAge" className="ml-2 block text-sm text-gray-700">
+          Ocultar fecha de nacimiento en el sitio público
+        </label>
+      </div>
+
+      {/* Estado activo */}
+      <div className="flex items-center pt-2">
+        <input
+          type="checkbox"
+          id="isActive"
+          checked={formData.isActive}
+          onChange={(e) => updateField('isActive', e.target.checked)}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+        />
+        <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
+          Persona activa
+        </label>
+      </div>
+    </div>
+  );
+}
+
+// ==================================================
+// src/components/admin/people/PersonFormFields/BiographyFields.tsx
+// ==================================================
+// src/components/admin/people/PersonFormFields/BiographyFields.tsx
+
+import { PersonFormData } from '@/lib/people/peopleTypes';
+import { Image, FileText } from 'lucide-react';
+
+interface BiographyFieldsProps {
+  formData: PersonFormData;
+  updateField: <K extends keyof PersonFormData>(field: K, value: PersonFormData[K]) => void;
+}
+
+export function BiographyFields({ formData, updateField }: BiographyFieldsProps) {
+  return (
+    <div className="space-y-6">
+      {/* Biografía */}
+      <div>
+        <label htmlFor="biography" className="block text-sm font-medium text-gray-700 mb-1">
+          <span className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Biografía
+          </span>
+        </label>
+        <textarea
+          id="biography"
+          value={formData.biography}
+          onChange={(e) => updateField('biography', e.target.value)}
+          placeholder="Escriba aquí la biografía de la persona..."
+          rows={6}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 resize-none"
+        />
+        <div className="mt-1 flex justify-between text-sm text-gray-500">
+          <span>Puede usar formato Markdown para dar estilo al texto</span>
+          <span>{formData.biography.length} caracteres</span>
+        </div>
+      </div>
+
+      {/* URL de Foto */}
+      <div>
+        <label htmlFor="photoUrl" className="block text-sm font-medium text-gray-700 mb-1">
+          <span className="flex items-center gap-2">
+            <Image className="w-4 h-4" />
+            URL de Foto
+          </span>
+        </label>
+        <input
+          type="url"
+          id="photoUrl"
+          value={formData.photoUrl}
+          onChange={(e) => updateField('photoUrl', e.target.value)}
+          placeholder="https://ejemplo.com/foto.jpg"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+        />
+        <p className="mt-1 text-sm text-gray-500">
+          Ingrese la URL completa de la imagen. Se recomienda usar imágenes de al menos 400x600px
+        </p>
+      </div>
+
+      {/* Vista previa de la imagen si hay URL */}
+      {formData.photoUrl && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Vista previa
+          </label>
+          <div className="relative w-32 h-48 rounded-lg overflow-hidden border border-gray-300">
+            <img
+              src={formData.photoUrl}
+              alt="Vista previa"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const errorDiv = target.nextElementSibling as HTMLElement;
+                if (errorDiv) errorDiv.style.display = 'flex';
+              }}
+            />
+            <div 
+              className="absolute inset-0 bg-gray-100 items-center justify-center hidden"
+              style={{ display: 'none' }}
+            >
+              <span className="text-sm text-gray-500">
+                Error al cargar imagen
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==================================================
+// src/components/admin/people/PersonFormFields/LinksSection.tsx
+// ==================================================
+// src/components/admin/people/PersonFormFields/LinksSection.tsx
+
+import { Plus, Trash2, ExternalLink, GripVertical } from 'lucide-react';
+import { PersonLink } from '@/lib/people/peopleTypes';
+import { PERSON_LINK_TYPE_OPTIONS, LINK_CATEGORIES } from '@/lib/people/peopleConstants';
+
+interface LinksSectionProps {
+  links: PersonLink[];
+  onAddLink: () => void;
+  onUpdateLink: (index: number, updates: Partial<PersonLink>) => void;
+  onRemoveLink: (index: number) => void;
+}
+
+export function LinksSection({ 
+  links, 
+  onAddLink, 
+  onUpdateLink, 
+  onRemoveLink 
+}: LinksSectionProps) {
+  return (
+    <div className="space-y-4">
+      {/* Descripción y botón agregar */}
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-gray-500">
+          Agregue enlaces a perfiles en redes sociales, sitios web, etc.
+        </p>
+        <button
+          type="button"
+          onClick={onAddLink}
+          className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Agregar Enlace
+        </button>
+      </div>
+
+      {/* Lista de links */}
+      {links.length === 0 ? (
+        <div className="text-center py-8 bg-gray-50 rounded-lg">
+          <p className="text-gray-500 mb-4">
+            No hay enlaces agregados
+          </p>
+          <button
+            type="button"
+            onClick={onAddLink}
+            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Agregar primer enlace
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {links.map((link, index) => (
+            <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <div className="space-y-4">
+                {/* Header del link */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <GripVertical className="w-4 h-4" />
+                    Enlace #{index + 1}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onRemoveLink(index)}
+                    className="text-red-600 hover:text-red-800 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Tipo y Título */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tipo de enlace
+                    </label>
+                    <select
+                      value={link.type}
+                      onChange={(e) => onUpdateLink(index, { type: e.target.value as any })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    >
+                      {Object.entries(LINK_CATEGORIES).map(([key, category]) => (
+                        <optgroup key={key} label={category.label}>
+                          {category.types.map((type) => {
+                            const option = PERSON_LINK_TYPE_OPTIONS.find(opt => opt.value === type);
+                            return (
+                              <option key={type} value={type}>
+                                {option?.label || type}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Título <span className="text-gray-400">(opcional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={link.title || ''}
+                      onChange={(e) => onUpdateLink(index, { title: e.target.value })}
+                      placeholder="Ej: Perfil oficial"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    />
+                  </div>
+                </div>
+
+                {/* URL */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    URL
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={link.url}
+                      onChange={(e) => onUpdateLink(index, { url: e.target.value })}
+                      placeholder="https://..."
+                      required
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    />
+                    {link.url && (
+                      <button
+                        type="button"
+                        onClick={() => window.open(link.url, '_blank')}
+                        title="Abrir enlace"
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Opciones */}
+                <div className="flex items-center gap-6">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={link.isVerified}
+                      onChange={(e) => onUpdateLink(index, { isVerified: e.target.checked })}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Verificado</span>
+                  </label>
+
+                  <label className="inline-flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={link.isActive}
+                      onChange={(e) => onUpdateLink(index, { isActive: e.target.checked })}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Activo</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Información adicional */}
+      {links.length > 0 && (
+        <p className="text-xs text-gray-500">
+          Los enlaces verificados se mostrarán con un ícono especial. 
+          Los enlaces inactivos no se mostrarán en el sitio público.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ==================================================
+// src/components/admin/people/PersonFormFields/LocationFields.tsx
+// ==================================================
+// src/components/admin/people/PersonFormFields/LocationFields.tsx
+
+import { PersonFormData } from '@/lib/people/peopleTypes';
+import { MapPin } from 'lucide-react';
+
+interface LocationFieldsProps {
+  formData: PersonFormData;
+  updateField: <K extends keyof PersonFormData>(field: K, value: PersonFormData[K]) => void;
+}
+
+export function LocationFields({ formData, updateField }: LocationFieldsProps) {
+  return (
+    <div className="space-y-6">
+      {/* Lugar de Nacimiento */}
+      <div>
+        <label htmlFor="birthLocation" className="block text-sm font-medium text-gray-700 mb-1">
+          <span className="flex items-center gap-2">
+            <MapPin className="w-4 h-4" />
+            Lugar de Nacimiento
+          </span>
+        </label>
+        <input
+          type="text"
+          id="birthLocation"
+          value={formData.birthLocation}
+          onChange={(e) => updateField('birthLocation', e.target.value)}
+          placeholder="Ej: Buenos Aires, Argentina"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+        />
+        <p className="mt-1 text-sm text-gray-500">
+          Ingrese ciudad y país. Ej: "Buenos Aires, Argentina" o "Madrid, España"
+        </p>
+      </div>
+
+      {/* Lugar de Fallecimiento */}
+      <div>
+        <label htmlFor="deathLocation" className="block text-sm font-medium text-gray-700 mb-1">
+          <span className="flex items-center gap-2">
+            <MapPin className="w-4 h-4" />
+            Lugar de Fallecimiento
+          </span>
+        </label>
+        <input
+          type="text"
+          id="deathLocation"
+          value={formData.deathLocation}
+          onChange={(e) => updateField('deathLocation', e.target.value)}
+          placeholder="Ej: Buenos Aires, Argentina"
+          disabled={!formData.deathDate}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 disabled:bg-gray-50 disabled:text-gray-500"
+        />
+        {!formData.deathDate && (
+          <p className="mt-1 text-sm text-gray-500">
+            Primero debe ingresar una fecha de fallecimiento
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ==================================================
 // src/components/admin/ScreeningVenueSelector.tsx
 // ==================================================
 // src/components/admin/ScreeningVenueSelector.tsx - VERSIÓN SIMPLIFICADA
@@ -15035,6 +16903,47 @@ export function TrailerSection({ trailerUrl, movieTitle, variant = 'fullwidth' }
 }
 
 // ==================================================
+// src/hooks/useDebounce.ts
+// ==================================================
+// src/hooks/useDebounce.ts
+
+import { useState, useEffect } from 'react';
+
+/**
+ * Hook que retrasa la actualización de un valor hasta que haya pasado
+ * un tiempo determinado sin cambios
+ * 
+ * @param value - El valor a retrasar
+ * @param delay - El tiempo de retraso en milisegundos
+ * @returns El valor retrasado
+ * 
+ * @example
+ * const [searchTerm, setSearchTerm] = useState('');
+ * const debouncedSearchTerm = useDebounce(searchTerm, 300);
+ * 
+ * // debouncedSearchTerm se actualizará 300ms después de que 
+ * // el usuario deje de escribir
+ */
+export function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    // Crear un timeout para actualizar el valor después del delay
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    // Limpiar el timeout si el value cambia antes del delay
+    // Esto "cancela" la actualización anterior y empieza una nueva
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+// ==================================================
 // src/hooks/useMovieForm.ts
 // ==================================================
 // src/hooks/useMovieForm.ts
@@ -15660,6 +17569,478 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
 }
 
 // ==================================================
+// src/hooks/usePeople.ts
+// ==================================================
+// src/hooks/usePeople.ts
+
+import { useState, useEffect, useCallback } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
+import { peopleService } from '@/services/people.service';
+import { 
+  PersonWithRelations,
+  PersonFilters,
+  PaginatedPeopleResponse 
+} from '@/lib/people/peopleTypes';
+import { PEOPLE_PAGINATION } from '@/lib/people/peopleConstants';
+import { toast } from 'react-hot-toast';
+
+interface UsePeopleOptions {
+  autoLoad?: boolean;
+  initialFilters?: PersonFilters;
+}
+
+export function usePeople(options: UsePeopleOptions = {}) {
+  const { autoLoad = true, initialFilters = {} } = options;
+  
+  // Estado
+  const [people, setPeople] = useState<PersonWithRelations[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  
+  // Filtros
+  const [filters, setFilters] = useState<PersonFilters>({
+    page: PEOPLE_PAGINATION.DEFAULT_PAGE,
+    limit: PEOPLE_PAGINATION.DEFAULT_LIMIT,
+    ...initialFilters,
+  });
+  
+  // Debounce para búsqueda
+  const debouncedSearch = useDebounce(filters.search || '', 300);
+
+  // Cargar personas
+  const loadPeople = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await peopleService.getAll({
+        ...filters,
+        search: debouncedSearch,
+      });
+      
+      setPeople(response.data);
+      setTotalCount(response.totalCount);
+      setTotalPages(response.totalPages);
+      setHasMore(response.hasMore);
+    } catch (err) {
+      console.error('Error loading people:', err);
+      setError(err as Error);
+      toast.error('No se pudieron cargar las personas');
+    } finally {
+      setLoading(false);
+    }
+  }, [filters, debouncedSearch]);
+
+  // Efecto para cargar personas
+  useEffect(() => {
+    if (autoLoad) {
+      loadPeople();
+    }
+  }, [loadPeople, autoLoad]);
+
+  // Actualizar un filtro específico
+  const updateFilter = useCallback(<K extends keyof PersonFilters>(
+    key: K,
+    value: PersonFilters[K]
+  ) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value,
+      // Resetear a página 1 cuando cambian otros filtros
+      ...(key !== 'page' && { page: 1 }),
+    }));
+  }, []);
+
+  // Actualizar múltiples filtros
+  const updateFilters = useCallback((newFilters: Partial<PersonFilters>) => {
+    setFilters(prev => ({
+      ...prev,
+      ...newFilters,
+      // Resetear a página 1 si no se está cambiando la página
+      ...(!newFilters.page && { page: 1 }),
+    }));
+  }, []);
+
+  // Resetear filtros
+  const resetFilters = useCallback(() => {
+    setFilters({
+      page: PEOPLE_PAGINATION.DEFAULT_PAGE,
+      limit: PEOPLE_PAGINATION.DEFAULT_LIMIT,
+    });
+  }, []);
+
+  // Cambiar página
+  const goToPage = useCallback((page: number) => {
+    updateFilter('page', page);
+  }, [updateFilter]);
+
+  // Eliminar persona
+  const deletePerson = useCallback(async (id: number) => {
+    try {
+      await peopleService.delete(id);
+      
+      toast.success('Persona eliminada correctamente');
+      
+      // Recargar lista después de eliminar
+      await loadPeople();
+    } catch (err) {
+      console.error('Error deleting person:', err);
+      
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : 'Error al eliminar persona';
+      
+      toast.error(errorMessage);
+      
+      throw err;
+    }
+  }, [loadPeople]);
+
+  // Exportar a CSV
+  const exportToCSV = useCallback(async () => {
+    try {
+      const blob = await peopleService.exportToCSV(filters);
+      
+      // Crear enlace de descarga
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `personas-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success('Archivo CSV descargado correctamente');
+    } catch (err) {
+      console.error('Error exporting to CSV:', err);
+      toast.error('No se pudo exportar a CSV');
+    }
+  }, [filters]);
+
+  return {
+    // Datos
+    people,
+    totalCount,
+    totalPages,
+    hasMore,
+    currentPage: filters.page || 1,
+    pageSize: filters.limit || PEOPLE_PAGINATION.DEFAULT_LIMIT,
+    
+    // Estado
+    loading,
+    error,
+    filters,
+    
+    // Acciones
+    loadPeople,
+    updateFilter,
+    updateFilters,
+    resetFilters,
+    goToPage,
+    deletePerson,
+    exportToCSV,
+    
+    // Navegación
+    goToNextPage: () => goToPage((filters.page || 1) + 1),
+    goToPreviousPage: () => goToPage(Math.max(1, (filters.page || 1) - 1)),
+    canGoNext: hasMore,
+    canGoPrevious: (filters.page || 1) > 1,
+  };
+}
+
+// Hook para búsqueda simple (autocomplete)
+export function usePeopleSearch() {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<Array<{ id: number; name: string; slug?: string }>>([]);
+  const [loading, setLoading] = useState(false);
+  
+  const debouncedQuery = useDebounce(query, 300);
+  
+  useEffect(() => {
+    const searchPeople = async () => {
+      if (debouncedQuery.length < 2) {
+        setResults([]);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        const data = await peopleService.search(debouncedQuery);
+        setResults(data);
+      } catch (error) {
+        console.error('Error searching people:', error);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    searchPeople();
+  }, [debouncedQuery]);
+  
+  return {
+    query,
+    setQuery,
+    results,
+    loading,
+    clearResults: () => setResults([]),
+  };
+}
+
+// Hook para una persona individual
+export function usePerson(id: number | string | null) {
+  const [person, setPerson] = useState<PersonWithRelations | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchPerson = async () => {
+      if (!id || id === 'new') {
+        setPerson(null);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const personId = typeof id === 'string' ? parseInt(id) : id;
+        const data = await peopleService.getById(personId);
+        setPerson(data);
+      } catch (err) {
+        console.error('Error loading person:', err);
+        setError(err as Error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPerson();
+  }, [id]);
+
+  const reload = useCallback(async () => {
+    if (!id || id === 'new') return;
+    
+    try {
+      setLoading(true);
+      const personId = typeof id === 'string' ? parseInt(id) : id;
+      const data = await peopleService.getById(personId);
+      setPerson(data);
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  return { person, loading, error, reload };
+}
+
+// ==================================================
+// src/hooks/usePeopleForm.ts
+// ==================================================
+// src/hooks/usePeopleForm.ts
+
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { peopleService } from '@/services/people.service';
+import { 
+  PersonFormData, 
+  PersonWithRelations,
+  PersonLink 
+} from '@/lib/people/peopleTypes';
+import { 
+  DEFAULT_PERSON_FORM_VALUES,
+  PERSON_ERROR_MESSAGES,
+  PERSON_SUCCESS_MESSAGES 
+} from '@/lib/people/peopleConstants';
+import {
+  formatPersonDataForForm,
+  validatePersonForm,
+  addNewPersonLink,
+  updatePersonLink,
+  removePersonLink
+} from '@/lib/people/peopleUtils';
+import { toast } from 'react-hot-toast';
+
+interface UsePeopleFormProps {
+  personId?: number;
+  onSuccess?: (person: PersonWithRelations) => void;
+}
+
+export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState<PersonFormData>(DEFAULT_PERSON_FORM_VALUES);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [isDirty, setIsDirty] = useState(false);
+
+  // Cargar datos de la persona si es edición
+  useEffect(() => {
+    if (personId) {
+      loadPerson();
+    }
+  }, [personId]);
+
+  // Cargar persona existente
+  const loadPerson = async () => {
+    if (!personId) return;
+
+    try {
+      setLoading(true);
+      const person = await peopleService.getById(personId);
+      
+      const formattedData = formatPersonDataForForm(person);
+      // Si la persona tiene links, cargarlos también
+      if (person.links) {
+        formattedData.links = person.links;
+      }
+      
+      setFormData(formattedData);
+    } catch (error) {
+      console.error('Error loading person:', error);
+      toast.error('No se pudo cargar la información de la persona');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Actualizar campo del formulario
+  const updateField = useCallback(<K extends keyof PersonFormData>(
+    field: K,
+    value: PersonFormData[K]
+  ) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+    setErrors([]); // Limpiar errores al modificar
+  }, []);
+
+  // Actualizar múltiples campos
+  const updateFields = useCallback((updates: Partial<PersonFormData>) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+    setIsDirty(true);
+    setErrors([]);
+  }, []);
+
+  // Manejo de links
+  const addLink = useCallback(() => {
+    setFormData(prev => ({
+      ...prev,
+      links: addNewPersonLink(prev.links)
+    }));
+    setIsDirty(true);
+  }, []);
+
+  const updateLink = useCallback((index: number, updates: Partial<PersonLink>) => {
+    setFormData(prev => ({
+      ...prev,
+      links: updatePersonLink(prev.links, index, updates)
+    }));
+    setIsDirty(true);
+  }, []);
+
+  const removeLink = useCallback((index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      links: removePersonLink(prev.links, index)
+    }));
+    setIsDirty(true);
+  }, []);
+
+  // Validar formulario
+  const validate = useCallback((): boolean => {
+    const validationErrors = validatePersonForm(formData);
+    setErrors(validationErrors);
+    return validationErrors.length === 0;
+  }, [formData]);
+
+  // Guardar persona
+  const save = useCallback(async () => {
+    if (!validate()) {
+      toast.error('Por favor corrige los errores en el formulario');
+      return false;
+    }
+
+    try {
+      setSaving(true);
+      
+      let savedPerson: PersonWithRelations;
+      
+      if (personId) {
+        savedPerson = await peopleService.update(personId, formData);
+        toast.success(PERSON_SUCCESS_MESSAGES.UPDATED);
+      } else {
+        savedPerson = await peopleService.create(formData);
+        toast.success(PERSON_SUCCESS_MESSAGES.CREATED);
+      }
+
+      setIsDirty(false);
+      
+      if (onSuccess) {
+        onSuccess(savedPerson);
+      } else {
+        router.push('/admin/people');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error saving person:', error);
+      
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : personId ? PERSON_ERROR_MESSAGES.UPDATE_ERROR : PERSON_ERROR_MESSAGES.CREATE_ERROR;
+      
+      toast.error(errorMessage);
+      
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }, [formData, personId, validate, router, onSuccess]);
+
+  // Resetear formulario
+  const reset = useCallback(() => {
+    setFormData(DEFAULT_PERSON_FORM_VALUES);
+    setErrors([]);
+    setIsDirty(false);
+  }, []);
+
+  // Cancelar y volver
+  const cancel = useCallback(() => {
+    if (isDirty) {
+      const confirmed = window.confirm('¿Estás seguro? Se perderán los cambios no guardados.');
+      if (!confirmed) return;
+    }
+    router.push('/admin/people');
+  }, [isDirty, router]);
+
+  return {
+    // Estado
+    formData,
+    loading,
+    saving,
+    errors,
+    isDirty,
+    isEdit: !!personId,
+    
+    // Acciones
+    updateField,
+    updateFields,
+    addLink,
+    updateLink,
+    removeLink,
+    save,
+    reset,
+    cancel,
+    reload: loadPerson,
+  };
+}
+
+// ==================================================
 // src/lib/movies/movieConstants.ts
 // ==================================================
 // src/lib/movies/movieConstants.ts
@@ -16048,6 +18429,503 @@ export const shouldDisableDurationType = (
   segundos: number | undefined | null
 ): boolean => {
   return (minutos && minutos > 0) || (segundos && segundos > 0) ? true : false
+}
+
+// ==================================================
+// src/lib/people/peopleConstants.ts
+// ==================================================
+// src/lib/people/peopleConstants.ts
+
+import { Gender, PersonLinkType } from './peopleTypes';
+
+// Opciones de género
+export const GENDER_OPTIONS = [
+  { value: 'MALE' as Gender, label: 'Masculino' },
+  { value: 'FEMALE' as Gender, label: 'Femenino' },
+  { value: 'OTHER' as Gender, label: 'Otro' },
+] as const;
+
+// Tipos de links con sus etiquetas
+export const PERSON_LINK_TYPES: Record<PersonLinkType, string> = {
+  IMDB: 'IMDb',
+  TMDB: 'TMDb',
+  CINENACIONAL: 'CineNacional',
+  WIKIPEDIA: 'Wikipedia',
+  OFFICIAL_WEBSITE: 'Sitio Web Oficial',
+  PORTFOLIO: 'Portfolio',
+  BLOG: 'Blog',
+  INSTAGRAM: 'Instagram',
+  TWITTER: 'Twitter',
+  FACEBOOK: 'Facebook',
+  YOUTUBE: 'YouTube',
+  TIKTOK: 'TikTok',
+  LINKEDIN: 'LinkedIn',
+  VIMEO: 'Vimeo',
+  LETTERBOXD: 'Letterboxd',
+  SPOTIFY: 'Spotify',
+  PODCAST: 'Podcast',
+  INTERVIEW: 'Entrevista',
+  ARTICLE: 'Artículo',
+  OTHER: 'Otro',
+} as const;
+
+// Array de opciones para selects
+export const PERSON_LINK_TYPE_OPTIONS = Object.entries(PERSON_LINK_TYPES).map(
+  ([value, label]) => ({ value, label })
+);
+
+// Categorías de links para organización en UI
+export const LINK_CATEGORIES = {
+  databases: {
+    label: 'Bases de datos',
+    types: ['IMDB', 'TMDB', 'CINENACIONAL'] as PersonLinkType[],
+  },
+  encyclopedias: {
+    label: 'Enciclopedias',
+    types: ['WIKIPEDIA'] as PersonLinkType[],
+  },
+  websites: {
+    label: 'Sitios web',
+    types: ['OFFICIAL_WEBSITE', 'PORTFOLIO', 'BLOG'] as PersonLinkType[],
+  },
+  social: {
+    label: 'Redes sociales',
+    types: ['INSTAGRAM', 'TWITTER', 'FACEBOOK', 'YOUTUBE', 'TIKTOK', 'LINKEDIN'] as PersonLinkType[],
+  },
+  content: {
+    label: 'Plataformas de contenido',
+    types: ['VIMEO', 'LETTERBOXD', 'SPOTIFY', 'PODCAST'] as PersonLinkType[],
+  },
+  other: {
+    label: 'Otros',
+    types: ['INTERVIEW', 'ARTICLE', 'OTHER'] as PersonLinkType[],
+  },
+} as const;
+
+// Valores por defecto para formularios
+export const DEFAULT_PERSON_FORM_VALUES = {
+  firstName: '',
+  lastName: '',
+  realName: '',
+  birthDate: '',
+  deathDate: '',
+  birthLocation: '',
+  deathLocation: '',
+  biography: '',
+  photoUrl: '',
+  gender: '',
+  hideAge: false,
+  isActive: true,
+  links: [],
+} as const;
+
+// Valores por defecto para un nuevo link
+export const DEFAULT_PERSON_LINK = {
+  type: 'OTHER' as PersonLinkType,
+  url: '',
+  title: '',
+  displayOrder: 0,
+  isVerified: false,
+  isActive: true,
+} as const;
+
+// Configuración de paginación
+export const PEOPLE_PAGINATION = {
+  DEFAULT_PAGE: 1,
+  DEFAULT_LIMIT: 20,
+  LIMITS: [10, 20, 50, 100],
+} as const;
+
+// Mensajes de error comunes
+export const PERSON_ERROR_MESSAGES = {
+  FETCH_ERROR: 'Error al cargar las personas',
+  CREATE_ERROR: 'Error al crear la persona',
+  UPDATE_ERROR: 'Error al actualizar la persona',
+  DELETE_ERROR: 'Error al eliminar la persona',
+  DELETE_WITH_MOVIES: 'No se puede eliminar esta persona porque está asociada a películas',
+  REQUIRED_NAME: 'Debe ingresar al menos el nombre o el apellido',
+  INVALID_DATES: 'La fecha de fallecimiento debe ser posterior a la fecha de nacimiento',
+  DUPLICATE_SLUG: 'Ya existe una persona con ese nombre',
+} as const;
+
+// Mensajes de éxito
+export const PERSON_SUCCESS_MESSAGES = {
+  CREATED: 'Persona creada exitosamente',
+  UPDATED: 'Persona actualizada exitosamente',
+  DELETED: 'Persona eliminada exitosamente',
+} as const;
+
+// ==================================================
+// src/lib/people/peopleTypes.ts
+// ==================================================
+// src/lib/people/peopleTypes.ts
+
+// Tipos base de la base de datos
+export interface Person {
+  id: number;
+  slug: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  realName?: string | null;
+  birthDate?: string | null;
+  deathDate?: string | null;
+  birthLocationId?: number | null;
+  deathLocationId?: number | null;
+  biography?: string | null;
+  photoUrl?: string | null;
+  gender?: Gender | null;
+  hideAge: boolean;
+  hasLinks: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Tipo de género
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER';
+
+// Tipo para links de persona
+export interface PersonLink {
+  id?: number;
+  personId?: number;
+  type: PersonLinkType;
+  url: string;
+  title?: string | null;
+  displayOrder: number;
+  isVerified: boolean;
+  isActive: boolean;
+  lastChecked?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Tipos de links disponibles
+export type PersonLinkType = 
+  | 'IMDB'
+  | 'TMDB'
+  | 'CINENACIONAL'
+  | 'WIKIPEDIA'
+  | 'OFFICIAL_WEBSITE'
+  | 'PORTFOLIO'
+  | 'BLOG'
+  | 'INSTAGRAM'
+  | 'TWITTER'
+  | 'FACEBOOK'
+  | 'YOUTUBE'
+  | 'TIKTOK'
+  | 'LINKEDIN'
+  | 'VIMEO'
+  | 'LETTERBOXD'
+  | 'SPOTIFY'
+  | 'PODCAST'
+  | 'INTERVIEW'
+  | 'ARTICLE'
+  | 'OTHER';
+
+// Tipo para ubicación
+export interface Location {
+  id: number;
+  name: string;
+  slug?: string | null;
+  type: string;
+  parentId?: number | null;
+  countryId: number;
+  latitude?: number | null;
+  longitude?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Tipo extendido con relaciones
+export interface PersonWithRelations extends Person {
+  links?: PersonLink[];
+  birthLocation?: Location | null;
+  deathLocation?: Location | null;
+  _count?: {
+    links: number;
+    castRoles: number;
+    crewRoles: number;
+    awards: number;
+  };
+}
+
+// Tipo para el formulario
+export interface PersonFormData {
+  firstName: string;
+  lastName: string;
+  realName: string;
+  birthDate: string;
+  deathDate: string;
+  birthLocation: string;
+  deathLocation: string;
+  biography: string;
+  photoUrl: string;
+  gender: string;
+  hideAge: boolean;
+  isActive: boolean;
+  links: PersonLink[];
+}
+
+// Tipo para filtros de búsqueda
+export interface PersonFilters {
+  search?: string;
+  gender?: Gender | '';
+  hasLinks?: boolean | '';
+  isActive?: boolean | '';
+  page?: number;
+  limit?: number;
+}
+
+// Tipo para respuesta paginada
+export interface PaginatedPeopleResponse {
+  data: PersonWithRelations[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+// ==================================================
+// src/lib/people/peopleUtils.ts
+// ==================================================
+// src/lib/people/peopleUtils.ts
+
+import { Person, PersonFormData, PersonLink, Gender } from './peopleTypes';
+import { DEFAULT_PERSON_FORM_VALUES, DEFAULT_PERSON_LINK } from './peopleConstants';
+
+/**
+ * Genera un slug único para una persona basado en nombre y apellido
+ */
+export function generatePersonSlug(firstName?: string, lastName?: string): string {
+  const parts = [firstName, lastName].filter(Boolean);
+  if (parts.length === 0) return '';
+  
+  return parts
+    .join(' ')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remover diacríticos
+    .replace(/[^\w\s-]/g, '') // Remover caracteres especiales
+    .trim()
+    .replace(/\s+/g, '-') // Reemplazar espacios con guiones
+    .replace(/-+/g, '-') // Reemplazar múltiples guiones con uno
+    .replace(/^-+|-+$/g, ''); // Remover guiones al inicio y final
+}
+
+/**
+ * Formatea el nombre completo de una persona
+ */
+export function formatPersonName(person: Partial<Person>): string {
+  const parts = [person.firstName, person.lastName].filter(Boolean);
+  return parts.join(' ') || 'Sin nombre';
+}
+
+/**
+ * Formatea el género para mostrar
+ */
+export function formatGender(gender?: Gender | null): string {
+  if (!gender) return '-';
+  
+  const genderMap: Record<Gender, string> = {
+    MALE: 'Masculino',
+    FEMALE: 'Femenino',
+    OTHER: 'Otro',
+  };
+  
+  return genderMap[gender] || '-';
+}
+
+/**
+ * Convierte los datos del formulario para enviar a la API
+ */
+export function formatPersonFormDataForAPI(data: PersonFormData) {
+  return {
+    firstName: data.firstName || null,
+    lastName: data.lastName || null,
+    realName: data.realName || null,
+    birthDate: data.birthDate || null,
+    deathDate: data.deathDate || null,
+    birthLocation: data.birthLocation || null,
+    deathLocation: data.deathLocation || null,
+    biography: data.biography || null,
+    photoUrl: data.photoUrl || null,
+    gender: data.gender || null,
+    hideAge: data.hideAge,
+    isActive: data.isActive,
+    links: data.links.map((link, index) => ({
+      ...link,
+      displayOrder: index,
+      title: link.title || null,
+    })),
+  };
+}
+
+/**
+ * Convierte los datos de la API al formato del formulario
+ */
+export function formatPersonDataForForm(person?: Person | null): PersonFormData {
+  if (!person) return DEFAULT_PERSON_FORM_VALUES;
+  
+  return {
+    firstName: person.firstName || '',
+    lastName: person.lastName || '',
+    realName: person.realName || '',
+    birthDate: person.birthDate ? person.birthDate.split('T')[0] : '',
+    deathDate: person.deathDate ? person.deathDate.split('T')[0] : '',
+    birthLocation: '', // TODO: Implementar cuando tengamos birthLocation
+    deathLocation: '', // TODO: Implementar cuando tengamos deathLocation
+    biography: person.biography || '',
+    photoUrl: person.photoUrl || '',
+    gender: person.gender || '',
+    hideAge: person.hideAge || false,
+    isActive: person.isActive ?? true,
+    links: [], // Se cargan por separado si es necesario
+  };
+}
+
+/**
+ * Valida los datos del formulario de persona
+ */
+export function validatePersonForm(data: PersonFormData): string[] {
+  const errors: string[] = [];
+  
+  // Validar que tenga al menos nombre o apellido
+  if (!data.firstName && !data.lastName) {
+    errors.push('Debe ingresar al menos el nombre o el apellido');
+  }
+  
+  // Validar fechas
+  if (data.birthDate && data.deathDate) {
+    const birthDate = new Date(data.birthDate);
+    const deathDate = new Date(data.deathDate);
+    
+    if (deathDate < birthDate) {
+      errors.push('La fecha de fallecimiento debe ser posterior a la fecha de nacimiento');
+    }
+  }
+  
+  // Validar links
+  data.links.forEach((link, index) => {
+    if (!link.url) {
+      errors.push(`El link #${index + 1} debe tener una URL`);
+    } else if (!isValidUrl(link.url)) {
+      errors.push(`La URL del link #${index + 1} no es válida`);
+    }
+  });
+  
+  return errors;
+}
+
+/**
+ * Valida si una cadena es una URL válida
+ */
+export function isValidUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Ordena los links por displayOrder
+ */
+export function sortPersonLinks(links: PersonLink[]): PersonLink[] {
+  return [...links].sort((a, b) => a.displayOrder - b.displayOrder);
+}
+
+/**
+ * Agrega un nuevo link con valores por defecto
+ */
+export function addNewPersonLink(currentLinks: PersonLink[]): PersonLink[] {
+  return [
+    ...currentLinks,
+    {
+      ...DEFAULT_PERSON_LINK,
+      displayOrder: currentLinks.length,
+    },
+  ];
+}
+
+/**
+ * Actualiza un link específico
+ */
+export function updatePersonLink(
+  links: PersonLink[],
+  index: number,
+  updates: Partial<PersonLink>
+): PersonLink[] {
+  const newLinks = [...links];
+  newLinks[index] = { ...newLinks[index], ...updates };
+  return newLinks;
+}
+
+/**
+ * Elimina un link y reordena los displayOrder
+ */
+export function removePersonLink(links: PersonLink[], index: number): PersonLink[] {
+  return links
+    .filter((_, i) => i !== index)
+    .map((link, i) => ({ ...link, displayOrder: i }));
+}
+
+/**
+ * Genera el texto para mostrar la edad o fecha de nacimiento
+ */
+export function formatBirthInfo(person: Person): string {
+  if (!person.birthDate) return '-';
+  if (person.hideAge) return 'Fecha oculta';
+  
+  const birthDate = new Date(person.birthDate);
+  const formattedDate = birthDate.toLocaleDateString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+  
+  // Si no hay fecha de muerte, calcular edad
+  if (!person.deathDate) {
+    const age = calculateAge(birthDate);
+    return `${formattedDate} (${age} años)`;
+  }
+  
+  // Si hay fecha de muerte, mostrar solo la fecha
+  return formattedDate;
+}
+
+/**
+ * Calcula la edad a partir de una fecha de nacimiento
+ */
+export function calculateAge(birthDate: Date, deathDate?: Date): number {
+  const endDate = deathDate || new Date();
+  let age = endDate.getFullYear() - birthDate.getFullYear();
+  const monthDiff = endDate.getMonth() - birthDate.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && endDate.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age;
+}
+
+/**
+ * Genera un resumen de la persona para mostrar en listas
+ */
+export function getPersonSummary(person: Person): string {
+  const parts = [];
+  
+  if (person.birthDate && !person.hideAge) {
+    const year = new Date(person.birthDate).getFullYear();
+    parts.push(`n. ${year}`);
+  }
+  
+  if (person.deathDate) {
+    const year = new Date(person.deathDate).getFullYear();
+    parts.push(`f. ${year}`);
+  }
+  
+  return parts.join(' - ');
 }
 
 // ==================================================
@@ -16689,95 +19567,143 @@ export const moviesService = {
 // ==================================================
 // src/services/people.service.ts
 
-interface Person {
-  id: number
-  name: string
-  slug?: string
-  birthDate?: string
-  deathDate?: string
-  biography?: string
-  photoUrl?: string
-}
+import { apiClient } from './api-client';
+import { 
+  Person, 
+  PersonWithRelations, 
+  PersonFormData, 
+  PersonFilters,
+  PaginatedPeopleResponse 
+} from '@/lib/people/peopleTypes';
+import { formatPersonFormDataForAPI } from '@/lib/people/peopleUtils';
 
 interface PersonSearchResult {
-  id: number
-  name: string
+  id: number;
+  name: string;
+  slug?: string;
 }
 
 export const peopleService = {
   /**
-   * Busca personas por nombre
+   * Obtiene una lista paginada de personas con filtros
+   */
+  async getAll(filters: PersonFilters = {}): Promise<PaginatedPeopleResponse> {
+    const params = new URLSearchParams();
+    
+    if (filters.search) params.append('search', filters.search);
+    if (filters.gender) params.append('gender', filters.gender);
+    if (filters.hasLinks !== undefined && filters.hasLinks !== '') {
+      params.append('hasLinks', String(filters.hasLinks));
+    }
+    if (filters.isActive !== undefined && filters.isActive !== '') {
+      params.append('isActive', String(filters.isActive));
+    }
+    if (filters.page) params.append('page', String(filters.page));
+    if (filters.limit) params.append('limit', String(filters.limit));
+
+    return apiClient.get<PaginatedPeopleResponse>(`/people?${params}`);
+  },
+
+  /**
+   * Busca personas por nombre (para autocomplete)
    */
   async search(query: string, limit: number = 10): Promise<PersonSearchResult[]> {
-    if (query.length < 2) return []
+    if (query.length < 2) return [];
 
     try {
-      const response = await fetch(`/api/people?search=${encodeURIComponent(query)}&limit=${limit}`)
-      if (!response.ok) throw new Error('Error searching people')
-      return response.json()
+      return await apiClient.get<PersonSearchResult[]>(
+        `/people?search=${encodeURIComponent(query)}&limit=${limit}`
+      );
     } catch (error) {
-      console.error('Error searching people:', error)
-      return []
+      console.error('Error searching people:', error);
+      return [];
     }
+  },
+
+  /**
+   * Obtiene una persona por ID con todas sus relaciones
+   */
+  async getById(id: number): Promise<PersonWithRelations> {
+    return apiClient.get<PersonWithRelations>(`/people/${id}`);
   },
 
   /**
    * Crea una nueva persona
    */
-  async create(name: string): Promise<Person> {
-    const response = await fetch('/api/people', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name })
-    })
-
-    if (!response.ok) {
-      throw new Error('Error creating person')
-    }
-
-    return response.json()
+  async create(data: PersonFormData): Promise<PersonWithRelations> {
+    const formattedData = formatPersonFormDataForAPI(data);
+    return apiClient.post<PersonWithRelations>('/people', formattedData);
   },
 
   /**
-   * Obtiene una persona por ID
+   * Crea una persona rápida (solo con nombre)
    */
-  async getById(id: number): Promise<Person> {
-    const response = await fetch(`/api/people/${id}`)
-    
-    if (!response.ok) {
-      throw new Error('Error loading person')
-    }
-
-    return response.json()
+  async createQuick(name: string): Promise<Person> {
+    return apiClient.post<Person>('/people', { name });
   },
 
   /**
    * Actualiza una persona
    */
-  async update(id: number, data: Partial<Person>): Promise<Person> {
-    const response = await fetch(`/api/people/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    })
-
-    if (!response.ok) {
-      throw new Error('Error updating person')
-    }
-
-    return response.json()
+  async update(id: number, data: PersonFormData): Promise<PersonWithRelations> {
+    const formattedData = formatPersonFormDataForAPI(data);
+    return apiClient.put<PersonWithRelations>(`/people/${id}`, formattedData);
   },
 
   /**
    * Elimina una persona
    */
   async delete(id: number): Promise<void> {
-    const response = await fetch(`/api/people/${id}`, {
-      method: 'DELETE'
-    })
+    await apiClient.delete(`/people/${id}`);
+  },
 
-    if (!response.ok) {
-      throw new Error('Error deleting person')
+  /**
+   * Verifica si un slug está disponible
+   */
+  async checkSlugAvailability(slug: string, excludeId?: number): Promise<boolean> {
+    const params = new URLSearchParams({ slug });
+    if (excludeId) params.append('excludeId', String(excludeId));
+    
+    const { available } = await apiClient.get<{ available: boolean }>(
+      `/people/check-slug?${params}`
+    );
+    return available;
+  },
+
+  /**
+   * Obtiene estadísticas de personas
+   */
+  async getStats(): Promise<{
+    total: number;
+    active: number;
+    withLinks: number;
+    byGender: Record<string, number>;
+  }> {
+    return apiClient.get('/people/stats');
+  },
+
+  /**
+   * Exporta personas a CSV
+   */
+  async exportToCSV(filters: PersonFilters = {}): Promise<Blob> {
+    const params = new URLSearchParams();
+    
+    if (filters.search) params.append('search', filters.search);
+    if (filters.gender) params.append('gender', filters.gender);
+    if (filters.hasLinks !== undefined) {
+      params.append('hasLinks', String(filters.hasLinks));
     }
+    if (filters.isActive !== undefined) {
+      params.append('isActive', String(filters.isActive));
+    }
+
+    // Usamos fetch directamente para manejar el blob
+    const response = await fetch(`/api/people/export?${params}`);
+    
+    if (!response.ok) {
+      throw new Error('Error al exportar personas');
+    }
+    
+    return response.blob();
   }
-}
+};

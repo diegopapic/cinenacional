@@ -1,94 +1,142 @@
 // src/services/people.service.ts
 
-interface Person {
-  id: number
-  name: string
-  slug?: string
-  birthDate?: string
-  deathDate?: string
-  biography?: string
-  photoUrl?: string
-}
+import { apiClient } from './api-client';
+import { 
+  Person, 
+  PersonWithRelations, 
+  PersonFormData, 
+  PersonFilters,
+  PaginatedPeopleResponse 
+} from '@/lib/people/peopleTypes';
+import { formatPersonFormDataForAPI } from '@/lib/people/peopleUtils';
 
 interface PersonSearchResult {
-  id: number
-  name: string
+  id: number;
+  name: string;
+  slug?: string;
 }
 
 export const peopleService = {
   /**
-   * Busca personas por nombre
+   * Obtiene una lista paginada de personas con filtros
+   */
+  async getAll(filters: PersonFilters = {}): Promise<PaginatedPeopleResponse> {
+    const params = new URLSearchParams();
+    
+    if (filters.search) params.append('search', filters.search);
+    if (filters.gender) params.append('gender', filters.gender);
+    if (filters.hasLinks !== undefined && filters.hasLinks !== '') {
+      params.append('hasLinks', String(filters.hasLinks));
+    }
+    if (filters.isActive !== undefined && filters.isActive !== '') {
+      params.append('isActive', String(filters.isActive));
+    }
+    if (filters.page) params.append('page', String(filters.page));
+    if (filters.limit) params.append('limit', String(filters.limit));
+
+    return apiClient.get<PaginatedPeopleResponse>(`/people?${params}`);
+  },
+
+  /**
+   * Busca personas por nombre (para autocomplete)
    */
   async search(query: string, limit: number = 10): Promise<PersonSearchResult[]> {
-    if (query.length < 2) return []
+    if (query.length < 2) return [];
 
     try {
-      const response = await fetch(`/api/people?search=${encodeURIComponent(query)}&limit=${limit}`)
-      if (!response.ok) throw new Error('Error searching people')
-      return response.json()
+      return await apiClient.get<PersonSearchResult[]>(
+        `/people?search=${encodeURIComponent(query)}&limit=${limit}`
+      );
     } catch (error) {
-      console.error('Error searching people:', error)
-      return []
+      console.error('Error searching people:', error);
+      return [];
     }
+  },
+
+  /**
+   * Obtiene una persona por ID con todas sus relaciones
+   */
+  async getById(id: number): Promise<PersonWithRelations> {
+    return apiClient.get<PersonWithRelations>(`/people/${id}`);
   },
 
   /**
    * Crea una nueva persona
    */
-  async create(name: string): Promise<Person> {
-    const response = await fetch('/api/people', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name })
-    })
-
-    if (!response.ok) {
-      throw new Error('Error creating person')
-    }
-
-    return response.json()
+  async create(data: PersonFormData): Promise<PersonWithRelations> {
+    const formattedData = formatPersonFormDataForAPI(data);
+    return apiClient.post<PersonWithRelations>('/people', formattedData);
   },
 
   /**
-   * Obtiene una persona por ID
+   * Crea una persona rápida (solo con nombre)
    */
-  async getById(id: number): Promise<Person> {
-    const response = await fetch(`/api/people/${id}`)
-    
-    if (!response.ok) {
-      throw new Error('Error loading person')
-    }
-
-    return response.json()
+  async createQuick(name: string): Promise<Person> {
+    return apiClient.post<Person>('/people', { name });
   },
 
   /**
    * Actualiza una persona
    */
-  async update(id: number, data: Partial<Person>): Promise<Person> {
-    const response = await fetch(`/api/people/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    })
-
-    if (!response.ok) {
-      throw new Error('Error updating person')
-    }
-
-    return response.json()
+  async update(id: number, data: PersonFormData): Promise<PersonWithRelations> {
+    const formattedData = formatPersonFormDataForAPI(data);
+    return apiClient.put<PersonWithRelations>(`/people/${id}`, formattedData);
   },
 
   /**
    * Elimina una persona
    */
   async delete(id: number): Promise<void> {
-    const response = await fetch(`/api/people/${id}`, {
-      method: 'DELETE'
-    })
+    await apiClient.delete(`/people/${id}`);
+  },
 
-    if (!response.ok) {
-      throw new Error('Error deleting person')
+  /**
+   * Verifica si un slug está disponible
+   */
+  async checkSlugAvailability(slug: string, excludeId?: number): Promise<boolean> {
+    const params = new URLSearchParams({ slug });
+    if (excludeId) params.append('excludeId', String(excludeId));
+    
+    const { available } = await apiClient.get<{ available: boolean }>(
+      `/people/check-slug?${params}`
+    );
+    return available;
+  },
+
+  /**
+   * Obtiene estadísticas de personas
+   */
+  async getStats(): Promise<{
+    total: number;
+    active: number;
+    withLinks: number;
+    byGender: Record<string, number>;
+  }> {
+    return apiClient.get('/people/stats');
+  },
+
+  /**
+   * Exporta personas a CSV
+   */
+  async exportToCSV(filters: PersonFilters = {}): Promise<Blob> {
+    const params = new URLSearchParams();
+    
+    if (filters.search) params.append('search', filters.search);
+    if (filters.gender) params.append('gender', filters.gender);
+    if (filters.hasLinks !== undefined) {
+      params.append('hasLinks', String(filters.hasLinks));
     }
+    if (filters.isActive !== undefined) {
+      params.append('isActive', String(filters.isActive));
+    }
+
+    // Usamos fetch directamente para manejar el blob
+    const response = await fetch(`/api/people/export?${params}`);
+    
+    if (!response.ok) {
+      throw new Error('Error al exportar personas');
+    }
+    
+    return response.blob();
   }
-}
+};
