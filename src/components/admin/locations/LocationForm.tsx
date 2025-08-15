@@ -135,7 +135,8 @@ export default function LocationForm({ location }: LocationFormProps) {
         throw new Error(data.error || 'Error al guardar el lugar')
       }
 
-      router.push('/admin/locations')
+      // Redirigir con timestamp para forzar recarga
+      router.push(`/admin/locations?refresh=${Date.now()}`)
       router.refresh()  // Forzar actualización del caché
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Error al guardar el lugar')

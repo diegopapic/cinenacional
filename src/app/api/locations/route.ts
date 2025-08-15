@@ -50,7 +50,13 @@ export async function GET(request: NextRequest) {
       ]
     })
 
-    return NextResponse.json(locations)
+    return NextResponse.json(locations, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    })
   } catch (error) {
     console.error('Error fetching locations:', error)
     return NextResponse.json(

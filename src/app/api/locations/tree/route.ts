@@ -72,7 +72,13 @@ export async function GET(request: NextRequest) {
     }
     roots.forEach(sortChildren)
 
-    return NextResponse.json(roots)
+    return NextResponse.json(roots, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    })
   } catch (error) {
     console.error('Error fetching location tree:', error)
     return NextResponse.json(
