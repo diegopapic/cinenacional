@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 200fd8590014d903b1cf3b0921bc79a900ecb038
-// Fecha: 2025-08-15T03:12:06.621Z
+// Commit: 1dff472d5c9b72638637c3edff2d694e372a7cfb
+// Fecha: 2025-08-15T03:17:48.057Z
 // ============================================
 
 
@@ -3239,9 +3239,16 @@ export default async function EditLocationPage({ params }: EditLocationPageProps
     notFound()
   }
 
-  // Convertir Decimal a string para el formulario
+  // Convertir Decimal a string y simplificar el objeto para el formulario
   const locationData = {
-    ...location,
+    id: location.id,
+    name: location.name,
+    slug: location.slug,
+    parentId: location.parentId,
+    parent: location.parent ? {
+      id: location.parent.id,
+      name: location.parent.name
+    } : undefined,
     latitude: location.latitude?.toString() || null,
     longitude: location.longitude?.toString() || null
   }
