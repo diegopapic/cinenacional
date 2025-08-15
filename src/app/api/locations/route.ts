@@ -4,6 +4,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateUniqueSlug } from '@/lib/utils/slugs'
 
+// Forzar que esta ruta sea dinámica
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // GET /api/locations - Listar lugares con filtros opcionales
 export async function GET(request: NextRequest) {
   try {

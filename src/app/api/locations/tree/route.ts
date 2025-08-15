@@ -3,6 +3,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Forzar que esta ruta sea dinámica
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 interface LocationNode {
   id: number
   name: string
