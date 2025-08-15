@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 091a6fd5012ac8df07cf9223b18295a62f17bcb4
-// Fecha: 2025-08-15T05:09:41.338Z
+// Commit: cba0cde7d7d4b31aca120c12a8b2cbfb71b73364
+// Fecha: 2025-08-15T20:42:51.755Z
 // ============================================
 
 
@@ -6342,87 +6342,76 @@ export async function POST(request: NextRequest) {
 // ==================================================
 // src/app/api/locations/search/route.ts
 
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const query = searchParams.get('q')
-    const excludeId = searchParams.get('excludeId')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const searchParams = request.nextUrl.searchParams;
+    const query = searchParams.get('q') || '';
 
     if (!query || query.length < 2) {
-      return NextResponse.json([])
+      return NextResponse.json([]);
     }
 
-    const where: any = {
-      name: {
-        contains: query,
-        mode: 'insensitive'
-      }
-    }
-
-    // Excluir el ID actual si estamos editando
-    if (excludeId) {
-      where.id = {
-        not: parseInt(excludeId)
-      }
-    }
-
+    // Buscar ubicaciones que coincidan con el query
     const locations = await prisma.location.findMany({
-      where,
-      include: {
-        parent: true
+      where: {
+        name: {
+          contains: query,
+          mode: 'insensitive'
+        }
       },
-      take: limit,
+      include: {
+        parent: {
+          include: {
+            parent: true
+          }
+        }
+      },
+      take: 20,
       orderBy: [
-        { name: 'asc' }
+        {
+          name: 'asc'
+        }
       ]
-    })
+    });
 
     // Construir el path completo para cada ubicación
     const locationsWithPath = await Promise.all(
       locations.map(async (location) => {
-        const path = await buildLocationPath(location)
+        let path = location.name;
+        let current = location;
+        
+        while (current.parent) {
+          path = `${current.parent.name}, ${path}`;
+          
+          if (current.parent.parent) {
+            path = `${current.parent.parent.name}, ${path}`;
+            break; // Asumimos máximo 3 niveles
+          }
+          break;
+        }
+
         return {
           id: location.id,
           name: location.name,
           slug: location.slug,
           parentId: location.parentId,
-          path
-        }
+          path,
+          parent: location.parent
+        };
       })
-    )
+    );
 
-    return NextResponse.json(locationsWithPath)
+    return NextResponse.json(locationsWithPath);
   } catch (error) {
-    console.error('Error searching locations:', error)
-    return NextResponse.json({ error: 'Error searching locations' }, { status: 500 })
+    console.error('Error searching locations:', error);
+    return NextResponse.json(
+      { error: 'Error al buscar ubicaciones' },
+      { status: 500 }
+    );
   }
-}
-
-async function buildLocationPath(location: any): Promise<string> {
-  const path = [location.name]
-  let current = location
-  
-  while (current.parent) {
-    path.unshift(current.parent.name)
-    
-    // Buscar el padre del padre si existe
-    if (current.parent.parentId) {
-      current = await prisma.location.findUnique({
-        where: { id: current.parent.parentId },
-        include: { parent: true }
-      })
-      
-      if (!current) break
-    } else {
-      break
-    }
-  }
-  
-  return path.join(' > ')
 }
 
 // ==================================================
@@ -7573,7 +7562,7 @@ export async function GET(request: NextRequest) {
 
     // Construir where clause
     const where: any = {};
-    
+
     if (search) {
       where.OR = [
         { firstName: { contains: search, mode: 'insensitive' } },
@@ -7638,7 +7627,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    
+
     // Si es una creación rápida (solo con nombre)
     if (data.name && !data.firstName && !data.lastName) {
       // Dividir el nombre en firstName y lastName
@@ -7646,12 +7635,12 @@ export async function POST(request: NextRequest) {
       data.firstName = nameParts[0];
       data.lastName = nameParts.slice(1).join(' ') || null;
     }
-    
+
     // Generar slug único basado en firstName y lastName
     let baseSlug = generatePersonSlug(data.firstName, data.lastName);
     let slug = baseSlug;
     let counter = 1;
-    
+
     // Verificar si el slug ya existe y generar uno único
     while (await prisma.person.findUnique({ where: { slug } })) {
       slug = `${baseSlug}-${counter}`;
@@ -7666,6 +7655,8 @@ export async function POST(request: NextRequest) {
       realName: data.realName || null,
       birthDate: data.birthDate ? new Date(data.birthDate) : null,
       deathDate: data.deathDate ? new Date(data.deathDate) : null,
+      birthLocationId: data.birthLocationId || null,
+      deathLocationId: data.deathLocationId || null,
       biography: data.biography || null,
       photoUrl: data.photoUrl || null,
       gender: data.gender || null,
@@ -7735,207 +7726,211 @@ import { prisma } from '@/lib/prisma';
 import { generatePersonSlug } from '@/lib/people/peopleUtils';
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params;
-    const person = await prisma.person.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        links: {
-          orderBy: { displayOrder: 'asc' },
-        },
-        birthLocation: true,
-        deathLocation: true,
-        _count: {
-          select: {
-            castRoles: true,
-            crewRoles: true,
-            awards: true,
-          },
-        },
-      },
-    });
+    try {
+        const { id } = await params;
+        const person = await prisma.person.findUnique({
+            where: { id: parseInt(id) },
+            include: {
+                links: {
+                    orderBy: { displayOrder: 'asc' },
+                },
+                birthLocation: true,
+                deathLocation: true,
+                _count: {
+                    select: {
+                        castRoles: true,
+                        crewRoles: true,
+                        awards: true,
+                    },
+                },
+            },
+        });
 
-    if (!person) {
-      return NextResponse.json(
-        { message: 'Persona no encontrada' },
-        { status: 404 }
-      );
+        if (!person) {
+            return NextResponse.json(
+                { message: 'Persona no encontrada' },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json(person);
+    } catch (error) {
+        console.error('Error fetching person:', error);
+        return NextResponse.json(
+            { message: 'Error al obtener persona' },
+            { status: 500 }
+        );
     }
-
-    return NextResponse.json(person);
-  } catch (error) {
-    console.error('Error fetching person:', error);
-    return NextResponse.json(
-      { message: 'Error al obtener persona' },
-      { status: 500 }
-    );
-  }
 }
 
 export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params;
-    const data = await request.json();
-    const personId = parseInt(id);
-    
-    // Verificar si necesitamos actualizar el slug
-    let slug = undefined;
-    const currentPerson = await prisma.person.findUnique({
-      where: { id: personId },
-      select: { firstName: true, lastName: true, slug: true },
-    });
+    try {
+        const { id } = await params;
+        const data = await request.json();
+        const personId = parseInt(id);
 
-    if (currentPerson) {
-      const nameChanged = 
-        currentPerson.firstName !== data.firstName || 
-        currentPerson.lastName !== data.lastName;
-      
-      if (nameChanged) {
-        // Generar nuevo slug si cambió el nombre
-        let baseSlug = generatePersonSlug(data.firstName, data.lastName);
-        slug = baseSlug;
-        let counter = 1;
-        
-        // Verificar que el nuevo slug no exista (excepto para la persona actual)
-        while (true) {
-          const existing = await prisma.person.findUnique({
-            where: { slug },
-            select: { id: true },
-          });
-          
-          if (!existing || existing.id === personId) break;
-          
-          slug = `${baseSlug}-${counter}`;
-          counter++;
-        }
-      }
-    }
-
-    // Preparar datos de actualización
-    const updateData: any = {
-      ...(slug && { slug }),
-      firstName: data.firstName || null,
-      lastName: data.lastName || null,
-      realName: data.realName || null,
-      birthDate: data.birthDate ? new Date(data.birthDate) : null,
-      deathDate: data.deathDate ? new Date(data.deathDate) : null,
-      biography: data.biography || null,
-      photoUrl: data.photoUrl || null,
-      gender: data.gender || null,
-      hideAge: data.hideAge || false,
-      isActive: data.isActive ?? true,
-      hasLinks: data.links && data.links.length > 0,
-    };
-
-    // Actualizar persona y links en una transacción
-    const person = await prisma.$transaction(async (tx) => {
-      // Actualizar la persona
-      const updatedPerson = await tx.person.update({
-        where: { id: personId },
-        data: updateData,
-      });
-
-      // Eliminar links existentes
-      await tx.personLink.deleteMany({
-        where: { personId },
-      });
-
-      // Crear nuevos links si existen
-      if (data.links && data.links.length > 0) {
-        await tx.personLink.createMany({
-          data: data.links.map((link: any, index: number) => ({
-            personId,
-            type: link.type,
-            url: link.url,
-            title: link.title || null,
-            displayOrder: link.displayOrder ?? index,
-            isVerified: link.isVerified || false,
-            isActive: link.isActive ?? true,
-          })),
+        // Verificar si necesitamos actualizar el slug
+        let slug = undefined;
+        const currentPerson = await prisma.person.findUnique({
+            where: { id: personId },
+            select: { firstName: true, lastName: true, slug: true },
         });
-      }
 
-      // Retornar la persona actualizada con sus relaciones
-      return tx.person.findUnique({
-        where: { id: personId },
-        include: {
-          links: true,
-          _count: {
-            select: {
-              links: true,
-              castRoles: true,
-              crewRoles: true,
-            },
-          },
-        },
-      });
-    });
+        if (currentPerson) {
+            const nameChanged =
+                currentPerson.firstName !== data.firstName ||
+                currentPerson.lastName !== data.lastName;
 
-    return NextResponse.json(person);
-  } catch (error) {
-    console.error('Error updating person:', error);
-    return NextResponse.json(
-      { message: 'Error al actualizar persona' },
-      { status: 500 }
-    );
-  }
+            if (nameChanged) {
+                // Generar nuevo slug si cambió el nombre
+                let baseSlug = generatePersonSlug(data.firstName, data.lastName);
+                slug = baseSlug;
+                let counter = 1;
+
+                // Verificar que el nuevo slug no exista (excepto para la persona actual)
+                while (true) {
+                    const existing = await prisma.person.findUnique({
+                        where: { slug },
+                        select: { id: true },
+                    });
+
+                    if (!existing || existing.id === personId) break;
+
+                    slug = `${baseSlug}-${counter}`;
+                    counter++;
+                }
+            }
+        }
+
+        // Preparar datos de actualización
+        const updateData: any = {
+            ...(slug && { slug }),
+            firstName: data.firstName || null,
+            lastName: data.lastName || null,
+            realName: data.realName || null,
+            birthDate: data.birthDate ? new Date(data.birthDate) : null,
+            deathDate: data.deathDate ? new Date(data.deathDate) : null,
+            birthLocationId: data.birthLocationId || null,
+            deathLocationId: data.deathLocationId || null,
+            biography: data.biography || null,
+            photoUrl: data.photoUrl || null,
+            gender: data.gender || null,
+            hideAge: data.hideAge || false,
+            isActive: data.isActive ?? true,
+            hasLinks: data.links && data.links.length > 0,
+        };
+
+        // Actualizar persona y links en una transacción
+        const person = await prisma.$transaction(async (tx) => {
+            // Actualizar la persona
+            const updatedPerson = await tx.person.update({
+                where: { id: personId },
+                data: updateData,
+            });
+
+            // Eliminar links existentes
+            await tx.personLink.deleteMany({
+                where: { personId },
+            });
+
+            // Crear nuevos links si existen
+            if (data.links && data.links.length > 0) {
+                await tx.personLink.createMany({
+                    data: data.links.map((link: any, index: number) => ({
+                        personId,
+                        type: link.type,
+                        url: link.url,
+                        title: link.title || null,
+                        displayOrder: link.displayOrder ?? index,
+                        isVerified: link.isVerified || false,
+                        isActive: link.isActive ?? true,
+                    })),
+                });
+            }
+
+            // Retornar la persona actualizada con sus relaciones
+            return tx.person.findUnique({
+                where: { id: personId },
+                include: {
+                    links: true,
+                    birthLocation: true,
+                    deathLocation: true,
+                    _count: {
+                        select: {
+                            links: true,
+                            castRoles: true,
+                            crewRoles: true,
+                        },
+                    },
+                },
+            });
+        });
+
+        return NextResponse.json(person);
+    } catch (error) {
+        console.error('Error updating person:', error);
+        return NextResponse.json(
+            { message: 'Error al actualizar persona' },
+            { status: 500 }
+        );
+    }
 }
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params;
-    // Verificar si la persona tiene películas asociadas
-    const person = await prisma.person.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        _count: {
-          select: {
-            castRoles: true,
-            crewRoles: true,
-          },
-        },
-      },
-    });
+    try {
+        const { id } = await params;
+        // Verificar si la persona tiene películas asociadas
+        const person = await prisma.person.findUnique({
+            where: { id: parseInt(id) },
+            include: {
+                _count: {
+                    select: {
+                        castRoles: true,
+                        crewRoles: true,
+                    },
+                },
+            },
+        });
 
-    if (!person) {
-      return NextResponse.json(
-        { message: 'Persona no encontrada' },
-        { status: 404 }
-      );
+        if (!person) {
+            return NextResponse.json(
+                { message: 'Persona no encontrada' },
+                { status: 404 }
+            );
+        }
+
+        const totalRoles = person._count.castRoles + person._count.crewRoles;
+        if (totalRoles > 0) {
+            return NextResponse.json(
+                {
+                    message: `No se puede eliminar esta persona porque está asociada a ${totalRoles} película(s)`
+                },
+                { status: 400 }
+            );
+        }
+
+        // Eliminar la persona (los links se eliminan en cascada)
+        await prisma.person.delete({
+            where: { id: parseInt(id) },
+        });
+
+        return NextResponse.json({ message: 'Persona eliminada correctamente' });
+    } catch (error) {
+        console.error('Error deleting person:', error);
+        return NextResponse.json(
+            { message: 'Error al eliminar persona' },
+            { status: 500 }
+        );
     }
-
-    const totalRoles = person._count.castRoles + person._count.crewRoles;
-    if (totalRoles > 0) {
-      return NextResponse.json(
-        { 
-          message: `No se puede eliminar esta persona porque está asociada a ${totalRoles} película(s)` 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Eliminar la persona (los links se eliminan en cascada)
-    await prisma.person.delete({
-      where: { id: parseInt(id) },
-    });
-
-    return NextResponse.json({ message: 'Persona eliminada correctamente' });
-  } catch (error) {
-    console.error('Error deleting person:', error);
-    return NextResponse.json(
-      { message: 'Error al eliminar persona' },
-      { status: 500 }
-    );
-  }
 }
 
 // ==================================================
@@ -16685,61 +16680,283 @@ export function LinksSection({
 // ==================================================
 // src/components/admin/people/PersonFormFields/LocationFields.tsx
 
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { PersonFormData } from '@/lib/people/peopleTypes';
-import { MapPin } from 'lucide-react';
+import { MapPin, Search, X, Loader2 } from 'lucide-react';
+import debounce from 'lodash/debounce';
 
 interface LocationFieldsProps {
   formData: PersonFormData;
   updateField: <K extends keyof PersonFormData>(field: K, value: PersonFormData[K]) => void;
 }
 
+interface Location {
+  id: number;
+  name: string;
+  slug: string;
+  parentId?: number;
+  path?: string;
+  parent?: {
+    name: string;
+    parent?: {
+      name: string;
+    };
+  };
+}
+
+// Componente de Autocompletado reutilizable
+function LocationAutocomplete({ 
+  value, 
+  onChange, 
+  placeholder,
+  disabled = false,
+  label
+}: {
+  value: number | null;
+  onChange: (locationId: number | null, locationName: string) => void;
+  placeholder: string;
+  disabled?: boolean;
+  label: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [displayValue, setDisplayValue] = useState('');
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [loading, setLoading] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Cargar el valor inicial si existe
+  useEffect(() => {
+    if (value) {
+      fetchLocationById(value);
+    }
+  }, [value]);
+
+  // Obtener ubicación por ID
+  const fetchLocationById = async (locationId: number) => {
+    try {
+      const response = await fetch(`/api/locations/${locationId}`);
+      if (response.ok) {
+        const location = await response.json();
+        // Usar el path completo que ya viene del API
+        const formatted = location.path || formatLocationDisplay(location);
+        setDisplayValue(formatted);
+        setSearchTerm(formatted);
+      }
+    } catch (error) {
+      console.error('Error fetching location:', error);
+    }
+  };
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Buscar ubicaciones
+  const searchLocations = useCallback(
+    debounce(async (query: string) => {
+      if (!query || query.length < 2) {
+        setLocations([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/locations/search?q=${encodeURIComponent(query)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setLocations(data);
+        }
+      } catch (error) {
+        console.error('Error searching locations:', error);
+      } finally {
+        setLoading(false);
+      }
+    }, 300),
+    []
+  );
+
+  // Formatear la ubicación para mostrar (con jerarquía)
+  const formatLocationDisplay = (location: Location): string => {
+    const parts = [location.name];
+    
+    // Si tiene path, usarlo directamente
+    if ('path' in location && location.path) {
+      return location.path;
+    }
+    
+    // Si no, construir la jerarquía
+    if (location.parent) {
+      parts.push(location.parent.name);
+      if (location.parent.parent) {
+        parts.push(location.parent.parent.name);
+      }
+    }
+    
+    return parts.join(', ');
+  };
+
+  // Manejar cambio en el input
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setDisplayValue(value);
+    
+    if (value.length >= 2) {
+      setIsOpen(true);
+      searchLocations(value);
+    } else {
+      setIsOpen(false);
+      setLocations([]);
+    }
+  };
+
+  // Seleccionar una ubicación
+  const handleSelectLocation = (location: Location) => {
+    const formatted = formatLocationDisplay(location);
+    console.log('Selected location:', { location, formatted });
+    setSearchTerm(formatted);
+    setDisplayValue(formatted);
+    onChange(location.id, formatted);
+    setIsOpen(false);
+    setLocations([]);
+  };
+
+  // Limpiar campo
+  const handleClear = () => {
+    setSearchTerm('');
+    setDisplayValue('');
+    onChange(null, '');
+    setLocations([]);
+    inputRef.current?.focus();
+  };
+
+  return (
+    <div>
+      <label htmlFor={label} className="block text-sm font-medium text-gray-700 mb-1">
+        <span className="flex items-center gap-2">
+          <MapPin className="w-4 h-4" />
+          {label}
+        </span>
+      </label>
+      <div className="relative" ref={dropdownRef}>
+        <div className="relative">
+          <input
+            ref={inputRef}
+            type="text"
+            id={label}
+            value={searchTerm}
+            onChange={handleInputChange}
+            onFocus={() => searchTerm.length >= 2 && setIsOpen(true)}
+            placeholder={placeholder}
+            disabled={disabled}
+            className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 disabled:bg-gray-50 disabled:text-gray-500"
+            autoComplete="off"
+          />
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-gray-400" />
+          </div>
+          {searchTerm && !disabled && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+            </button>
+          )}
+        </div>
+
+        {/* Dropdown de resultados */}
+        {isOpen && !disabled && (
+          <div className="absolute z-50 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-60 overflow-auto">
+            {loading ? (
+              <div className="px-4 py-3 text-center">
+                <Loader2 className="h-4 w-4 animate-spin inline-block text-gray-500" />
+                <span className="ml-2 text-sm text-gray-500">Buscando...</span>
+              </div>
+            ) : locations.length > 0 ? (
+              <ul className="py-1">
+                {locations.map((location) => (
+                  <li key={location.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectLocation(location)}
+                      className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors"
+                    >
+                      <div className="flex items-center">
+                        <MapPin className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {location.name}
+                          </div>
+                          {(location.parent?.name || location.parent?.parent?.name) && (
+                            <div className="text-xs text-gray-500">
+                              {[location.parent?.name, location.parent?.parent?.name]
+                                .filter(Boolean)
+                                .join(', ')}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : searchTerm.length >= 2 ? (
+              <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                No se encontraron ubicaciones
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function LocationFields({ formData, updateField }: LocationFieldsProps) {
+  const handleBirthLocationChange = (locationId: number | null, locationName: string) => {
+    console.log('Birth location change:', { locationId, locationName });
+    // Actualizar tanto el ID como el texto
+    updateField('birthLocationId', locationId);
+    updateField('birthLocation', locationName);
+  };
+
+  const handleDeathLocationChange = (locationId: number | null, locationName: string) => {
+    console.log('Death location change:', { locationId, locationName });
+    // Actualizar tanto el ID como el texto
+    updateField('deathLocationId', locationId);
+    updateField('deathLocation', locationName);
+  };
+
   return (
     <div className="space-y-6">
       {/* Lugar de Nacimiento */}
-      <div>
-        <label htmlFor="birthLocation" className="block text-sm font-medium text-gray-700 mb-1">
-          <span className="flex items-center gap-2">
-            <MapPin className="w-4 h-4" />
-            Lugar de Nacimiento
-          </span>
-        </label>
-        <input
-          type="text"
-          id="birthLocation"
-          value={formData.birthLocation}
-          onChange={(e) => updateField('birthLocation', e.target.value)}
-          placeholder="Ej: Buenos Aires, Argentina"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-        />
-        <p className="mt-1 text-sm text-gray-500">
-          Ingrese ciudad y país. Ej: "Buenos Aires, Argentina" o "Madrid, España"
-        </p>
-      </div>
+      <LocationAutocomplete
+        value={formData.birthLocationId || null}
+        onChange={handleBirthLocationChange}
+        placeholder="Buscar ciudad, provincia o país"
+        label="Lugar de Nacimiento"
+      />
 
       {/* Lugar de Fallecimiento */}
-      <div>
-        <label htmlFor="deathLocation" className="block text-sm font-medium text-gray-700 mb-1">
-          <span className="flex items-center gap-2">
-            <MapPin className="w-4 h-4" />
-            Lugar de Fallecimiento
-          </span>
-        </label>
-        <input
-          type="text"
-          id="deathLocation"
-          value={formData.deathLocation}
-          onChange={(e) => updateField('deathLocation', e.target.value)}
-          placeholder="Ej: Buenos Aires, Argentina"
-          disabled={!formData.deathDate}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 disabled:bg-gray-50 disabled:text-gray-500"
-        />
-        {!formData.deathDate && (
-          <p className="mt-1 text-sm text-gray-500">
-            Primero debe ingresar una fecha de fallecimiento
-          </p>
-        )}
-      </div>
+      <LocationAutocomplete
+        value={formData.deathLocationId || null}
+        onChange={handleDeathLocationChange}
+        placeholder="Buscar ciudad, provincia o país"
+        disabled={false}  // Cambiar a false para permitir edición siempre
+        label="Lugar de Fallecimiento"
+      />
     </div>
   );
 }
@@ -19337,197 +19554,199 @@ export function usePerson(id: number | string | null) {
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { peopleService } from '@/services/people.service';
-import { 
-  PersonFormData, 
-  PersonWithRelations,
-  PersonLink 
+import {
+    PersonFormData,
+    PersonWithRelations,
+    PersonLink
 } from '@/lib/people/peopleTypes';
-import { 
-  DEFAULT_PERSON_FORM_VALUES,
-  PERSON_ERROR_MESSAGES,
-  PERSON_SUCCESS_MESSAGES 
+import {
+    DEFAULT_PERSON_FORM_VALUES,
+    PERSON_ERROR_MESSAGES,
+    PERSON_SUCCESS_MESSAGES
 } from '@/lib/people/peopleConstants';
 import {
-  formatPersonDataForForm,
-  validatePersonForm,
-  addNewPersonLink,
-  updatePersonLink,
-  removePersonLink
+    formatPersonDataForForm,
+    validatePersonForm,
+    addNewPersonLink,
+    updatePersonLink,
+    removePersonLink
 } from '@/lib/people/peopleUtils';
 import { toast } from 'react-hot-toast';
 
 interface UsePeopleFormProps {
-  personId?: number;
-  onSuccess?: (person: PersonWithRelations) => void;
+    personId?: number;
+    onSuccess?: (person: PersonWithRelations) => void;
 }
 
 export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<PersonFormData>(DEFAULT_PERSON_FORM_VALUES);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [isDirty, setIsDirty] = useState(false);
+    const router = useRouter();
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [formData, setFormData] = useState<PersonFormData>(DEFAULT_PERSON_FORM_VALUES);
+    const [errors, setErrors] = useState<string[]>([]);
+    const [isDirty, setIsDirty] = useState(false);
 
-  // Cargar datos de la persona si es edición
-  useEffect(() => {
-    if (personId) {
-      loadPerson();
-    }
-  }, [personId]);
+    // Cargar datos de la persona si es edición
+    useEffect(() => {
+        if (personId) {
+            loadPerson();
+        }
+    }, [personId]);
 
-  // Cargar persona existente
-  const loadPerson = async () => {
-    if (!personId) return;
+    // Cargar persona existente
+    const loadPerson = async () => {
+        if (!personId) return;
 
-    try {
-      setLoading(true);
-      const person = await peopleService.getById(personId);
-      
-      const formattedData = formatPersonDataForForm(person);
-      // Si la persona tiene links, cargarlos también
-      if (person.links) {
-        formattedData.links = person.links;
-      }
-      
-      setFormData(formattedData);
-    } catch (error) {
-      console.error('Error loading person:', error);
-      toast.error('No se pudo cargar la información de la persona');
-    } finally {
-      setLoading(false);
-    }
-  };
+        try {
+            setLoading(true);
+            const person = await peopleService.getById(personId);
 
-  // Actualizar campo del formulario
-  const updateField = useCallback(<K extends keyof PersonFormData>(
-    field: K,
-    value: PersonFormData[K]
-  ) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    setIsDirty(true);
-    setErrors([]); // Limpiar errores al modificar
-  }, []);
+            const formattedData = formatPersonDataForForm(person);
+            // Si la persona tiene links, cargarlos también
+            if (person.links) {
+                formattedData.links = person.links;
+            }
 
-  // Actualizar múltiples campos
-  const updateFields = useCallback((updates: Partial<PersonFormData>) => {
-    setFormData(prev => ({ ...prev, ...updates }));
-    setIsDirty(true);
-    setErrors([]);
-  }, []);
+            setFormData(formattedData);
+        } catch (error) {
+            console.error('Error loading person:', error);
+            toast.error('No se pudo cargar la información de la persona');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  // Manejo de links
-  const addLink = useCallback(() => {
-    setFormData(prev => ({
-      ...prev,
-      links: addNewPersonLink(prev.links)
-    }));
-    setIsDirty(true);
-  }, []);
+    // Actualizar campo del formulario
+    const updateField = useCallback(<K extends keyof PersonFormData>(
+        field: K,
+        value: PersonFormData[K]
+    ) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        setIsDirty(true);
+        setErrors([]); // Limpiar errores al modificar
+    }, []);
 
-  const updateLink = useCallback((index: number, updates: Partial<PersonLink>) => {
-    setFormData(prev => ({
-      ...prev,
-      links: updatePersonLink(prev.links, index, updates)
-    }));
-    setIsDirty(true);
-  }, []);
+    // Actualizar múltiples campos
+    const updateFields = useCallback((updates: Partial<PersonFormData>) => {
+        setFormData(prev => ({ ...prev, ...updates }));
+        setIsDirty(true);
+        setErrors([]);
+    }, []);
 
-  const removeLink = useCallback((index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      links: removePersonLink(prev.links, index)
-    }));
-    setIsDirty(true);
-  }, []);
+    // Manejo de links
+    const addLink = useCallback(() => {
+        setFormData(prev => ({
+            ...prev,
+            links: addNewPersonLink(prev.links)
+        }));
+        setIsDirty(true);
+    }, []);
 
-  // Validar formulario
-  const validate = useCallback((): boolean => {
-    const validationErrors = validatePersonForm(formData);
-    setErrors(validationErrors);
-    return validationErrors.length === 0;
-  }, [formData]);
+    const updateLink = useCallback((index: number, updates: Partial<PersonLink>) => {
+        setFormData(prev => ({
+            ...prev,
+            links: updatePersonLink(prev.links, index, updates)
+        }));
+        setIsDirty(true);
+    }, []);
 
-  // Guardar persona
-  const save = useCallback(async () => {
-    if (!validate()) {
-      toast.error('Por favor corrige los errores en el formulario');
-      return false;
-    }
+    const removeLink = useCallback((index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            links: removePersonLink(prev.links, index)
+        }));
+        setIsDirty(true);
+    }, []);
 
-    try {
-      setSaving(true);
-      
-      let savedPerson: PersonWithRelations;
-      
-      if (personId) {
-        savedPerson = await peopleService.update(personId, formData);
-        toast.success(PERSON_SUCCESS_MESSAGES.UPDATED);
-      } else {
-        savedPerson = await peopleService.create(formData);
-        toast.success(PERSON_SUCCESS_MESSAGES.CREATED);
-      }
+    // Validar formulario
+    const validate = useCallback((): boolean => {
+        const validationErrors = validatePersonForm(formData);
+        setErrors(validationErrors);
+        return validationErrors.length === 0;
+    }, [formData]);
 
-      setIsDirty(false);
-      
-      if (onSuccess) {
-        onSuccess(savedPerson);
-      } else {
+    // Guardar persona
+    const save = useCallback(async () => {
+        console.log('FormData before save:', formData); // <-- Agregar esta línea
+        console.log('Birth Location ID:', formData.birthLocationId);
+        console.log('Death Location ID:', formData.deathLocationId);
+        if (!validate()) {
+            toast.error('Por favor corrige los errores en el formulario');
+            return false;
+        }
+
+        try {
+            setSaving(true);
+            let savedPerson: PersonWithRelations;
+
+            if (personId) {
+                savedPerson = await peopleService.update(personId, formData);
+                toast.success(PERSON_SUCCESS_MESSAGES.UPDATED);
+            } else {
+                savedPerson = await peopleService.create(formData);
+                toast.success(PERSON_SUCCESS_MESSAGES.CREATED);
+            }
+
+            setIsDirty(false);
+
+            if (onSuccess) {
+                onSuccess(savedPerson);
+            } else {
+                router.push('/admin/people');
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error saving person:', error);
+
+            const errorMessage = error instanceof Error
+                ? error.message
+                : personId ? PERSON_ERROR_MESSAGES.UPDATE_ERROR : PERSON_ERROR_MESSAGES.CREATE_ERROR;
+
+            toast.error(errorMessage);
+
+            return false;
+        } finally {
+            setSaving(false);
+        }
+    }, [formData, personId, validate, router, onSuccess]);
+
+    // Resetear formulario
+    const reset = useCallback(() => {
+        setFormData(DEFAULT_PERSON_FORM_VALUES);
+        setErrors([]);
+        setIsDirty(false);
+    }, []);
+
+    // Cancelar y volver
+    const cancel = useCallback(() => {
+        if (isDirty) {
+            const confirmed = window.confirm('¿Estás seguro? Se perderán los cambios no guardados.');
+            if (!confirmed) return;
+        }
         router.push('/admin/people');
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error saving person:', error);
-      
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : personId ? PERSON_ERROR_MESSAGES.UPDATE_ERROR : PERSON_ERROR_MESSAGES.CREATE_ERROR;
-      
-      toast.error(errorMessage);
-      
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  }, [formData, personId, validate, router, onSuccess]);
+    }, [isDirty, router]);
 
-  // Resetear formulario
-  const reset = useCallback(() => {
-    setFormData(DEFAULT_PERSON_FORM_VALUES);
-    setErrors([]);
-    setIsDirty(false);
-  }, []);
+    return {
+        // Estado
+        formData,
+        loading,
+        saving,
+        errors,
+        isDirty,
+        isEdit: !!personId,
 
-  // Cancelar y volver
-  const cancel = useCallback(() => {
-    if (isDirty) {
-      const confirmed = window.confirm('¿Estás seguro? Se perderán los cambios no guardados.');
-      if (!confirmed) return;
-    }
-    router.push('/admin/people');
-  }, [isDirty, router]);
-
-  return {
-    // Estado
-    formData,
-    loading,
-    saving,
-    errors,
-    isDirty,
-    isEdit: !!personId,
-    
-    // Acciones
-    updateField,
-    updateFields,
-    addLink,
-    updateLink,
-    removeLink,
-    save,
-    reset,
-    cancel,
-    reload: loadPerson,
-  };
+        // Acciones
+        updateField,
+        updateFields,
+        addLink,
+        updateLink,
+        removeLink,
+        save,
+        reset,
+        cancel,
+        reload: loadPerson,
+    };
 }
 
 // ==================================================
@@ -19997,16 +20216,19 @@ export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
   firstName: '',
   lastName: '',
   realName: '',
-  birthDate: '',
-  deathDate: '',
-  birthLocation: '',
-  deathLocation: '',
+  birthDate: null,
+  deathDate: null,
+  birthLocationId: null,    // <-- Agregar
+  deathLocationId: null,    // <-- Agregar
+  birthLocation: '',        // <-- Agregar
+  deathLocation: '',        // <-- Agregar
   biography: '',
   photoUrl: '',
   gender: '',
   hideAge: false,
   isActive: true,
   links: [],
+  nationalities: []
 };
 
 // Valores por defecto para un nuevo link
@@ -20143,17 +20365,20 @@ export interface PersonWithRelations extends Person {
 export interface PersonFormData {
   firstName: string;
   lastName: string;
-  realName: string;
-  birthDate: string;
-  deathDate: string;
-  birthLocation: string;
-  deathLocation: string;
-  biography: string;
-  photoUrl: string;
-  gender: string;
-  hideAge: boolean;
-  isActive: boolean;
+  realName?: string;
+  birthDate?: string | null;
+  deathDate?: string | null;
+  birthLocationId?: number | null;  // <-- Agregar este campo
+  deathLocationId?: number | null;  // <-- Agregar este campo
+  birthLocation?: string;            // <-- Mantener para compatibilidad/display
+  deathLocation?: string;            // <-- Mantener para compatibilidad/display
+  biography?: string;
+  photoUrl?: string;
+  gender?: string;
+  hideAge?: boolean;
+  isActive?: boolean;
   links: PersonLink[];
+  nationalities?: number[];
 }
 
 // Tipo para filtros de búsqueda
@@ -20235,8 +20460,8 @@ export function formatPersonFormDataForAPI(data: PersonFormData) {
     realName: data.realName || null,
     birthDate: data.birthDate || null,
     deathDate: data.deathDate || null,
-    birthLocation: data.birthLocation || null,
-    deathLocation: data.deathLocation || null,
+    birthLocationId: data.birthLocationId || null,    
+    deathLocationId: data.deathLocationId || null,
     biography: data.biography || null,
     photoUrl: data.photoUrl || null,
     gender: data.gender || null,
@@ -20248,6 +20473,22 @@ export function formatPersonFormDataForAPI(data: PersonFormData) {
       title: link.title || null,
     })),
   };
+}
+
+// Función auxiliar para formatear el path de la ubicación
+function formatLocationPath(location: any): string {
+  // Si la ubicación ya tiene un path, usarlo
+  if (location.path) return location.path;
+  
+  // Si no, construir el path con la información disponible
+  const parts = [location.name];
+  if (location.parent) {
+    parts.push(location.parent.name);
+    if (location.parent.parent) {
+      parts.push(location.parent.parent.name);
+    }
+  }
+  return parts.join(', ');
 }
 
 /**
@@ -20262,8 +20503,10 @@ export function formatPersonDataForForm(person?: Person | null): PersonFormData 
     realName: person.realName || '',
     birthDate: person.birthDate ? person.birthDate.split('T')[0] : '',
     deathDate: person.deathDate ? person.deathDate.split('T')[0] : '',
-    birthLocation: '', // TODO: Implementar cuando tengamos birthLocation
-    deathLocation: '', // TODO: Implementar cuando tengamos deathLocation
+    birthLocationId: person.birthLocationId || null,
+    deathLocationId: person.deathLocationId || null,
+    birthLocation: person.birthLocation ? formatLocationPath(person.birthLocation) : '',
+    deathLocation: person.deathLocation ? formatLocationPath(person.deathLocation) : '',
     biography: person.biography || '',
     photoUrl: person.photoUrl || '',
     gender: person.gender || '',
@@ -21137,12 +21380,12 @@ export const moviesService = {
 // src/services/people.service.ts
 
 import { apiClient } from './api-client';
-import { 
-  Person, 
-  PersonWithRelations, 
-  PersonFormData, 
+import {
+  Person,
+  PersonWithRelations,
+  PersonFormData,
   PersonFilters,
-  PaginatedPeopleResponse 
+  PaginatedPeopleResponse
 } from '@/lib/people/peopleTypes';
 import { formatPersonFormDataForAPI } from '@/lib/people/peopleUtils';
 
@@ -21158,7 +21401,7 @@ export const peopleService = {
    */
   async getAll(filters: PersonFilters = {}): Promise<PaginatedPeopleResponse> {
     const params = new URLSearchParams();
-    
+
     if (filters.search) params.append('search', filters.search);
     if (filters.gender) params.append('gender', filters.gender);
     if (filters.hasLinks !== undefined && filters.hasLinks !== '') {
@@ -21201,6 +21444,8 @@ export const peopleService = {
    */
   async create(data: PersonFormData): Promise<PersonWithRelations> {
     const formattedData = formatPersonFormDataForAPI(data);
+    console.log('Formatted data for API:', formattedData); // <-- Agregar este log
+
     return apiClient.post<PersonWithRelations>('/people', formattedData);
   },
 
@@ -21216,6 +21461,8 @@ export const peopleService = {
    */
   async update(id: number, data: PersonFormData): Promise<PersonWithRelations> {
     const formattedData = formatPersonFormDataForAPI(data);
+      console.log('Formatted data for API update:', formattedData); // <-- Agregar este log
+
     return apiClient.put<PersonWithRelations>(`/people/${id}`, formattedData);
   },
 
@@ -21232,7 +21479,7 @@ export const peopleService = {
   async checkSlugAvailability(slug: string, excludeId?: number): Promise<boolean> {
     const params = new URLSearchParams({ slug });
     if (excludeId) params.append('excludeId', String(excludeId));
-    
+
     const { available } = await apiClient.get<{ available: boolean }>(
       `/people/check-slug?${params}`
     );
@@ -21256,7 +21503,7 @@ export const peopleService = {
    */
   async exportToCSV(filters: PersonFilters = {}): Promise<Blob> {
     const params = new URLSearchParams();
-    
+
     if (filters.search) params.append('search', filters.search);
     if (filters.gender) params.append('gender', filters.gender);
     if (filters.hasLinks !== undefined) {
@@ -21268,11 +21515,11 @@ export const peopleService = {
 
     // Usamos fetch directamente para manejar el blob
     const response = await fetch(`/api/people/export?${params}`);
-    
+
     if (!response.ok) {
       throw new Error('Error al exportar personas');
     }
-    
+
     return response.blob();
   }
 };

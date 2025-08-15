@@ -1,12 +1,12 @@
 // src/services/people.service.ts
 
 import { apiClient } from './api-client';
-import { 
-  Person, 
-  PersonWithRelations, 
-  PersonFormData, 
+import {
+  Person,
+  PersonWithRelations,
+  PersonFormData,
   PersonFilters,
-  PaginatedPeopleResponse 
+  PaginatedPeopleResponse
 } from '@/lib/people/peopleTypes';
 import { formatPersonFormDataForAPI } from '@/lib/people/peopleUtils';
 
@@ -22,7 +22,7 @@ export const peopleService = {
    */
   async getAll(filters: PersonFilters = {}): Promise<PaginatedPeopleResponse> {
     const params = new URLSearchParams();
-    
+
     if (filters.search) params.append('search', filters.search);
     if (filters.gender) params.append('gender', filters.gender);
     if (filters.hasLinks !== undefined && filters.hasLinks !== '') {
@@ -65,6 +65,8 @@ export const peopleService = {
    */
   async create(data: PersonFormData): Promise<PersonWithRelations> {
     const formattedData = formatPersonFormDataForAPI(data);
+    console.log('Formatted data for API:', formattedData); // <-- Agregar este log
+
     return apiClient.post<PersonWithRelations>('/people', formattedData);
   },
 
@@ -80,6 +82,8 @@ export const peopleService = {
    */
   async update(id: number, data: PersonFormData): Promise<PersonWithRelations> {
     const formattedData = formatPersonFormDataForAPI(data);
+      console.log('Formatted data for API update:', formattedData); // <-- Agregar este log
+
     return apiClient.put<PersonWithRelations>(`/people/${id}`, formattedData);
   },
 
@@ -96,7 +100,7 @@ export const peopleService = {
   async checkSlugAvailability(slug: string, excludeId?: number): Promise<boolean> {
     const params = new URLSearchParams({ slug });
     if (excludeId) params.append('excludeId', String(excludeId));
-    
+
     const { available } = await apiClient.get<{ available: boolean }>(
       `/people/check-slug?${params}`
     );
@@ -120,7 +124,7 @@ export const peopleService = {
    */
   async exportToCSV(filters: PersonFilters = {}): Promise<Blob> {
     const params = new URLSearchParams();
-    
+
     if (filters.search) params.append('search', filters.search);
     if (filters.gender) params.append('gender', filters.gender);
     if (filters.hasLinks !== undefined) {
@@ -132,11 +136,11 @@ export const peopleService = {
 
     // Usamos fetch directamente para manejar el blob
     const response = await fetch(`/api/people/export?${params}`);
-    
+
     if (!response.ok) {
       throw new Error('Error al exportar personas');
     }
-    
+
     return response.blob();
   }
 };
