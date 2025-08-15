@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-14T23:06:29.074Z",
+  "timestamp": "2025-08-15T03:12:06.181Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "6b6cc97ebb906b10b9832283767f3426b804b6ee",
+  "commit": "200fd8590014d903b1cf3b0921bc79a900ecb038",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
@@ -26050,6 +26050,17 @@
             "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/genres/page.tsx"
           },
           "layout.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/layout.tsx",
+          "locations": {
+            "new": {
+              "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/locations/new/page.tsx"
+            },
+            "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/locations/page.tsx",
+            "[id]": {
+              "edit": {
+                "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/locations/[id]/edit/page.tsx"
+              }
+            }
+          },
           "movies": {
             "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/movies/page.tsx"
           },
@@ -26105,6 +26116,18 @@
           "images": {
             "[movieId]": {
               "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/images/[movieId]/route.ts"
+            }
+          },
+          "locations": {
+            "check-slug": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/locations/check-slug/route.ts"
+            },
+            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/locations/route.ts",
+            "tree": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/locations/tree/route.ts"
+            },
+            "[id]": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/locations/[id]/route.ts"
             }
           },
           "movies": {
@@ -26167,6 +26190,11 @@
           "CloudinaryGallery.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/CloudinaryGallery.tsx",
           "CloudinaryUploadWidget.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/CloudinaryUploadWidget.tsx",
           "CountrySelector.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/CountrySelector.tsx",
+          "locations": {
+            "LocationForm.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/locations/LocationForm.tsx",
+            "LocationTree.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/locations/LocationTree.tsx",
+            "LocationTreeNode.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/locations/LocationTreeNode.tsx"
+          },
           "MovieFormEnhanced.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MovieFormEnhanced.tsx",
           "MovieLinksManager.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MovieLinksManager.tsx",
           "movies": {
@@ -26239,6 +26267,9 @@
         },
         "prisma.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/prisma.ts",
         "schemas.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/schemas.ts",
+        "utils": {
+          "slugs.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/utils/slugs.ts"
+        },
         "utils.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/utils.ts"
       },
       "listados.html": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/listados.html",

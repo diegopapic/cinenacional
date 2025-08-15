@@ -76,7 +76,6 @@ model Movie {
   awards           MovieAward[]
   themes           MovieTheme[]
   movieCountries   MovieCountry[]  // Renombrado de "countries" a "movieCountries" para evitar conflicto
-  filmingLocations FilmingLocation[]
   userRatings      UserRating[]
   watchlists       UserWatchlist[]
   watchedBy        UserWatched[]
@@ -418,10 +417,8 @@ model ColorType {
 model Location {
   id              Int       @id @default(autoincrement())
   name            String    @db.VarChar(255)
-  slug            String?   @unique @db.VarChar(255)
-  type            String    @db.VarChar(50)
+  slug            String    @unique @db.VarChar(255) 
   parentId        Int?      @map("parent_id")
-  countryId       Int       @map("country_id")
   latitude        Decimal?  @db.Decimal(10, 8)
   longitude       Decimal?  @db.Decimal(11, 8)
   createdAt       DateTime  @default(now()) @map("created_at")
@@ -430,14 +427,11 @@ model Location {
   // Relaciones
   parent          Location? @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
   children        Location[] @relation("LocationHierarchy")
-  country         Country   @relation(fields: [countryId], references: [id], onDelete: Restrict)
   peopleBornHere  Person[]  @relation("BirthLocation")
   peopleDiedHere  Person[]  @relation("DeathLocation")
-  
+    
   @@map("locations")
   @@index([parentId])
-  @@index([countryId])
-  @@index([type])
   @@index([name])
   @@index([slug])
 }
@@ -577,7 +571,6 @@ model Country {
   
   // Relaciones
   movies    MovieCountry[]
-  locations Location[]
   personNationalities PersonNationality[]
 
   @@map("countries")
@@ -603,24 +596,6 @@ model Language {
   createdAt DateTime @default(now()) @map("created_at")
   
   @@map("languages")
-}
-
-model FilmingLocation {
-  id           Int      @id @default(autoincrement())
-  movieId      Int      @map("movie_id")
-  locationName String   @map("location_name") @db.VarChar(255)
-  city         String?  @db.VarChar(100)
-  province     String?  @db.VarChar(100)
-  country      String?  @db.VarChar(100)
-  latitude     Decimal? @db.Decimal(10, 8)
-  longitude    Decimal? @db.Decimal(11, 8)
-  notes        String?  @db.Text
-  createdAt    DateTime @default(now()) @map("created_at")
-  
-  // Relaciones
-  movie        Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  
-  @@map("filming_locations")
 }
 
 // =====================================================
