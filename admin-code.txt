@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-15T03:17:48.068Z
+// Archivos del admin - 2025-08-15T03:20:04.227Z
 // ==================
 
 
@@ -5618,7 +5618,6 @@ export async function GET(
             type: 'asc'
           }
         },
-        filmingLocations: true,
         screenings: {
           include: {
             venue: true

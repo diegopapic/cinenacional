@@ -88,7 +88,6 @@ export async function GET(
             type: 'asc'
           }
         },
-        filmingLocations: true,
         screenings: {
           include: {
             venue: true
