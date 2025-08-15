@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 9d71ae49d808253b89e01c1dc4119f89aad98d4b
-// Fecha: 2025-08-15T03:22:56.962Z
+// Commit: 2a627cd3a510d958efd6ddcca2ea814212ca88a7
+// Fecha: 2025-08-15T03:30:00.548Z
 // ============================================
 
 
@@ -3170,6 +3170,9 @@ export const metadata = {
   title: 'Lugares - Admin',
   description: 'Administración de lugares'
 }
+
+// Revalidar cada 0 segundos (sin caché)
+export const revalidate = 0
 
 export default function LocationsAdminPage() {
   return (
@@ -11506,7 +11509,7 @@ export default function LocationForm({ location }: LocationFormProps) {
       }
 
       router.push('/admin/locations')
-      router.refresh()
+      router.refresh()  // Forzar actualización del caché
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Error al guardar el lugar')
     } finally {
@@ -11701,7 +11704,9 @@ export default function LocationTree() {
   const loadLocationTree = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/locations/tree')
+      const response = await fetch('/api/locations/tree', {
+        cache: 'no-store'  // Evitar caché
+      })
       if (response.ok) {
         const data = await response.json()
         setLocations(data)

@@ -38,7 +38,9 @@ export default function LocationTree() {
   const loadLocationTree = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/locations/tree')
+      const response = await fetch('/api/locations/tree', {
+        cache: 'no-store'  // Evitar caché
+      })
       if (response.ok) {
         const data = await response.json()
         setLocations(data)
