@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-15T20:45:16.662Z
+// Archivos del admin - 2025-08-15T20:47:33.326Z
 // ==================
 
 
@@ -12062,7 +12062,7 @@ export function BiographyFields({ formData, updateField }: BiographyFieldsProps)
         />
         <div className="mt-1 flex justify-between text-sm text-gray-500">
           <span>Puede usar formato Markdown para dar estilo al texto</span>
-          <span>{formData.biography.length} caracteres</span>
+          <span>{(formData.biography  || '').length } caracteres</span>
         </div>
       </div>
 

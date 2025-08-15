@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 66e870bcb3fa20a23540ea50edffa6dabc9d3fb0
-// Fecha: 2025-08-15T20:45:16.651Z
+// Commit: d02732c3b34c20ba1fb37d8a171c31248aebfbb3
+// Fecha: 2025-08-15T20:47:33.314Z
 // ============================================
 
 
@@ -16437,7 +16437,7 @@ export function BiographyFields({ formData, updateField }: BiographyFieldsProps)
         />
         <div className="mt-1 flex justify-between text-sm text-gray-500">
           <span>Puede usar formato Markdown para dar estilo al texto</span>
-          <span>{formData.biography.length} caracteres</span>
+          <span>{(formData.biography  || '').length } caracteres</span>
         </div>
       </div>
 

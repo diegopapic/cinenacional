@@ -29,7 +29,7 @@ export function BiographyFields({ formData, updateField }: BiographyFieldsProps)
         />
         <div className="mt-1 flex justify-between text-sm text-gray-500">
           <span>Puede usar formato Markdown para dar estilo al texto</span>
-          <span>{formData.biography.length} caracteres</span>
+          <span>{(formData.biography  || '').length } caracteres</span>
         </div>
       </div>
 
