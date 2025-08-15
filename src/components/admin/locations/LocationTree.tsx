@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import LocationTreeNode from './LocationTreeNode'
-import { Search, Loader2 } from 'lucide-react'
+import { Search, Loader2, RefreshCw } from 'lucide-react'
 
 interface LocationNode {
   id: number
@@ -38,8 +38,13 @@ export default function LocationTree() {
   const loadLocationTree = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/locations/tree', {
-        cache: 'no-store'  // Evitar caché
+      // Agregar timestamp para evitar caché
+      const response = await fetch(`/api/locations/tree?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
       })
       if (response.ok) {
         const data = await response.json()
@@ -119,16 +124,27 @@ export default function LocationTree() {
 
   return (
     <div className="space-y-4">
-      {/* Barra de búsqueda */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-        <input
-          type="text"
-          placeholder="Buscar lugares..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
+      {/* Barra de búsqueda y botón refrescar */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Buscar lugares..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+        <button
+          onClick={loadLocationTree}
+          disabled={isLoading}
+          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 disabled:opacity-50"
+          title="Refrescar lista"
+        >
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          Refrescar
+        </button>
       </div>
 
       {/* Árbol de lugares */}
