@@ -9,6 +9,9 @@ export const metadata = {
   description: 'Administración de lugares'
 }
 
+// Revalidar cada 0 segundos (sin caché)
+export const revalidate = 0
+
 export default function LocationsAdminPage() {
   return (
     <div className="container mx-auto px-4 py-8">
