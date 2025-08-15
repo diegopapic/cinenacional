@@ -92,7 +92,7 @@ export function BasicInfoFields({ formData, updateField, isEdit }: BasicInfoFiel
           <input
             type="date"
             id="birthDate"
-            value={formData.birthDate}
+            value={formData.birthDate  || ''}
             onChange={(e) => updateField('birthDate', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
           />
@@ -105,7 +105,7 @@ export function BasicInfoFields({ formData, updateField, isEdit }: BasicInfoFiel
           <input
             type="date"
             id="deathDate"
-            value={formData.deathDate}
+            value={formData.deathDate  || ''}
             onChange={(e) => updateField('deathDate', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
           />
