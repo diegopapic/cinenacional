@@ -93,17 +93,20 @@ export interface PersonWithRelations extends Person {
 export interface PersonFormData {
   firstName: string;
   lastName: string;
-  realName: string;
-  birthDate: string;
-  deathDate: string;
-  birthLocation: string;
-  deathLocation: string;
-  biography: string;
-  photoUrl: string;
-  gender: string;
-  hideAge: boolean;
-  isActive: boolean;
+  realName?: string;
+  birthDate?: string | null;
+  deathDate?: string | null;
+  birthLocationId?: number | null;  // <-- Agregar este campo
+  deathLocationId?: number | null;  // <-- Agregar este campo
+  birthLocation?: string;            // <-- Mantener para compatibilidad/display
+  deathLocation?: string;            // <-- Mantener para compatibilidad/display
+  biography?: string;
+  photoUrl?: string;
+  gender?: string;
+  hideAge?: boolean;
+  isActive?: boolean;
   links: PersonLink[];
+  nationalities?: number[];
 }
 
 // Tipo para filtros de búsqueda

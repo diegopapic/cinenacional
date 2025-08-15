@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     // Construir where clause
     const where: any = {};
-    
+
     if (search) {
       where.OR = [
         { firstName: { contains: search, mode: 'insensitive' } },
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    
+
     // Si es una creación rápida (solo con nombre)
     if (data.name && !data.firstName && !data.lastName) {
       // Dividir el nombre en firstName y lastName
@@ -89,12 +89,12 @@ export async function POST(request: NextRequest) {
       data.firstName = nameParts[0];
       data.lastName = nameParts.slice(1).join(' ') || null;
     }
-    
+
     // Generar slug único basado en firstName y lastName
     let baseSlug = generatePersonSlug(data.firstName, data.lastName);
     let slug = baseSlug;
     let counter = 1;
-    
+
     // Verificar si el slug ya existe y generar uno único
     while (await prisma.person.findUnique({ where: { slug } })) {
       slug = `${baseSlug}-${counter}`;
@@ -109,6 +109,8 @@ export async function POST(request: NextRequest) {
       realName: data.realName || null,
       birthDate: data.birthDate ? new Date(data.birthDate) : null,
       deathDate: data.deathDate ? new Date(data.deathDate) : null,
+      birthLocationId: data.birthLocationId || null,
+      deathLocationId: data.deathLocationId || null,
       biography: data.biography || null,
       photoUrl: data.photoUrl || null,
       gender: data.gender || null,

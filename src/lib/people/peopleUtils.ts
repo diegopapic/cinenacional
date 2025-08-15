@@ -55,8 +55,8 @@ export function formatPersonFormDataForAPI(data: PersonFormData) {
     realName: data.realName || null,
     birthDate: data.birthDate || null,
     deathDate: data.deathDate || null,
-    birthLocation: data.birthLocation || null,
-    deathLocation: data.deathLocation || null,
+    birthLocationId: data.birthLocationId || null,    
+    deathLocationId: data.deathLocationId || null,
     biography: data.biography || null,
     photoUrl: data.photoUrl || null,
     gender: data.gender || null,
@@ -68,6 +68,22 @@ export function formatPersonFormDataForAPI(data: PersonFormData) {
       title: link.title || null,
     })),
   };
+}
+
+// Función auxiliar para formatear el path de la ubicación
+function formatLocationPath(location: any): string {
+  // Si la ubicación ya tiene un path, usarlo
+  if (location.path) return location.path;
+  
+  // Si no, construir el path con la información disponible
+  const parts = [location.name];
+  if (location.parent) {
+    parts.push(location.parent.name);
+    if (location.parent.parent) {
+      parts.push(location.parent.parent.name);
+    }
+  }
+  return parts.join(', ');
 }
 
 /**
@@ -82,8 +98,10 @@ export function formatPersonDataForForm(person?: Person | null): PersonFormData 
     realName: person.realName || '',
     birthDate: person.birthDate ? person.birthDate.split('T')[0] : '',
     deathDate: person.deathDate ? person.deathDate.split('T')[0] : '',
-    birthLocation: '', // TODO: Implementar cuando tengamos birthLocation
-    deathLocation: '', // TODO: Implementar cuando tengamos deathLocation
+    birthLocationId: person.birthLocationId || null,
+    deathLocationId: person.deathLocationId || null,
+    birthLocation: person.birthLocation ? formatLocationPath(person.birthLocation) : '',
+    deathLocation: person.deathLocation ? formatLocationPath(person.deathLocation) : '',
     biography: person.biography || '',
     photoUrl: person.photoUrl || '',
     gender: person.gender || '',

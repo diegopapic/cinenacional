@@ -71,16 +71,19 @@ export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
   firstName: '',
   lastName: '',
   realName: '',
-  birthDate: '',
-  deathDate: '',
-  birthLocation: '',
-  deathLocation: '',
+  birthDate: null,
+  deathDate: null,
+  birthLocationId: null,    // <-- Agregar
+  deathLocationId: null,    // <-- Agregar
+  birthLocation: '',        // <-- Agregar
+  deathLocation: '',        // <-- Agregar
   biography: '',
   photoUrl: '',
   gender: '',
   hideAge: false,
   isActive: true,
   links: [],
+  nationalities: []
 };
 
 // Valores por defecto para un nuevo link
