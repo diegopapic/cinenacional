@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateUniqueSlug } from '@/lib/utils/slugs'
 
-// GET /api/locations/[id] - Obtener un lugar por ID
+// GET /api/locations/[id] - Obtener un lugar por ID con path completo
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -12,6 +12,10 @@ export async function GET(
   try {
     const id = parseInt(params.id)
     
+    if (isNaN(id)) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 })
+    }
+
     const location = await prisma.location.findUnique({
       where: { id },
       include: {
@@ -40,7 +44,34 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(location)
+    // Construir el path completo
+    let path = location.name
+    let current = location
+    
+    while (current.parent) {
+      path = `${current.parent.name} > ${path}`
+      
+      if (current.parent.parentId) {
+        const grandParent = await prisma.location.findUnique({
+          where: { id: current.parent.parentId },
+          include: { parent: true }
+        })
+        
+        if (grandParent) {
+          current = { ...current, parent: grandParent }
+        } else {
+          break
+        }
+      } else {
+        break
+      }
+    }
+
+    // Retornar la location con el path incluido
+    return NextResponse.json({
+      ...location,
+      path
+    })
   } catch (error) {
     console.error('Error fetching location:', error)
     return NextResponse.json(
@@ -78,7 +109,7 @@ export async function PUT(
 
     if (parentId) {
       // Verificar que no se está creando un ciclo
-      const isDescendant = await checkIfDescendant(id, parentId)
+      const isDescendant = await checkIfDescendant(id, parseInt(parentId))
       if (isDescendant) {
         return NextResponse.json(
           { error: 'No se puede asignar un descendiente como padre' },
