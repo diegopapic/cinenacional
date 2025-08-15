@@ -41,9 +41,16 @@ export default async function EditLocationPage({ params }: EditLocationPageProps
     notFound()
   }
 
-  // Convertir Decimal a string para el formulario
+  // Convertir Decimal a string y simplificar el objeto para el formulario
   const locationData = {
-    ...location,
+    id: location.id,
+    name: location.name,
+    slug: location.slug,
+    parentId: location.parentId,
+    parent: location.parent ? {
+      id: location.parent.id,
+      name: location.parent.name
+    } : undefined,
     latitude: location.latitude?.toString() || null,
     longitude: location.longitude?.toString() || null
   }
