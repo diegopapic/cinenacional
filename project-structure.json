@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-15T03:42:39.022Z",
+  "timestamp": "2025-08-15T05:09:40.924Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "c0c642a2cd538116c76b32da2d3f5eb7ccbd0d36",
+  "commit": "091a6fd5012ac8df07cf9223b18295a62f17bcb4",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
@@ -25999,6 +25999,7 @@
       "analyze-wp-sound-migration-history.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-sound-migration-history.js",
       "analyze-wp-sound-types.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-sound-types.js",
       "check-classification-values.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-classification-values.js",
+      "check-missing-parent.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-missing-parent.js",
       "check-supabase-structure.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-supabase-structure.js",
       "check-taxonomy-confusion.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-taxonomy-confusion.js",
       "compile-project-code.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/compile-project-code.js",
@@ -26016,12 +26017,15 @@
       "import-optimized.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/import-optimized.sql",
       "import-via-supabase-api.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/import-via-supabase-api.js",
       "investigate-person-locations.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/investigate-person-locations.js",
+      "location-id-mapping.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/location-id-mapping.json",
       "map-wp-classification.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/map-wp-classification.js",
       "migrate-countries-final.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-countries-final.js",
       "migrate-countries-simple.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-countries-simple.js",
       "migrate-titles-simple.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-titles-simple.js",
       "migrate-titles.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-titles.js",
       "migrate-wp-countries-correct.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-countries-correct.js",
+      "migrate-wp-locations-improved.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-locations-improved.js",
+      "migrate-wp-locations-supabase.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-locations-supabase.js",
       "migrate-wp-titles-supabase.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-titles-supabase.js",
       "migrate-wp-to-supabase-complete.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-to-supabase-complete.js",
       "migrate-wp-to-supabase-full.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-to-supabase-full.js",
@@ -26035,7 +26039,8 @@
       "test-connection.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/test-connection.js",
       "test-fechas.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/test-fechas.js",
       "test-locations.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/test-locations.js",
-      "update-movies-coproduction-fields.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/update-movies-coproduction-fields.js"
+      "update-movies-coproduction-fields.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/update-movies-coproduction-fields.js",
+      "verify-las-palmas-gc.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/verify-las-palmas-gc.js"
     },
     "src": {
       "app": {
@@ -26123,6 +26128,9 @@
               "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/locations/check-slug/route.ts"
             },
             "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/locations/route.ts",
+            "search": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/locations/search/route.ts"
+            },
             "tree": {
               "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/locations/tree/route.ts"
             },

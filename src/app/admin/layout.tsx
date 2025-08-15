@@ -33,7 +33,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Distribuidoras', href: '/admin/companies/distribution', icon: Building2 },
     { name: 'Pantallas de Estreno', href: '/admin/screening-venues', icon: Tv },
     { name: 'Premios', href: '/admin/awards', icon: Award },
-    { name: 'Países', href: '/admin/countries', icon: Globe },
+    { name: 'Lugares', href: '/admin/locations', icon: Globe },
     { name: 'Temas', href: '/admin/themes', icon: Tag },
     { name: 'Calificaciones', href: '/admin/calificaciones', icon: Tag }
   ]
