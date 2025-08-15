@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 1dff472d5c9b72638637c3edff2d694e372a7cfb
-// Fecha: 2025-08-15T03:17:48.057Z
+// Commit: dbd0032da3a529f6beb5a252ce87a20813538382
+// Fecha: 2025-08-15T03:20:04.215Z
 // ============================================
 
 
@@ -7054,7 +7054,6 @@ export async function GET(
             type: 'asc'
           }
         },
-        filmingLocations: true,
         screenings: {
           include: {
             venue: true
