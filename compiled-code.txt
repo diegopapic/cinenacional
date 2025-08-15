@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 6b6cc97ebb906b10b9832283767f3426b804b6ee
-// Fecha: 2025-08-14T23:06:29.480Z
+// Commit: 200fd8590014d903b1cf3b0921bc79a900ecb038
+// Fecha: 2025-08-15T03:12:06.621Z
 // ============================================
 
 
@@ -3116,6 +3116,161 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 }
 
 // ==================================================
+// src/app/admin/locations/new/page.tsx
+// ==================================================
+// src/app/admin/locations/new/page.tsx
+
+import LocationForm from '@/components/admin/locations/LocationForm'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+
+export const metadata = {
+  title: 'Nuevo Lugar - Admin',
+  description: 'Crear nuevo lugar'
+}
+
+export default function NewLocationPage() {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="mb-8">
+        <Link
+          href="/admin/locations"
+          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Volver a lugares
+        </Link>
+        
+        <h1 className="text-3xl font-bold text-gray-900">Nuevo Lugar</h1>
+        <p className="mt-2 text-gray-600">
+          Agrega un nuevo país, provincia, estado o ciudad
+        </p>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <LocationForm />
+      </div>
+    </div>
+  )
+}
+
+// ==================================================
+// src/app/admin/locations/page.tsx
+// ==================================================
+// src/app/admin/locations/page.tsx
+
+import Link from 'next/link'
+import { Plus } from 'lucide-react'
+import LocationTree from '@/components/admin/locations/LocationTree'
+
+export const metadata = {
+  title: 'Lugares - Admin',
+  description: 'Administración de lugares'
+}
+
+export default function LocationsAdminPage() {
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Lugares</h1>
+          <p className="mt-2 text-gray-600">
+            Gestiona la estructura jerárquica de países, provincias, estados y ciudades
+          </p>
+        </div>
+        
+        <Link
+          href="/admin/locations/new"
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+        >
+          <Plus className="w-5 h-5" />
+          Nuevo Lugar
+        </Link>
+      </div>
+
+      <LocationTree />
+    </div>
+  )
+}
+
+// ==================================================
+// src/app/admin/locations/[id]/edit/page.tsx
+// ==================================================
+// src/app/admin/locations/[id]/edit/page.tsx
+
+import { notFound } from 'next/navigation'
+import LocationForm from '@/components/admin/locations/LocationForm'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+import { prisma } from '@/lib/prisma'
+
+export const metadata = {
+  title: 'Editar Lugar - Admin',
+  description: 'Editar lugar existente'
+}
+
+interface EditLocationPageProps {
+  params: {
+    id: string
+  }
+}
+
+async function getLocation(id: number) {
+  const location = await prisma.location.findUnique({
+    where: { id },
+    include: {
+      parent: true
+    }
+  })
+  
+  return location
+}
+
+export default async function EditLocationPage({ params }: EditLocationPageProps) {
+  const id = parseInt(params.id)
+  
+  if (isNaN(id)) {
+    notFound()
+  }
+  
+  const location = await getLocation(id)
+  
+  if (!location) {
+    notFound()
+  }
+
+  // Convertir Decimal a string para el formulario
+  const locationData = {
+    ...location,
+    latitude: location.latitude?.toString() || null,
+    longitude: location.longitude?.toString() || null
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="mb-8">
+        <Link
+          href="/admin/locations"
+          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Volver a lugares
+        </Link>
+        
+        <h1 className="text-3xl font-bold text-gray-900">Editar Lugar</h1>
+        <p className="mt-2 text-gray-600">
+          Modifica la información de {location.name}
+        </p>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <LocationForm location={locationData} />
+      </div>
+    </div>
+  )
+}
+
+// ==================================================
 // src/app/admin/movies/page.tsx
 // ==================================================
 // src/app/admin/movies/page.tsx
@@ -5998,6 +6153,464 @@ export async function GET(
       images: []
     }, { status: 500 });
   }
+}
+
+// ==================================================
+// src/app/api/locations/check-slug/route.ts
+// ==================================================
+// src/app/api/locations/check-slug/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { generateSlug } from '@/lib/utils/slugs'
+
+// POST /api/locations/check-slug - Verificar si un slug está disponible
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { name, excludeId } = body
+
+    if (!name || name.trim() === '') {
+      return NextResponse.json(
+        { available: false, slug: '', error: 'El nombre es requerido' },
+        { status: 400 }
+      )
+    }
+
+    const baseSlug = generateSlug(name)
+    let slug = baseSlug
+    let counter = 1
+    let available = false
+
+    // Buscar un slug disponible
+    while (!available) {
+      const where: any = { slug }
+      if (excludeId) {
+        where.NOT = { id: parseInt(excludeId) }
+      }
+
+      const exists = await prisma.location.findFirst({ where })
+      
+      if (!exists) {
+        available = true
+      } else {
+        slug = `${baseSlug}-${counter}`
+        counter++
+      }
+    }
+
+    return NextResponse.json({ available: true, slug })
+  } catch (error) {
+    console.error('Error checking slug:', error)
+    return NextResponse.json(
+      { available: false, slug: '', error: 'Error al verificar el slug' },
+      { status: 500 }
+    )
+  }
+}
+
+// ==================================================
+// src/app/api/locations/route.ts
+// ==================================================
+// src/app/api/locations/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { generateUniqueSlug } from '@/lib/utils/slugs'
+
+// GET /api/locations - Listar lugares con filtros opcionales
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const parentId = searchParams.get('parentId')
+    const search = searchParams.get('search')
+    const includeChildren = searchParams.get('includeChildren') === 'true'
+
+    const where: any = {}
+    
+    if (parentId === 'null') {
+      where.parentId = null
+    } else if (parentId) {
+      where.parentId = parseInt(parentId)
+    }
+    
+    if (search) {
+      where.name = {
+        contains: search,
+        mode: 'insensitive'
+      }
+    }
+
+    const locations = await prisma.location.findMany({
+      where,
+      include: {
+        parent: true,
+        children: includeChildren ? {
+          include: {
+            children: true
+          }
+        } : false,
+        _count: {
+          select: {
+            children: true,
+            peopleBornHere: true,
+            peopleDiedHere: true
+          }
+        }
+      },
+      orderBy: [
+        { parentId: 'asc' },
+        { name: 'asc' }
+      ]
+    })
+
+    return NextResponse.json(locations)
+  } catch (error) {
+    console.error('Error fetching locations:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener los lugares' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST /api/locations - Crear nuevo lugar
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { name, parentId, latitude, longitude } = body
+
+    // Validaciones
+    if (!name || name.trim() === '') {
+      return NextResponse.json(
+        { error: 'El nombre es requerido' },
+        { status: 400 }
+      )
+    }
+
+    // Generar slug único
+    const slug = await generateUniqueSlug(name, 'location', prisma)
+
+    const location = await prisma.location.create({
+      data: {
+        name,
+        slug,
+        parent: parentId ? { connect: { id: parseInt(parentId) } } : undefined,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null
+      },
+      include: {
+        parent: true
+      }
+    })
+
+    return NextResponse.json(location, { status: 201 })
+  } catch (error) {
+    console.error('Error creating location:', error)
+    return NextResponse.json(
+      { error: 'Error al crear el lugar' },
+      { status: 500 }
+    )
+  }
+}
+
+// ==================================================
+// src/app/api/locations/tree/route.ts
+// ==================================================
+// src/app/api/locations/tree/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+
+interface LocationNode {
+  id: number
+  name: string
+  slug: string
+  parentId: number | null
+  children: LocationNode[]
+  _count: {
+    children: number
+    peopleBornHere: number
+    peopleDiedHere: number
+  }
+}
+
+// GET /api/locations/tree - Obtener estructura de árbol completa
+export async function GET(request: NextRequest) {
+  try {
+    // Obtener todos los lugares
+    const locations = await prisma.location.findMany({
+      orderBy: [
+        { parentId: 'asc' },
+        { name: 'asc' }
+      ],
+      include: {
+        _count: {
+          select: {
+            children: true,
+            peopleBornHere: true,
+            peopleDiedHere: true
+          }
+        }
+      }
+    })
+
+    // Construir el árbol
+    const locationMap = new Map<number, LocationNode>()
+    const roots: LocationNode[] = []
+
+    // Primero, crear todos los nodos
+    locations.forEach(location => {
+      locationMap.set(location.id, {
+        id: location.id,
+        name: location.name,
+        slug: location.slug,
+        parentId: location.parentId,
+        children: [],
+        _count: location._count
+      })
+    })
+
+    // Luego, establecer las relaciones padre-hijo
+    locations.forEach(location => {
+      const node = locationMap.get(location.id)!
+      if (location.parentId) {
+        const parent = locationMap.get(location.parentId)
+        if (parent) {
+          parent.children.push(node)
+        }
+      } else {
+        roots.push(node)
+      }
+    })
+
+    // Ordenar los hijos de cada nodo alfabéticamente
+    const sortChildren = (node: LocationNode) => {
+      node.children.sort((a, b) => a.name.localeCompare(b.name))
+      node.children.forEach(sortChildren)
+    }
+    roots.forEach(sortChildren)
+
+    return NextResponse.json(roots)
+  } catch (error) {
+    console.error('Error fetching location tree:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener el árbol de lugares' },
+      { status: 500 }
+    )
+  }
+}
+
+// ==================================================
+// src/app/api/locations/[id]/route.ts
+// ==================================================
+// src/app/api/locations/[id]/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { generateUniqueSlug } from '@/lib/utils/slugs'
+
+// GET /api/locations/[id] - Obtener un lugar por ID
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = parseInt(params.id)
+    
+    const location = await prisma.location.findUnique({
+      where: { id },
+      include: {
+        parent: {
+          include: {
+            parent: true
+          }
+        },
+        children: {
+          orderBy: { name: 'asc' }
+        },
+        _count: {
+          select: {
+            children: true,
+            peopleBornHere: true,
+            peopleDiedHere: true
+          }
+        }
+      }
+    })
+
+    if (!location) {
+      return NextResponse.json(
+        { error: 'Lugar no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(location)
+  } catch (error) {
+    console.error('Error fetching location:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener el lugar' },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT /api/locations/[id] - Actualizar un lugar
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = parseInt(params.id)
+    const body = await request.json()
+    const { name, parentId, latitude, longitude } = body
+
+    // Validaciones
+    if (!name || name.trim() === '') {
+      return NextResponse.json(
+        { error: 'El nombre es requerido' },
+        { status: 400 }
+      )
+    }
+
+    // Verificar que no se está asignando como padre a sí mismo o a sus descendientes
+    if (parentId === id) {
+      return NextResponse.json(
+        { error: 'Un lugar no puede ser su propio padre' },
+        { status: 400 }
+      )
+    }
+
+    if (parentId) {
+      // Verificar que no se está creando un ciclo
+      const isDescendant = await checkIfDescendant(id, parentId)
+      if (isDescendant) {
+        return NextResponse.json(
+          { error: 'No se puede asignar un descendiente como padre' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Generar nuevo slug si cambió el nombre
+    const currentLocation = await prisma.location.findUnique({
+      where: { id }
+    })
+
+    if (!currentLocation) {
+      return NextResponse.json(
+        { error: 'Lugar no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    let slug = currentLocation.slug
+    if (currentLocation.name !== name) {
+      slug = await generateUniqueSlug(name, 'location', prisma, id)
+    }
+
+    const location = await prisma.location.update({
+      where: { id },
+      data: {
+        name,
+        slug,
+        parent: parentId ? { connect: { id: parseInt(parentId) } } : { disconnect: true },
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null
+      },
+      include: {
+        parent: true
+      }
+    })
+
+    return NextResponse.json(location)
+  } catch (error) {
+    console.error('Error updating location:', error)
+    return NextResponse.json(
+      { error: 'Error al actualizar el lugar' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/locations/[id] - Eliminar un lugar
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = parseInt(params.id)
+
+    // Verificar si tiene hijos
+    const location = await prisma.location.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            children: true,
+            peopleBornHere: true,
+            peopleDiedHere: true
+          }
+        }
+      }
+    })
+
+    if (!location) {
+      return NextResponse.json(
+        { error: 'Lugar no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    // Verificar si tiene relaciones
+    const hasRelations = 
+      location._count.children > 0 ||
+      location._count.peopleBornHere > 0 ||
+      location._count.peopleDiedHere > 0
+
+    if (hasRelations) {
+      const relations = []
+      if (location._count.children > 0) relations.push(`${location._count.children} lugares hijos`)
+      if (location._count.peopleBornHere > 0) relations.push(`${location._count.peopleBornHere} personas nacidas aquí`)
+      if (location._count.peopleDiedHere > 0) relations.push(`${location._count.peopleDiedHere} personas fallecidas aquí`)
+
+      return NextResponse.json(
+        { error: `No se puede eliminar el lugar porque tiene: ${relations.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
+    await prisma.location.delete({
+      where: { id }
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting location:', error)
+    return NextResponse.json(
+      { error: 'Error al eliminar el lugar' },
+      { status: 500 }
+    )
+  }
+}
+
+// Función auxiliar para verificar si un lugar es descendiente de otro
+async function checkIfDescendant(ancestorId: number, descendantId: number): Promise<boolean> {
+  const descendant = await prisma.location.findUnique({
+    where: { id: descendantId },
+    select: { parentId: true }
+  })
+
+  if (!descendant || !descendant.parentId) {
+    return false
+  }
+
+  if (descendant.parentId === ancestorId) {
+    return true
+  }
+
+  return checkIfDescendant(ancestorId, descendant.parentId)
 }
 
 // ==================================================
@@ -10739,6 +11352,631 @@ export function CountrySelector({
           : `${selectedCountryObjects.length} ${selectedCountryObjects.length === 1 ? 'país seleccionado' : 'países seleccionados'}`
         }
       </p>
+    </div>
+  )
+}
+
+// ==================================================
+// src/components/admin/locations/LocationForm.tsx
+// ==================================================
+// src/components/admin/locations/LocationForm.tsx
+
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+
+interface Location {
+  id: number
+  name: string
+  slug: string
+  parentId: number | null
+  parent?: {
+    id: number
+    name: string
+  }
+  latitude?: string | null
+  longitude?: string | null
+}
+
+interface LocationFormProps {
+  location?: Location
+}
+
+export default function LocationForm({ location }: LocationFormProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [availableLocations, setAvailableLocations] = useState<Location[]>([])
+  const [slug, setSlug] = useState(location?.slug || '')
+  const [isCheckingSlug, setIsCheckingSlug] = useState(false)
+  
+  // Obtener parentId de la URL si existe
+  const urlParentId = searchParams.get('parentId')
+  
+  const [formData, setFormData] = useState({
+    name: location?.name || '',
+    parentId: location?.parentId || urlParentId || '',
+    latitude: location?.latitude || '',
+    longitude: location?.longitude || ''
+  })
+
+  // Cargar lugares disponibles como padres
+  useEffect(() => {
+    loadAvailableLocations()
+  }, [])
+
+  // Verificar slug cuando cambia el nombre
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (formData.name && formData.name !== location?.name) {
+        checkSlugAvailability()
+      }
+    }, 500)
+
+    return () => clearTimeout(timeoutId)
+  }, [formData.name])
+
+  const loadAvailableLocations = async () => {
+    try {
+      const response = await fetch('/api/locations')
+      if (response.ok) {
+        const data = await response.json()
+        // Filtrar el lugar actual si estamos editando
+        const filtered = location 
+          ? data.filter((loc: Location) => loc.id !== location.id && !isDescendantOf(loc, location.id, data))
+          : data
+        setAvailableLocations(filtered)
+      }
+    } catch (error) {
+      console.error('Error loading locations:', error)
+    }
+  }
+
+  // Verificar si un lugar es descendiente de otro
+  const isDescendantOf = (location: Location, ancestorId: number, allLocations: Location[]): boolean => {
+    if (location.parentId === ancestorId) return true
+    if (!location.parentId) return false
+    
+    const parent = allLocations.find(loc => loc.id === location.parentId)
+    if (!parent) return false
+    
+    return isDescendantOf(parent, ancestorId, allLocations)
+  }
+
+  const checkSlugAvailability = async () => {
+    setIsCheckingSlug(true)
+    try {
+      const response = await fetch('/api/locations/check-slug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          excludeId: location?.id
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setSlug(data.slug)
+      }
+    } catch (error) {
+      console.error('Error checking slug:', error)
+    } finally {
+      setIsCheckingSlug(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setIsLoading(true)
+
+    try {
+      const url = location 
+        ? `/api/locations/${location.id}`
+        : '/api/locations'
+      
+      const method = location ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          parentId: formData.parentId || null
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al guardar el lugar')
+      }
+
+      router.push('/admin/locations')
+      router.refresh()
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Error al guardar el lugar')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleChange = (field: keyof typeof formData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  // Construir el path completo del lugar
+  const buildLocationPath = (locationId: number): string => {
+    const location = availableLocations.find(loc => loc.id === locationId)
+    if (!location) return ''
+    
+    const path = [location.name]
+    let current = location
+    
+    while (current.parentId) {
+      const parent = availableLocations.find(loc => loc.id === current.parentId)
+      if (!parent) break
+      path.unshift(parent.name)
+      current = parent
+    }
+    
+    return path.join(' > ')
+  }
+
+  // Organizar lugares en estructura jerárquica para el select
+  const organizeLocationsHierarchically = () => {
+    const organized: { location: Location; level: number; path: string }[] = []
+    
+    const addLocationAndChildren = (locations: Location[], parentId: number | null, level: number) => {
+      const children = locations.filter(loc => loc.parentId === parentId)
+      children.forEach(child => {
+        organized.push({
+          location: child,
+          level,
+          path: buildLocationPath(child.id)
+        })
+        addLocationAndChildren(locations, child.id, level + 1)
+      })
+    }
+    
+    addLocationAndChildren(availableLocations, null, 0)
+    return organized
+  }
+
+  const organizedLocations = organizeLocationsHierarchically()
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+
+      <div>
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          Nombre *
+        </label>
+        <input
+          type="text"
+          id="name"
+          value={formData.name}
+          onChange={(e) => handleChange('name', e.target.value)}
+          required
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+        />
+        {slug && (
+          <p className="mt-1 text-sm text-gray-500">
+            Slug: {slug} {isCheckingSlug && '(verificando...)'}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="parentId" className="block text-sm font-medium text-gray-700">
+          Lugar padre (opcional)
+        </label>
+        <select
+          id="parentId"
+          value={formData.parentId}
+          onChange={(e) => handleChange('parentId', e.target.value)}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+        >
+          <option value="">Sin padre (es un país)</option>
+          {organizedLocations.map(({ location, level, path }) => (
+            <option key={location.id} value={location.id}>
+              {'  '.repeat(level)}{location.name}
+              {path !== location.name && ` (${path})`}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="latitude" className="block text-sm font-medium text-gray-700">
+            Latitud (opcional)
+          </label>
+          <input
+            type="number"
+            id="latitude"
+            value={formData.latitude}
+            onChange={(e) => handleChange('latitude', e.target.value)}
+            step="0.00000001"
+            min="-90"
+            max="90"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="longitude" className="block text-sm font-medium text-gray-700">
+            Longitud (opcional)
+          </label>
+          <input
+            type="number"
+            id="longitude"
+            value={formData.longitude}
+            onChange={(e) => handleChange('longitude', e.target.value)}
+            step="0.00000001"
+            min="-180"
+            max="180"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-4">
+        <Link
+          href="/admin/locations"
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+        >
+          Cancelar
+        </Link>
+        <button
+          type="submit"
+          disabled={isLoading || !formData.name}
+          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? 'Guardando...' : (location ? 'Actualizar' : 'Crear')}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+// ==================================================
+// src/components/admin/locations/LocationTree.tsx
+// ==================================================
+// src/components/admin/locations/LocationTree.tsx
+
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import LocationTreeNode from './LocationTreeNode'
+import { Search, Loader2 } from 'lucide-react'
+
+interface LocationNode {
+  id: number
+  name: string
+  slug: string
+  children: LocationNode[]
+  _count: {
+    children: number
+    peopleBornHere: number
+    peopleDiedHere: number
+  }
+}
+
+export default function LocationTree() {
+  const router = useRouter()
+  const [locations, setLocations] = useState<LocationNode[]>([])
+  const [filteredLocations, setFilteredLocations] = useState<LocationNode[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [deleteModal, setDeleteModal] = useState<{ id: number; name: string } | null>(null)
+
+  useEffect(() => {
+    loadLocationTree()
+  }, [])
+
+  useEffect(() => {
+    filterLocations()
+  }, [searchTerm, locations])
+
+  const loadLocationTree = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/locations/tree')
+      if (response.ok) {
+        const data = await response.json()
+        setLocations(data)
+      }
+    } catch (error) {
+      console.error('Error loading location tree:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const filterLocations = () => {
+    if (!searchTerm.trim()) {
+      setFilteredLocations(locations)
+      return
+    }
+
+    const term = searchTerm.toLowerCase()
+    
+    const filterNode = (node: LocationNode): LocationNode | null => {
+      // Verificar si el nodo actual coincide
+      const nodeMatches = node.name.toLowerCase().includes(term)
+      
+      // Filtrar recursivamente los hijos
+      const filteredChildren = node.children
+        .map(child => filterNode(child))
+        .filter((child): child is LocationNode => child !== null)
+      
+      // Incluir el nodo si coincide o si tiene hijos que coinciden
+      if (nodeMatches || filteredChildren.length > 0) {
+        return {
+          ...node,
+          children: filteredChildren
+        }
+      }
+      
+      return null
+    }
+    
+    const filtered = locations
+      .map(node => filterNode(node))
+      .filter((node): node is LocationNode => node !== null)
+    
+    setFilteredLocations(filtered)
+  }
+
+  const handleDelete = async (id: number, name: string) => {
+    setDeleteModal({ id, name })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteModal) return
+
+    try {
+      const response = await fetch(`/api/locations/${deleteModal.id}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        alert(data.error || 'Error al eliminar el lugar')
+        return
+      }
+
+      // Recargar el árbol
+      await loadLocationTree()
+      router.refresh()
+    } catch (error) {
+      console.error('Error deleting location:', error)
+      alert('Error al eliminar el lugar')
+    } finally {
+      setDeleteModal(null)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Barra de búsqueda */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <input
+          type="text"
+          placeholder="Buscar lugares..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        />
+      </div>
+
+      {/* Árbol de lugares */}
+      {isLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
+        </div>
+      ) : filteredLocations.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">
+          {searchTerm ? 'No se encontraron lugares que coincidan con la búsqueda' : 'No hay lugares cargados'}
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          {filteredLocations.map((location) => (
+            <LocationTreeNode
+              key={location.id}
+              node={location}
+              level={0}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Modal de confirmación de eliminación */}
+      {deleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Confirmar eliminación</h3>
+            <p className="text-gray-600 mb-6">
+              ¿Estás seguro de que quieres eliminar "{deleteModal.name}"?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteModal(null)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ==================================================
+// src/components/admin/locations/LocationTreeNode.tsx
+// ==================================================
+// src/components/admin/locations/LocationTreeNode.tsx
+
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { ChevronRight, ChevronDown, MapPin, Edit, Trash2, Plus, Users } from 'lucide-react'
+
+interface LocationNode {
+  id: number
+  name: string
+  slug: string
+  children: LocationNode[]
+  _count: {
+    children: number
+    peopleBornHere: number
+    peopleDiedHere: number
+  }
+}
+
+interface LocationTreeNodeProps {
+  node: LocationNode
+  level: number
+  onDelete: (id: number, name: string) => void
+}
+
+export default function LocationTreeNode({ node, level, onDelete }: LocationTreeNodeProps) {
+  const [isExpanded, setIsExpanded] = useState(level < 1) // Expandir solo el primer nivel por defecto
+  const hasChildren = node.children.length > 0
+
+  const handleToggle = () => {
+    if (hasChildren) {
+      setIsExpanded(!isExpanded)
+    }
+  }
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onDelete(node.id, node.name)
+  }
+
+  // Determinar si tiene relaciones que impiden su eliminación
+  const hasRelations = 
+    node._count.children > 0 ||
+    node._count.peopleBornHere > 0 ||
+    node._count.peopleDiedHere > 0
+
+  // Construir tooltip con información de relaciones
+  const getRelationsTooltip = () => {
+    const relations = []
+    if (node._count.children > 0) relations.push(`${node._count.children} lugares`)
+    if (node._count.peopleBornHere > 0) relations.push(`${node._count.peopleBornHere} nacimientos`)
+    if (node._count.peopleDiedHere > 0) relations.push(`${node._count.peopleDiedHere} fallecimientos`)
+    return relations.join(', ')
+  }
+
+  return (
+    <div className="select-none">
+      <div
+        className={`flex items-center gap-2 py-2 px-3 hover:bg-gray-50 rounded-lg cursor-pointer group`}
+        style={{ paddingLeft: `${level * 1.5 + 0.75}rem` }}
+      >
+        {/* Chevron para expandir/colapsar */}
+        <button
+          onClick={handleToggle}
+          className={`p-0.5 ${!hasChildren ? 'invisible' : ''}`}
+        >
+          {isExpanded ? (
+            <ChevronDown className="w-4 h-4 text-gray-500" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-gray-500" />
+          )}
+        </button>
+
+        {/* Icono de lugar */}
+        <MapPin className="w-4 h-4 text-gray-400" />
+
+        {/* Nombre del lugar */}
+        <span className="flex-1 text-sm font-medium text-gray-900">
+          {node.name}
+        </span>
+
+        {/* Badges de contadores */}
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          {node._count.peopleBornHere + node._count.peopleDiedHere > 0 && (
+            <span className="flex items-center gap-1 text-xs text-gray-500" title="Personas relacionadas">
+              <Users className="w-3 h-3" />
+              {node._count.peopleBornHere + node._count.peopleDiedHere}
+            </span>
+          )}
+        </div>
+
+        {/* Acciones */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Link
+            href={`/admin/locations/new?parentId=${node.id}`}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+            title="Agregar lugar hijo"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Plus className="w-4 h-4" />
+          </Link>
+          
+          <Link
+            href={`/admin/locations/${node.id}/edit`}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+            title="Editar"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Edit className="w-4 h-4" />
+          </Link>
+          
+          <button
+            onClick={handleDelete}
+            disabled={hasRelations}
+            className={`p-1.5 rounded ${
+              hasRelations
+                ? 'text-gray-300 cursor-not-allowed'
+                : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+            }`}
+            title={hasRelations ? `No se puede eliminar: ${getRelationsTooltip()}` : 'Eliminar'}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Hijos */}
+      {isExpanded && hasChildren && (
+        <div>
+          {node.children.map((child) => (
+            <LocationTreeNode
+              key={child.id}
+              node={child}
+              level={level + 1}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -19047,6 +20285,85 @@ export const movieSchema = z.object({
 })
 
 export type MovieFormData = z.infer<typeof movieSchema>
+
+// ==================================================
+// src/lib/utils/slugs.ts
+// ==================================================
+// src/lib/utils/schemas.ts
+
+import { PrismaClient } from '@prisma/client'
+
+/**
+ * Genera un slug a partir de un texto
+ */
+export function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Elimina acentos
+    .replace(/[^a-z0-9]+/g, '-') // Reemplaza caracteres especiales por guiones
+    .replace(/^-+|-+$/g, '') // Elimina guiones al inicio y final
+    .replace(/-+/g, '-') // Reemplaza múltiples guiones por uno solo
+}
+
+/**
+ * Genera un slug único verificando contra la base de datos
+ */
+export async function generateUniqueSlug(
+  text: string,
+  model: 'location' | 'movie' | 'person' | 'genre' | 'productionCompany' | 'distributionCompany',
+  prisma: PrismaClient,
+  excludeId?: number
+): Promise<string> {
+  const baseSlug = generateSlug(text)
+  let slug = baseSlug
+  let counter = 1
+
+  while (true) {
+    let exists = false
+
+    switch (model) {
+      case 'location':
+        const locationQuery: any = { slug }
+        if (excludeId) locationQuery.NOT = { id: excludeId }
+        exists = await prisma.location.findFirst({ where: locationQuery }) !== null
+        break
+      case 'movie':
+        const movieQuery: any = { slug }
+        if (excludeId) movieQuery.NOT = { id: excludeId }
+        exists = await prisma.movie.findFirst({ where: movieQuery }) !== null
+        break
+      case 'person':
+        const personQuery: any = { slug }
+        if (excludeId) personQuery.NOT = { id: excludeId }
+        exists = await prisma.person.findFirst({ where: personQuery }) !== null
+        break
+      case 'genre':
+        const genreQuery: any = { slug }
+        if (excludeId) genreQuery.NOT = { id: excludeId }
+        exists = await prisma.genre.findFirst({ where: genreQuery }) !== null
+        break
+      case 'productionCompany':
+        const prodQuery: any = { slug }
+        if (excludeId) prodQuery.NOT = { id: excludeId }
+        exists = await prisma.productionCompany.findFirst({ where: prodQuery }) !== null
+        break
+      case 'distributionCompany':
+        const distQuery: any = { slug }
+        if (excludeId) distQuery.NOT = { id: excludeId }
+        exists = await prisma.distributionCompany.findFirst({ where: distQuery }) !== null
+        break
+    }
+
+    if (!exists) {
+      return slug
+    }
+
+    // Si existe, agregar un número al final
+    slug = `${baseSlug}-${counter}`
+    counter++
+  }
+}
 
 // ==================================================
 // src/lib/utils.ts

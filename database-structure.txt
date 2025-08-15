@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-14T23:06:29.666Z
+# Generado automáticamente el: 2025-08-15T03:12:06.956Z
 # ================================================
 
 ## Schema Prisma
@@ -83,7 +83,6 @@ model Movie {
   awards           MovieAward[]
   themes           MovieTheme[]
   movieCountries   MovieCountry[]  // Renombrado de "countries" a "movieCountries" para evitar conflicto
-  filmingLocations FilmingLocation[]
   userRatings      UserRating[]
   watchlists       UserWatchlist[]
   watchedBy        UserWatched[]
@@ -425,10 +424,8 @@ model ColorType {
 model Location {
   id              Int       @id @default(autoincrement())
   name            String    @db.VarChar(255)
-  slug            String?   @unique @db.VarChar(255)
-  type            String    @db.VarChar(50)
+  slug            String    @unique @db.VarChar(255) 
   parentId        Int?      @map("parent_id")
-  countryId       Int       @map("country_id")
   latitude        Decimal?  @db.Decimal(10, 8)
   longitude       Decimal?  @db.Decimal(11, 8)
   createdAt       DateTime  @default(now()) @map("created_at")
@@ -437,14 +434,11 @@ model Location {
   // Relaciones
   parent          Location? @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
   children        Location[] @relation("LocationHierarchy")
-  country         Country   @relation(fields: [countryId], references: [id], onDelete: Restrict)
   peopleBornHere  Person[]  @relation("BirthLocation")
   peopleDiedHere  Person[]  @relation("DeathLocation")
-  
+    
   @@map("locations")
   @@index([parentId])
-  @@index([countryId])
-  @@index([type])
   @@index([name])
   @@index([slug])
 }
@@ -584,7 +578,6 @@ model Country {
   
   // Relaciones
   movies    MovieCountry[]
-  locations Location[]
   personNationalities PersonNationality[]
 
   @@map("countries")
@@ -610,24 +603,6 @@ model Language {
   createdAt DateTime @default(now()) @map("created_at")
   
   @@map("languages")
-}
-
-model FilmingLocation {
-  id           Int      @id @default(autoincrement())
-  movieId      Int      @map("movie_id")
-  locationName String   @map("location_name") @db.VarChar(255)
-  city         String?  @db.VarChar(100)
-  province     String?  @db.VarChar(100)
-  country      String?  @db.VarChar(100)
-  latitude     Decimal? @db.Decimal(10, 8)
-  longitude    Decimal? @db.Decimal(11, 8)
-  notes        String?  @db.Text
-  createdAt    DateTime @default(now()) @map("created_at")
-  
-  // Relaciones
-  movie        Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  
-  @@map("filming_locations")
 }
 
 // =====================================================
@@ -1129,10 +1104,8 @@ CREATE TABLE "public"."color_types" (
 CREATE TABLE "public"."locations" (
     "id" SERIAL NOT NULL,
     "name" VARCHAR(255) NOT NULL,
-    "slug" VARCHAR(255),
-    "type" VARCHAR(50) NOT NULL,
+    "slug" VARCHAR(255) NOT NULL,
     "parent_id" INTEGER,
-    "country_id" INTEGER NOT NULL,
     "latitude" DECIMAL(10,8),
     "longitude" DECIMAL(11,8),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1265,22 +1238,6 @@ CREATE TABLE "public"."languages" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "languages_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "public"."filming_locations" (
-    "id" SERIAL NOT NULL,
-    "movie_id" INTEGER NOT NULL,
-    "location_name" VARCHAR(255) NOT NULL,
-    "city" VARCHAR(100),
-    "province" VARCHAR(100),
-    "country" VARCHAR(100),
-    "latitude" DECIMAL(10,8),
-    "longitude" DECIMAL(11,8),
-    "notes" TEXT,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "filming_locations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -1484,12 +1441,6 @@ CREATE UNIQUE INDEX "locations_slug_key" ON "public"."locations"("slug");
 CREATE INDEX "locations_parent_id_idx" ON "public"."locations"("parent_id");
 
 -- CreateIndex
-CREATE INDEX "locations_country_id_idx" ON "public"."locations"("country_id");
-
--- CreateIndex
-CREATE INDEX "locations_type_idx" ON "public"."locations"("type");
-
--- CreateIndex
 CREATE INDEX "locations_name_idx" ON "public"."locations"("name");
 
 -- CreateIndex
@@ -1595,9 +1546,6 @@ ALTER TABLE "public"."movie_distribution_companies" ADD CONSTRAINT "movie_distri
 ALTER TABLE "public"."locations" ADD CONSTRAINT "locations_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."locations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."locations" ADD CONSTRAINT "locations_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "public"."countries"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "public"."movie_images" ADD CONSTRAINT "movie_images_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -1623,9 +1571,6 @@ ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_movie_id_
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "public"."countries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."filming_locations" ADD CONSTRAINT "filming_locations_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."user_ratings" ADD CONSTRAINT "user_ratings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
