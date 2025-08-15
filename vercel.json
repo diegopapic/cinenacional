@@ -8,8 +8,28 @@
     },
     "src/app/api/people/route.ts": {
       "maxDuration": 10
+    },
+    "src/app/api/locations/route.ts": {
+      "maxDuration": 10
+    },
+    "src/app/api/locations/[id]/route.ts": {
+      "maxDuration": 10
+    },
+    "src/app/api/locations/tree/route.ts": {
+      "maxDuration": 10
     }
   },
   "buildCommand": "npm run build",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "headers": [
+    {
+      "source": "/api/locations/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+        }
+      ]
+    }
+  ]
 }

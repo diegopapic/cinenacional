@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 3c428989ed14eb8de69b772d95d5e47a6eccc93a
-// Fecha: 2025-08-15T03:34:37.308Z
+// Commit: c0c642a2cd538116c76b32da2d3f5eb7ccbd0d36
+// Fecha: 2025-08-15T03:42:39.431Z
 // ============================================
 
 
@@ -6231,6 +6231,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateUniqueSlug } from '@/lib/utils/slugs'
 
+// Forzar que esta ruta sea dinámica
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // GET /api/locations - Listar lugares con filtros opcionales
 export async function GET(request: NextRequest) {
   try {
@@ -6340,6 +6344,10 @@ export async function POST(request: NextRequest) {
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+
+// Forzar que esta ruta sea dinámica
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 interface LocationNode {
   id: number
