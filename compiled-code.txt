@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: dbd0032da3a529f6beb5a252ce87a20813538382
-// Fecha: 2025-08-15T03:20:04.215Z
+// Commit: 9d71ae49d808253b89e01c1dc4119f89aad98d4b
+// Fecha: 2025-08-15T03:22:56.962Z
 // ============================================
 
 
@@ -3120,6 +3120,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 // ==================================================
 // src/app/admin/locations/new/page.tsx
 
+import { Suspense } from 'react'
 import LocationForm from '@/components/admin/locations/LocationForm'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -3148,7 +3149,9 @@ export default function NewLocationPage() {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <LocationForm />
+        <Suspense fallback={<div>Cargando formulario...</div>}>
+          <LocationForm />
+        </Suspense>
       </div>
     </div>
   )

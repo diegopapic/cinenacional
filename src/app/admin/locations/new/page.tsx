@@ -1,5 +1,6 @@
 // src/app/admin/locations/new/page.tsx
 
+import { Suspense } from 'react'
 import LocationForm from '@/components/admin/locations/LocationForm'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -28,7 +29,9 @@ export default function NewLocationPage() {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <LocationForm />
+        <Suspense fallback={<div>Cargando formulario...</div>}>
+          <LocationForm />
+        </Suspense>
       </div>
     </div>
   )
