@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: cba0cde7d7d4b31aca120c12a8b2cbfb71b73364
-// Fecha: 2025-08-15T20:42:51.755Z
+// Commit: 66e870bcb3fa20a23540ea50edffa6dabc9d3fb0
+// Fecha: 2025-08-15T20:45:16.651Z
 // ============================================
 
 
@@ -16352,7 +16352,7 @@ export function BasicInfoFields({ formData, updateField, isEdit }: BasicInfoFiel
           <input
             type="date"
             id="birthDate"
-            value={formData.birthDate}
+            value={formData.birthDate  || ''}
             onChange={(e) => updateField('birthDate', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
           />
@@ -16365,7 +16365,7 @@ export function BasicInfoFields({ formData, updateField, isEdit }: BasicInfoFiel
           <input
             type="date"
             id="deathDate"
-            value={formData.deathDate}
+            value={formData.deathDate  || ''}
             onChange={(e) => updateField('deathDate', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
           />
