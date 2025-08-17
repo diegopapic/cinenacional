@@ -442,12 +442,10 @@ export function useMovieForm({
         setIsSubmitting(true)
 
         try {
-            console.log('🔍 1. Datos RAW del formulario:', data)
-            console.log('🔍 2. ¿Formulario tiene ID?', 'id' in data, data?.id)
+            
             // Preparar los datos correctamente
             const preparedData = prepareMovieData(data)
-            console.log('🔍 3. Datos después de prepareMovieData:', preparedData)
-            console.log('🔍 4. ¿Preparados tiene ID?', 'id' in preparedData, preparedData?.id)
+            
             // Procesar fecha de estreno según el tipo
             let releaseDateData = {}
             if (isPartialDate) {
@@ -565,26 +563,22 @@ export function useMovieForm({
                 alternativeTitles,
                 links: movieLinks
             }
-            console.log('🔍 5. movieData ANTES de limpiar fechas:', movieData)
-            console.log('🔍 6. ¿movieData tiene ID?', 'id' in movieData, movieData?.id)
+            
             // Asegurarse de nuevo de que no se envíen campos de fecha incorrectos
             delete movieData.releaseDate;
             delete movieData.filmingStartDate;
             delete movieData.filmingEndDate;
-            console.log('🔍 7. movieData FINAL antes de enviar:', movieData)
-            console.log('🔍 8. ¿movieData FINAL tiene ID?', 'id' in movieData, movieData?.id)
+            
             // 🔥 ASEGURAR QUE NO HAY ID PARA CREACIÓN
             if (!editingMovie) {
                 delete movieData.id;
-                console.log('🔍 9. Después de delete movieData.id:', movieData)
-                console.log('🔍 10. ¿Aún tiene ID?', 'id' in movieData, movieData?.id)
+                
             }
             // Usar el servicio para crear o actualizar
             let result: Movie;
             if (editingMovie) {
                 result = await moviesService.update(editingMovie.id, movieData)
             } else {
-                console.log('🔍 11. ENVIANDO A CREATE:', movieData)
                 result = await moviesService.create(movieData)
             }
 
