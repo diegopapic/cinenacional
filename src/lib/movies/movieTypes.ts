@@ -1,5 +1,12 @@
 // src/lib/movies/movieTypes.ts
 
+import { PartialDate } from '@/lib/shared/dateUtils'
+
+// Usar el tipo compartido de PartialDate en lugar de tipos propios
+export type PartialReleaseDate = PartialDate
+export type PartialFilmingDate = PartialDate
+
+
 import { z } from 'zod'
 
 // Schema del formulario
@@ -32,6 +39,27 @@ export const movieFormSchema = z.object({
   releaseDate: z.any().optional(),
   filmingStartDate: z.any().optional(),
   filmingEndDate: z.any().optional(),
+
+  isPartialReleaseDate: z.boolean().optional(),
+  partialReleaseDate: z.object({
+    year: z.number().nullable(),
+    month: z.number().nullable(),
+    day: z.number().nullable()
+  }).optional(),
+
+  isPartialFilmingStartDate: z.boolean().optional(),
+  partialFilmingStartDate: z.object({
+    year: z.number().nullable(),
+    month: z.number().nullable(),
+    day: z.number().nullable()
+  }).optional(),
+
+  isPartialFilmingEndDate: z.boolean().optional(),
+  partialFilmingEndDate: z.object({
+    year: z.number().nullable(),
+    month: z.number().nullable(),
+    day: z.number().nullable()
+  }).optional(),
 
   // URLs
   posterUrl: z.any().optional(),
@@ -75,6 +103,10 @@ export interface Movie {
   posterUrl?: string
   status: string
   stage?: string
+
+  // Fechas de rodaje
+  filmingStartDate: string;
+  filmingEndDate: string;
   dataCompleteness?: string
   genres: Array<{ id: number; name: string }>
   directors: Array<{ id: number; name: string }>
@@ -132,16 +164,16 @@ export interface ColorType {
 }
 
 // Tipos de constantes
-export type MovieStage = 
-  | 'COMPLETA' 
-  | 'EN_DESARROLLO' 
-  | 'EN_POSTPRODUCCION' 
-  | 'EN_PREPRODUCCION' 
-  | 'EN_RODAJE' 
-  | 'INCONCLUSA' 
+export type MovieStage =
+  | 'COMPLETA'
+  | 'EN_DESARROLLO'
+  | 'EN_POSTPRODUCCION'
+  | 'EN_PREPRODUCCION'
+  | 'EN_RODAJE'
+  | 'INCONCLUSA'
   | 'INEDITA'
 
-export type DataCompleteness = 
+export type DataCompleteness =
   | 'BASIC_PRESS_KIT'
   | 'FULL_PRESS_KIT'
   | 'MAIN_CAST'

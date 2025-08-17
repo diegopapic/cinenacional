@@ -1,5 +1,7 @@
 // src/lib/people/peopleTypes.ts
 
+import { PartialDate } from '@/lib/shared/dateUtils';
+
 // Tipos base de la base de datos
 export interface Person {
   id: number;
@@ -89,13 +91,28 @@ export interface PersonWithRelations extends Person {
   };
 }
 
+export interface PartialDate {
+  year: number | null;
+  month: number | null;
+  day: number | null;
+}
+
 // Tipo para el formulario
 export interface PersonFormData {
   firstName: string;
   lastName: string;
   realName?: string;
-  birthDate?: string | null;
-  deathDate?: string | null;
+  // Fechas completas para el input type="date"
+  birthDate: string;
+  deathDate: string;
+  
+  // Fechas parciales
+  partialBirthDate?: PartialDate;
+  partialDeathDate?: PartialDate;
+  
+  // Flags para indicar si usar fecha parcial
+  isPartialBirthDate?: boolean;
+  isPartialDeathDate?: boolean;
   birthLocationId?: number | null;  // <-- Agregar este campo
   deathLocationId?: number | null;  // <-- Agregar este campo
   birthLocation?: string;            // <-- Mantener para compatibilidad/display

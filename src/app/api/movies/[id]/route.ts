@@ -121,6 +121,17 @@ export async function PUT(
   try {
     const id = parseInt(params.id)
     const body = await request.json()
+    console.log('📥 Datos recibidos en API PUT:', {
+      releaseYear: body.releaseYear,
+      releaseMonth: body.releaseMonth,
+      releaseDay: body.releaseDay,
+      filmingStartYear: body.filmingStartYear,
+      filmingStartMonth: body.filmingStartMonth,
+      filmingStartDay: body.filmingStartDay,
+      filmingEndYear: body.filmingEndYear,
+      filmingEndMonth: body.filmingEndMonth,
+      filmingEndDay: body.filmingEndDay
+    })
 
     // Limpiar datos antes de validar
     const cleanedData = {
@@ -161,7 +172,33 @@ export async function PUT(
 
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
-      const { colorTypeId, ratingId, ...movieDataClean } = movieData
+      // Separar los campos de fecha y otros campos especiales
+      const {
+        colorTypeId,
+        ratingId,
+        releaseYear,
+        releaseMonth,
+        releaseDay,
+        filmingStartYear,
+        filmingStartMonth,
+        filmingStartDay,
+        filmingEndYear,
+        filmingEndMonth,
+        filmingEndDay,
+        ...movieDataClean
+      } = movieData
+
+      console.log('💾 Datos a guardar en DB:', {
+        releaseYear,
+        releaseMonth,
+        releaseDay,
+        filmingStartYear,
+        filmingStartMonth,
+        filmingStartDay,
+        filmingEndYear,
+        filmingEndMonth,
+        filmingEndDay
+      })
 
 
       // 1. Actualizar datos básicos de la película - EXACTAMENTE COMO EN EL POST
@@ -169,15 +206,15 @@ export async function PUT(
         where: { id },
         data: {
           ...movieDataClean,
-          releaseYear: movieData.releaseYear || null,
-          releaseMonth: movieData.releaseMonth || null,
-          releaseDay: movieData.releaseDay || null,
-          filmingStartYear: movieData.filmingStartYear || null,
-          filmingStartMonth: movieData.filmingStartMonth || null,
-          filmingStartDay: movieData.filmingStartDay || null,
-          filmingEndYear: movieData.filmingEndYear || null,
-          filmingEndMonth: movieData.filmingEndMonth || null,
-          filmingEndDay: movieData.filmingEndDay || null,
+          releaseYear: releaseYear !== undefined ? releaseYear : null,
+          releaseMonth: releaseMonth !== undefined ? releaseMonth : null,
+          releaseDay: releaseDay !== undefined ? releaseDay : null,
+          filmingStartYear: filmingStartYear !== undefined ? filmingStartYear : null,
+          filmingStartMonth: filmingStartMonth !== undefined ? filmingStartMonth : null,
+          filmingStartDay: filmingStartDay !== undefined ? filmingStartDay : null,
+          filmingEndYear: filmingEndYear !== undefined ? filmingEndYear : null,
+          filmingEndMonth: filmingEndMonth !== undefined ? filmingEndMonth : null,
+          filmingEndDay: filmingEndDay !== undefined ? filmingEndDay : null,
           ...(ratingId !== undefined && {
             rating: (ratingId === null || ratingId === 0)  // Tratar 0 como null
               ? { disconnect: true }

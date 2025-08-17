@@ -1,5 +1,7 @@
 // src/lib/movies/movieConstants.ts
 
+export { MONTHS } from '@/lib/shared/dateUtils';
+
 export const MOVIE_STAGES = [
   { value: 'COMPLETA', label: 'Completa', description: 'Película terminada y estrenada' },
   { value: 'EN_DESARROLLO', label: 'En desarrollo', description: 'En etapa de desarrollo del proyecto' },
@@ -29,21 +31,6 @@ export const SOUND_TYPES = [
   { value: 'Sonora', label: 'Sonora' },
   { value: 'Muda', label: 'Muda' },
   { value: 'n/d', label: 'No disponible' }
-] as const
-
-export const MONTHS = [
-  { value: 1, label: 'Enero' },
-  { value: 2, label: 'Febrero' },
-  { value: 3, label: 'Marzo' },
-  { value: 4, label: 'Abril' },
-  { value: 5, label: 'Mayo' },
-  { value: 6, label: 'Junio' },
-  { value: 7, label: 'Julio' },
-  { value: 8, label: 'Agosto' },
-  { value: 9, label: 'Septiembre' },
-  { value: 10, label: 'Octubre' },
-  { value: 11, label: 'Noviembre' },
-  { value: 12, label: 'Diciembre' }
 ] as const
 
 // Duraciones en minutos

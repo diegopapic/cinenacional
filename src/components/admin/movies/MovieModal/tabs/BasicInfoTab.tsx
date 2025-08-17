@@ -1,7 +1,8 @@
 // src/components/admin/movies/MovieModal/tabs/BasicInfoTab.tsx
 import { UseFormRegister, UseFormWatch, UseFormSetValue, FieldErrors } from 'react-hook-form'
 import { MovieFormData, PartialReleaseDate, PartialFilmingDate } from '@/lib/movies/movieTypes'
-import { MONTHS, TIPOS_DURACION, DATA_COMPLETENESS_LEVELS } from '@/lib/movies/movieConstants'
+import { TIPOS_DURACION, DATA_COMPLETENESS_LEVELS } from '@/lib/movies/movieConstants'
+import { MONTHS } from '@/lib/shared/dateUtils'
 import { getErrorMessage } from '@/lib/movies/movieUtils'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 import MovieLinksManager from '@/components/admin/MovieLinksManager'

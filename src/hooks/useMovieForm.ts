@@ -97,7 +97,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
     const [isPartialDate, setIsPartialDate] = useState(false)
     const [partialReleaseDate, setPartialReleaseDate] = useState<PartialReleaseDate>({
         year: null,
-        month: null
+        month: null,
+        day: null
     })
     const [tipoDuracionDisabled, setTipoDuracionDisabled] = useState(false)
     const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
@@ -106,13 +107,15 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
     const [isPartialFilmingStartDate, setIsPartialFilmingStartDate] = useState(false)
     const [partialFilmingStartDate, setPartialFilmingStartDate] = useState<PartialFilmingDate>({
         year: null,
-        month: null
+        month: null,
+        day: null
     })
 
     const [isPartialFilmingEndDate, setIsPartialFilmingEndDate] = useState(false)
     const [partialFilmingEndDate, setPartialFilmingEndDate] = useState<PartialFilmingDate>({
         year: null,
-        month: null
+        month: null,
+        day: null
     })
 
     // Estados de metadata

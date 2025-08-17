@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-15T20:52:00.414Z
+# Generado automáticamente el: 2025-08-17T02:29:41.202Z
 # ================================================
 
 ## Schema Prisma
@@ -198,8 +198,16 @@ model Person {
   firstName       String?   @map("first_name") @db.VarChar(255)
   lastName        String?   @map("last_name") @db.VarChar(255)
   realName        String?  @map("real_name") @db.VarChar(255)
-  birthDate       DateTime? @map("birth_date") @db.Date
-  deathDate       DateTime? @map("death_date") @db.Date
+  // Fecha de nacimiento parcial (reemplaza birthDate)
+  birthYear       Int?     @map("birth_year")
+  birthMonth      Int?     @map("birth_month") @db.SmallInt
+  birthDay        Int?     @map("birth_day") @db.SmallInt
+  
+  // Fecha de fallecimiento parcial (reemplaza deathDate)
+  deathYear       Int?     @map("death_year")
+  deathMonth      Int?     @map("death_month") @db.SmallInt
+  deathDay        Int?     @map("death_day") @db.SmallInt
+
   birthLocationId Int?     @map("birth_location_id")
   deathLocationId Int?     @map("death_location_id")
   biography       String?  @db.Text
@@ -233,6 +241,10 @@ model Person {
   @@index([birthLocationId])
   @@index([deathLocationId])
   @@index([isActive])
+  @@index([birthYear])
+  @@index([birthYear, birthMonth])
+  @@index([deathYear])
+  @@index([deathYear, deathMonth])
 }
 
 model PersonNationality {
@@ -946,8 +958,12 @@ CREATE TABLE "public"."people" (
     "first_name" VARCHAR(255),
     "last_name" VARCHAR(255),
     "real_name" VARCHAR(255),
-    "birth_date" DATE,
-    "death_date" DATE,
+    "birth_year" INTEGER,
+    "birth_month" SMALLINT,
+    "birth_day" SMALLINT,
+    "death_year" INTEGER,
+    "death_month" SMALLINT,
+    "death_day" SMALLINT,
     "birth_location_id" INTEGER,
     "death_location_id" INTEGER,
     "biography" TEXT,
@@ -1385,6 +1401,18 @@ CREATE INDEX "people_death_location_id_idx" ON "public"."people"("death_location
 
 -- CreateIndex
 CREATE INDEX "people_is_active_idx" ON "public"."people"("is_active");
+
+-- CreateIndex
+CREATE INDEX "people_birth_year_idx" ON "public"."people"("birth_year");
+
+-- CreateIndex
+CREATE INDEX "people_birth_year_birth_month_idx" ON "public"."people"("birth_year", "birth_month");
+
+-- CreateIndex
+CREATE INDEX "people_death_year_idx" ON "public"."people"("death_year");
+
+-- CreateIndex
+CREATE INDEX "people_death_year_death_month_idx" ON "public"."people"("death_year", "death_month");
 
 -- CreateIndex
 CREATE INDEX "person_links_person_id_idx" ON "public"."person_links"("person_id");
