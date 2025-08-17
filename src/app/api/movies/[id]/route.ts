@@ -136,7 +136,14 @@ export async function PUT(
     // Limpiar datos antes de validar
     const cleanedData = {
       ...body,
-      ratingId: body.ratingId === 0 ? null : body.ratingId
+      ratingId: body.ratingId === 0 ? null : body.ratingId,
+      metaKeywords: body.metaKeywords 
+        ? Array.isArray(body.metaKeywords) 
+          ? body.metaKeywords 
+          : typeof body.metaKeywords === 'string'
+            ? body.metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
+            : []
+        : []
     };
 
 
@@ -185,6 +192,7 @@ export async function PUT(
         filmingEndYear,
         filmingEndMonth,
         filmingEndDay,
+        metaKeywords,
         ...movieDataClean
       } = movieData
 
@@ -206,6 +214,11 @@ export async function PUT(
         where: { id },
         data: {
           ...movieDataClean,
+           metaKeywords: Array.isArray(metaKeywords) 
+            ? metaKeywords 
+            : typeof metaKeywords === 'string'
+              ? metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
+              : [],
           releaseYear: releaseYear !== undefined ? releaseYear : null,
           releaseMonth: releaseMonth !== undefined ? releaseMonth : null,
           releaseDay: releaseDay !== undefined ? releaseDay : null,
