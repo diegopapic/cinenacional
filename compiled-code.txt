@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 5db1657c432929cb5730d39c174a194c4d4c8d2b
-// Fecha: 2025-08-17T19:52:23.485Z
+// Commit: 52f97b9e7764e4d026967fa2b79ae3c8a11c99ae
+// Fecha: 2025-08-17T19:56:05.865Z
 // ============================================
 
 
@@ -5189,14 +5189,10 @@ export async function POST(request: NextRequest) {
             : []
         : []
     };
-    console.log('🔍 BACKEND 1 - body original:', body)
-    console.log('🔍 BACKEND 2 - ¿body tiene ID?', 'id' in body, body?.id)
-    console.log('🔍 BACKEND 3 - cleanedData:', cleanedData)
-    console.log('🔍 BACKEND 4 - ¿cleanedData tiene ID?', 'id' in cleanedData, cleanedData?.id)
+    
     // Validar datos
     const validatedData = movieSchema.parse(cleanedData)
-    console.log('🔍 BACKEND 5 - validatedData:', validatedData)
-    console.log('🔍 BACKEND 6 - ¿validatedData tiene ID?', 'id' in validatedData, validatedData?.id)
+    
     // Generar slug único
     let slug = createSlug(validatedData.title)
     let slugCounter = 0
@@ -5244,8 +5240,6 @@ export async function POST(request: NextRequest) {
           : []
       : []
 
-    console.log('🔍 BACKEND 7 - movieDataClean:', movieDataClean)
-    console.log('🔍 BACKEND 8 - ¿movieDataClean tiene ID?', 'id' in movieDataClean, movieDataClean?.id)
     // Crear película con relaciones
     const movie = await prisma.movie.create({
       data: {

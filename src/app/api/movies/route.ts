@@ -164,14 +164,10 @@ export async function POST(request: NextRequest) {
             : []
         : []
     };
-    console.log('🔍 BACKEND 1 - body original:', body)
-    console.log('🔍 BACKEND 2 - ¿body tiene ID?', 'id' in body, body?.id)
-    console.log('🔍 BACKEND 3 - cleanedData:', cleanedData)
-    console.log('🔍 BACKEND 4 - ¿cleanedData tiene ID?', 'id' in cleanedData, cleanedData?.id)
+    
     // Validar datos
     const validatedData = movieSchema.parse(cleanedData)
-    console.log('🔍 BACKEND 5 - validatedData:', validatedData)
-    console.log('🔍 BACKEND 6 - ¿validatedData tiene ID?', 'id' in validatedData, validatedData?.id)
+    
     // Generar slug único
     let slug = createSlug(validatedData.title)
     let slugCounter = 0
@@ -219,8 +215,6 @@ export async function POST(request: NextRequest) {
           : []
       : []
 
-    console.log('🔍 BACKEND 7 - movieDataClean:', movieDataClean)
-    console.log('🔍 BACKEND 8 - ¿movieDataClean tiene ID?', 'id' in movieDataClean, movieDataClean?.id)
     // Crear película con relaciones
     const movie = await prisma.movie.create({
       data: {
