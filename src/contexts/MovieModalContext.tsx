@@ -19,6 +19,7 @@ interface MovieModalContextValue {
   isSubmitting: boolean;
   editingMovie: Movie | null;
   
+  onSubmit: (data: any) => Promise<void>;
   // Date handling
   isPartialDate: boolean;
   setIsPartialDate: (value: boolean) => void;

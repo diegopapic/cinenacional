@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 52f97b9e7764e4d026967fa2b79ae3c8a11c99ae
-// Fecha: 2025-08-17T19:56:05.865Z
+// Commit: 04f560fb4d678dbe8f77a899d24c262fd36b9f2d
+// Fecha: 2025-08-17T20:00:19.801Z
 // ============================================
 
 
@@ -17044,6 +17044,7 @@ interface MovieModalContextValue {
   isSubmitting: boolean;
   editingMovie: Movie | null;
   
+  onSubmit: (data: any) => Promise<void>;
   // Date handling
   isPartialDate: boolean;
   setIsPartialDate: (value: boolean) => void;
