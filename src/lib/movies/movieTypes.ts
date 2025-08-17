@@ -89,6 +89,47 @@ export const movieFormSchema = z.object({
     'INCONCLUSA',
     'INEDITA'
   ]).optional(),
+  metaDescription: z.string().optional(),
+  metaKeywords: z.union([
+    z.string(),
+    z.array(z.string())
+  ]).optional(),
+  genres: z.array(z.number()).optional(),
+  cast: z.array(z.object({
+    personId: z.number(),
+    characterName: z.string().optional(),
+    billingOrder: z.number().optional(),
+    isPrincipal: z.boolean().optional()
+  })).optional(),
+  crew: z.array(z.object({
+    personId: z.number(),
+    role: z.string(),
+    department: z.string().optional(),
+    billingOrder: z.number().optional()
+  })).optional(),
+  productionCompanies: z.array(z.number()).optional(),
+  distributionCompanies: z.array(z.number()).optional(),
+  themes: z.array(z.number()).optional(),
+  movieCountries: z.array(z.number()).optional(),
+  links: z.array(z.object({
+    type: z.string(),
+    url: z.string(),
+    title: z.string().optional(),
+    isActive: z.boolean().optional()
+  })).optional(),
+  screeningVenues: z.array(z.union([
+    z.number(),
+    z.object({
+      venueId: z.number(),
+      screeningDate: z.string().optional(),
+      isPremiere: z.boolean().optional(),
+      isExclusive: z.boolean().optional()
+    })
+  ])).optional(),
+  alternativeTitles: z.array(z.object({
+    title: z.string(),
+    description: z.string().optional()
+  })).optional()
 })
 
 export type MovieFormData = z.infer<typeof movieFormSchema>
