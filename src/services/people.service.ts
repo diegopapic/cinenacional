@@ -32,7 +32,7 @@ function formatPersonDataForAPI(data: PersonFormData): any {
     birthLocationId: data.birthLocationId,
     deathLocationId: data.deathLocationId,
     biography: data.biography || null,
-    photoUrl: data.photoUrl || null
+    photoUrl: data.photoUrl || null,
   };
 
   // Procesar fecha de nacimiento
@@ -92,7 +92,8 @@ function formatPersonFromAPI(person: any): PersonFormData {
     birthLocationId: person.birthLocationId || null,
     deathLocationId: person.deathLocationId || null,
     biography: person.biography || '',
-    photoUrl: person.photoUrl || ''
+    photoUrl: person.photoUrl || '',
+    links: person.links || []
   };
 
   // Procesar fecha de nacimiento
