@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 72d1fde9799f5c995ac343843cd130c07b57271e
-// Fecha: 2025-08-17T03:01:11.535Z
+// Commit: e456066e9a90bd621547879b5d728f2a250af813
+// Fecha: 2025-08-17T03:03:54.996Z
 // ============================================
 
 
@@ -20798,7 +20798,7 @@ function formatPersonDataForAPI(data: PersonFormData): any {
     birthLocationId: data.birthLocationId,
     deathLocationId: data.deathLocationId,
     biography: data.biography || null,
-    photoUrl: data.photoUrl || null
+    photoUrl: data.photoUrl || null,
   };
 
   // Procesar fecha de nacimiento
@@ -20858,7 +20858,8 @@ function formatPersonFromAPI(person: any): PersonFormData {
     birthLocationId: person.birthLocationId || null,
     deathLocationId: person.deathLocationId || null,
     biography: person.biography || '',
-    photoUrl: person.photoUrl || ''
+    photoUrl: person.photoUrl || '',
+    links: person.links || []
   };
 
   // Procesar fecha de nacimiento
