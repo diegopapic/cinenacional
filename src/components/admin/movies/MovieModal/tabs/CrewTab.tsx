@@ -1,17 +1,17 @@
 // src/components/admin/movies/MovieModal/tabs/CrewTab.tsx
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 
-interface CrewTabProps {
-  handleCrewChange: (crew: any[]) => void
-  movieFormInitialData: any
-  editingMovieId?: number
-}
+export default function CrewTab() {
+  // Obtener datos necesarios del context
+  const {
+    handleCrewChange,
+    movieFormInitialData,
+    editingMovie
+  } = useMovieModalContext()
 
-export default function CrewTab({ 
-  handleCrewChange, 
-  movieFormInitialData,
-  editingMovieId 
-}: CrewTabProps) {
+  const editingMovieId = editingMovie?.id
+
   return (
     <MovieFormEnhanced
       key={editingMovieId || 'new'}

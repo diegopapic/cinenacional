@@ -1,12 +1,17 @@
 // src/components/admin/movies/MovieModal/MovieModalHeader.tsx
 import { X } from 'lucide-react'
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 
 interface MovieModalHeaderProps {
-  isEditing: boolean
   onClose: () => void
 }
 
-export default function MovieModalHeader({ isEditing, onClose }: MovieModalHeaderProps) {
+export default function MovieModalHeader({ onClose }: MovieModalHeaderProps) {
+  // Obtener editingMovie del context para determinar si estamos editando
+  const { editingMovie } = useMovieModalContext()
+  
+  const isEditing = !!editingMovie
+
   return (
     <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
       <div className="flex items-center justify-between">

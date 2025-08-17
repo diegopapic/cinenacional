@@ -34,8 +34,25 @@ export const movieFormFieldsSchema = z.object({
 
   // Campos numéricos
   year: z.number().nullable().optional(),
-  duration: z.number().nullable().optional(),
-  durationSeconds: z.number().nullable().optional(),
+  duration: z.preprocess(
+  (val) => {
+    if (val === '' || val === null || val === undefined || isNaN(Number(val))) {
+      return null;
+    }
+    return Number(val);
+  },
+  z.number().positive().nullable().optional()
+),
+  durationSeconds: z.preprocess(
+  (val) => {
+    if (val === '' || val === null || val === undefined || isNaN(Number(val))) {
+      return null;
+    }
+    const num = Number(val);
+    return num >= 0 && num <= 59 ? num : null;
+  },
+  z.number().min(0).max(59).nullable().optional()
+),
   colorTypeId: z.number().nullable().optional(),
   ratingId: z.union([
     z.number().positive(),

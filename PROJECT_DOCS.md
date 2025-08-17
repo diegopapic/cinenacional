@@ -16,11 +16,12 @@
 13. [Componentes Complejos](#componentes-complejos)
 14. [Flujos de Trabajo](#flujos-de-trabajo)
 15. [Scripts y Comandos](#scripts-y-comandos)
-16. [Estado de Migración](#estado-de-migración)
+16. [Problemas Resueltos](#problemas-resueltos)
+17. [Estado de Migración](#estado-de-migración)
 
 ---
 
-## 📝 Descripción General
+## 🔍 Descripción General
 
 CineNacional es una plataforma web integral para catalogar, gestionar y consultar información sobre cine argentino. El proyecto está en proceso de migración desde WordPress a un stack moderno basado en Next.js con TypeScript.
 
@@ -86,19 +87,19 @@ CineNacional es una plataforma web integral para catalogar, gestionar y consulta
 El proyecto sigue una arquitectura de capas con separación clara de responsabilidades:
 
 ```
-┌───────────────────────────────────────┐
+┌──────────────────────────────────────┐
 │     Capa de Presentación (UI)       │
 │   Components + Pages (App Router)    │
-├───────────────────────────────────────┤
+├──────────────────────────────────────┤
 │    Capa de Lógica de Negocio        │
 │    Services + Hooks + Utilities      │
-├───────────────────────────────────────┤
+├──────────────────────────────────────┤
 │      Capa de Acceso a Datos         │
 │    API Routes + Prisma ORM          │
-├───────────────────────────────────────┤
+├──────────────────────────────────────┤
 │         Base de Datos               │
 │    PostgreSQL (Supabase)            │
-└───────────────────────────────────────┘
+└──────────────────────────────────────┘
 ```
 
 ### Flujo de Datos
@@ -304,14 +305,14 @@ birthDay         Int? @db.SmallInt
   - PersonFormFields/
     - BasicInfoFields (con fechas parciales)
     - BiographyFields
-    - LocationFields
+    - LocationFields (con autocompletar)
     - LinksSection
 
 #### Características
 - Fechas parciales de nacimiento/muerte
 - Múltiples nacionalidades
 - Enlaces externos verificables
-- Ubicaciones jerárquicas
+- Ubicaciones jerárquicas con autocompletar
 - Opción de ocultar edad
 - Gestión de enlaces con tipos específicos
 
@@ -490,10 +491,22 @@ interface UseMovieFormReturn {
   loadMovieData: (movie: Movie) => Promise<void>
   resetForNewMovie: () => void
   
-  // 14 métodos de React Hook Form
-  register, handleSubmit, watch, setValue, reset,
-  control, formState, getValues, trigger, clearErrors,
-  setError, setFocus, getFieldState, resetField, unregister
+  // Métodos de React Hook Form tipados como any
+  register: any
+  handleSubmit: any
+  watch: any
+  setValue: any
+  reset: any
+  control: any
+  formState: any
+  getValues: any
+  trigger: any
+  clearErrors: any
+  setError: any
+  setFocus: any
+  getFieldState: any
+  resetField: any
+  unregister: any
 }
 ```
 
@@ -532,6 +545,22 @@ const [movieRelations, setMovieRelations] = useState({
 4. Mapea relaciones con metadata específica
 5. Maneja screeningVenues con fechas y flags (isPremiere, isExclusive)
 6. Envía a servicio con todos los campos INT de fechas
+
+**Manejo de Campos Null en Edición**
+```typescript
+// En loadMovieData, limpia valores null antes de setear
+const cleanedMovie = {
+  ...fullMovie,
+  tagline: fullMovie.tagline || '',
+  imdbId: fullMovie.imdbId || '',
+  posterUrl: fullMovie.posterUrl || '',
+  trailerUrl: fullMovie.trailerUrl || '',
+  originalTitle: fullMovie.originalTitle || '',
+  synopsis: fullMovie.synopsis || '',
+  // ... otros campos
+}
+// Luego usar cleanedMovie para llenar el formulario
+```
 
 ---
 
@@ -898,18 +927,37 @@ export type PartialFilmingDate = PartialDate
 
 #### Schema de Validación (Zod)
 ```typescript
-export const movieFormSchema = z.object({
+// Schema principal para formularios SIN transform (evita problemas de compilación)
+export const movieFormFieldsSchema = z.object({
   // Campo requerido
   title: z.string().min(1, 'El título es requerido'),
   
-  // Campos opcionales con any para flexibilidad
-  originalTitle: z.any().optional(),
-  synopsis: z.any().optional(),
+  // Campos opcionales SIN transform
+  originalTitle: z.string().optional(),
+  synopsis: z.string().optional(),
+  tagline: z.string().optional(),
+  imdbId: z.string().optional(),
+  posterUrl: z.string().optional(),
+  trailerUrl: z.string().optional(),
   
   // Campos numéricos
-  year: z.any().optional(),
-  duration: z.any().optional(),
+  year: z.number().nullable().optional(),
+  duration: z.number().nullable().optional(),
   ratingId: z.union([z.number(), z.null()]).optional(),
+  
+  // Metadata con transform (solo estos campos lo necesitan)
+  metaDescription: z.union([
+    z.string(),
+    z.null(),
+    z.undefined()
+  ]).transform(val => val ?? '').optional(),
+  
+  metaKeywords: z.union([
+    z.string(),
+    z.array(z.string()),
+    z.null(),
+    z.undefined()
+  ]).transform(val => val ?? []).optional(),
   
   // Enums con valores específicos
   dataCompleteness: z.enum([
@@ -930,6 +978,12 @@ export const movieFormSchema = z.object({
     'INCONCLUSA',
     'INEDITA'
   ]).optional()
+})
+
+// Uso en React Hook Form
+const form = useForm<MovieFormData>({
+  resolver: zodResolver(movieFormSchema),
+  defaultValues: movieFormInitialData
 })
 ```
 
@@ -1115,6 +1169,8 @@ interface PersonFormData {
   // Ubicaciones
   birthLocationId?: number | null
   deathLocationId?: number | null
+  birthLocation?: string  // Texto del autocompletar
+  deathLocation?: string  // Texto del autocompletar
   
   // Otros campos
   biography?: string
@@ -1296,6 +1352,16 @@ Lista personas con filtros y paginación.
     "birthYear": 1980,
     "birthMonth": 6,
     "birthDay": 15,
+    "birthLocationId": 1,
+    "deathLocationId": null,
+    "birthLocation": {
+      "id": 1,
+      "name": "Buenos Aires",
+      "parent": {
+        "id": 2,
+        "name": "Argentina"
+      }
+    },
     "_count": {
       "links": 5,
       "castRoles": 10,
@@ -1322,6 +1388,8 @@ Crea una nueva persona.
   "birthYear": 1980,
   "birthMonth": 6,
   "birthDay": 15,
+  "birthLocationId": 1,
+  "deathLocationId": null,
   "gender": "MALE",
   "biography": "string",
   "photoUrl": "string",
@@ -1341,6 +1409,45 @@ Crea una nueva persona.
 - Generación automática de slug único
 - Soporte para creación rápida con solo `name`
 - Transacción para crear persona y links simultáneamente
+- Incluye birthLocation y deathLocation en la respuesta
+
+#### PUT /api/people/[id]
+
+Actualiza una persona existente.
+
+**Request Body:** Mismo formato que POST
+
+**Características especiales:**
+- Actualiza campos de ubicación (birthLocationId, deathLocationId)
+- Maneja fechas parciales correctamente
+- Incluye relaciones de ubicación en el return
+
+---
+
+### Locations API
+
+#### GET /api/locations/search
+
+Busca ubicaciones para autocompletar.
+
+**Query Parameters:**
+- `query` (string): Término de búsqueda
+- `limit` (number): Límite de resultados (default: 10)
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "name": "Buenos Aires",
+    "path": "Buenos Aires, Argentina",
+    "parent": {
+      "id": 2,
+      "name": "Argentina"
+    }
+  }
+]
+```
 
 ---
 
@@ -1423,13 +1530,30 @@ formatBirthInfo(person: Person): string
 // Respeta hideAge flag
 ```
 
-#### Conversión de Datos
+#### Conversión de Datos - Actualizada
 ```typescript
 formatPersonFormDataForAPI(data: PersonFormData): any
 // Prepara datos del formulario para API
+// Maneja fechas parciales y ubicaciones
 
 formatPersonDataForForm(person?: PersonWithRelations): PersonFormData
 // Convierte datos de API a formato de formulario
+// Maneja fechas parciales (birthYear/Month/Day → partialBirthDate)
+// Convierte undefined a null para PartialDate fields
+// Incluye formateo de paths de ubicaciones
+
+// Función auxiliar para formatear paths
+function formatLocationPath(location: any): string {
+  if (location.path) return location.path;
+  const parts = [location.name];
+  if (location.parent) {
+    parts.push(location.parent.name);
+    if (location.parent.parent) {
+      parts.push(location.parent.parent.name);
+    }
+  }
+  return parts.join(', ');
+}
 ```
 
 #### Validación
@@ -1505,13 +1629,13 @@ interface MovieModalProps {
   onSubmit: (data: MovieFormData) => Promise<void>
   isSubmitting: boolean
 
-  // React Hook Form (6 métodos)
-  register: UseFormRegister<MovieFormData>
-  handleSubmit: UseFormHandleSubmit<MovieFormData>
-  watch: UseFormWatch<MovieFormData>
-  setValue: UseFormSetValue<MovieFormData>
-  reset: UseFormReset<MovieFormData>
-  errors: FieldErrors<MovieFormData>
+  // React Hook Form (6 métodos como any)
+  register: any
+  handleSubmit: any
+  watch: any
+  setValue: any
+  reset: any
+  errors: any
 
   // Estados de UI (2)
   activeTab: string
@@ -1655,178 +1779,9 @@ interface MovieModalProps {
 </div>
 ```
 
-#### Integración con MovieFormEnhanced
-
-El BasicInfoTab utiliza el componente `MovieFormEnhanced` para manejar relaciones complejas:
-
-```typescript
-<MovieFormEnhanced
-  key={editingMovieId || 'new'}
-  onGenresChange={handleGenresChange}
-  onCountriesChange={handleCountriesChange}
-  onThemesChange={handleThemesChange}
-  onScreeningVenuesChange={handleScreeningVenuesChange}
-  initialData={movieFormInitialData}
-  showOnlyBasicInfo={true}  // Solo muestra campos básicos
-/>
-```
-
-#### Patrón de Composición
-
-```typescript
-// El modal principal orquesta todos los tabs
-<Tabs.Root value={activeTab} onValueChange={setActiveTab}>
-  <MovieModalTabs activeTab={activeTab} onTabChange={setActiveTab} />
-  
-  <div className="p-6">
-    <Tabs.Content value="basic">
-      <BasicInfoTab {...basicInfoProps} />
-    </Tabs.Content>
-    
-    <Tabs.Content value="media">
-      <MediaTab {...mediaProps} />
-    </Tabs.Content>
-    
-    <Tabs.Content value="cast">
-      <CastTab {...castProps} />
-    </Tabs.Content>
-    
-    <Tabs.Content value="crew">
-      <CrewTab {...crewProps} />
-    </Tabs.Content>
-    
-    <Tabs.Content value="advanced">
-      <AdvancedTab {...advancedProps} />
-    </Tabs.Content>
-  </div>
-</Tabs.Root>
-```
-
-#### Problemas del Diseño Actual
-
-**1. Props Drilling Masivo**
-- 46 props pasadas desde el componente padre
-- Cada tab recibe entre 10-20 props
-- Dificulta el mantenimiento y testing
-
-**2. Acoplamiento Fuerte**
-- El modal depende directamente de useMovieForm
-- Los tabs no pueden funcionar independientemente
-- Difícil de reutilizar en otros contextos
-
-**3. Complejidad de Estado**
-- 3 sistemas de fechas parciales independientes
-- 9 callbacks para manejar relaciones
-- Estados duplicados entre tabs
-
-#### Solución Propuesta: Context Pattern
-
-```typescript
-// MovieModalContext.tsx
-const MovieModalContext = createContext<MovieModalContextType>()
-
-export function MovieModalProvider({ children, ...props }) {
-  const movieForm = useMovieForm(props)
-  
-  return (
-    <MovieModalContext.Provider value={movieForm}>
-      {children}
-    </MovieModalContext.Provider>
-  )
-}
-
-// Uso simplificado
-<MovieModalProvider editingMovie={movie} onSuccess={handleSuccess}>
-  <MovieModal /> {/* Sin props! */}
-</MovieModalProvider>
-
-// Dentro de cada tab
-function BasicInfoTab() {
-  const { register, watch, errors, ... } = useMovieModalContext()
-  // Acceso directo al contexto sin props
-}
-```
-
-#### Optimizaciones Potenciales
-
-**1. Lazy Loading de Tabs**
-```typescript
-const CastTab = lazy(() => import('./tabs/CastTab'))
-const CrewTab = lazy(() => import('./tabs/CrewTab'))
-
-// Cargar solo cuando se necesita
-<Suspense fallback={<TabLoader />}>
-  <CastTab />
-</Suspense>
-```
-
-**2. Memoización de Props**
-```typescript
-const basicInfoProps = useMemo(() => ({
-  register,
-  watch,
-  errors,
-  // ... otras props
-}), [register, watch, errors])
-```
-
-**3. División de Responsabilidades**
-```typescript
-// Separar lógica de fechas en un hook dedicado
-function usePartialDateField(fieldName: string) {
-  const [isPartial, setIsPartial] = useState(false)
-  const [partialDate, setPartialDate] = useState<PartialDate>({})
-  
-  // Toda la lógica de fechas parciales
-  return { isPartial, setIsPartial, partialDate, setPartialDate }
-}
-
-// Usar en el componente
-const releaseDate = usePartialDateField('releaseDate')
-const filmingStartDate = usePartialDateField('filmingStartDate')
-const filmingEndDate = usePartialDateField('filmingEndDate')
-```
-
 ---
 
-### MovieLinksManager
-
-Componente para gestionar enlaces externos de películas con validación y tipos específicos.
-
-#### Características
-- Array dinámico de enlaces
-- Validación de URLs en tiempo real
-- Tipos predefinidos (IMDB, YouTube, Facebook, etc.)
-- Ordenamiento drag & drop (si está implementado)
-- Preview de enlaces
-
----
-
-### MovieFormEnhanced
-
-Componente wrapper que mejora el formulario básico con funcionalidades adicionales.
-
-#### Props Principales
-```typescript
-interface MovieFormEnhancedProps {
-  onGenresChange: (genres: number[]) => void
-  onCountriesChange: (countries: number[]) => void
-  onThemesChange: (themes: number[]) => void
-  onScreeningVenuesChange: (venues: number[]) => void
-  initialData?: any
-  showOnlyBasicInfo?: boolean
-}
-```
-
-#### Características
-- Selectores múltiples con búsqueda
-- Carga async de opciones
-- Validación de selecciones
-- Modo básico vs completo
-
----
-
-## 🔄 Flujos de Trabajo y Patrones
+## 📄 Flujos de Trabajo y Patrones
 
 ### Arquitectura de Comunicación
 
@@ -1865,6 +1820,7 @@ PostgreSQL (Supabase)
    ↔
 4. onSubmit procesa:
    - prepareMovieData() formatea datos
+   - Limpia valores null → string vacío
    - Convierte fechas según tipo (parcial/completa)
    - Mapea relaciones (genres, cast, crew, etc.)
    ↔
@@ -1921,17 +1877,23 @@ if (movie.releaseDay) {
 ### Patrón de Validación
 
 ```typescript
-// Schema Zod flexible
+// Schema Zod sin transform (evita problemas)
 movieSchema = z.object({
   title: z.string().min(1), // Único requerido
-  // Resto opcional con transformaciones
+  tagline: z.string().optional(), // Sin transform
   ratingId: z.union([
-    z.number().
-    positive(),
+    z.number().positive(),
     z.null(),
     z.literal(0).transform(() => null)
   ]).optional()
 })
+
+// Limpieza de nulls en el hook
+const cleanedMovie = {
+  ...fullMovie,
+  tagline: fullMovie.tagline || '',
+  // ... limpiar todos los campos
+}
 
 // Validación en cascada:
 1. Cliente: React Hook Form + Zod
@@ -1985,6 +1947,16 @@ cast: {
     isPrincipal: item.isPrincipal
   }))
 }
+
+// Patrón para screening venues con metadata especial
+screeningVenues: {
+  create: venues.map((venue, index) => ({
+    venueId: venue.venueId,
+    screeningDate: venue.screeningDate,
+    isPremiere: index === 0,
+    isExclusive: venues.length === 1
+  }))
+}
 ```
 
 ---
@@ -2025,7 +1997,120 @@ npm run precommit      # Ejecuta antes de cada commit
 
 ---
 
-## 📊 Estado de Migración
+## 🔧 Problemas Resueltos
+
+### 1. Error de validación "Expected string, received null"
+
+**Problema**: Campos de películas llegaban como null pero Zod esperaba strings
+
+**Solución Implementada**: 
+```typescript
+// En movieTypes.ts - SIN transform en campos problemáticos
+tagline: z.string().optional(),
+imdbId: z.string().optional(),
+posterUrl: z.string().optional(),
+trailerUrl: z.string().optional(),
+
+// Solo usar transform en metadata que lo necesita
+metaDescription: z.union([
+  z.string(),
+  z.null(),
+  z.undefined()
+]).transform(val => val ?? '').optional()
+
+// En useMovieForm.ts - Limpieza antes de setear en formulario
+const cleanedMovie = {
+  ...fullMovie,
+  tagline: fullMovie.tagline || '',
+  imdbId: fullMovie.imdbId || '',
+  posterUrl: fullMovie.posterUrl || '',
+  trailerUrl: fullMovie.trailerUrl || '',
+  // ... limpiar todos los campos string
+}
+
+// Tipos de React Hook Form como any para evitar conflictos
+register: any
+handleSubmit: any
+watch: any
+// ... etc
+```
+
+### 2. Fechas parciales con undefined vs null
+
+**Problema**: TypeScript esperaba `null` pero llegaba `undefined` en PartialDate
+
+**Solución Implementada**:
+```typescript
+// Uso de nullish coalescing en peopleUtils.ts
+const birthPartial: PartialDate = {
+  year: person.birthYear ?? null,    // Convierte undefined a null
+  month: person.birthMonth ?? null,
+  day: person.birthDay ?? null
+}
+```
+
+### 3. Ubicaciones en personas no se cargaban al editar
+
+**Problema**: Los campos birthLocation/deathLocation no se recuperaban
+
+**Solución Implementada**:
+```typescript
+// En API /api/people/[id]/route.ts
+const person = await prisma.person.update({
+  where: { id },
+  data: {
+    ...updateData,
+    birthLocationId: data.birthLocationId || null,
+    deathLocationId: data.deathLocationId || null
+  },
+  include: {
+    birthLocation: true,  // Incluir relación
+    deathLocation: true,  // Incluir relación
+    // ... otras relaciones
+  }
+})
+
+// En peopleUtils.ts - formatLocationPath
+function formatLocationPath(location: any): string {
+  if (location.path) return location.path;
+  const parts = [location.name];
+  if (location.parent) {
+    parts.push(location.parent.name);
+    if (location.parent.parent) {
+      parts.push(location.parent.parent.name);
+    }
+  }
+  return parts.join(', ');
+}
+```
+
+### 4. Tipos de React Hook Form simplificados
+
+**Problema**: Incompatibilidad de tipos entre React Hook Form y Zod
+
+**Solución Pragmática**:
+```typescript
+// En vez de tipar cada método específicamente
+const {
+  register,
+  handleSubmit,
+  // ... etc
+} = form
+
+// Se retornan como any en la interface
+return {
+  register: form.register,
+  handleSubmit: form.handleSubmit,
+  watch: form.watch,
+  // ... todos como any
+} as const
+```
+
+**Nota**: Esta es una solución temporal mientras se resuelven las incompatibilidades de versiones entre las librerías.
+
+---
+
+## 🚀 Estado de Migración
 
 ### ✅ Completado
 - Estructura base del proyecto Next.js
@@ -2036,13 +2121,15 @@ npm run precommit      # Ejecuta antes de cada commit
 - Módulos auxiliares (géneros, ubicaciones, temas, etc.)
 - Integración con Cloudinary para imágenes
 - Sistema de enlaces externos
-- Validación con Zod
+- Validación con Zod (con workarounds para null handling)
 - Hooks personalizados complejos (useMovieForm, usePeople, usePeopleForm)
 - Capa de servicios completa con API Client singleton
 - Sistema de tipos TypeScript robusto
 - API Routes con transacciones y validación
 - Funciones de utilidad para movies y people
 - Componente MovieModal con sistema de tabs
+- Campos de autocompletar para ubicaciones en personas
+- Validación de campos nullable en formularios
 
 ### 🚧 En Proceso
 - Migración de datos desde WordPress (10,589 películas)
@@ -2050,7 +2137,7 @@ npm run precommit      # Ejecuta antes de cada commit
 - Sistema de búsqueda avanzada
 - Tests unitarios y de integración
 
-### ❌ Pendiente
+### ⌛ Pendiente
 - Autenticación y autorización de usuarios
 - Dashboard de estadísticas
 - API pública con rate limiting
@@ -2067,65 +2154,24 @@ npm run precommit      # Ejecuta antes de cada commit
 - Caché de imágenes de Cloudinary no optimizado
 - Hook useMovieForm muy grande (500+ líneas) - candidato a refactorización
 - MovieModal con 46 props - necesita Context API
+- Tipos de React Hook Form como `any` por compatibilidad temporal
 
 ---
 
-## 💻 Patrones de Código y Arquitectura
+## 💻 Mejoras Sugeridas
 
-### Utilidades Core
-
-#### Class Names (Tailwind + clsx)
-```typescript
-cn(...inputs: ClassValue[]) // Merge de clases Tailwind
-```
-
-#### Generación de Slugs
-```typescript
-createSlug(text: string): string
-// "El Secreto de Sus Ojos" → "el-secreto-de-sus-ojos"
-// Maneja acentos, caracteres especiales, múltiples espacios
-
-generatePersonSlug(firstName?: string, lastName?: string): string
-// Similar pero para personas
-```
-
-#### Formateo
-```typescript
-formatDate(date): string // Fecha en español AR
-formatDuration(minutes): string // "2h 15min"
-formatPartialDate(partial, options) // Desde dateUtils
-formatPersonName(person): string // Combina nombres
-formatBirthInfo(person): string // Fecha con edad
-```
-
-### Problemas Detectados y Mejoras Sugeridas
-
-#### 1. Props Drilling Extremo en MovieModal
+### 1. Props Drilling Extremo en MovieModal
 **Problema**: MovieModal recibe 46 props que debe pasar a sus tabs
 **Impacto**: Dificulta mantenimiento, testing y reutilización
-**Solución**: Context API o composición
 
+**Solución Sugerida**: Context API o composición
 ```typescript
 // Actual - 46 props
 <MovieModal 
   isOpen={isOpen}
   onClose={onClose}
   editingMovie={editingMovie}
-  onSubmit={onSubmit}
-  isSubmitting={isSubmitting}
-  register={register}
-  handleSubmit={handleSubmit}
-  watch={watch}
-  setValue={setValue}
-  reset={reset}
-  errors={errors}
-  activeTab={activeTab}
-  setActiveTab={setActiveTab}
-  isPartialDate={isPartialDate}
-  setIsPartialDate={setIsPartialDate}
-  partialReleaseDate={partialReleaseDate}
-  setPartialReleaseDate={setPartialReleaseDate}
-  // ... 30 props más
+  // ... 43 props más
 />
 
 // Solución propuesta - Context
@@ -2134,12 +2180,11 @@ formatBirthInfo(person): string // Fecha con edad
 </MovieModalProvider>
 ```
 
-#### 2. Hook Gigante
+### 2. Hook Gigante
 **Problema**: useMovieForm hace demasiado (514 líneas)
-**Solución**: Split en hooks especializados
 
+**Solución Sugerida**: Split en hooks especializados
 ```typescript
-// Sugerido
 useMovieForm() // Orquestador
 ├── useMovieMetadata() // Ratings, colors
 ├── useMovieDates() // Fechas parciales
@@ -2147,12 +2192,11 @@ useMovieForm() // Orquestador
 └── useMovieValidation() // Zod + RHF
 ```
 
-#### 3. Duplicación de Lógica de Fechas
+### 3. Duplicación de Lógica de Fechas
 **Problema**: Mismo código repetido para 3 fechas en BasicInfoTab
-**Solución**: Componente o hook genérico
 
+**Solución Sugerida**: Componente reutilizable
 ```typescript
-// Componente reutilizable
 function PartialDateField({ 
   label, 
   fieldName, 
@@ -2181,19 +2225,12 @@ function PartialDateField({
     </div>
   )
 }
-
-// Uso simplificado
-<PartialDateField
-  label="Fecha de Estreno"
-  fieldName="releaseDate"
-  {...releaseDateProps}
-/>
 ```
 
-#### 4. Validación Inconsistente
-**Problema**: Validación mínima en Zod
-**Solución**: Schemas más estrictos
+### 4. Validación Más Estricta
+**Problema**: Validación mínima en algunos campos
 
+**Solución Sugerida**: Schemas más estrictos
 ```typescript
 // Actual
 title: z.string().min(1)
@@ -2204,10 +2241,10 @@ title: z.string().min(1).max(255)
 year: z.number().min(1895).max(currentYear + 5)
 ```
 
-#### 5. Transacciones Largas
+### 5. Transacciones Largas
 **Problema**: Timeout en actualizaciones complejas
-**Solución**: Optimizar queries o dividir transacciones
 
+**Solución Sugerida**: Optimizar queries o dividir transacciones
 ```typescript
 // Actual: Una transacción gigante
 await prisma.$transaction(async (tx) => {
@@ -2219,10 +2256,10 @@ await prisma.movieGenre.deleteMany({ where: { movieId } })
 await prisma.movieGenre.createMany({ data: genres })
 ```
 
-#### 6. Tabs No Optimizados
+### 6. Tabs No Optimizados
 **Problema**: Todos los tabs se renderizan aunque no estén visibles
-**Solución**: Lazy loading y memoización
 
+**Solución Sugerida**: Lazy loading y memoización
 ```typescript
 // Actual
 <Tabs.Content value="cast">
@@ -2255,5 +2292,111 @@ const CastTab = lazy(() => import('./tabs/CastTab'))
 
 ---
 
-*Última actualización: Enero 2025*
-*Versión: 0.1.0*
+## 🗂 Apéndices
+
+### A. Comandos Git Frecuentes
+
+```bash
+# Crear rama para nueva feature
+git checkout -b feature/nombre-feature
+
+# Commit con mensaje descriptivo
+git add .
+git commit -m "tipo: descripción breve
+
+- Detalle del cambio 1
+- Detalle del cambio 2"
+
+# Push a rama
+git push origin feature/nombre-feature
+
+# Merge a main
+git checkout main
+git merge feature/nombre-feature
+git push origin main
+```
+
+### B. Estructura de Commits
+
+Seguir convención [Conventional Commits](https://www.conventionalcommits.org/):
+- `feat:` Nueva funcionalidad
+- `fix:` Corrección de bug
+- `docs:` Cambios en documentación
+- `style:` Cambios de formato
+- `refactor:` Refactorización de código
+- `test:` Añadir tests
+- `chore:` Tareas de mantenimiento
+
+### C. Variables de Entorno
+
+```env
+# .env.local
+DATABASE_URL="postgresql://..."
+DIRECT_URL="postgresql://..."
+NEXT_PUBLIC_SUPABASE_URL="https://....supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="..."
+CLOUDINARY_CLOUD_NAME="..."
+CLOUDINARY_API_KEY="..."
+CLOUDINARY_API_SECRET="..."
+```
+
+### D. Debugging Tips
+
+```typescript
+// Para debugging en desarrollo
+console.log('🔍 Debug:', {
+  variable,
+  timestamp: new Date().toISOString()
+})
+
+// Para debugging de queries Prisma
+const result = await prisma.$queryRaw`
+  SELECT * FROM movies WHERE id = ${id}
+`
+console.log('Query result:', result)
+
+// Para debugging de React Hook Form
+const watchedValues = watch()
+console.log('Form values:', watchedValues)
+console.log('Form errors:', formState.errors)
+```
+
+### E. Scripts de Migración WordPress
+
+Los scripts de migración se encuentran en `/scripts`:
+
+```bash
+# Análisis de datos WordPress
+node scripts/analyze-wp-completeness.js
+node scripts/analyze-wp-structure.js
+
+# Migración a Supabase
+node scripts/migrate-wp-titles-supabase.js
+node scripts/migrate-wp-people-supabase.js
+node scripts/migrate-wp-relations-supabase.js
+```
+
+### F. Troubleshooting Común
+
+**Error: "Expected string, received null"**
+- Verificar que los campos en `loadMovieData` estén siendo limpiados
+- Revisar que el schema no tenga transform en campos problemáticos
+
+**Error: Compilación en Vercel falla**
+- Revisar tipos de React Hook Form
+- Verificar que no haya imports circulares
+- Chequear versiones de dependencias
+
+**Error: Fechas parciales no se guardan**
+- Verificar que se estén enviando como campos INT separados
+- Revisar que la API esté procesando year/month/day
+
+**Error: Ubicaciones no se cargan**
+- Verificar includes en la API
+- Revisar que formatLocationPath esté funcionando
+
+---
+
+*Última actualización: Agosto 2025*
+*Versión: 1.0.2*
+*Mantenedor: Diego Papic*

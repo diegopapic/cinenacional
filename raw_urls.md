@@ -148,6 +148,7 @@
 - [src/components/movies/MovieSidebar.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/MovieSidebar.tsx)
 - [src/components/movies/SimilarMovies.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/SimilarMovies.tsx)
 - [src/components/movies/TrailerSection.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/TrailerSection.tsx)
+- [src/contexts/MovieModalContext.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/contexts/MovieModalContext.tsx)
 - [src/hooks/useDebounce.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/useDebounce.ts)
 - [src/hooks/useMovieForm.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/useMovieForm.ts)
 - [src/hooks/usePeople.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/usePeople.ts)

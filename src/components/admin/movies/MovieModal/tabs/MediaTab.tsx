@@ -1,21 +1,18 @@
 // src/components/admin/movies/MovieModal/tabs/MediaTab.tsx
-import { UseFormRegister, UseFormWatch, UseFormSetValue } from 'react-hook-form'
-import { MovieFormData } from '@/lib/movies/movieTypes'
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import { CloudinaryUploadWidget } from '@/components/admin/CloudinaryUploadWidget'
 
-interface MediaTabProps {
-  register: UseFormRegister<MovieFormData>
-  watch: UseFormWatch<MovieFormData>
-  setValue: UseFormSetValue<MovieFormData>
-  editingMovieId?: number
-}
+export default function MediaTab() {
+  // Obtener datos necesarios del context
+  const {
+    register,
+    watch,
+    setValue,
+    editingMovie
+  } = useMovieModalContext()
 
-export default function MediaTab({ 
-  register, 
-  watch, 
-  setValue, 
-  editingMovieId 
-}: MediaTabProps) {
+  const editingMovieId = editingMovie?.id
+
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">

@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-17T04:38:57.323Z",
+  "timestamp": "2025-08-17T19:52:23.141Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "a93ce35457bc213053ad2f829e03d4f3c0e75177",
+  "commit": "5db1657c432929cb5730d39c174a194c4d4c8d2b",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
@@ -383,6 +383,9 @@
           "SimilarMovies.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/SimilarMovies.tsx",
           "TrailerSection.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/TrailerSection.tsx"
         }
+      },
+      "contexts": {
+        "MovieModalContext.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/contexts/MovieModalContext.tsx"
       },
       "hooks": {
         "useDebounce.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/useDebounce.ts",

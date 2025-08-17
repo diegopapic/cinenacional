@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-17T04:38:57.660Z
+// Archivos del admin - 2025-08-17T19:52:23.547Z
 // ==================
 
 
@@ -1593,9 +1593,9 @@ import MoviesFilters, { type MovieFilters } from '@/components/admin/movies/Movi
 import MoviesPagination from '@/components/admin/movies/MoviesPagination'
 import MoviesTable from '@/components/admin/movies/MoviesTable'
 import MovieModal from '@/components/admin/movies/MovieModal'
+import { MovieModalProvider } from '@/contexts/MovieModalContext'
 import { moviesService } from '@/services'
 import { type Movie } from '@/lib/movies/movieTypes'
-import { useMovieForm } from '@/hooks/useMovieForm'
 
 export default function AdminMoviesPage() {
   const [movies, setMovies] = useState<Movie[]>([])
@@ -1612,17 +1612,6 @@ export default function AdminMoviesPage() {
     currentPage: 1
   })
 
-  // Usar el custom hook
-  const movieForm = useMovieForm({
-    editingMovie,
-    onSuccess: () => {
-      setShowModal(false)
-      setEditingMovie(null)
-      fetchMovies()
-    }
-  })
-
-  
   const handleFiltersChange = (newFilters: Partial<MovieFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }))
   }
@@ -1649,14 +1638,8 @@ export default function AdminMoviesPage() {
 
   // Editar película
   const handleEdit = async (movie: Movie) => {
-    try {
-      setEditingMovie(movie)
-      await movieForm.loadMovieData(movie)
-      setShowModal(true)
-    } catch (error) {
-      console.error('Error in handleEdit:', error)
-      toast.error('Error al cargar los datos de la película')
-    }
+    setEditingMovie(movie)
+    setShowModal(true)
   }
 
   // Eliminar película
@@ -1668,8 +1651,31 @@ export default function AdminMoviesPage() {
   // Abrir modal para nueva película
   const handleNewMovie = () => {
     setEditingMovie(null)
-    movieForm.resetForNewMovie()
     setShowModal(true)
+  }
+
+  // Callbacks para el context
+  const handleMovieSuccess = (movie: Movie) => {
+    setShowModal(false)
+    setEditingMovie(null)
+    fetchMovies()
+    
+    // Toast específico según la acción
+    if (editingMovie) {
+      toast.success(`Película "${movie.title}" actualizada exitosamente`)
+    } else {
+      toast.success(`Película "${movie.title}" creada exitosamente`)
+    }
+  }
+
+  const handleMovieError = (error: Error) => {
+    console.error('Error en operación de película:', error)
+    toast.error(error.message || 'Error al procesar la película')
+  }
+
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setEditingMovie(null)
   }
 
   return (
@@ -1711,67 +1717,17 @@ export default function AdminMoviesPage() {
           />
         )}
 
-        {/* Modal con todas las props del hook */}
-        <MovieModal
-          isOpen={showModal}
-          onClose={() => {
-            setShowModal(false)
-            setEditingMovie(null)
-          }}
+        {/* Modal envuelto en el Provider */}
+        <MovieModalProvider
           editingMovie={editingMovie}
-          onSubmit={movieForm.onSubmit}
-          isSubmitting={movieForm.formState.isSubmitting}
-
-          // Props del formulario
-          register={movieForm.register}
-          handleSubmit={movieForm.handleSubmit}
-          watch={movieForm.watch}
-          setValue={movieForm.setValue}
-          reset={movieForm.reset}
-          errors={movieForm.formState.errors}
-
-          // Estados
-          activeTab={movieForm.activeTab}
-          setActiveTab={movieForm.setActiveTab}
-          isPartialDate={movieForm.isPartialDate}
-          setIsPartialDate={movieForm.setIsPartialDate}
-          partialReleaseDate={movieForm.partialReleaseDate}
-          setPartialReleaseDate={movieForm.setPartialReleaseDate}
-          tipoDuracionDisabled={movieForm.tipoDuracionDisabled}
-
-          handleScreeningVenuesChange={movieForm.handleScreeningVenuesChange}
-
-
-          // Estados para fechas de rodaje
-          isPartialFilmingStartDate={movieForm.isPartialFilmingStartDate}
-          setIsPartialFilmingStartDate={movieForm.setIsPartialFilmingStartDate}
-          partialFilmingStartDate={movieForm.partialFilmingStartDate}
-          setPartialFilmingStartDate={movieForm.setPartialFilmingStartDate}
-          isPartialFilmingEndDate={movieForm.isPartialFilmingEndDate}
-          setIsPartialFilmingEndDate={movieForm.setIsPartialFilmingEndDate}
-          partialFilmingEndDate={movieForm.partialFilmingEndDate}
-          setPartialFilmingEndDate={movieForm.setPartialFilmingEndDate}
-
-          // Metadata - ahora viene del hook
-          availableRatings={movieForm.availableRatings}
-          availableColorTypes={movieForm.availableColorTypes}
-
-          // Relaciones
-          movieFormInitialData={movieForm.movieFormInitialData}
-          alternativeTitles={movieForm.alternativeTitles}
-          setAlternativeTitles={movieForm.setAlternativeTitles}
-          movieLinks={movieForm.movieLinks}
-
-          // Callbacks
-          handleGenresChange={movieForm.handleGenresChange}
-          handleCastChange={movieForm.handleCastChange}
-          handleCrewChange={movieForm.handleCrewChange}
-          handleCountriesChange={movieForm.handleCountriesChange}
-          handleProductionCompaniesChange={movieForm.handleProductionCompaniesChange}
-          handleDistributionCompaniesChange={movieForm.handleDistributionCompaniesChange}
-          handleThemesChange={movieForm.handleThemesChange}
-          handleLinksChange={movieForm.handleLinksChange}
-        />
+          onSuccess={handleMovieSuccess}
+          onError={handleMovieError}
+        >
+          <MovieModal
+            isOpen={showModal}
+            onClose={handleCloseModal}
+          />
+        </MovieModalProvider>
       </div>
     </div>
   )
@@ -3608,7 +3564,7 @@ export async function GET(request: NextRequest) {
       releaseYear: movie.releaseYear,
       releaseMonth: movie.releaseMonth,
       releaseDay: movie.releaseDay,
-      releaseDateFormatted: movie.releaseYear 
+      releaseDateFormatted: movie.releaseYear
         ? `${movie.releaseYear}${movie.releaseMonth ? `-${String(movie.releaseMonth).padStart(2, '0')}` : ''}${movie.releaseDay ? `-${String(movie.releaseDay).padStart(2, '0')}` : ''}`
         : null,
       duration: movie.duration,
@@ -3655,24 +3611,28 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     // Limpiar datos antes de validar
     const cleanedData = {
       ...body,
       ratingId: body.ratingId === 0 ? null : body.ratingId,
       // Asegurar que metaKeywords sea un array
-      metaKeywords: body.metaKeywords 
-        ? Array.isArray(body.metaKeywords) 
-          ? body.metaKeywords 
+      metaKeywords: body.metaKeywords
+        ? Array.isArray(body.metaKeywords)
+          ? body.metaKeywords
           : typeof body.metaKeywords === 'string'
             ? body.metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
             : []
         : []
     };
-
+    console.log('🔍 BACKEND 1 - body original:', body)
+    console.log('🔍 BACKEND 2 - ¿body tiene ID?', 'id' in body, body?.id)
+    console.log('🔍 BACKEND 3 - cleanedData:', cleanedData)
+    console.log('🔍 BACKEND 4 - ¿cleanedData tiene ID?', 'id' in cleanedData, cleanedData?.id)
     // Validar datos
     const validatedData = movieSchema.parse(cleanedData)
-
+    console.log('🔍 BACKEND 5 - validatedData:', validatedData)
+    console.log('🔍 BACKEND 6 - ¿validatedData tiene ID?', 'id' in validatedData, validatedData?.id)
     // Generar slug único
     let slug = createSlug(validatedData.title)
     let slugCounter = 0
@@ -3712,14 +3672,16 @@ export async function POST(request: NextRequest) {
     } = validatedData
 
     // Asegurar que metaKeywords sea un array
-    const processedMetaKeywords = metaKeywords 
-      ? Array.isArray(metaKeywords) 
-        ? metaKeywords 
+    const processedMetaKeywords = metaKeywords
+      ? Array.isArray(metaKeywords)
+        ? metaKeywords
         : typeof metaKeywords === 'string'
           ? metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
           : []
       : []
 
+    console.log('🔍 BACKEND 7 - movieDataClean:', movieDataClean)
+    console.log('🔍 BACKEND 8 - ¿movieDataClean tiene ID?', 'id' in movieDataClean, movieDataClean?.id)
     // Crear película con relaciones
     const movie = await prisma.movie.create({
       data: {
@@ -3735,7 +3697,7 @@ export async function POST(request: NextRequest) {
         filmingEndYear: filmingEndYear ?? null,
         filmingEndMonth: filmingEndMonth ?? null,
         filmingEndDay: filmingEndDay ?? null,
-        
+
         // Relaciones opcionales con connect
         ...(colorTypeId && {
           colorType: { connect: { id: colorTypeId } }
@@ -3743,7 +3705,7 @@ export async function POST(request: NextRequest) {
         ...(ratingId && {
           rating: { connect: { id: ratingId } }
         }),
-        
+
         // Relaciones many-to-many
         ...(genres && genres.length > 0 && {
           genres: {
@@ -3753,7 +3715,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(cast && cast.length > 0 && {
           cast: {
             create: cast.map((item: any) => ({
@@ -3764,7 +3726,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(crew && crew.length > 0 && {
           crew: {
             create: crew.map((item: any) => ({
@@ -3775,7 +3737,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(countries && countries.length > 0 && {
           movieCountries: {
             create: countries.map((countryId: number, index: number) => ({
@@ -3784,7 +3746,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(productionCompanies && productionCompanies.length > 0 && {
           productionCompanies: {
             create: productionCompanies.map((companyId: number, index: number) => ({
@@ -3793,7 +3755,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(distributionCompanies && distributionCompanies.length > 0 && {
           distributionCompanies: {
             create: distributionCompanies.map((companyId: number) => ({
@@ -3802,7 +3764,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(themes && themes.length > 0 && {
           themes: {
             create: themes.map((themeId: number) => ({
@@ -3810,7 +3772,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(alternativeTitles && alternativeTitles.length > 0 && {
           alternativeTitles: {
             create: alternativeTitles.map((title: any) => ({
@@ -3819,7 +3781,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(links && links.length > 0 && {
           links: {
             create: links.map((link: any) => ({
@@ -3830,7 +3792,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(screeningVenues && screeningVenues.length > 0 && {
           screenings: {
             create: screeningVenues.map((sv: any) => ({
@@ -7932,8 +7894,7 @@ export default function MovieLinksManager({
 // ==================================================
 // src/components/admin/movies/MovieModal/index.tsx
 import * as Tabs from '@radix-ui/react-tabs'
-import { UseFormRegister, UseFormHandleSubmit, UseFormWatch, UseFormSetValue, UseFormReset, FieldErrors } from 'react-hook-form'
-import { MovieFormData, Movie, PartialReleaseDate, PartialFilmingDate } from '@/lib/movies/movieTypes'
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 
 // Componentes del modal
 import MovieModalHeader from './MovieModalHeader'
@@ -7950,111 +7911,29 @@ import AdvancedTab from './tabs/AdvancedTab'
 interface MovieModalProps {
   isOpen: boolean
   onClose: () => void
-  editingMovie: Movie | null
-  onSubmit: (data: MovieFormData) => Promise<void>
-  isSubmitting: boolean
-
-  // Props del formulario
-  register: UseFormRegister<MovieFormData>
-  handleSubmit: UseFormHandleSubmit<MovieFormData>
-  watch: UseFormWatch<MovieFormData>
-  setValue: UseFormSetValue<MovieFormData>
-  reset: UseFormReset<MovieFormData>
-  errors: FieldErrors<MovieFormData>
-
-  // Estados que necesitamos pasar
-  activeTab: string
-  setActiveTab: (tab: string) => void
-  isPartialDate: boolean
-  setIsPartialDate: (value: boolean) => void
-  partialReleaseDate: PartialReleaseDate
-  setPartialReleaseDate: (value: PartialReleaseDate) => void
-  tipoDuracionDisabled: boolean
-
-  // Estados para fechas de rodaje
-  isPartialFilmingStartDate: boolean
-  setIsPartialFilmingStartDate: (value: boolean) => void
-  partialFilmingStartDate: PartialFilmingDate
-  setPartialFilmingStartDate: (value: PartialFilmingDate) => void
-
-  isPartialFilmingEndDate: boolean
-  setIsPartialFilmingEndDate: (value: boolean) => void
-  partialFilmingEndDate: PartialFilmingDate
-  setPartialFilmingEndDate: (value: PartialFilmingDate) => void
-  handleScreeningVenuesChange: (venues: number[]) => void
-  // Metadata
-  availableRatings: any[]
-  availableColorTypes: any[]
-
-  // Relaciones
-  movieFormInitialData: any
-  alternativeTitles: any[]
-  setAlternativeTitles: (titles: any[]) => void
-  movieLinks: any[]
-
-  // Callbacks
-  handleGenresChange: (genres: number[]) => void
-  handleCastChange: (cast: any[]) => void
-  handleCrewChange: (crew: any[]) => void
-  handleCountriesChange: (countries: number[]) => void
-  handleProductionCompaniesChange: (companies: number[]) => void
-  handleDistributionCompaniesChange: (companies: number[]) => void
-  handleThemesChange: (themes: number[]) => void
-  handleLinksChange: (links: any[]) => void
 }
 
-export default function MovieModal({
-  isOpen,
-  onClose,
-  editingMovie,
-  onSubmit,
-  isSubmitting,
-  register,
-  handleSubmit,
-  watch,
-  setValue,
-  reset,
-  errors,
-  activeTab,
-  setActiveTab,
-  isPartialDate,
-  setIsPartialDate,
-  partialReleaseDate,
-  setPartialReleaseDate,
-  tipoDuracionDisabled,
-  isPartialFilmingStartDate,
-  setIsPartialFilmingStartDate,
-  partialFilmingStartDate,
-  setPartialFilmingStartDate,
-  isPartialFilmingEndDate,
-  setIsPartialFilmingEndDate,
-  partialFilmingEndDate,
-  setPartialFilmingEndDate,
-  availableRatings,
-  availableColorTypes,
-  movieFormInitialData,
-  alternativeTitles,
-  setAlternativeTitles,
-  movieLinks,
-  handleGenresChange,
-  handleCastChange,
-  handleCrewChange,
-  handleCountriesChange,
-  handleProductionCompaniesChange,
-  handleDistributionCompaniesChange,
-  handleScreeningVenuesChange,
-  handleThemesChange,
-  handleLinksChange
-}: MovieModalProps) {
+export default function MovieModal({ isOpen, onClose }: MovieModalProps) {
+  // Obtener todos los datos del context en lugar de props
+  const {
+    // Form methods
+    handleSubmit,
+    
+    // UI state
+    activeTab,
+    setActiveTab,
+    isSubmitting,
+    
+    // Submit handler
+    onSubmit
+  } = useMovieModalContext()
+
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
-        <MovieModalHeader
-          isEditing={!!editingMovie}
-          onClose={onClose}
-        />
+        <MovieModalHeader onClose={onClose} />
 
         <form onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto max-h-[calc(90vh-8rem)]">
           <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -8065,83 +7944,28 @@ export default function MovieModal({
 
             <div className="p-6">
               <Tabs.Content value="basic">
-                <BasicInfoTab
-                  register={register}
-                  watch={watch}
-                  setValue={setValue}
-                  errors={errors}
-                  isPartialDate={isPartialDate}
-                  setIsPartialDate={setIsPartialDate}
-                  partialReleaseDate={partialReleaseDate}
-                  setPartialReleaseDate={setPartialReleaseDate}
-                  tipoDuracionDisabled={tipoDuracionDisabled}
-                  isPartialFilmingStartDate={isPartialFilmingStartDate}
-                  setIsPartialFilmingStartDate={setIsPartialFilmingStartDate}
-                  partialFilmingStartDate={partialFilmingStartDate}
-                  setPartialFilmingStartDate={setPartialFilmingStartDate}
-                  isPartialFilmingEndDate={isPartialFilmingEndDate}
-                  setIsPartialFilmingEndDate={setIsPartialFilmingEndDate}
-                  partialFilmingEndDate={partialFilmingEndDate}
-                  setPartialFilmingEndDate={setPartialFilmingEndDate}
-                  movieFormInitialData={movieFormInitialData}
-                  movieLinks={movieLinks}
-                  handleGenresChange={handleGenresChange}
-                  handleCountriesChange={handleCountriesChange}
-                  handleThemesChange={handleThemesChange}
-                  handleLinksChange={handleLinksChange}
-                  handleScreeningVenuesChange={handleScreeningVenuesChange}
-                  editingMovieId={editingMovie?.id}
-                />
+                <BasicInfoTab />
               </Tabs.Content>
 
               <Tabs.Content value="media">
-                <MediaTab
-                  register={register}
-                  watch={watch}
-                  setValue={setValue}
-                  editingMovieId={editingMovie?.id}
-                />
+                <MediaTab />
               </Tabs.Content>
 
               <Tabs.Content value="cast">
-                <CastTab
-                  handleCastChange={handleCastChange}
-                  movieFormInitialData={movieFormInitialData}
-                  editingMovieId={editingMovie?.id}
-                />
+                <CastTab />
               </Tabs.Content>
 
               <Tabs.Content value="crew">
-                <CrewTab
-                  handleCrewChange={handleCrewChange}
-                  movieFormInitialData={movieFormInitialData}
-                  editingMovieId={editingMovie?.id}
-                />
+                <CrewTab />
               </Tabs.Content>
 
               <Tabs.Content value="advanced">
-                <AdvancedTab
-                  register={register}
-                  watch={watch}
-                  availableRatings={availableRatings}
-                  availableColorTypes={availableColorTypes}
-                  alternativeTitles={alternativeTitles}
-                  setAlternativeTitles={setAlternativeTitles}
-                  movieFormInitialData={movieFormInitialData}
-                  handleProductionCompaniesChange={handleProductionCompaniesChange}
-                  handleDistributionCompaniesChange={handleDistributionCompaniesChange}
-                  editingMovieId={editingMovie?.id}
-                />
+                <AdvancedTab />
               </Tabs.Content>
             </div>
           </Tabs.Root>
 
-          <MovieModalFooter
-            isSubmitting={isSubmitting}
-            isEditing={!!editingMovie}
-            onCancel={onClose}
-            errors={errors}
-          />
+          <MovieModalFooter onCancel={onClose} />
         </form>
       </div>
     </div>
@@ -8153,20 +7977,23 @@ export default function MovieModal({
 // ==================================================
 // src/components/admin/movies/MovieModal/MovieModalFooter.tsx
 import { Save, Loader2 } from 'lucide-react'
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 
 interface MovieModalFooterProps {
-  isSubmitting: boolean
-  isEditing: boolean
   onCancel: () => void
-  errors: any
 }
 
-export default function MovieModalFooter({
-  isSubmitting,
-  isEditing,
-  onCancel,
-  errors
-}: MovieModalFooterProps) {
+export default function MovieModalFooter({ onCancel }: MovieModalFooterProps) {
+  // Obtener todos los datos necesarios del context
+  const { 
+    isSubmitting, 
+    editingMovie, 
+    formState 
+  } = useMovieModalContext()
+  
+  const isEditing = !!editingMovie
+  const errors = formState?.errors || {}
+
   return (
     <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-4">
       <button
@@ -8216,13 +8043,18 @@ export default function MovieModalFooter({
 // ==================================================
 // src/components/admin/movies/MovieModal/MovieModalHeader.tsx
 import { X } from 'lucide-react'
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 
 interface MovieModalHeaderProps {
-  isEditing: boolean
   onClose: () => void
 }
 
-export default function MovieModalHeader({ isEditing, onClose }: MovieModalHeaderProps) {
+export default function MovieModalHeader({ onClose }: MovieModalHeaderProps) {
+  // Obtener editingMovie del context para determinar si estamos editando
+  const { editingMovie } = useMovieModalContext()
+  
+  const isEditing = !!editingMovie
+
   return (
     <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
       <div className="flex items-center justify-between">
@@ -8290,44 +8122,28 @@ export default function MovieModalTabs({ activeTab, onTabChange }: MovieModalTab
 // src/components/admin/movies/MovieModal/tabs/AdvancedTab.tsx
 // ==================================================
 // src/components/admin/movies/MovieModal/tabs/AdvancedTab.tsx
-import { UseFormRegister, UseFormWatch } from 'react-hook-form'
-import { MovieFormData } from '@/lib/movies/movieTypes'
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import { SOUND_TYPES } from '@/lib/movies/movieConstants'
 import AlternativeTitlesManager from '@/components/admin/AlternativeTitlesManager'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 
-interface AdvancedTabProps {
-  register: UseFormRegister<MovieFormData>
-  watch: UseFormWatch<MovieFormData>
+export default function AdvancedTab() {
+  // Obtener todos los datos necesarios del context
+  const {
+    register,
+    watch,
+    availableRatings,
+    availableColorTypes,
+    alternativeTitles,
+    setAlternativeTitles,
+    movieFormInitialData,
+    handleProductionCompaniesChange,
+    handleDistributionCompaniesChange,
+    editingMovie
+  } = useMovieModalContext()
 
-  // Metadata
-  availableRatings: any[]
-  availableColorTypes: any[]
+  const editingMovieId = editingMovie?.id
 
-  // Títulos alternativos
-  alternativeTitles: any[]
-  setAlternativeTitles: (titles: any[]) => void
-
-  // Compañías
-  movieFormInitialData: any
-  handleProductionCompaniesChange: (companies: number[]) => void
-  handleDistributionCompaniesChange: (companies: number[]) => void
-
-  editingMovieId?: number
-}
-
-export default function AdvancedTab({
-  register,
-  watch,
-  availableRatings,
-  availableColorTypes,
-  alternativeTitles,
-  setAlternativeTitles,
-  movieFormInitialData,
-  handleProductionCompaniesChange,
-  handleDistributionCompaniesChange,
-  editingMovieId
-}: AdvancedTabProps) {
   return (
     <div className="space-y-6">
       {/* Información técnica */}
@@ -8432,7 +8248,7 @@ export default function AdvancedTab({
           Notas Internas
         </label>
         <textarea
-          {...register('notes')}  // 👈 Usar register como los otros campos
+          {...register('notes')}
           rows={4}
           placeholder="Anotaciones internas sobre esta película. No se mostrarán públicamente."
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
@@ -8449,78 +8265,55 @@ export default function AdvancedTab({
 // src/components/admin/movies/MovieModal/tabs/BasicInfoTab.tsx
 // ==================================================
 // src/components/admin/movies/MovieModal/tabs/BasicInfoTab.tsx
-import { UseFormRegister, UseFormWatch, UseFormSetValue, FieldErrors } from 'react-hook-form'
-import { MovieFormData, PartialReleaseDate, PartialFilmingDate } from '@/lib/movies/movieTypes'
 import { TIPOS_DURACION, DATA_COMPLETENESS_LEVELS } from '@/lib/movies/movieConstants'
 import { MONTHS } from '@/lib/shared/dateUtils'
 import { getErrorMessage } from '@/lib/movies/movieUtils'
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 import MovieLinksManager from '@/components/admin/MovieLinksManager'
 
-interface BasicInfoTabProps {
-  register: UseFormRegister<MovieFormData>
-  watch: UseFormWatch<MovieFormData>
-  setValue: UseFormSetValue<MovieFormData>
-  errors: FieldErrors<MovieFormData>
+export default function BasicInfoTab() {
+  // Obtener todos los datos necesarios del context
+  const {
+    // Form methods
+    register,
+    watch,
+    setValue,
+    formState,
 
-  // Estados específicos
-  isPartialDate: boolean
-  setIsPartialDate: (value: boolean) => void
-  partialReleaseDate: PartialReleaseDate
-  setPartialReleaseDate: (value: PartialReleaseDate) => void
-  tipoDuracionDisabled: boolean
+    // Date states
+    isPartialDate,
+    setIsPartialDate,
+    partialReleaseDate,
+    setPartialReleaseDate,
 
-  // Estados para fechas de rodaje
-  isPartialFilmingStartDate: boolean
-  setIsPartialFilmingStartDate: (value: boolean) => void
-  partialFilmingStartDate: PartialFilmingDate
-  setPartialFilmingStartDate: (value: PartialFilmingDate) => void
+    // Filming date states
+    isPartialFilmingStartDate,
+    setIsPartialFilmingStartDate,
+    partialFilmingStartDate,
+    setPartialFilmingStartDate,
+    isPartialFilmingEndDate,
+    setIsPartialFilmingEndDate,
+    partialFilmingEndDate,
+    setPartialFilmingEndDate,
 
-  isPartialFilmingEndDate: boolean
-  setIsPartialFilmingEndDate: (value: boolean) => void
-  partialFilmingEndDate: PartialFilmingDate
-  setPartialFilmingEndDate: (value: PartialFilmingDate) => void
+    // UI states
+    tipoDuracionDisabled,
 
-  handleScreeningVenuesChange: (venues: number[]) => void
+    // Data and handlers
+    movieFormInitialData,
+    movieLinks,
+    editingMovie,
+    handleGenresChange,
+    handleCountriesChange,
+    handleThemesChange,
+    handleLinksChange,
+    handleScreeningVenuesChange
+  } = useMovieModalContext()
 
-  // Datos y callbacks
-  movieFormInitialData: any
-  movieLinks: any[]
-  handleGenresChange: (genres: number[]) => void
-  handleCountriesChange: (countries: number[]) => void
-  handleThemesChange: (themes: number[]) => void
-  handleLinksChange: (links: any[]) => void
+  const errors = formState?.errors || {}
+  const editingMovieId = editingMovie?.id
 
-  editingMovieId?: number
-}
-
-export default function BasicInfoTab({
-  register,
-  watch,
-  setValue,
-  errors,
-  isPartialDate,
-  setIsPartialDate,
-  partialReleaseDate,
-  setPartialReleaseDate,
-  tipoDuracionDisabled,
-  isPartialFilmingStartDate,
-  setIsPartialFilmingStartDate,
-  partialFilmingStartDate,
-  setPartialFilmingStartDate,
-  isPartialFilmingEndDate,
-  setIsPartialFilmingEndDate,
-  partialFilmingEndDate,
-  setPartialFilmingEndDate,
-  handleScreeningVenuesChange,
-  movieFormInitialData,
-  movieLinks,
-  handleGenresChange,
-  handleCountriesChange,
-  handleThemesChange,
-  handleLinksChange,
-  editingMovieId
-}: BasicInfoTabProps) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -8624,8 +8417,6 @@ export default function BasicInfoTab({
               )}
             </div>
           </div>
-
-
 
           {/* Fechas de rodaje */}
           <div className="space-y-4">
@@ -8903,19 +8694,19 @@ export default function BasicInfoTab({
 // src/components/admin/movies/MovieModal/tabs/CastTab.tsx
 // ==================================================
 // src/components/admin/movies/MovieModal/tabs/CastTab.tsx
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 
-interface CastTabProps {
-  handleCastChange: (cast: any[]) => void
-  movieFormInitialData: any
-  editingMovieId?: number
-}
+export default function CastTab() {
+  // Obtener datos necesarios del context
+  const {
+    handleCastChange,
+    movieFormInitialData,
+    editingMovie
+  } = useMovieModalContext()
 
-export default function CastTab({ 
-  handleCastChange, 
-  movieFormInitialData,
-  editingMovieId 
-}: CastTabProps) {
+  const editingMovieId = editingMovie?.id
+
   return (
     <MovieFormEnhanced
       key={editingMovieId || 'new'}
@@ -8937,19 +8728,19 @@ export default function CastTab({
 // src/components/admin/movies/MovieModal/tabs/CrewTab.tsx
 // ==================================================
 // src/components/admin/movies/MovieModal/tabs/CrewTab.tsx
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 
-interface CrewTabProps {
-  handleCrewChange: (crew: any[]) => void
-  movieFormInitialData: any
-  editingMovieId?: number
-}
+export default function CrewTab() {
+  // Obtener datos necesarios del context
+  const {
+    handleCrewChange,
+    movieFormInitialData,
+    editingMovie
+  } = useMovieModalContext()
 
-export default function CrewTab({ 
-  handleCrewChange, 
-  movieFormInitialData,
-  editingMovieId 
-}: CrewTabProps) {
+  const editingMovieId = editingMovie?.id
+
   return (
     <MovieFormEnhanced
       key={editingMovieId || 'new'}
@@ -8971,23 +8762,20 @@ export default function CrewTab({
 // src/components/admin/movies/MovieModal/tabs/MediaTab.tsx
 // ==================================================
 // src/components/admin/movies/MovieModal/tabs/MediaTab.tsx
-import { UseFormRegister, UseFormWatch, UseFormSetValue } from 'react-hook-form'
-import { MovieFormData } from '@/lib/movies/movieTypes'
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import { CloudinaryUploadWidget } from '@/components/admin/CloudinaryUploadWidget'
 
-interface MediaTabProps {
-  register: UseFormRegister<MovieFormData>
-  watch: UseFormWatch<MovieFormData>
-  setValue: UseFormSetValue<MovieFormData>
-  editingMovieId?: number
-}
+export default function MediaTab() {
+  // Obtener datos necesarios del context
+  const {
+    register,
+    watch,
+    setValue,
+    editingMovie
+  } = useMovieModalContext()
 
-export default function MediaTab({ 
-  register, 
-  watch, 
-  setValue, 
-  editingMovieId 
-}: MediaTabProps) {
+  const editingMovieId = editingMovie?.id
+
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">

@@ -1,42 +1,26 @@
 // src/components/admin/movies/MovieModal/tabs/AdvancedTab.tsx
-import { UseFormRegister, UseFormWatch } from 'react-hook-form'
-import { MovieFormData } from '@/lib/movies/movieTypes'
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import { SOUND_TYPES } from '@/lib/movies/movieConstants'
 import AlternativeTitlesManager from '@/components/admin/AlternativeTitlesManager'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 
-interface AdvancedTabProps {
-  register: UseFormRegister<MovieFormData>
-  watch: UseFormWatch<MovieFormData>
+export default function AdvancedTab() {
+  // Obtener todos los datos necesarios del context
+  const {
+    register,
+    watch,
+    availableRatings,
+    availableColorTypes,
+    alternativeTitles,
+    setAlternativeTitles,
+    movieFormInitialData,
+    handleProductionCompaniesChange,
+    handleDistributionCompaniesChange,
+    editingMovie
+  } = useMovieModalContext()
 
-  // Metadata
-  availableRatings: any[]
-  availableColorTypes: any[]
+  const editingMovieId = editingMovie?.id
 
-  // Títulos alternativos
-  alternativeTitles: any[]
-  setAlternativeTitles: (titles: any[]) => void
-
-  // Compañías
-  movieFormInitialData: any
-  handleProductionCompaniesChange: (companies: number[]) => void
-  handleDistributionCompaniesChange: (companies: number[]) => void
-
-  editingMovieId?: number
-}
-
-export default function AdvancedTab({
-  register,
-  watch,
-  availableRatings,
-  availableColorTypes,
-  alternativeTitles,
-  setAlternativeTitles,
-  movieFormInitialData,
-  handleProductionCompaniesChange,
-  handleDistributionCompaniesChange,
-  editingMovieId
-}: AdvancedTabProps) {
   return (
     <div className="space-y-6">
       {/* Información técnica */}
@@ -141,7 +125,7 @@ export default function AdvancedTab({
           Notas Internas
         </label>
         <textarea
-          {...register('notes')}  // 👈 Usar register como los otros campos
+          {...register('notes')}
           rows={4}
           placeholder="Anotaciones internas sobre esta película. No se mostrarán públicamente."
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
