@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: b750324a050d5690d47a1e1e45d882623d1d0766
-// Fecha: 2025-08-17T02:37:10.183Z
+// Commit: 748360229a6bb53bec172d81157149775ae10ab1
+// Fecha: 2025-08-17T02:39:21.597Z
 // ============================================
 
 
@@ -18520,16 +18520,6 @@ export interface MovieRelations {
   productionCompanies: number[]
   distributionCompanies: number[]
   themes: number[]
-}
-
-export interface PartialReleaseDate {
-  year: number | null
-  month: number | null
-}
-
-export interface PartialFilmingDate {
-  year: number | null
-  month: number | null
 }
 
 export interface MovieLink {
