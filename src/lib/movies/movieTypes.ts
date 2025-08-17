@@ -21,15 +21,15 @@ export const movieFormFieldsSchema = z.object({
   title: z.string().min(1, 'El título es requerido'),
 
   // Información básica
-  originalTitle: z.string().nullable().transform(val => val ?? '').optional(),
-  synopsis: z.string().nullable().transform(val => val ?? '').optional(),
-  notes: z.string().nullable().transform(val => val ?? '').optional(),
-  tagline: z.string().nullable().transform(val => val ?? '').optional(),
-  imdbId: z.string().nullable().transform(val => val ?? '').optional(),
-  aspectRatio: z.string().nullable().transform(val => val ?? '').optional(),
-  soundType: z.string().nullable().transform(val => val ?? '').optional(),
-  filmFormat: z.string().nullable().transform(val => val ?? '').optional(),
-  certificateNumber: z.string().nullable().transform(val => val ?? '').optional(),
+  originalTitle: z.string().optional(),
+  synopsis: z.string().optional(),
+  notes: z.string().optional(),
+  tagline: z.string().optional(),
+  imdbId: z.string().optional(),
+  aspectRatio: z.string().optional(),
+  soundType: z.string().optional(),
+  filmFormat: z.string().optional(),
+  certificateNumber: z.string().optional(),
   tipoDuracion: z.string().optional(),
 
   // Campos numéricos
@@ -54,11 +54,11 @@ export const movieFormFieldsSchema = z.object({
   production_type: z.string().optional(),
 
   // URLs
-  posterUrl: z.string().nullable().transform(val => val ?? '').optional(),
+  posterUrl: z.string().optional(),
   posterPublicId: z.string().optional(),
   backdropUrl: z.string().optional(),
   backdropPublicId: z.string().optional(),
-  trailerUrl: z.string().nullable().transform(val => val ?? '').optional(),
+  trailerUrl: z.string().optional(),
 
   // Metadata - con transformaciones para evitar null
   metaDescription: z.union([
