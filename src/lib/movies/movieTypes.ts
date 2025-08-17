@@ -127,16 +127,6 @@ export interface MovieRelations {
   themes: number[]
 }
 
-export interface PartialReleaseDate {
-  year: number | null
-  month: number | null
-}
-
-export interface PartialFilmingDate {
-  year: number | null
-  month: number | null
-}
-
 export interface MovieLink {
   id?: number
   type: string
