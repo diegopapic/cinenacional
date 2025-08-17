@@ -71,8 +71,8 @@ export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
   firstName: '',
   lastName: '',
   realName: '',
-  birthDate: null,
-  deathDate: null,
+  birthDate: '',
+  deathDate: '',
   birthLocationId: null,    // <-- Agregar
   deathLocationId: null,    // <-- Agregar
   birthLocation: '',        // <-- Agregar

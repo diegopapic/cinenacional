@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 748360229a6bb53bec172d81157149775ae10ab1
-// Fecha: 2025-08-17T02:39:21.597Z
+// Commit: ea6229f01b4b10a7505b058e5ff7cbd9a63a5140
+// Fecha: 2025-08-17T02:40:57.175Z
 // ============================================
 
 
@@ -18802,8 +18802,8 @@ export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
   firstName: '',
   lastName: '',
   realName: '',
-  birthDate: null,
-  deathDate: null,
+  birthDate: '',
+  deathDate: '',
   birthLocationId: null,    // <-- Agregar
   deathLocationId: null,    // <-- Agregar
   birthLocation: '',        // <-- Agregar
