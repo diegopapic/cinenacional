@@ -17,25 +17,24 @@ import {
 import { moviesService } from '@/services'
 
 interface UseMovieFormProps {
-    editingMovie: Movie | null
-    onSuccess: () => void
+    editingMovie?: Movie | null
+    onSuccess?: (movie: Movie) => void
+    onError?: (error: Error) => void
 }
 
 interface UseMovieFormReturn {
     onSubmit: (data: MovieFormData) => Promise<void>
 
-    // Estados
+    // Estados de UI
     activeTab: string
     setActiveTab: (tab: string) => void
+    isSubmitting: boolean
+
+    // Estados de fechas parciales
     isPartialDate: boolean
     setIsPartialDate: (value: boolean) => void
     partialReleaseDate: PartialReleaseDate
     setPartialReleaseDate: (value: PartialReleaseDate) => void
-    tipoDuracionDisabled: boolean
-    movieFormInitialData: any
-    alternativeTitles: any[]
-    setAlternativeTitles: (titles: any[]) => void
-    movieLinks: any[]
 
     // Estados de fechas de rodaje
     isPartialFilmingStartDate: boolean
@@ -47,11 +46,18 @@ interface UseMovieFormReturn {
     partialFilmingEndDate: PartialFilmingDate
     setPartialFilmingEndDate: (value: PartialFilmingDate) => void
 
+    // Estados específicos de UI
+    tipoDuracionDisabled: boolean
+    movieFormInitialData: any
+    alternativeTitles: any[]
+    setAlternativeTitles: (titles: any[]) => void
+    movieLinks: any[]
+
     // Metadata
     availableRatings: any[]
     availableColorTypes: any[]
 
-    // Callbacks
+    // Callbacks para relaciones
     handleGenresChange: (genres: number[]) => void
     handleLinksChange: (links: any[]) => void
     handleCastChange: (cast: any[]) => void
@@ -62,11 +68,11 @@ interface UseMovieFormReturn {
     handleThemesChange: (themes: number[]) => void
     handleScreeningVenuesChange: (venues: number[]) => void
 
-    // Funciones
+    // Funciones principales
     loadMovieData: (movie: Movie) => Promise<void>
     resetForNewMovie: () => void
 
-    // Form methods
+    // Form methods (todos como any para evitar problemas de tipos)
     register: any
     handleSubmit: any
     watch: any
@@ -84,17 +90,23 @@ interface UseMovieFormReturn {
     unregister: any
 }
 
-export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): UseMovieFormReturn {
-    // Estados del formulario
+export function useMovieForm({
+    editingMovie = null,
+    onSuccess,
+    onError
+}: UseMovieFormProps = {}): UseMovieFormReturn {
+
+    // Estados del formulario y UI
     const [activeTab, setActiveTab] = useState('basic')
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Estados de fechas parciales
     const [isPartialDate, setIsPartialDate] = useState(false)
     const [partialReleaseDate, setPartialReleaseDate] = useState<PartialReleaseDate>({
         year: null,
         month: null,
         day: null
     })
-    const [tipoDuracionDisabled, setTipoDuracionDisabled] = useState(false)
-    const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
 
     // Estados para fechas de rodaje
     const [isPartialFilmingStartDate, setIsPartialFilmingStartDate] = useState(false)
@@ -110,6 +122,10 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         month: null,
         day: null
     })
+
+    // Estados específicos de UI
+    const [tipoDuracionDisabled, setTipoDuracionDisabled] = useState(false)
+    const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
 
     // Estados de metadata
     const [availableRatings, setAvailableRatings] = useState<any[]>([])
@@ -409,16 +425,29 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
             console.error('Error completo en loadMovieData:', error)
             console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack')
             toast.error('Error al cargar los datos de la película')
+
+            // Notificar error al context parent
+            if (onError) {
+                onError(error instanceof Error ? error : new Error('Error desconocido en loadMovieData'))
+            }
+
             throw error
         }
-    }, [setValue])
+    }, [setValue, onError])
 
-    // Función submit
+    // Función submit modificada para usar callbacks
     const onSubmit = async (data: MovieFormData) => {
+        if (isSubmitting) return; // Prevenir double submit
+
+        setIsSubmitting(true)
+
         try {
+            console.log('🔍 1. Datos RAW del formulario:', data)
+            console.log('🔍 2. ¿Formulario tiene ID?', 'id' in data, data?.id)
             // Preparar los datos correctamente
             const preparedData = prepareMovieData(data)
-
+            console.log('🔍 3. Datos después de prepareMovieData:', preparedData)
+            console.log('🔍 4. ¿Preparados tiene ID?', 'id' in preparedData, preparedData?.id)
             // Procesar fecha de estreno según el tipo
             let releaseDateData = {}
             if (isPartialDate) {
@@ -536,28 +565,48 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 alternativeTitles,
                 links: movieLinks
             }
-
+            console.log('🔍 5. movieData ANTES de limpiar fechas:', movieData)
+            console.log('🔍 6. ¿movieData tiene ID?', 'id' in movieData, movieData?.id)
             // Asegurarse de nuevo de que no se envíen campos de fecha incorrectos
             delete movieData.releaseDate;
             delete movieData.filmingStartDate;
             delete movieData.filmingEndDate;
-
+            console.log('🔍 7. movieData FINAL antes de enviar:', movieData)
+            console.log('🔍 8. ¿movieData FINAL tiene ID?', 'id' in movieData, movieData?.id)
+            // 🔥 ASEGURAR QUE NO HAY ID PARA CREACIÓN
+            if (!editingMovie) {
+                delete movieData.id;
+                console.log('🔍 9. Después de delete movieData.id:', movieData)
+                console.log('🔍 10. ¿Aún tiene ID?', 'id' in movieData, movieData?.id)
+            }
             // Usar el servicio para crear o actualizar
+            let result: Movie;
             if (editingMovie) {
-                await moviesService.update(editingMovie.id, movieData)
-                toast.success('Película actualizada')
+                result = await moviesService.update(editingMovie.id, movieData)
             } else {
-                await moviesService.create(movieData)
-                toast.success('Película creada')
+                console.log('🔍 11. ENVIANDO A CREATE:', movieData)
+                result = await moviesService.create(movieData)
             }
 
-            // Limpiar y ejecutar callback de éxito
+            // Limpiar formulario
             reset()
-            onSuccess()
+
+            // Ejecutar callback de éxito con la película creada/actualizada
+            if (onSuccess) {
+                onSuccess(result)
+            }
 
         } catch (error) {
             console.error('❌ Error in onSubmit:', error)
-            toast.error(error instanceof Error ? error.message : 'Error al guardar')
+            const errorMessage = error instanceof Error ? error.message : 'Error al guardar la película'
+            toast.error(errorMessage)
+
+            // Ejecutar callback de error
+            if (onError) {
+                onError(error instanceof Error ? error : new Error(errorMessage))
+            }
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -590,23 +639,22 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         setTipoDuracionDisabled(false)
         setActiveTab('basic')
         setMovieFormInitialData(null)
+        setIsSubmitting(false)
     }, [reset])
 
     return {
         onSubmit,
 
-        // Estados
+        // Estados de UI
         activeTab,
         setActiveTab,
+        isSubmitting,
+
+        // Estados de fechas parciales
         isPartialDate,
         setIsPartialDate,
         partialReleaseDate,
         setPartialReleaseDate,
-        tipoDuracionDisabled,
-        movieFormInitialData,
-        alternativeTitles,
-        setAlternativeTitles,
-        movieLinks,
 
         // Estados de fechas de rodaje
         isPartialFilmingStartDate,
@@ -618,11 +666,18 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         partialFilmingEndDate,
         setPartialFilmingEndDate,
 
+        // Estados específicos de UI
+        tipoDuracionDisabled,
+        movieFormInitialData,
+        alternativeTitles,
+        setAlternativeTitles,
+        movieLinks,
+
         // Metadata
         availableRatings,
         availableColorTypes,
 
-        // Callbacks
+        // Callbacks para relaciones
         handleGenresChange,
         handleLinksChange,
         handleCastChange,
@@ -633,11 +688,11 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         handleThemesChange,
         handleScreeningVenuesChange,
 
-        // Funciones
+        // Funciones principales
         loadMovieData,
         resetForNewMovie,
 
-        // Form methods explícitos (sin spread)
+        // Form methods explícitos (todos como any para evitar problemas de tipos)
         register: form.register,
         handleSubmit: form.handleSubmit,
         watch: form.watch,

@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
       releaseYear: movie.releaseYear,
       releaseMonth: movie.releaseMonth,
       releaseDay: movie.releaseDay,
-      releaseDateFormatted: movie.releaseYear 
+      releaseDateFormatted: movie.releaseYear
         ? `${movie.releaseYear}${movie.releaseMonth ? `-${String(movie.releaseMonth).padStart(2, '0')}` : ''}${movie.releaseDay ? `-${String(movie.releaseDay).padStart(2, '0')}` : ''}`
         : null,
       duration: movie.duration,
@@ -150,24 +150,28 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     // Limpiar datos antes de validar
     const cleanedData = {
       ...body,
       ratingId: body.ratingId === 0 ? null : body.ratingId,
       // Asegurar que metaKeywords sea un array
-      metaKeywords: body.metaKeywords 
-        ? Array.isArray(body.metaKeywords) 
-          ? body.metaKeywords 
+      metaKeywords: body.metaKeywords
+        ? Array.isArray(body.metaKeywords)
+          ? body.metaKeywords
           : typeof body.metaKeywords === 'string'
             ? body.metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
             : []
         : []
     };
-
+    console.log('🔍 BACKEND 1 - body original:', body)
+    console.log('🔍 BACKEND 2 - ¿body tiene ID?', 'id' in body, body?.id)
+    console.log('🔍 BACKEND 3 - cleanedData:', cleanedData)
+    console.log('🔍 BACKEND 4 - ¿cleanedData tiene ID?', 'id' in cleanedData, cleanedData?.id)
     // Validar datos
     const validatedData = movieSchema.parse(cleanedData)
-
+    console.log('🔍 BACKEND 5 - validatedData:', validatedData)
+    console.log('🔍 BACKEND 6 - ¿validatedData tiene ID?', 'id' in validatedData, validatedData?.id)
     // Generar slug único
     let slug = createSlug(validatedData.title)
     let slugCounter = 0
@@ -207,14 +211,16 @@ export async function POST(request: NextRequest) {
     } = validatedData
 
     // Asegurar que metaKeywords sea un array
-    const processedMetaKeywords = metaKeywords 
-      ? Array.isArray(metaKeywords) 
-        ? metaKeywords 
+    const processedMetaKeywords = metaKeywords
+      ? Array.isArray(metaKeywords)
+        ? metaKeywords
         : typeof metaKeywords === 'string'
           ? metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
           : []
       : []
 
+    console.log('🔍 BACKEND 7 - movieDataClean:', movieDataClean)
+    console.log('🔍 BACKEND 8 - ¿movieDataClean tiene ID?', 'id' in movieDataClean, movieDataClean?.id)
     // Crear película con relaciones
     const movie = await prisma.movie.create({
       data: {
@@ -230,7 +236,7 @@ export async function POST(request: NextRequest) {
         filmingEndYear: filmingEndYear ?? null,
         filmingEndMonth: filmingEndMonth ?? null,
         filmingEndDay: filmingEndDay ?? null,
-        
+
         // Relaciones opcionales con connect
         ...(colorTypeId && {
           colorType: { connect: { id: colorTypeId } }
@@ -238,7 +244,7 @@ export async function POST(request: NextRequest) {
         ...(ratingId && {
           rating: { connect: { id: ratingId } }
         }),
-        
+
         // Relaciones many-to-many
         ...(genres && genres.length > 0 && {
           genres: {
@@ -248,7 +254,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(cast && cast.length > 0 && {
           cast: {
             create: cast.map((item: any) => ({
@@ -259,7 +265,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(crew && crew.length > 0 && {
           crew: {
             create: crew.map((item: any) => ({
@@ -270,7 +276,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(countries && countries.length > 0 && {
           movieCountries: {
             create: countries.map((countryId: number, index: number) => ({
@@ -279,7 +285,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(productionCompanies && productionCompanies.length > 0 && {
           productionCompanies: {
             create: productionCompanies.map((companyId: number, index: number) => ({
@@ -288,7 +294,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(distributionCompanies && distributionCompanies.length > 0 && {
           distributionCompanies: {
             create: distributionCompanies.map((companyId: number) => ({
@@ -297,7 +303,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(themes && themes.length > 0 && {
           themes: {
             create: themes.map((themeId: number) => ({
@@ -305,7 +311,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(alternativeTitles && alternativeTitles.length > 0 && {
           alternativeTitles: {
             create: alternativeTitles.map((title: any) => ({
@@ -314,7 +320,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(links && links.length > 0 && {
           links: {
             create: links.map((link: any) => ({
@@ -325,7 +331,7 @@ export async function POST(request: NextRequest) {
             }))
           }
         }),
-        
+
         ...(screeningVenues && screeningVenues.length > 0 && {
           screenings: {
             create: screeningVenues.map((sv: any) => ({

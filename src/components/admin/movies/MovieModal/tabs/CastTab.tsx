@@ -1,17 +1,17 @@
 // src/components/admin/movies/MovieModal/tabs/CastTab.tsx
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 
-interface CastTabProps {
-  handleCastChange: (cast: any[]) => void
-  movieFormInitialData: any
-  editingMovieId?: number
-}
+export default function CastTab() {
+  // Obtener datos necesarios del context
+  const {
+    handleCastChange,
+    movieFormInitialData,
+    editingMovie
+  } = useMovieModalContext()
 
-export default function CastTab({ 
-  handleCastChange, 
-  movieFormInitialData,
-  editingMovieId 
-}: CastTabProps) {
+  const editingMovieId = editingMovie?.id
+
   return (
     <MovieFormEnhanced
       key={editingMovieId || 'new'}

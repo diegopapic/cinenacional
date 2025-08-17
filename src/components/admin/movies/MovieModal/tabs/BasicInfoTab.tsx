@@ -1,76 +1,53 @@
 // src/components/admin/movies/MovieModal/tabs/BasicInfoTab.tsx
-import { UseFormRegister, UseFormWatch, UseFormSetValue, FieldErrors } from 'react-hook-form'
-import { MovieFormData, PartialReleaseDate, PartialFilmingDate } from '@/lib/movies/movieTypes'
 import { TIPOS_DURACION, DATA_COMPLETENESS_LEVELS } from '@/lib/movies/movieConstants'
 import { MONTHS } from '@/lib/shared/dateUtils'
 import { getErrorMessage } from '@/lib/movies/movieUtils'
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 import MovieLinksManager from '@/components/admin/MovieLinksManager'
 
-interface BasicInfoTabProps {
-  register: UseFormRegister<MovieFormData>
-  watch: UseFormWatch<MovieFormData>
-  setValue: UseFormSetValue<MovieFormData>
-  errors: FieldErrors<MovieFormData>
+export default function BasicInfoTab() {
+  // Obtener todos los datos necesarios del context
+  const {
+    // Form methods
+    register,
+    watch,
+    setValue,
+    formState,
 
-  // Estados específicos
-  isPartialDate: boolean
-  setIsPartialDate: (value: boolean) => void
-  partialReleaseDate: PartialReleaseDate
-  setPartialReleaseDate: (value: PartialReleaseDate) => void
-  tipoDuracionDisabled: boolean
+    // Date states
+    isPartialDate,
+    setIsPartialDate,
+    partialReleaseDate,
+    setPartialReleaseDate,
 
-  // Estados para fechas de rodaje
-  isPartialFilmingStartDate: boolean
-  setIsPartialFilmingStartDate: (value: boolean) => void
-  partialFilmingStartDate: PartialFilmingDate
-  setPartialFilmingStartDate: (value: PartialFilmingDate) => void
+    // Filming date states
+    isPartialFilmingStartDate,
+    setIsPartialFilmingStartDate,
+    partialFilmingStartDate,
+    setPartialFilmingStartDate,
+    isPartialFilmingEndDate,
+    setIsPartialFilmingEndDate,
+    partialFilmingEndDate,
+    setPartialFilmingEndDate,
 
-  isPartialFilmingEndDate: boolean
-  setIsPartialFilmingEndDate: (value: boolean) => void
-  partialFilmingEndDate: PartialFilmingDate
-  setPartialFilmingEndDate: (value: PartialFilmingDate) => void
+    // UI states
+    tipoDuracionDisabled,
 
-  handleScreeningVenuesChange: (venues: number[]) => void
+    // Data and handlers
+    movieFormInitialData,
+    movieLinks,
+    editingMovie,
+    handleGenresChange,
+    handleCountriesChange,
+    handleThemesChange,
+    handleLinksChange,
+    handleScreeningVenuesChange
+  } = useMovieModalContext()
 
-  // Datos y callbacks
-  movieFormInitialData: any
-  movieLinks: any[]
-  handleGenresChange: (genres: number[]) => void
-  handleCountriesChange: (countries: number[]) => void
-  handleThemesChange: (themes: number[]) => void
-  handleLinksChange: (links: any[]) => void
+  const errors = formState?.errors || {}
+  const editingMovieId = editingMovie?.id
 
-  editingMovieId?: number
-}
-
-export default function BasicInfoTab({
-  register,
-  watch,
-  setValue,
-  errors,
-  isPartialDate,
-  setIsPartialDate,
-  partialReleaseDate,
-  setPartialReleaseDate,
-  tipoDuracionDisabled,
-  isPartialFilmingStartDate,
-  setIsPartialFilmingStartDate,
-  partialFilmingStartDate,
-  setPartialFilmingStartDate,
-  isPartialFilmingEndDate,
-  setIsPartialFilmingEndDate,
-  partialFilmingEndDate,
-  setPartialFilmingEndDate,
-  handleScreeningVenuesChange,
-  movieFormInitialData,
-  movieLinks,
-  handleGenresChange,
-  handleCountriesChange,
-  handleThemesChange,
-  handleLinksChange,
-  editingMovieId
-}: BasicInfoTabProps) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -174,8 +151,6 @@ export default function BasicInfoTab({
               )}
             </div>
           </div>
-
-
 
           {/* Fechas de rodaje */}
           <div className="space-y-4">

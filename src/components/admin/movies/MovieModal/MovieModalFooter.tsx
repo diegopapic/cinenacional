@@ -1,19 +1,22 @@
 // src/components/admin/movies/MovieModal/MovieModalFooter.tsx
 import { Save, Loader2 } from 'lucide-react'
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
 
 interface MovieModalFooterProps {
-  isSubmitting: boolean
-  isEditing: boolean
   onCancel: () => void
-  errors: any
 }
 
-export default function MovieModalFooter({
-  isSubmitting,
-  isEditing,
-  onCancel,
-  errors
-}: MovieModalFooterProps) {
+export default function MovieModalFooter({ onCancel }: MovieModalFooterProps) {
+  // Obtener todos los datos necesarios del context
+  const { 
+    isSubmitting, 
+    editingMovie, 
+    formState 
+  } = useMovieModalContext()
+  
+  const isEditing = !!editingMovie
+  const errors = formState?.errors || {}
+
   return (
     <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-4">
       <button

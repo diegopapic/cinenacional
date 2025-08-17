@@ -7,9 +7,9 @@ import MoviesFilters, { type MovieFilters } from '@/components/admin/movies/Movi
 import MoviesPagination from '@/components/admin/movies/MoviesPagination'
 import MoviesTable from '@/components/admin/movies/MoviesTable'
 import MovieModal from '@/components/admin/movies/MovieModal'
+import { MovieModalProvider } from '@/contexts/MovieModalContext'
 import { moviesService } from '@/services'
 import { type Movie } from '@/lib/movies/movieTypes'
-import { useMovieForm } from '@/hooks/useMovieForm'
 
 export default function AdminMoviesPage() {
   const [movies, setMovies] = useState<Movie[]>([])
@@ -26,17 +26,6 @@ export default function AdminMoviesPage() {
     currentPage: 1
   })
 
-  // Usar el custom hook
-  const movieForm = useMovieForm({
-    editingMovie,
-    onSuccess: () => {
-      setShowModal(false)
-      setEditingMovie(null)
-      fetchMovies()
-    }
-  })
-
-  
   const handleFiltersChange = (newFilters: Partial<MovieFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }))
   }
@@ -63,14 +52,8 @@ export default function AdminMoviesPage() {
 
   // Editar película
   const handleEdit = async (movie: Movie) => {
-    try {
-      setEditingMovie(movie)
-      await movieForm.loadMovieData(movie)
-      setShowModal(true)
-    } catch (error) {
-      console.error('Error in handleEdit:', error)
-      toast.error('Error al cargar los datos de la película')
-    }
+    setEditingMovie(movie)
+    setShowModal(true)
   }
 
   // Eliminar película
@@ -82,8 +65,31 @@ export default function AdminMoviesPage() {
   // Abrir modal para nueva película
   const handleNewMovie = () => {
     setEditingMovie(null)
-    movieForm.resetForNewMovie()
     setShowModal(true)
+  }
+
+  // Callbacks para el context
+  const handleMovieSuccess = (movie: Movie) => {
+    setShowModal(false)
+    setEditingMovie(null)
+    fetchMovies()
+    
+    // Toast específico según la acción
+    if (editingMovie) {
+      toast.success(`Película "${movie.title}" actualizada exitosamente`)
+    } else {
+      toast.success(`Película "${movie.title}" creada exitosamente`)
+    }
+  }
+
+  const handleMovieError = (error: Error) => {
+    console.error('Error en operación de película:', error)
+    toast.error(error.message || 'Error al procesar la película')
+  }
+
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setEditingMovie(null)
   }
 
   return (
@@ -125,67 +131,17 @@ export default function AdminMoviesPage() {
           />
         )}
 
-        {/* Modal con todas las props del hook */}
-        <MovieModal
-          isOpen={showModal}
-          onClose={() => {
-            setShowModal(false)
-            setEditingMovie(null)
-          }}
+        {/* Modal envuelto en el Provider */}
+        <MovieModalProvider
           editingMovie={editingMovie}
-          onSubmit={movieForm.onSubmit}
-          isSubmitting={movieForm.formState.isSubmitting}
-
-          // Props del formulario
-          register={movieForm.register}
-          handleSubmit={movieForm.handleSubmit}
-          watch={movieForm.watch}
-          setValue={movieForm.setValue}
-          reset={movieForm.reset}
-          errors={movieForm.formState.errors}
-
-          // Estados
-          activeTab={movieForm.activeTab}
-          setActiveTab={movieForm.setActiveTab}
-          isPartialDate={movieForm.isPartialDate}
-          setIsPartialDate={movieForm.setIsPartialDate}
-          partialReleaseDate={movieForm.partialReleaseDate}
-          setPartialReleaseDate={movieForm.setPartialReleaseDate}
-          tipoDuracionDisabled={movieForm.tipoDuracionDisabled}
-
-          handleScreeningVenuesChange={movieForm.handleScreeningVenuesChange}
-
-
-          // Estados para fechas de rodaje
-          isPartialFilmingStartDate={movieForm.isPartialFilmingStartDate}
-          setIsPartialFilmingStartDate={movieForm.setIsPartialFilmingStartDate}
-          partialFilmingStartDate={movieForm.partialFilmingStartDate}
-          setPartialFilmingStartDate={movieForm.setPartialFilmingStartDate}
-          isPartialFilmingEndDate={movieForm.isPartialFilmingEndDate}
-          setIsPartialFilmingEndDate={movieForm.setIsPartialFilmingEndDate}
-          partialFilmingEndDate={movieForm.partialFilmingEndDate}
-          setPartialFilmingEndDate={movieForm.setPartialFilmingEndDate}
-
-          // Metadata - ahora viene del hook
-          availableRatings={movieForm.availableRatings}
-          availableColorTypes={movieForm.availableColorTypes}
-
-          // Relaciones
-          movieFormInitialData={movieForm.movieFormInitialData}
-          alternativeTitles={movieForm.alternativeTitles}
-          setAlternativeTitles={movieForm.setAlternativeTitles}
-          movieLinks={movieForm.movieLinks}
-
-          // Callbacks
-          handleGenresChange={movieForm.handleGenresChange}
-          handleCastChange={movieForm.handleCastChange}
-          handleCrewChange={movieForm.handleCrewChange}
-          handleCountriesChange={movieForm.handleCountriesChange}
-          handleProductionCompaniesChange={movieForm.handleProductionCompaniesChange}
-          handleDistributionCompaniesChange={movieForm.handleDistributionCompaniesChange}
-          handleThemesChange={movieForm.handleThemesChange}
-          handleLinksChange={movieForm.handleLinksChange}
-        />
+          onSuccess={handleMovieSuccess}
+          onError={handleMovieError}
+        >
+          <MovieModal
+            isOpen={showModal}
+            onClose={handleCloseModal}
+          />
+        </MovieModalProvider>
       </div>
     </div>
   )
