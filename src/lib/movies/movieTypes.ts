@@ -39,6 +39,9 @@ export const movieFormSchema = z.object({
   releaseDate: z.any().optional(),
   filmingStartDate: z.any().optional(),
   filmingEndDate: z.any().optional(),
+  countries: z.array(z.string()).optional(),
+  is_coproduction: z.boolean().optional(),
+  production_type: z.string().optional(),
 
   isPartialReleaseDate: z.boolean().optional(),
   partialReleaseDate: z.object({
