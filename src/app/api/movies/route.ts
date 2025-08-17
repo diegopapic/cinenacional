@@ -24,7 +24,6 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
-        { originalTitle: { contains: search, mode: 'insensitive' } },
         { synopsis: { contains: search, mode: 'insensitive' } }
       ]
     }
@@ -100,7 +99,6 @@ export async function GET(request: NextRequest) {
       id: movie.id,
       slug: movie.slug,
       title: movie.title,
-      originalTitle: movie.originalTitle,
       year: movie.year,
       releaseYear: movie.releaseYear,
       releaseMonth: movie.releaseMonth,
