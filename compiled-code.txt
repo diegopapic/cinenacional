@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 13f10b01f31d8e664d8229bd4278e663a8c4d6eb
-// Fecha: 2025-08-17T20:03:38.081Z
+// Commit: 4f0f8a8b611a9fbc2a0963756470afaf93228cb6
+// Fecha: 2025-08-17T20:06:18.592Z
 // ============================================
 
 
@@ -12565,7 +12565,7 @@ export default function AdvancedTab() {
         </label>
         <select
           {...register('ratingId', {
-            setValueAs: (v) => {
+            setValueAs: (v: string | number) => {
               if (v === '' || v === '0' || v === 0) return null;
               return Number(v);
             }

@@ -73,7 +73,7 @@ export default function AdvancedTab() {
         </label>
         <select
           {...register('ratingId', {
-            setValueAs: (v) => {
+            setValueAs: (v: string | number) => {
               if (v === '' || v === '0' || v === 0) return null;
               return Number(v);
             }
