@@ -1,6 +1,6 @@
 // src/services/movies.service.ts
 import { MovieFilters } from '@/components/admin/movies/MoviesFilters'
-import { MovieFormData } from '@/lib/movies/movieTypes'
+import { MovieCompleteData } from '@/lib/movies/movieTypes'
 import { dateToPartialFields, partialFieldsToDate, PartialDate } from '@/lib/shared/dateUtils'
 
 interface MoviesResponse {
@@ -16,7 +16,7 @@ interface MoviesResponse {
  * Formatea los datos del formulario de película para enviar a la API
  * Convierte las fechas completas o parciales al formato esperado por el backend
  */
-function formatMovieDataForAPI(data: MovieFormData): any {
+function formatMovieDataForAPI(data: MovieCompleteData): any {
   const apiData: any = {
     title: data.title,
     year: data.year,
@@ -113,8 +113,8 @@ function formatMovieDataForAPI(data: MovieFormData): any {
 /**
  * Convierte los datos de la API al formato del formulario
  */
-function formatMovieFromAPI(movie: any): MovieFormData {
-  const formData: MovieFormData = {
+function formatMovieFromAPI(movie: any): MovieCompleteData {
+  const formData: MovieCompleteData = {
     title: movie.title || '',
     year: movie.year || null,
     releaseDate: '',
@@ -261,7 +261,7 @@ export const moviesService = {
   /**
    * Obtiene una película por ID en formato de formulario para edición
    */
-  async getByIdForEdit(id: number): Promise<MovieFormData> {
+  async getByIdForEdit(id: number): Promise<MovieCompleteData> {
     const response = await fetch(`/api/movies/${id}`)
 
     if (!response.ok) {
@@ -275,7 +275,7 @@ export const moviesService = {
   /**
    * Crea una nueva película
    */
-  async create(data: MovieFormData): Promise<any> {
+  async create(data: MovieCompleteData): Promise<any> {
     // Mismo tratamiento que update
     let formattedData = data;
 
@@ -308,16 +308,16 @@ export const moviesService = {
   /**
    * Actualiza una película existente
    */
-  async update(id: number, data: MovieFormData): Promise<any> {
-     console.log('🎬 movies.service.update - Datos recibidos:', {
-        tieneGenres: 'genres' in data,
-        genres: data.genres,
-        tieneLinks: 'links' in data,
-        links: data.links,
-        tieneMetaDescription: 'metaDescription' in data,
-        metaDescription: data.metaDescription
+  async update(id: number, data: MovieCompleteData): Promise<any> {
+    console.log('🎬 movies.service.update - Datos recibidos:', {
+      tieneGenres: 'genres' in data,
+      genres: data.genres,
+      tieneLinks: 'links' in data,
+      links: data.links,
+      tieneMetaDescription: 'metaDescription' in data,
+      metaDescription: data.metaDescription
     })
-    
+
     // NO volver a formatear si los datos ya vienen con campos de fecha separados
     let formattedData = data;
 
