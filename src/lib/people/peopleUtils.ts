@@ -2,6 +2,7 @@
 
 import { Person, PersonWithRelations, PersonFormData, PersonLink, Gender } from './peopleTypes';
 import { DEFAULT_PERSON_FORM_VALUES, DEFAULT_PERSON_LINK } from './peopleConstants';
+import { partialFieldsToDate } from '@/lib/shared/dateUtils';
 
 /**
  * Genera un slug único para una persona basado en nombre y apellido
@@ -47,6 +48,7 @@ export function formatGender(gender?: Gender | null): string {
 
 /**
  * Convierte los datos del formulario para enviar a la API
+ * NOTA: Esta función ya no se usa, se usa formatPersonDataForAPI en people.service.ts
  */
 export function formatPersonFormDataForAPI(data: PersonFormData) {
     return {
@@ -88,16 +90,17 @@ function formatLocationPath(location: any): string {
 
 /**
  * Convierte los datos de la API al formato del formulario
+ * Maneja tanto fechas completas como parciales
  */
 export function formatPersonDataForForm(person?: PersonWithRelations | null): PersonFormData {
     if (!person) return DEFAULT_PERSON_FORM_VALUES;
 
-    return {
+    const formData: PersonFormData = {
         firstName: person.firstName || '',
         lastName: person.lastName || '',
         realName: person.realName || '',
-        birthDate: person.birthDate ? person.birthDate.split('T')[0] : '',
-        deathDate: person.deathDate ? person.deathDate.split('T')[0] : '',
+        birthDate: '',
+        deathDate: '',
         birthLocationId: person.birthLocationId || null,
         deathLocationId: person.deathLocationId || null,
         birthLocation: person.birthLocation ? formatLocationPath(person.birthLocation) : '',
@@ -107,8 +110,64 @@ export function formatPersonDataForForm(person?: PersonWithRelations | null): Pe
         gender: person.gender || '',
         hideAge: person.hideAge || false,
         isActive: person.isActive ?? true,
-        links: [], // Se cargan por separado si es necesario
+        links: person.links || [], // Cargar los links directamente si vienen
     };
+
+    // Procesar fecha de nacimiento
+    if ('birthYear' in person && person.birthYear) {
+        const birthPartial = {
+            year: person.birthYear,
+            month: person.birthMonth,
+            day: person.birthDay
+        };
+
+        // Si la fecha está completa (año, mes y día), convertirla a formato ISO
+        if (person.birthYear && person.birthMonth && person.birthDay) {
+            const isoDate = partialFieldsToDate(birthPartial);
+            if (isoDate) {
+                formData.birthDate = isoDate;
+                formData.isPartialBirthDate = false;
+            }
+        } else {
+            // Es una fecha parcial
+            formData.partialBirthDate = birthPartial;
+            formData.isPartialBirthDate = true;
+            formData.birthDate = '';
+        }
+    } else if (person.birthDate) {
+        // Fallback para formato antiguo con birthDate como string
+        formData.birthDate = person.birthDate.split('T')[0];
+        formData.isPartialBirthDate = false;
+    }
+
+    // Procesar fecha de fallecimiento
+    if ('deathYear' in person && person.deathYear) {
+        const deathPartial = {
+            year: person.deathYear,
+            month: person.deathMonth,
+            day: person.deathDay
+        };
+
+        // Si la fecha está completa (año, mes y día), convertirla a formato ISO
+        if (person.deathYear && person.deathMonth && person.deathDay) {
+            const isoDate = partialFieldsToDate(deathPartial);
+            if (isoDate) {
+                formData.deathDate = isoDate;
+                formData.isPartialDeathDate = false;
+            }
+        } else {
+            // Es una fecha parcial
+            formData.partialDeathDate = deathPartial;
+            formData.isPartialDeathDate = true;
+            formData.deathDate = '';
+        }
+    } else if (person.deathDate) {
+        // Fallback para formato antiguo con deathDate como string
+        formData.deathDate = person.deathDate.split('T')[0];
+        formData.isPartialDeathDate = false;
+    }
+
+    return formData;
 }
 
 /**
@@ -122,13 +181,24 @@ export function validatePersonForm(data: PersonFormData): string[] {
         errors.push('Debe ingresar al menos el nombre o el apellido');
     }
 
-    // Validar fechas
+    // Validar fechas si ambas son completas
     if (data.birthDate && data.deathDate) {
         const birthDate = new Date(data.birthDate);
         const deathDate = new Date(data.deathDate);
 
         if (deathDate < birthDate) {
             errors.push('La fecha de fallecimiento debe ser posterior a la fecha de nacimiento');
+        }
+    }
+
+    // Validar fechas parciales
+    if (data.isPartialBirthDate && data.partialBirthDate && 
+        data.isPartialDeathDate && data.partialDeathDate) {
+        const birthYear = data.partialBirthDate.year;
+        const deathYear = data.partialDeathDate.year;
+        
+        if (birthYear && deathYear && deathYear < birthYear) {
+            errors.push('El año de fallecimiento debe ser posterior al año de nacimiento');
         }
     }
 
@@ -200,8 +270,42 @@ export function removePersonLink(links: PersonLink[], index: number): PersonLink
 
 /**
  * Genera el texto para mostrar la edad o fecha de nacimiento
+ * Actualizada para manejar fechas parciales
  */
-export function formatBirthInfo(person: Person): string {
+export function formatBirthInfo(person: any): string {
+    // Si hay campos de fecha parcial
+    if ('birthYear' in person && person.birthYear) {
+        if (person.hideAge) return 'Fecha oculta';
+        
+        let dateStr = '';
+        if (person.birthDay && person.birthMonth) {
+            // Fecha completa
+            const date = new Date(person.birthYear, person.birthMonth - 1, person.birthDay);
+            dateStr = date.toLocaleDateString('es-AR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+            });
+            
+            // Calcular edad si no hay fecha de muerte
+            if (!person.deathYear) {
+                const age = calculateAge(date);
+                return `${dateStr} (${age} años)`;
+            }
+        } else if (person.birthMonth) {
+            // Solo año y mes
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            dateStr = `${months[person.birthMonth - 1]} ${person.birthYear}`;
+        } else {
+            // Solo año
+            dateStr = String(person.birthYear);
+        }
+        
+        return dateStr;
+    }
+    
+    // Fallback al formato antiguo
     if (!person.birthDate) return '-';
     if (person.hideAge) return 'Fecha oculta';
 
@@ -212,13 +316,11 @@ export function formatBirthInfo(person: Person): string {
         year: 'numeric',
     });
 
-    // Si no hay fecha de muerte, calcular edad
     if (!person.deathDate) {
         const age = calculateAge(birthDate);
         return `${formattedDate} (${age} años)`;
     }
 
-    // Si hay fecha de muerte, mostrar solo la fecha
     return formattedDate;
 }
 
@@ -239,16 +341,23 @@ export function calculateAge(birthDate: Date, deathDate?: Date): number {
 
 /**
  * Genera un resumen de la persona para mostrar en listas
+ * Actualizada para manejar fechas parciales
  */
-export function getPersonSummary(person: Person): string {
+export function getPersonSummary(person: any): string {
     const parts = [];
 
-    if (person.birthDate && !person.hideAge) {
+    // Manejar fecha de nacimiento
+    if ('birthYear' in person && person.birthYear && !person.hideAge) {
+        parts.push(`n. ${person.birthYear}`);
+    } else if (person.birthDate && !person.hideAge) {
         const year = new Date(person.birthDate).getFullYear();
         parts.push(`n. ${year}`);
     }
 
-    if (person.deathDate) {
+    // Manejar fecha de fallecimiento
+    if ('deathYear' in person && person.deathYear) {
+        parts.push(`f. ${person.deathYear}`);
+    } else if (person.deathDate) {
         const year = new Date(person.deathDate).getFullYear();
         parts.push(`f. ${year}`);
     }

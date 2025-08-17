@@ -1,0 +1,244 @@
+﻿Folder PATH listing
+Volume serial number is D40D-D718
+C:.
+|   listados.html
+|   
++---app
+|   |   favicon.ico
+|   |   globals.css
+|   |   layout.tsx
+|   |   page.tsx
+|   |   
+|   +---admin
+|   |   |   layout.tsx
+|   |   |   
+|   |   +---calificaciones
+|   |   |       page.tsx
+|   |   |       
+|   |   +---countries
+|   |   |       page.tsx
+|   |   |       
+|   |   +---genres
+|   |   |       page.tsx
+|   |   |       
+|   |   +---locations
+|   |   |   |   page.tsx
+|   |   |   |   
+|   |   |   +---new
+|   |   |   |       page.tsx
+|   |   |   |       
+|   |   |   \---[id]
+|   |   |       \---edit
+|   |   |               page.tsx
+|   |   |               
+|   |   +---movies
+|   |   |       page.tsx
+|   |   |       
+|   |   +---people
+|   |   |   |   page.tsx
+|   |   |   |   
+|   |   |   +---new
+|   |   |   |       page.tsx
+|   |   |   |       
+|   |   |   \---[id]
+|   |   |       |   page.tsx
+|   |   |       |   
+|   |   |       \---edit
+|   |   |               page.tsx
+|   |   |               
+|   |   +---screening-venues
+|   |   |       page.tsx
+|   |   |       
+|   |   \---themes
+|   |           page.tsx
+|   |           
+|   +---api
+|   |   +---calificaciones
+|   |   |   |   route.ts
+|   |   |   |   
+|   |   |   \---[id]
+|   |   |           route.ts
+|   |   |           
+|   |   +---color-types
+|   |   |       route.ts
+|   |   |       
+|   |   +---companies
+|   |   |   +---distribution
+|   |   |   |       route.ts
+|   |   |   |       
+|   |   |   \---production
+|   |   |           route.ts
+|   |   |           
+|   |   +---countries
+|   |   |   |   route.ts
+|   |   |   |   
+|   |   |   \---[id]
+|   |   |           route.ts
+|   |   |           
+|   |   +---genres
+|   |   |   |   route.ts
+|   |   |   |   
+|   |   |   \---[id]
+|   |   |           route.ts
+|   |   |           
+|   |   +---images
+|   |   |   \---[movieId]
+|   |   |           route.ts
+|   |   |           
+|   |   +---locations
+|   |   |   |   route.ts
+|   |   |   |   
+|   |   |   +---check-slug
+|   |   |   |       route.ts
+|   |   |   |       
+|   |   |   +---search
+|   |   |   |       route.ts
+|   |   |   |       
+|   |   |   +---tree
+|   |   |   |       route.ts
+|   |   |   |       
+|   |   |   \---[id]
+|   |   |           route.ts
+|   |   |           
+|   |   +---movies
+|   |   |   |   route.ts
+|   |   |   |   
+|   |   |   \---[id]
+|   |   |           route.ts
+|   |   |           
+|   |   +---people
+|   |   |   |   route.ts
+|   |   |   |   
+|   |   |   \---[id]
+|   |   |           route.ts
+|   |   |           
+|   |   +---project-structure
+|   |   |       route.ts
+|   |   |       
+|   |   +---screening-venues
+|   |   |   |   route.ts
+|   |   |   |   
+|   |   |   \---[id]
+|   |   |           route.ts
+|   |   |           
+|   |   \---themes
+|   |       |   route.ts
+|   |       |   
+|   |       \---[id]
+|   |               route.ts
+|   |               
+|   +---listados
+|   |   +---peliculas
+|   |   |       page.tsx
+|   |   |       
+|   |   \---personas
+|   |           page.tsx
+|   |           
+|   +---peliculas
+|   |   \---[slug]
+|   |           page.tsx
+|   |           
+|   +---personas
+|   |   \---[slug]
+|   |           page.tsx
+|   |           
+|   \---test-env
+|           page.tsx
+|           
++---components
+|   +---admin
+|   |   |   AlternativeTitlesManager.tsx
+|   |   |   CloudinaryGallery.tsx
+|   |   |   CloudinaryUploadWidget.tsx
+|   |   |   CountrySelector.tsx
+|   |   |   MovieFormEnhanced.tsx
+|   |   |   MovieLinksManager.tsx
+|   |   |   MoviesFilters.tsx
+|   |   |   MoviesPagination.tsx
+|   |   |   MoviesTable.tsx
+|   |   |   ScreeningVenueSelector.tsx
+|   |   |   ThemeSelector.tsx
+|   |   |   
+|   |   +---locations
+|   |   |       LocationForm.tsx
+|   |   |       LocationTree.tsx
+|   |   |       LocationTreeNode.tsx
+|   |   |       
+|   |   +---movies
+|   |   |   |   MoviesFilters.tsx
+|   |   |   |   MoviesPagination.tsx
+|   |   |   |   MoviesTable.tsx
+|   |   |   |   
+|   |   |   \---MovieModal
+|   |   |       |   index.tsx
+|   |   |       |   MovieModalFooter.tsx
+|   |   |       |   MovieModalHeader.tsx
+|   |   |       |   MovieModalTabs.tsx
+|   |   |       |   
+|   |   |       \---tabs
+|   |   |               AdvancedTab.tsx
+|   |   |               BasicInfoTab.tsx
+|   |   |               CastTab.tsx
+|   |   |               CrewTab.tsx
+|   |   |               MediaTab.tsx
+|   |   |               
+|   |   \---people
+|   |       |   PeopleTable.tsx
+|   |       |   PersonForm.tsx
+|   |       |   
+|   |       \---PersonFormFields
+|   |               BasicInfoFields.tsx
+|   |               BiographyFields.tsx
+|   |               LinksSection.tsx
+|   |               LocationFields.tsx
+|   |               
+|   +---layout
+|   |       Footer.tsx
+|   |       Header.tsx
+|   |       
+|   \---movies
+|           CastSection.tsx
+|           CloudinaryImage.tsx
+|           CrewSection.tsx
+|           ImageGallery.tsx
+|           MovieHero.tsx
+|           MovieInfo.tsx
+|           MoviePoster.tsx
+|           MovieSidebar.tsx
+|           SimilarMovies.tsx
+|           TrailerSection.tsx
+|           
++---hooks
+|       useDebounce.ts
+|       useMovieForm.ts
+|       usePeople.ts
+|       usePeopleForm.ts
+|       
++---lib
+|   |   prisma.ts
+|   |   schemas.ts
+|   |   utils.ts
+|   |   
+|   +---movies
+|   |       movieConstants.ts
+|   |       movieTypes.ts
+|   |       movieUtils.ts
+|   |       
+|   +---people
+|   |       peopleConstants.ts
+|   |       peopleTypes.ts
+|   |       peopleUtils.ts
+|   |       
+|   +---shared
+|   |       dateUtils.ts
+|   |       
+|   \---utils
+|           slugs.ts
+|           
+\---services
+        api-client.ts
+        index.ts
+        metadata.service.ts
+        movies.service.ts
+        people.service.ts
+        

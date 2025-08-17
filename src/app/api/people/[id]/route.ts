@@ -54,6 +54,8 @@ export async function PUT(
         const data = await request.json();
         const personId = parseInt(id);
 
+        console.log('Data received in API:', data); // Log para debugging
+
         // Verificar si necesitamos actualizar el slug
         let slug = undefined;
         const currentPerson = await prisma.person.findUnique({
@@ -87,14 +89,19 @@ export async function PUT(
             }
         }
 
-        // Preparar datos de actualización
+        // Preparar datos de actualización con campos de fecha parciales
         const updateData: any = {
             ...(slug && { slug }),
             firstName: data.firstName || null,
             lastName: data.lastName || null,
             realName: data.realName || null,
-            birthDate: data.birthDate ? new Date(data.birthDate) : null,
-            deathDate: data.deathDate ? new Date(data.deathDate) : null,
+            // Usar los campos de fecha parciales que vienen del servicio
+            birthYear: data.birthYear || null,
+            birthMonth: data.birthMonth || null,
+            birthDay: data.birthDay || null,
+            deathYear: data.deathYear || null,
+            deathMonth: data.deathMonth || null,
+            deathDay: data.deathDay || null,
             birthLocationId: data.birthLocationId || null,
             deathLocationId: data.deathLocationId || null,
             biography: data.biography || null,
@@ -104,6 +111,8 @@ export async function PUT(
             isActive: data.isActive ?? true,
             hasLinks: data.links && data.links.length > 0,
         };
+
+        console.log('Update data prepared:', updateData); // Log para debugging
 
         // Actualizar persona y links en una transacción
         const person = await prisma.$transaction(async (tx) => {

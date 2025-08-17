@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: f86b61750b5413a9dec3d59152927a8635bb49b2
-// Fecha: 2025-08-15T20:52:00.211Z
+// Commit: 979c336925d06e57653a1c8950c8e5d22cc24a25
+// Fecha: 2025-08-17T02:29:40.938Z
 // ============================================
 
 
@@ -13,1696 +13,6 @@
 
 // NOTE: This file should not be edited
 // see https://nextjs.org/docs/app/building-your-application/configuring/typescript for more information.
-
-
-// ==================================================
-// pgsql/pgAdmin 4/web/pgadmin/static/js/components/PgTree/FileTreeItem/index.tsx
-// ==================================================
-/////////////////////////////////////////////////////////////
-//
-// pgAdmin 4 - PostgreSQL Tools
-//
-// Copyright (C) 2013 - 2025, The pgAdmin Development Team
-// This software is released under the PostgreSQL Licence
-//
-//////////////////////////////////////////////////////////////
-
-import cn from 'classnames';
-import * as React from 'react';
-import { ClasslistComposite } from 'aspen-decorations';
-import { Directory, FileEntry, IItemRendererProps, ItemType, RenamePromptHandle, FileType, FileOrDir} from 'react-aspen';
-import {IFileTreeXTriggerEvents, FileTreeXEvent } from '../types';
-import { Notificar } from 'notificar';
-import _ from 'lodash';
-import DoubleClickHandler from './DoubleClickHandler';
-interface IItemRendererXProps {
-    /**
-     * In this implementation, decoration are null when item is `PromptHandle`
-     *
-     * If you would like decorations for `PromptHandle`s, then get them using `DecorationManager#getDecorations(<target>)`.
-     * Where `<target>` can be either `NewFilePromptHandle.parent` or `RenamePromptHandle.target` depending on type of `PromptHandle`
-     *
-     * To determine the type of `PromptHandle`, use `IItemRendererProps.itemType`
-     */
-    decorations: ClasslistComposite
-    onClick: (ev: React.MouseEvent, item: FileEntry | Directory, type: ItemType) => void
-    onContextMenu: (ev: React.MouseEvent, item: FileEntry | Directory) => void
-    onMouseEnter: (ev: React.MouseEvent, item: FileEntry | Directory) => void
-    onMouseLeave: (ev: React.MouseEvent, item: FileEntry | Directory) => void
-    onItemHovered: (ev: React.MouseEvent, item: FileEntry | Directory, type: ItemType) => void
-    events: Notificar<FileTreeXEvent>
-}
-
-// DO NOT EXTEND FROM PureComponent!!! You might miss critical changes made deep within `item` prop
-// as far as efficiency is concerned, `react-aspen` works hard to ensure unnecessary updates are ignored
-export class FileTreeItem extends React.Component<IItemRendererXProps & IItemRendererProps> {
-  public static getBoundingClientRectForItem(item: FileEntry | Directory): DOMRect {
-    const divRef = FileTreeItem.itemIdToRefMap.get(item.id);
-    if (divRef) {
-      return divRef.getBoundingClientRect();
-    }
-    return null;
-  }
-
-  // ensure this syncs up with what goes in CSS, (em, px, % etc.) and what ultimately renders on the page
-  public static readonly renderHeight: number = 24;
-  private static readonly itemIdToRefMap: Map<number, HTMLDivElement> = new Map();
-  private static readonly refToItemIdMap: Map<number, HTMLDivElement> = new Map();
-  private readonly fileTreeEvent: IFileTreeXTriggerEvents;
-
-  constructor(props) {
-    super(props);
-    // used to apply decoration changes, you're welcome to use setState or other mechanisms as you see fit
-    this.forceUpdate = this.forceUpdate.bind(this);
-  }
-
-  public render() {
-    const { item, itemType, decorations } = this.props;
-    const isRenamePrompt = itemType === ItemType.RenamePrompt;
-    const isNewPrompt = itemType === ItemType.NewDirectoryPrompt || itemType === ItemType.NewFilePrompt;
-    const isDirExpanded = itemType === ItemType.Directory
-      ? (item as Directory).expanded
-      : itemType === ItemType.RenamePrompt && (item as RenamePromptHandle).target.type === FileType.Directory
-        ? ((item as RenamePromptHandle).target as Directory).expanded
-        : false;
-
-    const fileOrDir =
-            (itemType === ItemType.File ||
-                itemType === ItemType.NewFilePrompt ||
-                (itemType === ItemType.RenamePrompt && (item as RenamePromptHandle).target.constructor === FileEntry))
-              ? 'file'
-              : 'directory';
-
-    if (this.props.item.parent?.parent && this.props.item.parent?.path) {
-      this.props.item.resolvedPathCache = this.props.item.parent.path + '/' + this.props.item._metadata.data.id;
-    }
-
-    const itemChildren = item.children && item.children.length > 0 && item._metadata.data._type.indexOf('coll-') !== -1 ? '(' + item.children.length + ')' : '';
-    const extraClasses = item._metadata.data.extraClasses ? item._metadata.data.extraClasses.join(' ') : '';
-
-    const tags = item._metadata.data?.tags ?? [];
-
-    return (
-      <DoubleClickHandler onDoubleClick={this.handleDoubleClick} onSingleClick={this.handleClick}>
-        <div
-          className={cn('file-entry', {
-            renaming: isRenamePrompt,
-            prompt: isRenamePrompt || isNewPrompt,
-            new: isNewPrompt,
-          }, fileOrDir, decorations ? decorations.classlist : null, `depth-${item.depth}`, extraClasses)}
-          data-depth={item.depth}
-          onContextMenu={this.handleContextMenu}
-          onDragStart={this.handleDragStartItem}
-          onMouseEnter={this.handleMouseEnter}
-          onMouseLeave={this.handleMouseLeave}
-          onKeyDown={()=>{/* taken care by parent */}}
-          // required for rendering context menus when opened through context menu button on keyboard
-          ref={this.handleDivRef}
-          draggable={true}>
-
-          {!isNewPrompt && fileOrDir === 'directory' ?
-            <i className={cn('directory-toggle', isDirExpanded ? 'open' : '')} />
-            : null
-          }
-
-          <span className='file-label'>{
-            item._metadata?.data?.icon ?
-              <i className={cn('file-icon', item._metadata?.data?.icon ? item._metadata.data.icon : fileOrDir)} /> : null
-          }
-          <span className='file-name'>
-            { _.unescape(this.props.item.getMetadata('data')._label)}
-          </span>
-          <span className='children-count'>{itemChildren}</span>
-          {tags.map((tag)=>(
-            <div key={tag.text} className='file-tag' style={{'--tag-color': tag.color} as React.CSSProperties}>
-              {tag.text}
-            </div>
-          ))}
-          </span>
-        </div>
-      </DoubleClickHandler>
-    );
-  }
-
-  public componentDidMount() {
-    this.events = this.props.events;
-    this.props.item.resolvedPathCache = this.props.item.parent.path + '/' + this.props.item._metadata.data.id;
-    if (this.props.decorations) {
-      this.props.decorations.addChangeListener(this.forceUpdate);
-    }
-    this.setFileLoaded(this.props.item);
-  }
-
-  private readonly setFileLoaded = async (FileOrDir): Promise<void> => {
-    this.props.changeDirectoryCount(FileOrDir.parent);
-    if(FileOrDir._loaded !== true) {
-      this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'added', FileOrDir);
-    }
-    FileOrDir._loaded = true;
-  };
-
-  public componentWillUnmount() {
-    if (this.props.decorations) {
-      this.props.decorations.removeChangeListener(this.forceUpdate);
-    }
-  }
-
-  public componentDidUpdate(prevProps: IItemRendererXProps) {
-    if (prevProps.decorations) {
-      prevProps.decorations.removeChangeListener(this.forceUpdate);
-    }
-    if (this.props.decorations) {
-      this.props.decorations.addChangeListener(this.forceUpdate);
-    }
-  }
-
-  private readonly handleDivRef = (r: HTMLDivElement) => {
-    if (r === null) {
-      FileTreeItem.itemIdToRefMap.delete(this.props.item.id);
-    } else {
-      FileTreeItem.itemIdToRefMap.set(this.props.item.id, r);
-      FileTreeItem.refToItemIdMap.set(r, this.props.item);
-    }
-  };
-
-  private readonly handleContextMenu = (ev: React.MouseEvent) => {
-    const { item, itemType, onContextMenu } = this.props;
-    if (itemType === ItemType.File || itemType === ItemType.Directory) {
-      onContextMenu(ev, item as FileOrDir);
-    }
-  };
-
-  private readonly handleClick = (ev: React.MouseEvent) => {
-    const { item, itemType, onClick } = this.props;
-    if (itemType === ItemType.File || itemType === ItemType.Directory) {
-      onClick(ev, item as FileEntry, itemType);
-    }
-  };
-
-  private readonly handleDoubleClick = (ev: React.MouseEvent) => {
-    const { item, itemType, onDoubleClick } = this.props;
-    if (itemType === ItemType.File || itemType === ItemType.Directory) {
-      onDoubleClick(ev, item as FileEntry, itemType);
-    }
-  };
-
-  private readonly handleMouseEnter = (ev: React.MouseEvent) => {
-    const { item, itemType, onMouseEnter } = this.props;
-    if (itemType === ItemType.File || itemType === ItemType.Directory) {
-      onMouseEnter?.(ev, item as FileEntry);
-    }
-  };
-
-  private readonly handleMouseLeave = (ev: React.MouseEvent) => {
-    const { item, itemType, onMouseLeave } = this.props;
-    if (itemType === ItemType.File || itemType === ItemType.Directory) {
-      onMouseLeave?.(ev, item as FileEntry);
-    }
-  };
-
-  private readonly handleDragStartItem = (e: React.DragEvent) => {
-    const { item, itemType, events } = this.props;
-    if (itemType === ItemType.File || itemType === ItemType.Directory) {
-      const ref = FileTreeItem.itemIdToRefMap.get(item.id);
-      if (ref) {
-        events.dispatch(FileTreeXEvent.onTreeEvents, e, 'dragstart', item);
-      }
-    }
-  };
-}
-
-
-// ==================================================
-// pgsql/pgAdmin 4/web/pgadmin/static/js/components/PgTree/FileTreeX/index.tsx
-// ==================================================
-/////////////////////////////////////////////////////////////
-//
-// pgAdmin 4 - PostgreSQL Tools
-//
-// Copyright (C) 2013 - 2025, The pgAdmin Development Team
-// This software is released under the PostgreSQL Licence
-//
-//////////////////////////////////////////////////////////////
-import * as React from 'react';
-import {
-  FileTree,
-  Directory,
-  FileEntry,
-  ItemType,
-  IFileTreeHandle,
-  WatchEvent,
-  FileType,
-  IItemRendererProps,
-  FileOrDir
-} from 'react-aspen';
-import { Decoration, TargetMatchMode } from 'aspen-decorations';
-import { FileTreeItem } from '../FileTreeItem';
-import { Notificar, DisposablesComposite } from 'notificar';
-import { IFileTreeXHandle, IFileTreeXProps, FileTreeXEvent, IFileTreeXTriggerEvents } from '../types';
-import { KeyboardHotkeys } from '../services/keyboardHotkeys';
-import { TreeModelX } from '../TreeModelX';
-import AutoSizer from 'react-virtualized-auto-sizer';
-
-export class FileTreeX extends React.Component<IFileTreeXProps> {
-  private fileTreeHandle: IFileTreeXHandle;
-  private readonly activeFileDec: Decoration;
-  private readonly pseudoActiveFileDec: Decoration;
-  private activeFile: FileOrDir;
-  private pseudoActiveFile: FileOrDir;
-  private readonly wrapperRef: React.RefObject<HTMLDivElement> = React.createRef();
-  private readonly events: Notificar<FileTreeXEvent>;
-  private readonly disposables: DisposablesComposite;
-  private keyboardHotkeys: KeyboardHotkeys;
-  private fileTreeEvent: IFileTreeXTriggerEvents;
-  private readonly hoverTimeoutId: React.RefObject<number|null> = React.createRef<number|null>();
-  private readonly hoverDispatchId: React.RefObject<number|null> = React.createRef<number|null>();
-  constructor(props: IFileTreeXProps) {
-    super(props);
-    this.events = new Notificar();
-    this.disposables = new DisposablesComposite();
-    this.activeFileDec = new Decoration('active');
-    this.pseudoActiveFileDec = new Decoration('pseudo-active');
-  }
-
-  render() {
-    const { height, model, disableCache } = this.props;
-    const { decorations } = model;
-
-    return <div
-      onKeyDown={this.handleKeyDown}
-      className='file-tree'
-      onBlur={this.handleBlur}
-      onClick={this.handleClick}
-      onScroll={this.props.onScroll}
-      ref={this.wrapperRef}
-      style={{
-        height: height || 'calc(100vh - 60px)',
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        flex: 1
-      }}
-      tabIndex={-1}>
-      <AutoSizer onResize={this.onResize}>
-        {({ width, height }) => (
-          <FileTree
-            height={height}
-            width={width}
-            model={model}
-            itemHeight={FileTreeItem.renderHeight}
-            onReady={this.handleTreeReady}
-            disableCache={disableCache || false}
-          >
-            {(props: IItemRendererProps) => <FileTreeItem
-              item={props.item}
-              itemType={props.itemType}
-              decorations={decorations.getDecorations(props.item as FileEntry|Directory)}
-              onClick={this.handleItemClicked}
-              onDoubleClick={this.handleItemDoubleClicked}
-              onContextMenu={this.handleItemCtxMenu}
-              onMouseEnter={this.onItemMouseEnter}
-              onMouseLeave={this.onItemMouseLeave}
-              changeDirectoryCount={this.changeDirectoryCount}
-              events={this.events}/>}
-          </FileTree>
-        )}
-      </AutoSizer>
-    </div>;
-  }
-
-  public componentDidMount() {
-    for(const child of this.props.model.root.children) {
-      this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'loaded', child);
-    }
-  }
-
-  componentWillUnmount() {
-    const { model } = this.props;
-    model.decorations.removeDecoration(this.activeFileDec);
-    model.decorations.removeDecoration(this.pseudoActiveFileDec);
-    this.disposables.dispose();
-  }
-
-  private readonly handleTreeEvent = () => {
-    this.fileTreeEvent = this.props.onEvent;
-  };
-
-  private readonly handleTreeReady = (handle: IFileTreeHandle) => {
-    const { onReady, model } = this.props;
-    const scrollDiv = this.wrapperRef.current?.querySelector('div')?.querySelector('div');
-    if(this.props.onScroll) {
-      scrollDiv?.addEventListener('scroll', (ev: any)=>this.props.onScroll?.(ev));
-    }
-
-    this.fileTreeHandle = {
-      ...handle,
-      getModel: () => this.props.model,
-      getActiveFile: () => this.activeFile,
-      setActiveFile: this.setActiveFile,
-      getPseudoActiveFile: () => this.pseudoActiveFile,
-      setPseudoActiveFile: this.setPseudoActiveFile,
-      toggleDirectory: this.toggleDirectory,
-      closeDir: this.closeDir,
-      newFile: async (dirOrPath: Directory | string) => this.supervisePrompt(await handle.promptNewFile(dirOrPath as string)),
-      newFolder: async (dirOrPath: Directory | string) => this.supervisePrompt(await handle.promptNewDirectory(dirOrPath as string)),
-      onBlur: (callback) => this.events.add(FileTreeXEvent.OnBlur, callback),
-      hasDirectFocus: () => this.wrapperRef.current === document.activeElement,
-      first: this.first,
-      parent: this.parent,
-      hasParent: this.hasParent,
-      isOpen: this.isOpen,
-      isClosed: this.isClosed,
-      itemData: this.itemData,
-      children: this.children,
-      getItemFromDOM: this.getItemFromDOM,
-      getDOMFromItem: this.getDOMFromItem,
-      onTreeEvents: (callback) => this.events.add(FileTreeXEvent.onTreeEvents, callback),
-      addIcon: this.addIcon,
-      addCssClass: this.addCssClass,
-      create: this.create,
-      remove: this.remove,
-      update: this.update,
-      refresh: this.refresh,
-      setLabel: this.setLabel,
-      unload: this.unload,
-      deSelectActiveFile: this.deSelectActiveFile,
-      resize: this.resize,
-      showLoader: this.showLoader,
-      hideLoader: this.hideLoader,
-    };
-
-    model.decorations.addDecoration(this.activeFileDec);
-    model.decorations.addDecoration(this.pseudoActiveFileDec);
-
-    this.disposables.add(this.fileTreeHandle.onDidChangeModel((prevModel: TreeModelX, newModel: TreeModelX) => {
-      this.setActiveFile(null);
-      this.setPseudoActiveFile(null);
-      prevModel.decorations.removeDecoration(this.activeFileDec);
-      prevModel.decorations.removeDecoration(this.pseudoActiveFileDec);
-      newModel.decorations.addDecoration(this.activeFileDec);
-      newModel.decorations.addDecoration(this.pseudoActiveFileDec);
-    }));
-
-    this.disposables.add(this.fileTreeHandle.onBlur(() => {
-      this.setPseudoActiveFile(null);
-    }));
-
-    this.keyboardHotkeys = new KeyboardHotkeys(this.fileTreeHandle, this.events);
-
-    if (typeof onReady === 'function') {
-      onReady(this.fileTreeHandle);
-    }
-  };
-
-  private readonly onItemMouseEnter = (ev: React.MouseEvent, item: FileEntry | Directory) => {
-    clearTimeout(this.hoverDispatchId.current??undefined);
-    (this.hoverDispatchId as any).current = setTimeout(()=>{
-      clearTimeout(this.hoverTimeoutId.current??undefined);
-      this.events.dispatch(FileTreeXEvent.onTreeEvents, ev, 'hovered', item);
-    }, 500);
-  };
-
-  private readonly onItemMouseLeave = (ev: React.MouseEvent) => {
-    clearTimeout(this.hoverTimeoutId.current??undefined);
-    clearTimeout(this.hoverDispatchId.current??undefined);
-    (this.hoverTimeoutId as any).current = setTimeout(()=>{
-      this.events.dispatch(FileTreeXEvent.onTreeEvents, ev, 'hovered', null);
-    }, 100);
-  };
-
-  private readonly setActiveFile = async (fileOrDirOrPath: FileOrDir | string, ensureVisible, align): Promise<void> => {
-    const fileH = typeof fileOrDirOrPath === 'string'
-      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
-      : fileOrDirOrPath;
-
-    if (fileH === this.props.model.root) { return; }
-    if (this.activeFile !== fileH) {
-      if (this.activeFile) {
-        this.activeFileDec.removeTarget(this.activeFile);
-      }
-      if (fileH) {
-        this.activeFileDec.addTarget(fileH as Directory, TargetMatchMode.Self);
-      }
-      this.activeFile = fileH;
-      this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'selected', fileH);
-
-      if (fileH && ensureVisible === true) {
-        const alignTree = align ?? 'auto';
-        await this.fileTreeHandle.ensureVisible(fileH, alignTree);
-      }
-    }
-  };
-
-  private readonly ensureVisible = async (fileOrDirOrPath: FileOrDir | string): Promise<void> => {
-    const fileH = typeof fileOrDirOrPath === 'string'
-      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
-      : fileOrDirOrPath;
-
-    if (fileH) {
-      await this.fileTreeHandle.ensureVisible(fileH);
-    }
-  };
-
-  private readonly deSelectActiveFile = async (fileOrDirOrPath: FileOrDir | string): Promise<void> => {
-    const fileH = typeof fileOrDirOrPath === 'string'
-      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
-      : fileOrDirOrPath;
-
-    if (fileH === this.props.model.root) { return; }
-    if (this.activeFile === fileH) {
-      this.activeFileDec.removeTarget(this.activeFile);
-      this.activeFile = null;
-    }
-
-    this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'deselected', fileH);
-  };
-
-  private readonly setPseudoActiveFile = async (fileOrDirOrPath: FileOrDir | string): Promise<void> => {
-    const fileH = typeof fileOrDirOrPath === 'string'
-      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
-      : fileOrDirOrPath;
-
-    if (fileH === this.props.model.root) { return; }
-    if (this.pseudoActiveFile !== fileH) {
-      if (this.pseudoActiveFile) {
-        this.pseudoActiveFileDec.removeTarget(this.pseudoActiveFile);
-      }
-      if (fileH) {
-        this.pseudoActiveFileDec.addTarget(fileH as Directory, TargetMatchMode.Self);
-      }
-      this.pseudoActiveFile = fileH;
-    }
-    if (fileH) {
-      await this.fileTreeHandle.ensureVisible(fileH);
-    }
-    this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'selected', fileH);
-  };
-
-  private readonly create = async (parentDir, itemData): Promise<void> => {
-    if (parentDir == undefined || parentDir == null) {
-      parentDir = this.props.model.root;
-    }
-    const {create, model } = this.props;
-    const isOpen = parentDir.isExpanded;
-    let maybeFile = undefined;
-
-    if (isOpen && (parentDir._children == null || parentDir._children.length == 0)) {
-      await this.fileTreeHandle.closeDirectory(parentDir as Directory);
-    }
-    if (!parentDir.isExpanded && (parentDir._children == null || parentDir._children.length == 0)) {
-      await this.fileTreeHandle.openDirectory(parentDir as Directory);
-    } else {
-      await this.fileTreeHandle.openDirectory(parentDir as Directory);
-      maybeFile = await create(parentDir.path, itemData);
-      if (maybeFile?.type && maybeFile?.name) {
-        model.root.inotify({
-          type: WatchEvent.Added,
-          directory: parentDir.path,
-          file: maybeFile,
-        });
-      }
-    }
-    this.changeDirectoryCount(parentDir);
-    const newItem = parentDir._children.find((c) => c._metadata.data.id === itemData.id);
-    newItem.resolvedPathCache = newItem.parent.path + '/' + newItem._metadata.data.id;
-    return newItem;
-  };
-
-  private readonly update = async (item, itemData): Promise<void> => {
-    item._metadata.data = itemData;
-    await this.props.update(item.path, itemData);
-    this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'updated', item);
-  };
-
-  private readonly refresh = async (item): Promise<void> => {
-    const isOpen = item.isExpanded;
-    if (item.children && item.children.length > 0) {
-      for(const entry of item.children) {
-        await this.remove(entry).then(() => {/*intentional*/}, () => {console.warn('Error removing item');});
-      }
-    }
-    if (isOpen) {
-      const ref = FileTreeItem.itemIdToRefMap.get(item.id);
-
-      if (ref) {
-        this.showLoader(ref);
-      }
-
-      await this.fileTreeHandle.closeDirectory(item as Directory);
-      await this.fileTreeHandle.openDirectory(item as Directory);
-      await this.changeResolvePath(item as Directory);
-      this.changeDirectoryCount(item);
-
-      if (ref) {
-        this.hideLoader(ref);
-      }
-    }
-  };
-
-  private readonly unload = async (item): Promise<void> => {
-    const isOpen = item.isExpanded;
-    if (item.children && item.children.length > 0) {
-      for(const entry of item.children) {
-        await this.remove(entry).then(() => {/*intentional*/}, error => {console.warn(error);});
-      }
-    }
-    if (isOpen) {
-      await this.fileTreeHandle.closeDirectory(item as Directory);
-      this.changeDirectoryCount(item);
-    }
-  };
-
-  private readonly remove = async (item): Promise<void> => {
-    const {remove, model } = this.props;
-    const path = item.path;
-    await remove(path, false);
-    const dirName = model.root.pathfx.dirname(path);
-    const fileName = model.root.pathfx.basename(path);
-    const parent = item.parent;
-    if (dirName === parent.path) {
-      const item_1 = parent._children.find((c) => c._metadata && c._metadata.data.id === fileName);
-      if (item_1) {
-        parent.unlinkItem(item_1);
-        if (parent._children.length == 0) { parent._children = null; }
-        this.changeDirectoryCount(parent);
-        this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'removed', item);
-      }
-      else {
-        console.warn('Item not found');
-      }
-    }
-  };
-
-  private readonly first = async (fileOrDirOrPath: FileOrDir | string) => {
-    const fileH = typeof fileOrDirOrPath === 'string'
-      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
-      : fileOrDirOrPath;
-
-    if (fileH === undefined || fileH === null) { return this.props.model.root.children[0]; }
-
-    if (fileH.branchSize > 0) {
-      return fileH.children[0];
-    }
-    return null;
-  };
-
-  private readonly parent = async (fileOrDirOrPath: FileOrDir | string) => {
-    const fileH = typeof fileOrDirOrPath === 'string'
-      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
-      : fileOrDirOrPath;
-
-    if (fileH === FileType.Directory || fileH === FileType.File) {
-      return fileH.parent;
-    }
-
-    return null;
-  };
-
-
-  private readonly hasParent = async (fileOrDirOrPath: FileOrDir | string) => {
-    const fileH = typeof fileOrDirOrPath === 'string'
-      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
-      : fileOrDirOrPath;
-
-    if (fileH === FileType.Directory || fileH === FileType.File) {
-      return fileH.parent;
-    }
-
-    return false;
-  };
-
-  private readonly children = async (fileOrDirOrPath: FileOrDir | string) => {
-    const fileH = typeof fileOrDirOrPath === 'string'
-      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
-      : fileOrDirOrPath;
-
-    if (fileH === FileType.Directory) {
-      return fileH.children;
-    }
-
-    return null;
-  };
-
-
-  private readonly isOpen = async (fileOrDirOrPath: FileOrDir | string) => {
-    const fileH = typeof fileOrDirOrPath === 'string'
-      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
-      : fileOrDirOrPath;
-
-    if (fileH === FileType.Directory) {
-      return fileH.isExpanded;
-    }
-
-    return false;
-  };
-
-  private readonly isClosed = async (fileOrDirOrPath: FileOrDir | string) => {
-    const fileH = typeof fileOrDirOrPath === 'string'
-      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
-      : fileOrDirOrPath;
-
-    if (fileH === FileType.Directory || fileH === FileType.File) {
-      return !fileH.isExpanded;
-    }
-
-    return false;
-  };
-
-  private readonly itemData = async (fileOrDirOrPath: FileOrDir | string) => {
-    const fileH = typeof fileOrDirOrPath === 'string'
-      ? await this.fileTreeHandle.getFileHandle(fileOrDirOrPath)
-      : fileOrDirOrPath;
-
-    if (fileH === FileType.Directory || fileH === FileType.File) {
-      return fileH._metadata.data;
-    }
-
-    return null;
-  };
-
-  private readonly setLabel = async(pathOrDir: string | Directory, label: string): Promise<void> => {
-    const dir = typeof pathOrDir === 'string'
-      ? await this.fileTreeHandle.getFileHandle(pathOrDir)
-      : pathOrDir;
-
-    const ref = FileTreeItem.itemIdToRefMap.get(dir.id);
-    if (ref) {
-      ref.style.background = 'none';
-      const label$ = ref.querySelector('span.file-name') as HTMLDivElement;
-
-      if (label$) {
-        if (typeof(label) == 'object' && label.label) {
-          label = label.label;
-        }
-        label$.innerHTML = label;
-      }
-
-    }
-
-  };
-
-  private readonly changeDirectoryCount = async(pathOrDir: string | Directory): Promise<void> => {
-    const dir = typeof pathOrDir === 'string'
-      ? await this.fileTreeHandle.getFileHandle(pathOrDir)
-      : pathOrDir;
-
-    if (dir.type === FileType.Directory && dir._metadata.data && dir._metadata.data.is_collection === true) {
-      const ref = FileTreeItem.itemIdToRefMap.get(dir.id);
-      if (ref) {
-        ref.style.background = 'none';
-        const label$ = ref.querySelector('span.children-count') as HTMLDivElement;
-        if(dir.children && dir.children.length > 0) {
-          label$.innerHTML = '(' + dir.children.length + ')';
-        } else {
-          label$.innerHTML = '';
-        }
-      }
-    }
-
-  };
-
-  private readonly closeDir = async (pathOrDir: string | Directory) => {
-    const dir = typeof pathOrDir === 'string'
-      ? await this.fileTreeHandle.getFileHandle(pathOrDir)
-      : pathOrDir;
-
-    if (dir.type === FileType.Directory) {
-      if ((dir as Directory).expanded) {
-        this.fileTreeHandle.closeDirectory(dir as Directory);
-        this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'closed', dir);
-
-      }
-    }
-  };
-
-  private readonly toggleDirectory = async (pathOrDir: string | Directory) => {
-    const dir = typeof pathOrDir === 'string'
-      ? await this.fileTreeHandle.getFileHandle(pathOrDir)
-      : pathOrDir;
-
-    if (dir.type === FileType.Directory) {
-      if ((dir as Directory).expanded) {
-        this.fileTreeHandle.closeDirectory(dir as Directory);
-        this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'closed', dir);
-
-      } else {
-        const ref = FileTreeItem.itemIdToRefMap.get(dir.id);
-        if (ref) {
-          this.showLoader(ref);
-        }
-
-        await this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'beforeopen', dir);
-        await this.fileTreeHandle.openDirectory(dir as Directory);
-        await this.changeResolvePath(dir as Directory);
-
-        if (ref) {
-          this.hideLoader(ref);
-        }
-
-        this.events.dispatch(FileTreeXEvent.onTreeEvents, window.event, 'opened', dir);
-      }
-    }
-  };
-
-  private readonly addIcon = async (pathOrDir: string | Directory, icon) => {
-    const dir = typeof pathOrDir === 'string'
-      ? await this.fileTreeHandle.getFileHandle(pathOrDir)
-      : pathOrDir;
-
-    const ref = FileTreeItem.itemIdToRefMap.get(dir.id);
-    if (ref) {
-      const label$ = ref.querySelector('.file-label i') as HTMLDivElement;
-      label$.className = icon.icon;
-    }
-
-  };
-
-  private readonly addCssClass = async (pathOrDir: string | Directory, cssClass) => {
-    const dir = typeof pathOrDir === 'string'
-      ? await this.fileTreeHandle.getFileHandle(pathOrDir)
-      : pathOrDir;
-
-    const ref = FileTreeItem.itemIdToRefMap.get(dir.id);
-    if (ref) {
-      ref.classList.add(cssClass);
-      if (!dir._metadata.data.extraClasses)
-        dir._metadata.data.extraClasses = [];
-
-      dir._metadata.data.extraClasses.push(cssClass);
-    }
-
-  };
-
-  private readonly showLoader = (ref: HTMLDivElement) => {
-    // get label ref and add loading class
-    ref.style.background = 'none';
-    const label$ = ref.querySelector('i.directory-toggle') as HTMLDivElement;
-    if (label$)  label$.classList.add('loading');
-  };
-
-  private readonly hideLoader = (ref: HTMLDivElement) => {
-    // remove loading class.
-    ref.style.background = 'none';
-    const label$ = ref.querySelector('i.directory-toggle') as HTMLDivElement;
-    if (label$) label$.classList.remove('loading');
-  };
-
-  private readonly handleBlur = () => {
-    this.events.dispatch(FileTreeXEvent.OnBlur);
-  };
-
-  private readonly handleItemClicked = async (ev: React.MouseEvent, item: FileOrDir, type: ItemType) => {
-    if (type === ItemType.Directory && ev.target.className.includes('directory-toggle')) {
-      await this.toggleDirectory(item as Directory);
-    }
-    await this.setActiveFile(item as FileEntry);
-
-  };
-
-  private readonly handleItemDoubleClicked = async (ev: React.MouseEvent, item: FileOrDir) => {
-    await this.toggleDirectory(item as Directory);
-    await this.setActiveFile(item as FileEntry);
-
-  };
-
-  private readonly getItemFromDOM = (clientReact) => {
-    return FileTreeItem.refToItemIdMap.get(clientReact);
-  };
-
-  private readonly getDOMFromItem = (item: FileOrDir) => {
-    return FileTreeItem.itemIdToRefMap.get(item.id);
-  };
-
-  private readonly handleClick = (ev: React.MouseEvent) => {
-    // clicked in "blank space"
-    if (ev.currentTarget === ev.target) {
-      this.setPseudoActiveFile(null);
-    }
-  };
-
-  private readonly handleItemCtxMenu = (ev: React.MouseEvent, item: FileOrDir) => {
-    return this.props.onContextMenu?.(ev, item);
-  };
-
-  private readonly handleKeyDown = (ev: React.KeyboardEvent) => {
-    return this.keyboardHotkeys.handleKeyDown(ev);
-  };
-
-  private readonly onResize = () => {
-    if (this.wrapperRef.current != null) {
-      this.resize();
-    }
-  };
-
-  private readonly resize = (scrollX, scrollY) => {
-    const scrollXPos = scrollX || 0;
-    const scrollYPos = scrollY || this.props.model.state.scrollOffset;
-    const div = this.wrapperRef.current.querySelector('div').querySelector('div') as HTMLDivElement;
-    if (div) {
-      div.scroll(scrollXPos, scrollYPos);
-    }
-
-  };
-
-  private readonly changeResolvePath = async (item: FileOrDir): Promise<void> => {
-    // Change the path as per pgAdmin requirement: Item Id wise
-    if (item.type === FileType.File) {
-      item.resolvedPathCache = item.parent.path + '/' + item._metadata.data.id;
-    }
-    if (item.type === FileType.Directory && item.children && item.children.length > 0) {
-      for(const entry of item.children) {
-        entry.resolvedPathCache = entry.parent.path + '/' + entry._metadata.data.id;
-      }
-    }
-  };
-}
-
-export { IFileTreeXHandle, IFileTreeXProps };
-
-
-// ==================================================
-// pgsql/pgAdmin 4/web/pgadmin/static/js/components/PgTree/index.ts
-// ==================================================
-export { FileTreeX } from './FileTreeX';
-export { TreeModelX } from './TreeModelX';
-export { IFileTreeXHandle, IFileTreeXProps, FileTreeXEvent, IFileTreeXTriggerEvents } from './types';
-
-
-// ==================================================
-// pgsql/pgAdmin 4/web/pgadmin/static/js/components/PgTree/services/keyboardHotkeys.ts
-// ==================================================
-import { Notificar } from 'notificar';
-import { FileEntry, Directory, FileType } from 'react-aspen';
-import { FileTreeXEvent, IFileTreeXHandle } from '../types';
-
-export class KeyboardHotkeys {
-  private readonly hotkeyActions = {
-    'ArrowUp': () => this.jumpToPrevItem(),
-    'ArrowDown': () => this.jumpToNextItem(),
-    'ArrowRight': () => this.expandOrJumpToFirstChild(),
-    'ArrowLeft': () => this.collapseOrJumpToFirstParent(),
-    'Space': () => this.toggleDirectoryExpand(),
-    'Enter': () => this.selectFileOrToggleDirState(),
-    'Home': () => this.jumpToFirstItem(),
-    'End': () => this.jumpToLastItem(),
-    'Escape': () => this.resetSteppedOrSelectedItem(),
-    'Ctrl+KeyC': () => this.copyEntry(),
-  };
-
-  constructor(private readonly fileTreeX: IFileTreeXHandle, private readonly events: Notificar<FileTreeXEvent>) { }
-
-  public handleKeyDown = (ev: React.KeyboardEvent) => {
-    if (!this.fileTreeX.hasDirectFocus()) {
-      return false;
-    }
-    let { code } = ev.nativeEvent;
-
-    if((ev.nativeEvent.ctrlKey || ev.nativeEvent.metaKey) && ev.nativeEvent.key !== 'Control') {
-      code = `Ctrl+${code}`;
-    }
-    if (code in this.hotkeyActions) {
-      ev.preventDefault();
-      this.hotkeyActions[code]();
-      return true;
-    }
-  };
-
-  private readonly jumpToFirstItem = (): void => {
-    const { root } = this.fileTreeX.getModel();
-    this.fileTreeX.setActiveFile(root.getFileEntryAtIndex(0), true);
-  };
-
-  private readonly jumpToLastItem = (): void => {
-    const { root } = this.fileTreeX.getModel();
-    this.fileTreeX.setActiveFile(root.getFileEntryAtIndex(root.branchSize - 1), true);
-  };
-
-  private readonly jumpToNextItem = (): void => {
-    const { root } = this.fileTreeX.getModel();
-    let currentPseudoActive = this.fileTreeX.getActiveFile();
-    if (!currentPseudoActive) {
-      const selectedFile = this.fileTreeX.getActiveFile();
-      if (selectedFile) {
-        currentPseudoActive = selectedFile;
-      } else {
-        return this.jumpToFirstItem();
-      }
-    }
-    const idx = root.getIndexAtFileEntry(currentPseudoActive);
-    if (idx + 1 > root.branchSize) {
-      return this.jumpToFirstItem();
-    } else if (idx > -1) {
-      this.fileTreeX.setActiveFile(root.getFileEntryAtIndex(idx + 1), true);
-    }
-  };
-
-  private readonly jumpToPrevItem = (): void => {
-    const { root } = this.fileTreeX.getModel();
-    let currentPseudoActive = this.fileTreeX.getActiveFile();
-    if (!currentPseudoActive) {
-      const selectedFile = this.fileTreeX.getActiveFile();
-      if (selectedFile) {
-        currentPseudoActive = selectedFile;
-      } else {
-        return this.jumpToLastItem();
-      }
-    }
-    const idx = root.getIndexAtFileEntry(currentPseudoActive);
-    if (idx - 1 < 0) {
-      return this.jumpToLastItem();
-    } else if (idx > -1) {
-      this.fileTreeX.setActiveFile(root.getFileEntryAtIndex(idx - 1), true);
-    }
-  };
-
-  private expandOrJumpToFirstChild(): void {
-    const currentPseudoActive = this.fileTreeX.getActiveFile();
-    if (currentPseudoActive && currentPseudoActive.type === FileType.Directory) {
-      if ((currentPseudoActive as Directory).expanded) {
-        return this.jumpToNextItem();
-      } else {
-        this.fileTreeX.openDirectory(currentPseudoActive as Directory);
-      }
-    }
-  }
-
-  private collapseOrJumpToFirstParent(): void {
-    const currentPseudoActive = this.fileTreeX.getActiveFile();
-    if (currentPseudoActive) {
-      if (currentPseudoActive.type === FileType.Directory && (currentPseudoActive as Directory).expanded) {
-        return this.fileTreeX.closeDirectory(currentPseudoActive as Directory);
-      }
-      this.fileTreeX.setActiveFile(currentPseudoActive.parent, true);
-    }
-  }
-
-  private readonly selectFileOrToggleDirState = (): void => {
-    const currentPseudoActive = this.fileTreeX.getActiveFile();
-    if (!currentPseudoActive) { return; }
-    if (currentPseudoActive.type === FileType.Directory) {
-      this.fileTreeX.toggleDirectory(currentPseudoActive as Directory);
-    } else if (currentPseudoActive.type === FileType.File) {
-      this.fileTreeX.setActiveFile(currentPseudoActive as FileEntry, true);
-    }
-  };
-
-  private readonly toggleDirectoryExpand = (): void => {
-    const currentPseudoActive = this.fileTreeX.getActiveFile();
-    if (!currentPseudoActive) { return; }
-    if (currentPseudoActive.type === FileType.Directory) {
-      this.fileTreeX.toggleDirectory(currentPseudoActive as Directory);
-    }
-  };
-
-  private readonly resetSteppedOrSelectedItem = (): void => {
-    const currentPseudoActive = this.fileTreeX.getActiveFile();
-    if (currentPseudoActive) {
-      return this.resetSteppedItem();
-    }
-    this.fileTreeX.setActiveFile(null);
-  };
-
-  private readonly resetSteppedItem = () => {
-    this.fileTreeX.setActiveFile(null);
-  };
-
-  private readonly copyEntry = () => {
-    const currentPseudoActive = this.fileTreeX.getActiveFile();
-    this.events.dispatch(FileTreeXEvent.onTreeEvents, null, 'copied', currentPseudoActive);
-  };
-}
-
-
-// ==================================================
-// pgsql/pgAdmin 4/web/pgadmin/static/js/components/PgTree/TreeModelX/index.ts
-// ==================================================
-import { TreeModel, IBasicFileSystemHost, Root } from 'react-aspen';
-import { DecorationsManager } from 'aspen-decorations';
-
-export class TreeModelX extends TreeModel {
-  public readonly decorations: DecorationsManager;
-  constructor(host: IBasicFileSystemHost, mountPath: string) {
-    super(host, mountPath);
-    this.decorations = new DecorationsManager(this.root as Root);
-  }
-}
-
-
-// ==================================================
-// pgsql/pgAdmin 4/web/pgadmin/static/js/components/PgTree/types.ts
-// ==================================================
-import { IFileTreeHandle, FileEntry, Directory, FileType, IFileEntryItem, IItemRenderer, FileOrDir } from 'react-aspen';
-import { IDisposable } from 'notificar';
-import { TreeModelX } from './TreeModelX';
-import React from 'react';
-
-
-export interface IFileTreeXTriggerEvents {
-    onEvent(event: string, path: string): boolean | Promise<boolean>
-}
-
-export interface IItemRendererX extends IItemRenderer {
-    getBoundingClientRectForItem(item: FileEntry | Directory): DOMRect
-}
-
-// Here imagination is your limit! IFileTreeHandle has core low-level features you can build on top of as your application needs
-export interface IFileTreeXHandle extends IFileTreeHandle {
-    getActiveFile(): FileEntry | Directory
-    setActiveFile(path: string)
-    setActiveFile(file: FileEntry)
-    setActiveFile(dir: Directory)
-
-    getPseudoActiveFile(): FileEntry | Directory
-    setPseudoActiveFile(path: string)
-    setPseudoActiveFile(file: FileEntry)
-    setPseudoActiveFile(dir: Directory)
-
-    rename(path: string)
-    rename(file: FileEntry)
-    rename(dir: Directory)
-
-    newFile(dirpath: string)
-    newFile(dir: Directory)
-    newFolder(dirpath: string)
-    newFolder(dir: Directory)
-    toggleDirectory(path: string)
-    toggleDirectory(dir: Directory)
-
-    first(file: FileEntry): FileEntry | Directory
-    first(dir: Directory): FileEntry | Directory
-    first(): FileEntry | Directory
-
-    parent(file: FileEntry): Directory
-    parent(dir: Directory): Directory
-
-    hasParent(file: FileEntry): boolean
-    hasParent(dir: Directory): boolean
-
-    isOpen(file: FileEntry): boolean
-    isOpen(dir: Directory): boolean
-
-    isClosed(file: FileEntry): boolean
-    isClosed(dir: Directory): boolean
-
-    itemData(file: FileEntry): array
-    itemData(dir: Directory): array
-
-    children(file: FileEntry): array
-    children(dir: Directory): array
-
-    getModel(): TreeModelX
-    /**
-     * If document.activeElement === filetree wrapper element
-     */
-    hasDirectFocus(): boolean
-
-    // events
-    onBlur(callback: () => void): IDisposable
-}
-
-export interface IFileTreeXProps {
-    height: number
-    width: number
-    model: TreeModelX
-
-    /**
-     * Same as unix's `mv` command as in `mv [SOURCE] [DEST]`
-     */
-    mv: (oldPath: string, newPath: string) => boolean | Promise<boolean>
-
-    /**
-     * Amalgam of unix's `mkdir` and `touch` command
-     */
-    create: (path: string, type: FileType) => IFileEntryItem | Promise<IFileEntryItem>
-    onReady?: (handle: IFileTreeXHandle) => void
-    onEvent?: (event: IFileTreeXTriggerEvents) => void
-    onContextMenu?: (ev: React.MouseEvent, item?: FileOrDir) => void
-    onScroll?: (ev: React.UIEvent<HTMLDivElement>) => void
-}
-
-export enum FileTreeXEvent {
-    OnBlur,
-    onTreeEvents,
-}
-
-
-// ==================================================
-// pgsql/pgAdmin 4/web/pgadmin/static/js/tree/preference_nodes.ts
-// ==================================================
-/////////////////////////////////////////////////////////////
-//
-// pgAdmin 4 - PostgreSQL Tools
-//
-// Copyright (C) 2013 - 2025, The pgAdmin Development Team
-// This software is released under the PostgreSQL Licence
-//
-//////////////////////////////////////////////////////////////
-
-import * as BrowserFS from 'browserfs';
-import pgAdmin from 'sources/pgadmin';
-import _ from 'lodash';
-import { FileType } from 'react-aspen';
-import { findInTree } from './tree';
-
-export class ManagePreferenceTreeNodes {
-  constructor(data) {
-    this.tree = {};
-    this.tempTree = new TreeNode(undefined, {});
-    this.treeData = data || [];
-  }
-
-  public init = (_root: string) => new Promise((res) => {
-    const node = { parent: null, children: [], data: null };
-    this.tree = {};
-    this.tree[_root] = { name: 'root', type: FileType.Directory, metadata: node };
-    res();
-  });
-
-  public updateNode = (_path, _data) => new Promise((res) => {
-    const item = this.findNode(_path);
-    if (item) {
-      item.name = _data.label;
-      item.metadata.data = _data;
-    }
-    res(true);
-  });
-
-  public removeNode = async (_path) => {
-    const item = this.findNode(_path);
-
-    if (item?.parentNode) {
-      item.children = [];
-      item.parentNode.children.splice(item.parentNode.children.indexOf(item), 1);
-    }
-    return true;
-  };
-
-  findNode(path) {
-    if (path === null || path === undefined || path.length === 0 || path == '/preferences') {
-      return this.tempTree;
-    }
-
-    return findInTree(this.tempTree, path);
-  }
-
-  public addNode = (_parent: string, _path: string, _data: []) => new Promise((res) => {
-    _data.type = _data.inode ? FileType.Directory : FileType.File;
-    _data._label = _data.label;
-    _data.label = _.escape(_data.label);
-
-    _data.is_collection = isCollectionNode(_data._type);
-    const nodeData = { parent: _parent, children: _data?.children ? _data.children : [], data: _data };
-
-    const tmpParentNode = this.findNode(_parent);
-    const treeNode = new TreeNode(_data.id, _data, {}, tmpParentNode, nodeData, _data.type);
-
-    if (tmpParentNode !== null && tmpParentNode !== undefined) tmpParentNode.children.push(treeNode);
-
-    res(treeNode);
-  });
-
-  public readNode = (_path: string) => new Promise<string[]>((res, rej) => {
-    const temp_tree_path = _path,
-      node = this.findNode(_path);
-    node.children = [];
-
-    if (node && node.children.length > 0) {
-      if (!node.type === FileType.File) {
-        rej(new Error('It\'s a leaf node'));
-      }
-      else if (node?.children.length != 0) {
-        res(node.children);
-      }
-    }
-
-    const self = this;
-
-    async function loadData() {
-      const Path = BrowserFS.BFSRequire('path');
-      const fill = async (tree) => {
-        for (const idx in tree) {
-          const _node = tree[idx];
-          const _pathl = Path.join(_path, _node.id);
-          await self.addNode(temp_tree_path, _pathl, _node);
-        }
-      };
-
-      if (node && !_.isUndefined(node.id)) {
-        const _data = self.treeData.find((el) => el.id == node.id);
-        const subNodes = [];
-
-        _data.childrenNodes.forEach(element => {
-          subNodes.push(element);
-        });
-
-        await fill(subNodes);
-      } else {
-        await fill(self.treeData);
-      }
-
-      self.returnChildrens(node, res);
-    }
-    loadData();
-  });
-
-  public returnChildrens = (node: any, res: any)  =>{
-    if (node?.children.length > 0) return res(node.children);
-    else return res(null);
-  };
-}
-
-
-
-export class TreeNode {
-  constructor(id, data, domNode, parent, metadata, type) {
-    this.id = id;
-    this.data = data;
-    this.setParent(parent);
-    this.children = [];
-    this.domNode = domNode;
-    this.metadata = metadata;
-    this.name = metadata ? metadata.data.label : '';
-    this.type = type || undefined;
-  }
-
-  hasParent() {
-    return this.parentNode !== null && this.parentNode !== undefined;
-  }
-
-  parent() {
-    return this.parentNode;
-  }
-
-  setParent(parent) {
-    this.parentNode = parent;
-    this.path = this.id;
-    if (this.id)
-      if (parent !== null && parent !== undefined && parent.path !== undefined) {
-        this.path = parent.path + '/' + this.id;
-      } else {
-        this.path = '/preferences/' + this.id;
-      }
-  }
-
-  getData() {
-    if (this.data === undefined) {
-      return undefined;
-    } else if (this.data === null) {
-      return null;
-    }
-    return {...this.data};
-  }
-
-  getHtmlIdentifier() {
-    return this.domNode;
-  }
-
-  /*
-   * Find the ancestor with matches this condition
-   */
-  ancestorNode(condition) {
-    let node;
-
-    while (this.hasParent()) {
-      node = this.parent();
-      if (condition(node)) {
-        return node;
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Given a condition returns true if the current node
-   * or any of the parent nodes condition result is true
-   */
-  anyFamilyMember(condition) {
-    if (condition(this)) {
-      return true;
-    }
-
-    return this.ancestorNode(condition) !== null;
-  }
-  anyParent(condition) {
-    return this.ancestorNode(condition) !== null;
-  }
-
-  reload(tree) {
-    return new Promise((resolve) => {
-      this.unload(tree)
-        .then(() => {
-          tree.setInode(this.domNode);
-          tree.deselect(this.domNode);
-          setTimeout(() => {
-            tree.selectNode(this.domNode);
-          }, 0);
-          resolve();
-        });
-    });
-  }
-
-  unload(tree) {
-    return new Promise((resolve, reject) => {
-      this.children = [];
-      tree.unload(this.domNode)
-        .then(
-          () => {
-            resolve(true);
-          },
-          () => {
-            reject(new Error());
-          });
-    });
-  }
-
-
-  open(tree, suppressNoDom) {
-    return new Promise((resolve, reject) => {
-      if (suppressNoDom && (this.domNode == null || typeof (this.domNode) === 'undefined')) {
-        resolve(true);
-      } else if (tree.isOpen(this.domNode)) {
-        resolve(true);
-      } else {
-        tree.open(this.domNode).then(() => resolve(true), () => reject(new Error(true)));
-      }
-    });
-  }
-
-}
-
-export function isCollectionNode(node) {
-  if (pgAdmin.Browser.Nodes && node in pgAdmin.Browser.Nodes) {
-    if (pgAdmin.Browser.Nodes[node].is_collection !== undefined) return pgAdmin.Browser.Nodes[node].is_collection;
-    else return false;
-  }
-  return false;
-}
-
-
-// ==================================================
-// pgsql/pgAdmin 4/web/pgadmin/static/js/tree/tree_nodes.ts
-// ==================================================
-/////////////////////////////////////////////////////////////
-//
-// pgAdmin 4 - PostgreSQL Tools
-//
-// Copyright (C) 2013 - 2025, The pgAdmin Development Team
-// This software is released under the PostgreSQL Licence
-//
-//////////////////////////////////////////////////////////////
-
-import * as BrowserFS from 'browserfs';
-import url_for from 'sources/url_for';
-import pgAdmin from 'sources/pgadmin';
-import _ from 'lodash';
-import { FileType } from 'react-aspen';
-import { findInTree } from './tree';
-import gettext from 'sources/gettext';
-
-import { unix } from 'path-fx';
-import getApiInstance, { parseApiError } from '../api_instance';
-
-export class ManageTreeNodes {
-  constructor() {
-    this.tree = {};
-    this.tempTree = new TreeNode(undefined, {});
-  }
-
-  public init = (_root: string) => new Promise((res) => {
-    const node = {parent: null, children: [], data: null};
-    this.tree = {};
-    this.tree[_root] = {name: 'root', type: FileType.Directory, metadata: node};
-    res();
-  });
-
-  public updateNode = (_path, _data)  => new Promise((res) => {
-    const item = this.findNode(_path);
-    if (item) {
-      item.data = {...item.data, ..._data};
-      item.name = _data.label;
-      item.metadata.data = _data;
-    }
-    res(true);
-  });
-
-  public removeNode = async (_path)  => {
-    const item = this.findNode(_path);
-
-    if (item?.parentNode) {
-      item.children = [];
-      item.parentNode.children.splice(item.parentNode.children.indexOf(item), 1);
-    }
-    return true;
-  };
-
-  findNode(path) {
-    if (path === null || path === undefined || path.length === 0 || path == '/browser') {
-      return this.tempTree;
-    }
-    return findInTree(this.tempTree, path);
-  }
-
-  public addNode = (_parent: string, _path: string, _data: []) => new Promise((res) => {
-    _data.type = _data.inode ? FileType.Directory : FileType.File;
-    _data._label = _data.label;
-    _data.label = _.escape(_data.label);
-
-    _data.is_collection = isCollectionNode(_data._type);
-    const nodeData = {parent: _parent, children: [], data: _data};
-
-    const tmpParentNode = this.findNode(_parent);
-    const treeNode = new TreeNode(_data.id, _data, {}, tmpParentNode, nodeData, _data.type);
-
-    if (tmpParentNode !== null && tmpParentNode !== undefined) tmpParentNode.children.push(treeNode);
-
-    res(treeNode);
-  });
-
-  public readNode = async (_path: string) => {
-    let temp_tree_path = _path;
-    const node = this.findNode(_path);
-    const base_url = pgAdmin.Browser.URL;
-    const api = getApiInstance();
-
-    if (node && node.children.length > 0) {
-      if (node.type !== FileType.File) {
-        console.error(node, 'It\'s a leaf node');
-        return [];
-      }
-      else if (node.children.length != 0) {
-        return node.children;
-      }
-    }
-
-    const self = this;
-    let url = '';
-    if (_path == '/browser') {
-      url = url_for('browser.nodes');
-    } else {
-      const _parent_url = self.generate_url(_path);
-      if (node.metadata.data._pid == null ) {
-        url = node.metadata.data._type + '/children/' + node.metadata.data._id;
-      }
-      else if (node.metadata.data._type.includes('coll-')) {
-        const _type = node.metadata.data._type.replace('coll-', '');
-        url = _type + '/nodes/' + _parent_url + '/';
-      }
-      else {
-        url = node.metadata.data._type + '/children/' + _parent_url + '/' + node.metadata.data._id;
-      }
-
-      url = base_url + url;
-
-      temp_tree_path = node.path;
-
-      if (node.metadata.data._type == 'server' && !node.metadata.data.connected) {
-        url = null;
-      }
-    }
-
-    let treeData = [];
-    if (url) {
-      try {
-        const res = await api.get(url);
-        treeData = res.data.data;
-      } catch (error) {
-        /* react-aspen does not handle reject case */
-        console.error(error);
-        pgAdmin.Browser.notifier.error(parseApiError(error)||'Node Load Error...');
-        return [];
-      }
-    }
-
-    const Path = BrowserFS.BFSRequire('path');
-    for (const idx in treeData) {
-      const _node: any = treeData[idx];
-      const _pathl = Path.join(_path, _node.id);
-      await self.addNode(temp_tree_path, _pathl, _node);
-    }
-    if (node.children.length > 0) return node.children;
-    else {
-      if (node.data && node.data._type == 'server' && node.data.connected) {
-        pgAdmin.Browser.notifier.info(gettext('Server children are not available.'
-        +' Please check these nodes are not hidden through the preferences setting `Browser > Nodes`.'), null);
-      }
-      return [];
-    }
-  };
-
-  public generate_url = (path: string) => {
-    let _path = path;
-    const _parent_path = [];
-    let _partitions = [];
-    while(_path != '/') {
-      const node = this.findNode(_path);
-      const _parent = unix.dirname(_path);
-      if(node.parentNode && node.parentNode.path == _parent) {
-        if (node.parentNode.metadata.data !== null && !node.parentNode.metadata.data._type.includes('coll-'))
-          if(node.parentNode.metadata.data._type.includes('partition')) {
-            _partitions.push(node.parentNode.metadata.data._id);
-          } else {
-            _parent_path.push(node.parentNode.metadata.data._id);
-          }
-      }
-      _path = _parent;
-    }
-    _partitions = _partitions.reverse();
-    // Replace the table with the last partition as in reality partition node is not child of the table
-    if(_partitions.length > 0) _parent_path[0]  = _partitions[_partitions.length-1];
-
-    _parent_path.reverse();
-    return _parent_path.join('/');
-  };
-}
-
-
-
-export class TreeNode {
-  constructor(id, data, domNode, parent, metadata, type) {
-    this.id = id;
-    this.data = data;
-    this.setParent(parent);
-    this.children = [];
-    this.domNode = domNode;
-    this.metadata = metadata;
-    this.name = metadata ? metadata.data.label : '';
-    this.type = type || undefined;
-  }
-
-  hasParent() {
-    return this.parentNode !== null && this.parentNode !== undefined;
-  }
-
-  parent() {
-    return this.parentNode;
-  }
-
-  setParent(parent) {
-    this.parentNode = parent;
-    this.path = this.id;
-    if (this.id)
-      if (parent !== null && parent !== undefined && parent.path !== undefined) {
-        this.path = parent.path + '/' + this.id;
-      } else {
-        this.path =  '/browser/' + this.id;
-      }
-  }
-
-  getData() {
-    if (this.data === undefined) {
-      return undefined;
-    } else if (this.data === null) {
-      return null;
-    }
-    return {...this.data};
-  }
-
-  getHtmlIdentifier() {
-    return this.domNode;
-  }
-
-  /*
-   * Find the ancestor with matches this condition
-   */
-  ancestorNode(condition) {
-    let node = this;
-
-    while (node.hasParent()) {
-      node = node.parent();
-      if (condition(node)) {
-        return node;
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Given a condition returns true if the current node
-   * or any of the parent nodes condition result is true
-   */
-  anyFamilyMember(condition) {
-    if(condition(this)) {
-      return true;
-    }
-
-    return this.ancestorNode(condition) !== null;
-  }
-  anyParent(condition) {
-    return this.ancestorNode(condition) !== null;
-  }
-
-  reload(tree) {
-    return new Promise((resolve)=>{
-      this.unload(tree)
-        .then(()=>{
-          tree.setInode(this.domNode);
-          tree.deselect(this.domNode);
-          setTimeout(() => {
-            tree.selectNode(this.domNode);
-          }, 0);
-          resolve();
-        });
-    });
-  }
-
-  unload(tree) {
-    return new Promise((resolve, reject)=>{
-      this.children = [];
-      tree.unload(this.domNode)
-        .then(
-          ()=>{
-            resolve(true);
-          },
-          ()=>{
-            reject(new Error());
-          });
-    });
-  }
-
-
-  open(tree, suppressNoDom) {
-    return new Promise((resolve, reject)=>{
-      if(suppressNoDom && (this.domNode == null || typeof(this.domNode) === 'undefined')) {
-        resolve(true);
-      } else if(tree.isOpen(this.domNode)) {
-        resolve(true);
-      } else {
-        tree.open(this.domNode).then(() => resolve(true), () => reject(new Error(true)));
-      }
-    });
-  }
-
-}
-
-export function isCollectionNode(node) {
-  if (pgAdmin.Browser.Nodes && node in pgAdmin.Browser.Nodes) {
-    if (pgAdmin.Browser.Nodes[node].is_collection !== undefined) return pgAdmin.Browser.Nodes[node].is_collection;
-    else return false;
-  }
-  return false;
-}
 
 
 // ==================================================
@@ -7221,6 +5531,17 @@ export async function PUT(
   try {
     const id = parseInt(params.id)
     const body = await request.json()
+    console.log('📥 Datos recibidos en API PUT:', {
+      releaseYear: body.releaseYear,
+      releaseMonth: body.releaseMonth,
+      releaseDay: body.releaseDay,
+      filmingStartYear: body.filmingStartYear,
+      filmingStartMonth: body.filmingStartMonth,
+      filmingStartDay: body.filmingStartDay,
+      filmingEndYear: body.filmingEndYear,
+      filmingEndMonth: body.filmingEndMonth,
+      filmingEndDay: body.filmingEndDay
+    })
 
     // Limpiar datos antes de validar
     const cleanedData = {
@@ -7261,7 +5582,33 @@ export async function PUT(
 
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
-      const { colorTypeId, ratingId, ...movieDataClean } = movieData
+      // Separar los campos de fecha y otros campos especiales
+      const {
+        colorTypeId,
+        ratingId,
+        releaseYear,
+        releaseMonth,
+        releaseDay,
+        filmingStartYear,
+        filmingStartMonth,
+        filmingStartDay,
+        filmingEndYear,
+        filmingEndMonth,
+        filmingEndDay,
+        ...movieDataClean
+      } = movieData
+
+      console.log('💾 Datos a guardar en DB:', {
+        releaseYear,
+        releaseMonth,
+        releaseDay,
+        filmingStartYear,
+        filmingStartMonth,
+        filmingStartDay,
+        filmingEndYear,
+        filmingEndMonth,
+        filmingEndDay
+      })
 
 
       // 1. Actualizar datos básicos de la película - EXACTAMENTE COMO EN EL POST
@@ -7269,15 +5616,15 @@ export async function PUT(
         where: { id },
         data: {
           ...movieDataClean,
-          releaseYear: movieData.releaseYear || null,
-          releaseMonth: movieData.releaseMonth || null,
-          releaseDay: movieData.releaseDay || null,
-          filmingStartYear: movieData.filmingStartYear || null,
-          filmingStartMonth: movieData.filmingStartMonth || null,
-          filmingStartDay: movieData.filmingStartDay || null,
-          filmingEndYear: movieData.filmingEndYear || null,
-          filmingEndMonth: movieData.filmingEndMonth || null,
-          filmingEndDay: movieData.filmingEndDay || null,
+          releaseYear: releaseYear !== undefined ? releaseYear : null,
+          releaseMonth: releaseMonth !== undefined ? releaseMonth : null,
+          releaseDay: releaseDay !== undefined ? releaseDay : null,
+          filmingStartYear: filmingStartYear !== undefined ? filmingStartYear : null,
+          filmingStartMonth: filmingStartMonth !== undefined ? filmingStartMonth : null,
+          filmingStartDay: filmingStartDay !== undefined ? filmingStartDay : null,
+          filmingEndYear: filmingEndYear !== undefined ? filmingEndYear : null,
+          filmingEndMonth: filmingEndMonth !== undefined ? filmingEndMonth : null,
+          filmingEndDay: filmingEndDay !== undefined ? filmingEndDay : null,
           ...(ratingId !== undefined && {
             rating: (ratingId === null || ratingId === 0)  // Tratar 0 como null
               ? { disconnect: true }
@@ -7775,6 +6122,8 @@ export async function PUT(
         const data = await request.json();
         const personId = parseInt(id);
 
+        console.log('Data received in API:', data); // Log para debugging
+
         // Verificar si necesitamos actualizar el slug
         let slug = undefined;
         const currentPerson = await prisma.person.findUnique({
@@ -7808,14 +6157,19 @@ export async function PUT(
             }
         }
 
-        // Preparar datos de actualización
+        // Preparar datos de actualización con campos de fecha parciales
         const updateData: any = {
             ...(slug && { slug }),
             firstName: data.firstName || null,
             lastName: data.lastName || null,
             realName: data.realName || null,
-            birthDate: data.birthDate ? new Date(data.birthDate) : null,
-            deathDate: data.deathDate ? new Date(data.deathDate) : null,
+            // Usar los campos de fecha parciales que vienen del servicio
+            birthYear: data.birthYear || null,
+            birthMonth: data.birthMonth || null,
+            birthDay: data.birthDay || null,
+            deathYear: data.deathYear || null,
+            deathMonth: data.deathMonth || null,
+            deathDay: data.deathDay || null,
             birthLocationId: data.birthLocationId || null,
             deathLocationId: data.deathLocationId || null,
             biography: data.biography || null,
@@ -7825,6 +6179,8 @@ export async function PUT(
             isActive: data.isActive ?? true,
             hasLinks: data.links && data.links.length > 0,
         };
+
+        console.log('Update data prepared:', updateData); // Log para debugging
 
         // Actualizar persona y links en una transacción
         const person = await prisma.$transaction(async (tx) => {
@@ -14412,7 +12768,8 @@ export default function AdvancedTab({
 // src/components/admin/movies/MovieModal/tabs/BasicInfoTab.tsx
 import { UseFormRegister, UseFormWatch, UseFormSetValue, FieldErrors } from 'react-hook-form'
 import { MovieFormData, PartialReleaseDate, PartialFilmingDate } from '@/lib/movies/movieTypes'
-import { MONTHS, TIPOS_DURACION, DATA_COMPLETENESS_LEVELS } from '@/lib/movies/movieConstants'
+import { TIPOS_DURACION, DATA_COMPLETENESS_LEVELS } from '@/lib/movies/movieConstants'
+import { MONTHS } from '@/lib/shared/dateUtils'
 import { getErrorMessage } from '@/lib/movies/movieUtils'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 import MovieLinksManager from '@/components/admin/MovieLinksManager'
@@ -16260,8 +14617,10 @@ export function PersonForm({
 // ==================================================
 // src/components/admin/people/PersonFormFields/BasicInfoFields.tsx
 
+import { useState, useEffect, useCallback } from 'react';
 import { PersonFormData } from '@/lib/people/peopleTypes';
 import { GENDER_OPTIONS } from '@/lib/people/peopleConstants';
+import { PartialDate, MONTHS } from '@/lib/shared/dateUtils';
 
 interface BasicInfoFieldsProps {
   formData: PersonFormData;
@@ -16270,6 +14629,106 @@ interface BasicInfoFieldsProps {
 }
 
 export function BasicInfoFields({ formData, updateField, isEdit }: BasicInfoFieldsProps) {
+  // Estados para fechas parciales
+  const [isPartialBirthDate, setIsPartialBirthDate] = useState(false);
+  const [partialBirthDate, setPartialBirthDate] = useState<PartialDate>({
+    year: null,
+    month: null,
+    day: null
+  });
+
+  const [isPartialDeathDate, setIsPartialDeathDate] = useState(false);
+  const [partialDeathDate, setPartialDeathDate] = useState<PartialDate>({
+    year: null,
+    month: null,
+    day: null
+  });
+
+  // Inicializar fechas parciales si estamos editando
+  useEffect(() => {
+    if (isEdit) {
+      // Verificar si hay fechas parciales en formData
+      if (formData.isPartialBirthDate && formData.partialBirthDate) {
+        setIsPartialBirthDate(true);
+        setPartialBirthDate(formData.partialBirthDate);
+      } else if (formData.birthDate) {
+        // Si hay fecha completa, mantener el checkbox desmarcado
+        setIsPartialBirthDate(false);
+      }
+      
+      if (formData.isPartialDeathDate && formData.partialDeathDate) {
+        setIsPartialDeathDate(true);
+        setPartialDeathDate(formData.partialDeathDate);
+      } else if (formData.deathDate) {
+        setIsPartialDeathDate(false);
+      }
+    }
+  }, [isEdit, formData.isPartialBirthDate, formData.isPartialDeathDate]);
+
+  // Handlers para cambios en fechas parciales
+  const handlePartialBirthDateToggle = useCallback((checked: boolean) => {
+    setIsPartialBirthDate(checked);
+    
+    if (checked) {
+      // Al activar fecha parcial, limpiar fecha completa
+      updateField('birthDate', '');
+      updateField('isPartialBirthDate', true);
+      // Si hay una fecha completa, convertirla a parcial (solo año y mes)
+      if (formData.birthDate) {
+        const [year, month] = formData.birthDate.split('-').map(v => parseInt(v));
+        const newPartialDate = { 
+          year: year || null, 
+          month: month || null, 
+          day: null // Siempre null para fechas parciales
+        };
+        setPartialBirthDate(newPartialDate);
+        updateField('partialBirthDate', newPartialDate);
+      }
+    } else {
+      // Al desactivar fecha parcial, limpiar datos parciales
+      updateField('isPartialBirthDate', false);
+      updateField('partialBirthDate', { year: null, month: null, day: null });
+      setPartialBirthDate({ year: null, month: null, day: null });
+    }
+  }, [formData.birthDate, updateField]);
+
+  const handlePartialDeathDateToggle = useCallback((checked: boolean) => {
+    setIsPartialDeathDate(checked);
+    
+    if (checked) {
+      updateField('deathDate', '');
+      updateField('isPartialDeathDate', true);
+      // Si hay una fecha completa, convertirla a parcial (solo año y mes)
+      if (formData.deathDate) {
+        const [year, month] = formData.deathDate.split('-').map(v => parseInt(v));
+        const newPartialDate = { 
+          year: year || null, 
+          month: month || null, 
+          day: null // Siempre null para fechas parciales
+        };
+        setPartialDeathDate(newPartialDate);
+        updateField('partialDeathDate', newPartialDate);
+      }
+    } else {
+      updateField('isPartialDeathDate', false);
+      updateField('partialDeathDate', { year: null, month: null, day: null });
+      setPartialDeathDate({ year: null, month: null, day: null });
+    }
+  }, [formData.deathDate, updateField]);
+
+  // Handlers para cambios en los valores de las fechas parciales
+  const handlePartialBirthDateChange = useCallback((field: keyof PartialDate, value: number | null) => {
+    const newPartialDate = { ...partialBirthDate, [field]: value };
+    setPartialBirthDate(newPartialDate);
+    updateField('partialBirthDate', newPartialDate);
+  }, [partialBirthDate, updateField]);
+
+  const handlePartialDeathDateChange = useCallback((field: keyof PartialDate, value: number | null) => {
+    const newPartialDate = { ...partialDeathDate, [field]: value };
+    setPartialDeathDate(newPartialDate);
+    updateField('partialDeathDate', newPartialDate);
+  }, [partialDeathDate, updateField]);
+
   return (
     <div className="space-y-6">
       {/* Nombre y Apellido */}
@@ -16343,32 +14802,144 @@ export function BasicInfoFields({ formData, updateField, isEdit }: BasicInfoFiel
         </select>
       </div>
 
-      {/* Fechas */}
+      {/* Fechas con soporte para fechas parciales */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Fecha de Nacimiento */}
         <div>
-          <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Fecha de Nacimiento
           </label>
-          <input
-            type="date"
-            id="birthDate"
-            value={formData.birthDate  || ''}
-            onChange={(e) => updateField('birthDate', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-          />
+
+          <div className="mb-2">
+            <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                checked={isPartialBirthDate}
+                onChange={(e) => handlePartialBirthDateToggle(e.target.checked)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-600">
+                Fecha incompleta
+              </span>
+            </label>
+          </div>
+
+          {!isPartialBirthDate ? (
+            <input
+              type="date"
+              value={formData.birthDate || ''}
+              onChange={(e) => updateField('birthDate', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            />
+          ) : (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    placeholder="Año"
+                    min="1800"
+                    max="2100"
+                    value={partialBirthDate.year || ''}
+                    onChange={(e) => handlePartialBirthDateChange(
+                      'year', 
+                      e.target.value ? parseInt(e.target.value) : null
+                    )}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  />
+                </div>
+                <div className="flex-1">
+                  <select
+                    value={partialBirthDate.month || ''}
+                    onChange={(e) => handlePartialBirthDateChange(
+                      'month',
+                      e.target.value ? parseInt(e.target.value) : null
+                    )}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  >
+                    <option value="">Mes (opcional)</option>
+                    {MONTHS.map(month => (
+                      <option key={month.value} value={month.value}>
+                        {month.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500">
+                Ingrese el año (requerido) y mes (opcional) si los conoce
+              </p>
+            </div>
+          )}
         </div>
         
+        {/* Fecha de Fallecimiento */}
         <div>
-          <label htmlFor="deathDate" className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Fecha de Fallecimiento
           </label>
-          <input
-            type="date"
-            id="deathDate"
-            value={formData.deathDate  || ''}
-            onChange={(e) => updateField('deathDate', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-          />
+
+          <div className="mb-2">
+            <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                checked={isPartialDeathDate}
+                onChange={(e) => handlePartialDeathDateToggle(e.target.checked)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-600">
+                Fecha incompleta
+              </span>
+            </label>
+          </div>
+
+          {!isPartialDeathDate ? (
+            <input
+              type="date"
+              value={formData.deathDate || ''}
+              onChange={(e) => updateField('deathDate', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            />
+          ) : (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    placeholder="Año"
+                    min="1800"
+                    max="2100"
+                    value={partialDeathDate.year || ''}
+                    onChange={(e) => handlePartialDeathDateChange(
+                      'year',
+                      e.target.value ? parseInt(e.target.value) : null
+                    )}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  />
+                </div>
+                <div className="flex-1">
+                  <select
+                    value={partialDeathDate.month || ''}
+                    onChange={(e) => handlePartialDeathDateChange(
+                      'month',
+                      e.target.value ? parseInt(e.target.value) : null
+                    )}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  >
+                    <option value="">Mes (opcional)</option>
+                    {MONTHS.map(month => (
+                      <option key={month.value} value={month.value}>
+                        {month.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500">
+                Ingrese el año (requerido) y mes (opcional) si los conoce
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -18752,7 +17323,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
     const [isPartialDate, setIsPartialDate] = useState(false)
     const [partialReleaseDate, setPartialReleaseDate] = useState<PartialReleaseDate>({
         year: null,
-        month: null
+        month: null,
+        day: null
     })
     const [tipoDuracionDisabled, setTipoDuracionDisabled] = useState(false)
     const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
@@ -18761,13 +17333,15 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
     const [isPartialFilmingStartDate, setIsPartialFilmingStartDate] = useState(false)
     const [partialFilmingStartDate, setPartialFilmingStartDate] = useState<PartialFilmingDate>({
         year: null,
-        month: null
+        month: null,
+        day: null
     })
 
     const [isPartialFilmingEndDate, setIsPartialFilmingEndDate] = useState(false)
     const [partialFilmingEndDate, setPartialFilmingEndDate] = useState<PartialFilmingDate>({
         year: null,
-        month: null
+        month: null,
+        day: null
     })
 
     // Estados de metadata
@@ -19754,6 +18328,8 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
 // ==================================================
 // src/lib/movies/movieConstants.ts
 
+export { MONTHS } from '@/lib/shared/dateUtils';
+
 export const MOVIE_STAGES = [
   { value: 'COMPLETA', label: 'Completa', description: 'Película terminada y estrenada' },
   { value: 'EN_DESARROLLO', label: 'En desarrollo', description: 'En etapa de desarrollo del proyecto' },
@@ -19783,21 +18359,6 @@ export const SOUND_TYPES = [
   { value: 'Sonora', label: 'Sonora' },
   { value: 'Muda', label: 'Muda' },
   { value: 'n/d', label: 'No disponible' }
-] as const
-
-export const MONTHS = [
-  { value: 1, label: 'Enero' },
-  { value: 2, label: 'Febrero' },
-  { value: 3, label: 'Marzo' },
-  { value: 4, label: 'Abril' },
-  { value: 5, label: 'Mayo' },
-  { value: 6, label: 'Junio' },
-  { value: 7, label: 'Julio' },
-  { value: 8, label: 'Agosto' },
-  { value: 9, label: 'Septiembre' },
-  { value: 10, label: 'Octubre' },
-  { value: 11, label: 'Noviembre' },
-  { value: 12, label: 'Diciembre' }
 ] as const
 
 // Duraciones en minutos
@@ -19831,6 +18392,13 @@ export const COMPLETENESS_COLORS = {
 // ==================================================
 // src/lib/movies/movieTypes.ts
 
+import { PartialDate } from '@/lib/shared/dateUtils'
+
+// Usar el tipo compartido de PartialDate en lugar de tipos propios
+export type PartialReleaseDate = PartialDate
+export type PartialFilmingDate = PartialDate
+
+
 import { z } from 'zod'
 
 // Schema del formulario
@@ -19863,6 +18431,27 @@ export const movieFormSchema = z.object({
   releaseDate: z.any().optional(),
   filmingStartDate: z.any().optional(),
   filmingEndDate: z.any().optional(),
+
+  isPartialReleaseDate: z.boolean().optional(),
+  partialReleaseDate: z.object({
+    year: z.number().nullable(),
+    month: z.number().nullable(),
+    day: z.number().nullable()
+  }).optional(),
+
+  isPartialFilmingStartDate: z.boolean().optional(),
+  partialFilmingStartDate: z.object({
+    year: z.number().nullable(),
+    month: z.number().nullable(),
+    day: z.number().nullable()
+  }).optional(),
+
+  isPartialFilmingEndDate: z.boolean().optional(),
+  partialFilmingEndDate: z.object({
+    year: z.number().nullable(),
+    month: z.number().nullable(),
+    day: z.number().nullable()
+  }).optional(),
 
   // URLs
   posterUrl: z.any().optional(),
@@ -19906,6 +18495,10 @@ export interface Movie {
   posterUrl?: string
   status: string
   stage?: string
+
+  // Fechas de rodaje
+  filmingStartDate: string;
+  filmingEndDate: string;
   dataCompleteness?: string
   genres: Array<{ id: number; name: string }>
   directors: Array<{ id: number; name: string }>
@@ -19963,16 +18556,16 @@ export interface ColorType {
 }
 
 // Tipos de constantes
-export type MovieStage = 
-  | 'COMPLETA' 
-  | 'EN_DESARROLLO' 
-  | 'EN_POSTPRODUCCION' 
-  | 'EN_PREPRODUCCION' 
-  | 'EN_RODAJE' 
-  | 'INCONCLUSA' 
+export type MovieStage =
+  | 'COMPLETA'
+  | 'EN_DESARROLLO'
+  | 'EN_POSTPRODUCCION'
+  | 'EN_PREPRODUCCION'
+  | 'EN_RODAJE'
+  | 'INCONCLUSA'
   | 'INEDITA'
 
-export type DataCompleteness = 
+export type DataCompleteness =
   | 'BASIC_PRESS_KIT'
   | 'FULL_PRESS_KIT'
   | 'MAIN_CAST'
@@ -20267,10 +18860,28 @@ export const PERSON_SUCCESS_MESSAGES = {
   DELETED: 'Persona eliminada exitosamente',
 } as const;
 
+// Constante para los meses (igual que en movies)
+export const MONTHS = [
+  { value: 1, label: 'Enero' },
+  { value: 2, label: 'Febrero' },
+  { value: 3, label: 'Marzo' },
+  { value: 4, label: 'Abril' },
+  { value: 5, label: 'Mayo' },
+  { value: 6, label: 'Junio' },
+  { value: 7, label: 'Julio' },
+  { value: 8, label: 'Agosto' },
+  { value: 9, label: 'Septiembre' },
+  { value: 10, label: 'Octubre' },
+  { value: 11, label: 'Noviembre' },
+  { value: 12, label: 'Diciembre' }
+];
+
 // ==================================================
 // src/lib/people/peopleTypes.ts
 // ==================================================
 // src/lib/people/peopleTypes.ts
+
+import { PartialDate } from '@/lib/shared/dateUtils';
 
 // Tipos base de la base de datos
 export interface Person {
@@ -20361,13 +18972,28 @@ export interface PersonWithRelations extends Person {
   };
 }
 
+export interface PartialDate {
+  year: number | null;
+  month: number | null;
+  day: number | null;
+}
+
 // Tipo para el formulario
 export interface PersonFormData {
   firstName: string;
   lastName: string;
   realName?: string;
-  birthDate?: string | null;
-  deathDate?: string | null;
+  // Fechas completas para el input type="date"
+  birthDate: string;
+  deathDate: string;
+  
+  // Fechas parciales
+  partialBirthDate?: PartialDate;
+  partialDeathDate?: PartialDate;
+  
+  // Flags para indicar si usar fecha parcial
+  isPartialBirthDate?: boolean;
+  isPartialDeathDate?: boolean;
   birthLocationId?: number | null;  // <-- Agregar este campo
   deathLocationId?: number | null;  // <-- Agregar este campo
   birthLocation?: string;            // <-- Mantener para compatibilidad/display
@@ -20407,6 +19033,7 @@ export interface PaginatedPeopleResponse {
 
 import { Person, PersonWithRelations, PersonFormData, PersonLink, Gender } from './peopleTypes';
 import { DEFAULT_PERSON_FORM_VALUES, DEFAULT_PERSON_LINK } from './peopleConstants';
+import { partialFieldsToDate } from '@/lib/shared/dateUtils';
 
 /**
  * Genera un slug único para una persona basado en nombre y apellido
@@ -20452,6 +19079,7 @@ export function formatGender(gender?: Gender | null): string {
 
 /**
  * Convierte los datos del formulario para enviar a la API
+ * NOTA: Esta función ya no se usa, se usa formatPersonDataForAPI en people.service.ts
  */
 export function formatPersonFormDataForAPI(data: PersonFormData) {
     return {
@@ -20493,16 +19121,17 @@ function formatLocationPath(location: any): string {
 
 /**
  * Convierte los datos de la API al formato del formulario
+ * Maneja tanto fechas completas como parciales
  */
 export function formatPersonDataForForm(person?: PersonWithRelations | null): PersonFormData {
     if (!person) return DEFAULT_PERSON_FORM_VALUES;
 
-    return {
+    const formData: PersonFormData = {
         firstName: person.firstName || '',
         lastName: person.lastName || '',
         realName: person.realName || '',
-        birthDate: person.birthDate ? person.birthDate.split('T')[0] : '',
-        deathDate: person.deathDate ? person.deathDate.split('T')[0] : '',
+        birthDate: '',
+        deathDate: '',
         birthLocationId: person.birthLocationId || null,
         deathLocationId: person.deathLocationId || null,
         birthLocation: person.birthLocation ? formatLocationPath(person.birthLocation) : '',
@@ -20512,8 +19141,64 @@ export function formatPersonDataForForm(person?: PersonWithRelations | null): Pe
         gender: person.gender || '',
         hideAge: person.hideAge || false,
         isActive: person.isActive ?? true,
-        links: [], // Se cargan por separado si es necesario
+        links: person.links || [], // Cargar los links directamente si vienen
     };
+
+    // Procesar fecha de nacimiento
+    if ('birthYear' in person && person.birthYear) {
+        const birthPartial = {
+            year: person.birthYear,
+            month: person.birthMonth,
+            day: person.birthDay
+        };
+
+        // Si la fecha está completa (año, mes y día), convertirla a formato ISO
+        if (person.birthYear && person.birthMonth && person.birthDay) {
+            const isoDate = partialFieldsToDate(birthPartial);
+            if (isoDate) {
+                formData.birthDate = isoDate;
+                formData.isPartialBirthDate = false;
+            }
+        } else {
+            // Es una fecha parcial
+            formData.partialBirthDate = birthPartial;
+            formData.isPartialBirthDate = true;
+            formData.birthDate = '';
+        }
+    } else if (person.birthDate) {
+        // Fallback para formato antiguo con birthDate como string
+        formData.birthDate = person.birthDate.split('T')[0];
+        formData.isPartialBirthDate = false;
+    }
+
+    // Procesar fecha de fallecimiento
+    if ('deathYear' in person && person.deathYear) {
+        const deathPartial = {
+            year: person.deathYear,
+            month: person.deathMonth,
+            day: person.deathDay
+        };
+
+        // Si la fecha está completa (año, mes y día), convertirla a formato ISO
+        if (person.deathYear && person.deathMonth && person.deathDay) {
+            const isoDate = partialFieldsToDate(deathPartial);
+            if (isoDate) {
+                formData.deathDate = isoDate;
+                formData.isPartialDeathDate = false;
+            }
+        } else {
+            // Es una fecha parcial
+            formData.partialDeathDate = deathPartial;
+            formData.isPartialDeathDate = true;
+            formData.deathDate = '';
+        }
+    } else if (person.deathDate) {
+        // Fallback para formato antiguo con deathDate como string
+        formData.deathDate = person.deathDate.split('T')[0];
+        formData.isPartialDeathDate = false;
+    }
+
+    return formData;
 }
 
 /**
@@ -20527,13 +19212,24 @@ export function validatePersonForm(data: PersonFormData): string[] {
         errors.push('Debe ingresar al menos el nombre o el apellido');
     }
 
-    // Validar fechas
+    // Validar fechas si ambas son completas
     if (data.birthDate && data.deathDate) {
         const birthDate = new Date(data.birthDate);
         const deathDate = new Date(data.deathDate);
 
         if (deathDate < birthDate) {
             errors.push('La fecha de fallecimiento debe ser posterior a la fecha de nacimiento');
+        }
+    }
+
+    // Validar fechas parciales
+    if (data.isPartialBirthDate && data.partialBirthDate && 
+        data.isPartialDeathDate && data.partialDeathDate) {
+        const birthYear = data.partialBirthDate.year;
+        const deathYear = data.partialDeathDate.year;
+        
+        if (birthYear && deathYear && deathYear < birthYear) {
+            errors.push('El año de fallecimiento debe ser posterior al año de nacimiento');
         }
     }
 
@@ -20605,8 +19301,42 @@ export function removePersonLink(links: PersonLink[], index: number): PersonLink
 
 /**
  * Genera el texto para mostrar la edad o fecha de nacimiento
+ * Actualizada para manejar fechas parciales
  */
-export function formatBirthInfo(person: Person): string {
+export function formatBirthInfo(person: any): string {
+    // Si hay campos de fecha parcial
+    if ('birthYear' in person && person.birthYear) {
+        if (person.hideAge) return 'Fecha oculta';
+        
+        let dateStr = '';
+        if (person.birthDay && person.birthMonth) {
+            // Fecha completa
+            const date = new Date(person.birthYear, person.birthMonth - 1, person.birthDay);
+            dateStr = date.toLocaleDateString('es-AR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+            });
+            
+            // Calcular edad si no hay fecha de muerte
+            if (!person.deathYear) {
+                const age = calculateAge(date);
+                return `${dateStr} (${age} años)`;
+            }
+        } else if (person.birthMonth) {
+            // Solo año y mes
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            dateStr = `${months[person.birthMonth - 1]} ${person.birthYear}`;
+        } else {
+            // Solo año
+            dateStr = String(person.birthYear);
+        }
+        
+        return dateStr;
+    }
+    
+    // Fallback al formato antiguo
     if (!person.birthDate) return '-';
     if (person.hideAge) return 'Fecha oculta';
 
@@ -20617,13 +19347,11 @@ export function formatBirthInfo(person: Person): string {
         year: 'numeric',
     });
 
-    // Si no hay fecha de muerte, calcular edad
     if (!person.deathDate) {
         const age = calculateAge(birthDate);
         return `${formattedDate} (${age} años)`;
     }
 
-    // Si hay fecha de muerte, mostrar solo la fecha
     return formattedDate;
 }
 
@@ -20644,16 +19372,23 @@ export function calculateAge(birthDate: Date, deathDate?: Date): number {
 
 /**
  * Genera un resumen de la persona para mostrar en listas
+ * Actualizada para manejar fechas parciales
  */
-export function getPersonSummary(person: Person): string {
+export function getPersonSummary(person: any): string {
     const parts = [];
 
-    if (person.birthDate && !person.hideAge) {
+    // Manejar fecha de nacimiento
+    if ('birthYear' in person && person.birthYear && !person.hideAge) {
+        parts.push(`n. ${person.birthYear}`);
+    } else if (person.birthDate && !person.hideAge) {
         const year = new Date(person.birthDate).getFullYear();
         parts.push(`n. ${year}`);
     }
 
-    if (person.deathDate) {
+    // Manejar fecha de fallecimiento
+    if ('deathYear' in person && person.deathYear) {
+        parts.push(`f. ${person.deathYear}`);
+    } else if (person.deathDate) {
         const year = new Date(person.deathDate).getFullYear();
         parts.push(`f. ${year}`);
     }
@@ -20780,6 +19515,331 @@ export const movieSchema = z.object({
 })
 
 export type MovieFormData = z.infer<typeof movieSchema>
+
+// ==================================================
+// src/lib/shared/dateUtils.ts
+// ==================================================
+// src/lib/shared/dateUtils.ts
+
+/**
+ * Tipo compartido para fechas parciales
+ */
+export interface PartialDate {
+  year: number | null;
+  month: number | null;
+  day: number | null;
+}
+
+/**
+ * Meses en español para los selectores
+ */
+export const MONTHS = [
+  { value: 1, label: 'Enero' },
+  { value: 2, label: 'Febrero' },
+  { value: 3, label: 'Marzo' },
+  { value: 4, label: 'Abril' },
+  { value: 5, label: 'Mayo' },
+  { value: 6, label: 'Junio' },
+  { value: 7, label: 'Julio' },
+  { value: 8, label: 'Agosto' },
+  { value: 9, label: 'Septiembre' },
+  { value: 10, label: 'Octubre' },
+  { value: 11, label: 'Noviembre' },
+  { value: 12, label: 'Diciembre' }
+];
+
+/**
+ * Convierte una fecha completa (string ISO) a campos parciales
+ * IMPORTANTE: Maneja correctamente las zonas horarias para evitar el problema del día anterior
+ */
+export function dateToPartialFields(dateString: string | null | undefined): PartialDate {
+  if (!dateString) {
+    return { year: null, month: null, day: null };
+  }
+  
+  // Si el string viene en formato ISO (YYYY-MM-DD), parsearlo directamente
+  // sin crear un objeto Date para evitar problemas de timezone
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}/)) {
+    const [yearStr, monthStr, dayStr] = dateString.split('-');
+    return {
+      year: parseInt(yearStr, 10),
+      month: parseInt(monthStr, 10),
+      day: parseInt(dayStr, 10)
+    };
+  }
+  
+  // Si viene con tiempo (formato ISO completo con T), usar Date pero ajustar
+  const date = new Date(dateString);
+  
+  // Si la fecha incluye 'T', ya está en formato ISO completo
+  if (dateString.includes('T')) {
+    return {
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      day: date.getDate()
+    };
+  }
+  
+  // Para otros formatos, intentar parsear con Date
+  // pero usar getUTC* para evitar ajustes de timezone
+  return {
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate()
+  };
+}
+
+/**
+ * Convierte campos parciales a una fecha completa si es posible
+ * Retorna en formato YYYY-MM-DD sin información de hora para evitar problemas de timezone
+ */
+export function partialFieldsToDate(partial: PartialDate): string | null {
+  if (!partial.year || !partial.month || !partial.day) {
+    return null;
+  }
+  
+  // Formato ISO: YYYY-MM-DD
+  const year = partial.year.toString().padStart(4, '0');
+  const month = partial.month.toString().padStart(2, '0');
+  const day = partial.day.toString().padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Formatea una fecha parcial para mostrar
+ * @param partial - La fecha parcial
+ * @param options - Opciones de formato
+ */
+export function formatPartialDate(
+  partial: PartialDate,
+  options: {
+    monthFormat?: 'short' | 'long';
+    includeDay?: boolean;
+    fallback?: string;
+  } = {}
+): string {
+  const {
+    monthFormat = 'long',
+    includeDay = true,
+    fallback = 'Fecha desconocida'
+  } = options;
+
+  if (!partial.year) {
+    return fallback;
+  }
+  
+  const monthNames = {
+    short: [
+      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+    ],
+    long: [
+      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+    ]
+  };
+  
+  // Solo año
+  if (!partial.month) {
+    return partial.year.toString();
+  }
+  
+  const monthName = monthNames[monthFormat][partial.month - 1];
+  
+  // Año y mes
+  if (!partial.day || !includeDay) {
+    return monthFormat === 'long' 
+      ? `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} de ${partial.year}`
+      : `${monthName} ${partial.year}`;
+  }
+  
+  // Fecha completa
+  return monthFormat === 'long'
+    ? `${partial.day} de ${monthName} de ${partial.year}`
+    : `${partial.day} ${monthName} ${partial.year}`;
+}
+
+/**
+ * Calcula la edad o años transcurridos entre dos fechas parciales
+ * @param startDate - Fecha de inicio (nacimiento, estreno, etc.)
+ * @param endDate - Fecha de fin (muerte, fecha actual, etc.). Si no se proporciona, usa la fecha actual
+ */
+export function calculateYearsBetween(
+  startDate: PartialDate,
+  endDate?: PartialDate
+): number | null {
+  if (!startDate.year) {
+    return null;
+  }
+  
+  const currentDate = new Date();
+  const referenceYear = endDate?.year || currentDate.getFullYear();
+  const referenceMonth = endDate?.month || (currentDate.getMonth() + 1);
+  const referenceDay = endDate?.day || currentDate.getDate();
+  
+  let years = referenceYear - startDate.year;
+  
+  // Ajustar si no ha llegado el aniversario
+  if (startDate.month && referenceMonth) {
+    if (referenceMonth < startDate.month) {
+      years--;
+    } else if (referenceMonth === startDate.month && startDate.day && referenceDay) {
+      if (referenceDay < startDate.day) {
+        years--;
+      }
+    }
+  }
+  
+  return years;
+}
+
+/**
+ * Valida que una fecha parcial sea válida
+ * @param partial - La fecha parcial a validar
+ * @param options - Opciones de validación
+ */
+export function validatePartialDate(
+  partial: PartialDate,
+  options: {
+    minYear?: number;
+    maxYear?: number;
+    allowFuture?: boolean;
+    fieldName?: string;
+  } = {}
+): string | null {
+  const {
+    minYear = 1800,
+    maxYear = new Date().getFullYear() + 1,
+    allowFuture = false,
+    fieldName = 'fecha'
+  } = options;
+  
+  // Si no hay año, es válido (fecha vacía)
+  if (!partial.year) {
+    if (partial.month || partial.day) {
+      return `Si ingresa mes o día, debe ingresar también el año`;
+    }
+    return null;
+  }
+  
+  // Validar año
+  const currentYear = new Date().getFullYear();
+  const effectiveMaxYear = allowFuture ? maxYear : Math.min(maxYear, currentYear);
+  
+  if (partial.year < minYear || partial.year > effectiveMaxYear) {
+    return `El año de ${fieldName} debe estar entre ${minYear} y ${effectiveMaxYear}`;
+  }
+  
+  // Si hay mes, validarlo
+  if (partial.month) {
+    if (partial.month < 1 || partial.month > 12) {
+      return `El mes debe estar entre 1 y 12`;
+    }
+    
+    // Si hay día, validarlo según el mes
+    if (partial.day) {
+      const daysInMonth = new Date(partial.year, partial.month, 0).getDate();
+      if (partial.day < 1 || partial.day > daysInMonth) {
+        return `El día debe estar entre 1 y ${daysInMonth} para el mes seleccionado`;
+      }
+    }
+  } else if (partial.day) {
+    return `Si ingresa día, debe ingresar también el mes`;
+  }
+  
+  return null;
+}
+
+/**
+ * Compara dos fechas parciales
+ * @returns -1 si date1 < date2, 0 si son iguales, 1 si date1 > date2, null si no se pueden comparar
+ */
+export function comparePartialDates(date1: PartialDate, date2: PartialDate): number | null {
+  // Si alguna no tiene año, no se pueden comparar
+  if (!date1.year || !date2.year) {
+    return null;
+  }
+  
+  // Comparar años
+  if (date1.year !== date2.year) {
+    return date1.year < date2.year ? -1 : 1;
+  }
+  
+  // Si ambas tienen mes, comparar
+  if (date1.month && date2.month) {
+    if (date1.month !== date2.month) {
+      return date1.month < date2.month ? -1 : 1;
+    }
+    
+    // Si ambas tienen día, comparar
+    if (date1.day && date2.day) {
+      if (date1.day !== date2.day) {
+        return date1.day < date2.day ? -1 : 1;
+      }
+      return 0; // Son iguales
+    }
+  }
+  
+  // Si una tiene más precisión que la otra, considerarlas iguales en el nivel comparable
+  return 0;
+}
+
+/**
+ * Valida un rango de fechas parciales
+ */
+export function validateDateRange(
+  startDate: PartialDate,
+  endDate: PartialDate,
+  startFieldName: string = 'inicio',
+  endFieldName: string = 'fin'
+): string | null {
+  // Primero validar cada fecha individualmente
+  const startError = validatePartialDate(startDate, { fieldName: startFieldName });
+  if (startError) return startError;
+  
+  const endError = validatePartialDate(endDate, { fieldName: endFieldName });
+  if (endError) return endError;
+  
+  // Si ambas tienen año, verificar que el rango sea válido
+  if (startDate.year && endDate.year) {
+    const comparison = comparePartialDates(startDate, endDate);
+    if (comparison === 1) {
+      return `La fecha de ${startFieldName} no puede ser posterior a la fecha de ${endFieldName}`;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Crea una fecha parcial desde valores de formulario
+ */
+export function createPartialDate(
+  year: string | number | null | undefined,
+  month: string | number | null | undefined,
+  day: string | number | null | undefined
+): PartialDate {
+  return {
+    year: year ? (typeof year === 'string' ? parseInt(year) : year) : null,
+    month: month ? (typeof month === 'string' ? parseInt(month) : month) : null,
+    day: day ? (typeof day === 'string' ? parseInt(day) : day) : null
+  };
+}
+
+/**
+ * Verifica si una fecha parcial está completa
+ */
+export function isCompleteDate(partial: PartialDate): boolean {
+  return !!(partial.year && partial.month && partial.day);
+}
+
+/**
+ * Verifica si una fecha parcial está vacía
+ */
+export function isEmptyDate(partial: PartialDate): boolean {
+  return !partial.year && !partial.month && !partial.day;
+}
 
 // ==================================================
 // src/lib/utils/slugs.ts
@@ -21238,6 +20298,7 @@ export const metadataService = {
 // src/services/movies.service.ts
 import { MovieFilters } from '@/components/admin/movies/MoviesFilters'
 import { MovieFormData } from '@/lib/movies/movieTypes'
+import { dateToPartialFields, partialFieldsToDate, PartialDate } from '@/lib/shared/dateUtils'
 
 interface MoviesResponse {
   movies: any[]
@@ -21246,6 +20307,207 @@ interface MoviesResponse {
     currentPage: number
     totalItems: number
   }
+}
+
+/**
+ * Formatea los datos del formulario de película para enviar a la API
+ * Convierte las fechas completas o parciales al formato esperado por el backend
+ */
+function formatMovieDataForAPI(data: MovieFormData): any {
+  const apiData: any = {
+    title: data.title,
+    year: data.year,
+    duration: data.duration,
+    durationSeconds: data.durationSeconds,
+    tipoDuracion: data.tipoDuracion,
+    synopsis: data.synopsis,
+    notes: data.notes,
+    tagline: data.tagline,
+    posterUrl: data.posterUrl,
+    trailerUrl: data.trailerUrl,
+    imdbId: data.imdbId,
+    stage: data.stage,
+    colorTypeId: data.colorTypeId,
+    soundType: data.soundType,
+    ratingId: data.ratingId,
+    countries: data.countries,
+    is_coproduction: data.is_coproduction,
+    production_type: data.production_type,
+    dataCompleteness: data.dataCompleteness,
+    metaDescription: data.metaDescription,
+    metaKeywords: data.metaKeywords,
+    genres: data.genres,
+    cast: data.cast,
+    crew: data.crew,
+    productionCompanies: data.productionCompanies,
+    distributionCompanies: data.distributionCompanies,
+    themes: data.themes,
+    movieCountries: data.movieCountries,
+    links: data.links,
+    screeningVenues: data.screeningVenues
+  }
+
+  // Procesar fecha de estreno
+  if (data.isPartialReleaseDate && data.partialReleaseDate) {
+    // Fecha parcial de estreno
+    apiData.releaseYear = data.partialReleaseDate.year
+    apiData.releaseMonth = data.partialReleaseDate.month
+    apiData.releaseDay = data.partialReleaseDate.day
+  } else if (data.releaseDate) {
+    // Fecha completa de estreno - convertir a campos parciales
+    const partial = dateToPartialFields(data.releaseDate)
+    apiData.releaseYear = partial.year
+    apiData.releaseMonth = partial.month
+    apiData.releaseDay = partial.day
+  } else {
+    // Sin fecha de estreno
+    apiData.releaseYear = null
+    apiData.releaseMonth = null
+    apiData.releaseDay = null
+  }
+
+  // Procesar fecha de inicio de rodaje
+  if (data.isPartialFilmingStartDate && data.partialFilmingStartDate) {
+    // Fecha parcial de inicio de rodaje
+    apiData.filmingStartYear = data.partialFilmingStartDate.year
+    apiData.filmingStartMonth = data.partialFilmingStartDate.month
+    apiData.filmingStartDay = data.partialFilmingStartDate.day
+  } else if (data.filmingStartDate) {
+    // Fecha completa de inicio de rodaje - convertir a campos parciales
+    const partial = dateToPartialFields(data.filmingStartDate)
+    apiData.filmingStartYear = partial.year
+    apiData.filmingStartMonth = partial.month
+    apiData.filmingStartDay = partial.day
+  } else {
+    // Sin fecha de inicio de rodaje
+    apiData.filmingStartYear = null
+    apiData.filmingStartMonth = null
+    apiData.filmingStartDay = null
+  }
+
+  // Procesar fecha de fin de rodaje
+  if (data.isPartialFilmingEndDate && data.partialFilmingEndDate) {
+    // Fecha parcial de fin de rodaje
+    apiData.filmingEndYear = data.partialFilmingEndDate.year
+    apiData.filmingEndMonth = data.partialFilmingEndDate.month
+    apiData.filmingEndDay = data.partialFilmingEndDate.day
+  } else if (data.filmingEndDate) {
+    // Fecha completa de fin de rodaje - convertir a campos parciales
+    const partial = dateToPartialFields(data.filmingEndDate)
+    apiData.filmingEndYear = partial.year
+    apiData.filmingEndMonth = partial.month
+    apiData.filmingEndDay = partial.day
+  } else {
+    // Sin fecha de fin de rodaje
+    apiData.filmingEndYear = null
+    apiData.filmingEndMonth = null
+    apiData.filmingEndDay = null
+  }
+
+  return apiData
+}
+
+/**
+ * Convierte los datos de la API al formato del formulario
+ */
+function formatMovieFromAPI(movie: any): MovieFormData {
+  const formData: MovieFormData = {
+    title: movie.title || '',
+    year: movie.year || null,
+    releaseDate: '',
+    duration: movie.duration || null,
+    durationSeconds: movie.durationSeconds || null,
+    tipoDuracion: movie.tipoDuracion || '',
+    synopsis: movie.synopsis || '',
+    notes: movie.notes || '',
+    tagline: movie.tagline || '',
+    posterUrl: movie.posterUrl || '',
+    trailerUrl: movie.trailerUrl || '',
+    imdbId: movie.imdbId || '',
+    stage: movie.stage || 'COMPLETA',
+    filmingStartDate: '',
+    filmingEndDate: '',
+    colorTypeId: movie.colorTypeId || null,
+    soundType: movie.soundType || '',
+    ratingId: movie.ratingId || null,
+    countries: movie.countries || ['Argentina'],
+    is_coproduction: movie.is_coproduction || false,
+    production_type: movie.production_type || 'national',
+    dataCompleteness: movie.dataCompleteness || 'BASIC_PRESS_KIT',
+    metaDescription: movie.metaDescription || '',
+    metaKeywords: movie.metaKeywords || [],
+    genres: movie.genres || [],
+    cast: movie.cast || [],
+    crew: movie.crew || [],
+    productionCompanies: movie.productionCompanies || [],
+    distributionCompanies: movie.distributionCompanies || [],
+    themes: movie.themes || [],
+    movieCountries: movie.movieCountries || [],
+    links: movie.links || [],
+    screeningVenues: movie.screeningVenues || []
+  }
+
+  // Procesar fecha de estreno
+  if (movie.releaseYear) {
+    const releasePartial: PartialDate = {
+      year: movie.releaseYear,
+      month: movie.releaseMonth,
+      day: movie.releaseDay
+    }
+
+    // Si la fecha está completa, convertirla a formato ISO
+    if (movie.releaseYear && movie.releaseMonth && movie.releaseDay) {
+      formData.releaseDate = partialFieldsToDate(releasePartial) || ''
+      formData.isPartialReleaseDate = false
+    } else {
+      // Fecha parcial
+      formData.partialReleaseDate = releasePartial
+      formData.isPartialReleaseDate = true
+      formData.releaseDate = ''
+    }
+  }
+
+  // Procesar fecha de inicio de rodaje
+  if (movie.filmingStartYear) {
+    const filmingStartPartial: PartialDate = {
+      year: movie.filmingStartYear,
+      month: movie.filmingStartMonth,
+      day: movie.filmingStartDay
+    }
+
+    // Si la fecha está completa, convertirla a formato ISO
+    if (movie.filmingStartYear && movie.filmingStartMonth && movie.filmingStartDay) {
+      formData.filmingStartDate = partialFieldsToDate(filmingStartPartial) || ''
+      formData.isPartialFilmingStartDate = false
+    } else {
+      // Fecha parcial
+      formData.partialFilmingStartDate = filmingStartPartial
+      formData.isPartialFilmingStartDate = true
+      formData.filmingStartDate = ''
+    }
+  }
+
+  // Procesar fecha de fin de rodaje
+  if (movie.filmingEndYear) {
+    const filmingEndPartial: PartialDate = {
+      year: movie.filmingEndYear,
+      month: movie.filmingEndMonth,
+      day: movie.filmingEndDay
+    }
+
+    // Si la fecha está completa, convertirla a formato ISO
+    if (movie.filmingEndYear && movie.filmingEndMonth && movie.filmingEndDay) {
+      formData.filmingEndDate = partialFieldsToDate(filmingEndPartial) || ''
+      formData.isPartialFilmingEndDate = false
+    } else {
+      // Fecha parcial
+      formData.partialFilmingEndDate = filmingEndPartial
+      formData.isPartialFilmingEndDate = true
+      formData.filmingEndDate = ''
+    }
+  }
+
+  return formData
 }
 
 export const moviesService = {
@@ -21269,7 +20531,8 @@ export const moviesService = {
     }
 
     const data = await response.json()
-    
+
+    // Las películas ya vienen con los campos de fecha parcial desde la API
     return {
       movies: data.movies || [],
       pagination: data.pagination || { totalPages: 1, currentPage: 1, totalItems: 0 }
@@ -21281,24 +20544,48 @@ export const moviesService = {
    */
   async getById(id: number): Promise<any> {
     const response = await fetch(`/api/movies/${id}`)
-    
+
     if (!response.ok) {
       throw new Error('Error al cargar los datos de la película')
     }
 
-    return response.json()
+    const movie = await response.json()
+
+    // Devolver la película tal cual, con los campos de fecha parcial
+    return movie
+  },
+
+  /**
+   * Obtiene una película por ID en formato de formulario para edición
+   */
+  async getByIdForEdit(id: number): Promise<MovieFormData> {
+    const response = await fetch(`/api/movies/${id}`)
+
+    if (!response.ok) {
+      throw new Error('Error al cargar los datos de la película')
+    }
+
+    const movie = await response.json()
+    return formatMovieFromAPI(movie)
   },
 
   /**
    * Crea una nueva película
    */
-  async create(data: any): Promise<any> {
+  async create(data: MovieFormData): Promise<any> {
+    // Mismo tratamiento que update
+    let formattedData = data;
+
+    if (!('releaseYear' in data) && !('filmingStartYear' in data)) {
+      formattedData = formatMovieDataForAPI(data);
+    }
+
     const response = await fetch('/api/movies', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(formattedData)
     })
 
     if (!response.ok) {
@@ -21318,13 +20605,23 @@ export const moviesService = {
   /**
    * Actualiza una película existente
    */
-  async update(id: number, data: any): Promise<any> {
+  async update(id: number, data: MovieFormData): Promise<any> {
+    // NO volver a formatear si los datos ya vienen con campos de fecha separados
+    let formattedData = data;
+
+    // Solo formatear si vienen campos de fecha completos (releaseDate, etc.)
+    // Si ya vienen releaseYear, releaseMonth, etc., no hacer nada
+    if (!('releaseYear' in data) && !('filmingStartYear' in data)) {
+      // Solo formatear si es necesario
+      formattedData = formatMovieDataForAPI(data);
+    }
+
     const response = await fetch(`/api/movies/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(formattedData)
     })
 
     if (!response.ok) {
@@ -21365,12 +20662,65 @@ export const moviesService = {
     })
 
     const response = await fetch(`/api/movies/search?${params}`)
-    
+
     if (!response.ok) {
       throw new Error('Error al buscar películas')
     }
 
     return response.json()
+  },
+
+  /**
+   * Verifica si un slug está disponible
+   */
+  async checkSlugAvailability(slug: string, excludeId?: number): Promise<boolean> {
+    const params = new URLSearchParams({ slug })
+    if (excludeId) params.append('excludeId', String(excludeId))
+
+    const response = await fetch(`/api/movies/check-slug?${params}`)
+
+    if (!response.ok) {
+      throw new Error('Error al verificar disponibilidad del slug')
+    }
+
+    const { available } = await response.json()
+    return available
+  },
+
+  /**
+   * Obtiene estadísticas de películas
+   */
+  async getStats(): Promise<{
+    total: number
+    byYear: Record<string, number>
+    byStage: Record<string, number>
+    byDataCompleteness: Record<string, number>
+  }> {
+    const response = await fetch('/api/movies/stats')
+
+    if (!response.ok) {
+      throw new Error('Error al obtener estadísticas')
+    }
+
+    return response.json()
+  },
+
+  /**
+   * Exporta películas a CSV
+   */
+  async exportToCSV(filters: MovieFilters): Promise<Blob> {
+    const params = new URLSearchParams({
+      search: filters.searchTerm,
+      year: filters.selectedYear
+    })
+
+    const response = await fetch(`/api/movies/export?${params}`)
+
+    if (!response.ok) {
+      throw new Error('Error al exportar películas')
+    }
+
+    return response.blob()
   }
 }
 
@@ -21388,11 +20738,133 @@ import {
   PaginatedPeopleResponse
 } from '@/lib/people/peopleTypes';
 import { formatPersonFormDataForAPI } from '@/lib/people/peopleUtils';
+import { dateToPartialFields, partialFieldsToDate } from '@/lib/shared/dateUtils';
 
 interface PersonSearchResult {
   id: number;
   name: string;
   slug?: string;
+}
+
+/**
+ * Formatea los datos del formulario para enviar a la API
+ * Convierte las fechas completas o parciales al formato esperado por el backend
+ */
+function formatPersonDataForAPI(data: PersonFormData): any {
+  const apiData: any = {
+    firstName: data.firstName || null,
+    lastName: data.lastName || null,
+    realName: data.realName || null,
+    gender: data.gender || null,
+    hideAge: data.hideAge,
+    isActive: data.isActive,
+    birthLocationId: data.birthLocationId,
+    deathLocationId: data.deathLocationId,
+    biography: data.biography || null,
+    photoUrl: data.photoUrl || null
+  };
+
+  // Procesar fecha de nacimiento
+  if (data.isPartialBirthDate && data.partialBirthDate) {
+    // Fecha parcial de nacimiento
+    apiData.birthYear = data.partialBirthDate.year;
+    apiData.birthMonth = data.partialBirthDate.month;
+    apiData.birthDay = data.partialBirthDate.day;
+  } else if (data.birthDate) {
+    // Fecha completa de nacimiento - convertir a campos parciales
+    const partial = dateToPartialFields(data.birthDate);
+    apiData.birthYear = partial.year;
+    apiData.birthMonth = partial.month;
+    apiData.birthDay = partial.day;
+  } else {
+    // Sin fecha de nacimiento
+    apiData.birthYear = null;
+    apiData.birthMonth = null;
+    apiData.birthDay = null;
+  }
+
+  // Procesar fecha de fallecimiento
+  if (data.isPartialDeathDate && data.partialDeathDate) {
+    // Fecha parcial de fallecimiento
+    apiData.deathYear = data.partialDeathDate.year;
+    apiData.deathMonth = data.partialDeathDate.month;
+    apiData.deathDay = data.partialDeathDate.day;
+  } else if (data.deathDate) {
+    // Fecha completa de fallecimiento - convertir a campos parciales
+    const partial = dateToPartialFields(data.deathDate);
+    apiData.deathYear = partial.year;
+    apiData.deathMonth = partial.month;
+    apiData.deathDay = partial.day;
+  } else {
+    // Sin fecha de fallecimiento
+    apiData.deathYear = null;
+    apiData.deathMonth = null;
+    apiData.deathDay = null;
+  }
+
+  return apiData;
+}
+
+/**
+ * Convierte los datos de la API al formato del formulario
+ */
+function formatPersonFromAPI(person: any): PersonFormData {
+  const formData: PersonFormData = {
+    firstName: person.firstName || '',
+    lastName: person.lastName || '',
+    realName: person.realName || '',
+    birthDate: '',
+    deathDate: '',
+    gender: person.gender || '',
+    hideAge: person.hideAge || false,
+    isActive: person.isActive !== false, // Default true
+    birthLocationId: person.birthLocationId || null,
+    deathLocationId: person.deathLocationId || null,
+    biography: person.biography || '',
+    photoUrl: person.photoUrl || ''
+  };
+
+  // Procesar fecha de nacimiento
+  if (person.birthYear) {
+    const birthPartial = {
+      year: person.birthYear,
+      month: person.birthMonth,
+      day: person.birthDay
+    };
+
+    // Si la fecha está completa, convertirla a formato ISO
+    if (person.birthYear && person.birthMonth && person.birthDay) {
+      formData.birthDate = partialFieldsToDate(birthPartial) || '';
+      formData.isPartialBirthDate = false;
+    } else {
+      // Fecha parcial
+      formData.partialBirthDate = birthPartial;
+      formData.isPartialBirthDate = true;
+      formData.birthDate = '';
+    }
+  }
+
+  // Procesar fecha de fallecimiento
+  if (person.deathYear) {
+    const deathPartial = {
+      year: person.deathYear,
+      month: person.deathMonth,
+      day: person.deathDay
+    };
+
+    // Si la fecha está completa, convertirla a formato ISO
+    if (person.deathYear && person.deathMonth && person.deathDay) {
+      formData.deathDate = partialFieldsToDate(deathPartial) || '';
+      formData.isPartialDeathDate = false;
+    } else {
+      // Fecha parcial
+      formData.partialDeathDate = deathPartial;
+      formData.isPartialDeathDate = true;
+      formData.deathDate = '';
+    }
+  }
+
+  return formData;
 }
 
 export const peopleService = {
@@ -21413,7 +20885,23 @@ export const peopleService = {
     if (filters.page) params.append('page', String(filters.page));
     if (filters.limit) params.append('limit', String(filters.limit));
 
-    return apiClient.get<PaginatedPeopleResponse>(`/people?${params}`);
+    const response = await apiClient.get<PaginatedPeopleResponse>(`/people?${params}`);
+    
+    // Convertir las fechas de cada persona si es necesario
+    if (response.data && Array.isArray(response.data)) {
+      response.data = response.data.map((person: any) => ({
+        ...person,
+        // Mantener la estructura original pero asegurar que las fechas parciales estén disponibles
+        birthYear: person.birthYear,
+        birthMonth: person.birthMonth,
+        birthDay: person.birthDay,
+        deathYear: person.deathYear,
+        deathMonth: person.deathMonth,
+        deathDay: person.deathDay
+      }));
+    }
+
+    return response;
   },
 
   /**
@@ -21436,15 +20924,28 @@ export const peopleService = {
    * Obtiene una persona por ID con todas sus relaciones
    */
   async getById(id: number): Promise<PersonWithRelations> {
-    return apiClient.get<PersonWithRelations>(`/people/${id}`);
+    const person = await apiClient.get<PersonWithRelations>(`/people/${id}`);
+    
+    // Si necesitas devolver el formato de formulario, usa formatPersonFromAPI
+    // De lo contrario, devuelve la persona tal cual con los campos de fecha parcial
+    return person;
+  },
+
+  /**
+   * Obtiene una persona por ID en formato de formulario
+   */
+  async getByIdForEdit(id: number): Promise<PersonFormData> {
+    const person = await apiClient.get<any>(`/people/${id}`);
+    return formatPersonFromAPI(person);
   },
 
   /**
    * Crea una nueva persona
    */
   async create(data: PersonFormData): Promise<PersonWithRelations> {
-    const formattedData = formatPersonFormDataForAPI(data);
-    console.log('Formatted data for API:', formattedData); // <-- Agregar este log
+    // Usar la nueva función que maneja fechas parciales
+    const formattedData = formatPersonDataForAPI(data);
+    console.log('Formatted data for API:', formattedData); // <-- Log para debugging
 
     return apiClient.post<PersonWithRelations>('/people', formattedData);
   },
@@ -21453,15 +20954,24 @@ export const peopleService = {
    * Crea una persona rápida (solo con nombre)
    */
   async createQuick(name: string): Promise<Person> {
-    return apiClient.post<Person>('/people', { name });
+    // Separar el nombre en firstName y lastName si es posible
+    const nameParts = name.trim().split(' ');
+    const quickData = {
+      firstName: nameParts[0] || null,
+      lastName: nameParts.slice(1).join(' ') || null,
+      isActive: true
+    };
+
+    return apiClient.post<Person>('/people', quickData);
   },
 
   /**
    * Actualiza una persona
    */
   async update(id: number, data: PersonFormData): Promise<PersonWithRelations> {
-    const formattedData = formatPersonFormDataForAPI(data);
-      console.log('Formatted data for API update:', formattedData); // <-- Agregar este log
+    // Usar la nueva función que maneja fechas parciales
+    const formattedData = formatPersonDataForAPI(data);
+    console.log('Formatted data for API update:', formattedData); // <-- Log para debugging
 
     return apiClient.put<PersonWithRelations>(`/people/${id}`, formattedData);
   },
