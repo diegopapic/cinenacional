@@ -19,7 +19,9 @@ interface MovieModalContextValue {
   isSubmitting: boolean;
   editingMovie: Movie | null;
   
+  // Submit handler
   onSubmit: (data: any) => Promise<void>;
+  
   // Date handling
   isPartialDate: boolean;
   setIsPartialDate: (value: boolean) => void;
@@ -36,15 +38,20 @@ interface MovieModalContextValue {
   partialFilmingEndDate: any;
   setPartialFilmingEndDate: (value: any) => void;
   
-  // UI state
+  // UI states
   tipoDuracionDisabled: boolean;
+  movieFormInitialData: any;
+  alternativeTitles: any[];
+  setAlternativeTitles: (titles: any[]) => void;
+  movieLinks: any[];
   
   // Metadata
   availableRatings: any[];
   availableColorTypes: any[];
   
-  // Relations handlers
+  // Relation handlers
   handleGenresChange: (genres: number[]) => void;
+  handleLinksChange: (links: any[]) => void;
   handleCastChange: (cast: any[]) => void;
   handleCrewChange: (crew: any[]) => void;
   handleCountriesChange: (countries: number[]) => void;
@@ -52,14 +59,8 @@ interface MovieModalContextValue {
   handleDistributionCompaniesChange: (companies: number[]) => void;
   handleThemesChange: (themes: number[]) => void;
   handleScreeningVenuesChange: (venues: number[]) => void;
-  handleLinksChange: (links: any[]) => void;
   
-  // Data
-  alternativeTitles: any[];
-  setAlternativeTitles: (titles: any[]) => void;
-  movieLinks: any[];
-  
-  // Actions
+  // Functions
   loadMovieData: (movie: Movie) => Promise<void>;
   resetForNewMovie: () => void;
 }
@@ -85,6 +86,7 @@ export function MovieModalProvider({
     onError
   });
 
+  // Cargar datos automáticamente cuando cambia editingMovie
   useEffect(() => {
     if (editingMovie) {
       console.log('🔄 Loading movie data for editing:', editingMovie.title)
@@ -95,13 +97,14 @@ export function MovieModalProvider({
         }
       })
     } else {
+      // Si no hay película editándose, resetear para nueva película
       movieFormData.resetForNewMovie()
     }
   }, [editingMovie?.id])
 
   return (
     <MovieModalContext.Provider value={{
-        ...movieFormData,
+      ...movieFormData,
       editingMovie
     }}>
       {children}
