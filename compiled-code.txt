@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: aa46ed52f477767b80b33dca386bb564330ac356
-// Fecha: 2025-08-17T02:33:42.776Z
+// Commit: b750324a050d5690d47a1e1e45d882623d1d0766
+// Fecha: 2025-08-17T02:37:10.183Z
 // ============================================
 
 
@@ -17766,11 +17766,11 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
             dataCompleteness: 'BASIC_PRESS_KIT',
         })
         setIsPartialDate(false)
-        setPartialReleaseDate({ year: null, month: null })
+        setPartialReleaseDate({ year: null, month: null, day: null })
         setIsPartialFilmingStartDate(false)
-        setPartialFilmingStartDate({ year: null, month: null })
+        setPartialFilmingStartDate({ year: null, month: null, day: null })
         setIsPartialFilmingEndDate(false)
-        setPartialFilmingEndDate({ year: null, month: null })
+        setPartialFilmingEndDate({ year: null, month: null, day: null })
         setMovieRelations({
             genres: [],
             cast: [],

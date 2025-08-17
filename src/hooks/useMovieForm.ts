@@ -540,11 +540,11 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
             dataCompleteness: 'BASIC_PRESS_KIT',
         })
         setIsPartialDate(false)
-        setPartialReleaseDate({ year: null, month: null })
+        setPartialReleaseDate({ year: null, month: null, day: null })
         setIsPartialFilmingStartDate(false)
-        setPartialFilmingStartDate({ year: null, month: null })
+        setPartialFilmingStartDate({ year: null, month: null, day: null })
         setIsPartialFilmingEndDate(false)
-        setPartialFilmingEndDate({ year: null, month: null })
+        setPartialFilmingEndDate({ year: null, month: null, day: null })
         setMovieRelations({
             genres: [],
             cast: [],
