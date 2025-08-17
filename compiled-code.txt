@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: f5c3c14c1e2f9d6dbfeeee0cbbdc1efc8d0c9a1f
-// Fecha: 2025-08-17T02:42:32.020Z
+// Commit: 8ccc4076fa0a6a69a1a454da578f95555bee5609
+// Fecha: 2025-08-17T02:46:37.114Z
 // ============================================
 
 
@@ -18885,6 +18885,12 @@ export interface Person {
   realName?: string | null;
   birthDate?: string | null;
   deathDate?: string | null;
+  birthYear?: number | null;
+  birthMonth?: number | null;
+  birthDay?: number | null;
+  deathYear?: number | null;
+  deathMonth?: number | null;
+  deathDay?: number | null;
   birthLocationId?: number | null;
   deathLocationId?: number | null;
   biography?: string | null;

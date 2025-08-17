@@ -11,6 +11,12 @@ export interface Person {
   realName?: string | null;
   birthDate?: string | null;
   deathDate?: string | null;
+  birthYear?: number | null;
+  birthMonth?: number | null;
+  birthDay?: number | null;
+  deathYear?: number | null;
+  deathMonth?: number | null;
+  deathDay?: number | null;
   birthLocationId?: number | null;
   deathLocationId?: number | null;
   biography?: string | null;
