@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: e456066e9a90bd621547879b5d728f2a250af813
-// Fecha: 2025-08-17T03:03:54.996Z
+// Commit: d3e3b73b5b2244887cda3a30173a8cc75dd1655e
+// Fecha: 2025-08-17T03:33:11.746Z
 // ============================================
 
 
@@ -12502,10 +12502,18 @@ export default function MovieModalFooter({
       </button>
       
       {Object.keys(errors).length > 0 && (
-        <div className="px-6 py-2 bg-red-50 text-red-800 text-sm">
-          Errores: {Object.keys(errors).join(', ')}
+  <div className="px-6 py-2 bg-red-50 text-red-800 text-sm">
+    {console.log('🔴 Errores de validación:', errors)}
+    Errores: {Object.keys(errors).join(', ')}
+    <div className="text-xs mt-1">
+      {Object.entries(errors).map(([key, error]: [string, any]) => (
+        <div key={key}>
+          {key}: {error?.message || error?.type || 'Error desconocido'}
         </div>
-      )}
+      ))}
+    </div>
+  </div>
+)}
       
       <button
         type="submit"
@@ -17377,7 +17385,10 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
     const form = useForm<MovieFormData>({
         resolver: zodResolver(movieFormSchema),
         defaultValues: {
-            stage: 'COMPLETA'
+            stage: 'COMPLETA',
+            dataCompleteness: 'BASIC_PRESS_KIT',
+            metaDescription: '',
+            metaKeywords: []
         }
     })
 
@@ -17530,7 +17541,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 setPartialReleaseDate({ year: null, month: null, day: null })
             }
 
-            // Manejar fecha parcial de inicio de rodaje (IGUAL que releaseDate)
+            // Manejar fecha parcial de inicio de rodaje
             if (fullMovie.filmingStartYear) {
                 setIsPartialFilmingStartDate(true)
                 setPartialFilmingStartDate({
@@ -17549,7 +17560,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 setPartialFilmingStartDate({ year: null, month: null, day: null })
             }
 
-            // Manejar fecha parcial de fin de rodaje (IGUAL que releaseDate)
+            // Manejar fecha parcial de fin de rodaje
             if (fullMovie.filmingEndYear) {
                 setIsPartialFilmingEndDate(true)
                 setPartialFilmingEndDate({
@@ -17587,7 +17598,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 productionCompanies: fullMovie.productionCompanies || [],
                 distributionCompanies: fullMovie.distributionCompanies || [],
                 themes: fullMovie.themes || [],
-                screeningVenues: fullMovie.screenings?.map((s: any) => s.venueId) || [] // AGREGAR ESTA LÍNEA
+                screeningVenues: fullMovie.screenings?.map((s: any) => s.venueId) || []
             })
 
             if (fullMovie.links) {
@@ -17613,7 +17624,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
                 distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
                 themes: fullMovie.themes?.map((t: any) => t.themeId) || [],
-                screeningVenues: fullMovie.screenings?.map((s: any) => s.venueId) || [] // AGREGAR ESTA LÍNEA
+                screeningVenues: fullMovie.screenings?.map((s: any) => s.venueId) || []
             })
 
         } catch (error) {
@@ -17712,7 +17723,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
             delete preparedData.filmingStartDate;
             delete preparedData.filmingEndDate;
 
-            const movieData = {
+            // Construir el objeto completo de datos
+            const movieData: any = {
                 ...preparedData,
                 ...releaseDateData,
                 ...filmingStartDateData,
@@ -17724,13 +17736,25 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                         ? preparedData.metaKeywords
                         : preparedData.metaKeywords.split(',').map((k: string) => k.trim()).filter((k: string) => k)
                     : [],
-                ...movieRelations,
+                
+                // IMPORTANTE: Usar las relaciones del estado, no del data del formulario
+                genres: movieRelations.genres,
+                cast: movieRelations.cast,
+                crew: movieRelations.crew,
+                countries: movieRelations.countries,
+                productionCompanies: movieRelations.productionCompanies,
+                distributionCompanies: movieRelations.distributionCompanies,
+                themes: movieRelations.themes,
+                
+                // Screening venues con procesamiento especial
                 screeningVenues: movieRelations.screeningVenues.map((venueId, index) => ({
                     venueId,
                     screeningDate: data.releaseDate || new Date().toISOString().split('T')[0],
-                    isPremiere: index === 0, // La primera es premiere
-                    isExclusive: movieRelations.screeningVenues.length === 1 // Exclusiva si es la única
+                    isPremiere: index === 0,
+                    isExclusive: movieRelations.screeningVenues.length === 1
                 })),
+                
+                // Otros campos manejados por estado
                 alternativeTitles,
                 links: movieLinks
             }
@@ -17764,6 +17788,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         reset({
             stage: 'COMPLETA',
             dataCompleteness: 'BASIC_PRESS_KIT',
+            metaDescription: '',
+            metaKeywords: []
         })
         setIsPartialDate(false)
         setPartialReleaseDate({ year: null, month: null, day: null })
@@ -17789,7 +17815,6 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
     }, [reset])
 
     return {
-
         onSubmit,
 
         // Estados
@@ -17833,6 +17858,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         // Funciones
         loadMovieData,
         resetForNewMovie,
+        
         // Form methods explícitos (sin spread)
         register: form.register,
         handleSubmit: form.handleSubmit,
@@ -18395,49 +18421,103 @@ export const COMPLETENESS_COLORS = {
 // ==================================================
 // src/lib/movies/movieTypes.ts
 
+import { z } from 'zod'
 import { PartialDate } from '@/lib/shared/dateUtils'
 
-// Usar el tipo compartido de PartialDate en lugar de tipos propios
+// ============================================================================
+// TIPOS REUTILIZABLES
+// ============================================================================
+
+// Usar el tipo compartido de PartialDate
 export type PartialReleaseDate = PartialDate
 export type PartialFilmingDate = PartialDate
 
+// ============================================================================
+// SCHEMAS DE VALIDACIÓN
+// ============================================================================
 
-import { z } from 'zod'
-
-// Schema del formulario
-export const movieFormSchema = z.object({
+// Schema para campos del formulario (solo campos que se manejan con register)
+export const movieFormFieldsSchema = z.object({
   // Campos requeridos
   title: z.string().min(1, 'El título es requerido'),
 
-  // Todos los demás campos como strings opcionales o any
-  originalTitle: z.any().optional(),
-  synopsis: z.any().optional(),
-  notes: z.string().optional(),
-  tagline: z.any().optional(),
-  imdbId: z.any().optional(),
-  aspectRatio: z.any().optional(),
-  colorType: z.any().optional(),
-  soundType: z.any().optional(),
-  filmFormat: z.any().optional(),
-  certificateNumber: z.any().optional(),
-  tipoDuracion: z.any().optional(),
+  // Información básica
+  originalTitle: z.string().nullable().transform(val => val ?? '').optional(),
+  synopsis: z.string().nullable().transform(val => val ?? '').optional(),
+  notes: z.string().nullable().transform(val => val ?? '').optional(),
+  tagline: z.string().nullable().transform(val => val ?? '').optional(),
+  imdbId: z.string().nullable().transform(val => val ?? '').optional(),
+  aspectRatio: z.string().nullable().transform(val => val ?? '').optional(),
+  soundType: z.string().nullable().transform(val => val ?? '').optional(),
+  filmFormat: z.string().nullable().transform(val => val ?? '').optional(),
+  certificateNumber: z.string().nullable().transform(val => val ?? '').optional(),
+  tipoDuracion: z.string().nullable().transform(val => val ?? '').optional(),
 
   // Campos numéricos
-  year: z.any().optional(),
-  duration: z.any().optional(),
-  durationSeconds: z.any().optional(),
-  rating: z.any().optional(),
-  colorTypeId: z.any().optional(),
-  ratingId: z.union([z.number(), z.null()]).optional(),
+  year: z.number().nullable().optional(),
+  duration: z.number().nullable().optional(),
+  durationSeconds: z.number().nullable().optional(),
+  colorTypeId: z.number().nullable().optional(),
+  ratingId: z.union([
+    z.number().positive(),
+    z.null(),
+    z.literal(0).transform(() => null)
+  ]).optional(),
 
   // Campos de fecha
-  releaseDate: z.any().optional(),
-  filmingStartDate: z.any().optional(),
-  filmingEndDate: z.any().optional(),
+  releaseDate: z.string().optional(),
+  filmingStartDate: z.string().optional(),
+  filmingEndDate: z.string().optional(),
+
+  // Producción
   countries: z.array(z.string()).optional(),
   is_coproduction: z.boolean().optional(),
   production_type: z.string().optional(),
 
+  // URLs
+  posterUrl: z.string().nullable().transform(val => val ?? '').optional(),
+  posterPublicId: z.string().optional(),
+  backdropUrl: z.string().optional(),
+  backdropPublicId: z.string().optional(),
+  trailerUrl: z.string().nullable().transform(val => val ?? '').optional(),
+
+  // Metadata - con transformaciones para evitar null
+  metaDescription: z.union([
+    z.string(),
+    z.null(),
+    z.undefined()
+  ]).transform(val => val ?? '').optional(),
+  
+  metaKeywords: z.union([
+    z.string(),
+    z.array(z.string()),
+    z.null(),
+    z.undefined()
+  ]).transform(val => val ?? []).optional(),
+
+  // Enums
+  dataCompleteness: z.enum([
+    'BASIC_PRESS_KIT',
+    'FULL_PRESS_KIT',
+    'MAIN_CAST',
+    'MAIN_CREW',
+    'FULL_CAST',
+    'FULL_CREW'
+  ]).optional(),
+  
+  stage: z.enum([
+    'COMPLETA',
+    'EN_DESARROLLO',
+    'EN_POSTPRODUCCION',
+    'EN_PREPRODUCCION',
+    'EN_RODAJE',
+    'INCONCLUSA',
+    'INEDITA'
+  ]).optional(),
+})
+
+// Schema para fechas parciales (estado interno del formulario)
+export const moviePartialDatesSchema = z.object({
   isPartialReleaseDate: z.boolean().optional(),
   partialReleaseDate: z.object({
     year: z.number().nullable(),
@@ -18458,37 +18538,10 @@ export const movieFormSchema = z.object({
     month: z.number().nullable(),
     day: z.number().nullable()
   }).optional(),
+})
 
-  // URLs
-  posterUrl: z.any().optional(),
-  posterPublicId: z.any().optional(),
-  backdropUrl: z.any().optional(),
-  backdropPublicId: z.any().optional(),
-  trailerUrl: z.any().optional(),
-
-  // Enums
-  dataCompleteness: z.enum([
-    'BASIC_PRESS_KIT',
-    'FULL_PRESS_KIT',
-    'MAIN_CAST',
-    'MAIN_CREW',
-    'FULL_CAST',
-    'FULL_CREW'
-  ]).optional(),
-  stage: z.enum([
-    'COMPLETA',
-    'EN_DESARROLLO',
-    'EN_POSTPRODUCCION',
-    'EN_PREPRODUCCION',
-    'EN_RODAJE',
-    'INCONCLUSA',
-    'INEDITA'
-  ]).optional(),
-  metaDescription: z.string().optional(),
-  metaKeywords: z.union([
-    z.string(),
-    z.array(z.string())
-  ]).optional(),
+// Schema para relaciones (manejadas por callbacks, no validadas por React Hook Form)
+export const movieRelationsSchema = z.object({
   genres: z.array(z.number()).optional(),
   cast: z.array(z.object({
     personId: z.number(),
@@ -18527,9 +18580,33 @@ export const movieFormSchema = z.object({
   })).optional()
 })
 
+// Schema principal para React Hook Form (solo valida campos del formulario)
+export const movieFormSchema = movieFormFieldsSchema.merge(moviePartialDatesSchema)
+
+// Schema completo para la API (incluye todo)
+export const movieCompleteSchema = movieFormFieldsSchema
+  .merge(moviePartialDatesSchema)
+  .merge(movieRelationsSchema)
+
+// ============================================================================
+// TIPOS TYPESCRIPT
+// ============================================================================
+
+// Tipo para React Hook Form (solo campos del formulario + fechas parciales)
 export type MovieFormData = z.infer<typeof movieFormSchema>
 
-// Interfaces
+// Tipo completo con relaciones (para enviar a la API)
+export type MovieCompleteData = z.infer<typeof movieCompleteSchema>
+
+// Tipos parciales para mejor organización
+export type MovieFormFields = z.infer<typeof movieFormFieldsSchema>
+export type MovieRelations = z.infer<typeof movieRelationsSchema>
+export type MoviePartialDates = z.infer<typeof moviePartialDatesSchema>
+
+// ============================================================================
+// INTERFACES
+// ============================================================================
+
 export interface Movie {
   id: number
   slug: string
@@ -18542,10 +18619,8 @@ export interface Movie {
   posterUrl?: string
   status: string
   stage?: string
-
-  // Fechas de rodaje
-  filmingStartDate: string;
-  filmingEndDate: string;
+  filmingStartDate: string
+  filmingEndDate: string
   dataCompleteness?: string
   genres: Array<{ id: number; name: string }>
   directors: Array<{ id: number; name: string }>
@@ -18554,16 +18629,6 @@ export interface Movie {
     character?: string
   }>
   country: string
-}
-
-export interface MovieRelations {
-  genres: number[]
-  cast: any[]
-  crew: any[]
-  countries: number[]
-  productionCompanies: number[]
-  distributionCompanies: number[]
-  themes: number[]
 }
 
 export interface MovieLink {
@@ -18592,7 +18657,10 @@ export interface ColorType {
   name: string
 }
 
-// Tipos de constantes
+// ============================================================================
+// TIPOS DE CONSTANTES
+// ============================================================================
+
 export type MovieStage =
   | 'COMPLETA'
   | 'EN_DESARROLLO'
@@ -19502,6 +19570,13 @@ export const movieSchema = z.object({
   soundType: z.string().optional(),
   filmFormat: z.string().optional(),
 
+  // AGREGAR ESTOS CAMPOS DE METADATA
+  metaDescription: z.string().optional(),
+  metaKeywords: z.union([
+    z.string(),
+    z.array(z.string())
+  ]).optional(),
+
   // Clasificación
   ratingId: z.union([
     z.number().positive(),  // Solo números positivos
@@ -19544,11 +19619,11 @@ export const movieSchema = z.object({
   alternativeTitles: z.array(z.any()).optional(),
   links: z.array(z.any()).optional(),
   screeningVenues: z.array(z.object({
-  venueId: z.number(),
-  screeningDate: z.string().optional().nullable(),
-  isPremiere: z.boolean().optional(),
-  isExclusive: z.boolean().optional()
-})).optional()
+    venueId: z.number(),
+    screeningDate: z.string().optional().nullable(),
+    isPremiere: z.boolean().optional(),
+    isExclusive: z.boolean().optional()
+  })).optional()
 })
 
 export type MovieFormData = z.infer<typeof movieSchema>
@@ -20643,6 +20718,15 @@ export const moviesService = {
    * Actualiza una película existente
    */
   async update(id: number, data: MovieFormData): Promise<any> {
+     console.log('🎬 movies.service.update - Datos recibidos:', {
+        tieneGenres: 'genres' in data,
+        genres: data.genres,
+        tieneLinks: 'links' in data,
+        links: data.links,
+        tieneMetaDescription: 'metaDescription' in data,
+        metaDescription: data.metaDescription
+    })
+    
     // NO volver a formatear si los datos ya vienen con campos de fecha separados
     let formattedData = data;
 

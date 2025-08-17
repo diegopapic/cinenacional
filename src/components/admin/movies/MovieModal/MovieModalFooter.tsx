@@ -25,10 +25,18 @@ export default function MovieModalFooter({
       </button>
       
       {Object.keys(errors).length > 0 && (
-        <div className="px-6 py-2 bg-red-50 text-red-800 text-sm">
-          Errores: {Object.keys(errors).join(', ')}
+  <div className="px-6 py-2 bg-red-50 text-red-800 text-sm">
+    {console.log('🔴 Errores de validación:', errors)}
+    Errores: {Object.keys(errors).join(', ')}
+    <div className="text-xs mt-1">
+      {Object.entries(errors).map(([key, error]: [string, any]) => (
+        <div key={key}>
+          {key}: {error?.message || error?.type || 'Error desconocido'}
         </div>
-      )}
+      ))}
+    </div>
+  </div>
+)}
       
       <button
         type="submit"

@@ -309,6 +309,15 @@ export const moviesService = {
    * Actualiza una película existente
    */
   async update(id: number, data: MovieFormData): Promise<any> {
+     console.log('🎬 movies.service.update - Datos recibidos:', {
+        tieneGenres: 'genres' in data,
+        genres: data.genres,
+        tieneLinks: 'links' in data,
+        links: data.links,
+        tieneMetaDescription: 'metaDescription' in data,
+        metaDescription: data.metaDescription
+    })
+    
     // NO volver a formatear si los datos ya vienen con campos de fecha separados
     let formattedData = data;
 
