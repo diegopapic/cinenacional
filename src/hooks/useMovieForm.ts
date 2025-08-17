@@ -290,7 +290,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 setIsPartialDate(true)
                 setPartialReleaseDate({
                     year: fullMovie.releaseYear,
-                    month: fullMovie.releaseMonth || null
+                    month: fullMovie.releaseMonth || null,
+                    day: null
                 })
 
                 if (fullMovie.releaseDay) {
@@ -300,7 +301,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 }
             } else if (!fullMovie.releaseYear && !fullMovie.releaseDate) {
                 setIsPartialDate(false)
-                setPartialReleaseDate({ year: null, month: null })
+                setPartialReleaseDate({ year: null, month: null, day: null })
             }
 
             // Manejar fecha parcial de inicio de rodaje (IGUAL que releaseDate)
@@ -308,7 +309,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 setIsPartialFilmingStartDate(true)
                 setPartialFilmingStartDate({
                     year: fullMovie.filmingStartYear,
-                    month: fullMovie.filmingStartMonth || null
+                    month: fullMovie.filmingStartMonth || null,
+                    day: null
                 })
 
                 if (fullMovie.filmingStartDay) {
@@ -318,7 +320,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 }
             } else {
                 setIsPartialFilmingStartDate(false)
-                setPartialFilmingStartDate({ year: null, month: null })
+                setPartialFilmingStartDate({ year: null, month: null, day: null })
             }
 
             // Manejar fecha parcial de fin de rodaje (IGUAL que releaseDate)
@@ -326,7 +328,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 setIsPartialFilmingEndDate(true)
                 setPartialFilmingEndDate({
                     year: fullMovie.filmingEndYear,
-                    month: fullMovie.filmingEndMonth || null
+                    month: fullMovie.filmingEndMonth || null,
+                    day: null
                 })
 
                 if (fullMovie.filmingEndDay) {
@@ -336,7 +339,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 }
             } else {
                 setIsPartialFilmingEndDate(false)
-                setPartialFilmingEndDate({ year: null, month: null })
+                setPartialFilmingEndDate({ year: null, month: null, day: null })
             }
 
             // Configurar valores por defecto
