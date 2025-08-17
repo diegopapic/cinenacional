@@ -91,12 +91,6 @@ export interface PersonWithRelations extends Person {
   };
 }
 
-export interface PartialDate {
-  year: number | null;
-  month: number | null;
-  day: number | null;
-}
-
 // Tipo para el formulario
 export interface PersonFormData {
   firstName: string;

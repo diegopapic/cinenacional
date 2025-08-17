@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: ea6229f01b4b10a7505b058e5ff7cbd9a63a5140
-// Fecha: 2025-08-17T02:40:57.175Z
+// Commit: f5c3c14c1e2f9d6dbfeeee0cbbdc1efc8d0c9a1f
+// Fecha: 2025-08-17T02:42:32.020Z
 // ============================================
 
 
@@ -18963,12 +18963,6 @@ export interface PersonWithRelations extends Person {
     crewRoles: number;
     awards: number;
   };
-}
-
-export interface PartialDate {
-  year: number | null;
-  month: number | null;
-  day: number | null;
 }
 
 // Tipo para el formulario
