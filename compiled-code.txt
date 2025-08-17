@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 53463036b95bf0036a7a8a3f6408189f6cc6ee6b
-// Fecha: 2025-08-17T02:51:50.404Z
+// Commit: c198d8399278061b394c40b99fb3e81d2bda372f
+// Fecha: 2025-08-17T02:54:35.941Z
 // ============================================
 
 
@@ -18434,6 +18434,9 @@ export const movieFormSchema = z.object({
   releaseDate: z.any().optional(),
   filmingStartDate: z.any().optional(),
   filmingEndDate: z.any().optional(),
+  countries: z.array(z.string()).optional(),
+  is_coproduction: z.boolean().optional(),
+  production_type: z.string().optional(),
 
   isPartialReleaseDate: z.boolean().optional(),
   partialReleaseDate: z.object({
