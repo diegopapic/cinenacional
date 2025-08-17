@@ -30,7 +30,7 @@ export const movieFormFieldsSchema = z.object({
   soundType: z.string().nullable().transform(val => val ?? '').optional(),
   filmFormat: z.string().nullable().transform(val => val ?? '').optional(),
   certificateNumber: z.string().nullable().transform(val => val ?? '').optional(),
-  tipoDuracion: z.string().nullable().transform(val => val ?? '').optional(),
+  tipoDuracion: z.string().optional(),
 
   // Campos numéricos
   year: z.number().nullable().optional(),
@@ -66,7 +66,7 @@ export const movieFormFieldsSchema = z.object({
     z.null(),
     z.undefined()
   ]).transform(val => val ?? '').optional(),
-  
+
   metaKeywords: z.union([
     z.string(),
     z.array(z.string()),
@@ -83,7 +83,7 @@ export const movieFormFieldsSchema = z.object({
     'FULL_CAST',
     'FULL_CREW'
   ]).optional(),
-  
+
   stage: z.enum([
     'COMPLETA',
     'EN_DESARROLLO',

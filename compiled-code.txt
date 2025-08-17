@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 59a6b449b321c84e77b51e0610fb03fda8bf12b4
-// Fecha: 2025-08-17T03:47:51.956Z
+// Commit: 8a06d8186f62c6e4928b180bcadbb0bbc60fb284
+// Fecha: 2025-08-17T03:56:44.753Z
 // ============================================
 
 
@@ -18501,7 +18501,7 @@ export const movieFormFieldsSchema = z.object({
   soundType: z.string().nullable().transform(val => val ?? '').optional(),
   filmFormat: z.string().nullable().transform(val => val ?? '').optional(),
   certificateNumber: z.string().nullable().transform(val => val ?? '').optional(),
-  tipoDuracion: z.string().nullable().transform(val => val ?? '').optional(),
+  tipoDuracion: z.string().optional(),
 
   // Campos numéricos
   year: z.number().nullable().optional(),
@@ -18537,7 +18537,7 @@ export const movieFormFieldsSchema = z.object({
     z.null(),
     z.undefined()
   ]).transform(val => val ?? '').optional(),
-  
+
   metaKeywords: z.union([
     z.string(),
     z.array(z.string()),
@@ -18554,7 +18554,7 @@ export const movieFormFieldsSchema = z.object({
     'FULL_CAST',
     'FULL_CREW'
   ]).optional(),
-  
+
   stage: z.enum([
     'COMPLETA',
     'EN_DESARROLLO',
