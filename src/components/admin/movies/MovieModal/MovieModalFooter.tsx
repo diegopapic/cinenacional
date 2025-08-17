@@ -8,11 +8,11 @@ interface MovieModalFooterProps {
   errors: any
 }
 
-export default function MovieModalFooter({ 
-  isSubmitting, 
-  isEditing, 
-  onCancel, 
-  errors 
+export default function MovieModalFooter({
+  isSubmitting,
+  isEditing,
+  onCancel,
+  errors
 }: MovieModalFooterProps) {
   return (
     <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-4">
@@ -23,21 +23,20 @@ export default function MovieModalFooter({
       >
         Cancelar
       </button>
-      
+
       {Object.keys(errors).length > 0 && (
-  <div className="px-6 py-2 bg-red-50 text-red-800 text-sm">
-    {console.log('🔴 Errores de validación:', errors)}
-    Errores: {Object.keys(errors).join(', ')}
-    <div className="text-xs mt-1">
-      {Object.entries(errors).map(([key, error]: [string, any]) => (
-        <div key={key}>
-          {key}: {error?.message || error?.type || 'Error desconocido'}
+        <div className="px-6 py-2 bg-red-50 text-red-800 text-sm">
+          Errores: {Object.keys(errors).join(', ')}
+          <div className="text-xs mt-1">
+            {Object.entries(errors).map(([key, error]: [string, any]) => (
+              <div key={key}>
+                {key}: {error?.message || error?.type || 'Error desconocido'}
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
-    </div>
-  </div>
-)}
-      
+      )}
+
       <button
         type="submit"
         disabled={isSubmitting}
