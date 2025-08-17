@@ -2,7 +2,7 @@
 
 import { Person, PersonWithRelations, PersonFormData, PersonLink, Gender } from './peopleTypes';
 import { DEFAULT_PERSON_FORM_VALUES, DEFAULT_PERSON_LINK } from './peopleConstants';
-import { partialFieldsToDate } from '@/lib/shared/dateUtils';
+import { PartialDate, partialFieldsToDate } from '@/lib/shared/dateUtils';
 
 /**
  * Genera un slug único para una persona basado en nombre y apellido
@@ -115,10 +115,10 @@ export function formatPersonDataForForm(person?: PersonWithRelations | null): Pe
 
     // Procesar fecha de nacimiento
     if ('birthYear' in person && person.birthYear) {
-        const birthPartial = {
+        const birthPartial: PartialDate = {
             year: person.birthYear,
-            month: person.birthMonth,
-            day: person.birthDay
+            month: person.birthMonth ?? null,  // Usar ?? para convertir undefined a null
+            day: person.birthDay ?? null       // Usar ?? para convertir undefined a null
         };
 
         // Si la fecha está completa (año, mes y día), convertirla a formato ISO
@@ -142,10 +142,10 @@ export function formatPersonDataForForm(person?: PersonWithRelations | null): Pe
 
     // Procesar fecha de fallecimiento
     if ('deathYear' in person && person.deathYear) {
-        const deathPartial = {
+        const deathPartial: PartialDate = {
             year: person.deathYear,
-            month: person.deathMonth,
-            day: person.deathDay
+            month: person.deathMonth ?? null,  // Usar ?? para convertir undefined a null
+            day: person.deathDay ?? null       // Usar ?? para convertir undefined a null
         };
 
         // Si la fecha está completa (año, mes y día), convertirla a formato ISO
@@ -192,11 +192,11 @@ export function validatePersonForm(data: PersonFormData): string[] {
     }
 
     // Validar fechas parciales
-    if (data.isPartialBirthDate && data.partialBirthDate && 
+    if (data.isPartialBirthDate && data.partialBirthDate &&
         data.isPartialDeathDate && data.partialDeathDate) {
         const birthYear = data.partialBirthDate.year;
         const deathYear = data.partialDeathDate.year;
-        
+
         if (birthYear && deathYear && deathYear < birthYear) {
             errors.push('El año de fallecimiento debe ser posterior al año de nacimiento');
         }
@@ -276,7 +276,7 @@ export function formatBirthInfo(person: any): string {
     // Si hay campos de fecha parcial
     if ('birthYear' in person && person.birthYear) {
         if (person.hideAge) return 'Fecha oculta';
-        
+
         let dateStr = '';
         if (person.birthDay && person.birthMonth) {
             // Fecha completa
@@ -286,7 +286,7 @@ export function formatBirthInfo(person: any): string {
                 month: '2-digit',
                 year: 'numeric',
             });
-            
+
             // Calcular edad si no hay fecha de muerte
             if (!person.deathYear) {
                 const age = calculateAge(date);
@@ -295,16 +295,16 @@ export function formatBirthInfo(person: any): string {
         } else if (person.birthMonth) {
             // Solo año y mes
             const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
             dateStr = `${months[person.birthMonth - 1]} ${person.birthYear}`;
         } else {
             // Solo año
             dateStr = String(person.birthYear);
         }
-        
+
         return dateStr;
     }
-    
+
     // Fallback al formato antiguo
     if (!person.birthDate) return '-';
     if (person.hideAge) return 'Fecha oculta';
