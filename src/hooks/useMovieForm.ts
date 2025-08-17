@@ -151,7 +151,10 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
     const form = useForm<MovieFormData>({
         resolver: zodResolver(movieFormSchema),
         defaultValues: {
-            stage: 'COMPLETA'
+            stage: 'COMPLETA',
+            dataCompleteness: 'BASIC_PRESS_KIT',
+            metaDescription: '',
+            metaKeywords: []
         }
     })
 
@@ -304,7 +307,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 setPartialReleaseDate({ year: null, month: null, day: null })
             }
 
-            // Manejar fecha parcial de inicio de rodaje (IGUAL que releaseDate)
+            // Manejar fecha parcial de inicio de rodaje
             if (fullMovie.filmingStartYear) {
                 setIsPartialFilmingStartDate(true)
                 setPartialFilmingStartDate({
@@ -323,7 +326,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 setPartialFilmingStartDate({ year: null, month: null, day: null })
             }
 
-            // Manejar fecha parcial de fin de rodaje (IGUAL que releaseDate)
+            // Manejar fecha parcial de fin de rodaje
             if (fullMovie.filmingEndYear) {
                 setIsPartialFilmingEndDate(true)
                 setPartialFilmingEndDate({
@@ -361,7 +364,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 productionCompanies: fullMovie.productionCompanies || [],
                 distributionCompanies: fullMovie.distributionCompanies || [],
                 themes: fullMovie.themes || [],
-                screeningVenues: fullMovie.screenings?.map((s: any) => s.venueId) || [] // AGREGAR ESTA LÍNEA
+                screeningVenues: fullMovie.screenings?.map((s: any) => s.venueId) || []
             })
 
             if (fullMovie.links) {
@@ -387,7 +390,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                 productionCompanies: fullMovie.productionCompanies?.map((c: any) => c.companyId) || [],
                 distributionCompanies: fullMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
                 themes: fullMovie.themes?.map((t: any) => t.themeId) || [],
-                screeningVenues: fullMovie.screenings?.map((s: any) => s.venueId) || [] // AGREGAR ESTA LÍNEA
+                screeningVenues: fullMovie.screenings?.map((s: any) => s.venueId) || []
             })
 
         } catch (error) {
@@ -486,7 +489,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
             delete preparedData.filmingStartDate;
             delete preparedData.filmingEndDate;
 
-            const movieData = {
+            // Construir el objeto completo de datos
+            const movieData: any = {
                 ...preparedData,
                 ...releaseDateData,
                 ...filmingStartDateData,
@@ -498,13 +502,25 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
                         ? preparedData.metaKeywords
                         : preparedData.metaKeywords.split(',').map((k: string) => k.trim()).filter((k: string) => k)
                     : [],
-                ...movieRelations,
+                
+                // IMPORTANTE: Usar las relaciones del estado, no del data del formulario
+                genres: movieRelations.genres,
+                cast: movieRelations.cast,
+                crew: movieRelations.crew,
+                countries: movieRelations.countries,
+                productionCompanies: movieRelations.productionCompanies,
+                distributionCompanies: movieRelations.distributionCompanies,
+                themes: movieRelations.themes,
+                
+                // Screening venues con procesamiento especial
                 screeningVenues: movieRelations.screeningVenues.map((venueId, index) => ({
                     venueId,
                     screeningDate: data.releaseDate || new Date().toISOString().split('T')[0],
-                    isPremiere: index === 0, // La primera es premiere
-                    isExclusive: movieRelations.screeningVenues.length === 1 // Exclusiva si es la única
+                    isPremiere: index === 0,
+                    isExclusive: movieRelations.screeningVenues.length === 1
                 })),
+                
+                // Otros campos manejados por estado
                 alternativeTitles,
                 links: movieLinks
             }
@@ -538,6 +554,8 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         reset({
             stage: 'COMPLETA',
             dataCompleteness: 'BASIC_PRESS_KIT',
+            metaDescription: '',
+            metaKeywords: []
         })
         setIsPartialDate(false)
         setPartialReleaseDate({ year: null, month: null, day: null })
@@ -563,7 +581,6 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
     }, [reset])
 
     return {
-
         onSubmit,
 
         // Estados
@@ -607,6 +624,7 @@ export function useMovieForm({ editingMovie, onSuccess }: UseMovieFormProps): Us
         // Funciones
         loadMovieData,
         resetForNewMovie,
+        
         // Form methods explícitos (sin spread)
         register: form.register,
         handleSubmit: form.handleSubmit,

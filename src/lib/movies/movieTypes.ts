@@ -1,48 +1,102 @@
 // src/lib/movies/movieTypes.ts
 
+import { z } from 'zod'
 import { PartialDate } from '@/lib/shared/dateUtils'
 
-// Usar el tipo compartido de PartialDate en lugar de tipos propios
+// ============================================================================
+// TIPOS REUTILIZABLES
+// ============================================================================
+
+// Usar el tipo compartido de PartialDate
 export type PartialReleaseDate = PartialDate
 export type PartialFilmingDate = PartialDate
 
+// ============================================================================
+// SCHEMAS DE VALIDACIÓN
+// ============================================================================
 
-import { z } from 'zod'
-
-// Schema del formulario
-export const movieFormSchema = z.object({
+// Schema para campos del formulario (solo campos que se manejan con register)
+export const movieFormFieldsSchema = z.object({
   // Campos requeridos
   title: z.string().min(1, 'El título es requerido'),
 
-  // Todos los demás campos como strings opcionales o any
-  originalTitle: z.any().optional(),
-  synopsis: z.any().optional(),
-  notes: z.string().optional(),
-  tagline: z.any().optional(),
-  imdbId: z.any().optional(),
-  aspectRatio: z.any().optional(),
-  colorType: z.any().optional(),
-  soundType: z.any().optional(),
-  filmFormat: z.any().optional(),
-  certificateNumber: z.any().optional(),
-  tipoDuracion: z.any().optional(),
+  // Información básica
+  originalTitle: z.string().nullable().transform(val => val ?? '').optional(),
+  synopsis: z.string().nullable().transform(val => val ?? '').optional(),
+  notes: z.string().nullable().transform(val => val ?? '').optional(),
+  tagline: z.string().nullable().transform(val => val ?? '').optional(),
+  imdbId: z.string().nullable().transform(val => val ?? '').optional(),
+  aspectRatio: z.string().nullable().transform(val => val ?? '').optional(),
+  soundType: z.string().nullable().transform(val => val ?? '').optional(),
+  filmFormat: z.string().nullable().transform(val => val ?? '').optional(),
+  certificateNumber: z.string().nullable().transform(val => val ?? '').optional(),
+  tipoDuracion: z.string().nullable().transform(val => val ?? '').optional(),
 
   // Campos numéricos
-  year: z.any().optional(),
-  duration: z.any().optional(),
-  durationSeconds: z.any().optional(),
-  rating: z.any().optional(),
-  colorTypeId: z.any().optional(),
-  ratingId: z.union([z.number(), z.null()]).optional(),
+  year: z.number().nullable().optional(),
+  duration: z.number().nullable().optional(),
+  durationSeconds: z.number().nullable().optional(),
+  colorTypeId: z.number().nullable().optional(),
+  ratingId: z.union([
+    z.number().positive(),
+    z.null(),
+    z.literal(0).transform(() => null)
+  ]).optional(),
 
   // Campos de fecha
-  releaseDate: z.any().optional(),
-  filmingStartDate: z.any().optional(),
-  filmingEndDate: z.any().optional(),
+  releaseDate: z.string().optional(),
+  filmingStartDate: z.string().optional(),
+  filmingEndDate: z.string().optional(),
+
+  // Producción
   countries: z.array(z.string()).optional(),
   is_coproduction: z.boolean().optional(),
   production_type: z.string().optional(),
 
+  // URLs
+  posterUrl: z.string().nullable().transform(val => val ?? '').optional(),
+  posterPublicId: z.string().optional(),
+  backdropUrl: z.string().optional(),
+  backdropPublicId: z.string().optional(),
+  trailerUrl: z.string().nullable().transform(val => val ?? '').optional(),
+
+  // Metadata - con transformaciones para evitar null
+  metaDescription: z.union([
+    z.string(),
+    z.null(),
+    z.undefined()
+  ]).transform(val => val ?? '').optional(),
+  
+  metaKeywords: z.union([
+    z.string(),
+    z.array(z.string()),
+    z.null(),
+    z.undefined()
+  ]).transform(val => val ?? []).optional(),
+
+  // Enums
+  dataCompleteness: z.enum([
+    'BASIC_PRESS_KIT',
+    'FULL_PRESS_KIT',
+    'MAIN_CAST',
+    'MAIN_CREW',
+    'FULL_CAST',
+    'FULL_CREW'
+  ]).optional(),
+  
+  stage: z.enum([
+    'COMPLETA',
+    'EN_DESARROLLO',
+    'EN_POSTPRODUCCION',
+    'EN_PREPRODUCCION',
+    'EN_RODAJE',
+    'INCONCLUSA',
+    'INEDITA'
+  ]).optional(),
+})
+
+// Schema para fechas parciales (estado interno del formulario)
+export const moviePartialDatesSchema = z.object({
   isPartialReleaseDate: z.boolean().optional(),
   partialReleaseDate: z.object({
     year: z.number().nullable(),
@@ -63,37 +117,10 @@ export const movieFormSchema = z.object({
     month: z.number().nullable(),
     day: z.number().nullable()
   }).optional(),
+})
 
-  // URLs
-  posterUrl: z.any().optional(),
-  posterPublicId: z.any().optional(),
-  backdropUrl: z.any().optional(),
-  backdropPublicId: z.any().optional(),
-  trailerUrl: z.any().optional(),
-
-  // Enums
-  dataCompleteness: z.enum([
-    'BASIC_PRESS_KIT',
-    'FULL_PRESS_KIT',
-    'MAIN_CAST',
-    'MAIN_CREW',
-    'FULL_CAST',
-    'FULL_CREW'
-  ]).optional(),
-  stage: z.enum([
-    'COMPLETA',
-    'EN_DESARROLLO',
-    'EN_POSTPRODUCCION',
-    'EN_PREPRODUCCION',
-    'EN_RODAJE',
-    'INCONCLUSA',
-    'INEDITA'
-  ]).optional(),
-  metaDescription: z.string().optional(),
-  metaKeywords: z.union([
-    z.string(),
-    z.array(z.string())
-  ]).optional(),
+// Schema para relaciones (manejadas por callbacks, no validadas por React Hook Form)
+export const movieRelationsSchema = z.object({
   genres: z.array(z.number()).optional(),
   cast: z.array(z.object({
     personId: z.number(),
@@ -132,9 +159,33 @@ export const movieFormSchema = z.object({
   })).optional()
 })
 
+// Schema principal para React Hook Form (solo valida campos del formulario)
+export const movieFormSchema = movieFormFieldsSchema.merge(moviePartialDatesSchema)
+
+// Schema completo para la API (incluye todo)
+export const movieCompleteSchema = movieFormFieldsSchema
+  .merge(moviePartialDatesSchema)
+  .merge(movieRelationsSchema)
+
+// ============================================================================
+// TIPOS TYPESCRIPT
+// ============================================================================
+
+// Tipo para React Hook Form (solo campos del formulario + fechas parciales)
 export type MovieFormData = z.infer<typeof movieFormSchema>
 
-// Interfaces
+// Tipo completo con relaciones (para enviar a la API)
+export type MovieCompleteData = z.infer<typeof movieCompleteSchema>
+
+// Tipos parciales para mejor organización
+export type MovieFormFields = z.infer<typeof movieFormFieldsSchema>
+export type MovieRelations = z.infer<typeof movieRelationsSchema>
+export type MoviePartialDates = z.infer<typeof moviePartialDatesSchema>
+
+// ============================================================================
+// INTERFACES
+// ============================================================================
+
 export interface Movie {
   id: number
   slug: string
@@ -147,10 +198,8 @@ export interface Movie {
   posterUrl?: string
   status: string
   stage?: string
-
-  // Fechas de rodaje
-  filmingStartDate: string;
-  filmingEndDate: string;
+  filmingStartDate: string
+  filmingEndDate: string
   dataCompleteness?: string
   genres: Array<{ id: number; name: string }>
   directors: Array<{ id: number; name: string }>
@@ -159,16 +208,6 @@ export interface Movie {
     character?: string
   }>
   country: string
-}
-
-export interface MovieRelations {
-  genres: number[]
-  cast: any[]
-  crew: any[]
-  countries: number[]
-  productionCompanies: number[]
-  distributionCompanies: number[]
-  themes: number[]
 }
 
 export interface MovieLink {
@@ -197,7 +236,10 @@ export interface ColorType {
   name: string
 }
 
-// Tipos de constantes
+// ============================================================================
+// TIPOS DE CONSTANTES
+// ============================================================================
+
 export type MovieStage =
   | 'COMPLETA'
   | 'EN_DESARROLLO'

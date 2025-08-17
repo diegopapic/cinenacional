@@ -49,6 +49,13 @@ export const movieSchema = z.object({
   soundType: z.string().optional(),
   filmFormat: z.string().optional(),
 
+  // AGREGAR ESTOS CAMPOS DE METADATA
+  metaDescription: z.string().optional(),
+  metaKeywords: z.union([
+    z.string(),
+    z.array(z.string())
+  ]).optional(),
+
   // Clasificación
   ratingId: z.union([
     z.number().positive(),  // Solo números positivos
@@ -91,11 +98,11 @@ export const movieSchema = z.object({
   alternativeTitles: z.array(z.any()).optional(),
   links: z.array(z.any()).optional(),
   screeningVenues: z.array(z.object({
-  venueId: z.number(),
-  screeningDate: z.string().optional().nullable(),
-  isPremiere: z.boolean().optional(),
-  isExclusive: z.boolean().optional()
-})).optional()
+    venueId: z.number(),
+    screeningDate: z.string().optional().nullable(),
+    isPremiere: z.boolean().optional(),
+    isExclusive: z.boolean().optional()
+  })).optional()
 })
 
 export type MovieFormData = z.infer<typeof movieSchema>
