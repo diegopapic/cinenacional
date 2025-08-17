@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 1a02813b9f1f2df89e7b644ffb14cad51de3d2fc
-// Fecha: 2025-08-17T03:37:45.034Z
+// Commit: 2e6b565defb5ecacff3f74fd12fcebeca4648849
+// Fecha: 2025-08-17T03:43:04.802Z
 // ============================================
 
 
@@ -5070,12 +5070,11 @@ async function checkIfDescendant(ancestorId: number, descendantId: number): Prom
 // src/app/api/movies/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { createSlug } from '@/lib/utils'
 import { z } from 'zod'
 import { movieSchema } from '@/lib/schemas'
+import { createSlug } from '@/lib/utils'
 
-
-// GET /api/movies - Listar películas con filtros
+// GET /api/movies - Obtener lista de películas con filtros
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -5088,14 +5087,13 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'createdAt'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
 
-    const skip = (page - 1) * limit
-
-    // Construir filtros
+    // Construir where clause
     const where: any = {}
 
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
+        { originalTitle: { contains: search, mode: 'insensitive' } },
         { synopsis: { contains: search, mode: 'insensitive' } }
       ]
     }
@@ -5118,114 +5116,86 @@ export async function GET(request: NextRequest) {
       where.stage = stage
     }
 
-    // Obtener total de registros
-    const total = await prisma.movie.count({ where })
+    // Calcular skip para paginación
+    const skip = (page - 1) * limit
 
-    // Obtener películas
-    const movies = await prisma.movie.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: {
-        [sortBy]: sortOrder
-      },
-      include: {
-        colorType: true,
-        genres: {
-          include: {
-            genre: true
+    // Obtener películas y total
+    const [movies, total] = await Promise.all([
+      prisma.movie.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+          [sortBy]: sortOrder
+        },
+        include: {
+          genres: {
+            include: {
+              genre: true
+            }
+          },
+          cast: {
+            where: {
+              isPrincipal: true
+            },
+            include: {
+              person: true
+            },
+            take: 5
+          },
+          crew: {
+            where: {
+              role: 'Director'
+            },
+            include: {
+              person: true
+            }
+          },
+          movieCountries: {
+            where: {
+              isPrimary: true
+            },
+            include: {
+              country: true
+            }
           }
-        },
-        cast: {
-          where: {
-            isPrincipal: true
-          },
-          include: {
-            person: true
-          },
-          orderBy: {
-            billingOrder: 'asc'
-          },
-          take: 3
-        },
-        crew: {
-          where: {
-            role: 'Director'
-          },
-          include: {
-            person: true
-          }
-        },
-        movieCountries: {  // CAMBIADO DE countries A movieCountries
-          where: {
-            isPrimary: true
-          },
-          include: {
-            country: true
-          }
-        },
-        themes: {
-          include: {
-            theme: true
-          }
-        },
-        images: {
-          where: {
-            type: 'POSTER',
-            isPrimary: true
-          },
-          take: 1
         }
-      }
-    })
+      }),
+      prisma.movie.count({ where })
+    ])
 
     // Formatear respuesta
     const formattedMovies = movies.map(movie => ({
       id: movie.id,
       slug: movie.slug,
       title: movie.title,
+      originalTitle: movie.originalTitle,
       year: movie.year,
       releaseYear: movie.releaseYear,
       releaseMonth: movie.releaseMonth,
       releaseDay: movie.releaseDay,
-      // Opcionalmente, crear un campo de fecha formateada para mostrar
-      releaseDateFormatted: movie.releaseDay
-        ? `${movie.releaseYear}-${String(movie.releaseMonth).padStart(2, '0')}-${String(movie.releaseDay).padStart(2, '0')}`
-        : movie.releaseMonth
-          ? `${movie.releaseYear}-${String(movie.releaseMonth).padStart(2, '0')}`
-          : movie.releaseYear?.toString() || null,
-      // Construir fecha de inicio de filmación si existe
-      filmingStartDate: movie.filmingStartYear
-        ? new Date(
-          movie.filmingStartYear,
-          (movie.filmingStartMonth || 1) - 1,
-          movie.filmingStartDay || 1
-        ).toISOString()
-        : null,
-
-      // Construir fecha de fin de filmación si existe  
-      filmingEndDate: movie.filmingEndYear
-        ? new Date(
-          movie.filmingEndYear,
-          (movie.filmingEndMonth || 1) - 1,
-          movie.filmingEndDay || 1
-        ).toISOString()
+      releaseDateFormatted: movie.releaseYear 
+        ? `${movie.releaseYear}${movie.releaseMonth ? `-${String(movie.releaseMonth).padStart(2, '0')}` : ''}${movie.releaseDay ? `-${String(movie.releaseDay).padStart(2, '0')}` : ''}`
         : null,
       duration: movie.duration,
-      posterUrl: movie.posterUrl || movie.images[0]?.url,
+      posterUrl: movie.posterUrl,
       stage: movie.stage,
-      colorType: movie.colorType,
-      genres: movie.genres.map(g => g.genre),
-      directors: movie.crew.map(c => c.person),
+      genres: movie.genres.map(g => ({
+        id: g.genre.id,
+        name: g.genre.name
+      })),
+      directors: movie.crew.map(c => ({
+        id: c.person.id,
+        name: `${c.person.firstName || ''} ${c.person.lastName || ''}`.trim()
+      })),
       mainCast: movie.cast.map(c => ({
-        person: c.person,
+        person: {
+          id: c.person.id,
+          name: `${c.person.firstName || ''} ${c.person.lastName || ''}`.trim()
+        },
         character: c.characterName
       })),
-      country: movie.movieCountries[0]?.country.name || 'Argentina',  // CAMBIADO DE countries A movieCountries
-      countries: movie.countries || ['Argentina'],  // Campo array directo
-      isCoProduction: movie.is_coproduction || false,
-      productionType: movie.production_type || 'national',
-      themes: movie.themes
+      country: movie.movieCountries[0]?.country?.name || 'Argentina'
     }))
 
     return NextResponse.json({
@@ -5237,6 +5207,7 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit)
       }
     })
+
   } catch (error) {
     console.error('Error fetching movies:', error)
     return NextResponse.json(
@@ -5250,22 +5221,36 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    
+    // Limpiar datos antes de validar
+    const cleanedData = {
+      ...body,
+      ratingId: body.ratingId === 0 ? null : body.ratingId,
+      // Asegurar que metaKeywords sea un array
+      metaKeywords: body.metaKeywords 
+        ? Array.isArray(body.metaKeywords) 
+          ? body.metaKeywords 
+          : typeof body.metaKeywords === 'string'
+            ? body.metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
+            : []
+        : []
+    };
 
     // Validar datos
-    const validatedData = movieSchema.parse(body)
+    const validatedData = movieSchema.parse(cleanedData)
 
     // Generar slug único
     let slug = createSlug(validatedData.title)
-    let slugExists = await prisma.movie.findUnique({ where: { slug } })
-    let counter = 1
+    let slugCounter = 0
+    let uniqueSlug = slug
 
-    while (slugExists) {
-      slug = `${createSlug(validatedData.title)}-${counter}`
-      slugExists = await prisma.movie.findUnique({ where: { slug } })
-      counter++
+    while (await prisma.movie.findUnique({ where: { slug: uniqueSlug } })) {
+      slugCounter++
+      uniqueSlug = `${slug}-${slugCounter}`
     }
+    slug = uniqueSlug
 
-    // Extraer relaciones del body
+    // Extraer relaciones y campos especiales
     const {
       genres,
       cast,
@@ -5273,89 +5258,155 @@ export async function POST(request: NextRequest) {
       countries,
       productionCompanies,
       distributionCompanies,
-      alternativeTitles,
       themes,
+      alternativeTitles,
       links,
-      ...movieData
+      screeningVenues,
+      colorTypeId,
+      ratingId,
+      metaKeywords,
+      releaseYear,
+      releaseMonth,
+      releaseDay,
+      filmingStartYear,
+      filmingStartMonth,
+      filmingStartDay,
+      filmingEndYear,
+      filmingEndMonth,
+      filmingEndDay,
+      ...movieDataClean
     } = validatedData
 
-    // Transformar cast y crew para quitar la propiedad 'person'
-    const processedCast = cast?.map((item: any) => ({
-      personId: item.personId,
-      characterName: item.characterName,
-      billingOrder: item.billingOrder,
-      isPrincipal: item.isPrincipal
-    }))
-
-    const processedCrew = crew?.map((item: any) => ({
-      personId: item.personId,
-      role: item.role,
-      department: item.department,
-      billingOrder: item.billingOrder
-    }))
+    // Asegurar que metaKeywords sea un array
+    const processedMetaKeywords = metaKeywords 
+      ? Array.isArray(metaKeywords) 
+        ? metaKeywords 
+        : typeof metaKeywords === 'string'
+          ? metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
+          : []
+      : []
 
     // Crear película con relaciones
     const movie = await prisma.movie.create({
       data: {
-        ...movieData,
+        ...movieDataClean,
         slug,
-        releaseYear: movieData.releaseYear || null,
-        releaseMonth: movieData.releaseMonth || null,
-        releaseDay: movieData.releaseDay || null,
-        filmingStartYear: movieData.filmingStartYear || null,
-        filmingStartMonth: movieData.filmingStartMonth || null,
-        filmingStartDay: movieData.filmingStartDay || null,
-        filmingEndYear: movieData.filmingEndYear || null,
-        filmingEndMonth: movieData.filmingEndMonth || null,
-        filmingEndDay: movieData.filmingEndDay || null,
-
-        // Crear relaciones
-        genres: genres ? {
-          create: genres.map((genreId, index) => ({
-            genreId,
-            isPrimary: index === 0
-          }))
-        } : undefined,
-        alternativeTitles: alternativeTitles ? {
-          create: alternativeTitles
-        } : undefined,
-        cast: cast ? {
-          create: cast
-        } : undefined,
-        crew: crew ? {
-          create: crew
-        } : undefined,
-        movieCountries: countries ? {  // CAMBIADO DE countries A movieCountries
-          create: countries.map((countryId, index) => ({
-            countryId,
-            isPrimary: index === 0
-          }))
-        } : undefined,
-        productionCompanies: productionCompanies ? {
-          create: productionCompanies.map((companyId, index) => ({
-            companyId,
-            isPrimary: index === 0
-          }))
-        } : undefined,
-        distributionCompanies: distributionCompanies ? {
-          create: distributionCompanies.map(companyId => ({
-            companyId,
-            territory: 'Argentina'
-          }))
-        } : undefined,
-        themes: themes ? {
-          create: themes.map(themeId => ({
-            themeId
-          }))
-        } : undefined,
-        links: links ? {
-          create: links.map((link: any) => ({
-            type: link.type,
-            url: link.url,
-            title: link.title,
-            isActive: link.isActive !== false
-          }))
-        } : undefined
+        metaKeywords: processedMetaKeywords,
+        releaseYear: releaseYear ?? null,
+        releaseMonth: releaseMonth ?? null,
+        releaseDay: releaseDay ?? null,
+        filmingStartYear: filmingStartYear ?? null,
+        filmingStartMonth: filmingStartMonth ?? null,
+        filmingStartDay: filmingStartDay ?? null,
+        filmingEndYear: filmingEndYear ?? null,
+        filmingEndMonth: filmingEndMonth ?? null,
+        filmingEndDay: filmingEndDay ?? null,
+        
+        // Relaciones opcionales con connect
+        ...(colorTypeId && {
+          colorType: { connect: { id: colorTypeId } }
+        }),
+        ...(ratingId && {
+          rating: { connect: { id: ratingId } }
+        }),
+        
+        // Relaciones many-to-many
+        ...(genres && genres.length > 0 && {
+          genres: {
+            create: genres.map((genreId: number, index: number) => ({
+              genreId,
+              isPrimary: index === 0
+            }))
+          }
+        }),
+        
+        ...(cast && cast.length > 0 && {
+          cast: {
+            create: cast.map((item: any) => ({
+              personId: item.personId,
+              characterName: item.characterName || null,
+              billingOrder: item.billingOrder || 0,
+              isPrincipal: item.isPrincipal || false
+            }))
+          }
+        }),
+        
+        ...(crew && crew.length > 0 && {
+          crew: {
+            create: crew.map((item: any) => ({
+              personId: item.personId,
+              role: item.role,
+              department: item.department || null,
+              billingOrder: item.billingOrder || 0
+            }))
+          }
+        }),
+        
+        ...(countries && countries.length > 0 && {
+          movieCountries: {
+            create: countries.map((countryId: number, index: number) => ({
+              countryId,
+              isPrimary: index === 0
+            }))
+          }
+        }),
+        
+        ...(productionCompanies && productionCompanies.length > 0 && {
+          productionCompanies: {
+            create: productionCompanies.map((companyId: number, index: number) => ({
+              companyId,
+              isPrimary: index === 0
+            }))
+          }
+        }),
+        
+        ...(distributionCompanies && distributionCompanies.length > 0 && {
+          distributionCompanies: {
+            create: distributionCompanies.map((companyId: number) => ({
+              companyId,
+              territory: 'Argentina'
+            }))
+          }
+        }),
+        
+        ...(themes && themes.length > 0 && {
+          themes: {
+            create: themes.map((themeId: number) => ({
+              themeId
+            }))
+          }
+        }),
+        
+        ...(alternativeTitles && alternativeTitles.length > 0 && {
+          alternativeTitles: {
+            create: alternativeTitles.map((title: any) => ({
+              title: title.title,
+              description: title.description || null
+            }))
+          }
+        }),
+        
+        ...(links && links.length > 0 && {
+          links: {
+            create: links.map((link: any) => ({
+              type: link.type,
+              url: link.url,
+              title: link.title || null,
+              isActive: link.isActive !== false
+            }))
+          }
+        }),
+        
+        ...(screeningVenues && screeningVenues.length > 0 && {
+          screenings: {
+            create: screeningVenues.map((sv: any) => ({
+              venueId: sv.venueId,
+              screeningDate: sv.screeningDate ? new Date(sv.screeningDate) : null,
+              isPremiere: sv.isPremiere || false,
+              isExclusive: sv.isExclusive || false
+            }))
+          }
+        })
       },
       include: {
         genres: {
@@ -5372,23 +5423,12 @@ export async function POST(request: NextRequest) {
           include: {
             person: true
           }
-        },
-        movieCountries: {  // CAMBIADO DE countries A movieCountries
-          include: {
-            country: true
-          }
-        },
-        themes: {
-          include: {
-            theme: true
-          }
-        },
-        alternativeTitles: true,
-        links: true
+        }
       }
     })
 
     return NextResponse.json(movie, { status: 201 })
+
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
