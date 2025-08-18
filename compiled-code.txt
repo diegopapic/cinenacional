@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: e8ba861e367551de6443104b729a7a77261af890
-// Fecha: 2025-08-18T02:20:12.763Z
+// Commit: c67ce2b7b38a0a52676ffa0ff18f5db20c1c9d40
+// Fecha: 2025-08-18T02:23:06.709Z
 // ============================================
 
 
@@ -14367,7 +14367,7 @@ export function PersonForm({
 
             // Cargar nacionalidades si existen
             if (initialData.nationalities) {
-                const nationalityIds = initialData.nationalities.map(n => {
+                const nationalityIds = initialData.nationalities.map((n: any) => {
                     if (typeof n === 'number') return n;
                     if (typeof n === 'object' && n !== null) {
                         return n.locationId;
@@ -14386,7 +14386,7 @@ export function PersonForm({
             console.log('PersonForm - formData.nationalities:', formData.nationalities);
             // Asegurarse de que tenemos un array de IDs
             const nationalityIds = Array.isArray(formData.nationalities)
-                ? formData.nationalities.map((n) => {  // Cambiar de ( a {
+                ? formData.nationalities.map((n: any) => {  // Cambiar de ( a {
                     console.log('PersonForm - Processing nationality item:', n);
                     const id = typeof n === 'object' ? n.locationId : n;
                     console.log('PersonForm - Extracted ID:', id);
