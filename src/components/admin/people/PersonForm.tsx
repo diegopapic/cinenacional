@@ -61,9 +61,13 @@ export function PersonForm({
 
             // Cargar nacionalidades si existen
             if (initialData.nationalities) {
-                const nationalityIds = initialData.nationalities.map(n =>
-                    typeof n === 'object' ? (n.locationId || n.id) : n
-                );
+                const nationalityIds = initialData.nationalities.map(n => {
+                    if (typeof n === 'number') return n;
+                    if (typeof n === 'object' && n !== null) {
+                        return n.locationId;
+                    }
+                    return null;
+                }).filter((id): id is number => id !== null);
                 setNationalities(nationalityIds);
             }
         }
@@ -78,7 +82,7 @@ export function PersonForm({
             const nationalityIds = Array.isArray(formData.nationalities)
                 ? formData.nationalities.map((n) => {  // Cambiar de ( a {
                     console.log('PersonForm - Processing nationality item:', n);
-                    const id = typeof n === 'object' ? (n.locationId || n.id) : n;
+                    const id = typeof n === 'object' ? n.locationId : n;
                     console.log('PersonForm - Extracted ID:', id);
                     return id;  // Agregar return explícito
                 })  // Cambiar de ) a }
