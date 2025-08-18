@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 5be917d493d2452fd370b7dda9bd95e9ca084db1
-// Fecha: 2025-08-17T20:08:06.416Z
+// Commit: f6e107c27434fff5ab70e1144ccc1cdbc33df4c0
+// Fecha: 2025-08-18T02:11:51.407Z
 // ============================================
 
 
@@ -3840,19 +3840,25 @@ export async function POST(request: NextRequest) {
 // ==================================================
 // src/app/api/countries/route.ts
 // ==================================================
-// src/app/api/countries/route.ts
+// src/app/api/locations/countries/route.ts
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// GET /api/countries - Listar todos los países con conteo de películas
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const countries = await prisma.country.findMany({
-      orderBy: { name: 'asc' },
-      include: {
-        _count: {
-          select: { movies: true }
-        }
+    // Obtener todas las locations que no tienen parent (son países)
+    const countries = await prisma.location.findMany({
+      where: {
+        parentId: null
+      },
+      orderBy: {
+        name: 'asc'
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true
       }
     })
 
@@ -3860,71 +3866,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching countries:', error)
     return NextResponse.json(
-      { error: 'Error al obtener los países' },
-      { status: 500 }
-    )
-  }
-}
-
-// POST /api/countries - Crear nuevo país
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    
-    // Validar datos requeridos
-    if (!body.code || body.code.trim() === '') {
-      return NextResponse.json(
-        { error: 'El código del país es requerido' },
-        { status: 400 }
-      )
-    }
-    
-    if (!body.name || body.name.trim() === '') {
-      return NextResponse.json(
-        { error: 'El nombre del país es requerido' },
-        { status: 400 }
-      )
-    }
-    
-    // Validar formato del código
-    const code = body.code.trim().toUpperCase()
-    if (!/^[A-Z]{2}$/.test(code)) {
-      return NextResponse.json(
-        { error: 'El código debe ser de 2 letras mayúsculas (ISO 3166-1 alpha-2)' },
-        { status: 400 }
-      )
-    }
-    
-    // Verificar si el código ya existe
-    const existingCountry = await prisma.country.findUnique({
-      where: { code }
-    })
-    
-    if (existingCountry) {
-      return NextResponse.json(
-        { error: 'Ya existe un país con ese código' },
-        { status: 400 }
-      )
-    }
-
-    // Crear país
-    const country = await prisma.country.create({
-      data: {
-        code,
-        name: body.name.trim()
-      },
-      include: {
-        _count: {
-          select: { movies: true }
-        }
-      }
-    })
-
-    return NextResponse.json(country, { status: 201 })
-  } catch (error) {
-    console.error('Error creating country:', error)
-    return NextResponse.json(
-      { error: 'Error al crear el país' },
+      { error: 'Failed to fetch countries' },
       { status: 500 }
     )
   }
@@ -4485,6 +4427,53 @@ export async function POST(request: NextRequest) {
       { available: false, slug: '', error: 'Error al verificar el slug' },
       { status: 500 }
     )
+  }
+}
+
+// ==================================================
+// src/app/api/locations/countries/route.ts
+// ==================================================
+// src/app/api/locations/countries/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+export async function GET(request: NextRequest) {
+  try {
+    // Obtener todas las locations que no tienen parent (son países)
+    // Quitamos el filtro 'type' que puede no existir
+    const countries = await prisma.location.findMany({
+      where: {
+        parentId: null  // Solo filtrar por parentId null
+      },
+      orderBy: {
+        name: 'asc'
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true
+      }
+    });
+
+    console.log('Countries found:', countries.length); // Log para debugging
+
+    return NextResponse.json(countries);
+  } catch (error) {
+    console.error('Error fetching countries:', error);
+    
+    // Devolver el mensaje de error específico para debugging
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
+    
+    return NextResponse.json(
+      { error: 'Failed to fetch countries' },
+      { status: 500 }
+    );
   }
 }
 
@@ -5944,6 +5933,11 @@ export async function GET(request: NextRequest) {
     const people = await prisma.person.findMany({
       where,
       include: {
+        nationalities: {
+          include: {
+            location: true  // Cambiado de 'location' a 'country'
+          }
+        },
         _count: {
           select: {
             links: true,
@@ -6001,14 +5995,21 @@ export async function POST(request: NextRequest) {
       counter++;
     }
 
-    // Preparar los datos de la persona
+    // Preparar los datos de la persona (campos de fecha parcial)
     const personData: any = {
       slug,
       firstName: data.firstName || null,
       lastName: data.lastName || null,
       realName: data.realName || null,
-      birthDate: data.birthDate ? new Date(data.birthDate) : null,
-      deathDate: data.deathDate ? new Date(data.deathDate) : null,
+      // Fechas parciales de nacimiento
+      birthYear: data.birthYear || null,
+      birthMonth: data.birthMonth || null,
+      birthDay: data.birthDay || null,
+      // Fechas parciales de muerte
+      deathYear: data.deathYear || null,
+      deathMonth: data.deathMonth || null,
+      deathDay: data.deathDay || null,
+      // Ubicaciones
       birthLocationId: data.birthLocationId || null,
       deathLocationId: data.deathLocationId || null,
       biography: data.biography || null,
@@ -6019,10 +6020,7 @@ export async function POST(request: NextRequest) {
       hasLinks: data.links && data.links.length > 0,
     };
 
-    // TODO: Manejar ubicaciones birthLocation y deathLocation
-    // Por ahora solo guardamos el texto en la biografía o notas
-
-    // Crear la persona y sus links en una transacción
+    // Crear la persona, sus links y nacionalidades en una transacción
     const person = await prisma.$transaction(async (tx) => {
       // Crear la persona
       const newPerson = await tx.person.create({
@@ -6044,11 +6042,28 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Si hay nacionalidades, crearlas
+      if (data.nationalities && data.nationalities.length > 0) {
+        await tx.personNationality.createMany({
+          data: data.nationalities.map((locationId: number) => ({
+            personId: newPerson.id,
+            locationId: locationId,
+          })),
+        });
+      }
+
       // Retornar la persona con sus relaciones
       return tx.person.findUnique({
         where: { id: newPerson.id },
         include: {
           links: true,
+          nationalities: {
+            include: {
+              location: true  // Cambiado de 'location' a 'country'
+            }
+          },
+          birthLocation: true,
+          deathLocation: true,
           _count: {
             select: {
               links: true,
@@ -6091,6 +6106,11 @@ export async function GET(
                 links: {
                     orderBy: { displayOrder: 'asc' },
                 },
+                nationalities: {
+                    include: {
+                        location: true  // Cambiado de 'location' a 'country'
+                    }
+                },
                 birthLocation: true,
                 deathLocation: true,
                 _count: {
@@ -6130,6 +6150,7 @@ export async function PUT(
         const personId = parseInt(id);
 
         console.log('Data received in API:', data); // Log para debugging
+        console.log('Nationalities received:', data.nationalities); // Log específico de nacionalidades
 
         // Verificar si necesitamos actualizar el slug
         let slug = undefined;
@@ -6189,7 +6210,7 @@ export async function PUT(
 
         console.log('Update data prepared:', updateData); // Log para debugging
 
-        // Actualizar persona y links en una transacción
+        // Actualizar persona, links y nacionalidades en una transacción
         const person = await prisma.$transaction(async (tx) => {
             // Actualizar la persona
             const updatedPerson = await tx.person.update({
@@ -6217,11 +6238,31 @@ export async function PUT(
                 });
             }
 
+            // Eliminar nacionalidades existentes
+            await tx.personNationality.deleteMany({
+                where: { personId },
+            });
+
+            // Crear nuevas nacionalidades si existen
+            if (data.nationalities && data.nationalities.length > 0) {
+                await tx.personNationality.createMany({
+                    data: data.nationalities.map((locationId: number) => ({
+                        personId,
+                        locationId: locationId,
+                    })),
+                });
+            }
+
             // Retornar la persona actualizada con sus relaciones
             return tx.person.findUnique({
                 where: { id: personId },
                 include: {
                     links: true,
+                    nationalities: {
+                        include: {
+                            location: true  // Cambiado de 'location' a 'country'
+                        }
+                    },
                     birthLocation: true,
                     deathLocation: true,
                     _count: {
@@ -6281,7 +6322,7 @@ export async function DELETE(
             );
         }
 
-        // Eliminar la persona (los links se eliminan en cascada)
+        // Eliminar la persona (los links y nacionalidades se eliminan en cascada)
         await prisma.person.delete({
             where: { id: parseInt(id) },
         });
@@ -14267,10 +14308,11 @@ export function PeopleTable() {
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Save, Loader2, AlertCircle } from 'lucide-react';
 import { usePeopleForm } from '@/hooks/usePeopleForm';
 import { PersonWithRelations } from '@/lib/people/peopleTypes';
+import NationalitiesField from './PersonFormFields/NationalitiesField'
 
 // Importar sub-componentes del formulario
 import { BasicInfoFields } from './PersonFormFields/BasicInfoFields';
@@ -14279,177 +14321,230 @@ import { LocationFields } from './PersonFormFields/LocationFields';
 import { LinksSection } from './PersonFormFields/LinksSection';
 
 interface PersonFormProps {
-  personId?: number;
-  initialData?: PersonWithRelations;
-  onSuccess?: (person: PersonWithRelations) => void;
-  onCancel?: () => void;
+    personId?: number;
+    initialData?: PersonWithRelations;
+    onSuccess?: (person: PersonWithRelations) => void;
+    onCancel?: () => void;
 }
 
-export function PersonForm({ 
-  personId, 
-  initialData, 
-  onSuccess,
-  onCancel 
+export function PersonForm({
+    personId,
+    initialData,
+    onSuccess,
+    onCancel
 }: PersonFormProps) {
-  const {
-    formData,
-    loading,
-    saving,
-    errors,
-    isDirty,
-    isEdit,
-    updateField,
-    updateFields,
-    addLink,
-    updateLink,
-    removeLink,
-    save,
-    cancel,
-  } = usePeopleForm({ personId, onSuccess });
+    const {
+        formData,
+        loading,
+        saving,
+        errors,
+        isDirty,
+        isEdit,
+        updateField,
+        updateFields,
+        addLink,
+        updateLink,
+        removeLink,
+        save,
+        cancel,
+    } = usePeopleForm({ personId, onSuccess });
 
-  // Si hay datos iniciales y no es edición, cargarlos
-  useEffect(() => {
-    if (initialData && !personId) {
-      updateFields({
-        firstName: initialData.firstName || '',
-        lastName: initialData.lastName || '',
-        realName: initialData.realName || '',
-        gender: initialData.gender || '',
-      });
-    }
-  }, [initialData, personId, updateFields]);
+    // Estado para nacionalidades
+    const [nationalities, setNationalities] = useState<number[]>([]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await save();
-  };
+    // Usar ref para evitar loops infinitos
+    const nationalitiesInitialized = useRef(false);
 
-  const handleCancel = () => {
-    if (onCancel) {
-      onCancel();
-    } else {
-      cancel();
-    }
-  };
+    // Si hay datos iniciales y no es edición, cargarlos
+    useEffect(() => {
+        if (initialData && !personId) {
+            updateFields({
+                firstName: initialData.firstName || '',
+                lastName: initialData.lastName || '',
+                realName: initialData.realName || '',
+                gender: initialData.gender || '',
+            });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
-  }
+            // Cargar nacionalidades si existen
+            if (initialData.nationalities) {
+                const nationalityIds = initialData.nationalities.map(n =>
+                    typeof n === 'object' ? (n.locationId || n.id) : n
+                );
+                setNationalities(nationalityIds);
+            }
+        }
+    }, [initialData, personId, updateFields]);
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Mostrar errores si hay */}
-      {errors.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex">
-            <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                Se encontraron los siguientes errores:
-              </h3>
-              <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
-                {errors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
+    // Cargar nacionalidades cuando se edita una persona existente
+    useEffect(() => {
+        if (isEdit && formData.nationalities && formData.nationalities.length > 0 && !nationalitiesInitialized.current) {
+            console.log('PersonForm - Loading nationalities for edit');
+            console.log('PersonForm - formData.nationalities:', formData.nationalities);
+            // Asegurarse de que tenemos un array de IDs
+            const nationalityIds = Array.isArray(formData.nationalities)
+                ? formData.nationalities.map((n) => {  // Cambiar de ( a {
+                    console.log('PersonForm - Processing nationality item:', n);
+                    const id = typeof n === 'object' ? (n.locationId || n.id) : n;
+                    console.log('PersonForm - Extracted ID:', id);
+                    return id;  // Agregar return explícito
+                })  // Cambiar de ) a }
+                : [];
+            console.log('PersonForm - Final nationalityIds:', nationalityIds);
+
+            setNationalities(nationalityIds);
+            nationalitiesInitialized.current = true;
+        }
+    }, [isEdit, formData.nationalities]);
+
+    // Función para manejar el cambio de nacionalidades
+    const handleNationalitiesChange = (newNationalities: number[]) => {
+        setNationalities(newNationalities);
+        updateField('nationalities', newNationalities);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await save();
+    };
+
+    const handleCancel = () => {
+        if (onCancel) {
+            onCancel();
+        } else {
+            cancel();
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
             </div>
-          </div>
-        </div>
-      )}
+        );
+    }
 
-      {/* Información básica */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-6">
-          Información Personal
-        </h3>
-        <BasicInfoFields
-          formData={formData}
-          updateField={updateField}
-          isEdit={isEdit}
-        />
-      </div>
-
-      {/* Ubicaciones */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-6">
-          Ubicaciones
-        </h3>
-        <LocationFields
-          formData={formData}
-          updateField={updateField}
-        />
-      </div>
-
-      {/* Biografía e información adicional */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-6">
-          Información Adicional
-        </h3>
-        <BiographyFields
-          formData={formData}
-          updateField={updateField}
-        />
-      </div>
-
-      {/* Links */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-6">
-          Enlaces
-        </h3>
-        <LinksSection
-          links={formData.links}
-          onAddLink={addLink}
-          onUpdateLink={updateLink}
-          onRemoveLink={removeLink}
-        />
-      </div>
-
-      {/* Botones de acción */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-500">
-            {isDirty && (
-              <span className="text-orange-600">
-                * Hay cambios sin guardar
-              </span>
+    return (
+        <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Mostrar errores si hay */}
+            {errors.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex">
+                        <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
+                        <div className="ml-3">
+                            <h3 className="text-sm font-medium text-red-800">
+                                Se encontraron los siguientes errores:
+                            </h3>
+                            <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
+                                {errors.map((error, index) => (
+                                    <li key={index}>{error}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             )}
-          </div>
-          
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Cancelar
-            </button>
-            
-            <button
-              type="submit"
-              disabled={saving || loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  {isEdit ? 'Actualizar' : 'Crear'} Persona
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </form>
-  );
+
+            {/* Información básica */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">
+                    Información Personal
+                </h3>
+                <BasicInfoFields
+                    formData={formData}
+                    updateField={updateField}
+                    isEdit={isEdit}
+                />
+            </div>
+
+            {/* Nacionalidades */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">
+                    Nacionalidades
+                </h3>
+                <NationalitiesField
+                    value={nationalities}
+                    onChange={handleNationalitiesChange}
+                    disabled={saving}
+                />
+            </div>
+
+            {/* Ubicaciones */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">
+                    Ubicaciones
+                </h3>
+                <LocationFields
+                    formData={formData}
+                    updateField={updateField}
+                />
+            </div>
+
+            {/* Biografía e información adicional */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">
+                    Información Adicional
+                </h3>
+                <BiographyFields
+                    formData={formData}
+                    updateField={updateField}
+                />
+            </div>
+
+            {/* Links */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">
+                    Enlaces
+                </h3>
+                <LinksSection
+                    links={formData.links}
+                    onAddLink={addLink}
+                    onUpdateLink={updateLink}
+                    onRemoveLink={removeLink}
+                />
+            </div>
+
+            {/* Botones de acción */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-500">
+                        {isDirty && (
+                            <span className="text-orange-600">
+                                * Hay cambios sin guardar
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button
+                            type="button"
+                            onClick={handleCancel}
+                            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+
+                        <button
+                            type="submit"
+                            disabled={saving || loading}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {saving ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Guardando...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4" />
+                                    {isEdit ? 'Actualizar' : 'Crear'} Persona
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    );
 }
 
 // ==================================================
@@ -15370,6 +15465,153 @@ export function LocationFields({ formData, updateField }: LocationFieldsProps) {
       />
     </div>
   );
+}
+
+// ==================================================
+// src/components/admin/people/PersonFormFields/NationalitiesField.tsx
+// ==================================================
+// src/components/admin/people/PersonFormFields/NationalitiesField.tsx
+
+import React, { useState, useEffect } from 'react'
+import { X } from 'lucide-react'
+import { apiClient } from '@/services/api-client'
+
+interface Location {
+  id: number
+  name: string
+  slug: string
+}
+
+interface NationalitiesFieldProps {
+  value: number[]
+  onChange: (nationalities: number[]) => void
+  disabled?: boolean
+}
+
+export default function NationalitiesField({
+  value = [],
+  onChange,
+  disabled = false
+}: NationalitiesFieldProps) {
+  const [countries, setCountries] = useState<Location[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [selectedCountries, setSelectedCountries] = useState<Location[]>([])
+
+  // Cargar países (locations sin parent)
+  useEffect(() => {
+    loadCountries()
+  }, [])
+
+  // Cargar países seleccionados
+  useEffect(() => {
+    if (value.length > 0 && countries.length > 0) {
+      const selected = countries.filter(c => value.includes(c.id))
+      setSelectedCountries(selected)
+    }
+  }, [value, countries])
+
+  const loadCountries = async () => {
+    try {
+      const response = await apiClient.get<Location[]>('/locations/countries')
+      setCountries(response)
+    } catch (error) {
+      console.error('Error loading countries:', error)
+    }
+  }
+
+  const filteredCountries = countries.filter(
+    country => 
+      !value.includes(country.id) && 
+      country.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const handleAddCountry = (country: Location) => {
+    const newValue = [...value, country.id]
+    onChange(newValue)
+    setSelectedCountries([...selectedCountries, country])
+    setSearchTerm('')
+    setShowDropdown(false)
+  }
+
+  const handleRemoveCountry = (countryId: number) => {
+    const newValue = value.filter(id => id !== countryId)
+    onChange(newValue)
+    setSelectedCountries(selectedCountries.filter(c => c.id !== countryId))
+  }
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">
+        Nacionalidades
+      </label>
+      
+      {/* Tags de nacionalidades seleccionadas */}
+      {selectedCountries.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {selectedCountries.map(country => (
+            <span
+              key={country.id}
+              className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+            >
+              {country.name}
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveCountry(country.id)}
+                  className="ml-1 hover:text-blue-600"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Campo de búsqueda */}
+      {!disabled && (
+        <div className="relative">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value)
+              setShowDropdown(true)
+            }}
+            onFocus={() => setShowDropdown(true)}
+            placeholder="Buscar país para agregar..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+          />
+          
+          {/* Dropdown de resultados */}
+          {showDropdown && searchTerm && filteredCountries.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg max-h-48 overflow-y-auto border border-gray-200">
+              {filteredCountries.slice(0, 10).map(country => (
+                <button
+                  key={country.id}
+                  type="button"
+                  onClick={() => handleAddCountry(country)}
+                  className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                >
+                  {country.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Click outside to close dropdown */}
+      {showDropdown && (
+        <div 
+          className="fixed inset-0 z-0" 
+          onClick={() => setShowDropdown(false)}
+        />
+      )}
+    </div>
+  )
 }
 
 // ==================================================
@@ -18226,12 +18468,43 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
         try {
             setLoading(true);
             const person = await peopleService.getById(personId);
-
+            console.log('usePeopleForm - Raw person from getById:', person);
+            console.log('usePeopleForm - Person nationalities raw:', person.nationalities);
             const formattedData = formatPersonDataForForm(person);
+            console.log('usePeopleForm - Formatted data from formatPersonDataForForm:', formattedData);
+            console.log('usePeopleForm - Formatted nationalities:', formattedData.nationalities);
             // Si la persona tiene links, cargarlos también
             if (person.links) {
                 formattedData.links = person.links;
             }
+
+            // Si la persona tiene nacionalidades, cargarlas como array de IDs
+            if (person.nationalities && Array.isArray(person.nationalities)) {
+                console.log('usePeopleForm - Processing nationalities, raw:', person.nationalities);
+
+                formattedData.nationalities = person.nationalities.map(n => {
+                    console.log('usePeopleForm - Processing nationality item:', n);
+
+                    // Manejar diferentes formatos posibles
+                    if (typeof n === 'number') {
+                        console.log('usePeopleForm - Direct number:', n);
+                        return n;
+                    } if (typeof n === 'object' && n !== null) {
+                        // Puede venir como {locationId: X, country: {...}} o similar
+                        return n.locationId || n.id || n;
+                        console.log('usePeopleForm - Extracted ID from object:', id);
+
+                    }
+                    return n;
+                });
+                console.log('usePeopleForm - Final nationalities after processing:', formattedData.nationalities);
+
+            } else {
+                console.log('usePeopleForm - No nationalities found, setting empty array');
+
+                formattedData.nationalities = [];
+            }
+        console.log('usePeopleForm - Final formData before setFormData:', formattedData);
 
             setFormData(formattedData);
         } catch (error) {
@@ -18284,6 +18557,16 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
         setIsDirty(true);
     }, []);
 
+    // Manejo de nacionalidades
+    const updateNationalities = useCallback((nationalities: number[]) => {
+        setFormData(prev => ({
+            ...prev,
+            nationalities
+        }));
+        setIsDirty(true);
+        setErrors([]);
+    }, []);
+
     // Validar formulario
     const validate = useCallback((): boolean => {
         const validationErrors = validatePersonForm(formData);
@@ -18293,9 +18576,11 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
 
     // Guardar persona
     const save = useCallback(async () => {
-        console.log('FormData before save:', formData); // <-- Agregar esta línea
+        console.log('FormData before save:', formData);
         console.log('Birth Location ID:', formData.birthLocationId);
         console.log('Death Location ID:', formData.deathLocationId);
+        console.log('Nationalities:', formData.nationalities); // Log de nacionalidades
+
         if (!validate()) {
             toast.error('Por favor corrige los errores en el formulario');
             return false;
@@ -18305,11 +18590,17 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
             setSaving(true);
             let savedPerson: PersonWithRelations;
 
+            // Preparar datos para enviar
+            const dataToSave = {
+                ...formData,
+                nationalities: formData.nationalities || []
+            };
+
             if (personId) {
-                savedPerson = await peopleService.update(personId, formData);
+                savedPerson = await peopleService.update(personId, dataToSave);
                 toast.success(PERSON_SUCCESS_MESSAGES.UPDATED);
             } else {
-                savedPerson = await peopleService.create(formData);
+                savedPerson = await peopleService.create(dataToSave);
                 toast.success(PERSON_SUCCESS_MESSAGES.CREATED);
             }
 
@@ -18365,6 +18656,7 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
         // Acciones
         updateField,
         updateFields,
+        updateNationalities, // Nueva función para actualizar nacionalidades
         addLink,
         updateLink,
         removeLink,
@@ -19181,364 +19473,383 @@ import { DEFAULT_PERSON_FORM_VALUES, DEFAULT_PERSON_LINK } from './peopleConstan
 import { PartialDate, partialFieldsToDate } from '@/lib/shared/dateUtils';
 
 /**
- * Genera un slug único para una persona basado en nombre y apellido
- */
+* Genera un slug único para una persona basado en nombre y apellido
+*/
 export function generatePersonSlug(firstName?: string, lastName?: string): string {
-    const parts = [firstName, lastName].filter(Boolean);
-    if (parts.length === 0) return '';
+   const parts = [firstName, lastName].filter(Boolean);
+   if (parts.length === 0) return '';
 
-    return parts
-        .join(' ')
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Remover diacríticos
-        .replace(/[^\w\s-]/g, '') // Remover caracteres especiales
-        .trim()
-        .replace(/\s+/g, '-') // Reemplazar espacios con guiones
-        .replace(/-+/g, '-') // Reemplazar múltiples guiones con uno
-        .replace(/^-+|-+$/g, ''); // Remover guiones al inicio y final
+   return parts
+       .join(' ')
+       .toLowerCase()
+       .normalize('NFD')
+       .replace(/[\u0300-\u036f]/g, '') // Remover diacríticos
+       .replace(/[^\w\s-]/g, '') // Remover caracteres especiales
+       .trim()
+       .replace(/\s+/g, '-') // Reemplazar espacios con guiones
+       .replace(/-+/g, '-') // Reemplazar múltiples guiones con uno
+       .replace(/^-+|-+$/g, ''); // Remover guiones al inicio y final
 }
 
 /**
- * Formatea el nombre completo de una persona
- */
+* Formatea el nombre completo de una persona
+*/
 export function formatPersonName(person: Partial<Person>): string {
-    const parts = [person.firstName, person.lastName].filter(Boolean);
-    return parts.join(' ') || 'Sin nombre';
+   const parts = [person.firstName, person.lastName].filter(Boolean);
+   return parts.join(' ') || 'Sin nombre';
 }
 
 /**
- * Formatea el género para mostrar
- */
+* Formatea el género para mostrar
+*/
 export function formatGender(gender?: Gender | null): string {
-    if (!gender) return '-';
+   if (!gender) return '-';
 
-    const genderMap: Record<Gender, string> = {
-        MALE: 'Masculino',
-        FEMALE: 'Femenino',
-        OTHER: 'Otro',
-    };
+   const genderMap: Record<Gender, string> = {
+       MALE: 'Masculino',
+       FEMALE: 'Femenino',
+       OTHER: 'Otro',
+   };
 
-    return genderMap[gender] || '-';
+   return genderMap[gender] || '-';
 }
 
 /**
- * Convierte los datos del formulario para enviar a la API
- * NOTA: Esta función ya no se usa, se usa formatPersonDataForAPI en people.service.ts
- */
+* Convierte los datos del formulario para enviar a la API
+* NOTA: Esta función ya no se usa, se usa formatPersonDataForAPI en people.service.ts
+*/
 export function formatPersonFormDataForAPI(data: PersonFormData) {
-    return {
-        firstName: data.firstName || null,
-        lastName: data.lastName || null,
-        realName: data.realName || null,
-        birthDate: data.birthDate || null,
-        deathDate: data.deathDate || null,
-        birthLocationId: data.birthLocationId || null,
-        deathLocationId: data.deathLocationId || null,
-        biography: data.biography || null,
-        photoUrl: data.photoUrl || null,
-        gender: data.gender || null,
-        hideAge: data.hideAge,
-        isActive: data.isActive,
-        links: data.links.map((link, index) => ({
-            ...link,
-            displayOrder: index,
-            title: link.title || null,
-        })),
-    };
+   return {
+       firstName: data.firstName || null,
+       lastName: data.lastName || null,
+       realName: data.realName || null,
+       birthDate: data.birthDate || null,
+       deathDate: data.deathDate || null,
+       birthLocationId: data.birthLocationId || null,
+       deathLocationId: data.deathLocationId || null,
+       biography: data.biography || null,
+       photoUrl: data.photoUrl || null,
+       gender: data.gender || null,
+       hideAge: data.hideAge,
+       isActive: data.isActive,
+       links: data.links.map((link, index) => ({
+           ...link,
+           displayOrder: index,
+           title: link.title || null,
+       })),
+   };
 }
 
 // Función auxiliar para formatear el path de la ubicación
 function formatLocationPath(location: any): string {
-    // Si la ubicación ya tiene un path, usarlo
-    if (location.path) return location.path;
+   // Si la ubicación ya tiene un path, usarlo
+   if (location.path) return location.path;
 
-    // Si no, construir el path con la información disponible
-    const parts = [location.name];
-    if (location.parent) {
-        parts.push(location.parent.name);
-        if (location.parent.parent) {
-            parts.push(location.parent.parent.name);
-        }
-    }
-    return parts.join(', ');
+   // Si no, construir el path con la información disponible
+   const parts = [location.name];
+   if (location.parent) {
+       parts.push(location.parent.name);
+       if (location.parent.parent) {
+           parts.push(location.parent.parent.name);
+       }
+   }
+   return parts.join(', ');
 }
 
 /**
- * Convierte los datos de la API al formato del formulario
- * Maneja tanto fechas completas como parciales
- */
+* Convierte los datos de la API al formato del formulario
+* Maneja tanto fechas completas como parciales
+*/
 export function formatPersonDataForForm(person?: PersonWithRelations | null): PersonFormData {
-    if (!person) return DEFAULT_PERSON_FORM_VALUES;
+   if (!person) return DEFAULT_PERSON_FORM_VALUES;
 
-    const formData: PersonFormData = {
-        firstName: person.firstName || '',
-        lastName: person.lastName || '',
-        realName: person.realName || '',
-        birthDate: '',
-        deathDate: '',
-        birthLocationId: person.birthLocationId || null,
-        deathLocationId: person.deathLocationId || null,
-        birthLocation: person.birthLocation ? formatLocationPath(person.birthLocation) : '',
-        deathLocation: person.deathLocation ? formatLocationPath(person.deathLocation) : '',
-        biography: person.biography || '',
-        photoUrl: person.photoUrl || '',
-        gender: person.gender || '',
-        hideAge: person.hideAge || false,
-        isActive: person.isActive ?? true,
-        links: person.links || [], // Cargar los links directamente si vienen
-    };
+   const formData: PersonFormData = {
+       firstName: person.firstName || '',
+       lastName: person.lastName || '',
+       realName: person.realName || '',
+       birthDate: '',
+       deathDate: '',
+       birthLocationId: person.birthLocationId || null,
+       deathLocationId: person.deathLocationId || null,
+       birthLocation: person.birthLocation ? formatLocationPath(person.birthLocation) : '',
+       deathLocation: person.deathLocation ? formatLocationPath(person.deathLocation) : '',
+       biography: person.biography || '',
+       photoUrl: person.photoUrl || '',
+       gender: person.gender || '',
+       hideAge: person.hideAge || false,
+       isActive: person.isActive ?? true,
+       links: person.links || [], // Cargar los links directamente si vienen
+       nationalities: []
+   };
 
-    // Procesar fecha de nacimiento
-    if ('birthYear' in person && person.birthYear) {
-        const birthPartial: PartialDate = {
-            year: person.birthYear,
-            month: person.birthMonth ?? null,  // Usar ?? para convertir undefined a null
-            day: person.birthDay ?? null       // Usar ?? para convertir undefined a null
-        };
+   // Procesar fecha de nacimiento
+   if ('birthYear' in person && person.birthYear) {
+       const birthPartial: PartialDate = {
+           year: person.birthYear,
+           month: person.birthMonth ?? null,  // Usar ?? para convertir undefined a null
+           day: person.birthDay ?? null       // Usar ?? para convertir undefined a null
+       };
 
-        // Si la fecha está completa (año, mes y día), convertirla a formato ISO
-        if (person.birthYear && person.birthMonth && person.birthDay) {
-            const isoDate = partialFieldsToDate(birthPartial);
-            if (isoDate) {
-                formData.birthDate = isoDate;
-                formData.isPartialBirthDate = false;
-            }
-        } else {
-            // Es una fecha parcial
-            formData.partialBirthDate = birthPartial;
-            formData.isPartialBirthDate = true;
-            formData.birthDate = '';
-        }
-    } else if (person.birthDate) {
-        // Fallback para formato antiguo con birthDate como string
-        formData.birthDate = person.birthDate.split('T')[0];
-        formData.isPartialBirthDate = false;
-    }
+       // Si la fecha está completa (año, mes y día), convertirla a formato ISO
+       if (person.birthYear && person.birthMonth && person.birthDay) {
+           const isoDate = partialFieldsToDate(birthPartial);
+           if (isoDate) {
+               formData.birthDate = isoDate;
+               formData.isPartialBirthDate = false;
+           }
+       } else {
+           // Es una fecha parcial
+           formData.partialBirthDate = birthPartial;
+           formData.isPartialBirthDate = true;
+           formData.birthDate = '';
+       }
+   } else if (person.birthDate) {
+       // Fallback para formato antiguo con birthDate como string
+       formData.birthDate = person.birthDate.split('T')[0];
+       formData.isPartialBirthDate = false;
+   }
 
-    // Procesar fecha de fallecimiento
-    if ('deathYear' in person && person.deathYear) {
-        const deathPartial: PartialDate = {
-            year: person.deathYear,
-            month: person.deathMonth ?? null,  // Usar ?? para convertir undefined a null
-            day: person.deathDay ?? null       // Usar ?? para convertir undefined a null
-        };
+   // Procesar fecha de fallecimiento
+   if ('deathYear' in person && person.deathYear) {
+       const deathPartial: PartialDate = {
+           year: person.deathYear,
+           month: person.deathMonth ?? null,  // Usar ?? para convertir undefined a null
+           day: person.deathDay ?? null       // Usar ?? para convertir undefined a null
+       };
 
-        // Si la fecha está completa (año, mes y día), convertirla a formato ISO
-        if (person.deathYear && person.deathMonth && person.deathDay) {
-            const isoDate = partialFieldsToDate(deathPartial);
-            if (isoDate) {
-                formData.deathDate = isoDate;
-                formData.isPartialDeathDate = false;
-            }
-        } else {
-            // Es una fecha parcial
-            formData.partialDeathDate = deathPartial;
-            formData.isPartialDeathDate = true;
-            formData.deathDate = '';
-        }
-    } else if (person.deathDate) {
-        // Fallback para formato antiguo con deathDate como string
-        formData.deathDate = person.deathDate.split('T')[0];
-        formData.isPartialDeathDate = false;
-    }
+       // Si la fecha está completa (año, mes y día), convertirla a formato ISO
+       if (person.deathYear && person.deathMonth && person.deathDay) {
+           const isoDate = partialFieldsToDate(deathPartial);
+           if (isoDate) {
+               formData.deathDate = isoDate;
+               formData.isPartialDeathDate = false;
+           }
+       } else {
+           // Es una fecha parcial
+           formData.partialDeathDate = deathPartial;
+           formData.isPartialDeathDate = true;
+           formData.deathDate = '';
+       }
+   } else if (person.deathDate) {
+       // Fallback para formato antiguo con deathDate como string
+       formData.deathDate = person.deathDate.split('T')[0];
+       formData.isPartialDeathDate = false;
+   }
 
-    return formData;
+   // Procesar nacionalidades si existen
+   if (person.nationalities && Array.isArray(person.nationalities)) {
+       formData.nationalities = person.nationalities.map((n: any) => {
+           // Si es un número directo
+           if (typeof n === 'number') return n;
+
+           // Si es un objeto
+           if (typeof n === 'object' && n !== null) {
+               // Intentar extraer el ID de diferentes estructuras posibles
+               if (n.locationId) return n.locationId;
+               if (n.location && n.location.id) return n.location.id;
+               if (n.id) return n.id;
+           }
+
+           return null;
+       }).filter((id: any) => id !== null);
+   }
+
+   return formData;
 }
 
 /**
- * Valida los datos del formulario de persona
- */
+* Valida los datos del formulario de persona
+*/
 export function validatePersonForm(data: PersonFormData): string[] {
-    const errors: string[] = [];
+   const errors: string[] = [];
 
-    // Validar que tenga al menos nombre o apellido
-    if (!data.firstName && !data.lastName) {
-        errors.push('Debe ingresar al menos el nombre o el apellido');
-    }
+   // Validar que tenga al menos nombre o apellido
+   if (!data.firstName && !data.lastName) {
+       errors.push('Debe ingresar al menos el nombre o el apellido');
+   }
 
-    // Validar fechas si ambas son completas
-    if (data.birthDate && data.deathDate) {
-        const birthDate = new Date(data.birthDate);
-        const deathDate = new Date(data.deathDate);
+   // Validar fechas si ambas son completas
+   if (data.birthDate && data.deathDate) {
+       const birthDate = new Date(data.birthDate);
+       const deathDate = new Date(data.deathDate);
 
-        if (deathDate < birthDate) {
-            errors.push('La fecha de fallecimiento debe ser posterior a la fecha de nacimiento');
-        }
-    }
+       if (deathDate < birthDate) {
+           errors.push('La fecha de fallecimiento debe ser posterior a la fecha de nacimiento');
+       }
+   }
 
-    // Validar fechas parciales
-    if (data.isPartialBirthDate && data.partialBirthDate &&
-        data.isPartialDeathDate && data.partialDeathDate) {
-        const birthYear = data.partialBirthDate.year;
-        const deathYear = data.partialDeathDate.year;
+   // Validar fechas parciales
+   if (data.isPartialBirthDate && data.partialBirthDate &&
+       data.isPartialDeathDate && data.partialDeathDate) {
+       const birthYear = data.partialBirthDate.year;
+       const deathYear = data.partialDeathDate.year;
 
-        if (birthYear && deathYear && deathYear < birthYear) {
-            errors.push('El año de fallecimiento debe ser posterior al año de nacimiento');
-        }
-    }
+       if (birthYear && deathYear && deathYear < birthYear) {
+           errors.push('El año de fallecimiento debe ser posterior al año de nacimiento');
+       }
+   }
 
-    // Validar links
-    data.links.forEach((link, index) => {
-        if (!link.url) {
-            errors.push(`El link #${index + 1} debe tener una URL`);
-        } else if (!isValidUrl(link.url)) {
-            errors.push(`La URL del link #${index + 1} no es válida`);
-        }
-    });
+   // Validar links
+   data.links.forEach((link, index) => {
+       if (!link.url) {
+           errors.push(`El link #${index + 1} debe tener una URL`);
+       } else if (!isValidUrl(link.url)) {
+           errors.push(`La URL del link #${index + 1} no es válida`);
+       }
+   });
 
-    return errors;
+   return errors;
 }
 
 /**
- * Valida si una cadena es una URL válida
- */
+* Valida si una cadena es una URL válida
+*/
 export function isValidUrl(url: string): boolean {
-    try {
-        new URL(url);
-        return true;
-    } catch {
-        return false;
-    }
+   try {
+       new URL(url);
+       return true;
+   } catch {
+       return false;
+   }
 }
 
 /**
- * Ordena los links por displayOrder
- */
+* Ordena los links por displayOrder
+*/
 export function sortPersonLinks(links: PersonLink[]): PersonLink[] {
-    return [...links].sort((a, b) => a.displayOrder - b.displayOrder);
+   return [...links].sort((a, b) => a.displayOrder - b.displayOrder);
 }
 
 /**
- * Agrega un nuevo link con valores por defecto
- */
+* Agrega un nuevo link con valores por defecto
+*/
 export function addNewPersonLink(currentLinks: PersonLink[]): PersonLink[] {
-    return [
-        ...currentLinks,
-        {
-            ...DEFAULT_PERSON_LINK,
-            displayOrder: currentLinks.length,
-        },
-    ];
+   return [
+       ...currentLinks,
+       {
+           ...DEFAULT_PERSON_LINK,
+           displayOrder: currentLinks.length,
+       },
+   ];
 }
 
 /**
- * Actualiza un link específico
- */
+* Actualiza un link específico
+*/
 export function updatePersonLink(
-    links: PersonLink[],
-    index: number,
-    updates: Partial<PersonLink>
+   links: PersonLink[],
+   index: number,
+   updates: Partial<PersonLink>
 ): PersonLink[] {
-    const newLinks = [...links];
-    newLinks[index] = { ...newLinks[index], ...updates };
-    return newLinks;
+   const newLinks = [...links];
+   newLinks[index] = { ...newLinks[index], ...updates };
+   return newLinks;
 }
 
 /**
- * Elimina un link y reordena los displayOrder
- */
+* Elimina un link y reordena los displayOrder
+*/
 export function removePersonLink(links: PersonLink[], index: number): PersonLink[] {
-    return links
-        .filter((_, i) => i !== index)
-        .map((link, i) => ({ ...link, displayOrder: i }));
+   return links
+       .filter((_, i) => i !== index)
+       .map((link, i) => ({ ...link, displayOrder: i }));
 }
 
 /**
- * Genera el texto para mostrar la edad o fecha de nacimiento
- * Actualizada para manejar fechas parciales
- */
+* Genera el texto para mostrar la edad o fecha de nacimiento
+* Actualizada para manejar fechas parciales
+*/
 export function formatBirthInfo(person: any): string {
-    // Si hay campos de fecha parcial
-    if ('birthYear' in person && person.birthYear) {
-        if (person.hideAge) return 'Fecha oculta';
+   // Si hay campos de fecha parcial
+   if ('birthYear' in person && person.birthYear) {
+       if (person.hideAge) return 'Fecha oculta';
 
-        let dateStr = '';
-        if (person.birthDay && person.birthMonth) {
-            // Fecha completa
-            const date = new Date(person.birthYear, person.birthMonth - 1, person.birthDay);
-            dateStr = date.toLocaleDateString('es-AR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-            });
+       let dateStr = '';
+       if (person.birthDay && person.birthMonth) {
+           // Fecha completa
+           const date = new Date(person.birthYear, person.birthMonth - 1, person.birthDay);
+           dateStr = date.toLocaleDateString('es-AR', {
+               day: '2-digit',
+               month: '2-digit',
+               year: 'numeric',
+           });
 
-            // Calcular edad si no hay fecha de muerte
-            if (!person.deathYear) {
-                const age = calculateAge(date);
-                return `${dateStr} (${age} años)`;
-            }
-        } else if (person.birthMonth) {
-            // Solo año y mes
-            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            dateStr = `${months[person.birthMonth - 1]} ${person.birthYear}`;
-        } else {
-            // Solo año
-            dateStr = String(person.birthYear);
-        }
+           // Calcular edad si no hay fecha de muerte
+           if (!person.deathYear) {
+               const age = calculateAge(date);
+               return `${dateStr} (${age} años)`;
+           }
+       } else if (person.birthMonth) {
+           // Solo año y mes
+           const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+               'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+           dateStr = `${months[person.birthMonth - 1]} ${person.birthYear}`;
+       } else {
+           // Solo año
+           dateStr = String(person.birthYear);
+       }
 
-        return dateStr;
-    }
+       return dateStr;
+   }
 
-    // Fallback al formato antiguo
-    if (!person.birthDate) return '-';
-    if (person.hideAge) return 'Fecha oculta';
+   // Fallback al formato antiguo
+   if (!person.birthDate) return '-';
+   if (person.hideAge) return 'Fecha oculta';
 
-    const birthDate = new Date(person.birthDate);
-    const formattedDate = birthDate.toLocaleDateString('es-AR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-    });
+   const birthDate = new Date(person.birthDate);
+   const formattedDate = birthDate.toLocaleDateString('es-AR', {
+       day: '2-digit',
+       month: '2-digit',
+       year: 'numeric',
+   });
 
-    if (!person.deathDate) {
-        const age = calculateAge(birthDate);
-        return `${formattedDate} (${age} años)`;
-    }
+   if (!person.deathDate) {
+       const age = calculateAge(birthDate);
+       return `${formattedDate} (${age} años)`;
+   }
 
-    return formattedDate;
+   return formattedDate;
 }
 
 /**
- * Calcula la edad a partir de una fecha de nacimiento
- */
+* Calcula la edad a partir de una fecha de nacimiento
+*/
 export function calculateAge(birthDate: Date, deathDate?: Date): number {
-    const endDate = deathDate || new Date();
-    let age = endDate.getFullYear() - birthDate.getFullYear();
-    const monthDiff = endDate.getMonth() - birthDate.getMonth();
+   const endDate = deathDate || new Date();
+   let age = endDate.getFullYear() - birthDate.getFullYear();
+   const monthDiff = endDate.getMonth() - birthDate.getMonth();
 
-    if (monthDiff < 0 || (monthDiff === 0 && endDate.getDate() < birthDate.getDate())) {
-        age--;
-    }
+   if (monthDiff < 0 || (monthDiff === 0 && endDate.getDate() < birthDate.getDate())) {
+       age--;
+   }
 
-    return age;
+   return age;
 }
 
 /**
- * Genera un resumen de la persona para mostrar en listas
- * Actualizada para manejar fechas parciales
- */
+* Genera un resumen de la persona para mostrar en listas
+* Actualizada para manejar fechas parciales
+*/
 export function getPersonSummary(person: any): string {
-    const parts = [];
+   const parts = [];
 
-    // Manejar fecha de nacimiento
-    if ('birthYear' in person && person.birthYear && !person.hideAge) {
-        parts.push(`n. ${person.birthYear}`);
-    } else if (person.birthDate && !person.hideAge) {
-        const year = new Date(person.birthDate).getFullYear();
-        parts.push(`n. ${year}`);
-    }
+   // Manejar fecha de nacimiento
+   if ('birthYear' in person && person.birthYear && !person.hideAge) {
+       parts.push(`n. ${person.birthYear}`);
+   } else if (person.birthDate && !person.hideAge) {
+       const year = new Date(person.birthDate).getFullYear();
+       parts.push(`n. ${year}`);
+   }
 
-    // Manejar fecha de fallecimiento
-    if ('deathYear' in person && person.deathYear) {
-        parts.push(`f. ${person.deathYear}`);
-    } else if (person.deathDate) {
-        const year = new Date(person.deathDate).getFullYear();
-        parts.push(`f. ${year}`);
-    }
+   // Manejar fecha de fallecimiento
+   if ('deathYear' in person && person.deathYear) {
+       parts.push(`f. ${person.deathYear}`);
+   } else if (person.deathDate) {
+       const year = new Date(person.deathDate).getFullYear();
+       parts.push(`f. ${year}`);
+   }
 
-    return parts.join(' - ');
+   return parts.join(' - ');
 }
 
 // ==================================================
@@ -20892,306 +21203,372 @@ export const moviesService = {
 
 import { apiClient } from './api-client';
 import {
-  Person,
-  PersonWithRelations,
-  PersonFormData,
-  PersonFilters,
-  PaginatedPeopleResponse
+ Person,
+ PersonWithRelations,
+ PersonFormData,
+ PersonFilters,
+ PaginatedPeopleResponse
 } from '@/lib/people/peopleTypes';
 import { formatPersonFormDataForAPI } from '@/lib/people/peopleUtils';
 import { dateToPartialFields, partialFieldsToDate } from '@/lib/shared/dateUtils';
 
 interface PersonSearchResult {
-  id: number;
-  name: string;
-  slug?: string;
+ id: number;
+ name: string;
+ slug?: string;
 }
 
 /**
- * Formatea los datos del formulario para enviar a la API
- * Convierte las fechas completas o parciales al formato esperado por el backend
- */
+* Formatea los datos del formulario para enviar a la API
+* Convierte las fechas completas o parciales al formato esperado por el backend
+*/
 function formatPersonDataForAPI(data: PersonFormData): any {
-  const apiData: any = {
-    firstName: data.firstName || null,
-    lastName: data.lastName || null,
-    realName: data.realName || null,
-    gender: data.gender || null,
-    hideAge: data.hideAge,
-    isActive: data.isActive,
-    birthLocationId: data.birthLocationId,
-    deathLocationId: data.deathLocationId,
-    biography: data.biography || null,
-    photoUrl: data.photoUrl || null,
-  };
+ const apiData: any = {
+   firstName: data.firstName || null,
+   lastName: data.lastName || null,
+   realName: data.realName || null,
+   gender: data.gender || null,
+   hideAge: data.hideAge,
+   isActive: data.isActive,
+   birthLocationId: data.birthLocationId,
+   deathLocationId: data.deathLocationId,
+   biography: data.biography || null,
+   photoUrl: data.photoUrl || null,
+ };
 
-  // Procesar fecha de nacimiento
-  if (data.isPartialBirthDate && data.partialBirthDate) {
-    // Fecha parcial de nacimiento
-    apiData.birthYear = data.partialBirthDate.year;
-    apiData.birthMonth = data.partialBirthDate.month;
-    apiData.birthDay = data.partialBirthDate.day;
-  } else if (data.birthDate) {
-    // Fecha completa de nacimiento - convertir a campos parciales
-    const partial = dateToPartialFields(data.birthDate);
-    apiData.birthYear = partial.year;
-    apiData.birthMonth = partial.month;
-    apiData.birthDay = partial.day;
-  } else {
-    // Sin fecha de nacimiento
-    apiData.birthYear = null;
-    apiData.birthMonth = null;
-    apiData.birthDay = null;
-  }
+ // Procesar fecha de nacimiento
+ if (data.isPartialBirthDate && data.partialBirthDate) {
+   // Fecha parcial de nacimiento
+   apiData.birthYear = data.partialBirthDate.year;
+   apiData.birthMonth = data.partialBirthDate.month;
+   apiData.birthDay = data.partialBirthDate.day;
+ } else if (data.birthDate) {
+   // Fecha completa de nacimiento - convertir a campos parciales
+   const partial = dateToPartialFields(data.birthDate);
+   apiData.birthYear = partial.year;
+   apiData.birthMonth = partial.month;
+   apiData.birthDay = partial.day;
+ } else {
+   // Sin fecha de nacimiento
+   apiData.birthYear = null;
+   apiData.birthMonth = null;
+   apiData.birthDay = null;
+ }
 
-  // Procesar fecha de fallecimiento
-  if (data.isPartialDeathDate && data.partialDeathDate) {
-    // Fecha parcial de fallecimiento
-    apiData.deathYear = data.partialDeathDate.year;
-    apiData.deathMonth = data.partialDeathDate.month;
-    apiData.deathDay = data.partialDeathDate.day;
-  } else if (data.deathDate) {
-    // Fecha completa de fallecimiento - convertir a campos parciales
-    const partial = dateToPartialFields(data.deathDate);
-    apiData.deathYear = partial.year;
-    apiData.deathMonth = partial.month;
-    apiData.deathDay = partial.day;
-  } else {
-    // Sin fecha de fallecimiento
-    apiData.deathYear = null;
-    apiData.deathMonth = null;
-    apiData.deathDay = null;
-  }
+ // Procesar fecha de fallecimiento
+ if (data.isPartialDeathDate && data.partialDeathDate) {
+   // Fecha parcial de fallecimiento
+   apiData.deathYear = data.partialDeathDate.year;
+   apiData.deathMonth = data.partialDeathDate.month;
+   apiData.deathDay = data.partialDeathDate.day;
+ } else if (data.deathDate) {
+   // Fecha completa de fallecimiento - convertir a campos parciales
+   const partial = dateToPartialFields(data.deathDate);
+   apiData.deathYear = partial.year;
+   apiData.deathMonth = partial.month;
+   apiData.deathDay = partial.day;
+ } else {
+   // Sin fecha de fallecimiento
+   apiData.deathYear = null;
+   apiData.deathMonth = null;
+   apiData.deathDay = null;
+ }
 
-  return apiData;
+ // Procesar nacionalidades
+ if (data.nationalities && data.nationalities.length > 0) {
+   apiData.nationalities = data.nationalities;
+ }
+
+ // Procesar links si existen
+ if (data.links && data.links.length > 0) {
+   apiData.links = data.links;
+ }
+
+ return apiData;
 }
 
 /**
- * Convierte los datos de la API al formato del formulario
- */
+* Convierte los datos de la API al formato del formulario
+*/
 function formatPersonFromAPI(person: any): PersonFormData {
-  const formData: PersonFormData = {
-    firstName: person.firstName || '',
-    lastName: person.lastName || '',
-    realName: person.realName || '',
-    birthDate: '',
-    deathDate: '',
-    gender: person.gender || '',
-    hideAge: person.hideAge || false,
-    isActive: person.isActive !== false, // Default true
-    birthLocationId: person.birthLocationId || null,
-    deathLocationId: person.deathLocationId || null,
-    biography: person.biography || '',
-    photoUrl: person.photoUrl || '',
-    links: person.links || []
-  };
+ console.log('formatPersonFromAPI - Raw person data:', person); // Debug log
+ console.log('formatPersonFromAPI - Nationalities raw:', person.nationalities); // Debug log
+ 
+ const formData: PersonFormData = {
+   firstName: person.firstName || '',
+   lastName: person.lastName || '',
+   realName: person.realName || '',
+   birthDate: '',
+   deathDate: '',
+   gender: person.gender || '',
+   hideAge: person.hideAge || false,
+   isActive: person.isActive !== false, // Default true
+   birthLocationId: person.birthLocationId || null,
+   deathLocationId: person.deathLocationId || null,
+   biography: person.biography || '',
+   photoUrl: person.photoUrl || '',
+   links: person.links || [],
+   nationalities: []
+ };
 
-  // Procesar fecha de nacimiento
-  if (person.birthYear) {
-    const birthPartial = {
-      year: person.birthYear,
-      month: person.birthMonth,
-      day: person.birthDay
-    };
+ // Procesar fecha de nacimiento
+ if (person.birthYear) {
+   const birthPartial = {
+     year: person.birthYear,
+     month: person.birthMonth,
+     day: person.birthDay
+   };
 
-    // Si la fecha está completa, convertirla a formato ISO
-    if (person.birthYear && person.birthMonth && person.birthDay) {
-      formData.birthDate = partialFieldsToDate(birthPartial) || '';
-      formData.isPartialBirthDate = false;
-    } else {
-      // Fecha parcial
-      formData.partialBirthDate = birthPartial;
-      formData.isPartialBirthDate = true;
-      formData.birthDate = '';
-    }
-  }
+   // Si la fecha está completa, convertirla a formato ISO
+   if (person.birthYear && person.birthMonth && person.birthDay) {
+     formData.birthDate = partialFieldsToDate(birthPartial) || '';
+     formData.isPartialBirthDate = false;
+   } else {
+     // Fecha parcial
+     formData.partialBirthDate = birthPartial;
+     formData.isPartialBirthDate = true;
+     formData.birthDate = '';
+   }
+ }
 
-  // Procesar fecha de fallecimiento
-  if (person.deathYear) {
-    const deathPartial = {
-      year: person.deathYear,
-      month: person.deathMonth,
-      day: person.deathDay
-    };
+ // Procesar fecha de fallecimiento
+ if (person.deathYear) {
+   const deathPartial = {
+     year: person.deathYear,
+     month: person.deathMonth,
+     day: person.deathDay
+   };
 
-    // Si la fecha está completa, convertirla a formato ISO
-    if (person.deathYear && person.deathMonth && person.deathDay) {
-      formData.deathDate = partialFieldsToDate(deathPartial) || '';
-      formData.isPartialDeathDate = false;
-    } else {
-      // Fecha parcial
-      formData.partialDeathDate = deathPartial;
-      formData.isPartialDeathDate = true;
-      formData.deathDate = '';
-    }
-  }
+   // Si la fecha está completa, convertirla a formato ISO
+   if (person.deathYear && person.deathMonth && person.deathDay) {
+     formData.deathDate = partialFieldsToDate(deathPartial) || '';
+     formData.isPartialDeathDate = false;
+   } else {
+     // Fecha parcial
+     formData.partialDeathDate = deathPartial;
+     formData.isPartialDeathDate = true;
+     formData.deathDate = '';
+   }
+ }
 
-  return formData;
+ // Procesar nacionalidades - ACTUALIZADO para manejar la estructura con 'location'
+ if (person.nationalities && Array.isArray(person.nationalities)) {
+   console.log('Processing nationalities, raw data:', person.nationalities); // Debug log
+   
+   formData.nationalities = person.nationalities.map((n: any) => {
+     console.log('Processing nationality item:', n); // Debug log
+     
+     // Si es un número directo
+     if (typeof n === 'number') {
+       console.log('Direct number:', n);
+       return n;
+     }
+     
+     // Si es un objeto
+     if (typeof n === 'object' && n !== null) {
+       // Primero intentar con locationId (campo directo)
+       if (n.locationId) {
+         console.log('Found locationId:', n.locationId);
+         return n.locationId;
+       }
+       
+       // Si tiene un campo 'location' con id (estructura que viene de la API con include)
+       if (n.location && n.location.id) {
+         console.log('Found location.id:', n.location.id);
+         return n.location.id;
+       }
+       
+       // Si tiene un campo 'country' con id (por si acaso)
+       if (n.country && n.country.id) {
+         console.log('Found country.id:', n.country.id);
+         return n.country.id;
+       }
+       
+       // Si tiene un id directo
+       if (n.id) {
+         console.log('Found direct id:', n.id);
+         return n.id;
+       }
+     }
+     
+     console.log('Could not extract ID from:', n);
+     return null;
+   }).filter((id: any) => id !== null); // Filtrar nulls
+   
+   console.log('Final processed nationalities:', formData.nationalities); // Debug log
+ }
+
+ return formData;
 }
 
 export const peopleService = {
-  /**
-   * Obtiene una lista paginada de personas con filtros
-   */
-  async getAll(filters: PersonFilters = {}): Promise<PaginatedPeopleResponse> {
-    const params = new URLSearchParams();
+ /**
+  * Obtiene una lista paginada de personas con filtros
+  */
+ async getAll(filters: PersonFilters = {}): Promise<PaginatedPeopleResponse> {
+   const params = new URLSearchParams();
 
-    if (filters.search) params.append('search', filters.search);
-    if (filters.gender) params.append('gender', filters.gender);
-    if (filters.hasLinks !== undefined && filters.hasLinks !== '') {
-      params.append('hasLinks', String(filters.hasLinks));
-    }
-    if (filters.isActive !== undefined && filters.isActive !== '') {
-      params.append('isActive', String(filters.isActive));
-    }
-    if (filters.page) params.append('page', String(filters.page));
-    if (filters.limit) params.append('limit', String(filters.limit));
+   if (filters.search) params.append('search', filters.search);
+   if (filters.gender) params.append('gender', filters.gender);
+   if (filters.hasLinks !== undefined && filters.hasLinks !== '') {
+     params.append('hasLinks', String(filters.hasLinks));
+   }
+   if (filters.isActive !== undefined && filters.isActive !== '') {
+     params.append('isActive', String(filters.isActive));
+   }
+   if (filters.page) params.append('page', String(filters.page));
+   if (filters.limit) params.append('limit', String(filters.limit));
 
-    const response = await apiClient.get<PaginatedPeopleResponse>(`/people?${params}`);
-    
-    // Convertir las fechas de cada persona si es necesario
-    if (response.data && Array.isArray(response.data)) {
-      response.data = response.data.map((person: any) => ({
-        ...person,
-        // Mantener la estructura original pero asegurar que las fechas parciales estén disponibles
-        birthYear: person.birthYear,
-        birthMonth: person.birthMonth,
-        birthDay: person.birthDay,
-        deathYear: person.deathYear,
-        deathMonth: person.deathMonth,
-        deathDay: person.deathDay
-      }));
-    }
+   const response = await apiClient.get<PaginatedPeopleResponse>(`/people?${params}`);
+   
+   // Convertir las fechas de cada persona si es necesario
+   if (response.data && Array.isArray(response.data)) {
+     response.data = response.data.map((person: any) => ({
+       ...person,
+       // Mantener la estructura original pero asegurar que las fechas parciales estén disponibles
+       birthYear: person.birthYear,
+       birthMonth: person.birthMonth,
+       birthDay: person.birthDay,
+       deathYear: person.deathYear,
+       deathMonth: person.deathMonth,
+       deathDay: person.deathDay
+     }));
+   }
 
-    return response;
-  },
+   return response;
+ },
 
-  /**
-   * Busca personas por nombre (para autocomplete)
-   */
-  async search(query: string, limit: number = 10): Promise<PersonSearchResult[]> {
-    if (query.length < 2) return [];
+ /**
+  * Busca personas por nombre (para autocomplete)
+  */
+ async search(query: string, limit: number = 10): Promise<PersonSearchResult[]> {
+   if (query.length < 2) return [];
 
-    try {
-      return await apiClient.get<PersonSearchResult[]>(
-        `/people?search=${encodeURIComponent(query)}&limit=${limit}`
-      );
-    } catch (error) {
-      console.error('Error searching people:', error);
-      return [];
-    }
-  },
+   try {
+     return await apiClient.get<PersonSearchResult[]>(
+       `/people?search=${encodeURIComponent(query)}&limit=${limit}`
+     );
+   } catch (error) {
+     console.error('Error searching people:', error);
+     return [];
+   }
+ },
 
-  /**
-   * Obtiene una persona por ID con todas sus relaciones
-   */
-  async getById(id: number): Promise<PersonWithRelations> {
-    const person = await apiClient.get<PersonWithRelations>(`/people/${id}`);
-    
-    // Si necesitas devolver el formato de formulario, usa formatPersonFromAPI
-    // De lo contrario, devuelve la persona tal cual con los campos de fecha parcial
-    return person;
-  },
+ /**
+  * Obtiene una persona por ID con todas sus relaciones
+  */
+ async getById(id: number): Promise<PersonWithRelations> {
+   const person = await apiClient.get<PersonWithRelations>(`/people/${id}`);
+   
+   // Si necesitas devolver el formato de formulario, usa formatPersonFromAPI
+   // De lo contrario, devuelve la persona tal cual con los campos de fecha parcial
+   return person;
+ },
 
-  /**
-   * Obtiene una persona por ID en formato de formulario
-   */
-  async getByIdForEdit(id: number): Promise<PersonFormData> {
-    const person = await apiClient.get<any>(`/people/${id}`);
-    return formatPersonFromAPI(person);
-  },
+ /**
+  * Obtiene una persona por ID en formato de formulario
+  */
+ async getByIdForEdit(id: number): Promise<PersonFormData> {
+   const person = await apiClient.get<any>(`/people/${id}`);
+   console.log('getByIdForEdit - Raw person from API:', person); // Debug log
+   const formatted = formatPersonFromAPI(person);
+   console.log('getByIdForEdit - Formatted person:', formatted); // Debug log
+   return formatted;
+ },
 
-  /**
-   * Crea una nueva persona
-   */
-  async create(data: PersonFormData): Promise<PersonWithRelations> {
-    // Usar la nueva función que maneja fechas parciales
-    const formattedData = formatPersonDataForAPI(data);
-    console.log('Formatted data for API:', formattedData); // <-- Log para debugging
+ /**
+  * Crea una nueva persona
+  */
+ async create(data: PersonFormData): Promise<PersonWithRelations> {
+   // Usar la nueva función que maneja fechas parciales
+   const formattedData = formatPersonDataForAPI(data);
+   console.log('Formatted data for API:', formattedData); // <-- Log para debugging
+   console.log('Nationalities being sent:', formattedData.nationalities); // Log específico de nacionalidades
 
-    return apiClient.post<PersonWithRelations>('/people', formattedData);
-  },
+   return apiClient.post<PersonWithRelations>('/people', formattedData);
+ },
 
-  /**
-   * Crea una persona rápida (solo con nombre)
-   */
-  async createQuick(name: string): Promise<Person> {
-    // Separar el nombre en firstName y lastName si es posible
-    const nameParts = name.trim().split(' ');
-    const quickData = {
-      firstName: nameParts[0] || null,
-      lastName: nameParts.slice(1).join(' ') || null,
-      isActive: true
-    };
+ /**
+  * Crea una persona rápida (solo con nombre)
+  */
+ async createQuick(name: string): Promise<Person> {
+   // Separar el nombre en firstName y lastName si es posible
+   const nameParts = name.trim().split(' ');
+   const quickData = {
+     firstName: nameParts[0] || null,
+     lastName: nameParts.slice(1).join(' ') || null,
+     isActive: true
+   };
 
-    return apiClient.post<Person>('/people', quickData);
-  },
+   return apiClient.post<Person>('/people', quickData);
+ },
 
-  /**
-   * Actualiza una persona
-   */
-  async update(id: number, data: PersonFormData): Promise<PersonWithRelations> {
-    // Usar la nueva función que maneja fechas parciales
-    const formattedData = formatPersonDataForAPI(data);
-    console.log('Formatted data for API update:', formattedData); // <-- Log para debugging
+ /**
+  * Actualiza una persona
+  */
+ async update(id: number, data: PersonFormData): Promise<PersonWithRelations> {
+   // Usar la nueva función que maneja fechas parciales
+   const formattedData = formatPersonDataForAPI(data);
+   console.log('Formatted data for API update:', formattedData); // <-- Log para debugging
+   console.log('Nationalities being updated:', formattedData.nationalities); // Log específico de nacionalidades
 
-    return apiClient.put<PersonWithRelations>(`/people/${id}`, formattedData);
-  },
+   return apiClient.put<PersonWithRelations>(`/people/${id}`, formattedData);
+ },
 
-  /**
-   * Elimina una persona
-   */
-  async delete(id: number): Promise<void> {
-    await apiClient.delete(`/people/${id}`);
-  },
+ /**
+  * Elimina una persona
+  */
+ async delete(id: number): Promise<void> {
+   await apiClient.delete(`/people/${id}`);
+ },
 
-  /**
-   * Verifica si un slug está disponible
-   */
-  async checkSlugAvailability(slug: string, excludeId?: number): Promise<boolean> {
-    const params = new URLSearchParams({ slug });
-    if (excludeId) params.append('excludeId', String(excludeId));
+ /**
+  * Verifica si un slug está disponible
+  */
+ async checkSlugAvailability(slug: string, excludeId?: number): Promise<boolean> {
+   const params = new URLSearchParams({ slug });
+   if (excludeId) params.append('excludeId', String(excludeId));
 
-    const { available } = await apiClient.get<{ available: boolean }>(
-      `/people/check-slug?${params}`
-    );
-    return available;
-  },
+   const { available } = await apiClient.get<{ available: boolean }>(
+     `/people/check-slug?${params}`
+   );
+   return available;
+ },
 
-  /**
-   * Obtiene estadísticas de personas
-   */
-  async getStats(): Promise<{
-    total: number;
-    active: number;
-    withLinks: number;
-    byGender: Record<string, number>;
-  }> {
-    return apiClient.get('/people/stats');
-  },
+ /**
+  * Obtiene estadísticas de personas
+  */
+ async getStats(): Promise<{
+   total: number;
+   active: number;
+   withLinks: number;
+   byGender: Record<string, number>;
+ }> {
+   return apiClient.get('/people/stats');
+ },
 
-  /**
-   * Exporta personas a CSV
-   */
-  async exportToCSV(filters: PersonFilters = {}): Promise<Blob> {
-    const params = new URLSearchParams();
+ /**
+  * Exporta personas a CSV
+  */
+ async exportToCSV(filters: PersonFilters = {}): Promise<Blob> {
+   const params = new URLSearchParams();
 
-    if (filters.search) params.append('search', filters.search);
-    if (filters.gender) params.append('gender', filters.gender);
-    if (filters.hasLinks !== undefined) {
-      params.append('hasLinks', String(filters.hasLinks));
-    }
-    if (filters.isActive !== undefined) {
-      params.append('isActive', String(filters.isActive));
-    }
+   if (filters.search) params.append('search', filters.search);
+   if (filters.gender) params.append('gender', filters.gender);
+   if (filters.hasLinks !== undefined) {
+     params.append('hasLinks', String(filters.hasLinks));
+   }
+   if (filters.isActive !== undefined) {
+     params.append('isActive', String(filters.isActive));
+   }
 
-    // Usamos fetch directamente para manejar el blob
-    const response = await fetch(`/api/people/export?${params}`);
+   // Usamos fetch directamente para manejar el blob
+   const response = await fetch(`/api/people/export?${params}`);
 
-    if (!response.ok) {
-      throw new Error('Error al exportar personas');
-    }
+   if (!response.ok) {
+     throw new Error('Error al exportar personas');
+   }
 
-    return response.blob();
-  }
+   return response.blob();
+ }
 };

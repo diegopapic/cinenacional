@@ -245,6 +245,11 @@
     "size": 0
   },
   {
+    "path": "PROJECT_DOCS v2.0.0.md",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/PROJECT_DOCS v2.0.0.md",
+    "size": 0
+  },
+  {
     "path": "PROJECT_DOCS.md",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/PROJECT_DOCS.md",
     "size": 0
@@ -335,6 +340,16 @@
     "size": 0
   },
   {
+    "path": "scripts/analyze-person-location-ids-fixed.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-person-location-ids-fixed.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/analyze-person-location-ids.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-person-location-ids.js",
+    "size": 0
+  },
+  {
     "path": "scripts/analyze-wp-classification.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-classification.js",
     "size": 0
@@ -395,6 +410,11 @@
     "size": 0
   },
   {
+    "path": "scripts/analyze-wp-person-dates.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-person-dates.js",
+    "size": 0
+  },
+  {
     "path": "scripts/analyze-wp-sound-discrepancy.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-sound-discrepancy.js",
     "size": 0
@@ -417,6 +437,16 @@
   {
     "path": "scripts/check-missing-parent.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-missing-parent.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/check-supabase-locations-fixed.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-supabase-locations-fixed.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/check-supabase-locations.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-supabase-locations.js",
     "size": 0
   },
   {
@@ -480,6 +510,16 @@
     "size": 0
   },
   {
+    "path": "scripts/find-person-date-fields.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/find-person-date-fields.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/find-person-location-fields.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/find-person-location-fields.js",
+    "size": 0
+  },
+  {
     "path": "scripts/find-wp-locations-mystery.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/find-wp-locations-mystery.js",
     "size": 0
@@ -502,6 +542,11 @@
   {
     "path": "scripts/investigate-person-locations.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/investigate-person-locations.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/investigate-wp-locations.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/investigate-wp-locations.js",
     "size": 0
   },
   {
@@ -580,8 +625,28 @@
     "size": 0
   },
   {
+    "path": "scripts/migration/migrate-person-dates-supabase.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-person-dates-supabase.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/migration/migrate-person-locations-to-supabase.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-person-locations-to-supabase.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/migration/migrate-person-locations-with-mapping.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-person-locations-with-mapping.js",
+    "size": 0
+  },
+  {
     "path": "scripts/migration/migrate-wp-people-to-supabase.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-people-to-supabase.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/prepare-person-dates-migration.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/prepare-person-dates-migration.js",
     "size": 0
   },
   {
@@ -617,6 +682,11 @@
   {
     "path": "scripts/verify-las-palmas-gc.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/verify-las-palmas-gc.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/verify-person-locations.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/verify-person-locations.js",
     "size": 0
   },
   {
@@ -742,6 +812,11 @@
   {
     "path": "src/app/api/locations/check-slug/route.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/locations/check-slug/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/locations/countries/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/locations/countries/route.ts",
     "size": 0
   },
   {
@@ -1002,6 +1077,11 @@
   {
     "path": "src/components/admin/people/PersonFormFields/LocationFields.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/people/PersonFormFields/LocationFields.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/admin/people/PersonFormFields/NationalitiesField.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/people/PersonFormFields/NationalitiesField.tsx",
     "size": 0
   },
   {

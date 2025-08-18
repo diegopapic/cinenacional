@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-17T20:08:06.571Z
+# Generado automáticamente el: 2025-08-18T02:11:51.665Z
 # ================================================
 
 ## Schema Prisma
@@ -249,14 +249,14 @@ model Person {
 
 model PersonNationality {
   personId    Int     @map("person_id")
-  countryId   Int     @map("country_id")
+  locationId   Int     @map("location_id")
   isPrimary   Boolean @default(false) @map("is_primary")
   
   // Relaciones
   person      Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
-  country     Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  location    Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
   
-  @@id([personId, countryId])
+  @@id([personId, locationId])
   @@map("person_nationalities")
 }
 
@@ -448,6 +448,8 @@ model Location {
   children        Location[] @relation("LocationHierarchy")
   peopleBornHere  Person[]  @relation("BirthLocation")
   peopleDiedHere  Person[]  @relation("DeathLocation")
+  personNationalities PersonNationality[]
+
     
   @@map("locations")
   @@index([parentId])
@@ -590,7 +592,7 @@ model Country {
   
   // Relaciones
   movies    MovieCountry[]
-  personNationalities PersonNationality[]
+  // personNationalities PersonNationality[]
 
   @@map("countries")
 }
@@ -981,10 +983,10 @@ CREATE TABLE "public"."people" (
 -- CreateTable
 CREATE TABLE "public"."person_nationalities" (
     "person_id" INTEGER NOT NULL,
-    "country_id" INTEGER NOT NULL,
+    "location_id" INTEGER NOT NULL,
     "is_primary" BOOLEAN NOT NULL DEFAULT false,
 
-    CONSTRAINT "person_nationalities_pkey" PRIMARY KEY ("person_id","country_id")
+    CONSTRAINT "person_nationalities_pkey" PRIMARY KEY ("person_id","location_id")
 );
 
 -- CreateTable
@@ -1535,7 +1537,7 @@ ALTER TABLE "public"."people" ADD CONSTRAINT "people_death_location_id_fkey" FOR
 ALTER TABLE "public"."person_nationalities" ADD CONSTRAINT "person_nationalities_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."person_nationalities" ADD CONSTRAINT "person_nationalities_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "public"."countries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."person_nationalities" ADD CONSTRAINT "person_nationalities_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."locations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."person_links" ADD CONSTRAINT "person_links_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
