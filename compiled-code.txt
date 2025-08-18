@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: c67ce2b7b38a0a52676ffa0ff18f5db20c1c9d40
-// Fecha: 2025-08-18T02:23:06.709Z
+// Commit: 2a61fb1316b862d371855d2a7c13c84fed91d6d1
+// Fecha: 2025-08-18T02:26:18.577Z
 // ============================================
 
 
@@ -18486,7 +18486,7 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
             if (person.nationalities && Array.isArray(person.nationalities)) {
                 console.log('usePeopleForm - Processing nationalities, raw:', person.nationalities);
 
-                formattedData.nationalities = person.nationalities.map(n => {
+                formattedData.nationalities = person.nationalities.map((n: any) => {
                     console.log('usePeopleForm - Processing nationality item:', n);
 
                     // Manejar diferentes formatos posibles
@@ -18495,8 +18495,9 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
                         return n;
                     } if (typeof n === 'object' && n !== null) {
                         // Puede venir como {locationId: X, country: {...}} o similar
-                        return n.locationId || n.id || n;
+                        const id = n.locationId || n;
                         console.log('usePeopleForm - Extracted ID from object:', id);
+                        return id;
 
                     }
                     return n;
@@ -18508,7 +18509,7 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
 
                 formattedData.nationalities = [];
             }
-        console.log('usePeopleForm - Final formData before setFormData:', formattedData);
+            console.log('usePeopleForm - Final formData before setFormData:', formattedData);
 
             setFormData(formattedData);
         } catch (error) {
