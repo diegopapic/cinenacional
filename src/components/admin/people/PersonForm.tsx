@@ -61,7 +61,7 @@ export function PersonForm({
 
             // Cargar nacionalidades si existen
             if (initialData.nationalities) {
-                const nationalityIds = initialData.nationalities.map(n => {
+                const nationalityIds = initialData.nationalities.map((n: any) => {
                     if (typeof n === 'number') return n;
                     if (typeof n === 'object' && n !== null) {
                         return n.locationId;
@@ -80,7 +80,7 @@ export function PersonForm({
             console.log('PersonForm - formData.nationalities:', formData.nationalities);
             // Asegurarse de que tenemos un array de IDs
             const nationalityIds = Array.isArray(formData.nationalities)
-                ? formData.nationalities.map((n) => {  // Cambiar de ( a {
+                ? formData.nationalities.map((n: any) => {  // Cambiar de ( a {
                     console.log('PersonForm - Processing nationality item:', n);
                     const id = typeof n === 'object' ? n.locationId : n;
                     console.log('PersonForm - Extracted ID:', id);
