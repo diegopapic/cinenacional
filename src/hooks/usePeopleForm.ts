@@ -63,7 +63,7 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
             if (person.nationalities && Array.isArray(person.nationalities)) {
                 console.log('usePeopleForm - Processing nationalities, raw:', person.nationalities);
 
-                formattedData.nationalities = person.nationalities.map(n => {
+                formattedData.nationalities = person.nationalities.map((n: any) => {
                     console.log('usePeopleForm - Processing nationality item:', n);
 
                     // Manejar diferentes formatos posibles
@@ -72,8 +72,9 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
                         return n;
                     } if (typeof n === 'object' && n !== null) {
                         // Puede venir como {locationId: X, country: {...}} o similar
-                        return n.locationId || n.id || n;
+                        const id = n.locationId || n;
                         console.log('usePeopleForm - Extracted ID from object:', id);
+                        return id;
 
                     }
                     return n;
@@ -85,7 +86,7 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
 
                 formattedData.nationalities = [];
             }
-        console.log('usePeopleForm - Final formData before setFormData:', formattedData);
+            console.log('usePeopleForm - Final formData before setFormData:', formattedData);
 
             setFormData(formattedData);
         } catch (error) {
