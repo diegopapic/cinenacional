@@ -87,6 +87,12 @@ export interface Location {
 // Tipo extendido con relaciones
 export interface PersonWithRelations extends Person {
   links?: PersonLink[];
+  nationalities?: Array<{
+    personId?: number;
+    locationId: number;
+    isPrimary?: boolean;
+    location?: Location;
+  }>;
   birthLocation?: Location | null;
   deathLocation?: Location | null;
   _count?: {

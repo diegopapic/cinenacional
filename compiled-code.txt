@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: f6e107c27434fff5ab70e1144ccc1cdbc33df4c0
-// Fecha: 2025-08-18T02:11:51.407Z
+// Commit: 1b5898d208e34173fccad9e82329be799389672e
+// Fecha: 2025-08-18T02:17:16.719Z
 // ============================================
 
 
@@ -19405,6 +19405,12 @@ export interface Location {
 // Tipo extendido con relaciones
 export interface PersonWithRelations extends Person {
   links?: PersonLink[];
+  nationalities?: Array<{
+    personId?: number;
+    locationId: number;
+    isPrimary?: boolean;
+    location?: Location;
+  }>;
   birthLocation?: Location | null;
   deathLocation?: Location | null;
   _count?: {
