@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-17T20:08:06.428Z
+// Archivos del admin - 2025-08-18T02:11:51.473Z
 // ==================
 
 
@@ -4380,6 +4380,11 @@ export async function GET(request: NextRequest) {
     const people = await prisma.person.findMany({
       where,
       include: {
+        nationalities: {
+          include: {
+            location: true  // Cambiado de 'location' a 'country'
+          }
+        },
         _count: {
           select: {
             links: true,
@@ -4437,14 +4442,21 @@ export async function POST(request: NextRequest) {
       counter++;
     }
 
-    // Preparar los datos de la persona
+    // Preparar los datos de la persona (campos de fecha parcial)
     const personData: any = {
       slug,
       firstName: data.firstName || null,
       lastName: data.lastName || null,
       realName: data.realName || null,
-      birthDate: data.birthDate ? new Date(data.birthDate) : null,
-      deathDate: data.deathDate ? new Date(data.deathDate) : null,
+      // Fechas parciales de nacimiento
+      birthYear: data.birthYear || null,
+      birthMonth: data.birthMonth || null,
+      birthDay: data.birthDay || null,
+      // Fechas parciales de muerte
+      deathYear: data.deathYear || null,
+      deathMonth: data.deathMonth || null,
+      deathDay: data.deathDay || null,
+      // Ubicaciones
       birthLocationId: data.birthLocationId || null,
       deathLocationId: data.deathLocationId || null,
       biography: data.biography || null,
@@ -4455,10 +4467,7 @@ export async function POST(request: NextRequest) {
       hasLinks: data.links && data.links.length > 0,
     };
 
-    // TODO: Manejar ubicaciones birthLocation y deathLocation
-    // Por ahora solo guardamos el texto en la biografía o notas
-
-    // Crear la persona y sus links en una transacción
+    // Crear la persona, sus links y nacionalidades en una transacción
     const person = await prisma.$transaction(async (tx) => {
       // Crear la persona
       const newPerson = await tx.person.create({
@@ -4480,11 +4489,28 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Si hay nacionalidades, crearlas
+      if (data.nationalities && data.nationalities.length > 0) {
+        await tx.personNationality.createMany({
+          data: data.nationalities.map((locationId: number) => ({
+            personId: newPerson.id,
+            locationId: locationId,
+          })),
+        });
+      }
+
       // Retornar la persona con sus relaciones
       return tx.person.findUnique({
         where: { id: newPerson.id },
         include: {
           links: true,
+          nationalities: {
+            include: {
+              location: true  // Cambiado de 'location' a 'country'
+            }
+          },
+          birthLocation: true,
+          deathLocation: true,
           _count: {
             select: {
               links: true,
@@ -4527,6 +4553,11 @@ export async function GET(
                 links: {
                     orderBy: { displayOrder: 'asc' },
                 },
+                nationalities: {
+                    include: {
+                        location: true  // Cambiado de 'location' a 'country'
+                    }
+                },
                 birthLocation: true,
                 deathLocation: true,
                 _count: {
@@ -4566,6 +4597,7 @@ export async function PUT(
         const personId = parseInt(id);
 
         console.log('Data received in API:', data); // Log para debugging
+        console.log('Nationalities received:', data.nationalities); // Log específico de nacionalidades
 
         // Verificar si necesitamos actualizar el slug
         let slug = undefined;
@@ -4625,7 +4657,7 @@ export async function PUT(
 
         console.log('Update data prepared:', updateData); // Log para debugging
 
-        // Actualizar persona y links en una transacción
+        // Actualizar persona, links y nacionalidades en una transacción
         const person = await prisma.$transaction(async (tx) => {
             // Actualizar la persona
             const updatedPerson = await tx.person.update({
@@ -4653,11 +4685,31 @@ export async function PUT(
                 });
             }
 
+            // Eliminar nacionalidades existentes
+            await tx.personNationality.deleteMany({
+                where: { personId },
+            });
+
+            // Crear nuevas nacionalidades si existen
+            if (data.nationalities && data.nationalities.length > 0) {
+                await tx.personNationality.createMany({
+                    data: data.nationalities.map((locationId: number) => ({
+                        personId,
+                        locationId: locationId,
+                    })),
+                });
+            }
+
             // Retornar la persona actualizada con sus relaciones
             return tx.person.findUnique({
                 where: { id: personId },
                 include: {
                     links: true,
+                    nationalities: {
+                        include: {
+                            location: true  // Cambiado de 'location' a 'country'
+                        }
+                    },
                     birthLocation: true,
                     deathLocation: true,
                     _count: {
@@ -4717,7 +4769,7 @@ export async function DELETE(
             );
         }
 
-        // Eliminar la persona (los links se eliminan en cascada)
+        // Eliminar la persona (los links y nacionalidades se eliminan en cascada)
         await prisma.person.delete({
             where: { id: parseInt(id) },
         });
@@ -9892,10 +9944,11 @@ export function PeopleTable() {
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Save, Loader2, AlertCircle } from 'lucide-react';
 import { usePeopleForm } from '@/hooks/usePeopleForm';
 import { PersonWithRelations } from '@/lib/people/peopleTypes';
+import NationalitiesField from './PersonFormFields/NationalitiesField'
 
 // Importar sub-componentes del formulario
 import { BasicInfoFields } from './PersonFormFields/BasicInfoFields';
@@ -9904,177 +9957,230 @@ import { LocationFields } from './PersonFormFields/LocationFields';
 import { LinksSection } from './PersonFormFields/LinksSection';
 
 interface PersonFormProps {
-  personId?: number;
-  initialData?: PersonWithRelations;
-  onSuccess?: (person: PersonWithRelations) => void;
-  onCancel?: () => void;
+    personId?: number;
+    initialData?: PersonWithRelations;
+    onSuccess?: (person: PersonWithRelations) => void;
+    onCancel?: () => void;
 }
 
-export function PersonForm({ 
-  personId, 
-  initialData, 
-  onSuccess,
-  onCancel 
+export function PersonForm({
+    personId,
+    initialData,
+    onSuccess,
+    onCancel
 }: PersonFormProps) {
-  const {
-    formData,
-    loading,
-    saving,
-    errors,
-    isDirty,
-    isEdit,
-    updateField,
-    updateFields,
-    addLink,
-    updateLink,
-    removeLink,
-    save,
-    cancel,
-  } = usePeopleForm({ personId, onSuccess });
+    const {
+        formData,
+        loading,
+        saving,
+        errors,
+        isDirty,
+        isEdit,
+        updateField,
+        updateFields,
+        addLink,
+        updateLink,
+        removeLink,
+        save,
+        cancel,
+    } = usePeopleForm({ personId, onSuccess });
 
-  // Si hay datos iniciales y no es edición, cargarlos
-  useEffect(() => {
-    if (initialData && !personId) {
-      updateFields({
-        firstName: initialData.firstName || '',
-        lastName: initialData.lastName || '',
-        realName: initialData.realName || '',
-        gender: initialData.gender || '',
-      });
-    }
-  }, [initialData, personId, updateFields]);
+    // Estado para nacionalidades
+    const [nationalities, setNationalities] = useState<number[]>([]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await save();
-  };
+    // Usar ref para evitar loops infinitos
+    const nationalitiesInitialized = useRef(false);
 
-  const handleCancel = () => {
-    if (onCancel) {
-      onCancel();
-    } else {
-      cancel();
-    }
-  };
+    // Si hay datos iniciales y no es edición, cargarlos
+    useEffect(() => {
+        if (initialData && !personId) {
+            updateFields({
+                firstName: initialData.firstName || '',
+                lastName: initialData.lastName || '',
+                realName: initialData.realName || '',
+                gender: initialData.gender || '',
+            });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
-  }
+            // Cargar nacionalidades si existen
+            if (initialData.nationalities) {
+                const nationalityIds = initialData.nationalities.map(n =>
+                    typeof n === 'object' ? (n.locationId || n.id) : n
+                );
+                setNationalities(nationalityIds);
+            }
+        }
+    }, [initialData, personId, updateFields]);
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Mostrar errores si hay */}
-      {errors.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex">
-            <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                Se encontraron los siguientes errores:
-              </h3>
-              <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
-                {errors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
+    // Cargar nacionalidades cuando se edita una persona existente
+    useEffect(() => {
+        if (isEdit && formData.nationalities && formData.nationalities.length > 0 && !nationalitiesInitialized.current) {
+            console.log('PersonForm - Loading nationalities for edit');
+            console.log('PersonForm - formData.nationalities:', formData.nationalities);
+            // Asegurarse de que tenemos un array de IDs
+            const nationalityIds = Array.isArray(formData.nationalities)
+                ? formData.nationalities.map((n) => {  // Cambiar de ( a {
+                    console.log('PersonForm - Processing nationality item:', n);
+                    const id = typeof n === 'object' ? (n.locationId || n.id) : n;
+                    console.log('PersonForm - Extracted ID:', id);
+                    return id;  // Agregar return explícito
+                })  // Cambiar de ) a }
+                : [];
+            console.log('PersonForm - Final nationalityIds:', nationalityIds);
+
+            setNationalities(nationalityIds);
+            nationalitiesInitialized.current = true;
+        }
+    }, [isEdit, formData.nationalities]);
+
+    // Función para manejar el cambio de nacionalidades
+    const handleNationalitiesChange = (newNationalities: number[]) => {
+        setNationalities(newNationalities);
+        updateField('nationalities', newNationalities);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await save();
+    };
+
+    const handleCancel = () => {
+        if (onCancel) {
+            onCancel();
+        } else {
+            cancel();
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
             </div>
-          </div>
-        </div>
-      )}
+        );
+    }
 
-      {/* Información básica */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-6">
-          Información Personal
-        </h3>
-        <BasicInfoFields
-          formData={formData}
-          updateField={updateField}
-          isEdit={isEdit}
-        />
-      </div>
-
-      {/* Ubicaciones */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-6">
-          Ubicaciones
-        </h3>
-        <LocationFields
-          formData={formData}
-          updateField={updateField}
-        />
-      </div>
-
-      {/* Biografía e información adicional */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-6">
-          Información Adicional
-        </h3>
-        <BiographyFields
-          formData={formData}
-          updateField={updateField}
-        />
-      </div>
-
-      {/* Links */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-6">
-          Enlaces
-        </h3>
-        <LinksSection
-          links={formData.links}
-          onAddLink={addLink}
-          onUpdateLink={updateLink}
-          onRemoveLink={removeLink}
-        />
-      </div>
-
-      {/* Botones de acción */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-500">
-            {isDirty && (
-              <span className="text-orange-600">
-                * Hay cambios sin guardar
-              </span>
+    return (
+        <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Mostrar errores si hay */}
+            {errors.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex">
+                        <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
+                        <div className="ml-3">
+                            <h3 className="text-sm font-medium text-red-800">
+                                Se encontraron los siguientes errores:
+                            </h3>
+                            <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
+                                {errors.map((error, index) => (
+                                    <li key={index}>{error}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             )}
-          </div>
-          
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Cancelar
-            </button>
-            
-            <button
-              type="submit"
-              disabled={saving || loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  {isEdit ? 'Actualizar' : 'Crear'} Persona
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </form>
-  );
+
+            {/* Información básica */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">
+                    Información Personal
+                </h3>
+                <BasicInfoFields
+                    formData={formData}
+                    updateField={updateField}
+                    isEdit={isEdit}
+                />
+            </div>
+
+            {/* Nacionalidades */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">
+                    Nacionalidades
+                </h3>
+                <NationalitiesField
+                    value={nationalities}
+                    onChange={handleNationalitiesChange}
+                    disabled={saving}
+                />
+            </div>
+
+            {/* Ubicaciones */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">
+                    Ubicaciones
+                </h3>
+                <LocationFields
+                    formData={formData}
+                    updateField={updateField}
+                />
+            </div>
+
+            {/* Biografía e información adicional */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">
+                    Información Adicional
+                </h3>
+                <BiographyFields
+                    formData={formData}
+                    updateField={updateField}
+                />
+            </div>
+
+            {/* Links */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">
+                    Enlaces
+                </h3>
+                <LinksSection
+                    links={formData.links}
+                    onAddLink={addLink}
+                    onUpdateLink={updateLink}
+                    onRemoveLink={removeLink}
+                />
+            </div>
+
+            {/* Botones de acción */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-500">
+                        {isDirty && (
+                            <span className="text-orange-600">
+                                * Hay cambios sin guardar
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button
+                            type="button"
+                            onClick={handleCancel}
+                            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+
+                        <button
+                            type="submit"
+                            disabled={saving || loading}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {saving ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Guardando...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4" />
+                                    {isEdit ? 'Actualizar' : 'Crear'} Persona
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    );
 }
 
 // ==================================================
@@ -10995,6 +11101,153 @@ export function LocationFields({ formData, updateField }: LocationFieldsProps) {
       />
     </div>
   );
+}
+
+// ==================================================
+// src/components/admin/people/PersonFormFields/NationalitiesField.tsx
+// ==================================================
+// src/components/admin/people/PersonFormFields/NationalitiesField.tsx
+
+import React, { useState, useEffect } from 'react'
+import { X } from 'lucide-react'
+import { apiClient } from '@/services/api-client'
+
+interface Location {
+  id: number
+  name: string
+  slug: string
+}
+
+interface NationalitiesFieldProps {
+  value: number[]
+  onChange: (nationalities: number[]) => void
+  disabled?: boolean
+}
+
+export default function NationalitiesField({
+  value = [],
+  onChange,
+  disabled = false
+}: NationalitiesFieldProps) {
+  const [countries, setCountries] = useState<Location[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [selectedCountries, setSelectedCountries] = useState<Location[]>([])
+
+  // Cargar países (locations sin parent)
+  useEffect(() => {
+    loadCountries()
+  }, [])
+
+  // Cargar países seleccionados
+  useEffect(() => {
+    if (value.length > 0 && countries.length > 0) {
+      const selected = countries.filter(c => value.includes(c.id))
+      setSelectedCountries(selected)
+    }
+  }, [value, countries])
+
+  const loadCountries = async () => {
+    try {
+      const response = await apiClient.get<Location[]>('/locations/countries')
+      setCountries(response)
+    } catch (error) {
+      console.error('Error loading countries:', error)
+    }
+  }
+
+  const filteredCountries = countries.filter(
+    country => 
+      !value.includes(country.id) && 
+      country.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const handleAddCountry = (country: Location) => {
+    const newValue = [...value, country.id]
+    onChange(newValue)
+    setSelectedCountries([...selectedCountries, country])
+    setSearchTerm('')
+    setShowDropdown(false)
+  }
+
+  const handleRemoveCountry = (countryId: number) => {
+    const newValue = value.filter(id => id !== countryId)
+    onChange(newValue)
+    setSelectedCountries(selectedCountries.filter(c => c.id !== countryId))
+  }
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">
+        Nacionalidades
+      </label>
+      
+      {/* Tags de nacionalidades seleccionadas */}
+      {selectedCountries.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {selectedCountries.map(country => (
+            <span
+              key={country.id}
+              className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+            >
+              {country.name}
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveCountry(country.id)}
+                  className="ml-1 hover:text-blue-600"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Campo de búsqueda */}
+      {!disabled && (
+        <div className="relative">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value)
+              setShowDropdown(true)
+            }}
+            onFocus={() => setShowDropdown(true)}
+            placeholder="Buscar país para agregar..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+          />
+          
+          {/* Dropdown de resultados */}
+          {showDropdown && searchTerm && filteredCountries.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg max-h-48 overflow-y-auto border border-gray-200">
+              {filteredCountries.slice(0, 10).map(country => (
+                <button
+                  key={country.id}
+                  type="button"
+                  onClick={() => handleAddCountry(country)}
+                  className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                >
+                  {country.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Click outside to close dropdown */}
+      {showDropdown && (
+        <div 
+          className="fixed inset-0 z-0" 
+          onClick={() => setShowDropdown(false)}
+        />
+      )}
+    </div>
+  )
 }
 
 // ==================================================

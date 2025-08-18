@@ -16,6 +16,11 @@ export async function GET(
                 links: {
                     orderBy: { displayOrder: 'asc' },
                 },
+                nationalities: {
+                    include: {
+                        location: true  // Cambiado de 'location' a 'country'
+                    }
+                },
                 birthLocation: true,
                 deathLocation: true,
                 _count: {
@@ -55,6 +60,7 @@ export async function PUT(
         const personId = parseInt(id);
 
         console.log('Data received in API:', data); // Log para debugging
+        console.log('Nationalities received:', data.nationalities); // Log específico de nacionalidades
 
         // Verificar si necesitamos actualizar el slug
         let slug = undefined;
@@ -114,7 +120,7 @@ export async function PUT(
 
         console.log('Update data prepared:', updateData); // Log para debugging
 
-        // Actualizar persona y links en una transacción
+        // Actualizar persona, links y nacionalidades en una transacción
         const person = await prisma.$transaction(async (tx) => {
             // Actualizar la persona
             const updatedPerson = await tx.person.update({
@@ -142,11 +148,31 @@ export async function PUT(
                 });
             }
 
+            // Eliminar nacionalidades existentes
+            await tx.personNationality.deleteMany({
+                where: { personId },
+            });
+
+            // Crear nuevas nacionalidades si existen
+            if (data.nationalities && data.nationalities.length > 0) {
+                await tx.personNationality.createMany({
+                    data: data.nationalities.map((locationId: number) => ({
+                        personId,
+                        locationId: locationId,
+                    })),
+                });
+            }
+
             // Retornar la persona actualizada con sus relaciones
             return tx.person.findUnique({
                 where: { id: personId },
                 include: {
                     links: true,
+                    nationalities: {
+                        include: {
+                            location: true  // Cambiado de 'location' a 'country'
+                        }
+                    },
                     birthLocation: true,
                     deathLocation: true,
                     _count: {
@@ -206,7 +232,7 @@ export async function DELETE(
             );
         }
 
-        // Eliminar la persona (los links se eliminan en cascada)
+        // Eliminar la persona (los links y nacionalidades se eliminan en cascada)
         await prisma.person.delete({
             where: { id: parseInt(id) },
         });

@@ -44,6 +44,11 @@ export async function GET(request: NextRequest) {
     const people = await prisma.person.findMany({
       where,
       include: {
+        nationalities: {
+          include: {
+            location: true  // Cambiado de 'location' a 'country'
+          }
+        },
         _count: {
           select: {
             links: true,
@@ -101,14 +106,21 @@ export async function POST(request: NextRequest) {
       counter++;
     }
 
-    // Preparar los datos de la persona
+    // Preparar los datos de la persona (campos de fecha parcial)
     const personData: any = {
       slug,
       firstName: data.firstName || null,
       lastName: data.lastName || null,
       realName: data.realName || null,
-      birthDate: data.birthDate ? new Date(data.birthDate) : null,
-      deathDate: data.deathDate ? new Date(data.deathDate) : null,
+      // Fechas parciales de nacimiento
+      birthYear: data.birthYear || null,
+      birthMonth: data.birthMonth || null,
+      birthDay: data.birthDay || null,
+      // Fechas parciales de muerte
+      deathYear: data.deathYear || null,
+      deathMonth: data.deathMonth || null,
+      deathDay: data.deathDay || null,
+      // Ubicaciones
       birthLocationId: data.birthLocationId || null,
       deathLocationId: data.deathLocationId || null,
       biography: data.biography || null,
@@ -119,10 +131,7 @@ export async function POST(request: NextRequest) {
       hasLinks: data.links && data.links.length > 0,
     };
 
-    // TODO: Manejar ubicaciones birthLocation y deathLocation
-    // Por ahora solo guardamos el texto en la biografía o notas
-
-    // Crear la persona y sus links en una transacción
+    // Crear la persona, sus links y nacionalidades en una transacción
     const person = await prisma.$transaction(async (tx) => {
       // Crear la persona
       const newPerson = await tx.person.create({
@@ -144,11 +153,28 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Si hay nacionalidades, crearlas
+      if (data.nationalities && data.nationalities.length > 0) {
+        await tx.personNationality.createMany({
+          data: data.nationalities.map((locationId: number) => ({
+            personId: newPerson.id,
+            locationId: locationId,
+          })),
+        });
+      }
+
       // Retornar la persona con sus relaciones
       return tx.person.findUnique({
         where: { id: newPerson.id },
         include: {
           links: true,
+          nationalities: {
+            include: {
+              location: true  // Cambiado de 'location' a 'country'
+            }
+          },
+          birthLocation: true,
+          deathLocation: true,
           _count: {
             select: {
               links: true,

@@ -49,12 +49,43 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
         try {
             setLoading(true);
             const person = await peopleService.getById(personId);
-
+            console.log('usePeopleForm - Raw person from getById:', person);
+            console.log('usePeopleForm - Person nationalities raw:', person.nationalities);
             const formattedData = formatPersonDataForForm(person);
+            console.log('usePeopleForm - Formatted data from formatPersonDataForForm:', formattedData);
+            console.log('usePeopleForm - Formatted nationalities:', formattedData.nationalities);
             // Si la persona tiene links, cargarlos también
             if (person.links) {
                 formattedData.links = person.links;
             }
+
+            // Si la persona tiene nacionalidades, cargarlas como array de IDs
+            if (person.nationalities && Array.isArray(person.nationalities)) {
+                console.log('usePeopleForm - Processing nationalities, raw:', person.nationalities);
+
+                formattedData.nationalities = person.nationalities.map(n => {
+                    console.log('usePeopleForm - Processing nationality item:', n);
+
+                    // Manejar diferentes formatos posibles
+                    if (typeof n === 'number') {
+                        console.log('usePeopleForm - Direct number:', n);
+                        return n;
+                    } if (typeof n === 'object' && n !== null) {
+                        // Puede venir como {locationId: X, country: {...}} o similar
+                        return n.locationId || n.id || n;
+                        console.log('usePeopleForm - Extracted ID from object:', id);
+
+                    }
+                    return n;
+                });
+                console.log('usePeopleForm - Final nationalities after processing:', formattedData.nationalities);
+
+            } else {
+                console.log('usePeopleForm - No nationalities found, setting empty array');
+
+                formattedData.nationalities = [];
+            }
+        console.log('usePeopleForm - Final formData before setFormData:', formattedData);
 
             setFormData(formattedData);
         } catch (error) {
@@ -107,6 +138,16 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
         setIsDirty(true);
     }, []);
 
+    // Manejo de nacionalidades
+    const updateNationalities = useCallback((nationalities: number[]) => {
+        setFormData(prev => ({
+            ...prev,
+            nationalities
+        }));
+        setIsDirty(true);
+        setErrors([]);
+    }, []);
+
     // Validar formulario
     const validate = useCallback((): boolean => {
         const validationErrors = validatePersonForm(formData);
@@ -116,9 +157,11 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
 
     // Guardar persona
     const save = useCallback(async () => {
-        console.log('FormData before save:', formData); // <-- Agregar esta línea
+        console.log('FormData before save:', formData);
         console.log('Birth Location ID:', formData.birthLocationId);
         console.log('Death Location ID:', formData.deathLocationId);
+        console.log('Nationalities:', formData.nationalities); // Log de nacionalidades
+
         if (!validate()) {
             toast.error('Por favor corrige los errores en el formulario');
             return false;
@@ -128,11 +171,17 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
             setSaving(true);
             let savedPerson: PersonWithRelations;
 
+            // Preparar datos para enviar
+            const dataToSave = {
+                ...formData,
+                nationalities: formData.nationalities || []
+            };
+
             if (personId) {
-                savedPerson = await peopleService.update(personId, formData);
+                savedPerson = await peopleService.update(personId, dataToSave);
                 toast.success(PERSON_SUCCESS_MESSAGES.UPDATED);
             } else {
-                savedPerson = await peopleService.create(formData);
+                savedPerson = await peopleService.create(dataToSave);
                 toast.success(PERSON_SUCCESS_MESSAGES.CREATED);
             }
 
@@ -188,6 +237,7 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
         // Acciones
         updateField,
         updateFields,
+        updateNationalities, // Nueva función para actualizar nacionalidades
         addLink,
         updateLink,
         removeLink,
