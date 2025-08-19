@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-19T23:07:01.445Z
+// Archivos del admin - 2025-08-19T23:09:36.579Z
 // ==================
 
 
@@ -4190,7 +4190,7 @@ export async function GET(
             person: true
           },
           orderBy: [
-            { department: 'asc' },
+            { role: { department: 'asc' } },
             { billingOrder: 'asc' }
           ]
         },
