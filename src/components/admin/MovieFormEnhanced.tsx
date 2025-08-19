@@ -251,13 +251,26 @@ export default function MovieFormEnhanced({
   const searchPeople = async (search: string) => {
     if (search.length < 2) return
 
-    try {
-      const response = await fetch(`/api/people?search=${encodeURIComponent(search)}&limit=10`)
-      const data = await response.json()
-      setAvailablePeople(data)
-    } catch (error) {
-      console.error('Error searching people:', error)
+     try {
+    const response = await fetch(`/api/people?search=${encodeURIComponent(search)}&limit=10`)
+    const result = await response.json()
+    
+    // El endpoint devuelve { data: [...], totalCount, etc }
+    // Necesitamos solo el array de personas
+    if (result.data) {
+      // Formatear los nombres correctamente
+      const formattedPeople = result.data.map((person: any) => ({
+        ...person,
+        name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || 'Sin nombre'
+      }))
+      setAvailablePeople(formattedPeople)
+    } else {
+      setAvailablePeople([])
     }
+  } catch (error) {
+    console.error('Error searching people:', error)
+    setAvailablePeople([])
+  }
   }
 
   // Agregar persona al cast o crew
