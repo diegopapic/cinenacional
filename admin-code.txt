@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-19T23:09:36.579Z
+// Archivos del admin - 2025-08-19T23:16:16.639Z
 // ==================
 
 
@@ -3847,7 +3847,7 @@ export async function GET(request: NextRequest) {
           },
           crew: {
             where: {
-              role: 'Director'
+              name: 'Director'
             },
             include: {
               person: true

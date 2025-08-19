@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
           },
           crew: {
             where: {
-              role: 'Director'
+              name: 'Director'
             },
             include: {
               person: true
