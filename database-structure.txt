@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-19T23:16:16.808Z
+# Generado automáticamente el: 2025-08-19T23:25:32.608Z
 # ================================================
 
 ## Schema Prisma
