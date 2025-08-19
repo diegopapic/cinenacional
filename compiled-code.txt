@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 2a61fb1316b862d371855d2a7c13c84fed91d6d1
-// Fecha: 2025-08-18T02:26:18.577Z
+// Commit: 231a483b74fcb591bf7445795e8edea8f7277575
+// Fecha: 2025-08-19T22:57:44.978Z
 // ============================================
 
 
@@ -1316,6 +1316,7 @@ import {
   Award, 
   Globe, 
   Tv,
+  Clapperboard,
   Home,
   Menu,
   X,
@@ -1339,6 +1340,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Productoras', href: '/admin/companies/production', icon: Building2 },
     { name: 'Distribuidoras', href: '/admin/companies/distribution', icon: Building2 },
     { name: 'Pantallas de Estreno', href: '/admin/screening-venues', icon: Tv },
+    { name: 'Roles', href: '/admin/roles', icon: Clapperboard },
     { name: 'Premios', href: '/admin/awards', icon: Award },
     { name: 'Lugares', href: '/admin/locations', icon: Globe },
     { name: 'Temas', href: '/admin/themes', icon: Tag },
@@ -2273,6 +2275,315 @@ export default function PersonDetailPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ==================================================
+// src/app/admin/roles/page.tsx
+// ==================================================
+// src/app/admin/roles/page.tsx
+
+'use client';
+
+import React, { useState } from 'react';
+import { Plus, Search, Download, Filter } from 'lucide-react';
+import { useRoles } from '@/hooks/useRoles';
+import { RoleModal } from '@/components/admin/roles/RoleModal';
+import { RoleCard } from '@/components/admin/roles/RoleCard';
+import { useDebounce } from '@/hooks/useDebounce';
+import { Department, getDepartmentOptions } from '@/lib/roles/rolesTypes';
+import toast from 'react-hot-toast';
+
+export default function RolesPage() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState<'all' | Department>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [mainRoleFilter, setMainRoleFilter] = useState<'all' | 'main' | 'regular'>('all');
+
+  const debouncedSearch = useDebounce(searchTerm, 300);
+
+  const {
+    roles,
+    totalCount,
+    totalPages,
+    currentPage,
+    loading,
+    error,
+    filters,
+    updateFilter,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    canGoNext,
+    canGoPrevious,
+    deleteRole,
+    exportToCSV,
+    seedDefault
+  } = useRoles();
+
+  // Aplicar filtros cuando cambien los valores
+  React.useEffect(() => {
+    updateFilter('search', debouncedSearch);
+  }, [debouncedSearch, updateFilter]);
+
+  React.useEffect(() => {
+    const deptValue = departmentFilter === 'all' ? '' : departmentFilter;
+    updateFilter('department', deptValue);
+  }, [departmentFilter, updateFilter]);
+
+  React.useEffect(() => {
+    const isActiveValue = activeFilter === 'all' ? '' : activeFilter === 'active';
+    updateFilter('isActive', isActiveValue);
+  }, [activeFilter, updateFilter]);
+
+  React.useEffect(() => {
+    const isMainValue = mainRoleFilter === 'all' ? '' : mainRoleFilter === 'main';
+    updateFilter('isMainRole', isMainValue);
+  }, [mainRoleFilter, updateFilter]);
+
+  const handleCreateNew = () => {
+    setEditingRole(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (role: any) => {
+    setEditingRole(role);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este rol?')) {
+      try {
+        await deleteRole(id);
+        toast.success('Rol eliminado correctamente');
+      } catch (error) {
+        toast.error('Error al eliminar el rol');
+      }
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      await exportToCSV();
+      toast.success('Exportación iniciada');
+    } catch (error) {
+      toast.error('Error al exportar');
+    }
+  };
+
+  const handleSeedDefault = async () => {
+    if (window.confirm('¿Quieres crear los roles por defecto? Esto no eliminará los existentes.')) {
+      try {
+        const result = await seedDefault();
+        toast.success(`Se crearon ${result.created} roles nuevos (${result.skipped} ya existían)`);
+      } catch (error) {
+        toast.error('Error al crear roles por defecto');
+      }
+    }
+  };
+
+  const handleModalSuccess = () => {
+    setIsModalOpen(false);
+    setEditingRole(null);
+  };
+
+  const departmentOptions = getDepartmentOptions();
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Error al cargar roles</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Intentar de nuevo
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Roles</h1>
+          <p className="text-gray-600">
+            Gestiona los roles del equipo técnico y artístico
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSeedDefault}
+            className="hidden sm:flex px-3 py-2 border border-gray-300 text-sm rounded-md hover:bg-gray-50"
+          >
+            Crear por defecto
+          </button>
+          <button
+            onClick={handleExport}
+            className="hidden sm:flex items-center gap-2 px-3 py-2 border border-gray-300 text-sm rounded-md hover:bg-gray-50"
+          >
+            <Download className="w-4 h-4" />
+            Exportar
+          </button>
+          <button
+            onClick={handleCreateNew}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4" />
+            Nuevo Rol
+          </button>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-col gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Buscar roles..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-400" />
+            <span className="text-sm text-gray-600">Filtros:</span>
+          </div>
+          
+          <select
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value as any)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+          >
+            <option value="all">Todos los departamentos</option>
+            {departmentOptions.map(dept => (
+              <option key={dept.value} value={dept.value}>
+                {dept.label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={activeFilter}
+            onChange={(e) => setActiveFilter(e.target.value as any)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+          >
+            <option value="all">Todos</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Inactivos</option>
+          </select>
+
+          <select
+            value={mainRoleFilter}
+            onChange={(e) => setMainRoleFilter(e.target.value as any)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+          >
+            <option value="all">Todos los tipos</option>
+            <option value="main">Roles principales</option>
+            <option value="regular">Roles regulares</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Estadísticas */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-lg border">
+          <p className="text-sm text-gray-600">Total</p>
+          <p className="text-2xl font-bold">{totalCount}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg border">
+          <p className="text-sm text-gray-600">Página</p>
+          <p className="text-2xl font-bold">{currentPage} de {totalPages}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg border">
+          <p className="text-sm text-gray-600">Resultados</p>
+          <p className="text-2xl font-bold">{roles.length}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg border">
+          <p className="text-sm text-gray-600">Departamento</p>
+          <p className="text-sm font-medium">
+            {departmentFilter === 'all' ? 'Todos' : 
+             departmentOptions.find(d => d.value === departmentFilter)?.label}
+          </p>
+        </div>
+      </div>
+
+      {/* Lista de roles */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white p-6 rounded-lg border animate-pulse">
+              <div className="h-4 bg-gray-200 rounded mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded mb-4 w-2/3"></div>
+              <div className="h-8 bg-gray-200 rounded"></div>
+            </div>
+          ))}
+        </div>
+      ) : roles.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 mb-4">No se encontraron roles</p>
+          <button
+            onClick={handleCreateNew}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mx-auto"
+          >
+            <Plus className="w-4 h-4" />
+            Crear primer rol
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {roles.map((role) => (
+            <RoleCard
+              key={role.id}
+              role={role}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={goToPreviousPage}
+            disabled={!canGoPrevious}
+            className="px-3 py-2 border border-gray-300 text-sm rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Anterior
+          </button>
+          <span className="text-sm text-gray-600">
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            onClick={goToNextPage}
+            disabled={!canGoNext}
+            className="px-3 py-2 border border-gray-300 text-sm rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
+
+      {/* Modal */}
+      <RoleModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        role={editingRole}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   );
 }
@@ -6442,6 +6753,594 @@ function countFiles(obj: any): number {
     }
   }
   return count;
+}
+
+// ==================================================
+// src/app/api/roles/route.ts
+// ==================================================
+// src/app/api/roles/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { roleSchema, Department } from '@/lib/roles/rolesTypes';
+import { generateSlug } from '@/lib/utils/slugs';
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search') || '';
+    const department = searchParams.get('department') as Department;
+    const isActive = searchParams.get('isActive');
+    const isMainRole = searchParams.get('isMainRole');
+    const exportFormat = searchParams.get('export');
+
+    const offset = (page - 1) * limit;
+
+    // Construir where clause
+    const where: any = {};
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    if (department && Object.values(Department).includes(department)) {
+      where.department = department;
+    }
+
+    if (isActive !== null && isActive !== '') {
+      where.isActive = isActive === 'true';
+    }
+
+    if (isMainRole !== null && isMainRole !== '') {
+      where.isMainRole = isMainRole === 'true';
+    }
+
+    // Para exportación CSV
+    if (exportFormat === 'csv') {
+      const roles = await prisma.role.findMany({
+        where,
+        include: {
+          _count: {
+            select: {
+              crewRoles: true
+            }
+          }
+        },
+        orderBy: [
+          { department: 'asc' },
+          { name: 'asc' }
+        ]
+      });
+
+      const csv = [
+        'ID,Nombre,Departamento,Descripción,Principal,Activo,Usos',
+        ...roles.map(role => 
+          `${role.id},"${role.name}","${role.department}","${role.description || ''}",${role.isMainRole ? 'Sí' : 'No'},${role.isActive ? 'Sí' : 'No'},${role._count.crewRoles}`
+        )
+      ].join('\n');
+
+      return new NextResponse(csv, {
+        headers: {
+          'Content-Type': 'text/csv',
+          'Content-Disposition': `attachment; filename="roles_${new Date().toISOString().split('T')[0]}.csv"`
+        }
+      });
+    }
+
+    // Query principal
+    const [roles, totalCount] = await Promise.all([
+      prisma.role.findMany({
+        where,
+        include: {
+          _count: {
+            select: {
+              crewRoles: true
+            }
+          }
+        },
+        orderBy: [
+          { department: 'asc' },
+          { name: 'asc' }
+        ],
+        skip: offset,
+        take: limit
+      }),
+      prisma.role.count({ where })
+    ]);
+
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasMore = page < totalPages;
+
+    return NextResponse.json({
+      data: roles,
+      totalCount,
+      page,
+      totalPages,
+      hasMore
+    });
+
+  } catch (error) {
+    console.error('Error fetching roles:', error);
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    
+    // Validar datos
+    const validatedData = roleSchema.parse(body);
+    
+    // Generar slug único
+    const baseSlug = generateSlug(validatedData.name);
+    let slug = baseSlug;
+    let counter = 1;
+    
+    while (await prisma.role.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
+    // Crear rol
+    const role = await prisma.role.create({
+      data: {
+        ...validatedData,
+        slug,
+        isActive: validatedData.isActive ?? true,
+        isMainRole: validatedData.isMainRole ?? false
+      },
+      include: {
+        _count: {
+          select: {
+            crewRoles: true
+          }
+        }
+      }
+    });
+
+    return NextResponse.json(role, { status: 201 });
+
+  } catch (error) {
+    console.error('Error creating role:', error);
+    
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+    
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+// ==================================================
+// src/app/api/roles/seed/route.ts
+// ==================================================
+// src/app/api/roles/seed/route.ts
+
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { Department } from '@/lib/roles/rolesTypes';
+import { generateSlug } from '@/lib/utils/slugs';
+
+// Roles iniciales por departamento
+const INITIAL_ROLES_BY_DEPARTMENT = {
+  [Department.DIRECCION]: [
+    'Director',
+    'Codirector', 
+    'Primer Asistente de Dirección',
+    'Segundo Asistente de Dirección',
+    'Tercer Asistente de Dirección',
+    'Ayudante de Dirección',
+    'Continuista',
+    'Script',
+    'Director de Casting',
+    'Asistente de Casting',
+    'Casting'
+  ],
+  
+  [Department.PRODUCCION]: [
+    'Productor Ejecutivo',
+    'Productor',
+    'Coproductor',
+    'Productor Asociado',
+    'Producción Ejecutiva',
+    'Jefe de Producción',
+    'Dirección de Producción',
+    'Coordinación de Producción',
+    'Asistente de Producción',
+    'Diseño de Producción',
+    'Coordinador General',
+    'Jefe de Locaciones',
+    'Chofer',
+    'Transporte',
+    'Localización'
+  ],
+  
+  [Department.GUION]: [
+    'Guionista',
+    'Coguionista',
+    'Adaptación',
+    'Argumento',
+    'Historia Original',
+    'Colaboración en Guión',
+    'Guión y Continuidad'
+  ],
+  
+  [Department.FOTOGRAFIA]: [
+    'Director de Fotografía',
+    'Operador de Cámara',
+    'Primer Asistente de Cámara',
+    'Segundo Asistente de Cámara',
+    'Gaffer',
+    'Electricista',
+    'Cámara y Electricidad'
+  ],
+  
+  [Department.ARTE]: [
+    'Director de Arte',
+    'Diseñador de Producción',
+    'Ambientador',
+    'Escenógrafo',
+    'Utilero',
+    'Props Master',
+    'Decoración',
+    'Especialistas'
+  ],
+  
+  [Department.MONTAJE]: [
+    'Editor',
+    'Montajista',
+    'Asistente de Montaje',
+    'Edición',
+    'Colorista'
+  ],
+  
+  [Department.SONIDO]: [
+    'Director de Sonido',
+    'Sonidista',
+    'Microfonista',
+    'Diseñador de Sonido',
+    'Editor de Diálogos',
+    'Mezclador'
+  ],
+  
+  [Department.MUSICA]: [
+    'Compositor',
+    'Director Musical',
+    'Arreglador',
+    'Supervisor Musical',
+    'Música',
+    'Composición'
+  ],
+  
+  [Department.VESTUARIO]: [
+    'Diseñador de Vestuario',
+    'Vestuarista',
+    'Asistente de Vestuario',
+    'Ambientador de Vestuario'
+  ],
+  
+  [Department.MAQUILLAJE]: [
+    'Maquillador Principal',
+    'Caracterizador',
+    'Efectos Especiales de Maquillaje',
+    'Peluquero',
+    'Asistente de Maquillaje',
+    'Maquillaje'
+  ],
+  
+  [Department.EFECTOS]: [
+    'Supervisor de Efectos Especiales',
+    'Efectos Especiales',
+    'Pirotecnia',
+    'Efectos Mecánicos',
+    'Supervisor de VFX',
+    'Artista VFX',
+    'Coordinador VFX',
+    'Editor VFX',
+    'Efectos Visuales',
+    'Director de Animación',
+    'Animador',
+    'Asistente de Animación',
+    'Animación'
+  ]
+} as const;
+
+// Roles principales (primeros de cada departamento + algunos específicos)
+const MAIN_ROLES = [
+  'Director',
+  'Productor Ejecutivo',
+  'Productor',
+  'Guionista',
+  'Director de Fotografía',
+  'Director de Arte',
+  'Editor',
+  'Director de Sonido',
+  'Compositor',
+  'Diseñador de Vestuario',
+  'Maquillador Principal',
+  'Supervisor de Efectos Especiales',
+  'Supervisor de VFX'
+];
+
+export async function POST() {
+  try {
+    let created = 0;
+    let skipped = 0;
+
+    console.log('🌱 Iniciando seeding de roles...');
+
+    for (const [department, roleNames] of Object.entries(INITIAL_ROLES_BY_DEPARTMENT)) {
+      console.log(`\n📁 Procesando departamento: ${department}`);
+      
+      for (let i = 0; i < roleNames.length; i++) {
+        const roleName = roleNames[i];
+        const roleSlug = generateSlug(roleName);
+        
+        // Verificar si el rol ya existe
+        const existingRole = await prisma.role.findUnique({
+          where: { slug: roleSlug }
+        });
+
+        if (existingRole) {
+          console.log(`⏭️ Rol "${roleName}" ya existe`);
+          skipped++;
+          continue;
+        }
+
+        // Determinar si es rol principal
+        const isMainRole = MAIN_ROLES.includes(roleName);
+
+        // Crear rol
+        await prisma.role.create({
+          data: {
+            name: roleName,
+            slug: roleSlug,
+            department: department as Department,
+            isMainRole,
+            isActive: true
+          }
+        });
+
+        console.log(`✅ Creado rol: ${roleName}${isMainRole ? ' (Principal)' : ''}`);
+        created++;
+      }
+    }
+
+    console.log(`\n🎉 Seeding completado: ${created} roles creados, ${skipped} omitidos`);
+
+    return NextResponse.json({
+      success: true,
+      created,
+      skipped,
+      message: `Se crearon ${created} roles nuevos (${skipped} ya existían)`
+    });
+
+  } catch (error) {
+    console.error('❌ Error en seeding:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Error interno del servidor',
+        details: error instanceof Error ? error.message : 'Error desconocido'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// ==================================================
+// src/app/api/roles/[id]/route.ts
+// ==================================================
+// src/app/api/roles/[id]/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { roleSchema } from '@/lib/roles/rolesTypes';
+import { generateSlug } from '@/lib/utils/slugs';
+
+interface RouteContext {
+  params: {
+    id: string;
+  };
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: RouteContext
+) {
+  try {
+    const id = parseInt(params.id);
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      );
+    }
+
+    const role = await prisma.role.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            crewRoles: true
+          }
+        }
+      }
+    });
+
+    if (!role) {
+      return NextResponse.json(
+        { error: 'Rol no encontrado' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(role);
+
+  } catch (error) {
+    console.error('Error fetching role:', error);
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: RouteContext
+) {
+  try {
+    const id = parseInt(params.id);
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    const validatedData = roleSchema.parse(body);
+
+    // Verificar que el rol existe
+    const existingRole = await prisma.role.findUnique({
+      where: { id }
+    });
+
+    if (!existingRole) {
+      return NextResponse.json(
+        { error: 'Rol no encontrado' },
+        { status: 404 }
+      );
+    }
+
+    // Generar nuevo slug si cambió el nombre
+    let slug = existingRole.slug;
+    if (validatedData.name !== existingRole.name) {
+      const baseSlug = generateSlug(validatedData.name);
+      slug = baseSlug;
+      let counter = 1;
+      
+      while (await prisma.role.findFirst({ 
+        where: { 
+          slug,
+          id: { not: id }
+        } 
+      })) {
+        slug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+    }
+
+    // Actualizar rol
+    const role = await prisma.role.update({
+      where: { id },
+      data: {
+        ...validatedData,
+        slug
+      },
+      include: {
+        _count: {
+          select: {
+            crewRoles: true
+          }
+        }
+      }
+    });
+
+    return NextResponse.json(role);
+
+  } catch (error) {
+    console.error('Error updating role:', error);
+    
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+    
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: RouteContext
+) {
+  try {
+    const id = parseInt(params.id);
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      );
+    }
+
+    // Verificar que el rol existe
+    const existingRole = await prisma.role.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            crewRoles: true
+          }
+        }
+      }
+    });
+
+    if (!existingRole) {
+      return NextResponse.json(
+        { error: 'Rol no encontrado' },
+        { status: 404 }
+      );
+    }
+
+    // Verificar si tiene relaciones activas
+    if (existingRole._count.crewRoles > 0) {
+      return NextResponse.json(
+        { 
+          error: 'No se puede eliminar el rol porque está asignado a películas'
+        },
+        { status: 400 }
+      );
+    }
+
+    // Eliminar rol
+    await prisma.role.delete({
+      where: { id }
+    });
+
+    return new NextResponse(null, { status: 204 });
+
+  } catch (error) {
+    console.error('Error deleting role:', error);
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    );
+  }
 }
 
 // ==================================================
@@ -15619,6 +16518,404 @@ export default function NationalitiesField({
 }
 
 // ==================================================
+// src/components/admin/roles/RoleCard.tsx
+// ==================================================
+// src/components/admin/roles/RoleCard.tsx
+'use client';
+
+import { Edit, Trash2, Users, Star } from 'lucide-react';
+import { getDepartmentLabel, getDepartmentColor } from '@/lib/roles/roleUtils';
+import { Department } from '@/lib/roles/rolesTypes';
+
+interface Role {
+  id: number;
+  name: string;
+  department: string;
+  description?: string | null;
+  isMainRole: boolean;
+  isActive: boolean;
+  _count?: {
+    crewRoles: number;
+  };
+}
+
+interface RoleCardProps {
+  role: Role;
+  onEdit: (role: Role) => void;
+  onDelete: (id: number) => void;
+}
+
+export function RoleCard({ role, onEdit, onDelete }: RoleCardProps) {
+  const departmentLabel = getDepartmentLabel(role.department as Department);
+  const departmentColor = getDepartmentColor(role.department as Department);
+  const usageCount = role._count?.crewRoles || 0;
+
+  return (
+    <div className="bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow">
+      {/* Header con departamento */}
+      <div className="p-4 border-b">
+        <div className="flex items-center justify-between mb-2">
+          <span
+            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+            style={{ backgroundColor: departmentColor }}
+          >
+            {departmentLabel}
+          </span>
+          <div className="flex items-center gap-1">
+            {role.isMainRole && (
+              <Star className="w-4 h-4 text-yellow-500 fill-current" />
+            )}
+            {!role.isActive && (
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                Inactivo
+              </span>
+            )}
+          </div>
+        </div>
+        
+        <h3 className="font-semibold text-gray-900 text-lg">
+          {role.name}
+        </h3>
+        
+        {role.description && (
+          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+            {role.description}
+          </p>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div className="px-4 py-3 bg-gray-50">
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-1 text-gray-600">
+            <Users className="w-4 h-4" />
+            <span>{usageCount} uso{usageCount !== 1 ? 's' : ''}</span>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            {role.isMainRole && (
+              <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-medium">
+                Principal
+              </span>
+            )}
+            <span className={`text-xs px-2 py-1 rounded font-medium ${
+              role.isActive 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-gray-100 text-gray-600'
+            }`}>
+              {role.isActive ? 'Activo' : 'Inactivo'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="p-4 pt-3">
+        <div className="flex gap-2">
+          <button
+            onClick={() => onEdit(role)}
+            className="flex-1 flex items-center justify-center gap-1 px-3 py-2 border border-gray-300 text-sm rounded-md hover:bg-gray-50"
+          >
+            <Edit className="w-4 h-4" />
+            Editar
+          </button>
+          <button
+            onClick={() => onDelete(role.id)}
+            disabled={usageCount > 0}
+            title={usageCount > 0 ? 'No se puede eliminar un rol en uso' : 'Eliminar rol'}
+            className="px-3 py-2 border border-gray-300 text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-md"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+        
+        {usageCount > 0 && (
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            No se puede eliminar (en uso)
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ==================================================
+// src/components/admin/roles/RoleModal.tsx
+// ==================================================
+// src/components/admin/roles/RoleModal.tsx
+'use client';
+
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { X } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { rolesService } from '@/services/roles.service';
+import { getDepartmentOptions, getDepartmentColor, DEPARTMENTS } from '@/lib/roles/roleUtils';
+import { Department } from '@/lib/roles/rolesTypes';
+
+const roleSchema = z.object({
+  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+  description: z.string().optional(),
+  department: z.string(),
+  isMainRole: z.boolean(),
+  isActive: z.boolean()
+});
+
+type RoleFormData = z.infer<typeof roleSchema>;
+
+interface Role {
+  id: number;
+  name: string;
+  description?: string | null;
+  department: string;
+  isMainRole: boolean;
+  isActive: boolean;
+}
+
+interface RoleModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  role?: Role | null;
+  onSuccess: () => void;
+}
+
+export function RoleModal({
+  isOpen,
+  onClose,
+  role,
+  onSuccess
+}: RoleModalProps) {
+  const isEdit = !!role;
+  const departmentOptions = getDepartmentOptions();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+    watch,
+    setValue
+  } = useForm<RoleFormData>({
+    resolver: zodResolver(roleSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      department: Department.DIRECCION,
+      isMainRole: false,
+      isActive: true
+    }
+  });
+
+  // Cargar datos al editar
+  React.useEffect(() => {
+    if (isEdit && role) {
+      reset({
+        name: role.name,
+        description: role.description || '',
+        department: role.department,
+        isMainRole: role.isMainRole,
+        isActive: role.isActive
+      });
+    } else {
+      reset({
+        name: '',
+        description: '',
+        department: Department.DIRECCION,
+        isMainRole: false,
+        isActive: true
+      });
+    }
+  }, [role, isEdit, reset]);
+
+  const onSubmit = async (data: RoleFormData) => {
+    try {
+      const formattedData = {
+        ...data,
+        department: data.department as Department
+      };
+      
+      if (isEdit && role) {
+        await rolesService.update(role.id, formattedData);
+        toast.success('Rol actualizado correctamente');
+      } else {
+        await rolesService.create(formattedData);
+        toast.success('Rol creado correctamente');
+      }
+      
+      onSuccess();
+    } catch (error) {
+      console.error('Error saving role:', error);
+      toast.error(isEdit ? 'Error al actualizar rol' : 'Error al crear rol');
+    }
+  };
+
+  const handleClose = () => {
+    if (!isSubmitting) {
+      onClose();
+    }
+  };
+
+  const selectedDepartment = watch('department');
+  const selectedDepartmentColor = getDepartmentColor(selectedDepartment as Department);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b">
+          <h3 className="text-lg font-medium text-gray-900">
+            {isEdit ? 'Editar Rol' : 'Nuevo Rol'}
+          </h3>
+          <button
+            onClick={handleClose}
+            disabled={isSubmitting}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
+          {/* Nombre */}
+          <div className="space-y-2">
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              Nombre del rol <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="name"
+              {...register('name')}
+              placeholder="Ej: Director, Productor, Gaffer..."
+              disabled={isSubmitting}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.name && (
+              <p className="text-sm text-red-600">{errors.name.message}</p>
+            )}
+          </div>
+
+          {/* Departamento */}
+          <div className="space-y-2">
+            <label htmlFor="department" className="block text-sm font-medium text-gray-700">
+              Departamento <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="department"
+              {...register('department')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isSubmitting}
+            >
+              {departmentOptions.map(dept => (
+                <option key={dept.value} value={dept.value}>
+                  {dept.label}
+                </option>
+              ))}
+            </select>
+            {errors.department && (
+              <p className="text-sm text-red-600">{errors.department.message}</p>
+            )}
+          </div>
+
+          {/* Descripción */}
+          <div className="space-y-2">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+              Descripción
+            </label>
+            <textarea
+              id="description"
+              {...register('description')}
+              placeholder="Descripción del rol (opcional)..."
+              rows={3}
+              disabled={isSubmitting}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.description && (
+              <p className="text-sm text-red-600">{errors.description.message}</p>
+            )}
+          </div>
+
+          {/* Rol principal */}
+          <div className="flex items-center justify-between">
+            <div>
+              <label htmlFor="isMainRole" className="block text-sm font-medium text-gray-700">
+                Rol principal
+              </label>
+              <p className="text-sm text-gray-500">
+                Marca si es un rol de liderazgo en el departamento
+              </p>
+            </div>
+            <input
+              id="isMainRole"
+              type="checkbox"
+              {...register('isMainRole')}
+              disabled={isSubmitting}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+          </div>
+
+          {/* Estado activo */}
+          <div className="flex items-center justify-between">
+            <label htmlFor="isActive" className="block text-sm font-medium text-gray-700">
+              Rol activo
+            </label>
+            <input
+              id="isActive"
+              type="checkbox"
+              {...register('isActive')}
+              disabled={isSubmitting}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+          </div>
+
+          {/* Preview del rol */}
+          <div className="p-3 rounded-lg border bg-gray-50">
+            <p className="text-sm text-gray-600 mb-2">Vista previa:</p>
+            <div className="flex items-center gap-2">
+              <span
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                style={{ backgroundColor: selectedDepartmentColor }}
+              >
+                {departmentOptions.find(d => d.value === selectedDepartment)?.label}
+              </span>
+              <span className="font-medium">
+                {watch('name') || 'Nombre del rol'}
+              </span>
+              {watch('isMainRole') && (
+                <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                  Principal
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Botones */}
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              type="button"
+              onClick={handleClose}
+              disabled={isSubmitting}
+              className="px-4 py-2 border border-gray-300 text-sm rounded-md hover:bg-gray-50 disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isSubmitting ? 'Guardando...' : isEdit ? 'Actualizar' : 'Crear'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ==================================================
 // src/components/admin/ScreeningVenueSelector.tsx
 // ==================================================
 // src/components/admin/ScreeningVenueSelector.tsx - VERSIÓN SIMPLIFICADA
@@ -18673,6 +19970,220 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
 }
 
 // ==================================================
+// src/hooks/useRoles.ts
+// ==================================================
+// src/hooks/useRoles.ts
+
+import { useState, useEffect, useCallback } from 'react';
+import { rolesService } from '@/services/roles.service';
+import type { 
+  Role, 
+  RoleFilters, 
+  PaginatedRolesResponse,
+  Department 
+} from '@/lib/roles/rolesTypes';
+import { useDebounce } from './useDebounce';
+
+interface UseRolesReturn {
+  // Datos
+  roles: Role[];
+  totalCount: number;
+  totalPages: number;
+  hasMore: boolean;
+  currentPage: number;
+  pageSize: number;
+  
+  // Estado
+  loading: boolean;
+  error: Error | null;
+  filters: RoleFilters;
+  
+  // Acciones principales
+  loadRoles: () => Promise<void>;
+  deleteRole: (id: number) => Promise<void>;
+  exportToCSV: () => Promise<void>;
+  seedDefault: () => Promise<{ created: number; skipped: number }>;
+  
+  // Gestión de filtros
+  updateFilter: <K extends keyof RoleFilters>(key: K, value: RoleFilters[K]) => void;
+  updateFilters: (filters: Partial<RoleFilters>) => void;
+  resetFilters: () => void;
+  
+  // Navegación
+  goToPage: (page: number) => void;
+  goToNextPage: () => void;
+  goToPreviousPage: () => void;
+  canGoNext: boolean;
+  canGoPrevious: boolean;
+}
+
+const defaultFilters: RoleFilters = {
+  search: '',
+  department: '',
+  isActive: '',
+  isMainRole: '',
+  page: 1,
+  limit: 20
+};
+
+export function useRoles(): UseRolesReturn {
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [filters, setFilters] = useState<RoleFilters>(defaultFilters);
+
+  // Debounce search para evitar requests excesivos
+  const debouncedSearch = useDebounce(filters.search || '', 300);
+
+  const loadRoles = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const filtersToSend = {
+        ...filters,
+        search: debouncedSearch
+      };
+      
+      const response: PaginatedRolesResponse = await rolesService.getAll(filtersToSend);
+      
+      setRoles(response.data);
+      setTotalCount(response.totalCount);
+      setTotalPages(response.totalPages);
+      setHasMore(response.hasMore);
+      
+    } catch (err) {
+      console.error('Error loading roles:', err);
+      setError(err instanceof Error ? err : new Error('Error desconocido'));
+      setRoles([]);
+      setTotalCount(0);
+      setTotalPages(0);
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters, debouncedSearch]);
+
+  // Cargar roles cuando cambien los filtros
+  useEffect(() => {
+    loadRoles();
+  }, [loadRoles]);
+
+  // Reset a página 1 cuando cambien filtros (excepto page)
+  useEffect(() => {
+    if (filters.page !== 1) {
+      setFilters(prev => ({ ...prev, page: 1 }));
+    }
+  }, [debouncedSearch, filters.department, filters.isActive, filters.isMainRole]);
+
+  const deleteRole = useCallback(async (id: number) => {
+    await rolesService.delete(id);
+    await loadRoles(); // Recargar lista
+  }, [loadRoles]);
+
+  const exportToCSV = useCallback(async () => {
+    const blob = await rolesService.exportToCSV(filters);
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `roles_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }, [filters]);
+
+  const seedDefault = useCallback(async () => {
+    const result = await rolesService.seedDefault();
+    await loadRoles(); // Recargar lista
+    return result;
+  }, [loadRoles]);
+
+  const updateFilter = useCallback(<K extends keyof RoleFilters>(
+    key: K, 
+    value: RoleFilters[K]
+  ) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value,
+      // Reset page cuando no sea un cambio de página
+      ...(key !== 'page' ? { page: 1 } : {})
+    }));
+  }, []);
+
+  const updateFilters = useCallback((newFilters: Partial<RoleFilters>) => {
+    setFilters(prev => ({
+      ...prev,
+      ...newFilters,
+      page: 1 // Reset page en cambios múltiples
+    }));
+  }, []);
+
+  const resetFilters = useCallback(() => {
+    setFilters(defaultFilters);
+  }, []);
+
+  const goToPage = useCallback((page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      updateFilter('page', page);
+    }
+  }, [totalPages, updateFilter]);
+
+  const goToNextPage = useCallback(() => {
+    if (hasMore) {
+      goToPage((filters.page || 1) + 1);
+    }
+  }, [hasMore, filters.page, goToPage]);
+
+  const goToPreviousPage = useCallback(() => {
+    if ((filters.page || 1) > 1) {
+      goToPage((filters.page || 1) - 1);
+    }
+  }, [filters.page, goToPage]);
+
+  const canGoNext = hasMore;
+  const canGoPrevious = (filters.page || 1) > 1;
+  const currentPage = filters.page || 1;
+  const pageSize = filters.limit || 20;
+
+  return {
+    // Datos
+    roles,
+    totalCount,
+    totalPages,
+    hasMore,
+    currentPage,
+    pageSize,
+    
+    // Estado
+    loading,
+    error,
+    filters,
+    
+    // Acciones principales
+    loadRoles,
+    deleteRole,
+    exportToCSV,
+    seedDefault,
+    
+    // Gestión de filtros
+    updateFilter,
+    updateFilters,
+    resetFilters,
+    
+    // Navegación
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    canGoNext,
+    canGoPrevious
+  };
+}
+
+// ==================================================
 // src/lib/movies/movieConstants.ts
 // ==================================================
 // src/lib/movies/movieConstants.ts
@@ -19877,6 +21388,205 @@ export const prisma =
   })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+
+// ==================================================
+// src/lib/roles/rolesTypes.ts
+// ==================================================
+// src/lib/roles/rolesTypes.ts
+
+import { z } from 'zod';
+
+// Enum de departamentos
+export enum Department {
+  DIRECCION = 'DIRECCION',
+  PRODUCCION = 'PRODUCCION',
+  GUION = 'GUION',
+  FOTOGRAFIA = 'FOTOGRAFIA',
+  ARTE = 'ARTE',
+  MONTAJE = 'MONTAJE',
+  SONIDO = 'SONIDO',
+  MUSICA = 'MUSICA',
+  VESTUARIO = 'VESTUARIO',
+  MAQUILLAJE = 'MAQUILLAJE',
+  EFECTOS = 'EFECTOS',
+  ANIMACION = 'ANIMACION',
+  OTROS = 'OTROS'
+}
+
+// Labels para mostrar al usuario
+export const DEPARTMENT_LABELS = {
+  [Department.DIRECCION]: 'Dirección',
+  [Department.PRODUCCION]: 'Producción',
+  [Department.GUION]: 'Guión',
+  [Department.FOTOGRAFIA]: 'Dirección de Fotografía',
+  [Department.ARTE]: 'Dirección de Arte',
+  [Department.MONTAJE]: 'Montaje',
+  [Department.SONIDO]: 'Sonido',
+  [Department.MUSICA]: 'Música',
+  [Department.VESTUARIO]: 'Vestuario',
+  [Department.MAQUILLAJE]: 'Maquillaje',
+  [Department.EFECTOS]: 'Efectos',
+  [Department.ANIMACION]: 'Animación',
+  [Department.OTROS]: 'Otros'
+} as const;
+
+// Colores para badges
+export const DEPARTMENT_COLORS = {
+  [Department.DIRECCION]: '#dc2626',
+  [Department.PRODUCCION]: '#059669',
+  [Department.GUION]: '#7c3aed',
+  [Department.FOTOGRAFIA]: '#2563eb',
+  [Department.ARTE]: '#ea580c',
+  [Department.MONTAJE]: '#be185d',
+  [Department.SONIDO]: '#0891b2',
+  [Department.MUSICA]: '#7c2d12',
+  [Department.VESTUARIO]: '#9333ea',
+  [Department.MAQUILLAJE]: '#c2410c',
+  [Department.EFECTOS]: '#0369a1',
+  [Department.ANIMACION]: '#ca8a04',
+  [Department.OTROS]: '#6b7280'
+} as const;
+
+// Interfaces principales
+export interface Role {
+  id: number;
+  name: string;
+  slug: string;
+  department: Department;
+  description?: string | null;
+  isMainRole: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    crewRoles: number;
+  };
+}
+
+// Formularios
+export interface RoleFormData {
+  name: string;
+  description?: string;
+  department: Department;
+  isMainRole?: boolean;
+  isActive?: boolean;
+}
+
+// Filtros
+export interface RoleFilters {
+  search?: string;
+  department?: Department | '';
+  isActive?: boolean | '';
+  isMainRole?: boolean | '';
+  page?: number;
+  limit?: number;
+}
+
+// Respuestas paginadas
+export interface PaginatedRolesResponse {
+  data: Role[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+// Validación con Zod
+export const roleSchema = z.object({
+  name: z.string()
+    .min(1, 'El nombre es requerido')
+    .max(100, 'Máximo 100 caracteres')
+    .trim(),
+  description: z.string()
+    .max(500, 'Máximo 500 caracteres')
+    .optional()
+    .or(z.literal('')),
+  department: z.nativeEnum(Department, {
+    errorMap: () => ({ message: 'Debe seleccionar un departamento' })
+  }),
+  isMainRole: z.boolean().optional(),
+  isActive: z.boolean().optional()
+});
+
+export type RoleFormSchema = z.infer<typeof roleSchema>;
+
+// Utilidades
+export const getDepartmentLabel = (department: Department): string => {
+  return DEPARTMENT_LABELS[department] || department;
+};
+
+export const getDepartmentColor = (department: Department): string => {
+  return DEPARTMENT_COLORS[department] || '#6b7280';
+};
+
+export const getDepartmentOptions = () => {
+  return Object.values(Department).map(dept => ({
+    value: dept,
+    label: getDepartmentLabel(dept),
+    color: getDepartmentColor(dept)
+  }));
+};
+
+// ==================================================
+// src/lib/roles/roleUtils.ts
+// ==================================================
+// src/lib/roles/roleUtils.ts
+import { 
+  Department, 
+  DEPARTMENT_LABELS, 
+  DEPARTMENT_COLORS,
+  getDepartmentLabel as getLabel,
+  getDepartmentColor as getColor,
+  getDepartmentOptions as getOptions
+} from './rolesTypes';
+
+// Re-exportar el enum para mantener compatibilidad con imports existentes
+export const DEPARTMENTS = Department;
+
+// Re-exportar funciones desde rolesTypes
+export const getDepartmentLabel = getLabel;
+export const getDepartmentColor = getColor;
+export const getDepartmentOptions = getOptions;
+
+export function sortRolesByDepartment(roles: any[]): any[] {
+  return [...roles].sort((a, b) => {
+    // Roles principales primero
+    if (a.isMainRole && !b.isMainRole) return -1;
+    if (!a.isMainRole && b.isMainRole) return 1;
+    
+    // Por orden de departamento
+    const deptOrder = Object.keys(DEPARTMENTS);
+    const aIndex = deptOrder.indexOf(a.department);
+    const bIndex = deptOrder.indexOf(b.department);
+    
+    if (aIndex !== bIndex) {
+      return aIndex - bIndex;
+    }
+    
+    // Alfabético por nombre
+    return a.name.localeCompare(b.name, 'es');
+  });
+}
+
+export function validateRole(name: string, department: Department): string | null {
+  if (!name || name.trim().length === 0) {
+    return 'El nombre del rol es requerido';
+  }
+  
+  if (name.trim().length < 2) {
+    return 'El nombre del rol debe tener al menos 2 caracteres';
+  }
+  
+  if (name.trim().length > 100) {
+    return 'El nombre del rol no puede exceder 100 caracteres';
+  }
+  
+  if (!Object.values(Department).includes(department as Department)) {
+    return 'Departamento inválido';
+  }
+  
+  return null;
+}
 
 // ==================================================
 // src/lib/schemas.ts
@@ -21582,4 +23292,220 @@ export const peopleService = {
 
    return response.blob();
  }
+};
+
+// ==================================================
+// src/services/roles.service.ts
+// ==================================================
+// src/services/roles.service.ts
+
+import { apiClient } from './api-client';
+import type { 
+  Role,
+  RoleFormData, 
+  RoleFilters, 
+  PaginatedRolesResponse,
+  Department 
+} from '@/lib/roles/rolesTypes';
+
+export const rolesService = {
+  /**
+   * Obtiene todos los roles con filtros y paginación
+   */
+  async getAll(filters: RoleFilters = {}): Promise<PaginatedRolesResponse> {
+    const params: Record<string, string> = {};
+    
+    if (filters.search) params.search = filters.search;
+    if (filters.department) params.department = filters.department;
+    if (filters.isActive !== undefined && filters.isActive !== '') {
+      params.isActive = filters.isActive.toString();
+    }
+    if (filters.isMainRole !== undefined && filters.isMainRole !== '') {
+      params.isMainRole = filters.isMainRole.toString();
+    }
+    if (filters.page) params.page = filters.page.toString();
+    if (filters.limit) params.limit = filters.limit.toString();
+
+    return apiClient.get<PaginatedRolesResponse>('/roles', { params });
+  },
+
+  /**
+   * Obtiene roles por departamento
+   */
+  async getByDepartment(department: Department): Promise<Role[]> {
+    const params = {
+      department: department,
+      isActive: 'true',
+      limit: '100'
+    };
+
+    const response = await apiClient.get<PaginatedRolesResponse>('/roles', { params });
+    return response.data;
+  },
+
+  /**
+   * Obtiene un rol por ID
+   */
+  async getById(id: number): Promise<Role> {
+    return apiClient.get<Role>(`/roles/${id}`);
+  },
+
+  /**
+   * Búsqueda rápida para autocomplete
+   */
+  async search(query: string, department?: Department, limit: number = 10): Promise<Role[]> {
+    if (query.length < 2) return [];
+    
+    const params: Record<string, string> = {
+      search: query,
+      limit: limit.toString(),
+      isActive: 'true'
+    };
+
+    if (department) params.department = department;
+
+    const response = await apiClient.get<PaginatedRolesResponse>('/roles', { params });
+    return response.data;
+  },
+
+  /**
+   * Obtiene roles principales por departamento (para crew de películas)
+   */
+  async getMainRolesByDepartment(): Promise<Record<string, Role[]>> {
+    const response = await apiClient.get<Record<string, Role[]>>('/roles/main-by-department');
+    return response;
+  },
+
+  /**
+   * Obtiene lista simple para dropdowns
+   */
+  async getSimpleList(department?: Department): Promise<Pick<Role, 'id' | 'name' | 'department'>[]> {
+    const params: Record<string, string> = {
+      isActive: 'true',
+      limit: '200'
+    };
+
+    if (department) params.department = department;
+
+    const response = await apiClient.get<PaginatedRolesResponse>('/roles', { params });
+    return response.data.map(role => ({
+      id: role.id,
+      name: role.name,
+      department: role.department
+    }));
+  },
+
+  /**
+   * Crea un nuevo rol
+   */
+  async create(data: RoleFormData): Promise<Role> {
+    console.log('🎭 Creating role:', data);
+    
+    const formattedData = {
+      ...data,
+      isActive: data.isActive ?? true,
+      isMainRole: data.isMainRole ?? false
+    };
+
+    return apiClient.post<Role>('/roles', formattedData);
+  },
+
+  /**
+   * Actualiza un rol existente
+   */
+  async update(id: number, data: RoleFormData): Promise<Role> {
+    console.log('📝 Updating role:', id, data);
+    
+    return apiClient.put<Role>(`/roles/${id}`, data);
+  },
+
+  /**
+   * Elimina un rol
+   */
+  async delete(id: number): Promise<void> {
+    console.log('🗑️ Deleting role:', id);
+    return apiClient.delete(`/roles/${id}`);
+  },
+
+  /**
+   * Verifica disponibilidad de slug
+   */
+  async checkSlugAvailability(slug: string, excludeId?: number): Promise<boolean> {
+    const params: Record<string, string> = { slug };
+    if (excludeId) params.excludeId = excludeId.toString();
+
+    try {
+      await apiClient.get('/roles/check-slug', { params });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Obtiene estadísticas de roles
+   */
+  async getStats(): Promise<{
+    total: number;
+    active: number;
+    mainRoles: number;
+    byDepartment: Record<number, number>;
+  }> {
+    return apiClient.get('/roles/stats');
+  },
+
+  /**
+   * Exporta roles a CSV
+   */
+  async exportToCSV(filters: RoleFilters = {}): Promise<Blob> {
+    const params: Record<string, string> = { export: 'csv' };
+    
+    if (filters.search) params.search = filters.search;
+    if (filters.department) params.department = filters.department;
+    if (filters.isActive !== undefined && filters.isActive !== '') {
+      params.isActive = filters.isActive.toString();
+    }
+    if (filters.isMainRole !== undefined && filters.isMainRole !== '') {
+      params.isMainRole = filters.isMainRole.toString();
+    }
+
+    const response = await fetch(`/api/roles?${new URLSearchParams(params)}`);
+    return response.blob();
+  },
+
+  /**
+   * Reordena roles dentro de un departamento
+   */
+  async reorder(roleIds: number[]): Promise<void> {
+    return apiClient.post('/roles/reorder', { roleIds });
+  },
+
+  /**
+   * Crea rol rápido con solo nombre y departamento
+   */
+  async createQuick(name: string, department: Department): Promise<Role> {
+    return this.create({
+      name,
+      department,
+      isActive: true
+    });
+  },
+
+  /**
+   * Crea roles por defecto
+   */
+  async seedDefault(): Promise<{ created: number; skipped: number }> {
+    const response = await fetch('/api/roles/seed', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Error al crear roles por defecto');
+    }
+    
+    return response.json();
+  }
 };
