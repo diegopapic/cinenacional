@@ -64,23 +64,6 @@ export async function GET(request: NextRequest) {
               genre: true
             }
           },
-          cast: {
-            where: {
-              isPrincipal: true
-            },
-            include: {
-              person: true
-            },
-            take: 5
-          },
-          crew: {
-            where: {
-              name: 'Director'
-            },
-            include: {
-              person: true
-            }
-          },
           movieCountries: {
             where: {
               isPrimary: true
@@ -112,17 +95,6 @@ export async function GET(request: NextRequest) {
       genres: movie.genres.map(g => ({
         id: g.genre.id,
         name: g.genre.name
-      })),
-      directors: movie.crew.map(c => ({
-        id: c.person.id,
-        name: `${c.person.firstName || ''} ${c.person.lastName || ''}`.trim()
-      })),
-      mainCast: movie.cast.map(c => ({
-        person: {
-          id: c.person.id,
-          name: `${c.person.firstName || ''} ${c.person.lastName || ''}`.trim()
-        },
-        character: c.characterName
       })),
       country: movie.movieCountries[0]?.country?.name || 'Argentina'
     }))
@@ -164,10 +136,10 @@ export async function POST(request: NextRequest) {
             : []
         : []
     };
-    
+
     // Validar datos
     const validatedData = movieSchema.parse(cleanedData)
-    
+
     // Generar slug único
     let slug = createSlug(validatedData.title)
     let slugCounter = 0
