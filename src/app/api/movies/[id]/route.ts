@@ -39,7 +39,7 @@ export async function GET(
             person: true
           },
           orderBy: [
-            { department: 'asc' },
+            { role: { department: 'asc' } },
             { billingOrder: 'asc' }
           ]
         },

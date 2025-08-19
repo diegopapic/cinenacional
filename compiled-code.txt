@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 7202c64ec37f46d2a4316354c47727d92481a4bc
-// Fecha: 2025-08-19T23:07:01.432Z
+// Commit: d8cee7a6b897f9e9dd5996389e04f66c74275406
+// Fecha: 2025-08-19T23:09:36.566Z
 // ============================================
 
 
@@ -5743,7 +5743,7 @@ export async function GET(
             person: true
           },
           orderBy: [
-            { department: 'asc' },
+            { role: { department: 'asc' } },
             { billingOrder: 'asc' }
           ]
         },
