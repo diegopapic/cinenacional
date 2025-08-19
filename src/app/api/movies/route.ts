@@ -236,8 +236,7 @@ export async function POST(request: NextRequest) {
           crew: {
             create: crew.map((item: any) => ({
               personId: item.personId,
-              role: item.role,
-              department: item.department || null,
+roleId: item.roleId,
               billingOrder: item.billingOrder || 0
             }))
           }
