@@ -81,14 +81,15 @@ export default function MovieFormEnhanced({
   const [showPersonSearch, setShowPersonSearch] = useState(false)
   const [addingType, setAddingType] = useState<'cast' | 'crew' | null>(null)
 
+  const [availableRoles, setAvailableRoles] = useState<any[]>([])
+
   const [dataReady, setDataReady] = useState(false)
 
   // Estado para nuevo actor/crew
   const [newPerson, setNewPerson] = useState({
     personId: 0,
     characterName: '',
-    role: '',
-    department: '',
+    roleId: 0,
     billingOrder: 0
   })
 
@@ -116,6 +117,7 @@ export default function MovieFormEnhanced({
       }
 
       if (initialData.crew) {
+        console.log('🎬 Crew data received:', initialData.crew)
         setCrew(initialData.crew)
       }
 
@@ -208,12 +210,13 @@ export default function MovieFormEnhanced({
   // Cargar datos de la API
   const fetchInitialData = async () => {
     try {
-      const [genresRes, countriesRes, prodCompaniesRes, distCompaniesRes, themesRes] = await Promise.all([
+      const [genresRes, countriesRes, prodCompaniesRes, distCompaniesRes, themesRes, rolesRes] = await Promise.all([
         fetch('/api/genres'),
         fetch('/api/countries'),
         fetch('/api/companies/production'),
         fetch('/api/companies/distribution'),
-        fetch('/api/themes').catch(() => ({ ok: false, json: () => [] }))
+        fetch('/api/themes').catch(() => ({ ok: false, json: () => [] })),
+        fetch('/api/roles?limit=100')
       ])
 
       // Verificar que todas las respuestas sean OK
@@ -221,12 +224,13 @@ export default function MovieFormEnhanced({
         throw new Error('Error fetching data')
       }
 
-      const [genres, countries, prodCompanies, distCompanies, themes] = await Promise.all([
+      const [genres, countries, prodCompanies, distCompanies, themes, roles] = await Promise.all([
         genresRes.json(),
         countriesRes.json(),
         prodCompaniesRes.json(),
         distCompaniesRes.json(),
-        themesRes.ok ? themesRes.json() : []
+        themesRes.ok ? themesRes.json() : [],
+        rolesRes.ok ? rolesRes.json() : { data: [] }
       ])
 
       // Asegurar que siempre sean arrays
@@ -235,6 +239,7 @@ export default function MovieFormEnhanced({
       setAvailableProductionCompanies(Array.isArray(prodCompanies) ? prodCompanies : [])
       setAvailableDistributionCompanies(Array.isArray(distCompanies) ? distCompanies : [])
       setAvailableThemes(Array.isArray(themes) ? themes : [])
+      setAvailableRoles(roles.data || [])
 
     } catch (error) {
       console.error('Error loading initial data:', error)
@@ -244,6 +249,7 @@ export default function MovieFormEnhanced({
       setAvailableProductionCompanies([])
       setAvailableDistributionCompanies([])
       setAvailableThemes([])
+      setAvailableRoles([])
     }
   }
 
@@ -251,26 +257,26 @@ export default function MovieFormEnhanced({
   const searchPeople = async (search: string) => {
     if (search.length < 2) return
 
-     try {
-    const response = await fetch(`/api/people?search=${encodeURIComponent(search)}&limit=10`)
-    const result = await response.json()
-    
-    // El endpoint devuelve { data: [...], totalCount, etc }
-    // Necesitamos solo el array de personas
-    if (result.data) {
-      // Formatear los nombres correctamente
-      const formattedPeople = result.data.map((person: any) => ({
-        ...person,
-        name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || 'Sin nombre'
-      }))
-      setAvailablePeople(formattedPeople)
-    } else {
+    try {
+      const response = await fetch(`/api/people?search=${encodeURIComponent(search)}&limit=10`)
+      const result = await response.json()
+
+      // El endpoint devuelve { data: [...], totalCount, etc }
+      // Necesitamos solo el array de personas
+      if (result.data) {
+        // Formatear los nombres correctamente
+        const formattedPeople = result.data.map((person: any) => ({
+          ...person,
+          name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || 'Sin nombre'
+        }))
+        setAvailablePeople(formattedPeople)
+      } else {
+        setAvailablePeople([])
+      }
+    } catch (error) {
+      console.error('Error searching people:', error)
       setAvailablePeople([])
     }
-  } catch (error) {
-    console.error('Error searching people:', error)
-    setAvailablePeople([])
-  }
   }
 
   // Agregar persona al cast o crew
@@ -289,12 +295,15 @@ export default function MovieFormEnhanced({
         isPrincipal: cast.length < 5
       }])
     } else if (addingType === 'crew') {
+      // Solo buscar el rol cuando es crew
+      const selectedRole = availableRoles.find(r => r.id === newPerson.roleId)
+
       setCrew([...crew, {
         personId: newPerson.personId,
         person: selectedPerson,
-        role: newPerson.role,
-        department: newPerson.department,
-        billingOrder: crew.filter(c => c.role === newPerson.role).length + 1
+        roleId: newPerson.roleId,
+        role: selectedRole,  // Incluir el objeto role para mostrar el nombre
+        billingOrder: crew.filter(c => c.roleId === newPerson.roleId).length + 1
       }])
     }
 
@@ -302,8 +311,7 @@ export default function MovieFormEnhanced({
     setNewPerson({
       personId: 0,
       characterName: '',
-      role: '',
-      department: '',
+      roleId: 0,
       billingOrder: 0
     })
     setShowPersonSearch(false)
@@ -561,7 +569,9 @@ export default function MovieFormEnhanced({
               {cast.map((member, index) => (
                 <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                   <div className="flex-1">
-                    <span className="font-medium">{member.person?.name || 'Sin nombre'}</span>
+                    <span className="font-medium">
+                      {member.person ? `${member.person.firstName || ''} ${member.person.lastName || ''}`.trim() : 'Sin nombre'}
+                    </span>
                     {member.characterName && (
                       <span className="text-gray-500"> como {member.characterName}</span>
                     )}
@@ -669,46 +679,18 @@ export default function MovieFormEnhanced({
                         Rol
                       </label>
                       <select
-                        value={newPerson.role}
-                        onChange={(e) => setNewPerson({ ...newPerson, role: e.target.value })}
+                        value={newPerson.roleId}
+                        onChange={(e) => setNewPerson({ ...newPerson, roleId: parseInt(e.target.value) })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Seleccionar...</option>
-                        <option value="Director">Director</option>
-                        <option value="Guionista">Guionista</option>
-                        <option value="Productor">Productor</option>
-                        <option value="Productor Ejecutivo">Productor Ejecutivo</option>
-                        <option value="Director de Fotografía">Director de Fotografía</option>
-                        <option value="Editor">Editor</option>
-                        <option value="Compositor">Compositor</option>
-                        <option value="Director de Arte">Director de Arte</option>
-                        <option value="Diseñador de Vestuario">Diseñador de Vestuario</option>
-                        <option value="Maquillador">Maquillador</option>
-                        <option value="Sonidista">Sonidista</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Departamento
-                      </label>
-                      <select
-                        value={newPerson.department}
-                        onChange={(e) => setNewPerson({ ...newPerson, department: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="">Seleccionar...</option>
-                        <option value="Dirección">Dirección</option>
-                        <option value="Guión">Guión</option>
-                        <option value="Producción">Producción</option>
-                        <option value="Fotografía">Fotografía</option>
-                        <option value="Montaje">Montaje</option>
-                        <option value="Música">Música</option>
-                        <option value="Arte">Arte</option>
-                        <option value="Vestuario">Vestuario</option>
-                        <option value="Maquillaje">Maquillaje</option>
-                        <option value="Sonido">Sonido</option>
-                        <option value="Efectos Especiales">Efectos Especiales</option>
+                        {availableRoles
+                          .sort((a, b) => a.department.localeCompare(b.department))
+                          .map((role: any) => (
+                            <option key={role.id} value={role.id}>
+                              {role.name} ({role.department})
+                            </option>
+                          ))}
                       </select>
                     </div>
                   </>
@@ -726,8 +708,7 @@ export default function MovieFormEnhanced({
                     setNewPerson({
                       personId: 0,
                       characterName: '',
-                      role: '',
-                      department: '',
+                      roleId: 0,
                       billingOrder: 0
                     })
                   }}
@@ -738,7 +719,7 @@ export default function MovieFormEnhanced({
                 <button
                   type="button"
                   onClick={addPerson}
-                  disabled={!newPerson.personId || (addingType === 'crew' && !newPerson.role)}
+                  disabled={!newPerson.personId || (addingType === 'crew' && !newPerson.roleId)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Agregar
@@ -763,24 +744,31 @@ export default function MovieFormEnhanced({
 
           {crew.length > 0 && (
             <div className="mb-4 space-y-2">
-              {crew.map((member, index) => (
-                <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <span className="font-medium">{member.person?.name || 'Sin nombre'}</span>
-                    <span className="text-gray-500"> - {member.role}</span>
-                    {member.department && (
-                      <span className="text-gray-400"> ({member.department})</span>
-                    )}
+              {crew.map((member, index) => {
+                console.log('🎭 Member:', member) // ← AGREGADO
+                console.log('Person:', member.person)  // ← AGREGAR
+                console.log('Role:', member.role)      // ← AGREGAR
+                return (
+                  <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <span className="font-medium">
+                        {member.person ? `${member.person.firstName || ''} ${member.person.lastName || ''}`.trim() : 'Sin nombre'}
+                      </span>
+                      <span className="text-gray-500"> - {member.role?.name || 'Sin rol'}</span>
+                      {member.role?.department && (
+                        <span className="text-gray-400"> ({member.role.department})</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCrew(crew.filter((_, i) => i !== index))}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setCrew(crew.filter((_, i) => i !== index))}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
 
@@ -875,46 +863,18 @@ export default function MovieFormEnhanced({
                         Rol
                       </label>
                       <select
-                        value={newPerson.role}
-                        onChange={(e) => setNewPerson({ ...newPerson, role: e.target.value })}
+                        value={newPerson.roleId}  // ✅ Cambiar a roleId
+                        onChange={(e) => setNewPerson({ ...newPerson, roleId: parseInt(e.target.value) })}  // ✅ Cambiar a roleId
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Seleccionar...</option>
-                        <option value="Director">Director</option>
-                        <option value="Guionista">Guionista</option>
-                        <option value="Productor">Productor</option>
-                        <option value="Productor Ejecutivo">Productor Ejecutivo</option>
-                        <option value="Director de Fotografía">Director de Fotografía</option>
-                        <option value="Editor">Editor</option>
-                        <option value="Compositor">Compositor</option>
-                        <option value="Director de Arte">Director de Arte</option>
-                        <option value="Diseñador de Vestuario">Diseñador de Vestuario</option>
-                        <option value="Maquillador">Maquillador</option>
-                        <option value="Sonidista">Sonidista</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Departamento
-                      </label>
-                      <select
-                        value={newPerson.department}
-                        onChange={(e) => setNewPerson({ ...newPerson, department: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="">Seleccionar...</option>
-                        <option value="Dirección">Dirección</option>
-                        <option value="Guión">Guión</option>
-                        <option value="Producción">Producción</option>
-                        <option value="Fotografía">Fotografía</option>
-                        <option value="Montaje">Montaje</option>
-                        <option value="Música">Música</option>
-                        <option value="Arte">Arte</option>
-                        <option value="Vestuario">Vestuario</option>
-                        <option value="Maquillaje">Maquillaje</option>
-                        <option value="Sonido">Sonido</option>
-                        <option value="Efectos Especiales">Efectos Especiales</option>
+                        {availableRoles
+                          .sort((a, b) => a.department.localeCompare(b.department))
+                          .map((role: any) => (
+                            <option key={role.id} value={role.id}>
+                              {role.name} ({role.department})
+                            </option>
+                          ))}
                       </select>
                     </div>
                   </>
@@ -932,8 +892,7 @@ export default function MovieFormEnhanced({
                     setNewPerson({
                       personId: 0,
                       characterName: '',
-                      role: '',
-                      department: '',
+                      roleId: 0,
                       billingOrder: 0
                     })
                   }}
@@ -944,7 +903,7 @@ export default function MovieFormEnhanced({
                 <button
                   type="button"
                   onClick={addPerson}
-                  disabled={!newPerson.personId || (addingType === 'crew' && !newPerson.role)}
+                  disabled={!newPerson.personId || (addingType === 'crew' && !newPerson.roleId)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Agregar
@@ -1060,7 +1019,9 @@ export default function MovieFormEnhanced({
             {cast.map((member, index) => (
               <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                 <div className="flex-1">
-                  <span className="font-medium">{member.person?.name || 'Sin nombre'}</span>
+                  <span className="font-medium">
+                    {member.person ? `${member.person.firstName || ''} ${member.person.lastName || ''}`.trim() : 'Sin nombre'}
+                  </span>
                   {member.characterName && (
                     <span className="text-gray-500"> como {member.characterName}</span>
                   )}
@@ -1103,9 +1064,9 @@ export default function MovieFormEnhanced({
               <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                 <div className="flex-1">
                   <span className="font-medium">{member.person?.name || 'Sin nombre'}</span>
-                  <span className="text-gray-500"> - {member.role}</span>
-                  {member.department && (
-                    <span className="text-gray-400"> ({member.department})</span>
+                  <span className="text-gray-500"> - {member.role?.name || 'Sin rol'}</span>  // ✅
+                  {member.role?.department && (  // ✅
+                    <span className="text-gray-400"> ({member.role.department})</span>
                   )}
                 </div>
                 <button
@@ -1375,46 +1336,18 @@ export default function MovieFormEnhanced({
                       Rol
                     </label>
                     <select
-                      value={newPerson.role}
-                      onChange={(e) => setNewPerson({ ...newPerson, role: e.target.value })}
+                      value={newPerson.roleId}
+                      onChange={(e) => setNewPerson({ ...newPerson, roleId: parseInt(e.target.value) })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="">Seleccionar...</option>
-                      <option value="Director">Director</option>
-                      <option value="Guionista">Guionista</option>
-                      <option value="Productor">Productor</option>
-                      <option value="Productor Ejecutivo">Productor Ejecutivo</option>
-                      <option value="Director de Fotografía">Director de Fotografía</option>
-                      <option value="Editor">Editor</option>
-                      <option value="Compositor">Compositor</option>
-                      <option value="Director de Arte">Director de Arte</option>
-                      <option value="Diseñador de Vestuario">Diseñador de Vestuario</option>
-                      <option value="Maquillador">Maquillador</option>
-                      <option value="Sonidista">Sonidista</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Departamento
-                    </label>
-                    <select
-                      value={newPerson.department}
-                      onChange={(e) => setNewPerson({ ...newPerson, department: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Seleccionar...</option>
-                      <option value="Dirección">Dirección</option>
-                      <option value="Guión">Guión</option>
-                      <option value="Producción">Producción</option>
-                      <option value="Fotografía">Fotografía</option>
-                      <option value="Montaje">Montaje</option>
-                      <option value="Música">Música</option>
-                      <option value="Arte">Arte</option>
-                      <option value="Vestuario">Vestuario</option>
-                      <option value="Maquillaje">Maquillaje</option>
-                      <option value="Sonido">Sonido</option>
-                      <option value="Efectos Especiales">Efectos Especiales</option>
+                      {availableRoles
+                        .sort((a, b) => a.department.localeCompare(b.department))
+                        .map((role: any) => (
+                          <option key={role.id} value={role.id}>
+                            {role.name} ({role.department})
+                          </option>
+                        ))}
                     </select>
                   </div>
                 </>
@@ -1432,8 +1365,7 @@ export default function MovieFormEnhanced({
                   setNewPerson({
                     personId: 0,
                     characterName: '',
-                    role: '',
-                    department: '',
+                    roleId: 0,
                     billingOrder: 0
                   })
                 }}
@@ -1444,7 +1376,7 @@ export default function MovieFormEnhanced({
               <button
                 type="button"
                 onClick={addPerson}
-                disabled={!newPerson.personId || (addingType === 'crew' && !newPerson.role)}
+                disabled={!newPerson.personId || (addingType === 'crew' && !newPerson.roleId)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Agregar

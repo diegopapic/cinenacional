@@ -28,7 +28,7 @@ export async function GET(
         },
         cast: {
           include: {
-            person: true
+            person: true,
           },
           orderBy: {
             billingOrder: 'asc'
@@ -36,7 +36,8 @@ export async function GET(
         },
         crew: {
           include: {
-            person: true
+            person: true,
+            role: true
           },
           orderBy: [
             { role: { department: 'asc' } },
@@ -137,9 +138,9 @@ export async function PUT(
     const cleanedData = {
       ...body,
       ratingId: body.ratingId === 0 ? null : body.ratingId,
-      metaKeywords: body.metaKeywords 
-        ? Array.isArray(body.metaKeywords) 
-          ? body.metaKeywords 
+      metaKeywords: body.metaKeywords
+        ? Array.isArray(body.metaKeywords)
+          ? body.metaKeywords
           : typeof body.metaKeywords === 'string'
             ? body.metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
             : []
@@ -214,8 +215,8 @@ export async function PUT(
         where: { id },
         data: {
           ...movieDataClean,
-           metaKeywords: Array.isArray(metaKeywords) 
-            ? metaKeywords 
+          metaKeywords: Array.isArray(metaKeywords)
+            ? metaKeywords
             : typeof metaKeywords === 'string'
               ? metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
               : [],
@@ -258,9 +259,12 @@ export async function PUT(
         await tx.movieCast.deleteMany({ where: { movieId: id } })
         if (cast.length > 0) {
           await tx.movieCast.createMany({
-            data: cast.map(item => ({
+            data: cast.map((item, index) => ({
               movieId: id,
-              ...item
+              personId: item.personId,
+              characterName: item.characterName || null,
+              billingOrder: item.billingOrder || index + 1,
+              isPrincipal: item.isPrincipal || false
             }))
           })
         }
@@ -271,9 +275,11 @@ export async function PUT(
         await tx.movieCrew.deleteMany({ where: { movieId: id } })
         if (crew.length > 0) {
           await tx.movieCrew.createMany({
-            data: crew.map(item => ({
+            data: crew.map((item, index) => ({
               movieId: id,
-              ...item
+              personId: item.personId,
+              roleId: item.roleId,
+              billingOrder: item.billingOrder || index + 1
             }))
           })
         }

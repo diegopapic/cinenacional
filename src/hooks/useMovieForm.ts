@@ -410,9 +410,10 @@ export function useMovieForm({
                 })) || [],
                 crew: cleanedMovie.crew?.map((c: any) => ({
                     personId: c.personId,
-                    role: c.role,
-                    department: c.department,
-                    billingOrder: c.billingOrder
+                    roleId: c.roleId,
+                    billingOrder: c.billingOrder,
+                    person: c.person,
+                    role: c.role
                 })) || [],
                 countries: cleanedMovie.movieCountries?.map((c: any) => c.countryId) || [],
                 productionCompanies: cleanedMovie.productionCompanies?.map((c: any) => c.companyId) || [],
@@ -442,10 +443,10 @@ export function useMovieForm({
         setIsSubmitting(true)
 
         try {
-            
+
             // Preparar los datos correctamente
             const preparedData = prepareMovieData(data)
-            
+
             // Procesar fecha de estreno según el tipo
             let releaseDateData = {}
             if (isPartialDate) {
@@ -545,7 +546,11 @@ export function useMovieForm({
                 // IMPORTANTE: Usar las relaciones del estado, no del data del formulario
                 genres: movieRelations.genres,
                 cast: movieRelations.cast,
-                crew: movieRelations.crew,
+                crew: movieRelations.crew.map(member => ({
+                    personId: member.personId,
+                    roleId: member.roleId || member.role?.id,
+                    billingOrder: member.billingOrder
+                })).filter(member => member.roleId),
                 countries: movieRelations.countries,
                 productionCompanies: movieRelations.productionCompanies,
                 distributionCompanies: movieRelations.distributionCompanies,
@@ -563,16 +568,16 @@ export function useMovieForm({
                 alternativeTitles,
                 links: movieLinks
             }
-            
+
             // Asegurarse de nuevo de que no se envíen campos de fecha incorrectos
             delete movieData.releaseDate;
             delete movieData.filmingStartDate;
             delete movieData.filmingEndDate;
-            
+
             // 🔥 ASEGURAR QUE NO HAY ID PARA CREACIÓN
             if (!editingMovie) {
                 delete movieData.id;
-                
+
             }
             // Usar el servicio para crear o actualizar
             let result: Movie;
