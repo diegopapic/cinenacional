@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 50393a0103274ad0dec076ca4d0f3fa5980832e7
-// Fecha: 2025-08-20T21:46:25.585Z
+// Commit: f477c50cb514c633ed77818600cabf04cbd34276
+// Fecha: 2025-08-20T21:54:31.536Z
 // ============================================
 
 
@@ -19315,7 +19315,7 @@ export function TrailerSection({ trailerUrl, movieTitle, variant = 'fullwidth' }
 // src/constants/homeData.ts
 // ==================================================
 // src/constants/homeData.ts
-import { HeroMovie, Obituario, Efemeride } from '@/types/home.types';
+import { HeroMovie, Efemeride } from '@/types/home.types';
 
 export const PELICULAS_HERO: HeroMovie[] = [
   { 
@@ -19360,24 +19360,9 @@ export const PELICULAS_HERO: HeroMovie[] = [
   }
 ];
 
-export const OBITUARIOS: Obituario[] = [
-  { 
-    id: 1, 
-    nombre: "Luis Brandoni", 
-    rol: "Actor", 
-    edad: "85 años", 
-    fecha: "5 de junio", 
-    imagen: "/images/persons/luis-brandoni.jpg" 
-  },
-  { 
-    id: 2, 
-    nombre: "María Vaner", 
-    rol: "Actriz", 
-    edad: "90 años", 
-    fecha: "28 de mayo", 
-    imagen: "/images/persons/maria-vaner.jpg" 
-  }
-];
+// OBITUARIOS eliminados - ahora vienen de la base de datos
+// Los obituarios se obtienen dinámicamente desde la API /api/people
+// con el filtro hasDeathDate=true ordenados por fecha de muerte más reciente
 
 export const EFEMERIDES: Efemeride[] = [
   { 
