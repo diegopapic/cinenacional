@@ -145,6 +145,7 @@
 - [src/app/listados/peliculas/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/listados/peliculas/page.tsx)
 - [src/app/listados/personas/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/listados/personas/page.tsx)
 - [src/app/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/page.tsx)
+- [src/app/peliculas/[slug]/MoviePageClient.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/peliculas/[slug]/MoviePageClient.tsx)
 - [src/app/peliculas/[slug]/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/peliculas/[slug]/page.tsx)
 - [src/app/personas/[slug]/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/personas/[slug]/page.tsx)
 - [src/app/test-env/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/test-env/page.tsx)

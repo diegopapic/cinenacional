@@ -1100,6 +1100,11 @@
     "size": 0
   },
   {
+    "path": "src/app/peliculas/[slug]/MoviePageClient.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/peliculas/[slug]/MoviePageClient.tsx",
+    "size": 0
+  },
+  {
     "path": "src/app/peliculas/[slug]/page.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/peliculas/[slug]/page.tsx",
     "size": 0
