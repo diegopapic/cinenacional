@@ -5,6 +5,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { formatPartialDate } from '@/lib/shared/dateUtils';
 
+export const runtime = 'nodejs' // Importante para Vercel
+export const maxDuration = 30 // Aumentar timeout a 30 segundos en Vercel
+
 interface MovieWithRelease {
   id: number;
   slug: string;
@@ -80,26 +83,26 @@ export default function HomePage() {
 
         // Filtrar solo películas que tienen fecha COMPLETA de estreno (año, mes Y día)
         let peliculasConFechaCompleta = data.movies?.filter((m: any) => {
-        // Primero verificar que tiene fecha completa
-        const tieneFechaCompleta = 
-          m.releaseYear !== null &&
-          m.releaseYear !== undefined &&
-          m.releaseMonth !== null &&
-          m.releaseMonth !== undefined &&
-          m.releaseDay !== null &&
-          m.releaseDay !== undefined;
-        
-        if (!tieneFechaCompleta) return false;
-        
-        // Luego verificar que no sea futura
-        const esFutura = 
-          m.releaseYear > currentYear ||
-          (m.releaseYear === currentYear && m.releaseMonth > currentMonth) ||
-          (m.releaseYear === currentYear && m.releaseMonth === currentMonth && m.releaseDay > currentDay);
-        
-        // Solo incluir si NO es futura (es decir, es pasada o de hoy)
-        return !esFutura;
-      }) || [];
+          // Primero verificar que tiene fecha completa
+          const tieneFechaCompleta =
+            m.releaseYear !== null &&
+            m.releaseYear !== undefined &&
+            m.releaseMonth !== null &&
+            m.releaseMonth !== undefined &&
+            m.releaseDay !== null &&
+            m.releaseDay !== undefined;
+
+          if (!tieneFechaCompleta) return false;
+
+          // Luego verificar que no sea futura
+          const esFutura =
+            m.releaseYear > currentYear ||
+            (m.releaseYear === currentYear && m.releaseMonth > currentMonth) ||
+            (m.releaseYear === currentYear && m.releaseMonth === currentMonth && m.releaseDay > currentDay);
+
+          // Solo incluir si NO es futura (es decir, es pasada o de hoy)
+          return !esFutura;
+        }) || [];
 
         // Ordenar manualmente por fecha completa (año, mes, día) - más recientes primero
         peliculasConFechaCompleta.sort((a: any, b: any) => {
