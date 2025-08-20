@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-20T21:14:11.640Z
+// Archivos del admin - 2025-08-20T21:42:46.307Z
 // ==================
 
 
@@ -4859,6 +4859,12 @@ export async function GET(request: NextRequest) {
     const gender = searchParams.get('gender');
     const isActive = searchParams.get('isActive');
     const hasLinks = searchParams.get('hasLinks');
+    
+    // NUEVO: Parámetros para obituarios y ordenamiento
+    const hasDeathDate = searchParams.get('hasDeathDate');
+    const sortBy = searchParams.get('sortBy') || 'lastName';
+    const sortOrder = searchParams.get('sortOrder') || 'asc';
+    
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
@@ -4885,6 +4891,48 @@ export async function GET(request: NextRequest) {
       where.hasLinks = hasLinks === 'true';
     }
 
+    // NUEVO: Filtro para personas con fecha de muerte
+    if (hasDeathDate === 'true') {
+      where.deathYear = { not: null };
+    } else if (hasDeathDate === 'false') {
+      where.deathYear = null;
+    }
+
+    // Construir orderBy dinámicamente
+    let orderBy: any = {};
+    
+    if (sortBy === 'deathDate') {
+      // Ordenar por fecha de muerte (año, mes, día)
+      orderBy = [
+        { deathYear: sortOrder },
+        { deathMonth: sortOrder },
+        { deathDay: sortOrder }
+      ];
+    } else if (sortBy === 'birthDate') {
+      // Ordenar por fecha de nacimiento (año, mes, día)
+      orderBy = [
+        { birthYear: sortOrder },
+        { birthMonth: sortOrder },
+        { birthDay: sortOrder }
+      ];
+    } else if (sortBy === 'createdAt') {
+      orderBy = { createdAt: sortOrder };
+    } else if (sortBy === 'updatedAt') {
+      orderBy = { updatedAt: sortOrder };
+    } else if (sortBy === 'name') {
+      // Ordenar por apellido y nombre
+      orderBy = [
+        { lastName: sortOrder },
+        { firstName: sortOrder }
+      ];
+    } else {
+      // Default: ordenar por apellido y nombre
+      orderBy = [
+        { lastName: 'asc' },
+        { firstName: 'asc' }
+      ];
+    }
+
     // Obtener total para paginación
     const totalCount = await prisma.person.count({ where });
 
@@ -4894,8 +4942,22 @@ export async function GET(request: NextRequest) {
       include: {
         nationalities: {
           include: {
-            location: true  // Cambiado de 'location' a 'country'
+            location: true
           }
+        },
+        birthLocation: {
+          include: {
+            parent: true
+          }
+        },
+        deathLocation: {
+          include: {
+            parent: true
+          }
+        },
+        links: {
+          where: { isActive: true },
+          orderBy: { displayOrder: 'asc' }
         },
         _count: {
           select: {
@@ -4905,10 +4967,7 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: [
-        { lastName: 'asc' },
-        { firstName: 'asc' },
-      ],
+      orderBy,
       skip: (page - 1) * limit,
       take: limit,
     });
@@ -5018,11 +5077,19 @@ export async function POST(request: NextRequest) {
           links: true,
           nationalities: {
             include: {
-              location: true  // Cambiado de 'location' a 'country'
+              location: true
             }
           },
-          birthLocation: true,
-          deathLocation: true,
+          birthLocation: {
+            include: {
+              parent: true
+            }
+          },
+          deathLocation: {
+            include: {
+              parent: true
+            }
+          },
           _count: {
             select: {
               links: true,
