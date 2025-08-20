@@ -1,12 +1,9 @@
-// src/app/page.tsx - Versión final funcionando
+// src/app/page.tsx - Versión corregida
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { formatPartialDate } from '@/lib/shared/dateUtils';
-
-export const runtime = 'nodejs' // Importante para Vercel
-export const maxDuration = 30 // Aumentar timeout a 30 segundos en Vercel
 
 interface MovieWithRelease {
   id: number;
@@ -42,6 +39,9 @@ export default function HomePage() {
   const [proximosEstrenos, setProximosEstrenos] = useState<MovieWithRelease[]>([]);
   const [loadingProximos, setLoadingProximos] = useState(true);
 
+  // Estado de error
+  const [error, setError] = useState<string | null>(null);
+
   // Películas para el hero rotativo (mantener estático por ahora)
   const peliculasHero = [
     { id: 1, titulo: "El Secreto de Sus Ojos", año: "2009", genero: "Drama, Thriller", director: "Juan José Campanella", imagen: "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=1024&fit=crop&auto=format" },
@@ -53,221 +53,105 @@ export default function HomePage() {
 
   const [peliculaHeroIndex, setPeliculaHeroIndex] = useState(0);
 
-  // Cargar últimos estrenos desde la base de datos
+  // Cargar datos de la home con una sola llamada optimizada
   useEffect(() => {
-    const fetchUltimosEstrenos = async () => {
-      try {
-        setLoadingEstrenos(true);
+    let mounted = true;
+    let retryTimeout: NodeJS.Timeout;
 
-        // Obtener películas ordenadas por fecha de creación para tener las más recientes
-        // Luego las filtraremos y ordenaremos por fecha de estreno
+    const fetchHomeData = async (attempt = 1) => {
+      try {
+        console.log(`🔄 Intento ${attempt} de cargar datos...`);
+        setError(null);
+
+        // Timeout de 20 segundos
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          console.log('⏱️ Timeout alcanzado, abortando...');
+          controller.abort();
+        }, 20000);
+
+        // Obtener las películas más recientes por fecha de creación
+        // Esto garantiza que obtenemos las últimas agregadas a la base de datos
         const params = new URLSearchParams({
-          limit: '100', // Traemos más para tener suficientes con fecha completa
+          limit: '100', // Aumentamos a 100 para tener más películas disponibles
           sortBy: 'createdAt',
           sortOrder: 'desc'
         });
 
-        const response = await fetch('/api/movies?' + params);
+        const response = await fetch('/api/movies/home-feed', {
+          signal: controller.signal,
+          cache: 'no-store'
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!mounted) return;
 
         if (!response.ok) {
-          throw new Error('Error al cargar los últimos estrenos');
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
 
         const data = await response.json();
-
-        // Obtener fecha actual
-        const today = new Date();
-        const currentYear = today.getFullYear();
-        const currentMonth = today.getMonth() + 1; // getMonth() retorna 0-11
-        const currentDay = today.getDate();
-
-        // Filtrar solo películas que tienen fecha COMPLETA de estreno (año, mes Y día)
-        let peliculasConFechaCompleta = data.movies?.filter((m: any) => {
-          // Primero verificar que tiene fecha completa
-          const tieneFechaCompleta =
-            m.releaseYear !== null &&
-            m.releaseYear !== undefined &&
-            m.releaseMonth !== null &&
-            m.releaseMonth !== undefined &&
-            m.releaseDay !== null &&
-            m.releaseDay !== undefined;
-
-          if (!tieneFechaCompleta) return false;
-
-          // Luego verificar que no sea futura
-          const esFutura =
-            m.releaseYear > currentYear ||
-            (m.releaseYear === currentYear && m.releaseMonth > currentMonth) ||
-            (m.releaseYear === currentYear && m.releaseMonth === currentMonth && m.releaseDay > currentDay);
-
-          // Solo incluir si NO es futura (es decir, es pasada o de hoy)
-          return !esFutura;
-        }) || [];
-
-        // Ordenar manualmente por fecha completa (año, mes, día) - más recientes primero
-        peliculasConFechaCompleta.sort((a: any, b: any) => {
-          // Primero comparar por año
-          if (b.releaseYear !== a.releaseYear) {
-            return b.releaseYear - a.releaseYear;
-          }
-          // Si el año es igual, comparar por mes
-          if (b.releaseMonth !== a.releaseMonth) {
-            return b.releaseMonth - a.releaseMonth;
-          }
-          // Si año y mes son iguales, comparar por día
-          return b.releaseDay - a.releaseDay;
+        console.log('✅ Datos recibidos del home-feed:', {
+          ultimosEstrenos: data.ultimosEstrenos?.length || 0,
+          proximosEstrenos: data.proximosEstrenos?.length || 0
         });
 
-        // Tomar solo las primeras 6 películas con fecha completa
-        const peliculasParaMostrar = peliculasConFechaCompleta.slice(0, 6);
-
-        // Obtener detalles completos para cada película (incluye crew)
-        const peliculasConDetalles = await Promise.all(
-          peliculasParaMostrar.map(async (movie: any) => {
-            try {
-              const detailResponse = await fetch(`/api/movies/${movie.id}`);
-              if (detailResponse.ok) {
-                return await detailResponse.json();
-              }
-              return movie;
-            } catch (error) {
-              console.error(`Error fetching details for movie ${movie.id}:`, error);
-              return movie;
-            }
-          })
-        );
-
-        setUltimosEstrenos(peliculasConDetalles);
-      } catch (error) {
-        console.error('❌ Error fetching últimos estrenos:', error);
-        setUltimosEstrenos([]);
-      } finally {
-        setLoadingEstrenos(false);
-      }
-    };
-
-    fetchUltimosEstrenos();
-  }, []);
-
-  // Cargar próximos estrenos desde la base de datos
-  useEffect(() => {
-    const fetchProximosEstrenos = async () => {
-      try {
-        setLoadingProximos(true);
-
-        // Obtener las películas más recientes que probablemente tienen fechas futuras
-        const params = new URLSearchParams({
-          limit: '200', // Suficiente para encontrar películas futuras
-          sortBy: 'createdAt',
-          sortOrder: 'desc'
-        });
-
-        const response = await fetch('/api/movies?' + params);
-
-        if (!response.ok) {
-          throw new Error('Error al cargar los próximos estrenos');
+        // Debug: ver si hay crew en las películas
+        if (data.ultimosEstrenos && data.ultimosEstrenos.length > 0) {
+          console.log('Primera película con crew:', {
+            title: data.ultimosEstrenos[0].title,
+            crew: data.ultimosEstrenos[0].crew
+          });
         }
 
-        const data = await response.json();
+        // Verificar la estructura de los datos
+        if (data.movies && data.movies.length > 0) {
+          console.log('Primera película:', data.movies[0]);
+        }
 
-        // Obtener fecha actual real
-        const today = new Date();
-        const currentYear = today.getFullYear();
-        const currentMonth = today.getMonth() + 1; // getMonth() retorna 0-11
-        const currentDay = today.getDate();
+        setUltimosEstrenos(data.ultimosEstrenos || []);
+    setProximosEstrenos(data.proximosEstrenos || []);
+        setError(null);
 
-        // Función para calcular la fecha efectiva de una película para comparación
-        const getEffectiveDate = (movie: any) => {
-          const year = movie.releaseYear;
-          if (!year) return null;
+      } catch (error: any) {
+        console.error(`❌ Error en intento ${attempt}:`, error);
 
-          let month = movie.releaseMonth;
-          let day = movie.releaseDay;
+        if (!mounted) return;
 
-          // Si no hay mes, usar diciembre (último mes del año)
-          if (!month) {
-            month = 12;
-            day = 31;
-          }
-          // Si no hay día, usar el último día del mes
-          else if (!day) {
-            // Calcular el último día del mes
-            const lastDay = new Date(year, month, 0).getDate();
-            day = lastDay;
-          }
+        if (error.name === 'AbortError') {
+          setError('La carga tardó demasiado. Intentando de nuevo...');
+        } else {
+          setError(`Error al cargar datos: ${error.message}`);
+        }
 
-          return { year, month, day };
-        };
-
-        // Filtrar películas que tienen año de estreno
-        const peliculasConAño = data.movies?.filter((m: any) =>
-          m.releaseYear !== null && m.releaseYear !== undefined
-        ) || [];
-
-        // Filtrar películas futuras (con cualquier tipo de fecha de estreno)
-        let peliculasFuturas = peliculasConAño.filter((m: any) => {
-          const effectiveDate = getEffectiveDate(m);
-          if (!effectiveDate) return false;
-
-          // Comparar si es futura respecto a la fecha actual
-          const isFuture =
-            effectiveDate.year > currentYear ||
-            (effectiveDate.year === currentYear && effectiveDate.month > currentMonth) ||
-            (effectiveDate.year === currentYear && effectiveDate.month === currentMonth && effectiveDate.day > currentDay);
-
-          return isFuture;
-        });
-
-        // Ordenar por fecha efectiva (más próximas primero)
-        peliculasFuturas.sort((a: any, b: any) => {
-          const dateA = getEffectiveDate(a);
-          const dateB = getEffectiveDate(b);
-
-          if (!dateA && !dateB) return 0;
-          if (!dateA) return 1;
-          if (!dateB) return -1;
-
-          // Comparar por año
-          if (dateA.year !== dateB.year) {
-            return dateA.year - dateB.year;
-          }
-          // Si el año es igual, comparar por mes
-          if (dateA.month !== dateB.month) {
-            return dateA.month - dateB.month;
-          }
-          // Si año y mes son iguales, comparar por día
-          return dateA.day - dateB.day;
-        });
-
-        // Tomar solo las primeras 6 películas futuras
-        const peliculasParaMostrar = peliculasFuturas.slice(0, 6);
-
-        // Obtener detalles completos para cada película (incluye crew)
-        const peliculasConDetalles = await Promise.all(
-          peliculasParaMostrar.map(async (movie: any) => {
-            try {
-              const detailResponse = await fetch(`/api/movies/${movie.id}`);
-              if (detailResponse.ok) {
-                return await detailResponse.json();
-              }
-              return movie;
-            } catch (error) {
-              console.error(`Error fetching details for movie ${movie.id}:`, error);
-              return movie;
-            }
-          })
-        );
-
-        setProximosEstrenos(peliculasConDetalles);
-      } catch (error) {
-        console.error('❌ Error fetching próximos estrenos:', error);
-        setProximosEstrenos([]);
+        // Reintentar hasta 3 veces
+        if (attempt < 3) {
+          const delay = attempt * 2000; // 2, 4, 6 segundos
+          console.log(`⏳ Reintentando en ${delay / 1000} segundos...`);
+          retryTimeout = setTimeout(() => {
+            if (mounted) fetchHomeData(attempt + 1);
+          }, delay);
+        } else {
+          setError('No se pudieron cargar los datos después de varios intentos.');
+          // Datos de fallback vacíos
+          setUltimosEstrenos([]);
+          setProximosEstrenos([]);
+        }
       } finally {
-        setLoadingProximos(false);
+        if (mounted) {
+          setLoadingEstrenos(false);
+          setLoadingProximos(false);
+        }
       }
     };
 
-    fetchProximosEstrenos();
+    fetchHomeData();
+
+    return () => {
+      mounted = false;
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
   }, []);
 
   // Función helper para formatear la fecha de estreno
@@ -349,7 +233,7 @@ export default function HomePage() {
       }).filter(Boolean);
 
       if (genreNames.length > 0) {
-        return genreNames.join(', ');
+        return genreNames.slice(0, 2).join(', '); // Limitar a 2 géneros
       }
     }
 
@@ -497,6 +381,19 @@ export default function HomePage() {
       <div className="bg-cine-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
+          {/* Mostrar error si existe */}
+          {error && (
+            <div className="mb-8 p-4 bg-red-900/20 border border-red-500 rounded-lg">
+              <p className="text-red-300">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-2 text-sm underline hover:no-underline text-red-300"
+              >
+                Recargar página
+              </button>
+            </div>
+          )}
+
           {/* Últimos Estrenos */}
           <section className="mb-12">
             <h2 className="serif-heading text-3xl mb-6 text-white">Últimos Estrenos</h2>
@@ -532,6 +429,7 @@ export default function HomePage() {
                           src={pelicula.posterUrl}
                           alt={pelicula.title}
                           className="w-full h-full object-cover"
+                          loading="lazy"
                           onError={(e) => {
                             // Si la imagen falla, mostrar placeholder
                             e.currentTarget.style.display = 'none';
@@ -558,7 +456,7 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Botón Ver Más */}
+            {/* Botón Ver Más - resto del componente continúa igual... */}
             <div className="mt-6 text-center">
               <Link
                 href="/listados/peliculas"
@@ -569,6 +467,7 @@ export default function HomePage() {
             </div>
           </section>
 
+          {/* El resto del componente continúa igual... */}
           {/* Próximos Estrenos */}
           <section className="mb-12">
             <h2 className="serif-heading text-3xl mb-6 text-white">Próximos Estrenos</h2>
@@ -604,6 +503,7 @@ export default function HomePage() {
                           src={pelicula.posterUrl}
                           alt={pelicula.title}
                           className="w-full h-full object-cover"
+                          loading="lazy"
                           onError={(e) => {
                             // Si la imagen falla, mostrar placeholder
                             e.currentTarget.style.display = 'none';
@@ -641,6 +541,7 @@ export default function HomePage() {
             </div>
           </section>
 
+          {/* Resto del componente igual... */}
           {/* Grid Layout para Obituarios y Efemérides */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
             {/* Obituarios */}
