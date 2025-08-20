@@ -1,63 +1,87 @@
 // src/components/home/ObituariosSection.tsx
 import Link from 'next/link';
-import { formatPartialDate } from '@/lib/shared/dateUtils';
-import { calculateYearsBetween } from '@/lib/shared/dateUtils';
+import { formatPartialDate, calculateYearsBetween } from '@/lib/shared/dateUtils';
 
 interface ObituariosSectionProps {
   obituarios: any[];
+  loading?: boolean; // Agregar prop loading como opcional
 }
 
-export default function ObituariosSection({ obituarios }: ObituariosSectionProps) {
+export default function ObituariosSection({ obituarios, loading = false }: ObituariosSectionProps) {
+  // Si está cargando, mostrar skeleton
+  if (loading) {
+    return (
+      <section>
+        <h2 className="serif-heading text-3xl mb-6 text-white">Obituarios</h2>
+        <div className="glass-effect rounded-lg p-6">
+          <div className="space-y-4">
+            {[1, 2].map((i) => (
+              <div key={i} className="flex items-center space-x-4 pb-4 border-b border-gray-700 last:border-0 last:pb-0">
+                <div className="w-24 h-24 rounded-full flex-shrink-0 bg-gray-800 animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-5 bg-gray-800 rounded w-3/4 animate-pulse" />
+                  <div className="h-4 bg-gray-800 rounded w-1/2 animate-pulse" />
+                  <div className="h-3 bg-gray-800 rounded w-1/3 animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Si no hay obituarios, no mostrar la sección
   if (!obituarios || obituarios.length === 0) {
-    return null; // No mostrar la sección si no hay obituarios
+    return null;
   }
 
   // Función para formatear el rol/profesión de la persona
   const formatearRoles = (person: any) => {
-    const roles = []
+    const roles = [];
     
     // Contar roles de cast y crew
     if (person._count) {
       if (person._count.castRoles > 0) {
-        roles.push('Actor')
+        roles.push('Actor');
       }
       if (person._count.crewRoles > 0) {
         // Aquí podrías ser más específico obteniendo los roles del crew
-        roles.push('Director/Técnico')
+        roles.push('Director/Técnico');
       }
     }
     
-    return roles.length > 0 ? roles.join(', ') : 'Profesional del cine'
-  }
+    return roles.length > 0 ? roles.join(', ') : 'Profesional del cine';
+  };
 
   // Función para calcular la edad al fallecer
   const calcularEdad = (person: any) => {
     if (!person.birthYear || !person.deathYear) {
-      return null
+      return null;
     }
     
     const birthDate = {
       year: person.birthYear,
       month: person.birthMonth,
       day: person.birthDay
-    }
+    };
     
     const deathDate = {
       year: person.deathYear,
       month: person.deathMonth,
       day: person.deathDay
-    }
+    };
     
-    return calculateYearsBetween(birthDate, deathDate)
-  }
+    return calculateYearsBetween(birthDate, deathDate);
+  };
 
   // Función para formatear el nombre completo
   const formatearNombre = (person: any) => {
-    const parts = []
-    if (person.firstName) parts.push(person.firstName)
-    if (person.lastName) parts.push(person.lastName)
-    return parts.join(' ') || 'Sin nombre'
-  }
+    const parts = [];
+    if (person.firstName) parts.push(person.firstName);
+    if (person.lastName) parts.push(person.lastName);
+    return parts.join(' ') || 'Sin nombre';
+  };
 
   return (
     <section>
@@ -65,7 +89,7 @@ export default function ObituariosSection({ obituarios }: ObituariosSectionProps
       <div className="glass-effect rounded-lg p-6">
         <div className="space-y-4">
           {obituarios.map((persona) => {
-            const edad = calcularEdad(persona)
+            const edad = calcularEdad(persona);
             const fechaMuerte = formatPartialDate(
               {
                 year: persona.deathYear,
@@ -73,7 +97,7 @@ export default function ObituariosSection({ obituarios }: ObituariosSectionProps
                 day: persona.deathDay
               },
               { monthFormat: 'long', includeDay: true }
-            )
+            );
             
             return (
               <Link 
@@ -108,11 +132,11 @@ export default function ObituariosSection({ obituarios }: ObituariosSectionProps
                     {persona.birthYear && `${persona.birthYear} - ${persona.deathYear}`}
                   </p>
                   <p className="text-xs text-gray-600 mt-1">
-                    Murió el {fechaMuerte}
+                    Falleció el {fechaMuerte}
                   </p>
                 </div>
               </Link>
-            )
+            );
           })}
         </div>
       </div>
