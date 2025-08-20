@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: b151cfcf3d10ee58c4f7a1b33cddc7227afb51ee
-// Fecha: 2025-08-20T22:32:58.332Z
+// Commit: c1db8b40066442837558ca8ba4ecfc6f95415855
+// Fecha: 2025-08-20T23:15:43.628Z
 // ============================================
 
 
@@ -4381,6 +4381,360 @@ export async function DELETE(
       { error: 'Error al eliminar el país' },
       { status: 500 }
     )
+  }
+}
+
+// ==================================================
+// src/app/api/efemerides/route.ts
+// ==================================================
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { calcularAniosDesde, formatearEfemeride, EfemerideData } from '@/lib/utils/efemerides';
+
+export async function GET(request: NextRequest) {
+  try {
+    const hoy = new Date();
+    const dia = hoy.getDate();
+    const mes = hoy.getMonth() + 1;
+    
+    console.log(`🔍 Buscando efemérides para día: ${dia}, mes: ${mes}`);
+    
+    // Obtener películas con fechas de estreno para hoy
+    const peliculasEstreno = await prisma.movie.findMany({
+      where: {
+        releaseDay: dia,
+        releaseMonth: mes,
+        releaseYear: { not: null }
+      },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        releaseYear: true,
+        releaseMonth: true,
+        releaseDay: true,
+        posterUrl: true,
+        crew: {
+          where: {
+            roleId: 2 // Solo buscar por roleId de Director
+          },
+          select: {
+            person: {
+              select: {
+                firstName: true,
+                lastName: true
+              }
+            }
+          },
+          take: 1
+        }
+      }
+    });
+    
+    console.log(`📽️ Películas con estreno hoy: ${peliculasEstreno.length}`);
+    
+    // Obtener películas con inicio de rodaje para hoy
+    const peliculasInicioRodaje = await prisma.movie.findMany({
+      where: {
+        filmingStartDay: dia,
+        filmingStartMonth: mes,
+        filmingStartYear: { not: null }
+      },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        filmingStartYear: true,
+        filmingStartMonth: true,
+        filmingStartDay: true,
+        posterUrl: true,
+        crew: {
+          where: {
+            roleId: 2
+          },
+          select: {
+            person: {
+              select: {
+                firstName: true,
+                lastName: true
+              }
+            }
+          },
+          take: 1
+        }
+      }
+    });
+    
+    console.log(`🎬 Películas con inicio de rodaje hoy: ${peliculasInicioRodaje.length}`);
+    
+    // Obtener películas con fin de rodaje para hoy
+    const peliculasFinRodaje = await prisma.movie.findMany({
+      where: {
+        filmingEndDay: dia,
+        filmingEndMonth: mes,
+        filmingEndYear: { not: null }
+      },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        filmingEndYear: true,
+        filmingEndMonth: true,
+        filmingEndDay: true,
+        posterUrl: true,
+        crew: {
+          where: {
+            roleId: 2
+          },
+          select: {
+            person: {
+              select: {
+                firstName: true,
+                lastName: true
+              }
+            }
+          },
+          take: 1
+        }
+      }
+    });
+    
+    console.log(`🎬 Películas con fin de rodaje hoy: ${peliculasFinRodaje.length}`);
+    
+    // Obtener personas nacidas hoy
+    const personasNacimiento = await prisma.person.findMany({
+      where: {
+        birthDay: dia,
+        birthMonth: mes,
+        birthYear: { not: null }
+      },
+      select: {
+        id: true,
+        slug: true,
+        firstName: true,
+        lastName: true,
+        birthYear: true,
+        birthMonth: true,
+        birthDay: true,
+        photoUrl: true
+      }
+    });
+    
+    console.log(`👶 Personas nacidas hoy: ${personasNacimiento.length}`);
+    
+    // Obtener personas fallecidas hoy
+    const personasMuerte = await prisma.person.findMany({
+      where: {
+        deathDay: dia,
+        deathMonth: mes,
+        deathYear: { not: null }
+      },
+      select: {
+        id: true,
+        slug: true,
+        firstName: true,
+        lastName: true,
+        deathYear: true,
+        deathMonth: true,
+        deathDay: true,
+        photoUrl: true
+      }
+    });
+    
+    console.log(`💀 Personas fallecidas hoy: ${personasMuerte.length}`);
+    
+    // Si no hay efemérides para hoy, buscar algunas de ejemplo para testing
+    let totalEfemerides = peliculasEstreno.length + peliculasInicioRodaje.length + 
+                          peliculasFinRodaje.length + personasNacimiento.length + 
+                          personasMuerte.length;
+    
+    if (totalEfemerides === 0) {
+      console.log('⚠️ No hay efemérides para hoy, buscando algunas de ejemplo...');
+      
+      // Buscar cualquier película con fecha de estreno completa
+      const peliculasEjemplo = await prisma.movie.findMany({
+        where: {
+          releaseDay: { not: null },
+          releaseMonth: { not: null },
+          releaseYear: { not: null }
+        },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          releaseYear: true,
+          releaseMonth: true,
+          releaseDay: true,
+          posterUrl: true,
+          crew: {
+            where: {
+              roleId: 2
+            },
+            select: {
+              person: {
+                select: {
+                  firstName: true,
+                  lastName: true
+                }
+              }
+            },
+            take: 1
+          }
+        },
+        take: 5
+      });
+      
+      console.log(`📽️ Películas de ejemplo encontradas: ${peliculasEjemplo.length}`);
+      
+      // Usar las primeras 2 como ejemplo, cambiando el día y mes al de hoy
+      const efemeridesEjemplo = peliculasEjemplo.slice(0, 2).map(pelicula => {
+        const director = pelicula.crew[0]?.person;
+        const directorName = director 
+          ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
+          : null;
+        
+        // Calcular años desde el estreno real
+        const añosDesde = hoy.getFullYear() - pelicula.releaseYear!;
+        
+        return {
+          id: `ejemplo-${pelicula.id}`,
+          tipo: 'pelicula' as const,
+          hace: `Hace ${añosDesde} ${añosDesde === 1 ? 'año' : 'años'}`,
+          evento: `se estrenaba "${pelicula.title}"${directorName ? `, de ${directorName}` : ''}`,
+          fecha: new Date(pelicula.releaseYear!, pelicula.releaseMonth! - 1, pelicula.releaseDay!),
+          slug: pelicula.slug,
+          posterUrl: pelicula.posterUrl || undefined
+        };
+      });
+      
+      return NextResponse.json({ efemerides: efemeridesEjemplo });
+    }
+    
+    // Formatear todas las efemérides
+    const efemerides: (Efemeride | null)[] = [];
+    
+    // Procesar estrenos
+    peliculasEstreno.forEach(pelicula => {
+      const director = pelicula.crew[0]?.person;
+      const directorName = director 
+        ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
+        : null;
+        
+      const efemeride = formatearEfemeride({
+        tipo: 'pelicula',
+        tipoEvento: 'estreno',
+        año: pelicula.releaseYear!,
+        mes: pelicula.releaseMonth!,
+        dia: pelicula.releaseDay!,
+        fecha: new Date(pelicula.releaseYear!, pelicula.releaseMonth! - 1, pelicula.releaseDay!),
+        titulo: pelicula.title,
+        director: directorName || undefined,
+        slug: pelicula.slug,
+        posterUrl: pelicula.posterUrl || undefined
+      });
+      if (efemeride) efemerides.push(efemeride);
+    });
+    
+    // Procesar inicio de rodajes
+    peliculasInicioRodaje.forEach(pelicula => {
+      const director = pelicula.crew[0]?.person;
+      const directorName = director 
+        ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
+        : null;
+        
+      const efemeride = formatearEfemeride({
+        tipo: 'pelicula',
+        tipoEvento: 'inicio_rodaje',
+        año: pelicula.filmingStartYear!,
+        mes: pelicula.filmingStartMonth!,
+        dia: pelicula.filmingStartDay!,
+        fecha: new Date(pelicula.filmingStartYear!, pelicula.filmingStartMonth! - 1, pelicula.filmingStartDay!),
+        titulo: pelicula.title,
+        director: directorName || undefined,
+        slug: pelicula.slug,
+        posterUrl: pelicula.posterUrl || undefined
+      });
+      if (efemeride) efemerides.push(efemeride);
+    });
+    
+    // Procesar fin de rodajes
+    peliculasFinRodaje.forEach(pelicula => {
+      const director = pelicula.crew[0]?.person;
+      const directorName = director 
+        ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
+        : null;
+        
+      const efemeride = formatearEfemeride({
+        tipo: 'pelicula',
+        tipoEvento: 'fin_rodaje',
+        año: pelicula.filmingEndYear!,
+        mes: pelicula.filmingEndMonth!,
+        dia: pelicula.filmingEndDay!,
+        fecha: new Date(pelicula.filmingEndYear!, pelicula.filmingEndMonth! - 1, pelicula.filmingEndDay!),
+        titulo: pelicula.title,
+        director: directorName || undefined,
+        slug: pelicula.slug,
+        posterUrl: pelicula.posterUrl || undefined
+      });
+      if (efemeride) efemerides.push(efemeride);
+    });
+    
+    // Procesar nacimientos
+    personasNacimiento.forEach(persona => {
+      const nombre = `${persona.firstName || ''} ${persona.lastName || ''}`.trim();
+      
+      const efemeride = formatearEfemeride({
+        tipo: 'persona',
+        tipoEvento: 'nacimiento',
+        año: persona.birthYear!,
+        mes: persona.birthMonth!,
+        dia: persona.birthDay!,
+        fecha: new Date(persona.birthYear!, persona.birthMonth! - 1, persona.birthDay!),
+        nombre,
+        slug: persona.slug,
+        photoUrl: persona.photoUrl || undefined
+      });
+      if (efemeride) efemerides.push(efemeride);
+    });
+    
+    // Procesar muertes
+    personasMuerte.forEach(persona => {
+      const nombre = `${persona.firstName || ''} ${persona.lastName || ''}`.trim();
+      
+      const efemeride = formatearEfemeride({
+        tipo: 'persona',
+        tipoEvento: 'muerte',
+        año: persona.deathYear!,
+        mes: persona.deathMonth!,
+        dia: persona.deathDay!,
+        fecha: new Date(persona.deathYear!, persona.deathMonth! - 1, persona.deathDay!),
+        nombre,
+        slug: persona.slug,
+        photoUrl: persona.photoUrl || undefined
+      });
+      if (efemeride) efemerides.push(efemeride);
+    });
+    
+    // Filtrar nulls y ordenar por años (más recientes primero)
+    const efemeridesValidas = efemerides
+      .filter((e): e is Efemeride => e !== null)
+      .sort((a, b) => {
+        const añosA = parseInt(a.hace.match(/\d+/)?.[0] || '0');
+        const añosB = parseInt(b.hace.match(/\d+/)?.[0] || '0');
+        return añosA - añosB; // Menos años primero (más reciente)
+      })
+      .slice(0, 2); // LIMITAR A 2 EFEMÉRIDES
+    
+    console.log(`✅ Efemérides válidas encontradas: ${efemeridesValidas.length}`);
+    
+    return NextResponse.json({ efemerides: efemeridesValidas });
+    
+  } catch (error) {
+    console.error('❌ Error fetching efemerides:', error);
+    return NextResponse.json(
+      { error: 'Error al obtener efemérides' },
+      { status: 500 }
+    );
   }
 }
 
@@ -9340,9 +9694,22 @@ const PELICULAS_HERO: HeroMovie[] = [
   { id: 5, titulo: "Nueve Reinas", año: "2000", genero: "Thriller", director: "Fabián Bielinsky", imagen: "https://images.unsplash.com/photo-1556388158-158ea5ccacbd?w=1024&fit=crop&auto=format" },
 ];
 
-const EFEMERIDES: Efemeride[] = [
-  { hace: "Hace 40 años", evento: 'se estrenaba "Camila" de María Luisa Bemberg', tipo: "pelicula", imagen: "/images/movies/camila.jpg" },
-  { hace: "Hace 50 años", evento: "nacía el director Juan José Campanella", tipo: "persona", imagen: "/images/persons/juan-jose-campanella.jpg" },
+// Efemérides de fallback mientras no tengamos datos reales
+const EFEMERIDES_FALLBACK: Efemeride[] = [
+  { 
+    id: 'fallback-1',
+    hace: "Hace 40 años", 
+    evento: 'se estrenaba "Camila" de María Luisa Bemberg', 
+    tipo: "pelicula",
+    fecha: new Date()
+  },
+  { 
+    id: 'fallback-2',
+    hace: "Hace 50 años", 
+    evento: "nacía el director Juan José Campanella", 
+    tipo: "persona",
+    fecha: new Date()
+  },
 ];
 
 export default function HomePage() {
@@ -9360,6 +9727,8 @@ export default function HomePage() {
 
   const [obituarios, setObituarios] = useState<any[]>([]);
   const [loadingObituarios, setLoadingObituarios] = useState(true);
+  const [efemerides, setEfemerides] = useState<Efemeride[]>([]);
+  const [loadingEfemerides, setLoadingEfemerides] = useState(true);
 
   // Función para calcular fecha efectiva de personas
   const calcularFechaEfectivaPersona = (person: any, type: 'birth' | 'death') => {
@@ -9414,6 +9783,46 @@ export default function HomePage() {
     };
 
     fetchObituarios();
+  }, []);
+
+  // Fetch efemérides
+  useEffect(() => {
+    const fetchEfemerides = async () => {
+      try {
+        setLoadingEfemerides(true);
+        
+        const response = await fetch('/api/efemerides');
+        
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        
+        if (!response.ok) {
+          // Intentar obtener el mensaje de error del servidor
+          const errorData = await response.text();
+          console.error('Error response:', errorData);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Efemérides recibidas:', data);
+        
+        if (data.efemerides && data.efemerides.length > 0) {
+          setEfemerides(data.efemerides);
+        } else {
+          // Si no hay efemérides, usar las de fallback
+          console.log('No hay efemérides para hoy, usando fallback');
+          setEfemerides(EFEMERIDES_FALLBACK);
+        }
+      } catch (error) {
+        console.error('Error fetching efemérides:', error);
+        // En caso de error, usar las efemérides de fallback
+        setEfemerides(EFEMERIDES_FALLBACK);
+      } finally {
+        setLoadingEfemerides(false);
+      }
+    };
+
+    fetchEfemerides();
   }, []);
 
   // Formateador para fechas pasadas (últimos estrenos)
@@ -9497,7 +9906,7 @@ export default function HomePage() {
               obituarios={obituarios} 
               loading={loadingObituarios}
             />
-            <EfemeridesSection efemerides={EFEMERIDES} />
+            <EfemeridesSection efemerides={efemerides} />
           </div>
 
           {/* Últimas Películas Ingresadas */}
@@ -17400,8 +17809,8 @@ export function ThemeSelector({
 // ==================================================
 // src/components/home/EfemeridesSection.tsx
 // ==================================================
-// src/components/home/EfemeridesSection.tsx
 import Link from 'next/link';
+import Image from 'next/image';
 import { Efemeride } from '@/types/home.types';
 
 interface EfemeridesSectionProps {
@@ -17409,13 +17818,17 @@ interface EfemeridesSectionProps {
 }
 
 export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps) {
+  if (!efemerides || efemerides.length === 0) {
+    return null; // No mostrar la sección si no hay efemérides
+  }
+
   return (
     <section>
       <h2 className="serif-heading text-3xl mb-6 text-white">Efemérides del Día</h2>
       <div className="glass-effect rounded-lg p-6">
         <div className="space-y-4">
-          {efemerides.map((item, index) => (
-            <div key={index} className="flex items-center space-x-4 pb-4 border-b border-gray-700 last:border-0 last:pb-0">
+          {efemerides.map((item) => (
+            <div key={item.id} className="flex items-center space-x-4 pb-4 border-b border-gray-700 last:border-0 last:pb-0">
               <div className="w-24 h-24 flex items-center justify-center flex-shrink-0">
                 {item.tipo === "pelicula" ? (
                   <div className="w-16 h-24 rounded movie-placeholder">
@@ -23061,6 +23474,78 @@ export function isEmptyDate(partial: PartialDate): boolean {
 }
 
 // ==================================================
+// src/lib/utils/efemerides.ts
+// ==================================================
+export interface EfemerideData {
+  tipo: 'pelicula' | 'persona';
+  fecha: Date;
+  año: number;
+  mes: number;
+  dia: number;
+  titulo?: string; // Para películas
+  nombre?: string; // Para personas
+  tipoEvento: 'estreno' | 'inicio_rodaje' | 'fin_rodaje' | 'nacimiento' | 'muerte';
+  slug?: string;
+  posterUrl?: string;
+  photoUrl?: string;
+  director?: string; // Para películas
+}
+
+export function calcularAniosDesde(año: number, mes: number, dia: number): number | null {
+  const hoy = new Date();
+  const fechaEvento = new Date(año, mes - 1, dia);
+  
+  // Verificar si es el mismo día y mes
+  if (hoy.getDate() !== dia || hoy.getMonth() !== mes - 1) {
+    return null;
+  }
+  
+  return hoy.getFullYear() - año;
+}
+
+export function formatearEfemeride(data: EfemerideData): Efemeride | null {
+  const añosDesde = calcularAniosDesde(data.año, data.mes, data.dia);
+  
+  if (!añosDesde || añosDesde <= 0) return null;
+  
+  let evento = '';
+  
+  if (data.tipo === 'pelicula') {
+    switch (data.tipoEvento) {
+      case 'estreno':
+        evento = `se estrenaba "${data.titulo}"${data.director ? `, de ${data.director}` : ''}`;
+        break;
+      case 'inicio_rodaje':
+        evento = `empezaba el rodaje de "${data.titulo}"${data.director ? `, de ${data.director}` : ''}`;
+        break;
+      case 'fin_rodaje':
+        evento = `terminaba el rodaje de "${data.titulo}"${data.director ? `, de ${data.director}` : ''}`;
+        break;
+    }
+  } else if (data.tipo === 'persona') {
+    switch (data.tipoEvento) {
+      case 'nacimiento':
+        evento = `nacía ${data.nombre}`;
+        break;
+      case 'muerte':
+        evento = `moría ${data.nombre}`;
+        break;
+    }
+  }
+  
+  return {
+    id: `${data.tipo}-${data.tipoEvento}-${data.slug || data.año}`,
+    tipo: data.tipo,
+    hace: `Hace ${añosDesde} ${añosDesde === 1 ? 'año' : 'años'}`,
+    evento,
+    fecha: new Date(data.año, data.mes - 1, data.dia),
+    slug: data.slug,
+    posterUrl: data.posterUrl,
+    photoUrl: data.photoUrl
+  };
+}
+
+// ==================================================
 // src/lib/utils/slugs.ts
 // ==================================================
 // src/lib/utils/schemas.ts
@@ -24603,10 +25088,14 @@ export interface Obituario {
 }
 
 export interface Efemeride {
-  hace: string;
-  evento: string;
+  id: string; // Único para cada efeméride
   tipo: 'pelicula' | 'persona';
-  imagen: string;
+  hace: string; // "Hace 23 años"
+  evento: string; // "se estrenaba Nueve Reinas, de Fabián Bielinsky"
+  fecha: Date; // Para ordenamiento
+  slug?: string; // Para enlaces
+  posterUrl?: string; // Para películas
+  photoUrl?: string; // Para personas
 }
 
 export interface SimpleMovie {

@@ -255,23 +255,23 @@ export default function MovieFormEnhanced({
 
   // Buscar personas
   const searchPeople = async (search: string) => {
-  if (search.length < 2) return
+    if (search.length < 2) return
 
-  try {
-    const response = await fetch(`/api/people?search=${encodeURIComponent(search)}&limit=10`)
-    const result = await response.json()
+    try {
+      const response = await fetch(`/api/people?search=${encodeURIComponent(search)}&limit=10`)
+      const result = await response.json()
 
-    // CAMBIO IMPORTANTE: Manejar tanto array directo como objeto con data
-    const peopleData = Array.isArray(result) ? result : (result.data || [])
-    
-    // Ya no necesitas formatear el nombre porque ya viene formateado del backend
-    setAvailablePeople(peopleData)
-    
-  } catch (error) {
-    console.error('Error searching people:', error)
-    setAvailablePeople([])
+      // CAMBIO IMPORTANTE: Manejar tanto array directo como objeto con data
+      const peopleData = Array.isArray(result) ? result : (result.data || [])
+
+      // Ya no necesitas formatear el nombre porque ya viene formateado del backend
+      setAvailablePeople(peopleData)
+
+    } catch (error) {
+      console.error('Error searching people:', error)
+      setAvailablePeople([])
+    }
   }
-}
 
   // Agregar persona al cast o crew
   const addPerson = () => {
