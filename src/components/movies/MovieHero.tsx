@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 interface MovieHeroProps {
   title: string;
-  year: number;
+  year: number | null;
   duration: number;
   genres: string[];
   gallery: string[];
@@ -118,7 +118,7 @@ export function MovieHero({ title, year, duration, genres, rating, gallery }: Mo
           </h1>
           <div className="flex flex-wrap items-center gap-4 text-gray-200 mt-4">
             <span className="bg-cine-accent/90 px-3 py-1 rounded-full text-sm font-medium text-white backdrop-blur-sm">
-              {year}
+              {year && <span>{year}</span>}
             </span>
             <span className="drop-shadow-lg">{duration} min</span>
             <span className="drop-shadow-lg">{formatGenres(genres)}</span>

@@ -15,7 +15,7 @@ import { SimilarMovies } from "@/components/movies/SimilarMovies";
 
 interface MoviePageClientProps {
   movie: any;
-  displayYear: number;
+  displayYear: number | null;
   totalDuration: number;
   genres: string[];
 }

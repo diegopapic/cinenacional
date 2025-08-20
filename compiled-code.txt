@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 7a6f581eb3fa81d85e4187e2c1417c993bf919a2
-// Fecha: 2025-08-20T23:52:45.272Z
+// Commit: faaf343a3ec299024782b382c249a0c762d6466e
+// Fecha: 2025-08-20T23:57:10.564Z
 // ============================================
 
 
@@ -9924,7 +9924,7 @@ import { SimilarMovies } from "@/components/movies/SimilarMovies";
 
 interface MoviePageClientProps {
   movie: any;
-  displayYear: number;
+  displayYear: number | null;
   totalDuration: number;
   genres: string[];
 }
@@ -19378,7 +19378,7 @@ import { useEffect } from 'react';
 
 interface MovieHeroProps {
   title: string;
-  year: number;
+  year: number | null;
   duration: number;
   genres: string[];
   gallery: string[];
@@ -19492,7 +19492,7 @@ export function MovieHero({ title, year, duration, genres, rating, gallery }: Mo
           </h1>
           <div className="flex flex-wrap items-center gap-4 text-gray-200 mt-4">
             <span className="bg-cine-accent/90 px-3 py-1 rounded-full text-sm font-medium text-white backdrop-blur-sm">
-              {year}
+              {year && <span>{year}</span>}
             </span>
             <span className="drop-shadow-lg">{duration} min</span>
             <span className="drop-shadow-lg">{formatGenres(genres)}</span>
