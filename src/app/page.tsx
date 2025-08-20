@@ -1,4 +1,4 @@
-// src/app/page.tsx - Versión final corregida
+// src/app/page.tsx - Versión final funcionando
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,14 +13,14 @@ interface MovieWithRelease {
   releaseMonth: number | null;
   releaseDay: number | null;
   posterUrl: string | null;
-  genres: Array<{ 
+  genres: Array<{
     genre?: { id: number; name: string };
     id?: number;
     name?: string;
   }>;
-  crew?: Array<{ 
-    person: { 
-      id: number; 
+  crew?: Array<{
+    person: {
+      id: number;
       firstName?: string;
       lastName?: string;
     };
@@ -34,6 +34,10 @@ export default function HomePage() {
   // Estado para últimos estrenos
   const [ultimosEstrenos, setUltimosEstrenos] = useState<MovieWithRelease[]>([]);
   const [loadingEstrenos, setLoadingEstrenos] = useState(true);
+
+  // Estado para próximos estrenos
+  const [proximosEstrenos, setProximosEstrenos] = useState<MovieWithRelease[]>([]);
+  const [loadingProximos, setLoadingProximos] = useState(true);
 
   // Películas para el hero rotativo (mantener estático por ahora)
   const peliculasHero = [
@@ -51,7 +55,7 @@ export default function HomePage() {
     const fetchUltimosEstrenos = async () => {
       try {
         setLoadingEstrenos(true);
-        
+
         // Obtener películas ordenadas por fecha de creación para tener las más recientes
         // Luego las filtraremos y ordenaremos por fecha de estreno
         const params = new URLSearchParams({
@@ -59,7 +63,7 @@ export default function HomePage() {
           sortBy: 'createdAt',
           sortOrder: 'desc'
         });
-        
+
         const response = await fetch('/api/movies?' + params);
 
         if (!response.ok) {
@@ -67,17 +71,36 @@ export default function HomePage() {
         }
 
         const data = await response.json();
-        
+
+        // Obtener fecha actual
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1; // getMonth() retorna 0-11
+        const currentDay = today.getDate();
+
         // Filtrar solo películas que tienen fecha COMPLETA de estreno (año, mes Y día)
-        let peliculasConFechaCompleta = data.movies?.filter((m: any) => 
-          m.releaseYear !== null && 
+        let peliculasConFechaCompleta = data.movies?.filter((m: any) => {
+        // Primero verificar que tiene fecha completa
+        const tieneFechaCompleta = 
+          m.releaseYear !== null &&
           m.releaseYear !== undefined &&
-          m.releaseMonth !== null && 
+          m.releaseMonth !== null &&
           m.releaseMonth !== undefined &&
-          m.releaseDay !== null && 
-          m.releaseDay !== undefined
-        ) || [];
+          m.releaseDay !== null &&
+          m.releaseDay !== undefined;
         
+        if (!tieneFechaCompleta) return false;
+        
+        // Luego verificar que no sea futura
+        const esFutura = 
+          m.releaseYear > currentYear ||
+          (m.releaseYear === currentYear && m.releaseMonth > currentMonth) ||
+          (m.releaseYear === currentYear && m.releaseMonth === currentMonth && m.releaseDay > currentDay);
+        
+        // Solo incluir si NO es futura (es decir, es pasada o de hoy)
+        return !esFutura;
+      }) || [];
+
         // Ordenar manualmente por fecha completa (año, mes, día) - más recientes primero
         peliculasConFechaCompleta.sort((a: any, b: any) => {
           // Primero comparar por año
@@ -123,10 +146,131 @@ export default function HomePage() {
     fetchUltimosEstrenos();
   }, []);
 
+  // Cargar próximos estrenos desde la base de datos
+  useEffect(() => {
+    const fetchProximosEstrenos = async () => {
+      try {
+        setLoadingProximos(true);
+
+        // Obtener las películas más recientes que probablemente tienen fechas futuras
+        const params = new URLSearchParams({
+          limit: '200', // Suficiente para encontrar películas futuras
+          sortBy: 'createdAt',
+          sortOrder: 'desc'
+        });
+
+        const response = await fetch('/api/movies?' + params);
+
+        if (!response.ok) {
+          throw new Error('Error al cargar los próximos estrenos');
+        }
+
+        const data = await response.json();
+
+        // Obtener fecha actual real
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1; // getMonth() retorna 0-11
+        const currentDay = today.getDate();
+
+        // Función para calcular la fecha efectiva de una película para comparación
+        const getEffectiveDate = (movie: any) => {
+          const year = movie.releaseYear;
+          if (!year) return null;
+
+          let month = movie.releaseMonth;
+          let day = movie.releaseDay;
+
+          // Si no hay mes, usar diciembre (último mes del año)
+          if (!month) {
+            month = 12;
+            day = 31;
+          }
+          // Si no hay día, usar el último día del mes
+          else if (!day) {
+            // Calcular el último día del mes
+            const lastDay = new Date(year, month, 0).getDate();
+            day = lastDay;
+          }
+
+          return { year, month, day };
+        };
+
+        // Filtrar películas que tienen año de estreno
+        const peliculasConAño = data.movies?.filter((m: any) =>
+          m.releaseYear !== null && m.releaseYear !== undefined
+        ) || [];
+
+        // Filtrar películas futuras (con cualquier tipo de fecha de estreno)
+        let peliculasFuturas = peliculasConAño.filter((m: any) => {
+          const effectiveDate = getEffectiveDate(m);
+          if (!effectiveDate) return false;
+
+          // Comparar si es futura respecto a la fecha actual
+          const isFuture =
+            effectiveDate.year > currentYear ||
+            (effectiveDate.year === currentYear && effectiveDate.month > currentMonth) ||
+            (effectiveDate.year === currentYear && effectiveDate.month === currentMonth && effectiveDate.day > currentDay);
+
+          return isFuture;
+        });
+
+        // Ordenar por fecha efectiva (más próximas primero)
+        peliculasFuturas.sort((a: any, b: any) => {
+          const dateA = getEffectiveDate(a);
+          const dateB = getEffectiveDate(b);
+
+          if (!dateA && !dateB) return 0;
+          if (!dateA) return 1;
+          if (!dateB) return -1;
+
+          // Comparar por año
+          if (dateA.year !== dateB.year) {
+            return dateA.year - dateB.year;
+          }
+          // Si el año es igual, comparar por mes
+          if (dateA.month !== dateB.month) {
+            return dateA.month - dateB.month;
+          }
+          // Si año y mes son iguales, comparar por día
+          return dateA.day - dateB.day;
+        });
+
+        // Tomar solo las primeras 6 películas futuras
+        const peliculasParaMostrar = peliculasFuturas.slice(0, 6);
+
+        // Obtener detalles completos para cada película (incluye crew)
+        const peliculasConDetalles = await Promise.all(
+          peliculasParaMostrar.map(async (movie: any) => {
+            try {
+              const detailResponse = await fetch(`/api/movies/${movie.id}`);
+              if (detailResponse.ok) {
+                return await detailResponse.json();
+              }
+              return movie;
+            } catch (error) {
+              console.error(`Error fetching details for movie ${movie.id}:`, error);
+              return movie;
+            }
+          })
+        );
+
+        setProximosEstrenos(peliculasConDetalles);
+      } catch (error) {
+        console.error('❌ Error fetching próximos estrenos:', error);
+        setProximosEstrenos([]);
+      } finally {
+        setLoadingProximos(false);
+      }
+    };
+
+    fetchProximosEstrenos();
+  }, []);
+
   // Función helper para formatear la fecha de estreno
   const formatearFechaEstreno = (movie: any): string => {
     if (!movie.releaseYear) return 'Sin fecha';
-    
+
     const partialDate = {
       year: movie.releaseYear,
       month: movie.releaseMonth,
@@ -140,24 +284,48 @@ export default function HomePage() {
     });
   };
 
+  // Función helper para formatear fecha futura (más amigable para próximos estrenos)
+  const formatearFechaProxima = (movie: any): string => {
+    if (!movie.releaseYear) return 'Fecha por confirmar';
+
+    // Si solo tiene año
+    if (!movie.releaseMonth) {
+      return movie.releaseYear.toString();
+    }
+
+    // Array de nombres de meses
+    const meses = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    // Si tiene mes pero no día
+    if (!movie.releaseDay) {
+      return `${meses[movie.releaseMonth - 1]} ${movie.releaseYear}`;
+    }
+
+    // Si tiene fecha completa
+    return `${movie.releaseDay} de ${meses[movie.releaseMonth - 1].toLowerCase()}`;
+  };
+
   // Función helper para obtener el director (buscar en crew por roleId = 2)
   const obtenerDirector = (movie: any): string => {
     if (movie.crew && movie.crew.length > 0) {
       // Buscar específicamente el roleId = 2 (Director)
       const director = movie.crew.find((c: any) => c.roleId === 2);
-      
+
       if (director && director.person) {
         // Construir el nombre completo desde firstName y lastName
         const firstName = director.person.firstName || '';
         const lastName = director.person.lastName || '';
         const fullName = `${firstName} ${lastName}`.trim();
-        
+
         if (fullName) {
           return fullName;
         }
       }
     }
-    
+
     return 'Director no especificado';
   };
 
@@ -167,7 +335,7 @@ export default function HomePage() {
       // Los géneros pueden venir de dos formas:
       // 1. Como array simple: [{id: 1, name: "Drama"}]
       // 2. Como relación: [{genre: {id: 1, name: "Drama"}}]
-      
+
       const genreNames = movie.genres.map((g: any) => {
         if (g.genre && g.genre.name) {
           return g.genre.name;
@@ -176,24 +344,14 @@ export default function HomePage() {
         }
         return null;
       }).filter(Boolean);
-      
+
       if (genreNames.length > 0) {
         return genreNames.join(', ');
       }
     }
-    
+
     return '';
   };
-
-  // Datos de ejemplo para otras secciones (mantener por ahora)
-  const proximosEstrenos = [
-    { id: 1, titulo: "Título de la Película", fecha: "15 de julio", director: "Director Nombre", genero: "Drama" },
-    { id: 2, titulo: "Otra Película", fecha: "22 de julio", director: "Otro Director", genero: "Comedia" },
-    { id: 3, titulo: "Película Esperada", fecha: "5 de agosto", director: "Director Conocido", genero: "Thriller" },
-    { id: 4, titulo: "Film Independiente", fecha: "12 de agosto", director: "Director Emergente", genero: "Drama social" },
-    { id: 5, titulo: "Película de Acción", fecha: "19 de agosto", director: "Director Acción", genero: "Acción" },
-    { id: 6, titulo: "Documental", fecha: "26 de agosto", director: "Documentalista", genero: "Documental" },
-  ];
 
   const obituarios = [
     { id: 1, nombre: "Luis Brandoni", rol: "Actor", edad: "85 años", fecha: "5 de junio", imagen: "/images/persons/luis-brandoni.jpg" },
@@ -231,15 +389,15 @@ export default function HomePage() {
       const img = document.querySelector('.hero-image') as HTMLImageElement;
       const container = document.querySelector('.hero-image-wrapper') as HTMLElement;
       const gradientsContainer = document.querySelector('.hero-gradients-container') as HTMLElement;
-      
+
       if (img && container && gradientsContainer && img.complete) {
         const containerWidth = container.offsetWidth;
         const containerHeight = container.offsetHeight;
         const imgAspectRatio = img.naturalWidth / img.naturalHeight;
         const containerAspectRatio = containerWidth / containerHeight;
-        
+
         let displayWidth, displayHeight;
-        
+
         if (imgAspectRatio > containerAspectRatio) {
           // Imagen más ancha - se ajusta por ancho
           displayWidth = containerWidth;
@@ -249,7 +407,7 @@ export default function HomePage() {
           displayHeight = containerHeight;
           displayWidth = containerHeight * imgAspectRatio;
         }
-        
+
         // Centrar y ajustar el contenedor de gradientes
         gradientsContainer.style.width = `${displayWidth}px`;
         gradientsContainer.style.height = `${displayHeight}px`;
@@ -264,7 +422,7 @@ export default function HomePage() {
       img.addEventListener('load', adjustGradients);
       // También ajustar al cambiar el tamaño de la ventana
       window.addEventListener('resize', adjustGradients);
-      
+
       // Ajustar inmediatamente si la imagen ya está cargada
       if (img.complete) {
         adjustGradients();
@@ -304,7 +462,7 @@ export default function HomePage() {
         <div className="hero-image-wrapper">
           {peliculaHeroActual && (
             <>
-              <img 
+              <img
                 src={peliculaHeroActual.imagen}
                 alt="Imagen destacada del cine argentino"
                 className="hero-image"
@@ -315,7 +473,7 @@ export default function HomePage() {
                 <div className="hero-gradient-right"></div>
                 <div className="hero-gradient-top"></div>
                 <div className="hero-gradient-bottom-inner"></div>
-                
+
                 {/* Epígrafe con título y año - dentro del contenedor de gradientes */}
                 <div className="absolute bottom-4 right-4 z-20">
                   <p className="text-xs text-gray-400 drop-shadow-lg">
@@ -326,7 +484,7 @@ export default function HomePage() {
             </>
           )}
         </div>
-        
+
         {/* Gradientes globales del contenedor */}
         <div className="hero-gradient-bottom"></div>
         <div className="hero-vignette"></div>
@@ -335,11 +493,11 @@ export default function HomePage() {
       {/* Main Content */}
       <div className="bg-cine-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          
+
           {/* Últimos Estrenos */}
           <section className="mb-12">
             <h2 className="serif-heading text-3xl mb-6 text-white">Últimos Estrenos</h2>
-            
+
             {loadingEstrenos ? (
               // Skeleton loader mientras carga
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -367,8 +525,8 @@ export default function HomePage() {
                   >
                     <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform poster-shadow relative">
                       {pelicula.posterUrl ? (
-                        <img 
-                          src={pelicula.posterUrl} 
+                        <img
+                          src={pelicula.posterUrl}
                           alt={pelicula.title}
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -380,7 +538,7 @@ export default function HomePage() {
                       ) : null}
                       <div className={`movie-placeholder w-full h-full ${pelicula.posterUrl ? 'hidden' : ''}`}>
                         <svg className="w-12 h-12 text-cine-accent mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
                         </svg>
                         <p className="text-xs text-gray-400">Afiche</p>
                       </div>
@@ -396,11 +554,11 @@ export default function HomePage() {
                 ))}
               </div>
             )}
-            
+
             {/* Botón Ver Más */}
             <div className="mt-6 text-center">
-              <Link 
-                href="/listados/peliculas" 
+              <Link
+                href="/listados/peliculas"
                 className="inline-block border border-cine-accent text-cine-accent hover:bg-cine-accent hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
               >
                 Ver más estrenos
@@ -408,40 +566,71 @@ export default function HomePage() {
             </div>
           </section>
 
-          {/* El resto del componente se mantiene igual... */}
           {/* Próximos Estrenos */}
           <section className="mb-12">
             <h2 className="serif-heading text-3xl mb-6 text-white">Próximos Estrenos</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {proximosEstrenos.map((pelicula) => (
-                <Link
-                  key={pelicula.id}
-                  href={`/pelicula/${pelicula.id}`}
-                  className="group cursor-pointer"
-                >
-                  <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform poster-shadow relative">
-                    <div className="movie-placeholder w-full h-full">
-                      <svg className="w-12 h-12 text-cine-accent mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/>
-                      </svg>
-                      <p className="text-xs text-gray-400">Afiche</p>
-                    </div>
-                    {/* Badge de fecha sobre el afiche */}
-                    <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white">
-                      {pelicula.fecha}
-                    </div>
+
+            {loadingProximos ? (
+              // Skeleton loader mientras carga
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {[...Array(6)].map((_, index) => (
+                  <div key={index} className="animate-pulse">
+                    <div className="aspect-[2/3] rounded-lg bg-gray-800 mb-2"></div>
+                    <div className="h-4 bg-gray-800 rounded mb-1"></div>
+                    <div className="h-3 bg-gray-800 rounded w-3/4"></div>
                   </div>
-                  <h3 className="font-medium text-sm text-white line-clamp-2">{pelicula.titulo}</h3>
-                  <p className="text-gray-400 text-xs">{pelicula.genero}</p>
-                  <p className="text-gray-400 text-xs">Dir: {pelicula.director}</p>
-                </Link>
-              ))}
-            </div>
-            
+                ))}
+              </div>
+            ) : proximosEstrenos.length === 0 ? (
+              // Mensaje si no hay películas futuras
+              <div className="text-center py-8">
+                <p className="text-gray-400">No hay próximos estrenos confirmados</p>
+              </div>
+            ) : (
+              // Grid de películas
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {proximosEstrenos.map((pelicula: any) => (
+                  <Link
+                    key={pelicula.id}
+                    href={`/peliculas/${pelicula.slug}`}
+                    className="group cursor-pointer"
+                  >
+                    <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform poster-shadow relative">
+                      {pelicula.posterUrl ? (
+                        <img
+                          src={pelicula.posterUrl}
+                          alt={pelicula.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Si la imagen falla, mostrar placeholder
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`movie-placeholder w-full h-full ${pelicula.posterUrl ? 'hidden' : ''}`}>
+                        <svg className="w-12 h-12 text-cine-accent mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                        </svg>
+                        <p className="text-xs text-gray-400">Afiche</p>
+                      </div>
+                      {/* Badge de fecha sobre el afiche */}
+                      <div className="absolute top-2 right-2 bg-blue-600/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white">
+                        {formatearFechaProxima(pelicula)}
+                      </div>
+                    </div>
+                    <h3 className="font-medium text-sm text-white line-clamp-2">{pelicula.title}</h3>
+                    <p className="text-gray-400 text-xs">{obtenerGeneros(pelicula)}</p>
+                    <p className="text-gray-400 text-xs">Dir: {obtenerDirector(pelicula)}</p>
+                  </Link>
+                ))}
+              </div>
+            )}
+
             {/* Botón Ver Más */}
             <div className="mt-6 text-center">
-              <Link 
-                href="/proximos-estrenos" 
+              <Link
+                href="/proximos-estrenos"
                 className="inline-block border border-cine-accent text-cine-accent hover:bg-cine-accent hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
               >
                 Ver más próximos estrenos
@@ -460,7 +649,7 @@ export default function HomePage() {
                     <div key={persona.id} className="flex items-center space-x-4 pb-4 border-b border-gray-700 last:border-0 last:pb-0">
                       <div className="w-24 h-24 rounded-full flex-shrink-0 person-placeholder">
                         <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                       </div>
                       <div className="flex-1">
@@ -474,8 +663,8 @@ export default function HomePage() {
               </div>
               {/* Botón Ver Más */}
               <div className="mt-6 text-center">
-                <Link 
-                  href="/obituarios" 
+                <Link
+                  href="/obituarios"
                   className="inline-block border border-cine-accent text-cine-accent hover:bg-cine-accent hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
                 >
                   Ver más obituarios
@@ -495,13 +684,13 @@ export default function HomePage() {
                         {item.tipo === "pelicula" ? (
                           <div className="w-16 h-24 rounded movie-placeholder">
                             <svg className="w-8 h-8 text-cine-accent opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
                             </svg>
                           </div>
                         ) : (
                           <div className="w-24 h-24 rounded-full person-placeholder">
                             <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                           </div>
                         )}
@@ -516,8 +705,8 @@ export default function HomePage() {
               </div>
               {/* Botón Ver Más */}
               <div className="mt-6 text-center">
-                <Link 
-                  href="/efemerides" 
+                <Link
+                  href="/efemerides"
                   className="inline-block border border-cine-accent text-cine-accent hover:bg-cine-accent hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
                 >
                   Ver más efemérides
@@ -531,15 +720,15 @@ export default function HomePage() {
             <h2 className="serif-heading text-3xl mb-6 text-white">Últimas Películas Ingresadas</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
               {ultimasPeliculas.map((pelicula) => (
-                <Link 
-                  key={pelicula.id} 
-                  href={`/pelicula/${pelicula.id}`} 
+                <Link
+                  key={pelicula.id}
+                  href={`/pelicula/${pelicula.id}`}
                   className="group cursor-pointer"
                 >
                   <div className="aspect-[2/3] rounded overflow-hidden mb-1 transform group-hover:scale-105 transition-transform">
                     <div className="placeholder-small w-full h-full">
                       <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
                       </svg>
                     </div>
                   </div>
@@ -561,7 +750,7 @@ export default function HomePage() {
                 >
                   <div className="w-24 h-24 mx-auto rounded-full overflow-hidden mb-2 person-placeholder">
                     <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
                   <h3 className="text-sm font-medium text-white group-hover:text-cine-accent transition-colors">{persona.nombre}</h3>
