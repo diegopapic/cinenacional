@@ -255,6 +255,11 @@
     "size": 0
   },
   {
+    "path": "PROJECT_DOCS v2.1.0.md",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/PROJECT_DOCS v2.1.0.md",
+    "size": 0
+  },
+  {
     "path": "PROJECT_DOCS.md",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/PROJECT_DOCS.md",
     "size": 0
@@ -390,6 +395,16 @@
     "size": 0
   },
   {
+    "path": "scripts/analyze-wp-crew-fields.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-crew-fields.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/analyze-wp-crew-structure.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-crew-structure.js",
+    "size": 0
+  },
+  {
     "path": "scripts/analyze-wp-estado.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-estado.js",
     "size": 0
@@ -410,6 +425,11 @@
     "size": 0
   },
   {
+    "path": "scripts/analyze-wp-movie-roles.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-movie-roles.js",
+    "size": 0
+  },
+  {
     "path": "scripts/analyze-wp-people.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-people.js",
     "size": 0
@@ -417,6 +437,16 @@
   {
     "path": "scripts/analyze-wp-person-dates.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-person-dates.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/analyze-wp-roles-storage.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-roles-storage.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/analyze-wp-roles.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/analyze-wp-roles.js",
     "size": 0
   },
   {
@@ -445,6 +475,16 @@
     "size": 0
   },
   {
+    "path": "scripts/check-movie-crew-fields.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-movie-crew-fields.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/check-roles-enum.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-roles-enum.js",
+    "size": 0
+  },
+  {
     "path": "scripts/check-supabase-locations-fixed.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-supabase-locations-fixed.js",
     "size": 0
@@ -465,6 +505,11 @@
     "size": 0
   },
   {
+    "path": "scripts/check-wp-movie-crew.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-wp-movie-crew.js",
+    "size": 0
+  },
+  {
     "path": "scripts/compile-project-code.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/compile-project-code.js",
     "size": 0
@@ -480,8 +525,23 @@
     "size": 0
   },
   {
+    "path": "scripts/create-missing-roles.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/create-missing-roles.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/crew-omitted-diagnosis.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/crew-omitted-diagnosis.json",
+    "size": 0
+  },
+  {
     "path": "scripts/debug-dates.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/debug-dates.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/debug-tiempo-revancha.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/debug-tiempo-revancha.js",
     "size": 0
   },
   {
@@ -497,6 +557,21 @@
   {
     "path": "scripts/diagnose-adolescencia.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/diagnose-adolescencia.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/diagnose-crew-omitted.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/diagnose-crew-omitted.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/diagnose-omitted-detailed.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/diagnose-omitted-detailed.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/discover-crew-fields.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/discover-crew-fields.js",
     "size": 0
   },
   {
@@ -640,6 +715,11 @@
     "size": 0
   },
   {
+    "path": "scripts/migration/crew-conflicts.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/crew-conflicts.json",
+    "size": 0
+  },
+  {
     "path": "scripts/migration/migrate-person-dates-supabase.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-person-dates-supabase.js",
     "size": 0
@@ -655,8 +735,53 @@
     "size": 0
   },
   {
+    "path": "scripts/migration/migrate-wp-cast-import-priority.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-cast-import-priority.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/migration/migrate-wp-crew-complete.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-crew-complete.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/migration/migrate-wp-crew-import-priority.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-crew-import-priority.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/migration/migrate-wp-crew-supabase-final.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-crew-supabase-final.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/migration/migrate-wp-crew-supabase.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-crew-supabase.js",
+    "size": 0
+  },
+  {
     "path": "scripts/migration/migrate-wp-people-to-supabase.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-people-to-supabase.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/migration/migrate-wp-roles-only.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-roles-only.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/migration/migrate-wp-roles-supabase-final.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-roles-supabase-final.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/migration/migrate-wp-roles-supabase.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-roles-supabase.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/migration/roles-not-found.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/roles-not-found.json",
     "size": 0
   },
   {
