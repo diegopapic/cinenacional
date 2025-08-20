@@ -1,3 +1,5 @@
+import { Efemeride } from '@/types/home.types';
+
 export interface EfemerideData {
   tipo: 'pelicula' | 'persona';
   fecha: Date;

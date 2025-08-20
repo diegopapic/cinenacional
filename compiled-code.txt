@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 0938038ccfe2823b8cc6bf29a99bf956ae195ae1
-// Fecha: 2025-08-20T23:22:47.464Z
+// Commit: 6eaf9b95ae170b014f55c94156c5449ace1da976
+// Fecha: 2025-08-20T23:25:16.500Z
 // ============================================
 
 
@@ -23436,6 +23436,8 @@ export function isEmptyDate(partial: PartialDate): boolean {
 // ==================================================
 // src/lib/utils/efemerides.ts
 // ==================================================
+import { Efemeride } from '@/types/home.types';
+
 export interface EfemerideData {
   tipo: 'pelicula' | 'persona';
   fecha: Date;
