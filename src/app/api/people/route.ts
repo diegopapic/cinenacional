@@ -11,16 +11,122 @@ export async function GET(request: NextRequest) {
     const gender = searchParams.get('gender');
     const isActive = searchParams.get('isActive');
     const hasLinks = searchParams.get('hasLinks');
-    
+
     // NUEVO: Parámetros para obituarios y ordenamiento
     const hasDeathDate = searchParams.get('hasDeathDate');
-    const sortBy = searchParams.get('sortBy') || 'lastName';
+    const sortBy = searchParams.get('sortBy') || 'last_name';
     const sortOrder = searchParams.get('sortOrder') || 'asc';
-    
+
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
-    // Construir where clause
+    // NUEVO: Si es una búsqueda para autocomplete (limit <= 10) y hay search term
+    // usar raw SQL para búsqueda concatenada
+    if (search && limit <= 10) {
+      const searchQuery = search.toLowerCase().trim();
+
+      // Debug log
+      console.log('Search query:', searchQuery);
+      console.log('Limit:', limit);
+      console.log('isActive param:', isActive);
+
+      try {
+        // Simplificar la query para ver si el problema es con isActive
+        const people = await prisma.$queryRaw<Array<{
+          id: number;
+          slug: string;
+          first_name: string | null;
+          last_name: string | null;
+          real_name: string | null;
+          photo_url: string | null;
+        }>>`
+          SELECT 
+            id,
+            slug,
+            "first_name",
+            "last_name",
+            "real_name",
+            "photo_url"
+          FROM people
+          WHERE 
+            (
+              -- Búsqueda en campos individuales
+              LOWER("first_name") LIKE ${`%${searchQuery}%`}
+              OR LOWER("last_name") LIKE ${`%${searchQuery}%`}
+              OR LOWER("real_name") LIKE ${`%${searchQuery}%`}
+              -- BÚSQUEDA CONCATENADA con || (operador de PostgreSQL)
+              OR LOWER(COALESCE("first_name", '') || ' ' || COALESCE("last_name", '')) LIKE ${`%${searchQuery}%`}
+              -- También buscar last_name, first_name por si buscan al revés
+              OR LOWER(COALESCE("last_name", '') || ' ' || COALESCE("first_name", '')) LIKE ${`%${searchQuery}%`}
+            )
+          ORDER BY 
+            -- Priorizar coincidencias exactas
+            CASE 
+              WHEN LOWER(COALESCE("first_name", '') || ' ' || COALESCE("last_name", '')) = ${searchQuery} THEN 1
+              WHEN LOWER("first_name") = ${searchQuery} OR LOWER("last_name") = ${searchQuery} THEN 2
+              WHEN LOWER(COALESCE("first_name", '') || ' ' || COALESCE("last_name", '')) LIKE ${`${searchQuery}%`} THEN 3
+              ELSE 4
+            END,
+            "last_name",
+            "first_name"
+          LIMIT ${limit}
+        `;
+
+        console.log('Found people:', people.length);
+        console.log('First person raw data:', people[0]);
+
+        // Formatear respuesta para autocomplete
+        const formattedPeople = people.map(person => ({
+          id: person.id,
+          slug: person.slug,
+          name: [person.first_name, person.last_name].filter(Boolean).join(' ') || person.real_name || 'Sin nombre',
+          firstName: person.first_name,
+          lastName: person.last_name,
+          photoUrl: person.photo_url
+        }));
+console.log('First person formatted:', formattedPeople[0]);
+console.log('Searching for "miguel k" should find:', formattedPeople.filter(p => 
+  p.name.toLowerCase().includes('miguel') && p.name.toLowerCase().includes('k')
+));
+        // Para búsquedas de autocomplete, retornar array simple
+        return NextResponse.json(formattedPeople);
+
+      } catch (sqlError) {
+        console.error('SQL Error:', sqlError);
+        // Si falla el SQL, intentar con Prisma normal
+        const people = await prisma.person.findMany({
+          where: {
+            OR: [
+              { firstName: { contains: search, mode: 'insensitive' } },
+              { lastName: { contains: search, mode: 'insensitive' } },
+              { realName: { contains: search, mode: 'insensitive' } },
+            ]
+          },
+          select: {
+            id: true,
+            slug: true,
+            firstName: true,
+            lastName: true,
+            realName: true,
+            photoUrl: true
+          },
+          take: limit
+        });
+
+        const formattedPeople = people.map(person => ({
+          id: person.id,
+          slug: person.slug,
+          name: [person.firstName, person.lastName].filter(Boolean).join(' ') || person.realName || 'Sin nombre',
+          firstName: person.firstName,
+          lastName: person.lastName,
+          photoUrl: person.photoUrl
+        }));
+
+        return NextResponse.json(formattedPeople);
+      }
+    }
+
+    // Para listados normales con paginación, usar el código existente
     const where: any = {};
 
     if (search) {
@@ -52,7 +158,7 @@ export async function GET(request: NextRequest) {
 
     // Construir orderBy dinámicamente
     let orderBy: any = {};
-    
+
     if (sortBy === 'deathDate') {
       // Ordenar por fecha de muerte (año, mes, día)
       orderBy = [
