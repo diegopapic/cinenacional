@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { calcularAniosDesde, formatearEfemeride, EfemerideData } from '@/lib/utils/efemerides';
+import { Efemeride } from '@/types/home.types';
 
 export async function GET(request: NextRequest) {
   try {

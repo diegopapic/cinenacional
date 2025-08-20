@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: c1db8b40066442837558ca8ba4ecfc6f95415855
-// Fecha: 2025-08-20T23:15:43.628Z
+// Commit: 9ca2c264f5ddca60524e6dcd8228e3fafde88c60
+// Fecha: 2025-08-20T23:18:28.267Z
 // ============================================
 
 
@@ -4390,6 +4390,7 @@ export async function DELETE(
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { calcularAniosDesde, formatearEfemeride, EfemerideData } from '@/lib/utils/efemerides';
+import { Efemeride } from '@/types/home.types';
 
 export async function GET(request: NextRequest) {
   try {
