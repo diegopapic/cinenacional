@@ -255,6 +255,11 @@
     "size": 0
   },
   {
+    "path": "PROJECT_DOCS v2.2.0.md",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/PROJECT_DOCS v2.2.0.md",
+    "size": 0
+  },
+  {
     "path": "PROJECT_DOCS.md",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/PROJECT_DOCS.md",
     "size": 0
@@ -1280,6 +1285,51 @@
     "size": 0
   },
   {
+    "path": "src/components/home/EfemeridesSection.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/EfemeridesSection.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/home/ErrorMessage.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/ErrorMessage.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/home/HeroSection.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/HeroSection.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/home/MovieCard.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/MovieCard.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/home/MoviesGrid.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/MoviesGrid.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/home/ObituariosSection.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/ObituariosSection.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/home/RecentMoviesSection.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/RecentMoviesSection.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/home/RecentPeopleSection.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/RecentPeopleSection.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/components/home/SkeletonLoader.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/SkeletonLoader.tsx",
+    "size": 0
+  },
+  {
     "path": "src/components/layout/Footer.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Footer.tsx",
     "size": 0
@@ -1340,6 +1390,11 @@
     "size": 0
   },
   {
+    "path": "src/constants/homeData.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/constants/homeData.ts",
+    "size": 0
+  },
+  {
     "path": "src/contexts/MovieModalContext.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/contexts/MovieModalContext.tsx",
     "size": 0
@@ -1347,6 +1402,11 @@
   {
     "path": "src/hooks/useDebounce.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/useDebounce.ts",
+    "size": 0
+  },
+  {
+    "path": "src/hooks/useHomeData.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/useHomeData.ts",
     "size": 0
   },
   {
@@ -1467,6 +1527,16 @@
   {
     "path": "src/services/roles.service.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/roles.service.ts",
+    "size": 0
+  },
+  {
+    "path": "src/types/home.types.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/types/home.types.ts",
+    "size": 0
+  },
+  {
+    "path": "src/utils/movieHelpers.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/utils/movieHelpers.ts",
     "size": 0
   },
   {

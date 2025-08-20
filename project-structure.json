@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-20T19:57:52.393Z",
+  "timestamp": "2025-08-20T21:14:11.013Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "a3c38ccf8ab4af403dd491c6cceabe2db284b35c",
+  "commit": "f01c0162ff5b35997b05e22da4d848dd9c4f8abf",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
@@ -87,6 +87,7 @@
     "project-structure.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/project-structure.json",
     "PROJECT_DOCS v2.0.0.md": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/PROJECT_DOCS v2.0.0.md",
     "PROJECT_DOCS v2.1.0.md": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/PROJECT_DOCS v2.1.0.md",
+    "PROJECT_DOCS v2.2.0.md": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/PROJECT_DOCS v2.2.0.md",
     "PROJECT_DOCS.md": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/PROJECT_DOCS.md",
     "public": {
       "file.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/file.svg",
@@ -434,6 +435,17 @@
           "ScreeningVenueSelector.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/ScreeningVenueSelector.tsx",
           "ThemeSelector.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/ThemeSelector.tsx"
         },
+        "home": {
+          "EfemeridesSection.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/EfemeridesSection.tsx",
+          "ErrorMessage.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/ErrorMessage.tsx",
+          "HeroSection.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/HeroSection.tsx",
+          "MovieCard.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/MovieCard.tsx",
+          "MoviesGrid.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/MoviesGrid.tsx",
+          "ObituariosSection.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/ObituariosSection.tsx",
+          "RecentMoviesSection.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/RecentMoviesSection.tsx",
+          "RecentPeopleSection.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/RecentPeopleSection.tsx",
+          "SkeletonLoader.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/SkeletonLoader.tsx"
+        },
         "layout": {
           "Footer.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Footer.tsx",
           "Header.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Header.tsx"
@@ -451,11 +463,15 @@
           "TrailerSection.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/TrailerSection.tsx"
         }
       },
+      "constants": {
+        "homeData.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/constants/homeData.ts"
+      },
       "contexts": {
         "MovieModalContext.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/contexts/MovieModalContext.tsx"
       },
       "hooks": {
         "useDebounce.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/useDebounce.ts",
+        "useHomeData.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/useHomeData.ts",
         "useMovieForm.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/useMovieForm.ts",
         "usePeople.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/usePeople.ts",
         "usePeopleForm.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/usePeopleForm.ts",
@@ -494,6 +510,12 @@
         "movies.service.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/movies.service.ts",
         "people.service.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/people.service.ts",
         "roles.service.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/roles.service.ts"
+      },
+      "types": {
+        "home.types.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/types/home.types.ts"
+      },
+      "utils": {
+        "movieHelpers.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/utils/movieHelpers.ts"
       }
     },
     "tailwind.config.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/tailwind.config.js",
