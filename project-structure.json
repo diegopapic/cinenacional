@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-20T19:42:16.525Z",
+  "timestamp": "2025-08-20T19:57:52.393Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "b9b866c67a4f6ed9cf0f504da3d6b5a484e4e7e2",
+  "commit": "a3c38ccf8ab4af403dd491c6cceabe2db284b35c",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
@@ -45,7 +45,6 @@
     "next-env.d.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next-env.d.ts",
     "next.config": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config",
     "next.config.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/next.config.js",
-    "nul": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/nul",
     "package.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/package.json",
     "postcss.config.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.js",
     "postcss.config.mjs": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.mjs",
