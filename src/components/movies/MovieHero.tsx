@@ -7,7 +7,6 @@ interface MovieHeroProps {
   year: number;
   duration: number;
   genres: string[];
-  rating: number;
   gallery: string[];
 }
 
