@@ -43,22 +43,3 @@ export const PELICULAS_HERO: HeroMovie[] = [
     imagen: "https://images.unsplash.com/photo-1556388158-158ea5ccacbd?w=1024&fit=crop&auto=format" 
   }
 ];
-
-// OBITUARIOS eliminados - ahora vienen de la base de datos
-// Los obituarios se obtienen dinámicamente desde la API /api/people
-// con el filtro hasDeathDate=true ordenados por fecha de muerte más reciente
-
-export const EFEMERIDES: Efemeride[] = [
-  { 
-    hace: "Hace 40 años", 
-    evento: 'se estrenaba "Camila" de María Luisa Bemberg', 
-    tipo: "pelicula", 
-    imagen: "/images/movies/camila.jpg" 
-  },
-  { 
-    hace: "Hace 50 años", 
-    evento: "nacía el director Juan José Campanella", 
-    tipo: "persona", 
-    imagen: "/images/persons/juan-jose-campanella.jpg" 
-  }
-];

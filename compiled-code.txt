@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 9ca2c264f5ddca60524e6dcd8228e3fafde88c60
-// Fecha: 2025-08-20T23:18:28.267Z
+// Commit: 0938038ccfe2823b8cc6bf29a99bf956ae195ae1
+// Fecha: 2025-08-20T23:22:47.464Z
 // ============================================
 
 
@@ -9695,24 +9695,6 @@ const PELICULAS_HERO: HeroMovie[] = [
   { id: 5, titulo: "Nueve Reinas", año: "2000", genero: "Thriller", director: "Fabián Bielinsky", imagen: "https://images.unsplash.com/photo-1556388158-158ea5ccacbd?w=1024&fit=crop&auto=format" },
 ];
 
-// Efemérides de fallback mientras no tengamos datos reales
-const EFEMERIDES_FALLBACK: Efemeride[] = [
-  { 
-    id: 'fallback-1',
-    hace: "Hace 40 años", 
-    evento: 'se estrenaba "Camila" de María Luisa Bemberg', 
-    tipo: "pelicula",
-    fecha: new Date()
-  },
-  { 
-    id: 'fallback-2',
-    hace: "Hace 50 años", 
-    evento: "nacía el director Juan José Campanella", 
-    tipo: "persona",
-    fecha: new Date()
-  },
-];
-
 export default function HomePage() {
   const {
     ultimosEstrenos,
@@ -9807,17 +9789,12 @@ export default function HomePage() {
         const data = await response.json();
         console.log('Efemérides recibidas:', data);
         
-        if (data.efemerides && data.efemerides.length > 0) {
-          setEfemerides(data.efemerides);
-        } else {
-          // Si no hay efemérides, usar las de fallback
-          console.log('No hay efemérides para hoy, usando fallback');
-          setEfemerides(EFEMERIDES_FALLBACK);
-        }
+        // Solo usar los datos recibidos, sin fallback
+        setEfemerides(data.efemerides || []);
       } catch (error) {
         console.error('Error fetching efemérides:', error);
-        // En caso de error, usar las efemérides de fallback
-        setEfemerides(EFEMERIDES_FALLBACK);
+        // En caso de error, dejar vacío
+        setEfemerides([]);
       } finally {
         setLoadingEfemerides(false);
       }
@@ -17811,7 +17788,6 @@ export function ThemeSelector({
 // src/components/home/EfemeridesSection.tsx
 // ==================================================
 import Link from 'next/link';
-import Image from 'next/image';
 import { Efemeride } from '@/types/home.types';
 
 interface EfemeridesSectionProps {
@@ -17819,39 +17795,41 @@ interface EfemeridesSectionProps {
 }
 
 export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps) {
-  if (!efemerides || efemerides.length === 0) {
-    return null; // No mostrar la sección si no hay efemérides
-  }
-
   return (
     <section>
       <h2 className="serif-heading text-3xl mb-6 text-white">Efemérides del Día</h2>
       <div className="glass-effect rounded-lg p-6">
-        <div className="space-y-4">
-          {efemerides.map((item) => (
-            <div key={item.id} className="flex items-center space-x-4 pb-4 border-b border-gray-700 last:border-0 last:pb-0">
-              <div className="w-24 h-24 flex items-center justify-center flex-shrink-0">
-                {item.tipo === "pelicula" ? (
-                  <div className="w-16 h-24 rounded movie-placeholder">
-                    <svg className="w-8 h-8 text-cine-accent opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
-                    </svg>
-                  </div>
-                ) : (
-                  <div className="w-24 h-24 rounded-full person-placeholder">
-                    <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                )}
+        {efemerides.length > 0 ? (
+          <div className="space-y-4">
+            {efemerides.map((item) => (
+              <div key={item.id} className="flex items-center space-x-4 pb-4 border-b border-gray-700 last:border-0 last:pb-0">
+                <div className="w-24 h-24 flex items-center justify-center flex-shrink-0">
+                  {item.tipo === "pelicula" ? (
+                    <div className="w-16 h-24 rounded movie-placeholder">
+                      <svg className="w-8 h-8 text-cine-accent opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                      </svg>
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 rounded-full person-placeholder">
+                      <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium text-cine-accent text-lg">{item.hace}</h3>
+                  <p className="text-sm mt-1 text-gray-300">... {item.evento}</p>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-medium text-cine-accent text-lg">{item.hace}</h3>
-                <p className="text-sm mt-1 text-gray-300">... {item.evento}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-400">No hay efemérides para la fecha</p>
+          </div>
+        )}
       </div>
       <div className="mt-6 text-center">
         <Link
@@ -19871,25 +19849,6 @@ export const PELICULAS_HERO: HeroMovie[] = [
     genero: "Thriller", 
     director: "Fabián Bielinsky", 
     imagen: "https://images.unsplash.com/photo-1556388158-158ea5ccacbd?w=1024&fit=crop&auto=format" 
-  }
-];
-
-// OBITUARIOS eliminados - ahora vienen de la base de datos
-// Los obituarios se obtienen dinámicamente desde la API /api/people
-// con el filtro hasDeathDate=true ordenados por fecha de muerte más reciente
-
-export const EFEMERIDES: Efemeride[] = [
-  { 
-    hace: "Hace 40 años", 
-    evento: 'se estrenaba "Camila" de María Luisa Bemberg', 
-    tipo: "pelicula", 
-    imagen: "/images/movies/camila.jpg" 
-  },
-  { 
-    hace: "Hace 50 años", 
-    evento: "nacía el director Juan José Campanella", 
-    tipo: "persona", 
-    imagen: "/images/persons/juan-jose-campanella.jpg" 
   }
 ];
 
