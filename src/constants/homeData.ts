@@ -1,5 +1,5 @@
 // src/constants/homeData.ts
-import { HeroMovie, Obituario, Efemeride } from '@/types/home.types';
+import { HeroMovie, Efemeride } from '@/types/home.types';
 
 export const PELICULAS_HERO: HeroMovie[] = [
   { 
@@ -44,24 +44,9 @@ export const PELICULAS_HERO: HeroMovie[] = [
   }
 ];
 
-export const OBITUARIOS: Obituario[] = [
-  { 
-    id: 1, 
-    nombre: "Luis Brandoni", 
-    rol: "Actor", 
-    edad: "85 años", 
-    fecha: "5 de junio", 
-    imagen: "/images/persons/luis-brandoni.jpg" 
-  },
-  { 
-    id: 2, 
-    nombre: "María Vaner", 
-    rol: "Actriz", 
-    edad: "90 años", 
-    fecha: "28 de mayo", 
-    imagen: "/images/persons/maria-vaner.jpg" 
-  }
-];
+// OBITUARIOS eliminados - ahora vienen de la base de datos
+// Los obituarios se obtienen dinámicamente desde la API /api/people
+// con el filtro hasDeathDate=true ordenados por fecha de muerte más reciente
 
 export const EFEMERIDES: Efemeride[] = [
   { 
