@@ -9,8 +9,9 @@ import RecentPeopleSection from '@/components/home/RecentPeopleSection';
 import ObituariosSection from '@/components/home/ObituariosSection';
 import EfemeridesSection from '@/components/home/EfemeridesSection';
 import ErrorMessage from '@/components/home/ErrorMessage';
-import { HeroMovie, Obituario, Efemeride } from '@/types/home.types';
+import { HeroMovie, Efemeride } from '@/types/home.types';
 import { formatPartialDate } from '@/lib/shared/dateUtils';
+import { useState, useEffect } from 'react';
 
 // Datos estáticos (mover a constants/homeData.ts)
 const PELICULAS_HERO: HeroMovie[] = [
@@ -19,11 +20,6 @@ const PELICULAS_HERO: HeroMovie[] = [
   { id: 3, titulo: "Argentina, 1985", año: "2022", genero: "Drama histórico", director: "Santiago Mitre", imagen: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1024&fit=crop&auto=format" },
   { id: 4, titulo: "La Ciénaga", año: "2001", genero: "Drama", director: "Lucrecia Martel", imagen: "https://images.unsplash.com/photo-1489599328131-cdd7553e2ad1?w=1024&fit=crop&auto=format" },
   { id: 5, titulo: "Nueve Reinas", año: "2000", genero: "Thriller", director: "Fabián Bielinsky", imagen: "https://images.unsplash.com/photo-1556388158-158ea5ccacbd?w=1024&fit=crop&auto=format" },
-];
-
-const OBITUARIOS: Obituario[] = [
-  { id: 1, nombre: "Luis Brandoni", rol: "Actor", edad: "85 años", fecha: "5 de junio", imagen: "/images/persons/luis-brandoni.jpg" },
-  { id: 2, nombre: "María Vaner", rol: "Actriz", edad: "90 años", fecha: "28 de mayo", imagen: "/images/persons/maria-vaner.jpg" },
 ];
 
 const EFEMERIDES: Efemeride[] = [
@@ -43,6 +39,64 @@ export default function HomePage() {
     error,
     retry
   } = useHomeData();
+
+  const [obituarios, setObituarios] = useState<any[]>([]);
+  const [loadingObituarios, setLoadingObituarios] = useState(true);
+
+  // Función para calcular fecha efectiva de personas
+  const calcularFechaEfectivaPersona = (person: any, type: 'birth' | 'death') => {
+    const prefix = type === 'birth' ? 'birth' : 'death';
+    const year = person[`${prefix}Year`];
+    const month = person[`${prefix}Month`] || 12;
+    const day = person[`${prefix}Day`] || new Date(year, month, 0).getDate(); // Último día del mes
+    
+    return new Date(year, month - 1, day);
+  };
+
+  // Fetch obituarios
+  useEffect(() => {
+    const fetchObituarios = async () => {
+      try {
+        setLoadingObituarios(true);
+        
+        // Obtener personas con fecha de muerte más reciente
+        const params = {
+          limit: '50',
+          hasDeathDate: 'true',
+          sortBy: 'deathDate',
+          sortOrder: 'desc'
+        };
+        
+        const response = await fetch(`/api/people?${new URLSearchParams(params)}`);
+        
+        if (!response.ok) {
+          throw new Error('Error al cargar obituarios');
+        }
+        
+        const data = await response.json();
+        
+        // Filtrar personas con fecha de muerte y ordenar por fecha más reciente
+        const personasConFecha = data.data.filter((person: any) => person.deathYear);
+        
+        // Ordenar por fecha de muerte más reciente considerando fechas parciales
+        const personasOrdenadas = personasConFecha.sort((a: any, b: any) => {
+          const dateA = calcularFechaEfectivaPersona(a, 'death');
+          const dateB = calcularFechaEfectivaPersona(b, 'death');
+          return dateB.getTime() - dateA.getTime();
+        });
+        
+        // Tomar solo las 2 más recientes
+        setObituarios(personasOrdenadas.slice(0, 2));
+      } catch (error) {
+        console.error('Error fetching obituarios:', error);
+        setObituarios([]);
+      } finally {
+        setLoadingObituarios(false);
+      }
+    };
+
+    fetchObituarios();
+  }, []);
 
   // Formateador para fechas pasadas (últimos estrenos)
   const formatearFechaEstreno = (movie: any): string => {
@@ -121,7 +175,10 @@ export default function HomePage() {
 
           {/* Grid de Obituarios y Efemérides */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-            <ObituariosSection obituarios={OBITUARIOS} />
+            <ObituariosSection 
+              obituarios={obituarios} 
+              loading={loadingObituarios}
+            />
             <EfemeridesSection efemerides={EFEMERIDES} />
           </div>
 

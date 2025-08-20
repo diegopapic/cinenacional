@@ -35,11 +35,21 @@ export interface HeroMovie {
 
 export interface Obituario {
   id: number;
-  nombre: string;
-  rol: string;
-  edad: string;
-  fecha: string;
-  imagen: string;
+  slug: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  birthYear?: number | null;
+  birthMonth?: number | null;
+  birthDay?: number | null;
+  deathYear?: number | null;
+  deathMonth?: number | null;
+  deathDay?: number | null;
+  photoUrl?: string | null;
+  _count?: {
+    links: number;
+    castRoles: number;
+    crewRoles: number;
+  };
 }
 
 export interface Efemeride {
