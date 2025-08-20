@@ -1,5 +1,5 @@
-// src/components/home/EfemeridesSection.tsx
 import Link from 'next/link';
+import Image from 'next/image';
 import { Efemeride } from '@/types/home.types';
 
 interface EfemeridesSectionProps {
@@ -7,13 +7,17 @@ interface EfemeridesSectionProps {
 }
 
 export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps) {
+  if (!efemerides || efemerides.length === 0) {
+    return null; // No mostrar la sección si no hay efemérides
+  }
+
   return (
     <section>
       <h2 className="serif-heading text-3xl mb-6 text-white">Efemérides del Día</h2>
       <div className="glass-effect rounded-lg p-6">
         <div className="space-y-4">
-          {efemerides.map((item, index) => (
-            <div key={index} className="flex items-center space-x-4 pb-4 border-b border-gray-700 last:border-0 last:pb-0">
+          {efemerides.map((item) => (
+            <div key={item.id} className="flex items-center space-x-4 pb-4 border-b border-gray-700 last:border-0 last:pb-0">
               <div className="w-24 h-24 flex items-center justify-center flex-shrink-0">
                 {item.tipo === "pelicula" ? (
                   <div className="w-16 h-24 rounded movie-placeholder">

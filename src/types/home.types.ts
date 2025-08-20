@@ -53,10 +53,14 @@ export interface Obituario {
 }
 
 export interface Efemeride {
-  hace: string;
-  evento: string;
+  id: string; // Único para cada efeméride
   tipo: 'pelicula' | 'persona';
-  imagen: string;
+  hace: string; // "Hace 23 años"
+  evento: string; // "se estrenaba Nueve Reinas, de Fabián Bielinsky"
+  fecha: Date; // Para ordenamiento
+  slug?: string; // Para enlaces
+  posterUrl?: string; // Para películas
+  photoUrl?: string; // Para personas
 }
 
 export interface SimpleMovie {

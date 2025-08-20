@@ -22,9 +22,22 @@ const PELICULAS_HERO: HeroMovie[] = [
   { id: 5, titulo: "Nueve Reinas", año: "2000", genero: "Thriller", director: "Fabián Bielinsky", imagen: "https://images.unsplash.com/photo-1556388158-158ea5ccacbd?w=1024&fit=crop&auto=format" },
 ];
 
-const EFEMERIDES: Efemeride[] = [
-  { hace: "Hace 40 años", evento: 'se estrenaba "Camila" de María Luisa Bemberg', tipo: "pelicula", imagen: "/images/movies/camila.jpg" },
-  { hace: "Hace 50 años", evento: "nacía el director Juan José Campanella", tipo: "persona", imagen: "/images/persons/juan-jose-campanella.jpg" },
+// Efemérides de fallback mientras no tengamos datos reales
+const EFEMERIDES_FALLBACK: Efemeride[] = [
+  { 
+    id: 'fallback-1',
+    hace: "Hace 40 años", 
+    evento: 'se estrenaba "Camila" de María Luisa Bemberg', 
+    tipo: "pelicula",
+    fecha: new Date()
+  },
+  { 
+    id: 'fallback-2',
+    hace: "Hace 50 años", 
+    evento: "nacía el director Juan José Campanella", 
+    tipo: "persona",
+    fecha: new Date()
+  },
 ];
 
 export default function HomePage() {
@@ -42,6 +55,8 @@ export default function HomePage() {
 
   const [obituarios, setObituarios] = useState<any[]>([]);
   const [loadingObituarios, setLoadingObituarios] = useState(true);
+  const [efemerides, setEfemerides] = useState<Efemeride[]>([]);
+  const [loadingEfemerides, setLoadingEfemerides] = useState(true);
 
   // Función para calcular fecha efectiva de personas
   const calcularFechaEfectivaPersona = (person: any, type: 'birth' | 'death') => {
@@ -96,6 +111,46 @@ export default function HomePage() {
     };
 
     fetchObituarios();
+  }, []);
+
+  // Fetch efemérides
+  useEffect(() => {
+    const fetchEfemerides = async () => {
+      try {
+        setLoadingEfemerides(true);
+        
+        const response = await fetch('/api/efemerides');
+        
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        
+        if (!response.ok) {
+          // Intentar obtener el mensaje de error del servidor
+          const errorData = await response.text();
+          console.error('Error response:', errorData);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Efemérides recibidas:', data);
+        
+        if (data.efemerides && data.efemerides.length > 0) {
+          setEfemerides(data.efemerides);
+        } else {
+          // Si no hay efemérides, usar las de fallback
+          console.log('No hay efemérides para hoy, usando fallback');
+          setEfemerides(EFEMERIDES_FALLBACK);
+        }
+      } catch (error) {
+        console.error('Error fetching efemérides:', error);
+        // En caso de error, usar las efemérides de fallback
+        setEfemerides(EFEMERIDES_FALLBACK);
+      } finally {
+        setLoadingEfemerides(false);
+      }
+    };
+
+    fetchEfemerides();
   }, []);
 
   // Formateador para fechas pasadas (últimos estrenos)
@@ -179,7 +234,7 @@ export default function HomePage() {
               obituarios={obituarios} 
               loading={loadingObituarios}
             />
-            <EfemeridesSection efemerides={EFEMERIDES} />
+            <EfemeridesSection efemerides={efemerides} />
           </div>
 
           {/* Últimas Películas Ingresadas */}
