@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 99acc5ad0a76cf3ee934250769a6e6b0c8b5218f
-// Fecha: 2025-08-20T00:56:33.193Z
+// Commit: dea36cc455de7698a591b83a9280fa92674ef073
+// Fecha: 2025-08-20T17:24:23.087Z
 // ============================================
 
 
@@ -8919,13 +8919,44 @@ export default function PeopleListPage() {
 // ==================================================
 // src/app/page.tsx
 // ==================================================
+// src/app/page.tsx - Versión final corregida
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { formatPartialDate } from '@/lib/shared/dateUtils';
+
+interface MovieWithRelease {
+  id: number;
+  slug: string;
+  title: string;
+  releaseYear: number | null;
+  releaseMonth: number | null;
+  releaseDay: number | null;
+  posterUrl: string | null;
+  genres: Array<{ 
+    genre?: { id: number; name: string };
+    id?: number;
+    name?: string;
+  }>;
+  crew?: Array<{ 
+    person: { 
+      id: number; 
+      firstName?: string;
+      lastName?: string;
+    };
+    roleId?: number;
+    role?: string;
+    department?: string;
+  }>;
+}
 
 export default function HomePage() {
-  // Películas para el hero rotativo
+  // Estado para últimos estrenos
+  const [ultimosEstrenos, setUltimosEstrenos] = useState<MovieWithRelease[]>([]);
+  const [loadingEstrenos, setLoadingEstrenos] = useState(true);
+
+  // Películas para el hero rotativo (mantener estático por ahora)
   const peliculasHero = [
     { id: 1, titulo: "El Secreto de Sus Ojos", año: "2009", genero: "Drama, Thriller", director: "Juan José Campanella", imagen: "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=1024&fit=crop&auto=format" },
     { id: 2, titulo: "Relatos Salvajes", año: "2014", genero: "Comedia negra", director: "Damián Szifron", imagen: "https://images.unsplash.com/photo-1507003211169-0a1dd7506d40?w=1024&fit=crop&auto=format" },
@@ -8936,16 +8967,146 @@ export default function HomePage() {
 
   const [peliculaHeroIndex, setPeliculaHeroIndex] = useState(0);
 
-  // Datos de ejemplo - en producción vendrían de tu API/DB
-  const ultimosEstrenos = [
-    { id: 1, titulo: "Argentina, 1985", fechaEstreno: "13 de octubre", director: "Santiago Mitre", genero: "Drama histórico" },
-    { id: 2, titulo: "El Empleado y el Patrón", fechaEstreno: "28 de abril", director: "Manuel Nieto Zas", genero: "Drama" },
-    { id: 3, titulo: "La Odisea de los Giles", fechaEstreno: "15 de agosto", director: "Sebastián Borensztein", genero: "Comedia dramática" },
-    { id: 4, titulo: "El Ángel", fechaEstreno: "9 de agosto", director: "Luis Ortega", genero: "Drama criminal" },
-    { id: 5, titulo: "Relatos Salvajes", fechaEstreno: "21 de agosto", director: "Damián Szifron", genero: "Comedia negra" },
-    { id: 6, titulo: "Elsa y Fred", fechaEstreno: "26 de mayo", director: "Marcos Carnevale", genero: "Romance" },
-  ];
+  // Cargar últimos estrenos desde la base de datos
+  useEffect(() => {
+    const fetchUltimosEstrenos = async () => {
+      try {
+        setLoadingEstrenos(true);
+        
+        // Obtener películas ordenadas por fecha de creación para tener las más recientes
+        // Luego las filtraremos y ordenaremos por fecha de estreno
+        const params = new URLSearchParams({
+          limit: '100', // Traemos más para tener suficientes con fecha completa
+          sortBy: 'createdAt',
+          sortOrder: 'desc'
+        });
+        
+        const response = await fetch('/api/movies?' + params);
 
+        if (!response.ok) {
+          throw new Error('Error al cargar los últimos estrenos');
+        }
+
+        const data = await response.json();
+        
+        // Filtrar solo películas que tienen fecha COMPLETA de estreno (año, mes Y día)
+        let peliculasConFechaCompleta = data.movies?.filter((m: any) => 
+          m.releaseYear !== null && 
+          m.releaseYear !== undefined &&
+          m.releaseMonth !== null && 
+          m.releaseMonth !== undefined &&
+          m.releaseDay !== null && 
+          m.releaseDay !== undefined
+        ) || [];
+        
+        // Ordenar manualmente por fecha completa (año, mes, día) - más recientes primero
+        peliculasConFechaCompleta.sort((a: any, b: any) => {
+          // Primero comparar por año
+          if (b.releaseYear !== a.releaseYear) {
+            return b.releaseYear - a.releaseYear;
+          }
+          // Si el año es igual, comparar por mes
+          if (b.releaseMonth !== a.releaseMonth) {
+            return b.releaseMonth - a.releaseMonth;
+          }
+          // Si año y mes son iguales, comparar por día
+          return b.releaseDay - a.releaseDay;
+        });
+
+        // Tomar solo las primeras 6 películas con fecha completa
+        const peliculasParaMostrar = peliculasConFechaCompleta.slice(0, 6);
+
+        // Obtener detalles completos para cada película (incluye crew)
+        const peliculasConDetalles = await Promise.all(
+          peliculasParaMostrar.map(async (movie: any) => {
+            try {
+              const detailResponse = await fetch(`/api/movies/${movie.id}`);
+              if (detailResponse.ok) {
+                return await detailResponse.json();
+              }
+              return movie;
+            } catch (error) {
+              console.error(`Error fetching details for movie ${movie.id}:`, error);
+              return movie;
+            }
+          })
+        );
+
+        setUltimosEstrenos(peliculasConDetalles);
+      } catch (error) {
+        console.error('❌ Error fetching últimos estrenos:', error);
+        setUltimosEstrenos([]);
+      } finally {
+        setLoadingEstrenos(false);
+      }
+    };
+
+    fetchUltimosEstrenos();
+  }, []);
+
+  // Función helper para formatear la fecha de estreno
+  const formatearFechaEstreno = (movie: any): string => {
+    if (!movie.releaseYear) return 'Sin fecha';
+    
+    const partialDate = {
+      year: movie.releaseYear,
+      month: movie.releaseMonth,
+      day: movie.releaseDay
+    };
+
+    return formatPartialDate(partialDate, {
+      monthFormat: 'short',
+      includeDay: true,
+      fallback: movie.releaseYear.toString()
+    });
+  };
+
+  // Función helper para obtener el director (buscar en crew por roleId = 2)
+  const obtenerDirector = (movie: any): string => {
+    if (movie.crew && movie.crew.length > 0) {
+      // Buscar específicamente el roleId = 2 (Director)
+      const director = movie.crew.find((c: any) => c.roleId === 2);
+      
+      if (director && director.person) {
+        // Construir el nombre completo desde firstName y lastName
+        const firstName = director.person.firstName || '';
+        const lastName = director.person.lastName || '';
+        const fullName = `${firstName} ${lastName}`.trim();
+        
+        if (fullName) {
+          return fullName;
+        }
+      }
+    }
+    
+    return 'Director no especificado';
+  };
+
+  // Función helper para obtener géneros
+  const obtenerGeneros = (movie: any): string => {
+    if (movie.genres && movie.genres.length > 0) {
+      // Los géneros pueden venir de dos formas:
+      // 1. Como array simple: [{id: 1, name: "Drama"}]
+      // 2. Como relación: [{genre: {id: 1, name: "Drama"}}]
+      
+      const genreNames = movie.genres.map((g: any) => {
+        if (g.genre && g.genre.name) {
+          return g.genre.name;
+        } else if (g.name) {
+          return g.name;
+        }
+        return null;
+      }).filter(Boolean);
+      
+      if (genreNames.length > 0) {
+        return genreNames.join(', ');
+      }
+    }
+    
+    return '';
+  };
+
+  // Datos de ejemplo para otras secciones (mantener por ahora)
   const proximosEstrenos = [
     { id: 1, titulo: "Título de la Película", fecha: "15 de julio", director: "Director Nombre", genero: "Drama" },
     { id: 2, titulo: "Otra Película", fecha: "22 de julio", director: "Otro Director", genero: "Comedia" },
@@ -9099,36 +9260,68 @@ export default function HomePage() {
           {/* Últimos Estrenos */}
           <section className="mb-12">
             <h2 className="serif-heading text-3xl mb-6 text-white">Últimos Estrenos</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {ultimosEstrenos.map((pelicula) => (
-                <Link
-                  key={pelicula.id}
-                  href={`/pelicula/${pelicula.id}`}
-                  className="group cursor-pointer"
-                >
-                  <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform poster-shadow relative">
-                    <div className="movie-placeholder w-full h-full">
-                      <svg className="w-12 h-12 text-cine-accent mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/>
-                      </svg>
-                      <p className="text-xs text-gray-400">Afiche</p>
-                    </div>
-                    {/* Badge de fecha sobre el afiche */}
-                    <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white">
-                      {pelicula.fechaEstreno}
-                    </div>
+            
+            {loadingEstrenos ? (
+              // Skeleton loader mientras carga
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {[...Array(6)].map((_, index) => (
+                  <div key={index} className="animate-pulse">
+                    <div className="aspect-[2/3] rounded-lg bg-gray-800 mb-2"></div>
+                    <div className="h-4 bg-gray-800 rounded mb-1"></div>
+                    <div className="h-3 bg-gray-800 rounded w-3/4"></div>
                   </div>
-                  <h3 className="font-medium text-sm text-white line-clamp-2">{pelicula.titulo}</h3>
-                  <p className="text-gray-400 text-xs">{pelicula.genero}</p>
-                  <p className="text-gray-400 text-xs">Dir: {pelicula.director}</p>
-                </Link>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : ultimosEstrenos.length === 0 ? (
+              // Mensaje si no hay películas
+              <div className="text-center py-8">
+                <p className="text-gray-400">No hay estrenos disponibles en este momento</p>
+              </div>
+            ) : (
+              // Grid de películas
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {ultimosEstrenos.map((pelicula: any) => (
+                  <Link
+                    key={pelicula.id}
+                    href={`/peliculas/${pelicula.slug}`}
+                    className="group cursor-pointer"
+                  >
+                    <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform poster-shadow relative">
+                      {pelicula.posterUrl ? (
+                        <img 
+                          src={pelicula.posterUrl} 
+                          alt={pelicula.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Si la imagen falla, mostrar placeholder
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`movie-placeholder w-full h-full ${pelicula.posterUrl ? 'hidden' : ''}`}>
+                        <svg className="w-12 h-12 text-cine-accent mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"/>
+                        </svg>
+                        <p className="text-xs text-gray-400">Afiche</p>
+                      </div>
+                      {/* Badge de fecha sobre el afiche */}
+                      <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm px-2 py-1 rounded text-xs text-white">
+                        {formatearFechaEstreno(pelicula)}
+                      </div>
+                    </div>
+                    <h3 className="font-medium text-sm text-white line-clamp-2">{pelicula.title}</h3>
+                    <p className="text-gray-400 text-xs">{obtenerGeneros(pelicula)}</p>
+                    <p className="text-gray-400 text-xs">Dir: {obtenerDirector(pelicula)}</p>
+                  </Link>
+                ))}
+              </div>
+            )}
             
             {/* Botón Ver Más */}
             <div className="mt-6 text-center">
               <Link 
-                href="/estrenos" 
+                href="/listados/peliculas" 
                 className="inline-block border border-cine-accent text-cine-accent hover:bg-cine-accent hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
               >
                 Ver más estrenos
@@ -9136,6 +9329,7 @@ export default function HomePage() {
             </div>
           </section>
 
+          {/* El resto del componente se mantiene igual... */}
           {/* Próximos Estrenos */}
           <section className="mb-12">
             <h2 className="serif-heading text-3xl mb-6 text-white">Próximos Estrenos</h2>
