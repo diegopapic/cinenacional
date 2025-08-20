@@ -22,24 +22,6 @@ const PELICULAS_HERO: HeroMovie[] = [
   { id: 5, titulo: "Nueve Reinas", año: "2000", genero: "Thriller", director: "Fabián Bielinsky", imagen: "https://images.unsplash.com/photo-1556388158-158ea5ccacbd?w=1024&fit=crop&auto=format" },
 ];
 
-// Efemérides de fallback mientras no tengamos datos reales
-const EFEMERIDES_FALLBACK: Efemeride[] = [
-  { 
-    id: 'fallback-1',
-    hace: "Hace 40 años", 
-    evento: 'se estrenaba "Camila" de María Luisa Bemberg', 
-    tipo: "pelicula",
-    fecha: new Date()
-  },
-  { 
-    id: 'fallback-2',
-    hace: "Hace 50 años", 
-    evento: "nacía el director Juan José Campanella", 
-    tipo: "persona",
-    fecha: new Date()
-  },
-];
-
 export default function HomePage() {
   const {
     ultimosEstrenos,
@@ -134,17 +116,12 @@ export default function HomePage() {
         const data = await response.json();
         console.log('Efemérides recibidas:', data);
         
-        if (data.efemerides && data.efemerides.length > 0) {
-          setEfemerides(data.efemerides);
-        } else {
-          // Si no hay efemérides, usar las de fallback
-          console.log('No hay efemérides para hoy, usando fallback');
-          setEfemerides(EFEMERIDES_FALLBACK);
-        }
+        // Solo usar los datos recibidos, sin fallback
+        setEfemerides(data.efemerides || []);
       } catch (error) {
         console.error('Error fetching efemérides:', error);
-        // En caso de error, usar las efemérides de fallback
-        setEfemerides(EFEMERIDES_FALLBACK);
+        // En caso de error, dejar vacío
+        setEfemerides([]);
       } finally {
         setLoadingEfemerides(false);
       }
