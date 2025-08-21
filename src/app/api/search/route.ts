@@ -64,7 +64,6 @@ export async function GET(request: NextRequest) {
       id: movie.id,
       slug: movie.slug,
       title: movie.title,
-      originalTitle: movie.originalTitle,
       year: movie.releaseYear,
       posterUrl: movie.posterUrl,
       type: 'movie' as const
