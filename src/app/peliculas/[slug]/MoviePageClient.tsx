@@ -107,11 +107,7 @@ export function MoviePageClient({
 
     // Función para obtener imágenes de fallback optimizadas
     const getFallbackImages = () => [
-        'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=1024&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7506d40?w=1024&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1024&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1489599328131-cdd7553e2ad1?w=1024&fit=crop&auto=format',
-        'https://images.unsplash.com/photo-1556388158-158ea5ccacbd?w=1024&fit=crop&auto=format'
+        'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=1024&fit=crop&auto=format'
     ];
 
     // Cargar imágenes al montar el componente
@@ -203,7 +199,8 @@ export function MoviePageClient({
                 </div>
             </div>
 
-            {/* Image Gallery */}
+            {/* Image Gallery 
+            
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-gray-800">
                 <h2 className="serif-heading text-2xl text-white mb-6">Galería de Imágenes</h2>
                 <ImageGallery
@@ -211,8 +208,8 @@ export function MoviePageClient({
                     movieTitle={movie.title}
                 />
             </div>
-
-            {/* Trailer */}
+            */ }
+            {/* Trailer 
             {movie.trailerUrl ? (
                 <TrailerSection
                     trailerUrl={movie.trailerUrl}
@@ -224,8 +221,8 @@ export function MoviePageClient({
                     movieTitle={movie.title}
                 />
             )}
-
-            {/* Similar Movies - TODO: Implementar con datos reales */}
+            */}
+            {/* Similar Movies - TODO: Implementar con datos reales
             <SimilarMovies
                 movies={[
                     {
@@ -250,6 +247,7 @@ export function MoviePageClient({
                     }
                 ]}
             />
+            */}
         </div>
     );
 }
