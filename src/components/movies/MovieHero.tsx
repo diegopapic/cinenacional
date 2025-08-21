@@ -10,7 +10,7 @@ interface MovieHeroProps {
   gallery: string[];
 }
 
-export function MovieHero({ title, year, duration, genres, rating, gallery }: MovieHeroProps) {
+export function MovieHero({ title, year, duration, genres, gallery }: MovieHeroProps) {
   // Ajustar gradientes al tamaño real de la imagen
   useEffect(() => {
     const adjustGradients = () => {
