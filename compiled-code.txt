@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: b9edc6b57a5e7f784ea49f929bbb9791df16324c
-// Fecha: 2025-08-21T17:26:10.676Z
+// Commit: 3b6cc7aae9b1bd0ff6ede1a2cbacf8ad7a90cd26
+// Fecha: 2025-08-21T17:57:16.405Z
 // ============================================
 
 
@@ -9922,6 +9922,15 @@ import { MovieSidebar } from "@/components/movies/MovieSidebar";
 import { ImageGallery } from "@/components/movies/ImageGallery";
 import { SimilarMovies } from "@/components/movies/SimilarMovies";
 
+interface CastMember {
+    name: string;
+    character: string;
+    image?: string;
+    isPrincipal?: boolean;
+    billingOrder?: number;
+    personId?: number;
+}
+
 interface MoviePageClientProps {
     movie: any;
     displayYear: number | null;
@@ -9933,6 +9942,8 @@ interface MoviePageClientProps {
     rating?: { id: number; name: string; description?: string } | null;
     colorType?: { id: number; name: string } | null;
     soundType?: string | null;
+    mainCast: CastMember[];  // Agregado
+    fullCast: CastMember[];  // Agregado
 }
 
 export function MoviePageClient({
@@ -9945,7 +9956,9 @@ export function MoviePageClient({
     countries,
     rating,
     colorType,
-    soundType
+    soundType,
+    mainCast,
+    fullCast
 }: MoviePageClientProps) {
     const [movieGallery, setMovieGallery] = useState<string[]>([]);
 
@@ -10020,8 +10033,8 @@ export function MoviePageClient({
                         {/* Poster */}
                         <div className="lg:col-span-1">
                             <MoviePoster
-                                title="Relatos Salvajes"
-                            // imageUrl={movie.posterUrl} // Cuando tengas la URL del poster
+                                title={movie.title}
+                                imageUrl={movie.posterUrl}
                             />
                         </div>
 
@@ -10055,28 +10068,13 @@ export function MoviePageClient({
                     <div className="lg:col-span-2">
                         <h2 className="serif-heading text-2xl mb-6 text-white">Reparto y Equipo</h2>
 
-                        {/* Cast */}
+                        {/* Cast - AHORA CON DATOS REALES DE LA BD */}
                         <CastSection
-                            mainCast={[
-                                { name: 'Ricardo Darín', character: 'Diego' },
-                                { name: 'Érica Rivas', character: 'Romina' },
-                                { name: 'Leonardo Sbaraglia', character: 'Cuenca' }
-                            ]}
-                            fullCast={[
-                                { name: 'Oscar Martínez', character: 'Mauricio' },
-                                { name: 'Julieta Zylberberg', character: 'Isabel' },
-                                { name: 'Rita Cortese', character: 'Cocinera' },
-                                { name: 'Darío Grandinetti', character: 'Ariel' },
-                                { name: 'María Marull', character: 'Victoria' },
-                                { name: 'Mónica Villa', character: 'Novia' },
-                                { name: 'Diego Starosta', character: 'Novio' },
-                                { name: 'Nancy Duplá', character: 'Mujer en ruta' },
-                                { name: 'Cesar Bordón', character: 'Hombre en ruta' },
-                                { name: 'Walter Donado', character: 'Piloto' }
-                            ]}
+                            mainCast={mainCast}
+                            fullCast={fullCast}
                         />
 
-                        {/* Crew */}
+                        {/* Crew - TODO: Actualizar con datos reales de la BD */}
                         <CrewSection
                             basicCrew={{
                                 "Dirección": [
@@ -10184,12 +10182,19 @@ export function MoviePageClient({
             </div>
 
             {/* Trailer */}
-            <TrailerSection
-                trailerUrl="https://youtu.be/3BxE9osMt5U?si=mLEH7dp-ll7ZJsXG"
-                movieTitle={movie.title}
-            />
+            {movie.trailerUrl ? (
+                <TrailerSection
+                    trailerUrl={movie.trailerUrl}
+                    movieTitle={movie.title}
+                />
+            ) : (
+                <TrailerSection
+                    trailerUrl="https://youtu.be/3BxE9osMt5U?si=mLEH7dp-ll7ZJsXG"
+                    movieTitle={movie.title}
+                />
+            )}
 
-            {/* Similar Movies */}
+            {/* Similar Movies - TODO: Implementar con datos reales */}
             <SimilarMovies
                 movies={[
                     {
@@ -10315,6 +10320,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+// Función helper para formatear el nombre completo de una persona
+function formatPersonName(person: any): string {
+  const parts = [];
+  if (person.firstName) parts.push(person.firstName);
+  if (person.lastName) parts.push(person.lastName);
+  return parts.join(' ') || person.realName || 'Sin nombre';
+}
+
 export default async function MoviePage({ params }: PageProps) {
   const movie = await getMovieData(params.slug);
   
@@ -10322,7 +10335,7 @@ export default async function MoviePage({ params }: PageProps) {
     notFound();
   }
 
-  // Formatear duración total en minutos (sin procesar segundos aquí, lo haremos en el componente)
+  // Formatear duración total en minutos
   const totalDuration = movie.duration || 0;
   
   // Procesar géneros con estructura correcta
@@ -10358,6 +10371,51 @@ export default async function MoviePage({ params }: PageProps) {
   // Formatear año - usar releaseYear si existe, sino year
   const displayYear = movie.releaseYear || movie.year;
 
+  // PROCESAR CAST - LÓGICA CORREGIDA CON DEBUG
+  // Formatear todo el cast con estructura correcta
+  const allCast = movie.cast?.map((c: any) => ({
+    name: formatPersonName(c.person),
+    character: c.characterName || 'Sin especificar',
+    isPrincipal: c.isPrincipal || false,
+    billingOrder: c.billingOrder || 999,
+    personId: c.person.id,
+    image: c.person.photoUrl || undefined
+  })) || [];
+
+  console.log('📽️ Película:', movie.title);
+  console.log('👥 Total de actores:', allCast.length);
+  console.log('🌟 Actores con isPrincipal:', allCast.filter((c: any) => c.isPrincipal).length);
+  
+  // Separar cast principal del cast completo
+  let mainCast: any[] = [];
+  let fullCast: any[] = [];
+  
+  // Primero buscar los que tienen isPrincipal = true
+  const principalActors = allCast.filter((c: any) => c.isPrincipal === true);
+  
+  console.log('✨ Actores principales encontrados:', principalActors.length);
+  
+  if (principalActors.length > 0) {
+    // Si hay actores marcados como principales, usarlos
+    mainCast = principalActors;
+    // El resto va a fullCast
+    fullCast = allCast.filter((c: any) => !c.isPrincipal);
+    console.log('Usando actores con isPrincipal=true');
+  } else if (allCast.length > 0) {
+    // Si no hay ninguno marcado como principal, tomar EXACTAMENTE los primeros 3
+    mainCast = allCast.slice(0, Math.min(3, allCast.length));
+    // El resto (desde el 4to en adelante) va a fullCast
+    if (allCast.length > 3) {
+      fullCast = allCast.slice(3);
+    }
+    console.log('No hay principales marcados. Tomando los primeros 3');
+  }
+
+  console.log('📊 Reparto principal:', mainCast.length, 'actores');
+  console.log('📊 Reparto completo adicional:', fullCast.length, 'actores');
+  console.log('Actores principales:', mainCast.map(a => a.name));
+  console.log('Actores en fullCast:', fullCast.map(a => a.name));
+
   // Pasar los datos procesados al componente cliente
   return (
     <MoviePageClient
@@ -10371,6 +10429,8 @@ export default async function MoviePage({ params }: PageProps) {
       rating={rating}
       colorType={colorType}
       soundType={movie.soundType}
+      mainCast={mainCast}
+      fullCast={fullCast}
     />
   );
 }
@@ -18905,14 +18965,20 @@ export default function Header() {
 // ==================================================
 // src/components/movies/CastSection.tsx
 // ==================================================
+// src/components/movies/CastSection.tsx
+
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 interface CastMember {
   name: string;
   character: string;
   image?: string;
+  personId?: number;
+  isPrincipal?: boolean;
+  billingOrder?: number;
 }
 
 interface CastSectionProps {
@@ -18923,40 +18989,63 @@ interface CastSectionProps {
 export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
   const [showFullCast, setShowFullCast] = useState(false);
 
+  // Si no hay cast, no mostrar nada
+  if (mainCast.length === 0 && fullCast.length === 0) {
+    return (
+      <div className="mb-8">
+        <h3 className="text-lg font-medium mb-4 text-cine-accent">Reparto</h3>
+        <p className="text-gray-400">No hay información de reparto disponible.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="mb-8">
-      <h3 className="text-lg font-medium mb-4 text-cine-accent">Reparto Principal</h3>
+      <h3 className="text-lg font-medium mb-4 text-cine-accent">
+        {mainCast.length > 0 ? 'Reparto Principal' : 'Reparto'}
+      </h3>
       
       {/* Main Cast */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {mainCast.map((actor, index) => (
-          <div key={index} className="text-center">
-            <div className="w-20 h-20 rounded-full person-placeholder mx-auto mb-2">
-              {actor.image ? (
-                <img 
-                  src={actor.image} 
-                  alt={actor.name}
-                  className="w-full h-full object-cover rounded-full"
-                />
+      {mainCast.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {mainCast.map((actor, index) => (
+            <div key={`main-${index}`} className="text-center">
+              <div className="w-20 h-20 rounded-full person-placeholder mx-auto mb-2">
+                {actor.image ? (
+                  <img 
+                    src={actor.image} 
+                    alt={actor.name}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                )}
+              </div>
+              {actor.personId ? (
+                <Link href={`/personas/${actor.personId}`} className="hover:text-cine-accent transition-colors">
+                  <p className="font-medium text-white">{actor.name}</p>
+                </Link>
               ) : (
-                <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                </svg>
+                <p className="font-medium text-white">{actor.name}</p>
               )}
+              <p className="text-sm text-gray-400">{actor.character}</p>
             </div>
-            <p className="font-medium text-white">{actor.name}</p>
-            <p className="text-sm text-gray-400">{actor.character}</p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
       
       {/* Full Cast (if provided) */}
       {fullCast.length > 0 && (
         <>
           {showFullCast && (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-4 animate-fade-in">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-6 pt-6 border-t border-gray-700 animate-fade-in">
+              <div className="col-span-full mb-2">
+                <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Reparto Completo</h4>
+              </div>
               {fullCast.map((actor, index) => (
-                <div key={index} className="text-center">
+                <div key={`full-${index}`} className="text-center">
                   <div className="w-16 h-16 rounded-full person-placeholder mx-auto mb-2">
                     {actor.image ? (
                       <img 
@@ -18970,7 +19059,13 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
                       </svg>
                     )}
                   </div>
-                  <p className="font-medium text-white text-sm">{actor.name}</p>
+                  {actor.personId ? (
+                    <Link href={`/personas/${actor.personId}`} className="hover:text-cine-accent transition-colors">
+                      <p className="font-medium text-white text-sm">{actor.name}</p>
+                    </Link>
+                  ) : (
+                    <p className="font-medium text-white text-sm">{actor.name}</p>
+                  )}
                   <p className="text-xs text-gray-400">{actor.character}</p>
                 </div>
               ))}
@@ -18982,7 +19077,7 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
               onClick={() => setShowFullCast(!showFullCast)}
               className="text-cine-accent hover:text-blue-300 font-medium transition-colors flex items-center space-x-2"
             >
-              <span>{showFullCast ? 'Ocultar reparto completo' : 'Ver reparto completo'}</span>
+              <span>{showFullCast ? 'Ocultar reparto completo' : `Ver reparto completo (${fullCast.length} más)`}</span>
               <svg 
                 className={`w-4 h-4 transition-transform duration-200 ${showFullCast ? 'rotate-180' : ''}`} 
                 fill="none" stroke="currentColor" viewBox="0 0 24 24"

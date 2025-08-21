@@ -92,6 +92,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+// Función helper para formatear el nombre completo de una persona
+function formatPersonName(person: any): string {
+  const parts = [];
+  if (person.firstName) parts.push(person.firstName);
+  if (person.lastName) parts.push(person.lastName);
+  return parts.join(' ') || person.realName || 'Sin nombre';
+}
+
 export default async function MoviePage({ params }: PageProps) {
   const movie = await getMovieData(params.slug);
   
@@ -99,7 +107,7 @@ export default async function MoviePage({ params }: PageProps) {
     notFound();
   }
 
-  // Formatear duración total en minutos (sin procesar segundos aquí, lo haremos en el componente)
+  // Formatear duración total en minutos
   const totalDuration = movie.duration || 0;
   
   // Procesar géneros con estructura correcta
@@ -135,6 +143,51 @@ export default async function MoviePage({ params }: PageProps) {
   // Formatear año - usar releaseYear si existe, sino year
   const displayYear = movie.releaseYear || movie.year;
 
+  // PROCESAR CAST - LÓGICA CORREGIDA CON DEBUG
+  // Formatear todo el cast con estructura correcta
+  const allCast = movie.cast?.map((c: any) => ({
+    name: formatPersonName(c.person),
+    character: c.characterName || 'Sin especificar',
+    isPrincipal: c.isPrincipal || false,
+    billingOrder: c.billingOrder || 999,
+    personId: c.person.id,
+    image: c.person.photoUrl || undefined
+  })) || [];
+
+  console.log('📽️ Película:', movie.title);
+  console.log('👥 Total de actores:', allCast.length);
+  console.log('🌟 Actores con isPrincipal:', allCast.filter((c: any) => c.isPrincipal).length);
+  
+  // Separar cast principal del cast completo
+  let mainCast: any[] = [];
+  let fullCast: any[] = [];
+  
+  // Primero buscar los que tienen isPrincipal = true
+  const principalActors = allCast.filter((c: any) => c.isPrincipal === true);
+  
+  console.log('✨ Actores principales encontrados:', principalActors.length);
+  
+  if (principalActors.length > 0) {
+    // Si hay actores marcados como principales, usarlos
+    mainCast = principalActors;
+    // El resto va a fullCast
+    fullCast = allCast.filter((c: any) => !c.isPrincipal);
+    console.log('Usando actores con isPrincipal=true');
+  } else if (allCast.length > 0) {
+    // Si no hay ninguno marcado como principal, tomar EXACTAMENTE los primeros 3
+    mainCast = allCast.slice(0, Math.min(3, allCast.length));
+    // El resto (desde el 4to en adelante) va a fullCast
+    if (allCast.length > 3) {
+      fullCast = allCast.slice(3);
+    }
+    console.log('No hay principales marcados. Tomando los primeros 3');
+  }
+
+  console.log('📊 Reparto principal:', mainCast.length, 'actores');
+  console.log('📊 Reparto completo adicional:', fullCast.length, 'actores');
+  console.log('Actores principales:', mainCast.map(a => a.name));
+  console.log('Actores en fullCast:', fullCast.map(a => a.name));
+
   // Pasar los datos procesados al componente cliente
   return (
     <MoviePageClient
@@ -148,6 +201,8 @@ export default async function MoviePage({ params }: PageProps) {
       rating={rating}
       colorType={colorType}
       soundType={movie.soundType}
+      mainCast={mainCast}
+      fullCast={fullCast}
     />
   );
 }
