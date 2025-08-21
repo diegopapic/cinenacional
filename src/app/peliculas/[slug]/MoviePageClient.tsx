@@ -13,6 +13,15 @@ import { MovieSidebar } from "@/components/movies/MovieSidebar";
 import { ImageGallery } from "@/components/movies/ImageGallery";
 import { SimilarMovies } from "@/components/movies/SimilarMovies";
 
+interface CastMember {
+    name: string;
+    character: string;
+    image?: string;
+    isPrincipal?: boolean;
+    billingOrder?: number;
+    personId?: number;
+}
+
 interface MoviePageClientProps {
     movie: any;
     displayYear: number | null;
@@ -24,6 +33,8 @@ interface MoviePageClientProps {
     rating?: { id: number; name: string; description?: string } | null;
     colorType?: { id: number; name: string } | null;
     soundType?: string | null;
+    mainCast: CastMember[];  // Agregado
+    fullCast: CastMember[];  // Agregado
 }
 
 export function MoviePageClient({
@@ -36,7 +47,9 @@ export function MoviePageClient({
     countries,
     rating,
     colorType,
-    soundType
+    soundType,
+    mainCast,
+    fullCast
 }: MoviePageClientProps) {
     const [movieGallery, setMovieGallery] = useState<string[]>([]);
 
@@ -111,8 +124,8 @@ export function MoviePageClient({
                         {/* Poster */}
                         <div className="lg:col-span-1">
                             <MoviePoster
-                                title="Relatos Salvajes"
-                            // imageUrl={movie.posterUrl} // Cuando tengas la URL del poster
+                                title={movie.title}
+                                imageUrl={movie.posterUrl}
                             />
                         </div>
 
@@ -146,28 +159,13 @@ export function MoviePageClient({
                     <div className="lg:col-span-2">
                         <h2 className="serif-heading text-2xl mb-6 text-white">Reparto y Equipo</h2>
 
-                        {/* Cast */}
+                        {/* Cast - AHORA CON DATOS REALES DE LA BD */}
                         <CastSection
-                            mainCast={[
-                                { name: 'Ricardo Darín', character: 'Diego' },
-                                { name: 'Érica Rivas', character: 'Romina' },
-                                { name: 'Leonardo Sbaraglia', character: 'Cuenca' }
-                            ]}
-                            fullCast={[
-                                { name: 'Oscar Martínez', character: 'Mauricio' },
-                                { name: 'Julieta Zylberberg', character: 'Isabel' },
-                                { name: 'Rita Cortese', character: 'Cocinera' },
-                                { name: 'Darío Grandinetti', character: 'Ariel' },
-                                { name: 'María Marull', character: 'Victoria' },
-                                { name: 'Mónica Villa', character: 'Novia' },
-                                { name: 'Diego Starosta', character: 'Novio' },
-                                { name: 'Nancy Duplá', character: 'Mujer en ruta' },
-                                { name: 'Cesar Bordón', character: 'Hombre en ruta' },
-                                { name: 'Walter Donado', character: 'Piloto' }
-                            ]}
+                            mainCast={mainCast}
+                            fullCast={fullCast}
                         />
 
-                        {/* Crew */}
+                        {/* Crew - TODO: Actualizar con datos reales de la BD */}
                         <CrewSection
                             basicCrew={{
                                 "Dirección": [
@@ -275,12 +273,19 @@ export function MoviePageClient({
             </div>
 
             {/* Trailer */}
-            <TrailerSection
-                trailerUrl="https://youtu.be/3BxE9osMt5U?si=mLEH7dp-ll7ZJsXG"
-                movieTitle={movie.title}
-            />
+            {movie.trailerUrl ? (
+                <TrailerSection
+                    trailerUrl={movie.trailerUrl}
+                    movieTitle={movie.title}
+                />
+            ) : (
+                <TrailerSection
+                    trailerUrl="https://youtu.be/3BxE9osMt5U?si=mLEH7dp-ll7ZJsXG"
+                    movieTitle={movie.title}
+                />
+            )}
 
-            {/* Similar Movies */}
+            {/* Similar Movies - TODO: Implementar con datos reales */}
             <SimilarMovies
                 movies={[
                     {
