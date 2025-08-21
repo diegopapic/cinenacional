@@ -1,3 +1,5 @@
+// src/app/buscar/page.tsx
+
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -12,20 +14,16 @@ interface SearchPageResult {
     id: number
     slug: string
     title: string
-    originalTitle?: string
     releaseYear?: number
     releaseMonth?: number
     releaseDay?: number
     posterUrl?: string
     synopsis?: string
-    directors: Array<{
+    directors?: Array<{
       person: {
         firstName?: string
         lastName?: string
       }
-    }>
-    genres: Array<{
-      name: string
     }>
   }>
   people: Array<{
@@ -241,11 +239,6 @@ export default function SearchPage() {
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-red-400 transition-colors">
                         {movie.title}
-                        {movie.originalTitle && movie.originalTitle !== movie.title && (
-                          <span className="text-sm font-normal text-zinc-500 ml-2">
-                            ({movie.originalTitle})
-                          </span>
-                        )}
                       </h3>
                       <div className="flex items-center gap-4 text-sm text-zinc-400 mb-2">
                         {getReleaseDate(movie) && (
@@ -258,18 +251,6 @@ export default function SearchPage() {
                           <span>Dir: {getDirectorName(movie)}</span>
                         )}
                       </div>
-                      {movie.genres.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {movie.genres.map((genre, index) => (
-                            <span
-                              key={index}
-                              className="text-xs px-2 py-1 bg-zinc-800 text-zinc-300 rounded"
-                            >
-                              {genre.name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
                       {movie.synopsis && (
                         <p className="text-sm text-zinc-400 line-clamp-2">
                           {movie.synopsis}
