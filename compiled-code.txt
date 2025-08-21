@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 301b8441c7a0810e9c3560c4e3ef54a6d9a4a396
-// Fecha: 2025-08-21T00:13:47.563Z
+// Commit: 0109e5bf81e45cb81d946abdd6b80becefd82dd2
+// Fecha: 2025-08-21T00:15:32.836Z
 // ============================================
 
 
@@ -19384,7 +19384,7 @@ interface MovieHeroProps {
   gallery: string[];
 }
 
-export function MovieHero({ title, year, duration, genres, rating, gallery }: MovieHeroProps) {
+export function MovieHero({ title, year, duration, genres, gallery }: MovieHeroProps) {
   // Ajustar gradientes al tamaño real de la imagen
   useEffect(() => {
     const adjustGradients = () => {
