@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 6b58646c8383c489a1df9e328e5857c735e8ab84
-// Fecha: 2025-08-21T00:09:26.299Z
+// Commit: 301b8441c7a0810e9c3560c4e3ef54a6d9a4a396
+// Fecha: 2025-08-21T00:13:47.563Z
 // ============================================
 
 
@@ -19627,6 +19627,7 @@ interface MovieSidebarProps {
   year: number | null;
   duration: number;
   country: string;
+  rating: string;
   format?: string;
   genres: string[];
   themes: string[];
@@ -19636,6 +19637,7 @@ export function MovieSidebar({
   year,
   duration,
   country,
+  rating,
   format = "Color | Sonora",
   genres,
   themes
@@ -19660,6 +19662,11 @@ export function MovieSidebar({
           <div className="flex items-start">
             <span className="text-gray-400 w-32 flex-shrink-0">País coproductor:</span>
             <span className="ml-2 text-white">{country}</span>
+          </div>
+          {/* Calificación por edad - AGREGAR esta sección */}
+          <div className="border-b border-gray-700 pb-3">
+            <h3 className="text-sm text-gray-400 mb-1">Calificación</h3>
+            <p className="text-white">{rating}</p>
           </div>
           <div className="flex justify-end">
             <span className="text-white">{format}</span>

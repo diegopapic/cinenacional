@@ -4,6 +4,7 @@ interface MovieSidebarProps {
   year: number | null;
   duration: number;
   country: string;
+  rating: string;
   format?: string;
   genres: string[];
   themes: string[];
@@ -13,6 +14,7 @@ export function MovieSidebar({
   year,
   duration,
   country,
+  rating,
   format = "Color | Sonora",
   genres,
   themes
@@ -37,6 +39,11 @@ export function MovieSidebar({
           <div className="flex items-start">
             <span className="text-gray-400 w-32 flex-shrink-0">País coproductor:</span>
             <span className="ml-2 text-white">{country}</span>
+          </div>
+          {/* Calificación por edad - AGREGAR esta sección */}
+          <div className="border-b border-gray-700 pb-3">
+            <h3 className="text-sm text-gray-400 mb-1">Calificación</h3>
+            <p className="text-white">{rating}</p>
           </div>
           <div className="flex justify-end">
             <span className="text-white">{format}</span>
