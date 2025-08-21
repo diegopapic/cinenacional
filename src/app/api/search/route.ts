@@ -22,14 +22,12 @@ export async function GET(request: NextRequest) {
         where: {
           OR: [
             { title: { contains: query, mode: 'insensitive' } },
-            { originalTitle: { contains: query, mode: 'insensitive' } }
           ]
         },
         select: {
           id: true,
           slug: true,
           title: true,
-          originalTitle: true,
           releaseYear: true,
           posterUrl: true
         },
