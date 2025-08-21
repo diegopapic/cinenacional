@@ -8,7 +8,6 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get('q')
     const limit = parseInt(searchParams.get('limit') || '10')
-    const type = searchParams.get('type') || 'all'
 
     if (!query || query.length < 2) {
       return NextResponse.json({ 
@@ -18,55 +17,51 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Búsqueda paralela en películas y personas
     const [movies, people] = await Promise.all([
-      // Buscar películas
-      type === 'all' || type === 'movies' ? 
-        prisma.movie.findMany({
-          where: {
-            OR: [
-              { title: { contains: query, mode: 'insensitive' } },
-            ],
-          },
-          select: {
-            id: true,
-            slug: true,
-            title: true,
-            releaseYear: true,
-            posterUrl: true
-          },
-          take: limit,
-          orderBy: { title: 'asc' }
-        }) : [],
-      
-      // Buscar personas
-      type === 'all' || type === 'people' ?
-        prisma.person.findMany({
-          where: {
-            isActive: true,
-            OR: [
-              { firstName: { contains: query, mode: 'insensitive' } },
-              { lastName: { contains: query, mode: 'insensitive' } },
-              { realName: { contains: query, mode: 'insensitive' } }
-            ]
-          },
-          select: {
-            id: true,
-            slug: true,
-            firstName: true,
-            lastName: true,
-            photoUrl: true,
-            birthYear: true
-          },
-          take: limit,
-          orderBy: [
-            { lastName: 'asc' },
-            { firstName: 'asc' }
+      prisma.movie.findMany({
+        where: {
+          OR: [
+            { title: { contains: query, mode: 'insensitive' } },
+            { originalTitle: { contains: query, mode: 'insensitive' } }
           ]
-        }) : []
+        },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          originalTitle: true,
+          releaseYear: true,
+          posterUrl: true
+        },
+        take: limit,
+        orderBy: { title: 'asc' }
+      }),
+      
+      prisma.person.findMany({
+        where: {
+          isActive: true,
+          OR: [
+            { firstName: { contains: query, mode: 'insensitive' } },
+            { lastName: { contains: query, mode: 'insensitive' } },
+            { realName: { contains: query, mode: 'insensitive' } }
+          ]
+        },
+        select: {
+          id: true,
+          slug: true,
+          firstName: true,
+          lastName: true,
+          photoUrl: true,
+          birthYear: true
+        },
+        take: limit,
+        orderBy: [
+          { lastName: 'asc' },
+          { firstName: 'asc' }
+        ]
+      })
     ])
 
-    // Formatear resultados
     const formattedMovies = movies.map(movie => ({
       id: movie.id,
       slug: movie.slug,
@@ -80,7 +75,7 @@ export async function GET(request: NextRequest) {
     const formattedPeople = people.map(person => ({
       id: person.id,
       slug: person.slug,
-      name: `${person.firstName || ''} ${person.lastName || ''}`.trim(),
+      name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || 'Sin nombre',
       photoUrl: person.photoUrl,
       birthYear: person.birthYear,
       type: 'person' as const
@@ -95,7 +90,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Search error:', error)
     return NextResponse.json(
-      { error: 'Error searching', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Error searching' },
       { status: 500 }
     )
   }
