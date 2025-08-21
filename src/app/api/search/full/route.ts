@@ -17,43 +17,25 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Búsqueda completa en paralelo
     const [movies, people] = await Promise.all([
-      // Buscar todas las películas que coincidan
       prisma.movie.findMany({
         where: {
           OR: [
             { title: { contains: query, mode: 'insensitive' } },
             { originalTitle: { contains: query, mode: 'insensitive' } },
             { synopsis: { contains: query, mode: 'insensitive' } }
-          ],
-          isActive: true
+          ]
         },
-        include: {
-          genres: {
-            include: {
-              genre: true
-            },
-            take: 3
-          },
-          crew: {
-            where: {
-              OR: [
-                { role: 'Director' },
-                { role: 'Dirección' },
-                { roleId: 2 }
-              ]
-            },
-            include: {
-              person: {
-                select: {
-                  firstName: true,
-                  lastName: true
-                }
-              }
-            },
-            take: 1
-          }
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          originalTitle: true,
+          releaseYear: true,
+          releaseMonth: true,
+          releaseDay: true,
+          posterUrl: true,
+          synopsis: true
         },
         orderBy: [
           { releaseYear: 'desc' },
@@ -62,7 +44,6 @@ export async function GET(request: NextRequest) {
         take: 50
       }),
       
-      // Buscar todas las personas que coincidan
       prisma.person.findMany({
         where: {
           isActive: true,
@@ -72,7 +53,16 @@ export async function GET(request: NextRequest) {
             { realName: { contains: query, mode: 'insensitive' } }
           ]
         },
-        include: {
+        select: {
+          id: true,
+          slug: true,
+          firstName: true,
+          lastName: true,
+          photoUrl: true,
+          birthYear: true,
+          birthMonth: true,
+          birthDay: true,
+          biography: true,
           _count: {
             select: {
               castRoles: true,
@@ -88,53 +78,17 @@ export async function GET(request: NextRequest) {
       })
     ])
 
-    // Formatear películas
-    const formattedMovies = movies.map(movie => ({
-      id: movie.id,
-      slug: movie.slug,
-      title: movie.title,
-      originalTitle: movie.originalTitle,
-      releaseYear: movie.releaseYear,
-      releaseMonth: movie.releaseMonth,
-      releaseDay: movie.releaseDay,
-      posterUrl: movie.posterUrl,
-      synopsis: movie.synopsis,
-      directors: movie.crew.map(c => ({
-        person: {
-          firstName: c.person.firstName,
-          lastName: c.person.lastName
-        }
-      })),
-      genres: movie.genres.map(g => ({ 
-        name: g.genre.name 
-      }))
-    }))
-
-    // Formatear personas
-    const formattedPeople = people.map(person => ({
-      id: person.id,
-      slug: person.slug,
-      firstName: person.firstName,
-      lastName: person.lastName,
-      photoUrl: person.photoUrl,
-      birthYear: person.birthYear,
-      birthMonth: person.birthMonth,
-      birthDay: person.birthDay,
-      biography: person.biography,
-      _count: person._count
-    }))
-
     return NextResponse.json({
-      movies: formattedMovies,
-      people: formattedPeople,
-      totalMovies: formattedMovies.length,
-      totalPeople: formattedPeople.length
+      movies: movies,
+      people: people,
+      totalMovies: movies.length,
+      totalPeople: people.length
     })
 
   } catch (error) {
     console.error('Full search error:', error)
     return NextResponse.json(
-      { error: 'Error searching', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Error searching' },
       { status: 500 }
     )
   }
