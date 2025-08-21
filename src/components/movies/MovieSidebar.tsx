@@ -25,10 +25,13 @@ export function MovieSidebar({
       <div>
         <h3 className="text-lg font-medium mb-4 text-cine-accent">Información</h3>
         <div className="space-y-3 text-sm">
-          <div className="flex items-start">
-            <span className="text-gray-400 w-32 flex-shrink-0">Año:</span>
-            <span className="ml-2 text-white">{year}</span>
-          </div>
+          {/* Mostrar año solo si existe */}
+          {year && (
+            <div className="flex items-start">
+              <span className="text-gray-400 w-32 flex-shrink-0">Año:</span>
+              <span className="ml-2 text-white">{year}</span>
+            </div>
+          )}
           <div className="flex items-start">
             <span className="text-gray-400 w-32 flex-shrink-0">Duración:</span>
             <span className="ml-2 text-white">{duration} min</span>
@@ -52,8 +55,8 @@ export function MovieSidebar({
         <h3 className="text-lg font-medium mb-4 text-cine-accent">Géneros</h3>
         <div className="flex flex-wrap gap-2">
           {genres.map((genre, index) => (
-            <span 
-              key={index} 
+            <span
+              key={index}
               className="bg-cine-gray px-3 py-1 rounded-full text-sm text-white"
             >
               {genre}
@@ -67,8 +70,8 @@ export function MovieSidebar({
         <h3 className="text-lg font-medium mb-4 text-cine-accent">Temas</h3>
         <div className="flex flex-wrap gap-2">
           {themes.map((theme, index) => (
-            <span 
-              key={index} 
+            <span
+              key={index}
               className="bg-cine-gray px-3 py-1 rounded-full text-sm text-white"
             >
               {theme}
