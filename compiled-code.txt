@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 3b6cc7aae9b1bd0ff6ede1a2cbacf8ad7a90cd26
-// Fecha: 2025-08-21T17:57:16.405Z
+// Commit: 43c5101fc307ecaf002e453edacc522c4d716520
+// Fecha: 2025-08-21T19:02:23.245Z
 // ============================================
 
 
@@ -9931,6 +9931,15 @@ interface CastMember {
     personId?: number;
 }
 
+interface CrewMember {
+    name: string;
+    role: string;
+}
+
+interface CrewDepartment {
+    [department: string]: CrewMember[];
+}
+
 interface MoviePageClientProps {
     movie: any;
     displayYear: number | null;
@@ -9942,8 +9951,10 @@ interface MoviePageClientProps {
     rating?: { id: number; name: string; description?: string } | null;
     colorType?: { id: number; name: string } | null;
     soundType?: string | null;
-    mainCast: CastMember[];  // Agregado
-    fullCast: CastMember[];  // Agregado
+    mainCast: CastMember[];
+    fullCast: CastMember[];
+    basicCrew: CrewDepartment;  // NUEVO
+    fullCrew: CrewDepartment;   // NUEVO
 }
 
 export function MoviePageClient({
@@ -9958,7 +9969,9 @@ export function MoviePageClient({
     colorType,
     soundType,
     mainCast,
-    fullCast
+    fullCast,
+    basicCrew,  // NUEVO
+    fullCrew    // NUEVO
 }: MoviePageClientProps) {
     const [movieGallery, setMovieGallery] = useState<string[]>([]);
 
@@ -10074,83 +10087,10 @@ export function MoviePageClient({
                             fullCast={fullCast}
                         />
 
-                        {/* Crew - TODO: Actualizar con datos reales de la BD */}
+                        {/* Crew - AHORA CON DATOS REALES DE LA BD */}
                         <CrewSection
-                            basicCrew={{
-                                "Dirección": [
-                                    { name: "Damián Szifron", role: "Director" }
-                                ],
-                                "Guión": [
-                                    { name: "Damián Szifron", role: "Guionista" }
-                                ],
-                                "Fotografía": [
-                                    { name: "Javier Juliá", role: "Director de fotografía" }
-                                ],
-                                "Música": [
-                                    { name: "Gustavo Santaolalla", role: "Compositor" }
-                                ],
-                                "Montaje": [
-                                    { name: "Pablo Barbieri", role: "Editor" },
-                                    { name: "Damián Szifrón", role: "Editor" }
-                                ],
-                                "Dirección de Arte": [
-                                    { name: "Clara Notari", role: "Dirección de arte" }
-                                ],
-                                "Producción": [
-                                    { name: "Hugo Sigman", role: "Producción" },
-                                    { name: "Matías Mosteirín", role: "Producción" },
-                                    { name: "Esther García", role: "Producción" },
-                                    { name: "Pedro Almodóvar", role: "Producción" },
-                                    { name: "Agustín Almodóvar", role: "Producción" }
-                                ]
-                            }}
-                            fullCrew={{
-                                "Dirección": [
-                                    { name: "Damián Szifrón", role: "Director" },
-                                    { name: "Cristian Trebotic", role: "Asistente de Dirección" },
-                                    { name: "Natalia Urruty", role: "Asistente de Dirección" },
-                                    { name: "Javier Braier", role: "Dirección de casting" },
-                                    { name: "Lorena Lisotti", role: "Continuista" },
-                                    { name: "Marcello Pozzo", role: "Ayudante de dirección" },
-                                    { name: "Agustín Arévalo", role: "2do ayudante de dirección" },
-                                    { name: "Lucila Frank", role: "Refuerzo de dirección" },
-                                    { name: "Iair Said", role: "Asistente de casting" },
-                                    { name: "Katia Szechtman", role: "Asistente de casting" }
-                                ],
-                                "Guión": [
-                                    { name: "Damián Szifron", role: "Guionista" }
-                                ],
-                                "Fotografía": [
-                                    { name: "Javier Juliá", role: "Director de fotografía" }
-                                ],
-                                "Música": [
-                                    { name: "Gustavo Santaolalla", role: "Compositor" }
-                                ],
-                                "Producción": [
-                                    { name: "Matías Mosteirín", role: "Producción" },
-                                    { name: "Esther García", role: "Producción" },
-                                    { name: "Hugo Sigman", role: "Producción" },
-                                    { name: "Pedro Almodóvar", role: "Producción" },
-                                    { name: "Agustín Almodóvar", role: "Producción" },
-                                    { name: "Claudio F. Belocopitt", role: "Productor asociado" },
-                                    { name: "Gerardo Rozín", role: "Productor asociado" },
-                                    { name: "Leticia Cristi", role: "Producción ejecutiva" },
-                                    { name: "Pola Zito", role: "Producción ejecutiva" },
-                                    { name: "Analía Castro", role: "Jefe de Producción" },
-                                    { name: "Axel Kuschevatzky", role: "Coproducción" },
-                                    { name: "Carolina Agunin", role: "Coordinación de producción" },
-                                    { name: "Covadonga R. Gamboa", role: "Jefe de Producción" }
-                                ],
-                                "Montaje": [
-                                    { name: "Pablo Barbieri", role: "Editor" },
-                                    { name: "Damián Szifrón", role: "Editor" }
-                                ],
-                                "Dirección de Arte": [
-                                    { name: "Clara Notari", role: "Dirección de arte" },
-                                    { name: "Ruth Fischerman", role: "Vestuario" },
-                                    { name: "Marisa Amenta", role: "Maquillaje" }
-                                ]
-                            }}
+                            basicCrew={basicCrew}
+                            fullCrew={fullCrew}
                         />
                     </div>
 
@@ -10262,7 +10202,8 @@ async function getMovieData(slug: string) {
         },
         crew: {
           include: {
-            person: true
+            person: true,
+            role: true
           },
           orderBy: {
             billingOrder: 'asc'
@@ -10382,7 +10323,7 @@ export default async function MoviePage({ params }: PageProps) {
     image: c.person.photoUrl || undefined
   })) || [];
 
-  console.log('📽️ Película:', movie.title);
+  console.log('🎬 Película:', movie.title);
   console.log('👥 Total de actores:', allCast.length);
   console.log('🌟 Actores con isPrincipal:', allCast.filter((c: any) => c.isPrincipal).length);
   
@@ -10416,6 +10357,111 @@ export default async function MoviePage({ params }: PageProps) {
   console.log('Actores principales:', mainCast.map(a => a.name));
   console.log('Actores en fullCast:', fullCast.map(a => a.name));
 
+  // PROCESAR CREW - NUEVA LÓGICA PARA LEER DE LA BASE DE DATOS
+  console.log('🎬 Procesando equipo técnico para:', movie.title);
+  
+  // IDs de los roles principales según lo especificado
+  const mainCrewRoleIds = [2, 3, 703, 526, 836, 636, 402, 641];
+  
+  // Mapeo de roleId a nombre de departamento para el equipo principal
+  const mainRoleDepartmentMap: { [key: number]: string } = {
+    2: 'Dirección',
+    3: 'Guión',
+    703: 'Producción Ejecutiva',
+    526: 'Dirección de Fotografía',
+    836: 'Dirección de Arte',
+    636: 'Montaje',
+    402: 'Dirección de Sonido',
+    641: 'Música'
+  };
+  
+  // Procesar todo el crew
+  const allCrew = movie.crew?.map((c: any) => ({
+    name: formatPersonName(c.person),
+    role: c.role?.name || 'Sin rol especificado',
+    roleId: c.roleId,
+    department: c.role.department || 'Otros',
+    billingOrder: c.billingOrder || 999,
+    personId: c.person.id
+  })) || [];
+  
+  console.log('👥 Total de crew:', allCrew.length);
+  
+  // Separar crew principal del crew completo
+  const basicCrewMembers = allCrew.filter((c: any) => mainCrewRoleIds.includes(c.roleId));
+  const additionalCrewMembers = allCrew.filter((c: any) => !mainCrewRoleIds.includes(c.roleId));
+  
+  console.log('⭐ Crew principal:', basicCrewMembers.length);
+  console.log('📋 Crew adicional:', additionalCrewMembers.length);
+  
+  // Organizar el crew principal por departamento (orden específico)
+  const basicCrewByDepartment: { [department: string]: Array<{ name: string; role: string }> } = {};
+  
+  // Orden específico de los departamentos principales
+  const mainDepartmentOrder = [
+    'Dirección',
+    'Guión',
+    'Producción Ejecutiva',
+    'Dirección de Fotografía',
+    'Dirección de Arte',
+    'Montaje',
+    'Dirección de Sonido',
+    'Música'
+  ];
+  
+  // Inicializar departamentos vacíos en el orden correcto
+  mainDepartmentOrder.forEach(dept => {
+    basicCrewByDepartment[dept] = [];
+  });
+  
+  // Llenar con los miembros del crew principal
+  basicCrewMembers.forEach((member: any) => {
+    const dept = mainRoleDepartmentMap[member.roleId] || member.department || 'Otros';
+    if (!basicCrewByDepartment[dept]) {
+      basicCrewByDepartment[dept] = [];
+    }
+    basicCrewByDepartment[dept].push({
+      name: member.name,
+      role: member.role
+    });
+  });
+  
+  // Eliminar departamentos vacíos del crew principal
+  Object.keys(basicCrewByDepartment).forEach(dept => {
+    if (basicCrewByDepartment[dept].length === 0) {
+      delete basicCrewByDepartment[dept];
+    }
+  });
+  
+  // Organizar el crew completo por departamento
+  const fullCrewByDepartment: { [department: string]: Array<{ name: string; role: string }> } = {};
+  
+  // Incluir TODO el crew (principal + adicional) en el crew completo
+  allCrew
+    .sort((a: any, b: any) => {
+      // Primero ordenar por departamento
+      if (a.department !== b.department) {
+        return (a.department || 'Otros').localeCompare(b.department || 'Otros');
+      }
+      // Luego por billingOrder
+      return a.billingOrder - b.billingOrder;
+    })
+    .forEach((member: any) => {
+      const dept = member.department || mainRoleDepartmentMap[member.roleId] || 'Otros';
+      
+      if (!fullCrewByDepartment[dept]) {
+        fullCrewByDepartment[dept] = [];
+      }
+      
+      fullCrewByDepartment[dept].push({
+        name: member.name,
+        role: member.role
+      });
+    });
+  
+  console.log('📊 Departamentos en crew principal:', Object.keys(basicCrewByDepartment));
+  console.log('📊 Departamentos en crew completo:', Object.keys(fullCrewByDepartment));
+
   // Pasar los datos procesados al componente cliente
   return (
     <MoviePageClient
@@ -10431,6 +10477,8 @@ export default async function MoviePage({ params }: PageProps) {
       soundType={movie.soundType}
       mainCast={mainCast}
       fullCast={fullCast}
+      basicCrew={basicCrewByDepartment}  // NUEVO
+      fullCrew={fullCrewByDepartment}    // NUEVO
     />
   );
 }
