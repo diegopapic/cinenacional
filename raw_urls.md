@@ -132,6 +132,8 @@
 - [src/app/api/movies/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/movies/route.ts)
 - [src/app/api/movies/[id]/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/movies/[id]/route.ts)
 - [src/app/api/people/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/people/route.ts)
+- [src/app/api/people/slug/[slug]/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/people/slug/[slug]/route.ts)
+- [src/app/api/people/[id]/filmography/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/people/[id]/filmography/route.ts)
 - [src/app/api/people/[id]/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/people/[id]/route.ts)
 - [src/app/api/project-structure/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/project-structure/route.ts)
 - [src/app/api/roles/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/roles/route.ts)
