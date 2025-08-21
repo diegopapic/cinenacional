@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
         where: {
           OR: [
             { title: { contains: query, mode: 'insensitive' } },
-            { originalTitle: { contains: query, mode: 'insensitive' } },
             { synopsis: { contains: query, mode: 'insensitive' } }
           ]
         },
@@ -30,7 +29,6 @@ export async function GET(request: NextRequest) {
           id: true,
           slug: true,
           title: true,
-          originalTitle: true,
           releaseYear: true,
           releaseMonth: true,
           releaseDay: true,
