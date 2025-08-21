@@ -1,118 +1,101 @@
-// src/components/layout/Header.tsx
 'use client'
 
 import Link from 'next/link'
+import { Film, Menu, X } from 'lucide-react'
+import SearchBar from './SearchBar'
 import { useState } from 'react'
-import { Search, Menu, X, Film } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 
 export default function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const router = useRouter()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      router.push(`/buscar?q=${encodeURIComponent(searchQuery)}`)
-      setSearchQuery('')
-    }
-  }
-
-  const navItems = [
-    { href: '/peliculas', label: 'Películas' },
-    { href: '/personas', label: 'Personas' },
-    { href: '/generos', label: 'Géneros' },
-    { href: '/anos', label: 'Por Año' },
-    { href: '/premios', label: 'Premios' },
+  const navigation = [
+    { name: 'Películas', href: '/listados/peliculas' },
+    { name: 'Personas', href: '/listados/personas' },
+    { name: 'Géneros', href: '/generos' },
+    { name: 'Sobre Nosotros', href: '/sobre-nosotros' },
   ]
 
+  const isActive = (href: string) => {
+    return pathname.startsWith(href)
+  }
+
   return (
-    <header className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 text-white hover:text-red-500 transition-colors">
-            <Film className="w-8 h-8" />
-            <span className="font-bold text-xl hidden sm:block">CineNacional</span>
+    <header className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 gap-4">
+          {/* Logo y nombre */}
+          <Link href="/" className="flex items-center space-x-2 flex-shrink-0">
+            <Film className="w-8 h-8 text-red-600" />
+            <span className="text-xl font-bold text-white hidden sm:block">
+              CineNacional
+            </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
-            {navItems.map((item) => (
+          {/* Buscador en el centro - visible en desktop */}
+          <div className="hidden md:block flex-1 max-w-2xl mx-4">
+            <SearchBar />
+          </div>
+
+          {/* Navegación principal - desktop */}
+          <nav className="hidden md:flex items-center space-x-6 flex-shrink-0">
+            {navigation.map((item) => (
               <Link
-                key={item.href}
+                key={item.name}
                 href={item.href}
-                className="text-gray-300 hover:text-white transition-colors"
+                className={`text-sm font-medium transition-colors ${
+                  isActive(item.href)
+                    ? 'text-red-500'
+                    : 'text-zinc-300 hover:text-white'
+                }`}
               >
-                {item.label}
+                {item.name}
               </Link>
             ))}
           </nav>
 
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="hidden md:flex items-center">
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar películas, personas..."
-                className="bg-zinc-800 text-white px-4 py-2 pr-10 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-              <button
-                type="submit"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-              >
-                <Search className="w-5 h-5" />
-              </button>
-            </div>
-          </form>
-
-          {/* Mobile Menu Button */}
+          {/* Botón menú móvil */}
           <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden text-white"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-md text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+            aria-label="Abrir menú"
           >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
           </button>
         </div>
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-zinc-800">
-            <form onSubmit={handleSearch} className="mb-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar..."
-                  className="bg-zinc-800 text-white px-4 py-2 pr-10 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-red-500"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                >
-                  <Search className="w-5 h-5" />
-                </button>
-              </div>
-            </form>
-            <nav className="flex flex-col space-y-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setIsMenuOpen(false)}
-                  className="text-gray-300 hover:text-white transition-colors py-2"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        )}
+        {/* Buscador móvil - debajo del header principal */}
+        <div className="md:hidden pb-3">
+          <SearchBar />
+        </div>
       </div>
+
+      {/* Menú móvil */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-zinc-800 bg-zinc-900">
+          <nav className="px-4 py-2 space-y-1">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                  isActive(item.href)
+                    ? 'bg-zinc-800 text-red-500'
+                    : 'text-zinc-300 hover:bg-zinc-800 hover:text-white'
+                }`}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      )}
     </header>
   )
 }

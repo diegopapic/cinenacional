@@ -1070,6 +1070,21 @@
     "size": 0
   },
   {
+    "path": "src/app/api/search/full/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/search/full/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/search/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/search/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/search/test/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/search/test/route.ts",
+    "size": 0
+  },
+  {
     "path": "src/app/api/themes/route.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/themes/route.ts",
     "size": 0
@@ -1077,6 +1092,16 @@
   {
     "path": "src/app/api/themes/[id]/route.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/themes/[id]/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/buscar/loading.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/buscar/loading.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/app/buscar/page.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/buscar/page.tsx",
     "size": 0
   },
   {
@@ -1360,6 +1385,11 @@
     "size": 0
   },
   {
+    "path": "src/components/layout/SearchBar.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/SearchBar.tsx",
+    "size": 0
+  },
+  {
     "path": "src/components/movies/CastSection.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/CastSection.tsx",
     "size": 0
@@ -1422,6 +1452,11 @@
   {
     "path": "src/hooks/useDebounce.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/useDebounce.ts",
+    "size": 0
+  },
+  {
+    "path": "src/hooks/useGlobalSearch.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/useGlobalSearch.ts",
     "size": 0
   },
   {
