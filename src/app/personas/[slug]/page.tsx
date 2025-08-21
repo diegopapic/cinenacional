@@ -1,4 +1,4 @@
-// src/app/personas/[slug]/page.tsx - VERSIÓN SIMPLIFICADA
+// src/app/personas/[slug]/page.tsx - VERSIÓN TIPADA PARA VERCEL
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -47,6 +47,10 @@ interface CrewRole {
 interface GroupedCrewRole {
   movie: Movie;
   roles: string[];
+}
+
+interface TabItem extends GroupedCrewRole {
+  characterName?: string;
 }
 
 export default function PersonPage({ params }: PersonPageProps) {
@@ -185,7 +189,7 @@ export default function PersonPage({ params }: PersonPageProps) {
   }, { monthFormat: 'long', includeDay: true }) : null;
 
   // Preparar las pestañas dinámicamente
-  const tabs: { [key: string]: any[] } = {};
+  const tabs: { [key: string]: TabItem[] } = {};
   
   // Agregar pestaña de actuación si tiene roles como actor/actriz
   if (filmography?.castRoles?.length > 0) {
@@ -201,8 +205,8 @@ export default function PersonPage({ params }: PersonPageProps) {
   }
 
   // Calcular estadísticas (sin duplicados)
-  const uniqueMoviesAsActor = new Set(filmography?.castRoles?.map((r: any) => r.movie.id) || []);
-  const uniqueMoviesAsCrew = new Set(filmography?.crewRoles?.map((r: any) => r.movie.id) || []);
+  const uniqueMoviesAsActor = new Set(filmography?.castRoles?.map((r: CastRole) => r.movie.id) || []);
+  const uniqueMoviesAsCrew = new Set(filmography?.crewRoles?.map((r: CrewRole) => r.movie.id) || []);
   const allUniqueMovies = new Set([...uniqueMoviesAsActor, ...uniqueMoviesAsCrew]);
   
   const stats = {
@@ -212,7 +216,7 @@ export default function PersonPage({ params }: PersonPageProps) {
   };
 
   // Obtener items a mostrar según la pestaña activa
-  const getFilmographyToShow = () => {
+  const getFilmographyToShow = (): TabItem[] => {
     const items = tabs[activeTab] || [];
     return showAllFilmography ? items : items.slice(0, 10);
   };
@@ -375,7 +379,7 @@ export default function PersonPage({ params }: PersonPageProps) {
               
               {/* Film Items */}
               <div className="divide-y divide-gray-800/50">
-                {getFilmographyToShow().map((item, index) => {
+                {getFilmographyToShow().map((item: TabItem, index: number) => {
                   const isActing = activeTab === 'Actuación';
                   const movie = item.movie;
                   const year = movie.releaseYear || movie.year;
@@ -400,7 +404,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                           )}
                           {!isActing && item.roles && item.roles.length > 1 && (
                             <span className="ml-2 text-sm text-gray-500">
-                              (también: {item.roles.filter(r => r !== activeTab).join(', ')})
+                              (también: {item.roles.filter((r: string) => r !== activeTab).join(', ')})
                             </span>
                           )}
                         </div>
