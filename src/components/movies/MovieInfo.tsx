@@ -98,6 +98,7 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
         </div>
       )}
       <div className="flex flex-wrap gap-4">
+        {/*
         {movie.trailerUrl && (
           <button 
             onClick={onTrailerClick}
@@ -110,6 +111,7 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
             <span>Ver Trailer</span>
           </button>
         )}
+        */}
         <button 
           onClick={onShareClick}
           className="border border-gray-600 hover:border-cine-accent px-6 py-3 rounded-lg font-medium transition-colors text-white"

@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: e8fd08c4081fdc3653033d8eabb92c4402b3ffb0
-// Fecha: 2025-08-21T19:30:25.601Z
+// Commit: 2aab99a37ac465d3d79151be548d5b63164fd129
+// Fecha: 2025-08-21T19:33:56.207Z
 // ============================================
 
 
@@ -19743,6 +19743,7 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
         </div>
       )}
       <div className="flex flex-wrap gap-4">
+        {/*
         {movie.trailerUrl && (
           <button 
             onClick={onTrailerClick}
@@ -19755,6 +19756,7 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
             <span>Ver Trailer</span>
           </button>
         )}
+        */}
         <button 
           onClick={onShareClick}
           className="border border-gray-600 hover:border-cine-accent px-6 py-3 rounded-lg font-medium transition-colors text-white"
