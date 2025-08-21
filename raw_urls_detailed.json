@@ -1025,6 +1025,16 @@
     "size": 0
   },
   {
+    "path": "src/app/api/people/slug/[slug]/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/people/slug/[slug]/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/people/[id]/filmography/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/people/[id]/filmography/route.ts",
+    "size": 0
+  },
+  {
     "path": "src/app/api/people/[id]/route.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/people/[id]/route.ts",
     "size": 0
