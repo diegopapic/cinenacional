@@ -22,6 +22,15 @@ interface CastMember {
     personId?: number;
 }
 
+interface CrewMember {
+    name: string;
+    role: string;
+}
+
+interface CrewDepartment {
+    [department: string]: CrewMember[];
+}
+
 interface MoviePageClientProps {
     movie: any;
     displayYear: number | null;
@@ -33,8 +42,10 @@ interface MoviePageClientProps {
     rating?: { id: number; name: string; description?: string } | null;
     colorType?: { id: number; name: string } | null;
     soundType?: string | null;
-    mainCast: CastMember[];  // Agregado
-    fullCast: CastMember[];  // Agregado
+    mainCast: CastMember[];
+    fullCast: CastMember[];
+    basicCrew: CrewDepartment;  // NUEVO
+    fullCrew: CrewDepartment;   // NUEVO
 }
 
 export function MoviePageClient({
@@ -49,7 +60,9 @@ export function MoviePageClient({
     colorType,
     soundType,
     mainCast,
-    fullCast
+    fullCast,
+    basicCrew,  // NUEVO
+    fullCrew    // NUEVO
 }: MoviePageClientProps) {
     const [movieGallery, setMovieGallery] = useState<string[]>([]);
 
@@ -165,83 +178,10 @@ export function MoviePageClient({
                             fullCast={fullCast}
                         />
 
-                        {/* Crew - TODO: Actualizar con datos reales de la BD */}
+                        {/* Crew - AHORA CON DATOS REALES DE LA BD */}
                         <CrewSection
-                            basicCrew={{
-                                "Dirección": [
-                                    { name: "Damián Szifron", role: "Director" }
-                                ],
-                                "Guión": [
-                                    { name: "Damián Szifron", role: "Guionista" }
-                                ],
-                                "Fotografía": [
-                                    { name: "Javier Juliá", role: "Director de fotografía" }
-                                ],
-                                "Música": [
-                                    { name: "Gustavo Santaolalla", role: "Compositor" }
-                                ],
-                                "Montaje": [
-                                    { name: "Pablo Barbieri", role: "Editor" },
-                                    { name: "Damián Szifrón", role: "Editor" }
-                                ],
-                                "Dirección de Arte": [
-                                    { name: "Clara Notari", role: "Dirección de arte" }
-                                ],
-                                "Producción": [
-                                    { name: "Hugo Sigman", role: "Producción" },
-                                    { name: "Matías Mosteirín", role: "Producción" },
-                                    { name: "Esther García", role: "Producción" },
-                                    { name: "Pedro Almodóvar", role: "Producción" },
-                                    { name: "Agustín Almodóvar", role: "Producción" }
-                                ]
-                            }}
-                            fullCrew={{
-                                "Dirección": [
-                                    { name: "Damián Szifrón", role: "Director" },
-                                    { name: "Cristian Trebotic", role: "Asistente de Dirección" },
-                                    { name: "Natalia Urruty", role: "Asistente de Dirección" },
-                                    { name: "Javier Braier", role: "Dirección de casting" },
-                                    { name: "Lorena Lisotti", role: "Continuista" },
-                                    { name: "Marcello Pozzo", role: "Ayudante de dirección" },
-                                    { name: "Agustín Arévalo", role: "2do ayudante de dirección" },
-                                    { name: "Lucila Frank", role: "Refuerzo de dirección" },
-                                    { name: "Iair Said", role: "Asistente de casting" },
-                                    { name: "Katia Szechtman", role: "Asistente de casting" }
-                                ],
-                                "Guión": [
-                                    { name: "Damián Szifron", role: "Guionista" }
-                                ],
-                                "Fotografía": [
-                                    { name: "Javier Juliá", role: "Director de fotografía" }
-                                ],
-                                "Música": [
-                                    { name: "Gustavo Santaolalla", role: "Compositor" }
-                                ],
-                                "Producción": [
-                                    { name: "Matías Mosteirín", role: "Producción" },
-                                    { name: "Esther García", role: "Producción" },
-                                    { name: "Hugo Sigman", role: "Producción" },
-                                    { name: "Pedro Almodóvar", role: "Producción" },
-                                    { name: "Agustín Almodóvar", role: "Producción" },
-                                    { name: "Claudio F. Belocopitt", role: "Productor asociado" },
-                                    { name: "Gerardo Rozín", role: "Productor asociado" },
-                                    { name: "Leticia Cristi", role: "Producción ejecutiva" },
-                                    { name: "Pola Zito", role: "Producción ejecutiva" },
-                                    { name: "Analía Castro", role: "Jefe de Producción" },
-                                    { name: "Axel Kuschevatzky", role: "Coproducción" },
-                                    { name: "Carolina Agunin", role: "Coordinación de producción" },
-                                    { name: "Covadonga R. Gamboa", role: "Jefe de Producción" }
-                                ],
-                                "Montaje": [
-                                    { name: "Pablo Barbieri", role: "Editor" },
-                                    { name: "Damián Szifrón", role: "Editor" }
-                                ],
-                                "Dirección de Arte": [
-                                    { name: "Clara Notari", role: "Dirección de arte" },
-                                    { name: "Ruth Fischerman", role: "Vestuario" },
-                                    { name: "Marisa Amenta", role: "Maquillaje" }
-                                ]
-                            }}
+                            basicCrew={basicCrew}
+                            fullCrew={fullCrew}
                         />
                     </div>
 

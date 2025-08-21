@@ -34,7 +34,8 @@ async function getMovieData(slug: string) {
         },
         crew: {
           include: {
-            person: true
+            person: true,
+            role: true
           },
           orderBy: {
             billingOrder: 'asc'
@@ -154,7 +155,7 @@ export default async function MoviePage({ params }: PageProps) {
     image: c.person.photoUrl || undefined
   })) || [];
 
-  console.log('📽️ Película:', movie.title);
+  console.log('🎬 Película:', movie.title);
   console.log('👥 Total de actores:', allCast.length);
   console.log('🌟 Actores con isPrincipal:', allCast.filter((c: any) => c.isPrincipal).length);
   
@@ -188,6 +189,111 @@ export default async function MoviePage({ params }: PageProps) {
   console.log('Actores principales:', mainCast.map(a => a.name));
   console.log('Actores en fullCast:', fullCast.map(a => a.name));
 
+  // PROCESAR CREW - NUEVA LÓGICA PARA LEER DE LA BASE DE DATOS
+  console.log('🎬 Procesando equipo técnico para:', movie.title);
+  
+  // IDs de los roles principales según lo especificado
+  const mainCrewRoleIds = [2, 3, 703, 526, 836, 636, 402, 641];
+  
+  // Mapeo de roleId a nombre de departamento para el equipo principal
+  const mainRoleDepartmentMap: { [key: number]: string } = {
+    2: 'Dirección',
+    3: 'Guión',
+    703: 'Producción Ejecutiva',
+    526: 'Dirección de Fotografía',
+    836: 'Dirección de Arte',
+    636: 'Montaje',
+    402: 'Dirección de Sonido',
+    641: 'Música'
+  };
+  
+  // Procesar todo el crew
+  const allCrew = movie.crew?.map((c: any) => ({
+    name: formatPersonName(c.person),
+    role: c.role?.name || 'Sin rol especificado',
+    roleId: c.roleId,
+    department: c.role.department || 'Otros',
+    billingOrder: c.billingOrder || 999,
+    personId: c.person.id
+  })) || [];
+  
+  console.log('👥 Total de crew:', allCrew.length);
+  
+  // Separar crew principal del crew completo
+  const basicCrewMembers = allCrew.filter((c: any) => mainCrewRoleIds.includes(c.roleId));
+  const additionalCrewMembers = allCrew.filter((c: any) => !mainCrewRoleIds.includes(c.roleId));
+  
+  console.log('⭐ Crew principal:', basicCrewMembers.length);
+  console.log('📋 Crew adicional:', additionalCrewMembers.length);
+  
+  // Organizar el crew principal por departamento (orden específico)
+  const basicCrewByDepartment: { [department: string]: Array<{ name: string; role: string }> } = {};
+  
+  // Orden específico de los departamentos principales
+  const mainDepartmentOrder = [
+    'Dirección',
+    'Guión',
+    'Producción Ejecutiva',
+    'Dirección de Fotografía',
+    'Dirección de Arte',
+    'Montaje',
+    'Dirección de Sonido',
+    'Música'
+  ];
+  
+  // Inicializar departamentos vacíos en el orden correcto
+  mainDepartmentOrder.forEach(dept => {
+    basicCrewByDepartment[dept] = [];
+  });
+  
+  // Llenar con los miembros del crew principal
+  basicCrewMembers.forEach((member: any) => {
+    const dept = mainRoleDepartmentMap[member.roleId] || member.department || 'Otros';
+    if (!basicCrewByDepartment[dept]) {
+      basicCrewByDepartment[dept] = [];
+    }
+    basicCrewByDepartment[dept].push({
+      name: member.name,
+      role: member.role
+    });
+  });
+  
+  // Eliminar departamentos vacíos del crew principal
+  Object.keys(basicCrewByDepartment).forEach(dept => {
+    if (basicCrewByDepartment[dept].length === 0) {
+      delete basicCrewByDepartment[dept];
+    }
+  });
+  
+  // Organizar el crew completo por departamento
+  const fullCrewByDepartment: { [department: string]: Array<{ name: string; role: string }> } = {};
+  
+  // Incluir TODO el crew (principal + adicional) en el crew completo
+  allCrew
+    .sort((a: any, b: any) => {
+      // Primero ordenar por departamento
+      if (a.department !== b.department) {
+        return (a.department || 'Otros').localeCompare(b.department || 'Otros');
+      }
+      // Luego por billingOrder
+      return a.billingOrder - b.billingOrder;
+    })
+    .forEach((member: any) => {
+      const dept = member.department || mainRoleDepartmentMap[member.roleId] || 'Otros';
+      
+      if (!fullCrewByDepartment[dept]) {
+        fullCrewByDepartment[dept] = [];
+      }
+      
+      fullCrewByDepartment[dept].push({
+        name: member.name,
+        role: member.role
+      });
+    });
+  
+  console.log('📊 Departamentos en crew principal:', Object.keys(basicCrewByDepartment));
+  console.log('📊 Departamentos en crew completo:', Object.keys(fullCrewByDepartment));
+
   // Pasar los datos procesados al componente cliente
   return (
     <MoviePageClient
@@ -203,6 +309,8 @@ export default async function MoviePage({ params }: PageProps) {
       soundType={movie.soundType}
       mainCast={mainCast}
       fullCast={fullCast}
+      basicCrew={basicCrewByDepartment}  // NUEVO
+      fullCrew={fullCrewByDepartment}    // NUEVO
     />
   );
 }
