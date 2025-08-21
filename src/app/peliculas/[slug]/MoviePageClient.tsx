@@ -100,7 +100,7 @@ export function MoviePageClient({
                 title={movie.title}
                 year={displayYear}
                 duration={totalDuration}
-                genres={genres}
+                genres={genres.map(g => g.name)}
                 gallery={movieGallery}
             />
 
@@ -249,19 +249,19 @@ export function MoviePageClient({
 
                     {/* Sidebar Info */}
                     <div className="lg:col-span-1">
-            <MovieSidebar
-              year={movie.year}
-              releaseYear={movie.releaseYear}
-              duration={totalDuration}
-              durationSeconds={durationSeconds}
-              countries={countries}
-              rating={rating}
-              colorType={colorType}
-              soundType={soundType}
-              genres={genres}
-              themes={themes}
-            />
-          </div>
+                        <MovieSidebar
+                            year={movie.year}
+                            releaseYear={movie.releaseYear}
+                            duration={totalDuration}
+                            durationSeconds={durationSeconds}
+                            countries={countries}
+                            rating={rating}
+                            colorType={colorType}
+                            soundType={soundType}
+                            genres={genres}
+                            themes={themes}
+                        />
+                    </div>
                 </div>
             </div>
 
