@@ -1,6 +1,8 @@
 // src/app/components/layout/Footer.tsx
 import Link from 'next/link'
-import { Film, Github, Twitter, Mail } from 'lucide-react'
+import { X, Mail } from 'lucide-react'
+import Image from 'next/image'
+import { FaInstagram, FaFacebook, FaYoutube } from 'react-icons/fa'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -32,19 +34,24 @@ export default function Footer() {
           {/* Brand Section */}
           <div className="col-span-1">
             <Link href="/" className="flex items-center space-x-2 text-white mb-4">
-              <Film className="w-8 h-8" />
-              <span className="font-bold text-xl">CineNacional</span>
+              <Image
+                src="/logo.svg"
+                alt="cinenacional.com"
+                width={180}
+                height={40}
+                className="h-10 sm:h-12 w-auto"
+                priority
+              />
             </Link>
             <p className="text-gray-400 text-sm mb-4">
-              La base de datos más completa del cine argentino. 
-              Preservando nuestra historia cinematográfica.
+              La base de datos más completa del cine argentino.
             </p>
             <div className="flex space-x-4">
-              <a href="https://github.com" className="text-gray-400 hover:text-white transition-colors">
-                <Github className="w-5 h-5" />
+              <a href="https://x.com/cinenacional" className="text-gray-400 hover:text-white transition-colors">
+                <X className="w-5 h-5" />
               </a>
-              <a href="https://twitter.com" className="text-gray-400 hover:text-white transition-colors">
-                <Twitter className="w-5 h-5" />
+              <a href="https://instagram.com/cinenacional" className="text-gray-400 hover:text-white transition-colors">
+                <FaInstagram className="w-5 h-5" />
               </a>
               <a href="mailto:info@cinenacional.com" className="text-gray-400 hover:text-white transition-colors">
                 <Mail className="w-5 h-5" />
@@ -98,10 +105,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-zinc-800 mt-8 pt-8 text-center">
           <p className="text-gray-400 text-sm">
-            © {currentYear} CineNacional. Todos los derechos reservados.
-          </p>
-          <p className="text-gray-500 text-xs mt-2">
-            Hecho con ❤️ para el cine argentino
+            © {currentYear} cinenacional.com. Todos los derechos reservados.
           </p>
         </div>
       </div>
