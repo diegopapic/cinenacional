@@ -1,7 +1,7 @@
 'use client';
 
 interface MovieSidebarProps {
-  year: number;
+  year: number | null;
   duration: number;
   country: string;
   format?: string;
