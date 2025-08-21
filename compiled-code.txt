@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: df06af53dacda78656f4b1c6c8c9d1895f1c3584
-// Fecha: 2025-08-21T20:44:54.822Z
+// Commit: a456852011e9ab204b738fe81d5973be9b87c153
+// Fecha: 2025-08-21T21:10:13.226Z
 // ============================================
 
 
@@ -10068,6 +10068,7 @@ interface CastMember {
 interface CrewMember {
     name: string;
     role: string;
+    personSlug?: string;
 }
 
 interface CrewDepartment {
@@ -10515,7 +10516,8 @@ export default async function MoviePage({ params }: PageProps) {
     roleId: c.roleId,
     department: c.role.department || 'Otros',
     billingOrder: c.billingOrder || 999,
-    personId: c.person.id
+    personId: c.person.id,
+    personSlug: c.person.slug
   })) || [];
   
   console.log('👥 Total de crew:', allCrew.length);
@@ -10528,7 +10530,7 @@ export default async function MoviePage({ params }: PageProps) {
   console.log('📋 Crew adicional:', additionalCrewMembers.length);
   
   // Organizar el crew principal por departamento (orden específico)
-  const basicCrewByDepartment: { [department: string]: Array<{ name: string; role: string }> } = {};
+  const basicCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string }> } = {};
   
   // Orden específico de los departamentos principales
   const mainDepartmentOrder = [
@@ -10555,7 +10557,8 @@ export default async function MoviePage({ params }: PageProps) {
     }
     basicCrewByDepartment[dept].push({
       name: member.name,
-      role: member.role
+      role: member.role,
+      personSlug: member.personSlug
     });
   });
   
@@ -10567,7 +10570,7 @@ export default async function MoviePage({ params }: PageProps) {
   });
   
   // Organizar el crew completo por departamento
-  const fullCrewByDepartment: { [department: string]: Array<{ name: string; role: string }> } = {};
+  const fullCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string }> } = {};
   
   // Incluir TODO el crew (principal + adicional) en el crew completo
   allCrew
@@ -10588,7 +10591,8 @@ export default async function MoviePage({ params }: PageProps) {
       
       fullCrewByDepartment[dept].push({
         name: member.name,
-        role: member.role
+        role: member.role,
+        personSlug: member.personSlug
       });
     });
   
@@ -19297,13 +19301,13 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
                       </svg>
                     )}
                   </div>
-                  {actor.personId ? (
-                    <Link href={`/personas/${actor.personId}`} className="hover:text-cine-accent transition-colors">
-                      <p className="font-medium text-white text-sm">{actor.name}</p>
-                    </Link>
-                  ) : (
-                    <p className="font-medium text-white text-sm">{actor.name}</p>
-                  )}
+                  {actor.personSlug ? (
+                <Link href={`/personas/${actor.personSlug}`} className="hover:text-cine-accent transition-colors">
+                  <p className="font-medium text-white">{actor.name}</p>
+                </Link>
+              ) : (
+                <p className="font-medium text-white">{actor.name}</p>
+              )}
                   <p className="text-xs text-gray-400">{actor.character}</p>
                 </div>
               ))}
@@ -19421,13 +19425,16 @@ export function CloudinaryImage({
 // ==================================================
 // src/components/movies/CrewSection.tsx
 // ==================================================
+// src/components/movies/CrewSection.tsx
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 interface CrewMember {
   name: string;
   role: string;
+  personSlug?: string;
 }
 
 interface CrewDepartment {
@@ -19443,15 +19450,33 @@ export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
   const [showFullCrew, setShowFullCrew] = useState(false);
 
   const renderCrewMember = (member: CrewMember, index: number, showRole: boolean = false) => {
+    // Crear el elemento del nombre con o sin enlace
+    const nameElement = member.personSlug ? (
+      <Link 
+        href={`/personas/${member.personSlug}`} 
+        className="text-white hover:text-cine-accent transition-colors"
+      >
+        {member.name}
+      </Link>
+    ) : (
+      <span className="text-white">{member.name}</span>
+    );
+
     if (showRole) {
       return (
         <div key={index} className="flex justify-between">
-          <span className="text-white">{member.name}</span>
+          {nameElement}
           <span className="text-gray-400 text-xs">{member.role}</span>
         </div>
       );
     }
-    return <p key={index} className="text-white">{member.name}</p>;
+    
+    // IMPORTANTE: Cambiar aquí para que el enlace funcione sin roles
+    return (
+      <div key={index}>
+        {nameElement}
+      </div>
+    );
   };
 
   const renderDepartment = (title: string, members: CrewMember[], showRoles: boolean = false) => (
@@ -19472,14 +19497,14 @@ export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
           <div className="space-y-4">
             {Object.entries(basicCrew).slice(0, Math.ceil(Object.keys(basicCrew).length / 2)).map(([dept, members]) => (
               <div key={dept}>
-                {renderDepartment(dept, members)}
+                {renderDepartment(dept, members, false)} {/* false = no mostrar roles */}
               </div>
             ))}
           </div>
           <div className="space-y-4">
             {Object.entries(basicCrew).slice(Math.ceil(Object.keys(basicCrew).length / 2)).map(([dept, members]) => (
               <div key={dept}>
-                {renderDepartment(dept, members)}
+                {renderDepartment(dept, members, false)} {/* false = no mostrar roles */}
               </div>
             ))}
           </div>
@@ -19489,14 +19514,14 @@ export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
           <div className="space-y-4">
             {fullCrew && Object.entries(fullCrew).slice(0, Math.ceil(Object.keys(fullCrew).length / 2)).map(([dept, members]) => (
               <div key={dept}>
-                {renderDepartment(dept, members, true)}
+                {renderDepartment(dept, members, true)} {/* true = mostrar roles */}
               </div>
             ))}
           </div>
           <div className="space-y-4">
             {fullCrew && Object.entries(fullCrew).slice(Math.ceil(Object.keys(fullCrew).length / 2)).map(([dept, members]) => (
               <div key={dept}>
-                {renderDepartment(dept, members, true)}
+                {renderDepartment(dept, members, true)} {/* true = mostrar roles */}
               </div>
             ))}
           </div>

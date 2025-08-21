@@ -215,7 +215,8 @@ export default async function MoviePage({ params }: PageProps) {
     roleId: c.roleId,
     department: c.role.department || 'Otros',
     billingOrder: c.billingOrder || 999,
-    personId: c.person.id
+    personId: c.person.id,
+    personSlug: c.person.slug
   })) || [];
   
   console.log('👥 Total de crew:', allCrew.length);
@@ -228,7 +229,7 @@ export default async function MoviePage({ params }: PageProps) {
   console.log('📋 Crew adicional:', additionalCrewMembers.length);
   
   // Organizar el crew principal por departamento (orden específico)
-  const basicCrewByDepartment: { [department: string]: Array<{ name: string; role: string }> } = {};
+  const basicCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string }> } = {};
   
   // Orden específico de los departamentos principales
   const mainDepartmentOrder = [
@@ -255,7 +256,8 @@ export default async function MoviePage({ params }: PageProps) {
     }
     basicCrewByDepartment[dept].push({
       name: member.name,
-      role: member.role
+      role: member.role,
+      personSlug: member.personSlug
     });
   });
   
@@ -267,7 +269,7 @@ export default async function MoviePage({ params }: PageProps) {
   });
   
   // Organizar el crew completo por departamento
-  const fullCrewByDepartment: { [department: string]: Array<{ name: string; role: string }> } = {};
+  const fullCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string }> } = {};
   
   // Incluir TODO el crew (principal + adicional) en el crew completo
   allCrew
@@ -288,7 +290,8 @@ export default async function MoviePage({ params }: PageProps) {
       
       fullCrewByDepartment[dept].push({
         name: member.name,
-        role: member.role
+        role: member.role,
+        personSlug: member.personSlug
       });
     });
   
