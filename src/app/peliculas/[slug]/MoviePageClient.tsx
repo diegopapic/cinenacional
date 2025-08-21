@@ -20,6 +20,7 @@ interface CastMember {
     isPrincipal?: boolean;
     billingOrder?: number;
     personId?: number;
+    personSlug?: string;
 }
 
 interface CrewMember {

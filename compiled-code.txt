@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 7cd36ba80f86db826a952be3b184b62f0c6275da
-// Fecha: 2025-08-21T20:21:58.718Z
+// Commit: df06af53dacda78656f4b1c6c8c9d1895f1c3584
+// Fecha: 2025-08-21T20:44:54.822Z
 // ============================================
 
 
@@ -10062,6 +10062,7 @@ interface CastMember {
     isPrincipal?: boolean;
     billingOrder?: number;
     personId?: number;
+    personSlug?: string;
 }
 
 interface CrewMember {
@@ -10451,6 +10452,7 @@ export default async function MoviePage({ params }: PageProps) {
     isPrincipal: c.isPrincipal || false,
     billingOrder: c.billingOrder || 999,
     personId: c.person.id,
+    personSlug: c.person.slug,
     image: c.person.photoUrl || undefined
   })) || [];
 
@@ -19212,6 +19214,7 @@ interface CastMember {
   character: string;
   image?: string;
   personId?: number;
+  personSlug?: string;
   isPrincipal?: boolean;
   billingOrder?: number;
 }
@@ -19258,8 +19261,8 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
                   </svg>
                 )}
               </div>
-              {actor.personId ? (
-                <Link href={`/personas/${actor.personId}`} className="hover:text-cine-accent transition-colors">
+              {actor.personSlug ? (
+                <Link href={`/personas/${actor.personSlug}`} className="hover:text-cine-accent transition-colors">
                   <p className="font-medium text-white">{actor.name}</p>
                 </Link>
               ) : (

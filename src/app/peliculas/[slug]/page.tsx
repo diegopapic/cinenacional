@@ -152,6 +152,7 @@ export default async function MoviePage({ params }: PageProps) {
     isPrincipal: c.isPrincipal || false,
     billingOrder: c.billingOrder || 999,
     personId: c.person.id,
+    personSlug: c.person.slug,
     image: c.person.photoUrl || undefined
   })) || [];
 
