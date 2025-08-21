@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-21T21:10:12.883Z",
+  "timestamp": "2025-08-21T21:52:39.566Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "a456852011e9ab204b738fe81d5973be9b87c153",
+  "commit": "29a102602e8f9c8c314460bdb3f983325c7485fc",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
@@ -361,12 +361,25 @@
               "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/screening-venues/[id]/route.ts"
             }
           },
+          "search": {
+            "full": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/search/full/route.ts"
+            },
+            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/search/route.ts",
+            "test": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/search/test/route.ts"
+            }
+          },
           "themes": {
             "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/themes/route.ts",
             "[id]": {
               "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/themes/[id]/route.ts"
             }
           }
+        },
+        "buscar": {
+          "loading.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/buscar/loading.tsx",
+          "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/buscar/page.tsx"
         },
         "favicon.ico": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/favicon.ico",
         "globals.css": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/globals.css",
@@ -460,7 +473,8 @@
         },
         "layout": {
           "Footer.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Footer.tsx",
-          "Header.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Header.tsx"
+          "Header.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Header.tsx",
+          "SearchBar.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/SearchBar.tsx"
         },
         "movies": {
           "CastSection.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/movies/CastSection.tsx",
@@ -483,6 +497,7 @@
       },
       "hooks": {
         "useDebounce.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/useDebounce.ts",
+        "useGlobalSearch.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/useGlobalSearch.ts",
         "useHomeData.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/useHomeData.ts",
         "useMovieForm.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/useMovieForm.ts",
         "usePeople.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/hooks/usePeople.ts",
