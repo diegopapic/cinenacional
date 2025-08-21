@@ -120,7 +120,18 @@ export default async function MoviePage({ params }: PageProps) {
     name: c.country.name
   }))
   .filter((c: any) => c.name !== 'Argentina' || movie.movieCountries.length > 1) || [];
+
+  const rating = movie.rating ? {
+    id: movie.rating.id,
+    name: movie.rating.name,
+    description: movie.rating.description || undefined
+  } : null;
   
+  const colorType = movie.colorType ? {
+    id: movie.colorType.id,
+    name: movie.colorType.name
+  } : null;
+
   // Formatear año - usar releaseYear si existe, sino year
   const displayYear = movie.releaseYear || movie.year;
 
@@ -134,8 +145,8 @@ export default async function MoviePage({ params }: PageProps) {
       genres={genres}
       themes={themes}
       countries={countries}
-      rating={movie.rating}
-      colorType={movie.colorType}
+      rating={rating}
+      colorType={colorType}
       soundType={movie.soundType}
     />
   );

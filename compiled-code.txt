@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: c9f642c7753b019570a3cd7491128060a0268c2c
-// Fecha: 2025-08-21T17:15:13.661Z
+// Commit: b9edc6b57a5e7f784ea49f929bbb9791df16324c
+// Fecha: 2025-08-21T17:26:10.676Z
 // ============================================
 
 
@@ -10343,7 +10343,18 @@ export default async function MoviePage({ params }: PageProps) {
     name: c.country.name
   }))
   .filter((c: any) => c.name !== 'Argentina' || movie.movieCountries.length > 1) || [];
+
+  const rating = movie.rating ? {
+    id: movie.rating.id,
+    name: movie.rating.name,
+    description: movie.rating.description || undefined
+  } : null;
   
+  const colorType = movie.colorType ? {
+    id: movie.colorType.id,
+    name: movie.colorType.name
+  } : null;
+
   // Formatear año - usar releaseYear si existe, sino year
   const displayYear = movie.releaseYear || movie.year;
 
@@ -10357,8 +10368,8 @@ export default async function MoviePage({ params }: PageProps) {
       genres={genres}
       themes={themes}
       countries={countries}
-      rating={movie.rating}
-      colorType={movie.colorType}
+      rating={rating}
+      colorType={colorType}
       soundType={movie.soundType}
     />
   );
