@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 0778c2212984350a7ab53e4ce32dc48a3c764f1a
-// Fecha: 2025-08-21T00:07:33.888Z
+// Commit: 6b58646c8383c489a1df9e328e5857c735e8ab84
+// Fecha: 2025-08-21T00:09:26.299Z
 // ============================================
 
 
@@ -19624,7 +19624,7 @@ export function MoviePoster({ imageUrl, title }: MoviePosterProps) {
 'use client';
 
 interface MovieSidebarProps {
-  year: number;
+  year: number | null;
   duration: number;
   country: string;
   format?: string;
