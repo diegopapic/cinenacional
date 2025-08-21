@@ -26,6 +26,7 @@ interface CastMember {
 interface CrewMember {
     name: string;
     role: string;
+    personSlug?: string;
 }
 
 interface CrewDepartment {

@@ -93,13 +93,13 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
                       </svg>
                     )}
                   </div>
-                  {actor.personId ? (
-                    <Link href={`/personas/${actor.personId}`} className="hover:text-cine-accent transition-colors">
-                      <p className="font-medium text-white text-sm">{actor.name}</p>
-                    </Link>
-                  ) : (
-                    <p className="font-medium text-white text-sm">{actor.name}</p>
-                  )}
+                  {actor.personSlug ? (
+                <Link href={`/personas/${actor.personSlug}`} className="hover:text-cine-accent transition-colors">
+                  <p className="font-medium text-white">{actor.name}</p>
+                </Link>
+              ) : (
+                <p className="font-medium text-white">{actor.name}</p>
+              )}
                   <p className="text-xs text-gray-400">{actor.character}</p>
                 </div>
               ))}

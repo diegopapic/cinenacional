@@ -1,10 +1,13 @@
+// src/components/movies/CrewSection.tsx
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 interface CrewMember {
   name: string;
   role: string;
+  personSlug?: string;
 }
 
 interface CrewDepartment {
@@ -20,15 +23,33 @@ export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
   const [showFullCrew, setShowFullCrew] = useState(false);
 
   const renderCrewMember = (member: CrewMember, index: number, showRole: boolean = false) => {
+    // Crear el elemento del nombre con o sin enlace
+    const nameElement = member.personSlug ? (
+      <Link 
+        href={`/personas/${member.personSlug}`} 
+        className="text-white hover:text-cine-accent transition-colors"
+      >
+        {member.name}
+      </Link>
+    ) : (
+      <span className="text-white">{member.name}</span>
+    );
+
     if (showRole) {
       return (
         <div key={index} className="flex justify-between">
-          <span className="text-white">{member.name}</span>
+          {nameElement}
           <span className="text-gray-400 text-xs">{member.role}</span>
         </div>
       );
     }
-    return <p key={index} className="text-white">{member.name}</p>;
+    
+    // IMPORTANTE: Cambiar aquí para que el enlace funcione sin roles
+    return (
+      <div key={index}>
+        {nameElement}
+      </div>
+    );
   };
 
   const renderDepartment = (title: string, members: CrewMember[], showRoles: boolean = false) => (
@@ -49,14 +70,14 @@ export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
           <div className="space-y-4">
             {Object.entries(basicCrew).slice(0, Math.ceil(Object.keys(basicCrew).length / 2)).map(([dept, members]) => (
               <div key={dept}>
-                {renderDepartment(dept, members)}
+                {renderDepartment(dept, members, false)} {/* false = no mostrar roles */}
               </div>
             ))}
           </div>
           <div className="space-y-4">
             {Object.entries(basicCrew).slice(Math.ceil(Object.keys(basicCrew).length / 2)).map(([dept, members]) => (
               <div key={dept}>
-                {renderDepartment(dept, members)}
+                {renderDepartment(dept, members, false)} {/* false = no mostrar roles */}
               </div>
             ))}
           </div>
@@ -66,14 +87,14 @@ export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
           <div className="space-y-4">
             {fullCrew && Object.entries(fullCrew).slice(0, Math.ceil(Object.keys(fullCrew).length / 2)).map(([dept, members]) => (
               <div key={dept}>
-                {renderDepartment(dept, members, true)}
+                {renderDepartment(dept, members, true)} {/* true = mostrar roles */}
               </div>
             ))}
           </div>
           <div className="space-y-4">
             {fullCrew && Object.entries(fullCrew).slice(Math.ceil(Object.keys(fullCrew).length / 2)).map(([dept, members]) => (
               <div key={dept}>
-                {renderDepartment(dept, members, true)}
+                {renderDepartment(dept, members, true)} {/* true = mostrar roles */}
               </div>
             ))}
           </div>
