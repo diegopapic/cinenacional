@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-21T22:53:51.806Z",
+  "timestamp": "2025-08-21T23:19:06.795Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "be768f006511fc72879ad38cc220af6f5656b396",
+  "commit": "0b62021015192a2324c9a2c74995c4027fc7ead9",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
@@ -101,6 +101,7 @@
           "unnamed.jpg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/unnamed.jpg"
         }
       },
+      "logo.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/logo.svg",
       "next.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/next.svg",
       "vercel.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/vercel.svg",
       "window.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/window.svg"

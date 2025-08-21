@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { Film, Menu, X } from 'lucide-react'
+import Image from 'next/image'
+import { Menu, X } from 'lucide-react'
 import SearchBar from './SearchBar'
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
@@ -27,10 +28,14 @@ export default function Header() {
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo y nombre */}
           <Link href="/" className="flex items-center space-x-2 flex-shrink-0">
-            <Film className="w-8 h-8 text-red-600" />
-            <span className="text-xl font-bold text-white hidden sm:block">
-              CineNacional
-            </span>
+            <Image 
+              src="/logo.svg" 
+              alt="cinenacional.com" 
+              width={180} 
+              height={40}
+              className="h-10 sm:h-12 w-auto"
+              priority
+            />
           </Link>
 
           {/* Buscador en el centro - visible en desktop */}
