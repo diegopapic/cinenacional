@@ -1,5 +1,4 @@
 // src/app/peliculas/[slug]/page.tsx
-
 import { notFound } from 'next/navigation';
 import { MoviePageClient } from './MoviePageClient';
 import type { Metadata } from 'next';
@@ -100,11 +99,27 @@ export default async function MoviePage({ params }: PageProps) {
     notFound();
   }
 
-  // Formatear duración total en minutos
-  const totalDuration = (movie.duration || 0) + Math.floor((movie.durationSeconds || 0) / 60);
+  // Formatear duración total en minutos (sin procesar segundos aquí, lo haremos en el componente)
+  const totalDuration = movie.duration || 0;
   
-  // Obtener géneros
-  const genres = movie.genres?.map((g: any) => g.genre?.name).filter(Boolean) || [];
+  // Procesar géneros con estructura correcta
+  const genres = movie.genres?.map((g: any) => ({
+    id: g.genre.id,
+    name: g.genre.name
+  })).filter(Boolean) || [];
+  
+  // Procesar temas con estructura correcta
+  const themes = movie.themes?.map((t: any) => ({
+    id: t.theme.id,
+    name: t.theme.name
+  })).filter(Boolean) || [];
+  
+  // Procesar países coproductores (excluyendo Argentina si es el único)
+  const countries = movie.movieCountries?.map((c: any) => ({
+    id: c.country.id,
+    name: c.country.name
+  }))
+  .filter((c: any) => c.name !== 'Argentina' || movie.movieCountries.length > 1) || [];
   
   // Formatear año - usar releaseYear si existe, sino year
   const displayYear = movie.releaseYear || movie.year;
@@ -115,7 +130,13 @@ export default async function MoviePage({ params }: PageProps) {
       movie={movie}
       displayYear={displayYear}
       totalDuration={totalDuration}
+      durationSeconds={movie.durationSeconds}
       genres={genres}
+      themes={themes}
+      countries={countries}
+      rating={movie.rating}
+      colorType={movie.colorType}
+      soundType={movie.soundType}
     />
   );
 }

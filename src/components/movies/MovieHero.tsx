@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 interface MovieHeroProps {
   title: string;
@@ -11,120 +11,75 @@ interface MovieHeroProps {
 }
 
 export function MovieHero({ title, year, duration, genres, gallery }: MovieHeroProps) {
-  // Ajustar gradientes al tamaño real de la imagen
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   useEffect(() => {
-    const adjustGradients = () => {
-      const img = document.querySelector('.hero-image') as HTMLImageElement;
-      const container = document.querySelector('.hero-image-wrapper') as HTMLElement;
-      const gradientsContainer = document.querySelector('.hero-gradients-container') as HTMLElement;
-      
-      if (img && container && gradientsContainer && img.complete) {
-        const containerWidth = container.offsetWidth;
-        const containerHeight = container.offsetHeight;
-        const imgAspectRatio = img.naturalWidth / img.naturalHeight;
-        const containerAspectRatio = containerWidth / containerHeight;
-        
-        let displayWidth, displayHeight;
-        
-        if (imgAspectRatio > containerAspectRatio) {
-          // Imagen más ancha - se ajusta por ancho
-          displayWidth = containerWidth;
-          displayHeight = containerWidth / imgAspectRatio;
-        } else {
-          // Imagen más alta - se ajusta por altura
-          displayHeight = containerHeight;
-          displayWidth = containerHeight * imgAspectRatio;
-        }
-        
-        // Centrar y ajustar el contenedor de gradientes
-        gradientsContainer.style.width = `${displayWidth}px`;
-        gradientsContainer.style.height = `${displayHeight}px`;
-        gradientsContainer.style.left = `${(containerWidth - displayWidth) / 2}px`;
-        gradientsContainer.style.top = `${(containerHeight - displayHeight) / 2}px`;
-      }
-    };
+    if (gallery.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % gallery.length);
+    }, 5000);
 
-    // Ajustar cuando la imagen cambie
-    const img = document.querySelector('.hero-image') as HTMLImageElement;
-    if (img) {
-      img.addEventListener('load', adjustGradients);
-      // También ajustar al cambiar el tamaño de la ventana
-      window.addEventListener('resize', adjustGradients);
-      
-      // Ajustar inmediatamente si la imagen ya está cargada
-      if (img.complete) {
-        adjustGradients();
-      }
-    }
+    return () => clearInterval(interval);
+  }, [gallery.length]);
 
-    return () => {
-      if (img) {
-        img.removeEventListener('load', adjustGradients);
-      }
-      window.removeEventListener('resize', adjustGradients);
-    };
-  }, [gallery]);
-
-  // Cambiar fondo cada 8 segundos
-  useEffect(() => {
-    if (gallery.length > 0) {
-      const interval = setInterval(() => {
-        const randomIndex = Math.floor(Math.random() * gallery.length);
-        const heroElement = document.querySelector('.hero-image');
-        if (heroElement) {
-          (heroElement as HTMLImageElement).src = gallery[randomIndex];
-        }
-      }, 8000);
-      return () => clearInterval(interval);
-    }
-  }, [gallery]);
-
-  // Función para formatear géneros
-  const formatGenres = (genres: string[]) => {
-    return genres.join(', ');
-  };
+  const currentImage = gallery.length > 0 ? gallery[currentImageIndex] : null;
 
   return (
-    <div className="relative hero-background-container -mt-16 pt-16">
-      {/* Wrapper de imagen con gradientes */}
-      <div className="hero-image-wrapper">
-        {gallery.length > 0 && (
-          <>
-            <img 
-              src={gallery[0]}
-              alt={title}
-              className="hero-image"
-            />
-            {/* Contenedor de gradientes que se ajusta a la imagen */}
-            <div className="hero-gradients-container">
-              <div className="hero-gradient-left"></div>
-              <div className="hero-gradient-right"></div>
-              <div className="hero-gradient-top"></div>
-              <div className="hero-gradient-bottom-inner"></div>
-            </div>
-          </>
-        )}
-      </div>
+    <div className="relative h-[50vh] overflow-hidden">
+      {/* Background Image */}
+      {currentImage && (
+        <div 
+          className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
+          style={{ backgroundImage: `url(${currentImage})` }}
+        />
+      )}
       
-      {/* Gradientes globales del contenedor */}
-      <div className="hero-gradient-bottom"></div>
-      <div className="hero-vignette"></div>
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-cine-dark" />
       
-      {/* Contenido */}
-      <div className="hero-content">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 w-full">
-          <h1 className="serif-heading text-5xl md:text-6xl lg:text-7xl text-white leading-tight drop-shadow-2xl">
+      {/* Content */}
+      <div className="relative h-full flex items-end">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 w-full">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
             {title}
           </h1>
-          <div className="flex flex-wrap items-center gap-4 text-gray-200 mt-4">
-            <span className="bg-cine-accent/90 px-3 py-1 rounded-full text-sm font-medium text-white backdrop-blur-sm">
-              {year && <span>{year}</span>}
-            </span>
-            <span className="drop-shadow-lg">{duration} min</span>
-            <span className="drop-shadow-lg">{formatGenres(genres)}</span>
+          
+          <div className="flex flex-wrap items-center gap-4 text-gray-300">
+            {year && <span>{year}</span>}
+            {duration > 0 && (
+              <>
+                <span>•</span>
+                <span>{duration} min</span>
+              </>
+            )}
+            {genres.length > 0 && (
+              <>
+                <span>•</span>
+                <span>{genres.join(', ')}</span>
+              </>
+            )}
           </div>
         </div>
       </div>
+      
+      {/* Image Indicators */}
+      {gallery.length > 1 && (
+        <div className="absolute bottom-4 right-4 flex gap-2">
+          {gallery.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentImageIndex(index)}
+              className={`w-2 h-2 rounded-full transition-all ${
+                index === currentImageIndex 
+                  ? 'bg-white w-8' 
+                  : 'bg-white/50 hover:bg-white/75'
+              }`}
+              aria-label={`Ir a imagen ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
