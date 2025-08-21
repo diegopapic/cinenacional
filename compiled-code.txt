@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: d463e0772cd6b0ff0b6853fa485f4abe49901a2c
-// Fecha: 2025-08-21T17:10:19.852Z
+// Commit: c9f642c7753b019570a3cd7491128060a0268c2c
+// Fecha: 2025-08-21T17:15:13.661Z
 // ============================================
 
 
@@ -10009,7 +10009,7 @@ export function MoviePageClient({
                 title={movie.title}
                 year={displayYear}
                 duration={totalDuration}
-                genres={genres}
+                genres={genres.map(g => g.name)}
                 gallery={movieGallery}
             />
 
@@ -10158,19 +10158,19 @@ export function MoviePageClient({
 
                     {/* Sidebar Info */}
                     <div className="lg:col-span-1">
-            <MovieSidebar
-              year={movie.year}
-              releaseYear={movie.releaseYear}
-              duration={totalDuration}
-              durationSeconds={durationSeconds}
-              countries={countries}
-              rating={rating}
-              colorType={colorType}
-              soundType={soundType}
-              genres={genres}
-              themes={themes}
-            />
-          </div>
+                        <MovieSidebar
+                            year={movie.year}
+                            releaseYear={movie.releaseYear}
+                            duration={totalDuration}
+                            durationSeconds={durationSeconds}
+                            countries={countries}
+                            rating={rating}
+                            colorType={colorType}
+                            soundType={soundType}
+                            genres={genres}
+                            themes={themes}
+                        />
+                    </div>
                 </div>
             </div>
 
