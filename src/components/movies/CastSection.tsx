@@ -10,6 +10,7 @@ interface CastMember {
   character: string;
   image?: string;
   personId?: number;
+  personSlug?: string;
   isPrincipal?: boolean;
   billingOrder?: number;
 }
@@ -56,8 +57,8 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
                   </svg>
                 )}
               </div>
-              {actor.personId ? (
-                <Link href={`/personas/${actor.personId}`} className="hover:text-cine-accent transition-colors">
+              {actor.personSlug ? (
+                <Link href={`/personas/${actor.personSlug}`} className="hover:text-cine-accent transition-colors">
                   <p className="font-medium text-white">{actor.name}</p>
                 </Link>
               ) : (
