@@ -40,6 +40,16 @@
     "size": 0
   },
   {
+    "path": "docker-compose.yml",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/docker-compose.yml",
+    "size": 0
+  },
+  {
+    "path": "Dockerfile",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/Dockerfile",
+    "size": 0
+  },
+  {
     "path": "docs/05-database.md",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/docs/05-database.md",
     "size": 0
