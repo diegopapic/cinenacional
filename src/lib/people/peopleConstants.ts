@@ -3,6 +3,11 @@
 import { Gender, PersonLinkType, PersonFormData } from './peopleTypes';
 
 // Opciones de género
+/**
+ * Opciones de género disponibles para personas
+ * @constant
+ * @type {Array<{value: string, label: string}>}
+ */
 export const GENDER_OPTIONS = [
   { value: 'MALE' as Gender, label: 'Masculino' },
   { value: 'FEMALE' as Gender, label: 'Femenino' },
@@ -10,6 +15,11 @@ export const GENDER_OPTIONS = [
 ] as const;
 
 // Tipos de links con sus etiquetas
+/**
+ * Tipos de enlaces externos para personas (IMDB, Wikipedia, etc.)
+ * @constant
+ * @type {Array<{value: string, label: string}>}
+ */
 export const PERSON_LINK_TYPES: Record<PersonLinkType, string> = {
   IMDB: 'IMDb',
   TMDB: 'TMDb',
@@ -34,11 +44,19 @@ export const PERSON_LINK_TYPES: Record<PersonLinkType, string> = {
 } as const;
 
 // Array de opciones para selects
+/**
+ * PERSON_LINK_TYPE_OPTIONS
+ * @TODO Add documentation
+ */
 export const PERSON_LINK_TYPE_OPTIONS = Object.entries(PERSON_LINK_TYPES).map(
   ([value, label]) => ({ value, label })
 );
 
 // Categorías de links para organización en UI
+/**
+ * LINK_CATEGORIES
+ * @TODO Add documentation
+ */
 export const LINK_CATEGORIES = {
   databases: {
     label: 'Bases de datos',
@@ -67,6 +85,10 @@ export const LINK_CATEGORIES = {
 } as const;
 
 // Valores por defecto para formularios
+/**
+ * DEFAULT_PERSON_FORM_VALUES
+ * @TODO Add documentation
+ */
 export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
   firstName: '',
   lastName: '',
@@ -87,6 +109,10 @@ export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
 };
 
 // Valores por defecto para un nuevo link
+/**
+ * DEFAULT_PERSON_LINK
+ * @TODO Add documentation
+ */
 export const DEFAULT_PERSON_LINK = {
   type: 'OTHER' as PersonLinkType,
   url: '',
@@ -97,6 +123,10 @@ export const DEFAULT_PERSON_LINK = {
 } as const;
 
 // Configuración de paginación
+/**
+ * PEOPLE_PAGINATION
+ * @TODO Add documentation
+ */
 export const PEOPLE_PAGINATION = {
   DEFAULT_PAGE: 1,
   DEFAULT_LIMIT: 20,
@@ -104,6 +134,10 @@ export const PEOPLE_PAGINATION = {
 } as const;
 
 // Mensajes de error comunes
+/**
+ * PERSON_ERROR_MESSAGES
+ * @TODO Add documentation
+ */
 export const PERSON_ERROR_MESSAGES = {
   FETCH_ERROR: 'Error al cargar las personas',
   CREATE_ERROR: 'Error al crear la persona',
@@ -116,6 +150,10 @@ export const PERSON_ERROR_MESSAGES = {
 } as const;
 
 // Mensajes de éxito
+/**
+ * PERSON_SUCCESS_MESSAGES
+ * @TODO Add documentation
+ */
 export const PERSON_SUCCESS_MESSAGES = {
   CREATED: 'Persona creada exitosamente',
   UPDATED: 'Persona actualizada exitosamente',
@@ -123,6 +161,10 @@ export const PERSON_SUCCESS_MESSAGES = {
 } as const;
 
 // Constante para los meses (igual que en movies)
+/**
+ * MONTHS
+ * @TODO Add documentation
+ */
 export const MONTHS = [
   { value: 1, label: 'Enero' },
   { value: 2, label: 'Febrero' },

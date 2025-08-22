@@ -67,6 +67,7 @@ export default function HeroSection({ peliculas }: HeroSectionProps) {
   if (!peliculaActual) return null;
 
   return (
+
     <div className="relative hero-background-container -mt-16 pt-16">
       <div className="hero-image-wrapper">
         <img
@@ -90,5 +91,6 @@ export default function HeroSection({ peliculas }: HeroSectionProps) {
       <div className="hero-gradient-bottom"></div>
       <div className="hero-vignette"></div>
     </div>
+    
   );
 }

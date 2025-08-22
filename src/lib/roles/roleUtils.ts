@@ -9,13 +9,33 @@ import {
 } from './rolesTypes';
 
 // Re-exportar el enum para mantener compatibilidad con imports existentes
+/**
+ * DEPARTMENTS
+ * @TODO Add documentation
+ */
 export const DEPARTMENTS = Department;
 
 // Re-exportar funciones desde rolesTypes
+/**
+ * getDepartmentLabel
+ * @TODO Add documentation
+ */
 export const getDepartmentLabel = getLabel;
+/**
+ * getDepartmentColor
+ * @TODO Add documentation
+ */
 export const getDepartmentColor = getColor;
+/**
+ * getDepartmentOptions
+ * @TODO Add documentation
+ */
 export const getDepartmentOptions = getOptions;
 
+/**
+ * sortRolesByDepartment
+ * @TODO Add documentation
+ */
 export function sortRolesByDepartment(roles: any[]): any[] {
   return [...roles].sort((a, b) => {
     // Roles principales primero
@@ -36,6 +56,10 @@ export function sortRolesByDepartment(roles: any[]): any[] {
   });
 }
 
+/**
+ * validateRole
+ * @TODO Add documentation
+ */
 export function validateRole(name: string, department: Department): string | null {
   if (!name || name.trim().length === 0) {
     return 'El nombre del rol es requerido';

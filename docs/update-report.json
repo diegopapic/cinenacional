@@ -1,0 +1,200 @@
+{
+  "timestamp": "2025-08-22T01:50:48.217Z",
+  "summary": {
+    "totalSections": 32,
+    "successful": 25,
+    "failed": 7
+  },
+  "errors": [
+    {
+      "key": "overview",
+      "reason": "Contenido vacío o muy corto"
+    },
+    {
+      "key": "stack",
+      "reason": "Contenido vacío o muy corto"
+    },
+    {
+      "key": "architecture",
+      "reason": "Contenido vacío o muy corto"
+    },
+    {
+      "key": "structure",
+      "reason": "Contenido vacío o muy corto"
+    },
+    {
+      "key": "components/homepage",
+      "reason": "Contenido vacío o muy corto"
+    },
+    {
+      "key": "status/improvements",
+      "reason": "Contenido vacío o muy corto"
+    },
+    {
+      "key": "appendix/stats",
+      "reason": "Contenido vacío o muy corto"
+    }
+  ],
+  "files": [
+    {
+      "key": "overview",
+      "file": "01-overview.md",
+      "exists": false
+    },
+    {
+      "key": "stack",
+      "file": "02-stack.md",
+      "exists": false
+    },
+    {
+      "key": "architecture",
+      "file": "03-architecture.md",
+      "exists": false
+    },
+    {
+      "key": "structure",
+      "file": "04-structure.md",
+      "exists": false
+    },
+    {
+      "key": "database",
+      "file": "05-database.md",
+      "exists": true
+    },
+    {
+      "key": "modules/movies",
+      "file": "modules/01-movies.md",
+      "exists": true
+    },
+    {
+      "key": "modules/people",
+      "file": "modules/02-people.md",
+      "exists": true
+    },
+    {
+      "key": "modules/roles",
+      "file": "modules/03-roles.md",
+      "exists": true
+    },
+    {
+      "key": "modules/auxiliary",
+      "file": "modules/04-auxiliary.md",
+      "exists": true
+    },
+    {
+      "key": "features/partial-dates",
+      "file": "features/01-partial-dates.md",
+      "exists": true
+    },
+    {
+      "key": "features/hooks",
+      "file": "features/02-hooks.md",
+      "exists": true
+    },
+    {
+      "key": "features/context-api",
+      "file": "features/03-context-api.md",
+      "exists": true
+    },
+    {
+      "key": "services/api-client",
+      "file": "services/01-api-client.md",
+      "exists": true
+    },
+    {
+      "key": "services/types",
+      "file": "services/02-types.md",
+      "exists": true
+    },
+    {
+      "key": "api/movies",
+      "file": "api/01-movies.md",
+      "exists": true
+    },
+    {
+      "key": "api/people",
+      "file": "api/02-people.md",
+      "exists": true
+    },
+    {
+      "key": "api/roles",
+      "file": "api/03-roles.md",
+      "exists": true
+    },
+    {
+      "key": "api/locations",
+      "file": "api/04-locations.md",
+      "exists": true
+    },
+    {
+      "key": "utils/movie-utils",
+      "file": "utils/01-movie-utils.md",
+      "exists": true
+    },
+    {
+      "key": "utils/people-utils",
+      "file": "utils/02-people-utils.md",
+      "exists": true
+    },
+    {
+      "key": "components/homepage",
+      "file": "components/01-homepage.md",
+      "exists": false
+    },
+    {
+      "key": "components/movie-modal",
+      "file": "components/02-movie-modal.md",
+      "exists": true
+    },
+    {
+      "key": "workflows/patterns",
+      "file": "workflows/01-patterns.md",
+      "exists": true
+    },
+    {
+      "key": "development/scripts",
+      "file": "development/01-scripts.md",
+      "exists": true
+    },
+    {
+      "key": "development/troubleshooting",
+      "file": "development/02-troubleshooting.md",
+      "exists": true
+    },
+    {
+      "key": "status/migration",
+      "file": "status/01-migration.md",
+      "exists": true
+    },
+    {
+      "key": "status/improvements",
+      "file": "status/02-improvements.md",
+      "exists": false
+    },
+    {
+      "key": "status/roadmap",
+      "file": "status/03-roadmap.md",
+      "exists": true
+    },
+    {
+      "key": "appendix/stats",
+      "file": "appendix/01-stats.md",
+      "exists": false
+    },
+    {
+      "key": "appendix/references",
+      "file": "appendix/02-references.md",
+      "exists": true
+    },
+    {
+      "key": "appendix/commands",
+      "file": "appendix/03-commands.md",
+      "exists": true
+    },
+    {
+      "key": "appendix/migration-scripts",
+      "file": "appendix/04-migration-scripts.md",
+      "exists": true
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 0b62021015192a2324c9a2c74995c4027fc7ead9
-// Fecha: 2025-08-21T23:19:07.144Z
+// Commit: 1d9ce0d5122421ef215757876b7a93318ad1bd53
+// Fecha: 2025-08-22T02:12:26.558Z
 // ============================================
 
 
@@ -3858,6 +3858,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/calificaciones/[id] - Obtener una calificación por ID
+/**
+ * GET
+ * @TODO Add documentation
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -3892,6 +3896,10 @@ export async function GET(
 }
 
 // PUT /api/calificaciones/[id] - Actualizar calificación
+/**
+ * PUT
+ * @TODO Add documentation
+ */
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -3940,6 +3948,10 @@ export async function PUT(
 }
 
 // DELETE /api/calificaciones/[id] - Eliminar calificación
+/**
+ * DELETE
+ * @TODO Add documentation
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -4191,6 +4203,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/countries/[id] - Obtener país por ID
+/**
+ * GET
+ * @TODO Add documentation
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -4232,6 +4248,10 @@ export async function GET(
 }
 
 // PUT /api/countries/[id] - Actualizar país
+/**
+ * PUT
+ * @TODO Add documentation
+ */
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -4325,6 +4345,10 @@ export async function PUT(
 }
 
 // DELETE /api/countries/[id] - Eliminar país
+/**
+ * DELETE
+ * @TODO Add documentation
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -4825,6 +4849,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/genres/[id] - Obtener género por ID
+/**
+ * GET
+ * @TODO Add documentation
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -4866,6 +4894,10 @@ export async function GET(
 }
 
 // PUT /api/genres/[id] - Actualizar género
+/**
+ * PUT
+ * @TODO Add documentation
+ */
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -4926,6 +4958,10 @@ export async function PUT(
 }
 
 // DELETE /api/genres/[id] - Eliminar género
+/**
+ * DELETE
+ * @TODO Add documentation
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -5153,10 +5189,22 @@ import { prisma } from '@/lib/prisma'
 import { generateUniqueSlug } from '@/lib/utils/slugs'
 
 // Forzar que esta ruta sea dinámica
+/**
+ * dynamic
+ * @TODO Add documentation
+ */
 export const dynamic = 'force-dynamic'
+/**
+ * revalidate
+ * @TODO Add documentation
+ */
 export const revalidate = 0
 
 // GET /api/locations - Listar lugares con filtros opcionales
+/**
+ * GET
+ * @TODO Add documentation
+ */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -5219,6 +5267,10 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/locations - Crear nuevo lugar
+/**
+ * POST
+ * @TODO Add documentation
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -10585,7 +10637,8 @@ export default function HomePage() {
 
   return (
     <div className="bg-cine-dark text-white min-h-screen">
-      <HeroSection peliculas={PELICULAS_HERO} />
+      {/* Comentada la parte de imágenes de la home */}
+      {/*<HeroSection peliculas={PELICULAS_HERO} />*/}
 
       <div className="bg-cine-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -10758,7 +10811,7 @@ export function MoviePageClient({
 
     // Función para obtener imágenes de fallback optimizadas
     const getFallbackImages = () => [
-        'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=1024&fit=crop&auto=format'
+        '/images/placeholder.jpg'
     ];
 
     // Cargar imágenes al montar el componente
@@ -19014,6 +19067,7 @@ export default function HeroSection({ peliculas }: HeroSectionProps) {
   if (!peliculaActual) return null;
 
   return (
+
     <div className="relative hero-background-container -mt-16 pt-16">
       <div className="hero-image-wrapper">
         <img
@@ -19037,6 +19091,7 @@ export default function HeroSection({ peliculas }: HeroSectionProps) {
       <div className="hero-gradient-bottom"></div>
       <div className="hero-vignette"></div>
     </div>
+    
   );
 }
 
@@ -23093,6 +23148,11 @@ export function useRoles(): UseRolesReturn {
 
 export { MONTHS } from '@/lib/shared/dateUtils';
 
+/**
+ * Estados posibles de producción de una película
+ * @constant
+ * @type {Array<{value: string, label: string}>}
+ */
 export const MOVIE_STAGES = [
   { value: 'COMPLETA', label: 'Completa', description: 'Película terminada y estrenada' },
   { value: 'EN_DESARROLLO', label: 'En desarrollo', description: 'En etapa de desarrollo del proyecto' },
@@ -23103,12 +23163,20 @@ export const MOVIE_STAGES = [
   { value: 'INEDITA', label: 'Inédita', description: 'Completa pero sin estrenar' }
 ] as const
 
+/**
+ * TIPOS_DURACION
+ * @TODO Add documentation
+ */
 export const TIPOS_DURACION = [
   { value: 'largometraje', label: 'Largometraje' },
   { value: 'mediometraje', label: 'Mediometraje' },
   { value: 'cortometraje', label: 'Cortometraje' }
 ] as const
 
+/**
+ * DATA_COMPLETENESS_LEVELS
+ * @TODO Add documentation
+ */
 export const DATA_COMPLETENESS_LEVELS = [
   { value: 'BASIC_PRESS_KIT', label: 'Gacetilla básica', icon: '📄' },
   { value: 'FULL_PRESS_KIT', label: 'Gacetilla completa', icon: '📋' },
@@ -23118,6 +23186,10 @@ export const DATA_COMPLETENESS_LEVELS = [
   { value: 'FULL_CREW', label: 'Todos los técnicos', icon: '🎬' }
 ] as const
 
+/**
+ * SOUND_TYPES
+ * @TODO Add documentation
+ */
 export const SOUND_TYPES = [
   { value: 'Sonora', label: 'Sonora' },
   { value: 'Muda', label: 'Muda' },
@@ -23125,12 +23197,20 @@ export const SOUND_TYPES = [
 ] as const
 
 // Duraciones en minutos
+/**
+ * DURATION_THRESHOLDS
+ * @TODO Add documentation
+ */
 export const DURATION_THRESHOLDS = {
   LARGOMETRAJE: 60,
   MEDIOMETRAJE: 30
 } as const
 
 // Colores para los badges
+/**
+ * STAGE_COLORS
+ * @TODO Add documentation
+ */
 export const STAGE_COLORS = {
   COMPLETA: 'bg-green-100 text-green-800',
   EN_DESARROLLO: 'bg-blue-100 text-blue-800',
@@ -23141,6 +23221,10 @@ export const STAGE_COLORS = {
   INEDITA: 'bg-gray-100 text-gray-800'
 } as const
 
+/**
+ * COMPLETENESS_COLORS
+ * @TODO Add documentation
+ */
 export const COMPLETENESS_COLORS = {
   BASIC_PRESS_KIT: 'bg-red-100 text-red-800',
   FULL_PRESS_KIT: 'bg-orange-100 text-orange-800',
@@ -23171,6 +23255,10 @@ export type PartialFilmingDate = PartialDate
 // ============================================================================
 
 // Schema para campos del formulario (solo campos que se manejan con register)
+/**
+ * movieFormFieldsSchema
+ * @TODO Add documentation
+ */
 export const movieFormFieldsSchema = z.object({
   // Campos requeridos
   title: z.string().min(1, 'El título es requerido'),
@@ -23268,6 +23356,10 @@ export const movieFormFieldsSchema = z.object({
 })
 
 // Schema para fechas parciales (estado interno del formulario)
+/**
+ * moviePartialDatesSchema
+ * @TODO Add documentation
+ */
 export const moviePartialDatesSchema = z.object({
   isPartialReleaseDate: z.boolean().optional(),
   partialReleaseDate: z.object({
@@ -23292,6 +23384,10 @@ export const moviePartialDatesSchema = z.object({
 })
 
 // Schema para relaciones (manejadas por callbacks, no validadas por React Hook Form)
+/**
+ * movieRelationsSchema
+ * @TODO Add documentation
+ */
 export const movieRelationsSchema = z.object({
   genres: z.array(z.number()).optional(),
   cast: z.array(z.object({
@@ -23332,9 +23428,17 @@ export const movieRelationsSchema = z.object({
 })
 
 // Schema principal para React Hook Form (solo valida campos del formulario)
+/**
+ * movieFormSchema
+ * @TODO Add documentation
+ */
 export const movieFormSchema = movieFormFieldsSchema.merge(moviePartialDatesSchema)
 
 // Schema completo para la API (incluye todo)
+/**
+ * movieCompleteSchema
+ * @TODO Add documentation
+ */
 export const movieCompleteSchema = movieFormFieldsSchema
   .merge(moviePartialDatesSchema)
   .merge(movieRelationsSchema)
@@ -23597,6 +23701,11 @@ export const shouldDisableDurationType = (
 import { Gender, PersonLinkType, PersonFormData } from './peopleTypes';
 
 // Opciones de género
+/**
+ * Opciones de género disponibles para personas
+ * @constant
+ * @type {Array<{value: string, label: string}>}
+ */
 export const GENDER_OPTIONS = [
   { value: 'MALE' as Gender, label: 'Masculino' },
   { value: 'FEMALE' as Gender, label: 'Femenino' },
@@ -23604,6 +23713,11 @@ export const GENDER_OPTIONS = [
 ] as const;
 
 // Tipos de links con sus etiquetas
+/**
+ * Tipos de enlaces externos para personas (IMDB, Wikipedia, etc.)
+ * @constant
+ * @type {Array<{value: string, label: string}>}
+ */
 export const PERSON_LINK_TYPES: Record<PersonLinkType, string> = {
   IMDB: 'IMDb',
   TMDB: 'TMDb',
@@ -23628,11 +23742,19 @@ export const PERSON_LINK_TYPES: Record<PersonLinkType, string> = {
 } as const;
 
 // Array de opciones para selects
+/**
+ * PERSON_LINK_TYPE_OPTIONS
+ * @TODO Add documentation
+ */
 export const PERSON_LINK_TYPE_OPTIONS = Object.entries(PERSON_LINK_TYPES).map(
   ([value, label]) => ({ value, label })
 );
 
 // Categorías de links para organización en UI
+/**
+ * LINK_CATEGORIES
+ * @TODO Add documentation
+ */
 export const LINK_CATEGORIES = {
   databases: {
     label: 'Bases de datos',
@@ -23661,6 +23783,10 @@ export const LINK_CATEGORIES = {
 } as const;
 
 // Valores por defecto para formularios
+/**
+ * DEFAULT_PERSON_FORM_VALUES
+ * @TODO Add documentation
+ */
 export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
   firstName: '',
   lastName: '',
@@ -23681,6 +23807,10 @@ export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
 };
 
 // Valores por defecto para un nuevo link
+/**
+ * DEFAULT_PERSON_LINK
+ * @TODO Add documentation
+ */
 export const DEFAULT_PERSON_LINK = {
   type: 'OTHER' as PersonLinkType,
   url: '',
@@ -23691,6 +23821,10 @@ export const DEFAULT_PERSON_LINK = {
 } as const;
 
 // Configuración de paginación
+/**
+ * PEOPLE_PAGINATION
+ * @TODO Add documentation
+ */
 export const PEOPLE_PAGINATION = {
   DEFAULT_PAGE: 1,
   DEFAULT_LIMIT: 20,
@@ -23698,6 +23832,10 @@ export const PEOPLE_PAGINATION = {
 } as const;
 
 // Mensajes de error comunes
+/**
+ * PERSON_ERROR_MESSAGES
+ * @TODO Add documentation
+ */
 export const PERSON_ERROR_MESSAGES = {
   FETCH_ERROR: 'Error al cargar las personas',
   CREATE_ERROR: 'Error al crear la persona',
@@ -23710,6 +23848,10 @@ export const PERSON_ERROR_MESSAGES = {
 } as const;
 
 // Mensajes de éxito
+/**
+ * PERSON_SUCCESS_MESSAGES
+ * @TODO Add documentation
+ */
 export const PERSON_SUCCESS_MESSAGES = {
   CREATED: 'Persona creada exitosamente',
   UPDATED: 'Persona actualizada exitosamente',
@@ -23717,6 +23859,10 @@ export const PERSON_SUCCESS_MESSAGES = {
 } as const;
 
 // Constante para los meses (igual que en movies)
+/**
+ * MONTHS
+ * @TODO Add documentation
+ */
 export const MONTHS = [
   { value: 1, label: 'Enero' },
   { value: 2, label: 'Febrero' },
@@ -24317,6 +24463,10 @@ export enum Department {
 }
 
 // Labels para mostrar al usuario
+/**
+ * DEPARTMENT_LABELS
+ * @TODO Add documentation
+ */
 export const DEPARTMENT_LABELS = {
   [Department.DIRECCION]: 'Dirección',
   [Department.PRODUCCION]: 'Producción',
@@ -24334,6 +24484,10 @@ export const DEPARTMENT_LABELS = {
 } as const;
 
 // Colores para badges
+/**
+ * DEPARTMENT_COLORS
+ * @TODO Add documentation
+ */
 export const DEPARTMENT_COLORS = {
   [Department.DIRECCION]: '#dc2626',
   [Department.PRODUCCION]: '#059669',
@@ -24395,6 +24549,10 @@ export interface PaginatedRolesResponse {
 }
 
 // Validación con Zod
+/**
+ * roleSchema
+ * @TODO Add documentation
+ */
 export const roleSchema = z.object({
   name: z.string()
     .min(1, 'El nombre es requerido')
@@ -24414,14 +24572,26 @@ export const roleSchema = z.object({
 export type RoleFormSchema = z.infer<typeof roleSchema>;
 
 // Utilidades
+/**
+ * getDepartmentLabel
+ * @TODO Add documentation
+ */
 export const getDepartmentLabel = (department: Department): string => {
   return DEPARTMENT_LABELS[department] || department;
 };
 
+/**
+ * getDepartmentColor
+ * @TODO Add documentation
+ */
 export const getDepartmentColor = (department: Department): string => {
   return DEPARTMENT_COLORS[department] || '#6b7280';
 };
 
+/**
+ * getDepartmentOptions
+ * @TODO Add documentation
+ */
 export const getDepartmentOptions = () => {
   return Object.values(Department).map(dept => ({
     value: dept,
@@ -24444,13 +24614,33 @@ import {
 } from './rolesTypes';
 
 // Re-exportar el enum para mantener compatibilidad con imports existentes
+/**
+ * DEPARTMENTS
+ * @TODO Add documentation
+ */
 export const DEPARTMENTS = Department;
 
 // Re-exportar funciones desde rolesTypes
+/**
+ * getDepartmentLabel
+ * @TODO Add documentation
+ */
 export const getDepartmentLabel = getLabel;
+/**
+ * getDepartmentColor
+ * @TODO Add documentation
+ */
 export const getDepartmentColor = getColor;
+/**
+ * getDepartmentOptions
+ * @TODO Add documentation
+ */
 export const getDepartmentOptions = getOptions;
 
+/**
+ * sortRolesByDepartment
+ * @TODO Add documentation
+ */
 export function sortRolesByDepartment(roles: any[]): any[] {
   return [...roles].sort((a, b) => {
     // Roles principales primero
@@ -24471,6 +24661,10 @@ export function sortRolesByDepartment(roles: any[]): any[] {
   });
 }
 
+/**
+ * validateRole
+ * @TODO Add documentation
+ */
 export function validateRole(name: string, department: Department): string | null {
   if (!name || name.trim().length === 0) {
     return 'El nombre del rol es requerido';
@@ -25087,10 +25281,19 @@ export async function generateUniqueSlug(
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+/**
+ * Combina clases de Tailwind CSS de forma segura
+ * @param {...ClassValue} inputs - Clases CSS a combinar
+ * @returns {string} Clases combinadas y optimizadas
+ */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/**
+ * createSlug
+ * @TODO Add documentation
+ */
 export function createSlug(text: string): string {
   return text
     .toLowerCase()
@@ -25101,6 +25304,10 @@ export function createSlug(text: string): string {
     .replace(/-+/g, '-') // Reemplazar múltiples guiones con uno solo
 }
 
+/**
+ * formatDate
+ * @TODO Add documentation
+ */
 export function formatDate(date: Date | string | null): string {
   if (!date) return ''
   const d = new Date(date)
@@ -25111,6 +25318,10 @@ export function formatDate(date: Date | string | null): string {
   })
 }
 
+/**
+ * formatDuration
+ * @TODO Add documentation
+ */
 export function formatDuration(minutes: number | null): string {
   if (!minutes) return ''
   const hours = Math.floor(minutes / 60)

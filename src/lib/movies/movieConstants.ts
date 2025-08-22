@@ -2,6 +2,11 @@
 
 export { MONTHS } from '@/lib/shared/dateUtils';
 
+/**
+ * Estados posibles de producción de una película
+ * @constant
+ * @type {Array<{value: string, label: string}>}
+ */
 export const MOVIE_STAGES = [
   { value: 'COMPLETA', label: 'Completa', description: 'Película terminada y estrenada' },
   { value: 'EN_DESARROLLO', label: 'En desarrollo', description: 'En etapa de desarrollo del proyecto' },
@@ -12,12 +17,20 @@ export const MOVIE_STAGES = [
   { value: 'INEDITA', label: 'Inédita', description: 'Completa pero sin estrenar' }
 ] as const
 
+/**
+ * TIPOS_DURACION
+ * @TODO Add documentation
+ */
 export const TIPOS_DURACION = [
   { value: 'largometraje', label: 'Largometraje' },
   { value: 'mediometraje', label: 'Mediometraje' },
   { value: 'cortometraje', label: 'Cortometraje' }
 ] as const
 
+/**
+ * DATA_COMPLETENESS_LEVELS
+ * @TODO Add documentation
+ */
 export const DATA_COMPLETENESS_LEVELS = [
   { value: 'BASIC_PRESS_KIT', label: 'Gacetilla básica', icon: '📄' },
   { value: 'FULL_PRESS_KIT', label: 'Gacetilla completa', icon: '📋' },
@@ -27,6 +40,10 @@ export const DATA_COMPLETENESS_LEVELS = [
   { value: 'FULL_CREW', label: 'Todos los técnicos', icon: '🎬' }
 ] as const
 
+/**
+ * SOUND_TYPES
+ * @TODO Add documentation
+ */
 export const SOUND_TYPES = [
   { value: 'Sonora', label: 'Sonora' },
   { value: 'Muda', label: 'Muda' },
@@ -34,12 +51,20 @@ export const SOUND_TYPES = [
 ] as const
 
 // Duraciones en minutos
+/**
+ * DURATION_THRESHOLDS
+ * @TODO Add documentation
+ */
 export const DURATION_THRESHOLDS = {
   LARGOMETRAJE: 60,
   MEDIOMETRAJE: 30
 } as const
 
 // Colores para los badges
+/**
+ * STAGE_COLORS
+ * @TODO Add documentation
+ */
 export const STAGE_COLORS = {
   COMPLETA: 'bg-green-100 text-green-800',
   EN_DESARROLLO: 'bg-blue-100 text-blue-800',
@@ -50,6 +75,10 @@ export const STAGE_COLORS = {
   INEDITA: 'bg-gray-100 text-gray-800'
 } as const
 
+/**
+ * COMPLETENESS_COLORS
+ * @TODO Add documentation
+ */
 export const COMPLETENESS_COLORS = {
   BASIC_PRESS_KIT: 'bg-red-100 text-red-800',
   FULL_PRESS_KIT: 'bg-orange-100 text-orange-800',

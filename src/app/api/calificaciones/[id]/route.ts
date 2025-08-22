@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/calificaciones/[id] - Obtener una calificación por ID
+/**
+ * GET
+ * @TODO Add documentation
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -36,6 +40,10 @@ export async function GET(
 }
 
 // PUT /api/calificaciones/[id] - Actualizar calificación
+/**
+ * PUT
+ * @TODO Add documentation
+ */
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -84,6 +92,10 @@ export async function PUT(
 }
 
 // DELETE /api/calificaciones/[id] - Eliminar calificación
+/**
+ * DELETE
+ * @TODO Add documentation
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
