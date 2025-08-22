@@ -19,8 +19,8 @@ jobs:
         script: |
           cd ${{ secrets.VPS_PATH }}
           
-          # Pull últimos cambios
-          git pull origin main
+          git fetch origin main
+          git reset --hard origin/main
           
           # Rebuild y restart Docker
           docker-compose down
