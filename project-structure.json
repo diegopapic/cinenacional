@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-22T22:01:48.728Z",
+  "timestamp": "2025-08-22T22:18:38.150Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "9698cd3b3d34f0ad02da16737e0a96e8fb38b5da",
+  "commit": "25a1ce0fd552efba57ad908635a8d83b49e8befd",
   "structure": {
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
@@ -18,6 +18,8 @@
     "color-analysis.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/color-analysis.json",
     "database-structure-meta.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/database-structure-meta.json",
     "database-structure.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/database-structure.txt",
+    "docker-compose.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/docker-compose.yml",
+    "Dockerfile": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/Dockerfile",
     "docs": {
       "05-database.md": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/docs/05-database.md",
       "api": {

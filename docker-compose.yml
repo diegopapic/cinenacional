@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: cinenacional-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cinenacional
+      POSTGRES_PASSWORD: Paganitzu
+      POSTGRES_DB: cinenacional
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    ports:
+      - "5432:5432"
+    networks:
+      - cinenacional-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cinenacional"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cinenacional-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    networks:
+      - cinenacional-network
+    volumes:
+      - ./public/uploads:/app/public/uploads
+
+volumes:
+  postgres_data:
+
+networks:
+  cinenacional-network:
+    driver: bridge
