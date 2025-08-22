@@ -17,78 +17,156 @@ export async function GET(
     // Determinar si es ID o slug
     const isId = /^\d+$/.test(idOrSlug)
 
+    // OPTIMIZACIÓN: Usar select en lugar de include para traer solo lo necesario
     const movie = await prisma.movie.findUnique({
       where: isId ? { id: parseInt(idOrSlug) } : { slug: idOrSlug },
-      include: {
+      select: {
+        // Campos básicos de la película
+        id: true,
+        slug: true,
+        title: true,
+        year: true,
+        releaseYear: true,
+        releaseMonth: true,
+        releaseDay: true,
+        duration: true,
+        durationSeconds: true,
+        synopsis: true,
+        tagline: true,
+        posterUrl: true,
+        trailerUrl: true,
+        imdbId: true,
+        stage: true,
+        dataCompleteness: true,
+        tipoDuracion: true,
+        metaDescription: true,
+        metaKeywords: true,
+        filmingStartYear: true,
+        filmingStartMonth: true,
+        filmingStartDay: true,
+        filmingEndYear: true,
+        filmingEndMonth: true,
+        filmingEndDay: true,
+        createdAt: true,
+        updatedAt: true,
+        
+        // Relaciones - solo traer los campos necesarios
         colorType: true,
+        
         genres: {
-          include: {
-            genre: true
+          select: {
+            genre: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
           }
         },
+        
         cast: {
-          include: {
-            person: true,
-          },
-          orderBy: {
-            billingOrder: 'asc'
+          orderBy: { billingOrder: 'asc' },
+          select: {
+            characterName: true,
+            billingOrder: true,
+            isPrincipal: true,
+            person: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                slug: true,
+                photoUrl: true
+              }
+            }
           }
         },
+        
         crew: {
-          include: {
-            person: true,
+          orderBy: { billingOrder: 'asc' },
+          select: {
+            roleId: true,
+            billingOrder: true,
+            person: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                slug: true
+              }
+            },
             role: true
-          },
-          orderBy: [
-            { role: { department: 'asc' } },
-            { billingOrder: 'asc' }
-          ]
+          }
         },
+        
         movieCountries: {
-          include: {
-            country: true
+          select: {
+            country: {
+              select: {
+                id: true,
+                name: true,
+                code: true
+              }
+            }
           }
         },
-
+        
         productionCompanies: {
-          include: {
-            company: true
+          select: {
+            company: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         },
+        
         distributionCompanies: {
-          include: {
-            company: true
+          select: {
+            company: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         },
+        
+        themes: {
+          select: {
+            theme: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
+          }
+        },
+        
+        // Para las demás relaciones, mantener include si las necesitás completas
         images: {
-          orderBy: {
-            displayOrder: 'asc'
-          }
+          orderBy: { displayOrder: 'asc' }
         },
+        
         videos: {
-          orderBy: {
-            isPrimary: 'desc'
-          }
+          orderBy: { isPrimary: 'desc' }
         },
+        
         awards: {
           include: {
             award: true,
             recipient: true
           }
         },
-        themes: {
-          include: {
-            theme: true
-          }
-        },
+        
         links: {
-          where: {
-            isActive: true
-          },
-          orderBy: {
-            type: 'asc'
-          }
+          where: { isActive: true },
+          orderBy: { type: 'asc' }
         },
+        
         screenings: {
           include: {
             venue: true

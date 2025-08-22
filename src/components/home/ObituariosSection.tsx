@@ -21,7 +21,6 @@ export default function ObituariosSection({ obituarios, loading = false }: Obitu
                 <div className="flex-1 space-y-2">
                   <div className="h-5 bg-gray-800 rounded w-3/4 animate-pulse" />
                   <div className="h-4 bg-gray-800 rounded w-1/2 animate-pulse" />
-                  <div className="h-3 bg-gray-800 rounded w-1/3 animate-pulse" />
                 </div>
               </div>
             ))}
@@ -35,24 +34,6 @@ export default function ObituariosSection({ obituarios, loading = false }: Obitu
   if (!obituarios || obituarios.length === 0) {
     return null;
   }
-
-  // Función para formatear el rol/profesión de la persona
-  const formatearRoles = (person: any) => {
-    const roles = [];
-    
-    // Contar roles de cast y crew
-    if (person._count) {
-      if (person._count.castRoles > 0) {
-        roles.push('Actor');
-      }
-      if (person._count.crewRoles > 0) {
-        // Aquí podrías ser más específico obteniendo los roles del crew
-        roles.push('Director/Técnico');
-      }
-    }
-    
-    return roles.length > 0 ? roles.join(', ') : 'Profesional del cine';
-  };
 
   // Función para calcular la edad al fallecer
   const calcularEdad = (person: any) => {
@@ -90,14 +71,6 @@ export default function ObituariosSection({ obituarios, loading = false }: Obitu
         <div className="space-y-4">
           {obituarios.map((persona) => {
             const edad = calcularEdad(persona);
-            const fechaMuerte = formatPartialDate(
-              {
-                year: persona.deathYear,
-                month: persona.deathMonth,
-                day: persona.deathDay
-              },
-              { monthFormat: 'long', includeDay: true }
-            );
             
             return (
               <Link 
@@ -125,14 +98,12 @@ export default function ObituariosSection({ obituarios, loading = false }: Obitu
                     {formatearNombre(persona)}
                   </h3>
                   <p className="text-sm text-gray-400">
-                    {formatearRoles(persona)} 
-                    {edad && ` • ${edad} años`}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {persona.birthYear && `${persona.birthYear} - ${persona.deathYear}`}
-                  </p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Falleció el {fechaMuerte}
+                    {persona.birthYear && persona.deathYear && (
+                      <>
+                        {persona.birthYear} - {persona.deathYear}
+                        {edad && ` (${edad} años)`}
+                      </>
+                    )}
                   </p>
                 </div>
               </Link>
