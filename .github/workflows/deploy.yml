@@ -17,24 +17,16 @@ jobs:
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
         script: |
-          # Navegar al directorio del proyecto
           cd ${{ secrets.VPS_PATH }}
           
           # Pull últimos cambios
           git pull origin main
           
-          # Instalar dependencias
-          npm ci
+          # Rebuild y restart Docker
+          docker-compose down
+          docker-compose build --no-cache
+          docker-compose up -d
           
-          # Generar Prisma Client
-          npx prisma generate
-          
-          # Build del proyecto
-          npm run build
-          
-          # Recargar PM2
-          pm2 reload cinenacional --update-env
-          pm2 save
-          
-          # Opcional: Limpiar cache antiguo
-          # rm -rf .next/cache
+          # Verificar que está corriendo
+          docker ps
+          echo "✅ Deployment completado"
