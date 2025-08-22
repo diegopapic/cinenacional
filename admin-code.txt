@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-22T23:27:24.861Z
+// Archivos del admin - 2025-08-22T23:41:36.033Z
 // ==================
 
 
@@ -4455,7 +4455,6 @@ export async function GET(
       id: true,
       slug: true,
       title: true,
-      originalTitle: true,
       year: true,
       releaseYear: true,
       releaseMonth: true,

@@ -109,7 +109,6 @@ export async function GET(
       id: true,
       slug: true,
       title: true,
-      originalTitle: true,
       year: true,
       releaseYear: true,
       releaseMonth: true,
