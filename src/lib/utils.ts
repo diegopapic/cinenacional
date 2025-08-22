@@ -1,10 +1,19 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+/**
+ * Combina clases de Tailwind CSS de forma segura
+ * @param {...ClassValue} inputs - Clases CSS a combinar
+ * @returns {string} Clases combinadas y optimizadas
+ */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/**
+ * createSlug
+ * @TODO Add documentation
+ */
 export function createSlug(text: string): string {
   return text
     .toLowerCase()
@@ -15,6 +24,10 @@ export function createSlug(text: string): string {
     .replace(/-+/g, '-') // Reemplazar múltiples guiones con uno solo
 }
 
+/**
+ * formatDate
+ * @TODO Add documentation
+ */
 export function formatDate(date: Date | string | null): string {
   if (!date) return ''
   const d = new Date(date)
@@ -25,6 +38,10 @@ export function formatDate(date: Date | string | null): string {
   })
 }
 
+/**
+ * formatDuration
+ * @TODO Add documentation
+ */
 export function formatDuration(minutes: number | null): string {
   if (!minutes) return ''
   const hours = Math.floor(minutes / 60)

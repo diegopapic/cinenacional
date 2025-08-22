@@ -109,7 +109,7 @@ export function MoviePageClient({
 
     // Función para obtener imágenes de fallback optimizadas
     const getFallbackImages = () => [
-        'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=1024&fit=crop&auto=format'
+        '/images/placeholder.jpg'
     ];
 
     // Cargar imágenes al montar el componente

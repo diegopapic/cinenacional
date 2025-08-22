@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-21T23:19:07.395Z
+# Generado automáticamente el: 2025-08-22T02:12:26.775Z
 # ================================================
 
 ## Schema Prisma
@@ -37,6 +37,7 @@ model Movie {
   notes            String?  @db.Text
   tagline          String?  @db.VarChar(500)
   posterUrl        String?  @map("poster_url") @db.VarChar(500)
+  posterPublicId   String?  @map("poster_public_id") @db.VarChar(500)
   trailerUrl       String?  @map("trailer_url") @db.VarChar(500)
   imdbId           String?  @map("imdb_id") @db.VarChar(20)
   stage            MovieStage  @default(COMPLETA)
@@ -907,6 +908,7 @@ CREATE TABLE "public"."movies" (
     "notes" TEXT,
     "tagline" VARCHAR(500),
     "poster_url" VARCHAR(500),
+    "poster_public_id" VARCHAR(500),
     "trailer_url" VARCHAR(500),
     "imdb_id" VARCHAR(20),
     "stage" "public"."movie_stage" NOT NULL DEFAULT 'COMPLETA',

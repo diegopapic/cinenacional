@@ -5,10 +5,22 @@ import { prisma } from '@/lib/prisma'
 import { generateUniqueSlug } from '@/lib/utils/slugs'
 
 // Forzar que esta ruta sea dinámica
+/**
+ * dynamic
+ * @TODO Add documentation
+ */
 export const dynamic = 'force-dynamic'
+/**
+ * revalidate
+ * @TODO Add documentation
+ */
 export const revalidate = 0
 
 // GET /api/locations - Listar lugares con filtros opcionales
+/**
+ * GET
+ * @TODO Add documentation
+ */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -71,6 +83,10 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/locations - Crear nuevo lugar
+/**
+ * POST
+ * @TODO Add documentation
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

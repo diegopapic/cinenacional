@@ -1,0 +1,6 @@
+
+  // Agregar estos scripts a tu package.json:
+  "docs:split": "node scripts/update-docs.js",
+  "docs:serve": "mkdocs serve -f docs/mkdocs.yml",
+  "docs:build": "mkdocs build -f docs/mkdocs.yml",
+  "docs:deploy": "mkdocs gh-deploy -f docs/mkdocs.yml"

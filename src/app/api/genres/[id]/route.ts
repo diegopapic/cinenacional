@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 // GET /api/genres/[id] - Obtener género por ID
+/**
+ * GET
+ * @TODO Add documentation
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -44,6 +48,10 @@ export async function GET(
 }
 
 // PUT /api/genres/[id] - Actualizar género
+/**
+ * PUT
+ * @TODO Add documentation
+ */
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -104,6 +112,10 @@ export async function PUT(
 }
 
 // DELETE /api/genres/[id] - Eliminar género
+/**
+ * DELETE
+ * @TODO Add documentation
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }

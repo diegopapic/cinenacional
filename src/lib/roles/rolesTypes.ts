@@ -20,6 +20,10 @@ export enum Department {
 }
 
 // Labels para mostrar al usuario
+/**
+ * DEPARTMENT_LABELS
+ * @TODO Add documentation
+ */
 export const DEPARTMENT_LABELS = {
   [Department.DIRECCION]: 'Dirección',
   [Department.PRODUCCION]: 'Producción',
@@ -37,6 +41,10 @@ export const DEPARTMENT_LABELS = {
 } as const;
 
 // Colores para badges
+/**
+ * DEPARTMENT_COLORS
+ * @TODO Add documentation
+ */
 export const DEPARTMENT_COLORS = {
   [Department.DIRECCION]: '#dc2626',
   [Department.PRODUCCION]: '#059669',
@@ -98,6 +106,10 @@ export interface PaginatedRolesResponse {
 }
 
 // Validación con Zod
+/**
+ * roleSchema
+ * @TODO Add documentation
+ */
 export const roleSchema = z.object({
   name: z.string()
     .min(1, 'El nombre es requerido')
@@ -117,14 +129,26 @@ export const roleSchema = z.object({
 export type RoleFormSchema = z.infer<typeof roleSchema>;
 
 // Utilidades
+/**
+ * getDepartmentLabel
+ * @TODO Add documentation
+ */
 export const getDepartmentLabel = (department: Department): string => {
   return DEPARTMENT_LABELS[department] || department;
 };
 
+/**
+ * getDepartmentColor
+ * @TODO Add documentation
+ */
 export const getDepartmentColor = (department: Department): string => {
   return DEPARTMENT_COLORS[department] || '#6b7280';
 };
 
+/**
+ * getDepartmentOptions
+ * @TODO Add documentation
+ */
 export const getDepartmentOptions = () => {
   return Object.values(Department).map(dept => ({
     value: dept,

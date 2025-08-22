@@ -1,0 +1,55 @@
+site_name: CineNacional Docs
+site_description: Documentación técnica del proyecto CineNacional
+site_author: Diego Papic
+repo_url: https://github.com/diegopapic/cinenacional
+repo_name: diegopapic/cinenacional
+
+theme:
+  name: material
+  language: es
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.highlight
+    - search.share
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+
+nav:
+  - Inicio: README.md
+  - General:
+    - Descripción: 01-overview.md
+    - Stack: 02-stack.md
+    - Arquitectura: 03-architecture.md
+    - Estructura: 04-structure.md
+    - Base de Datos: 05-database.md
+  - Módulos:
+    - Películas: modules/01-movies.md
+    - Personas: modules/02-people.md
+    - Roles: modules/03-roles.md
+    - Auxiliares: modules/04-auxiliary.md
+  - Features:
+    - Fechas Parciales: features/01-partial-dates.md
+    - Hooks: features/02-hooks.md
+    - Context API: features/03-context-api.md
+  - API:
+    - Movies: api/01-movies.md
+    - People: api/02-people.md
+    - Roles: api/03-roles.md
+    - Locations: api/04-locations.md
+  - Desarrollo:
+    - Scripts: development/01-scripts.md
+    - Troubleshooting: development/02-troubleshooting.md
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - meta
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.details
