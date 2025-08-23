@@ -1,37 +1,43 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { POSTER_PLACEHOLDER, BACKGROUND_PLACEHOLDER } from '@/lib/movies/movieConstants';
 
 interface MovieHeroProps {
   title: string;
   year: number | null;
   duration: number;
   genres: string[];
-  gallery: string[];
+  posterUrl?: string | null;
 }
 
-export function MovieHero({ title, year, duration, genres, gallery }: MovieHeroProps) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+export function MovieHero({ title, year, duration, genres, posterUrl }: MovieHeroProps) {
+  const [imageError, setImageError] = useState(false);
 
-  useEffect(() => {
-    if (gallery.length <= 1) return;
-    
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % gallery.length);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [gallery.length]);
-
-  const currentImage = gallery.length > 0 ? gallery[currentImageIndex] : null;
+  // Determinar si tenemos un poster válido
+  const hasValidPoster = posterUrl && posterUrl.trim() !== '' && !imageError;
+  
+  // Usar poster o placeholder
+  const backgroundImage = BACKGROUND_PLACEHOLDER.url;
 
   return (
-    <div className="relative h-[50vh] overflow-hidden">
+    <div className="relative h-[50vh] overflow-hidden bg-gray-900">
       {/* Background Image */}
-      {currentImage && (
-        <div 
-          className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
-          style={{ backgroundImage: `url(${currentImage})` }}
+      <div 
+        className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
+        style={{ 
+          backgroundImage: `url(${backgroundImage})`,
+          filter: hasValidPoster ? 'brightness(0.7)' : 'brightness(0.3)'  // ← Usar hasValidPoster
+        }}
+      />
+      
+      {/* Detectar errores solo si hay posterUrl válido */}
+      {posterUrl && posterUrl.trim() !== '' && (
+        <img 
+          src={posterUrl}
+          alt=""
+          className="hidden"
+          onError={() => setImageError(true)}
         />
       )}
       
@@ -62,24 +68,6 @@ export function MovieHero({ title, year, duration, genres, gallery }: MovieHeroP
           </div>
         </div>
       </div>
-      
-      {/* Image Indicators */}
-      {gallery.length > 1 && (
-        <div className="absolute bottom-4 right-4 flex gap-2">
-          {gallery.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentImageIndex(index)}
-              className={`w-2 h-2 rounded-full transition-all ${
-                index === currentImageIndex 
-                  ? 'bg-white w-8' 
-                  : 'bg-white/50 hover:bg-white/75'
-              }`}
-              aria-label={`Ir a imagen ${index + 1}`}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
