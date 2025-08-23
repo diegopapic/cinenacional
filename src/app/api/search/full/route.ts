@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
         where: {
           OR: [
             { title: { contains: query, mode: 'insensitive' } },
-            { synopsis: { contains: query, mode: 'insensitive' } }
           ]
         },
         select: {
@@ -68,19 +67,22 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        orderBy: [
-          { lastName: 'asc' },
-          { firstName: 'asc' }
-        ],
         take: 50
       })
     ])
 
+    // Ordenar personas por total de participaciones (castRoles + crewRoles) de mayor a menor
+    const sortedPeople = people.sort((a, b) => {
+      const totalA = (a._count?.castRoles || 0) + (a._count?.crewRoles || 0)
+      const totalB = (b._count?.castRoles || 0) + (b._count?.crewRoles || 0)
+      return totalB - totalA // Orden descendente (mayor a menor)
+    })
+
     return NextResponse.json({
       movies: movies,
-      people: people,
+      people: sortedPeople,
       totalMovies: movies.length,
-      totalPeople: people.length
+      totalPeople: sortedPeople.length
     })
 
   } catch (error) {
