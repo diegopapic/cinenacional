@@ -26,6 +26,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # AGREGAR ESTA LÍNEA
+        NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: dzndglyjr
     container_name: cinenacional-app
     restart: unless-stopped
     depends_on:
@@ -33,6 +36,9 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    environment:
+      # También mantenerla aquí para runtime
+      - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dzndglyjr
     ports:
       - "3000:3000"
     networks:
