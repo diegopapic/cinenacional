@@ -17,7 +17,13 @@ COPY . .
 # Generar Prisma Client
 RUN npx prisma generate
 
-# Build de Next.js
+# AGREGAR ESTAS LÍNEAS ANTES DEL BUILD
+# Recibir la variable como argumento de build
+ARG NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+# Establecerla como variable de entorno para el build
+ENV NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=$NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+
+# Build de Next.js (ahora tendrá acceso a la variable)
 RUN npm run build
 
 # Exponer puerto
