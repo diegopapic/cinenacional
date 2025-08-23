@@ -1,13 +1,10 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-23T04:52:26.482Z
+# Generado automáticamente el: 2025-08-23T05:36:46.763Z
 # ================================================
 
 ## Schema Prisma
 
 ```prisma
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -15,83 +12,64 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")  // IMPORTANTE: Esto hace que use DIRECT_URL para migraciones
+  directUrl = env("DIRECT_URL")
 }
 
-// =====================================================
-// MODELOS PRINCIPALES
-// =====================================================
-
 model Movie {
-  id               Int      @id @default(autoincrement())
-  slug             String   @unique @db.VarChar(255)
-  title            String   @db.VarChar(255)
-  year             Int?
-  releaseYear      Int?     @map("release_year")
-  releaseMonth     Int?     @map("release_month") @db.SmallInt
-  releaseDay       Int?     @map("release_day") @db.SmallInt
-  duration         Int?     // en minutos
-  durationSeconds  Int?     @map("duration_seconds")
-  tipoDuracion     String?  @map("tipo_duracion") @db.VarChar(20)
-  synopsis         String?  @db.Text
-  notes            String?  @db.Text
-  tagline          String?  @db.VarChar(500)
-  posterUrl        String?  @map("poster_url") @db.VarChar(500)
-  posterPublicId   String?  @map("poster_public_id") @db.VarChar(500)
-  trailerUrl       String?  @map("trailer_url") @db.VarChar(500)
-  imdbId           String?  @map("imdb_id") @db.VarChar(20)
-  stage            MovieStage  @default(COMPLETA)
-
-  // Información técnica
-  colorTypeId      Int?     @map("color_type_id")
-  colorType        ColorType? @relation(fields: [colorTypeId], references: [id])
-  soundType        String?  @map("sound_type") @db.VarChar(50)
-  
-  // Información legal
-  ratingId          Int?     @map("rating_id")
-  rating            Rating?  @relation(fields: [ratingId], references: [id])
-
-  // Nuevos campos para países y tipo de producción
-  countries          String[]           @default(["Argentina"])
-  is_coproduction    Boolean            @default(false)
-  production_type    String             @default("national")
-
-  // Fechas de rodaje (campos separados como releaseDate)
-  filmingStartYear  Int? @map("filming_start_year")
-  filmingStartMonth Int? @map("filming_start_month") @db.SmallInt
-  filmingStartDay   Int? @map("filming_start_day") @db.SmallInt
-  filmingEndYear    Int? @map("filming_end_year")
-  filmingEndMonth   Int? @map("filming_end_month") @db.SmallInt
-  filmingEndDay     Int? @map("filming_end_day") @db.SmallInt
-  
-  // Status y timestamps
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
-  dataCompleteness DataCompleteness @default(BASIC_PRESS_KIT) @map("data_completeness")
-  
-  // SEO
-  metaDescription  String?  @map("meta_description") @db.Text
-  metaKeywords     String[] @map("meta_keywords")
-  
-  // Relaciones
-  cast             MovieCast[]
-  crew             MovieCrew[]
-  genres           MovieGenre[]
-  productionCompanies MovieProductionCompany[]
+  id                    Int                        @id @default(autoincrement())
+  slug                  String                     @unique @db.VarChar(255)
+  title                 String                     @db.VarChar(255)
+  year                  Int?
+  releaseYear           Int?                       @map("release_year")
+  releaseMonth          Int?                       @map("release_month") @db.SmallInt
+  releaseDay            Int?                       @map("release_day") @db.SmallInt
+  duration              Int?
+  durationSeconds       Int?                       @map("duration_seconds")
+  tipoDuracion          String?                    @map("tipo_duracion") @db.VarChar(20)
+  synopsis              String?
+  notes                 String?
+  tagline               String?                    @db.VarChar(500)
+  posterUrl             String?                    @map("poster_url") @db.VarChar(500)
+  posterPublicId        String?                    @map("poster_public_id") @db.VarChar(500)
+  trailerUrl            String?                    @map("trailer_url") @db.VarChar(500)
+  imdbId                String?                    @map("imdb_id") @db.VarChar(20)
+  stage                 MovieStage                 @default(COMPLETA)
+  colorTypeId           Int?                       @map("color_type_id")
+  soundType             String?                    @map("sound_type") @db.VarChar(50)
+  ratingId              Int?                       @map("rating_id")
+  countries             String[]                   @default(["Argentina"])
+  is_coproduction       Boolean                    @default(false)
+  production_type       String                     @default("national")
+  filmingStartYear      Int?                       @map("filming_start_year")
+  filmingStartMonth     Int?                       @map("filming_start_month") @db.SmallInt
+  filmingStartDay       Int?                       @map("filming_start_day") @db.SmallInt
+  filmingEndYear        Int?                       @map("filming_end_year")
+  filmingEndMonth       Int?                       @map("filming_end_month") @db.SmallInt
+  filmingEndDay         Int?                       @map("filming_end_day") @db.SmallInt
+  createdAt             DateTime                   @default(now()) @map("created_at")
+  updatedAt             DateTime                   @updatedAt @map("updated_at")
+  dataCompleteness      DataCompleteness           @default(BASIC_PRESS_KIT) @map("data_completeness")
+  metaDescription       String?                    @map("meta_description")
+  metaKeywords          String[]                   @map("meta_keywords")
+  alternativeTitles     MovieAlternativeTitle[]
+  awards                MovieAward[]
+  cast                  MovieCast[]
+  movieCountries        MovieCountry[]
+  crew                  MovieCrew[]
   distributionCompanies MovieDistributionCompany[]
-  images           MovieImage[]
-  videos           MovieVideo[]
-  awards           MovieAward[]
-  themes           MovieTheme[]
-  movieCountries   MovieCountry[]  // Renombrado de "countries" a "movieCountries" para evitar conflicto
-  userRatings      UserRating[]
-  watchlists       UserWatchlist[]
-  watchedBy        UserWatched[]
-  alternativeTitles MovieAlternativeTitle[]
-  links            MovieLink[]
-  screenings       MovieScreening[]
-  
-  @@map("movies")
+  genres                MovieGenre[]
+  images                MovieImage[]
+  links                 MovieLink[]
+  productionCompanies   MovieProductionCompany[]
+  screenings            MovieScreening[]
+  themes                MovieTheme[]
+  videos                MovieVideo[]
+  colorType             ColorType?                 @relation(fields: [colorTypeId], references: [id])
+  rating                Rating?                    @relation(fields: [ratingId], references: [id])
+  userRatings           UserRating[]
+  watchedBy             UserWatched[]
+  watchlists            UserWatchlist[]
+
   @@index([slug])
   @@index([title])
   @@index([year])
@@ -105,137 +83,113 @@ model Movie {
   @@index([stage])
   @@index([releaseYear])
   @@index([releaseYear, releaseMonth])
+  @@map("movies")
 }
 
 model ScreeningVenue {
-  id          Int       @id @default(autoincrement())
-  slug        String    @unique @db.VarChar(255)
-  name        String    @db.VarChar(255)
+  id          Int              @id @default(autoincrement())
+  slug        String           @unique @db.VarChar(255)
+  name        String           @db.VarChar(255)
   type        VenueType
-  description String?   @db.Text
-  logoUrl     String?   @map("logo_url") @db.VarChar(500)
-  website     String?   @db.VarChar(500)
-  
-  // Ubicación física (para cines)
-  address     String?   @db.VarChar(500)
-  city        String?   @db.VarChar(100)
-  province    String?   @db.VarChar(100)
-  country     String?   @default("Argentina") @db.VarChar(100)
-  latitude    Decimal?  @db.Decimal(10, 8)
-  longitude   Decimal?  @db.Decimal(11, 8)
-  
-  // Estado y timestamps
-  isActive    Boolean   @default(true) @map("is_active")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  
-  // Relaciones
+  description String?
+  logoUrl     String?          @map("logo_url") @db.VarChar(500)
+  website     String?          @db.VarChar(500)
+  address     String?          @db.VarChar(500)
+  city        String?          @db.VarChar(100)
+  province    String?          @db.VarChar(100)
+  country     String?          @default("Argentina") @db.VarChar(100)
+  latitude    Decimal?         @db.Decimal(10, 8)
+  longitude   Decimal?         @db.Decimal(11, 8)
+  isActive    Boolean          @default(true) @map("is_active")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
   screenings  MovieScreening[]
-  
-  @@map("screening_venues")
+
   @@index([name])
   @@index([type])
   @@index([isActive])
+  @@map("screening_venues")
 }
 
 model MovieScreening {
-  id             Int      @id @default(autoincrement())
-  movieId        Int      @map("movie_id")
-  venueId        Int      @map("venue_id")
-  screeningDate  DateTime? @map("screening_date") @db.Date
-  endDate        DateTime? @map("end_date") @db.Date
-  isPremiere     Boolean  @default(false) @map("is_premiere")
-  isExclusive    Boolean  @default(false) @map("is_exclusive")
-  notes          String?  @db.Text
-  createdAt      DateTime @default(now()) @map("created_at")
-  
-  // Relaciones
-  movie          Movie           @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  venue          ScreeningVenue  @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  
+  id            Int            @id @default(autoincrement())
+  movieId       Int            @map("movie_id")
+  venueId       Int            @map("venue_id")
+  screeningDate DateTime?      @map("screening_date") @db.Date
+  endDate       DateTime?      @map("end_date") @db.Date
+  isPremiere    Boolean        @default(false) @map("is_premiere")
+  isExclusive   Boolean        @default(false) @map("is_exclusive")
+  notes         String?
+  createdAt     DateTime       @default(now()) @map("created_at")
+  movie         Movie          @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  venue         ScreeningVenue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
   @@unique([movieId, venueId, screeningDate])
-  @@map("movie_screenings")
   @@index([movieId])
   @@index([venueId])
   @@index([screeningDate])
+  @@map("movie_screenings")
 }
 
 model MovieAlternativeTitle {
   id          Int      @id @default(autoincrement())
   movieId     Int      @map("movie_id")
   title       String   @db.VarChar(255)
-  description String?  @db.Text // Descripción libre: "Título de rodaje", "Título abreviado", etc.
+  description String?
   createdAt   DateTime @default(now()) @map("created_at")
-  
-  // Relación
   movie       Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  
-  @@map("movie_alternative_titles")
+
   @@index([movieId])
   @@index([title])
+  @@map("movie_alternative_titles")
 }
 
 model MovieLink {
   id        Int      @id @default(autoincrement())
   movieId   Int      @map("movie_id")
   type      LinkType
-  url       String   @db.Text
+  url       String
   title     String?  @db.VarChar(255)
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  
-  // Relaciones
   movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  
-  @@map("movie_links")
+
   @@index([movieId])
   @@index([type])
+  @@map("movie_links")
 }
 
 model Person {
-  id              Int      @id @default(autoincrement())
-  slug            String   @unique @db.VarChar(255)
-  firstName       String?   @map("first_name") @db.VarChar(255)
-  lastName        String?   @map("last_name") @db.VarChar(255)
-  realName        String?  @map("real_name") @db.VarChar(255)
-  // Fecha de nacimiento parcial (reemplaza birthDate)
-  birthYear       Int?     @map("birth_year")
-  birthMonth      Int?     @map("birth_month") @db.SmallInt
-  birthDay        Int?     @map("birth_day") @db.SmallInt
-  
-  // Fecha de fallecimiento parcial (reemplaza deathDate)
-  deathYear       Int?     @map("death_year")
-  deathMonth      Int?     @map("death_month") @db.SmallInt
-  deathDay        Int?     @map("death_day") @db.SmallInt
-
-  birthLocationId Int?     @map("birth_location_id")
-  deathLocationId Int?     @map("death_location_id")
-  biography       String?  @db.Text
-  photoUrl        String?  @map("photo_url") @db.VarChar(500)
+  id              Int                 @id @default(autoincrement())
+  slug            String              @unique @db.VarChar(255)
+  firstName       String?             @map("first_name") @db.VarChar(255)
+  lastName        String?             @map("last_name") @db.VarChar(255)
+  realName        String?             @map("real_name") @db.VarChar(255)
+  birthYear       Int?                @map("birth_year")
+  birthMonth      Int?                @map("birth_month") @db.SmallInt
+  birthDay        Int?                @map("birth_day") @db.SmallInt
+  deathYear       Int?                @map("death_year")
+  deathMonth      Int?                @map("death_month") @db.SmallInt
+  deathDay        Int?                @map("death_day") @db.SmallInt
+  birthLocationId Int?                @map("birth_location_id")
+  deathLocationId Int?                @map("death_location_id")
+  biography       String?
+  photoUrl        String?             @map("photo_url") @db.VarChar(500)
   gender          Gender?
-  hideAge         Boolean  @default(false) @map("hide_age")
-  
-  // Campos de búsqueda rápida (opcional, para optimización)
-  hasLinks        Boolean  @default(false) @map("has_links")
-  
-  // Status
-  isActive        Boolean  @default(true) @map("is_active")
-  
-  // Timestamps
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  
-  // Relaciones
+  hideAge         Boolean             @default(false) @map("hide_age")
+  hasLinks        Boolean             @default(false) @map("has_links")
+  isActive        Boolean             @default(true) @map("is_active")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  awards          MovieAward[]
   castRoles       MovieCast[]
   crewRoles       MovieCrew[]
-  awards          MovieAward[]
-  birthLocation   Location?    @relation("BirthLocation", fields: [birthLocationId], references: [id])
-  deathLocation   Location?    @relation("DeathLocation", fields: [deathLocationId], references: [id])
-  nationalities   PersonNationality[]
+  birthLocation   Location?           @relation("BirthLocation", fields: [birthLocationId], references: [id])
+  deathLocation   Location?           @relation("DeathLocation", fields: [deathLocationId], references: [id])
   links           PersonLink[]
-  
-  @@map("people")
+  nationalities   PersonNationality[]
+
   @@index([slug])
   @@index([firstName])
   @@index([lastName])
@@ -246,94 +200,81 @@ model Person {
   @@index([birthYear, birthMonth])
   @@index([deathYear])
   @@index([deathYear, deathMonth])
+  @@map("people")
 }
 
 model PersonNationality {
-  personId    Int     @map("person_id")
-  locationId   Int     @map("location_id")
-  isPrimary   Boolean @default(false) @map("is_primary")
-  
-  // Relaciones
-  person      Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
-  location    Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  
+  personId   Int      @map("person_id")
+  locationId Int      @map("location_id")
+  isPrimary  Boolean  @default(false) @map("is_primary")
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  person     Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
   @@id([personId, locationId])
   @@map("person_nationalities")
 }
 
 model PersonLink {
-  id           Int      @id @default(autoincrement())
-  personId     Int      @map("person_id")
+  id           Int            @id @default(autoincrement())
+  personId     Int            @map("person_id")
   type         PersonLinkType
-  url          String   @db.VarChar(500)
-  title        String?  @db.VarChar(255)
-  displayOrder Int      @default(0) @map("display_order")
-  isVerified   Boolean  @default(false) @map("is_verified")
-  isActive     Boolean  @default(true) @map("is_active")
-  lastChecked  DateTime? @map("last_checked")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  
-  // Relaciones
-  person       Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
-  
-  @@map("person_links")
+  url          String         @db.VarChar(500)
+  title        String?        @db.VarChar(255)
+  displayOrder Int            @default(0) @map("display_order")
+  isVerified   Boolean        @default(false) @map("is_verified")
+  isActive     Boolean        @default(true) @map("is_active")
+  lastChecked  DateTime?      @map("last_checked")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  person       Person         @relation(fields: [personId], references: [id], onDelete: Cascade)
+
   @@index([personId])
   @@index([type])
   @@index([isActive])
+  @@map("person_links")
 }
 
 model Genre {
-  id          Int      @id @default(autoincrement())
-  slug        String   @unique @db.VarChar(100)
-  name        String   @db.VarChar(100)
-  description String?  @db.Text
-  createdAt   DateTime @default(now()) @map("created_at")
-  
-  // Relaciones
+  id          Int          @id @default(autoincrement())
+  slug        String       @unique @db.VarChar(100)
+  name        String       @db.VarChar(100)
+  description String?
+  createdAt   DateTime     @default(now()) @map("created_at")
   movies      MovieGenre[]
-  
+
   @@map("genres")
 }
 
 model ProductionCompany {
-  id          Int      @id @default(autoincrement())
-  slug        String   @unique @db.VarChar(255)
-  name        String   @db.VarChar(255)
-  description String?  @db.Text
-  foundedYear Int?     @map("founded_year")
-  logoUrl     String?  @map("logo_url") @db.VarChar(500)
-  website     String?  @db.VarChar(500)
-  country     String?  @db.VarChar(100)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  
-  // Relaciones
+  id          Int                      @id @default(autoincrement())
+  slug        String                   @unique @db.VarChar(255)
+  name        String                   @db.VarChar(255)
+  description String?
+  foundedYear Int?                     @map("founded_year")
+  logoUrl     String?                  @map("logo_url") @db.VarChar(500)
+  website     String?                  @db.VarChar(500)
+  country     String?                  @db.VarChar(100)
+  createdAt   DateTime                 @default(now()) @map("created_at")
+  updatedAt   DateTime                 @updatedAt @map("updated_at")
   movies      MovieProductionCompany[]
-  
+
   @@map("production_companies")
 }
 
 model DistributionCompany {
-  id          Int      @id @default(autoincrement())
-  slug        String   @unique @db.VarChar(255)
-  name        String   @db.VarChar(255)
-  description String?  @db.Text
-  logoUrl     String?  @map("logo_url") @db.VarChar(500)
-  website     String?  @db.VarChar(500)
-  country     String?  @db.VarChar(100)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  
-  // Relaciones
+  id          Int                        @id @default(autoincrement())
+  slug        String                     @unique @db.VarChar(255)
+  name        String                     @db.VarChar(255)
+  description String?
+  logoUrl     String?                    @map("logo_url") @db.VarChar(500)
+  website     String?                    @db.VarChar(500)
+  country     String?                    @db.VarChar(100)
+  createdAt   DateTime                   @default(now()) @map("created_at")
+  updatedAt   DateTime                   @updatedAt @map("updated_at")
   movies      MovieDistributionCompany[]
-  
+
   @@map("distribution_companies")
 }
-
-// =====================================================
-// MODELOS DE RELACIÓN
-// =====================================================
 
 model MovieCast {
   id            Int      @id @default(autoincrement())
@@ -342,17 +283,15 @@ model MovieCast {
   characterName String?  @map("character_name") @db.VarChar(255)
   billingOrder  Int?     @map("billing_order")
   isPrincipal   Boolean  @default(false) @map("is_principal")
-  notes         String?  @db.Text
+  notes         String?
   createdAt     DateTime @default(now()) @map("created_at")
-  
-  // Relaciones
   movie         Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
   person        Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
-  
+
   @@unique([movieId, personId, characterName])
-  @@map("movie_cast")
   @@index([movieId])
   @@index([personId])
+  @@map("movie_cast")
 }
 
 model MovieCrew {
@@ -361,10 +300,9 @@ model MovieCrew {
   personId     Int      @map("person_id")
   roleId       Int      @map("role_id")
   billingOrder Int?     @map("billing_order")
-  notes        String?  @db.Text
+  notes        String?
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-
   movie        Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
   person       Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
   role         Role     @relation(fields: [roleId], references: [id])
@@ -380,195 +318,164 @@ model MovieGenre {
   movieId   Int     @map("movie_id")
   genreId   Int     @map("genre_id")
   isPrimary Boolean @default(false) @map("is_primary")
-  
-  // Relaciones
-  movie     Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
   genre     Genre   @relation(fields: [genreId], references: [id], onDelete: Cascade)
-  
+  movie     Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
   @@id([movieId, genreId])
   @@map("movie_genres")
 }
 
 model MovieProductionCompany {
-  movieId   Int     @map("movie_id")
-  companyId Int     @map("company_id")
-  isPrimary Boolean @default(false) @map("is_primary")
-  
-  // Relaciones
-  movie     Movie             @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  movieId   Int               @map("movie_id")
+  companyId Int               @map("company_id")
+  isPrimary Boolean           @default(false) @map("is_primary")
   company   ProductionCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
+  movie     Movie             @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
   @@id([movieId, companyId])
   @@map("movie_production_companies")
 }
 
 model MovieDistributionCompany {
-  movieId   Int    @map("movie_id")
-  companyId Int    @map("company_id")
-  territory String @default("Argentina") @db.VarChar(100)
-  
-  // Relaciones
-  movie     Movie               @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  movieId   Int                 @map("movie_id")
+  companyId Int                 @map("company_id")
+  territory String              @default("Argentina") @db.VarChar(100)
   company   DistributionCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
+  movie     Movie               @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
   @@id([movieId, companyId, territory])
   @@map("movie_distribution_companies")
 }
 
 model ColorType {
-  id            Int      @id @default(autoincrement())
-  name          String   @db.VarChar(50)
-  slug          String   @unique @db.VarChar(50)
+  id            Int           @id @default(autoincrement())
+  name          String        @db.VarChar(50)
+  slug          String        @unique @db.VarChar(50)
   category      ColorCategory
-  technicalName String?  @map("technical_name") @db.VarChar(50)
-  displayOrder  Int      @default(0) @map("display_order")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-  
-  // Relaciones
+  technicalName String?       @map("technical_name") @db.VarChar(50)
+  displayOrder  Int           @default(0) @map("display_order")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
   movies        Movie[]
-  
-  @@map("color_types")
+
   @@index([category])
   @@index([slug])
+  @@map("color_types")
 }
 
 model Location {
-  id              Int       @id @default(autoincrement())
-  name            String    @db.VarChar(255)
-  slug            String    @unique @db.VarChar(255) 
-  parentId        Int?      @map("parent_id")
-  latitude        Decimal?  @db.Decimal(10, 8)
-  longitude       Decimal?  @db.Decimal(11, 8)
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  
-  // Relaciones
-  parent          Location? @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
-  children        Location[] @relation("LocationHierarchy")
-  gentilicio  String?   @db.VarChar(255)
-  peopleBornHere  Person[]  @relation("BirthLocation")
-  peopleDiedHere  Person[]  @relation("DeathLocation")
+  id                  Int                 @id @default(autoincrement())
+  name                String              @db.VarChar(255)
+  slug                String              @unique @db.VarChar(255)
+  parentId            Int?                @map("parent_id")
+  latitude            Decimal?            @db.Decimal(10, 8)
+  longitude           Decimal?            @db.Decimal(11, 8)
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  gentilicio          String?             @db.VarChar(255)
+  parent              Location?           @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children            Location[]          @relation("LocationHierarchy")
+  peopleBornHere      Person[]            @relation("BirthLocation")
+  peopleDiedHere      Person[]            @relation("DeathLocation")
   personNationalities PersonNationality[]
 
-    
-  @@map("locations")
   @@index([parentId])
   @@index([name])
   @@index([slug])
+  @@map("locations")
 }
 
-// =====================================================
-// CONTENIDO MULTIMEDIA
-// =====================================================
-
 model MovieImage {
-  id           Int      @id @default(autoincrement())
-  movieId      Int      @map("movie_id")
-  url          String   @db.VarChar(500)
+  id           Int       @id @default(autoincrement())
+  movieId      Int       @map("movie_id")
+  url          String    @db.VarChar(500)
   type         ImageType
   width        Int?
   height       Int?
-  caption      String?  @db.Text
-  photographer String?  @db.VarChar(255)
-  displayOrder Int      @default(0) @map("display_order")
-  isPrimary    Boolean  @default(false) @map("is_primary")
-  createdAt    DateTime @default(now()) @map("created_at")
-  
-  // Relaciones
-  movie        Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  
+  caption      String?
+  photographer String?   @db.VarChar(255)
+  displayOrder Int       @default(0) @map("display_order")
+  isPrimary    Boolean   @default(false) @map("is_primary")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  movie        Movie     @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
   @@map("movie_images")
 }
 
 model MovieVideo {
-  id        Int      @id @default(autoincrement())
-  movieId   Int      @map("movie_id")
-  url       String   @db.VarChar(500)
-  platform  String?  @db.VarChar(50)
-  videoKey  String?  @map("video_key") @db.VarChar(100)
+  id        Int       @id @default(autoincrement())
+  movieId   Int       @map("movie_id")
+  url       String    @db.VarChar(500)
+  platform  String?   @db.VarChar(50)
+  videoKey  String?   @map("video_key") @db.VarChar(100)
   type      VideoType
-  title     String?  @db.VarChar(255)
-  duration  Int?     // en segundos
-  language  String   @default("es") @db.VarChar(10)
-  isPrimary Boolean  @default(false) @map("is_primary")
-  createdAt DateTime @default(now()) @map("created_at")
-  
-  // Relaciones
-  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  
+  title     String?   @db.VarChar(255)
+  duration  Int?
+  language  String    @default("es") @db.VarChar(10)
+  isPrimary Boolean   @default(false) @map("is_primary")
+  createdAt DateTime  @default(now()) @map("created_at")
+  movie     Movie     @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
   @@map("movie_videos")
 }
 
-// =====================================================
-// INFORMACIÓN ADICIONAL
-// =====================================================
-
 model Award {
-  id           Int      @id @default(autoincrement())
-  name         String   @db.VarChar(255)
-  organization String?  @db.VarChar(255)
-  country      String?  @db.VarChar(100)
-  description  String?  @db.Text
-  logoUrl      String?  @map("logo_url") @db.VarChar(500)
-  createdAt    DateTime @default(now()) @map("created_at")
-  
-  // Relaciones
+  id           Int          @id @default(autoincrement())
+  name         String       @db.VarChar(255)
+  organization String?      @db.VarChar(255)
+  country      String?      @db.VarChar(100)
+  description  String?
+  logoUrl      String?      @map("logo_url") @db.VarChar(500)
+  createdAt    DateTime     @default(now()) @map("created_at")
   movieAwards  MovieAward[]
-  
+
   @@map("awards")
 }
 
 model MovieAward {
-  id                Int      @id @default(autoincrement())
-  movieId           Int      @map("movie_id")
-  awardId           Int      @map("award_id")
-  category          String   @db.VarChar(255)
+  id                Int         @id @default(autoincrement())
+  movieId           Int         @map("movie_id")
+  awardId           Int         @map("award_id")
+  category          String      @db.VarChar(255)
   year              Int
   result            AwardResult
-  recipientPersonId Int?     @map("recipient_person_id")
-  notes             String?  @db.Text
-  createdAt         DateTime @default(now()) @map("created_at")
-  
-  // Relaciones
-  movie             Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  award             Award    @relation(fields: [awardId], references: [id], onDelete: Cascade)
-  recipient         Person?  @relation(fields: [recipientPersonId], references: [id])
-  
+  recipientPersonId Int?        @map("recipient_person_id")
+  notes             String?
+  createdAt         DateTime    @default(now()) @map("created_at")
+  award             Award       @relation(fields: [awardId], references: [id], onDelete: Cascade)
+  movie             Movie       @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  recipient         Person?     @relation(fields: [recipientPersonId], references: [id])
+
   @@map("movie_awards")
 }
 
 model Theme {
-  id          Int      @id @default(autoincrement())
-  slug        String   @unique @db.VarChar(100)
-  name        String   @db.VarChar(100)
-  description String?  @db.Text
-  usageCount  Int      @default(0) @map("usage_count")
-  createdAt   DateTime @default(now()) @map("created_at")
-  
-  // Relaciones
+  id          Int          @id @default(autoincrement())
+  slug        String       @unique @db.VarChar(100)
+  name        String       @db.VarChar(100)
+  description String?
+  usageCount  Int          @default(0) @map("usage_count")
+  createdAt   DateTime     @default(now()) @map("created_at")
   movies      MovieTheme[]
-  
-  @@map("themes")
+
   @@index([slug])
   @@index([name])
+  @@map("themes")
 }
 
 model Role {
-  id          Int        @id @default(autoincrement())
-  name        String     @db.VarChar(100)
-  slug        String     @unique @db.VarChar(100)
+  id          Int         @id @default(autoincrement())
+  name        String      @db.VarChar(100)
+  slug        String      @unique @db.VarChar(100)
   department  Department
-  description String?    @db.Text
-  isMainRole  Boolean    @default(false) @map("is_main_role")
-  isActive    Boolean    @default(true) @map("is_active")
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @updatedAt @map("updated_at")
-
-  // Relaciones
+  description String?
+  isMainRole  Boolean     @default(false) @map("is_main_role")
+  isActive    Boolean     @default(true) @map("is_active")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
   crewRoles   MovieCrew[]
 
-  @@unique([name, department]) // Un rol único por departamento
+  @@unique([name, department])
   @@index([department])
   @@index([isActive])
   @@index([isMainRole])
@@ -576,45 +483,38 @@ model Role {
 }
 
 model Rating {
-  id              Int      @id @default(autoincrement())
-  slug            String   @unique @db.VarChar(100)
-  name            String   @unique @db.VarChar(255)
-  abbreviation    String?  @db.VarChar(10)
-  description     String?  @db.Text
-  order           Int      @default(0)
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  
-  // Relaciones
-  movies          Movie[]
-  
-  @@map("ratings")
+  id           Int      @id @default(autoincrement())
+  slug         String   @unique @db.VarChar(100)
+  name         String   @unique @db.VarChar(255)
+  abbreviation String?  @db.VarChar(10)
+  description  String?
+  order        Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  movies       Movie[]
+
   @@index([slug])
   @@index([order])
+  @@map("ratings")
 }
 
 model MovieTheme {
-  movieId   Int @map("movie_id")
-  themeId   Int @map("theme_id")
-  relevance Int @default(1) // 1-5
-  
-  // Relaciones
+  movieId   Int   @map("movie_id")
+  themeId   Int   @map("theme_id")
+  relevance Int   @default(1)
   movie     Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
   theme     Theme @relation(fields: [themeId], references: [id], onDelete: Cascade)
-  
+
   @@id([movieId, themeId])
   @@map("movie_themes")
 }
 
 model Country {
-  id        Int      @id @default(autoincrement())
-  code      String   @unique @db.VarChar(2)
-  name      String   @db.VarChar(100)
-  createdAt DateTime @default(now()) @map("created_at")
-  
-  // Relaciones
+  id        Int            @id @default(autoincrement())
+  code      String         @unique @db.VarChar(2)
+  name      String         @db.VarChar(100)
+  createdAt DateTime       @default(now()) @map("created_at")
   movies    MovieCountry[]
-  // personNationalities PersonNationality[]
 
   @@map("countries")
 }
@@ -623,11 +523,9 @@ model MovieCountry {
   movieId   Int     @map("movie_id")
   countryId Int     @map("country_id")
   isPrimary Boolean @default(false) @map("is_primary")
-  
-  // Relaciones
-  movie     Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
   country   Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
-  
+  movie     Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
   @@id([movieId, countryId])
   @@map("movie_countries")
 }
@@ -637,32 +535,26 @@ model Language {
   code      String   @unique @db.VarChar(10)
   name      String   @db.VarChar(100)
   createdAt DateTime @default(now()) @map("created_at")
-  
+
   @@map("languages")
 }
 
-// =====================================================
-// USUARIOS Y INTERACCIONES
-// =====================================================
-
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique @db.VarChar(255)
-  username     String   @unique @db.VarChar(100)
-  passwordHash String   @map("password_hash") @db.VarChar(255)
-  displayName  String?  @map("display_name") @db.VarChar(255)
-  avatarUrl    String?  @map("avatar_url") @db.VarChar(500)
-  bio          String?  @db.Text
-  isActive     Boolean  @default(true) @map("is_active")
-  isAdmin      Boolean  @default(false) @map("is_admin")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  
-  // Relaciones
+  id           Int             @id @default(autoincrement())
+  email        String          @unique @db.VarChar(255)
+  username     String          @unique @db.VarChar(100)
+  passwordHash String          @map("password_hash") @db.VarChar(255)
+  displayName  String?         @map("display_name") @db.VarChar(255)
+  avatarUrl    String?         @map("avatar_url") @db.VarChar(500)
+  bio          String?
+  isActive     Boolean         @default(true) @map("is_active")
+  isAdmin      Boolean         @default(false) @map("is_admin")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
   ratings      UserRating[]
-  watchlist    UserWatchlist[]
   watched      UserWatched[]
-  
+  watchlist    UserWatchlist[]
+
   @@map("users")
 }
 
@@ -670,27 +562,23 @@ model UserRating {
   userId     Int      @map("user_id")
   movieId    Int      @map("movie_id")
   rating     Decimal  @db.Decimal(3, 1)
-  reviewText String?  @map("review_text") @db.Text
+  reviewText String?  @map("review_text")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
-  
-  // Relaciones
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   movie      Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@id([userId, movieId])
   @@map("user_ratings")
 }
 
 model UserWatchlist {
-  userId    Int      @map("user_id")
-  movieId   Int      @map("movie_id")
-  addedAt   DateTime @default(now()) @map("added_at")
-  
-  // Relaciones
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  
+  userId  Int      @map("user_id")
+  movieId Int      @map("movie_id")
+  addedAt DateTime @default(now()) @map("added_at")
+  movie   Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@id([userId, movieId])
   @@map("user_watchlist")
 }
@@ -699,25 +587,19 @@ model UserWatched {
   userId    Int      @map("user_id")
   movieId   Int      @map("movie_id")
   watchedAt DateTime @default(now()) @map("watched_at")
-  
-  // Relaciones
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@id([userId, movieId])
   @@map("user_watched")
 }
-
-// =====================================================
-// ENUMS
-// =====================================================
 
 enum ImageType {
   POSTER
   BACKDROP
   STILL
   BEHIND_SCENES
-  
+
   @@map("image_type")
 }
 
@@ -741,45 +623,32 @@ enum Gender {
   MALE
   FEMALE
   OTHER
-  
+
   @@map("gender")
 }
 
 enum PersonLinkType {
-  // Bases de datos de cine
   IMDB
   TMDB
   CINENACIONAL
-  
-  // Enciclopedias
   WIKIPEDIA
-  
-  // Sitios web
   OFFICIAL_WEBSITE
   PORTFOLIO
   BLOG
-  
-  // Redes sociales principales
   INSTAGRAM
   TWITTER
   FACEBOOK
   YOUTUBE
   TIKTOK
   LINKEDIN
-  
-  // Plataformas de contenido
   VIMEO
   LETTERBOXD
-  
-  // Streaming/Podcasts
   SPOTIFY
   PODCAST
-  
-  // Otros
   INTERVIEW
   ARTICLE
   OTHER
-  
+
   @@map("person_link_type")
 }
 
@@ -788,7 +657,7 @@ enum VenueType {
   STREAMING
   TV_CHANNEL
   OTHER
-  
+
   @@map("venue_type")
 }
 
@@ -798,25 +667,25 @@ enum VideoType {
   BEHIND_SCENES
   INTERVIEW
   CLIP
-  
+
   @@map("video_type")
 }
 
 enum AwardResult {
   WON
   NOMINATED
-  
+
   @@map("award_result")
 }
 
 enum DataCompleteness {
-  BASIC_PRESS_KIT     // Gacetilla básica
-  FULL_PRESS_KIT      // Gacetilla completa
-  MAIN_CAST           // Intérpretes principales
-  MAIN_CREW           // Técnicos principales  
-  FULL_CAST           // Todos los intérpretes
-  FULL_CREW           // Todos los técnicos
-  
+  BASIC_PRESS_KIT
+  FULL_PRESS_KIT
+  MAIN_CAST
+  MAIN_CREW
+  FULL_CAST
+  FULL_CREW
+
   @@map("data_completeness")
 }
 
@@ -827,7 +696,7 @@ enum LinkType {
   TIKTOK
   YOUTUBE
   WEBSITE
-  
+
   @@map("link_type")
 }
 
@@ -836,7 +705,7 @@ enum ColorCategory {
   BLACK_AND_WHITE
   MIXED
   UNKNOWN
-  
+
   @@map("color_category")
 }
 
@@ -848,9 +717,10 @@ enum MovieStage {
   EN_RODAJE
   INCONCLUSA
   INEDITA
-  
+
   @@map("movie_stage")
 }
+
 ```
 
 ## SQL Generado
@@ -1606,10 +1476,10 @@ ALTER TABLE "public"."people" ADD CONSTRAINT "people_birth_location_id_fkey" FOR
 ALTER TABLE "public"."people" ADD CONSTRAINT "people_death_location_id_fkey" FOREIGN KEY ("death_location_id") REFERENCES "public"."locations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."person_nationalities" ADD CONSTRAINT "person_nationalities_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."person_nationalities" ADD CONSTRAINT "person_nationalities_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."locations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."person_nationalities" ADD CONSTRAINT "person_nationalities_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."locations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."person_nationalities" ADD CONSTRAINT "person_nationalities_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."person_links" ADD CONSTRAINT "person_links_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1630,22 +1500,22 @@ ALTER TABLE "public"."movie_crew" ADD CONSTRAINT "movie_crew_person_id_fkey" FOR
 ALTER TABLE "public"."movie_crew" ADD CONSTRAINT "movie_crew_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_genres" ADD CONSTRAINT "movie_genres_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "public"."movie_genres" ADD CONSTRAINT "movie_genres_genre_id_fkey" FOREIGN KEY ("genre_id") REFERENCES "public"."genres"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_production_companies" ADD CONSTRAINT "movie_production_companies_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."movie_genres" ADD CONSTRAINT "movie_genres_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_production_companies" ADD CONSTRAINT "movie_production_companies_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."production_companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_distribution_companies" ADD CONSTRAINT "movie_distribution_companies_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."movie_production_companies" ADD CONSTRAINT "movie_production_companies_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_distribution_companies" ADD CONSTRAINT "movie_distribution_companies_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."distribution_companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."movie_distribution_companies" ADD CONSTRAINT "movie_distribution_companies_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."locations" ADD CONSTRAINT "locations_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."locations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1657,10 +1527,10 @@ ALTER TABLE "public"."movie_images" ADD CONSTRAINT "movie_images_movie_id_fkey" 
 ALTER TABLE "public"."movie_videos" ADD CONSTRAINT "movie_videos_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_awards" ADD CONSTRAINT "movie_awards_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."movie_awards" ADD CONSTRAINT "movie_awards_award_id_fkey" FOREIGN KEY ("award_id") REFERENCES "public"."awards"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_awards" ADD CONSTRAINT "movie_awards_award_id_fkey" FOREIGN KEY ("award_id") REFERENCES "public"."awards"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."movie_awards" ADD CONSTRAINT "movie_awards_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_awards" ADD CONSTRAINT "movie_awards_recipient_person_id_fkey" FOREIGN KEY ("recipient_person_id") REFERENCES "public"."people"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -1672,28 +1542,28 @@ ALTER TABLE "public"."movie_themes" ADD CONSTRAINT "movie_themes_movie_id_fkey" 
 ALTER TABLE "public"."movie_themes" ADD CONSTRAINT "movie_themes_theme_id_fkey" FOREIGN KEY ("theme_id") REFERENCES "public"."themes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "public"."countries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_ratings" ADD CONSTRAINT "user_ratings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."user_ratings" ADD CONSTRAINT "user_ratings_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_watchlist" ADD CONSTRAINT "user_watchlist_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."user_ratings" ADD CONSTRAINT "user_ratings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."user_watchlist" ADD CONSTRAINT "user_watchlist_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_watched" ADD CONSTRAINT "user_watched_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."user_watchlist" ADD CONSTRAINT "user_watchlist_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."user_watched" ADD CONSTRAINT "user_watched_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."user_watched" ADD CONSTRAINT "user_watched_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 
 ```
