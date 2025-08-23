@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
           select: {
             person: {
               select: {
+                slug: true,
                 firstName: true,
                 lastName: true
               }
@@ -67,6 +68,7 @@ export async function GET(request: NextRequest) {
           select: {
             person: {
               select: {
+                slug: true,
                 firstName: true,
                 lastName: true
               }
@@ -101,6 +103,7 @@ export async function GET(request: NextRequest) {
           select: {
             person: {
               select: {
+                slug: true,
                 firstName: true,
                 lastName: true
               }
@@ -231,7 +234,7 @@ export async function GET(request: NextRequest) {
       const directorName = director 
         ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
         : null;
-        
+      const directorSlug = director?.slug;
       const efemeride = formatearEfemeride({
         tipo: 'pelicula',
         tipoEvento: 'estreno',
@@ -241,6 +244,7 @@ export async function GET(request: NextRequest) {
         fecha: new Date(pelicula.releaseYear!, pelicula.releaseMonth! - 1, pelicula.releaseDay!),
         titulo: pelicula.title,
         director: directorName || undefined,
+        directorSlug: directorSlug || undefined,
         slug: pelicula.slug,
         posterUrl: pelicula.posterUrl || undefined
       });
@@ -253,7 +257,7 @@ export async function GET(request: NextRequest) {
       const directorName = director 
         ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
         : null;
-        
+      const directorSlug = director?.slug;
       const efemeride = formatearEfemeride({
         tipo: 'pelicula',
         tipoEvento: 'inicio_rodaje',
@@ -263,6 +267,7 @@ export async function GET(request: NextRequest) {
         fecha: new Date(pelicula.filmingStartYear!, pelicula.filmingStartMonth! - 1, pelicula.filmingStartDay!),
         titulo: pelicula.title,
         director: directorName || undefined,
+        directorSlug: directorSlug || undefined, 
         slug: pelicula.slug,
         posterUrl: pelicula.posterUrl || undefined
       });
@@ -275,7 +280,7 @@ export async function GET(request: NextRequest) {
       const directorName = director 
         ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
         : null;
-        
+      const directorSlug = director?.slug;
       const efemeride = formatearEfemeride({
         tipo: 'pelicula',
         tipoEvento: 'fin_rodaje',
@@ -285,6 +290,7 @@ export async function GET(request: NextRequest) {
         fecha: new Date(pelicula.filmingEndYear!, pelicula.filmingEndMonth! - 1, pelicula.filmingEndDay!),
         titulo: pelicula.title,
         director: directorName || undefined,
+        directorSlug: directorSlug || undefined,
         slug: pelicula.slug,
         posterUrl: pelicula.posterUrl || undefined
       });
