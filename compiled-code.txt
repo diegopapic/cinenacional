@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: f563c29f30b43fd8f05b953ce813d80f00258b29
-// Fecha: 2025-08-23T04:24:04.675Z
+// Commit: 83510241a6d8d893728047bacebd48b8141d528a
+// Fecha: 2025-08-23T04:32:18.076Z
 // ============================================
 
 
@@ -11344,12 +11344,6 @@ async function getMovieData(slug: string) {
         links: true
       }
     });
-    console.log('🔍 Película obtenida:', {
-      title: movie.title,
-      posterUrl: movie.posterUrl,
-      poster_url: (movie as any).poster_url,
-      allFields: Object.keys(movie)
-    });
     return movie;
   } catch (error) {
     console.error('Error fetching movie:', error);
@@ -21458,12 +21452,7 @@ interface MoviePosterProps {
 }
 
 export function MoviePoster({ imageUrl, title }: MoviePosterProps) {
-  console.log('🔴 MoviePoster - title:', title);
-  console.log('🔴 MoviePoster - imageUrl:', imageUrl);
-  console.log('🔴 MoviePoster - typeof imageUrl:', typeof imageUrl);
-  // Generar un ID único para este render
-  const renderId = Math.random().toString(36).substring(7);
-  console.log('🔴 MoviePoster - render ID:', renderId);
+  
   return (
     <div className="aspect-[2/3] rounded-lg overflow-hidden poster-shadow">
       {imageUrl ? (
