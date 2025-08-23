@@ -107,8 +107,16 @@ export default function MovieFormEnhanced({
   // Inicializar con datos existentes - CORREGIDO
   useEffect(() => {
     if (initialData && !isInitialized) {
+      console.log('🎬 MovieFormEnhanced - initialData completo:', initialData)
+      console.log('🎭 MovieFormEnhanced - initialData.genres:', initialData.genres)
       if (initialData.genres) {
-        const genreIds = initialData.genres.map(g => g.genreId || g.id)
+        console.log('🎭 Primer género:', initialData.genres[0])
+        const genreIds = initialData.genres.map(g => {
+          console.log('🎭 Procesando género:', g)
+          return g.genre?.id || g.genreId || g.id
+        })
+      console.log('🎭 IDs extraídos:', genreIds)
+
         setSelectedGenres(genreIds)
       }
 

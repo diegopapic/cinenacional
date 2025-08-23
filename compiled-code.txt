@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 83510241a6d8d893728047bacebd48b8141d528a
-// Fecha: 2025-08-23T04:32:18.076Z
+// Commit: b32b0dc98a974f8d472abcb66bc278b7b7ff011b
+// Fecha: 2025-08-23T04:52:26.253Z
 // ============================================
 
 
@@ -13752,8 +13752,16 @@ export default function MovieFormEnhanced({
   // Inicializar con datos existentes - CORREGIDO
   useEffect(() => {
     if (initialData && !isInitialized) {
+      console.log('🎬 MovieFormEnhanced - initialData completo:', initialData)
+      console.log('🎭 MovieFormEnhanced - initialData.genres:', initialData.genres)
       if (initialData.genres) {
-        const genreIds = initialData.genres.map(g => g.genreId || g.id)
+        console.log('🎭 Primer género:', initialData.genres[0])
+        const genreIds = initialData.genres.map(g => {
+          console.log('🎭 Procesando género:', g)
+          return g.genre?.id || g.genreId || g.id
+        })
+      console.log('🎭 IDs extraídos:', genreIds)
+
         setSelectedGenres(genreIds)
       }
 
@@ -22521,13 +22529,13 @@ export function useMovieForm({
 
     const handleCrewChange = useCallback((crew: any[]) => {
         console.log('👥 handleCrewChange recibió:', crew)
-    crew?.forEach((member, index) => {
-        console.log(`👥 Crew[${index}]:`, {
-            personId: member.personId,
-            person: member.person,
-            roleId: member.roleId
+        crew?.forEach((member, index) => {
+            console.log(`👥 Crew[${index}]:`, {
+                personId: member.personId,
+                person: member.person,
+                roleId: member.roleId
+            })
         })
-    })
         setMovieRelations(prev => ({ ...prev, crew }))
     }, [])
 
@@ -22691,8 +22699,8 @@ export function useMovieForm({
 
             // Configurar relaciones
             setMovieRelations({
-                genres: (cleanedMovie.genres?.map((g: any) => g.genreId) || [])
-                    .filter((g: number) => g != null && g !== 0 && !isNaN(g)),
+                genres: (cleanedMovie.genres?.map((g: any) => g.genre?.id || g.id) || [])  // <-- CAMBIAR AQUÍ
+        .filter((g: number) => g != null && g !== 0 && !isNaN(g)),
                 cast: cleanedMovie.cast?.map((c: any) => ({
                     personId: c.personId,
                     characterName: c.characterName,

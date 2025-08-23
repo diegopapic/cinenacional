@@ -241,13 +241,13 @@ export function useMovieForm({
 
     const handleCrewChange = useCallback((crew: any[]) => {
         console.log('👥 handleCrewChange recibió:', crew)
-    crew?.forEach((member, index) => {
-        console.log(`👥 Crew[${index}]:`, {
-            personId: member.personId,
-            person: member.person,
-            roleId: member.roleId
+        crew?.forEach((member, index) => {
+            console.log(`👥 Crew[${index}]:`, {
+                personId: member.personId,
+                person: member.person,
+                roleId: member.roleId
+            })
         })
-    })
         setMovieRelations(prev => ({ ...prev, crew }))
     }, [])
 
@@ -411,8 +411,8 @@ export function useMovieForm({
 
             // Configurar relaciones
             setMovieRelations({
-                genres: (cleanedMovie.genres?.map((g: any) => g.genreId) || [])
-                    .filter((g: number) => g != null && g !== 0 && !isNaN(g)),
+                genres: (cleanedMovie.genres?.map((g: any) => g.genre?.id || g.id) || [])  // <-- CAMBIAR AQUÍ
+        .filter((g: number) => g != null && g !== 0 && !isNaN(g)),
                 cast: cleanedMovie.cast?.map((c: any) => ({
                     personId: c.personId,
                     characterName: c.characterName,
