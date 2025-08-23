@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-23T20:14:58.128Z
+// Archivos del admin - 2025-08-23T20:33:58.361Z
 // ==================
 
 
@@ -11889,7 +11889,7 @@ export function PersonForm({
                         }}
                         label=""
                         type="person_photo"
-                        personId={formData.id}
+                        personId={personId}
                         aspectRatio="3:4"
                         maxWidth={800}
                         maxDisplayHeight={400}  // NUEVO: limitar altura de display
