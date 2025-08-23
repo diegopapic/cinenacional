@@ -77,6 +77,9 @@ export async function GET(request: NextRequest) {
       prisma.movie.count({ where })
     ])
 
+    console.log('Primera película raw:', movies[0]?.posterUrl);
+    console.log('Campos de la primera película:', Object.keys(movies[0] || {}));
+
     // Formatear respuesta
     const formattedMovies = movies.map(movie => ({
       id: movie.id,
@@ -236,7 +239,7 @@ export async function POST(request: NextRequest) {
           crew: {
             create: crew.map((item: any) => ({
               personId: item.personId,
-roleId: item.roleId,
+              roleId: item.roleId,
               billingOrder: item.billingOrder || 0
             }))
           }
