@@ -6,12 +6,7 @@ interface MoviePosterProps {
 }
 
 export function MoviePoster({ imageUrl, title }: MoviePosterProps) {
-  console.log('🔴 MoviePoster - title:', title);
-  console.log('🔴 MoviePoster - imageUrl:', imageUrl);
-  console.log('🔴 MoviePoster - typeof imageUrl:', typeof imageUrl);
-  // Generar un ID único para este render
-  const renderId = Math.random().toString(36).substring(7);
-  console.log('🔴 MoviePoster - render ID:', renderId);
+  
   return (
     <div className="aspect-[2/3] rounded-lg overflow-hidden poster-shadow">
       {imageUrl ? (

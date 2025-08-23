@@ -69,12 +69,6 @@ async function getMovieData(slug: string) {
         links: true
       }
     });
-    console.log('🔍 Película obtenida:', {
-      title: movie.title,
-      posterUrl: movie.posterUrl,
-      poster_url: (movie as any).poster_url,
-      allFields: Object.keys(movie)
-    });
     return movie;
   } catch (error) {
     console.error('Error fetching movie:', error);
