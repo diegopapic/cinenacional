@@ -13,6 +13,7 @@ export interface EfemerideData {
   posterUrl?: string;
   photoUrl?: string;
   director?: string; // Para películas
+  directorSlug?: string;
 }
 
 export function calcularAniosDesde(año: number, mes: number, dia: number): number | null {
@@ -65,6 +66,11 @@ export function formatearEfemeride(data: EfemerideData): Efemeride | null {
     fecha: new Date(data.año, data.mes - 1, data.dia),
     slug: data.slug,
     posterUrl: data.posterUrl,
-    photoUrl: data.photoUrl
+    photoUrl: data.photoUrl,
+    // Nuevos campos
+    titulo: data.tipo === 'pelicula' ? data.titulo : data.nombre,
+    director: data.director,
+    directorSlug: data.directorSlug,
+    tipoEvento: data.tipoEvento
   };
 }

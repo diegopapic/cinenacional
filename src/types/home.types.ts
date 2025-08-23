@@ -61,6 +61,10 @@ export interface Efemeride {
   slug?: string; // Para enlaces
   posterUrl?: string; // Para películas
   photoUrl?: string; // Para personas
+  titulo?: string; // Título de película o nombre de persona
+  director?: string; // Nombre del director para películas
+  directorSlug?: string;
+  tipoEvento?: 'estreno' | 'inicio_rodaje' | 'fin_rodaje' | 'nacimiento' | 'muerte';
 }
 
 export interface SimpleMovie {
