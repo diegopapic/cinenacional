@@ -84,10 +84,10 @@ export async function GET(request: NextRequest) {
           lastName: person.last_name,
           photoUrl: person.photo_url
         }));
-console.log('First person formatted:', formattedPeople[0]);
-console.log('Searching for "miguel k" should find:', formattedPeople.filter(p => 
-  p.name.toLowerCase().includes('miguel') && p.name.toLowerCase().includes('k')
-));
+        console.log('First person formatted:', formattedPeople[0]);
+        console.log('Searching for "miguel k" should find:', formattedPeople.filter(p =>
+          p.name.toLowerCase().includes('miguel') && p.name.toLowerCase().includes('k')
+        ));
         // Para búsquedas de autocomplete, retornar array simple
         return NextResponse.json(formattedPeople);
 
@@ -290,6 +290,7 @@ export async function POST(request: NextRequest) {
       deathLocationId: data.deathLocationId || null,
       biography: data.biography || null,
       photoUrl: data.photoUrl || null,
+      photoPublicId: data.photoPublicId || null,
       gender: data.gender || null,
       hideAge: data.hideAge || false,
       isActive: data.isActive ?? true,
