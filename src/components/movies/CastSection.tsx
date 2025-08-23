@@ -23,14 +23,9 @@ interface CastSectionProps {
 export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
   const [showFullCast, setShowFullCast] = useState(false);
 
-  // Si no hay cast, no mostrar nada
+  // Si no hay cast, no mostrar la sección en absoluto
   if (mainCast.length === 0 && fullCast.length === 0) {
-    return (
-      <div className="mb-8">
-        <h3 className="text-lg font-medium mb-4 text-cine-accent">Reparto</h3>
-        <p className="text-gray-400">No hay información de reparto disponible.</p>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -64,7 +59,9 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
               ) : (
                 <p className="font-medium text-white">{actor.name}</p>
               )}
-              <p className="text-sm text-gray-400">{actor.character}</p>
+              {actor.character && (
+                <p className="text-sm text-gray-400">{actor.character}</p>
+              )}
             </div>
           ))}
         </div>
@@ -94,13 +91,15 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
                     )}
                   </div>
                   {actor.personSlug ? (
-                <Link href={`/personas/${actor.personSlug}`} className="hover:text-cine-accent transition-colors">
-                  <p className="font-medium text-white">{actor.name}</p>
-                </Link>
-              ) : (
-                <p className="font-medium text-white">{actor.name}</p>
-              )}
-                  <p className="text-xs text-gray-400">{actor.character}</p>
+                    <Link href={`/personas/${actor.personSlug}`} className="hover:text-cine-accent transition-colors">
+                      <p className="font-medium text-white text-sm">{actor.name}</p>
+                    </Link>
+                  ) : (
+                    <p className="font-medium text-white text-sm">{actor.name}</p>
+                  )}
+                  {actor.character && (
+                    <p className="text-xs text-gray-400">{actor.character}</p>
+                  )}
                 </div>
               ))}
             </div>

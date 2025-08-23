@@ -148,7 +148,7 @@ export default async function MoviePage({ params }: PageProps) {
   // Formatear todo el cast con estructura correcta
   const allCast = movie.cast?.map((c: any) => ({
     name: formatPersonName(c.person),
-    character: c.characterName || 'Sin especificar',
+    character: c.characterName,
     isPrincipal: c.isPrincipal || false,
     billingOrder: c.billingOrder || 999,
     personId: c.person.id,
