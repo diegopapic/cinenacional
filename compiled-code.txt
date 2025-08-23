@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: ddc95883863cddff2a245e645d72d43d4ac8b8ae
-// Fecha: 2025-08-23T02:06:13.473Z
+// Commit: fb27e8c0913fa7cf46139d90c6ba0104aab6011b
+// Fecha: 2025-08-23T02:29:53.939Z
 // ============================================
 
 
@@ -8858,7 +8858,6 @@ export async function GET(request: NextRequest) {
         where: {
           OR: [
             { title: { contains: query, mode: 'insensitive' } },
-            { synopsis: { contains: query, mode: 'insensitive' } }
           ]
         },
         select: {
@@ -8904,19 +8903,22 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        orderBy: [
-          { lastName: 'asc' },
-          { firstName: 'asc' }
-        ],
         take: 50
       })
     ])
 
+    // Ordenar personas por total de participaciones (castRoles + crewRoles) de mayor a menor
+    const sortedPeople = people.sort((a, b) => {
+      const totalA = (a._count?.castRoles || 0) + (a._count?.crewRoles || 0)
+      const totalB = (b._count?.castRoles || 0) + (b._count?.crewRoles || 0)
+      return totalB - totalA // Orden descendente (mayor a menor)
+    })
+
     return NextResponse.json({
       movies: movies,
-      people: people,
+      people: sortedPeople,
       totalMovies: movies.length,
-      totalPeople: people.length
+      totalPeople: sortedPeople.length
     })
 
   } catch (error) {
@@ -9522,7 +9524,7 @@ export default function SearchPage() {
             onClick={() => setActiveTab('all')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'all'
-                ? 'border-red-500 text-red-500'
+                ? 'border-zinc-400 text-white'
                 : 'border-transparent text-zinc-400 hover:text-white hover:border-zinc-600'
             }`}
           >
@@ -9537,7 +9539,7 @@ export default function SearchPage() {
             onClick={() => setActiveTab('movies')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'movies'
-                ? 'border-red-500 text-red-500'
+                ? 'border-zinc-400 text-white'
                 : 'border-transparent text-zinc-400 hover:text-white hover:border-zinc-600'
             }`}
           >
@@ -9550,7 +9552,7 @@ export default function SearchPage() {
             onClick={() => setActiveTab('people')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'people'
-                ? 'border-red-500 text-red-500'
+                ? 'border-zinc-400 text-white'
                 : 'border-transparent text-zinc-400 hover:text-white hover:border-zinc-600'
             }`}
           >
@@ -9605,7 +9607,7 @@ export default function SearchPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-red-400 transition-colors">
+                      <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-zinc-300 transition-colors">
                         {movie.title}
                       </h3>
                       <div className="flex items-center gap-4 text-sm text-zinc-400 mb-2">
@@ -9662,7 +9664,7 @@ export default function SearchPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-red-400 transition-colors">
+                      <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-zinc-300 transition-colors">
                         {getPersonName(person)}
                       </h3>
                       {getBirthDate(person) && (
@@ -20487,7 +20489,7 @@ export default function SearchBar() {
                         onChange={(e) => setQuery(e.target.value)}
                         onFocus={() => query.length >= 2 && setShowResults(true)}
                         placeholder="Buscar películas o personas..."
-                        className="w-full pl-10 pr-10 py-2 bg-zinc-800 border border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent focus:bg-zinc-700 transition-all"
+                        className="w-full pl-10 pr-10 py-2 bg-zinc-800 border border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent focus:bg-zinc-700 transition-all"
                     />
                     {query && (
                         <button
@@ -20542,7 +20544,7 @@ export default function SearchBar() {
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-white truncate group-hover:text-red-400 transition-colors">
+                                                    <p className="text-sm font-medium text-white truncate group-hover:text-zinc-300 transition-colors">
                                                         {movie.title}
                                                     </p>
                                                     <p className="text-xs text-zinc-400">
@@ -20586,7 +20588,7 @@ export default function SearchBar() {
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-white truncate group-hover:text-red-400 transition-colors">
+                                                    <p className="text-sm font-medium text-white truncate group-hover:text-zinc-300 transition-colors">
                                                         {person.name}
                                                     </p>
                                                     {person.birthYear && (
@@ -20602,7 +20604,7 @@ export default function SearchBar() {
                                 <Link
                                     href={`/buscar?q=${encodeURIComponent(query)}`}
                                     onClick={handleResultClick}
-                                    className="flex items-center justify-between px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 text-sm text-red-500 font-medium group transition-colors"
+                                    className="flex items-center justify-between px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 text-sm text-zinc-400 hover:text-white font-medium group transition-colors"
                                 >
                                     <span>Ver todos los resultados para "{query}"</span>
                                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

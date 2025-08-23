@@ -154,7 +154,7 @@ export default function SearchPage() {
             onClick={() => setActiveTab('all')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'all'
-                ? 'border-red-500 text-red-500'
+                ? 'border-zinc-400 text-white'
                 : 'border-transparent text-zinc-400 hover:text-white hover:border-zinc-600'
             }`}
           >
@@ -169,7 +169,7 @@ export default function SearchPage() {
             onClick={() => setActiveTab('movies')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'movies'
-                ? 'border-red-500 text-red-500'
+                ? 'border-zinc-400 text-white'
                 : 'border-transparent text-zinc-400 hover:text-white hover:border-zinc-600'
             }`}
           >
@@ -182,7 +182,7 @@ export default function SearchPage() {
             onClick={() => setActiveTab('people')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'people'
-                ? 'border-red-500 text-red-500'
+                ? 'border-zinc-400 text-white'
                 : 'border-transparent text-zinc-400 hover:text-white hover:border-zinc-600'
             }`}
           >
@@ -237,7 +237,7 @@ export default function SearchPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-red-400 transition-colors">
+                      <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-zinc-300 transition-colors">
                         {movie.title}
                       </h3>
                       <div className="flex items-center gap-4 text-sm text-zinc-400 mb-2">
@@ -294,7 +294,7 @@ export default function SearchPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-red-400 transition-colors">
+                      <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-zinc-300 transition-colors">
                         {getPersonName(person)}
                       </h3>
                       {getBirthDate(person) && (

@@ -76,7 +76,7 @@ export default function SearchBar() {
                         onChange={(e) => setQuery(e.target.value)}
                         onFocus={() => query.length >= 2 && setShowResults(true)}
                         placeholder="Buscar películas o personas..."
-                        className="w-full pl-10 pr-10 py-2 bg-zinc-800 border border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent focus:bg-zinc-700 transition-all"
+                        className="w-full pl-10 pr-10 py-2 bg-zinc-800 border border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent focus:bg-zinc-700 transition-all"
                     />
                     {query && (
                         <button
@@ -131,7 +131,7 @@ export default function SearchBar() {
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-white truncate group-hover:text-red-400 transition-colors">
+                                                    <p className="text-sm font-medium text-white truncate group-hover:text-zinc-300 transition-colors">
                                                         {movie.title}
                                                     </p>
                                                     <p className="text-xs text-zinc-400">
@@ -175,7 +175,7 @@ export default function SearchBar() {
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-white truncate group-hover:text-red-400 transition-colors">
+                                                    <p className="text-sm font-medium text-white truncate group-hover:text-zinc-300 transition-colors">
                                                         {person.name}
                                                     </p>
                                                     {person.birthYear && (
@@ -191,7 +191,7 @@ export default function SearchBar() {
                                 <Link
                                     href={`/buscar?q=${encodeURIComponent(query)}`}
                                     onClick={handleResultClick}
-                                    className="flex items-center justify-between px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 text-sm text-red-500 font-medium group transition-colors"
+                                    className="flex items-center justify-between px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 text-sm text-zinc-400 hover:text-white font-medium group transition-colors"
                                 >
                                     <span>Ver todos los resultados para "{query}"</span>
                                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
