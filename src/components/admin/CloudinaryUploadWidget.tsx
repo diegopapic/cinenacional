@@ -39,7 +39,6 @@ export function CloudinaryUploadWidget({
   maxDisplayHeight
 }: CloudinaryUploadWidgetProps) {
   const [imageUrl, setImageUrl] = useState(value || '')
-  const widgetRef = useRef<any>(null)
   const [isUploading, setIsUploading] = useState(false)
   
   // Sincronizar con el valor externo
@@ -47,22 +46,12 @@ export function CloudinaryUploadWidget({
     setImageUrl(value || '')
   }, [value])
 
-  // Limpiar widget al desmontar el componente
+  // Limpiar al desmontar el componente
   useEffect(() => {
     return () => {
       // Restaurar el scroll al desmontar
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
-      
-      // Cerrar widget si existe
-      if (widgetRef.current) {
-        try {
-          widgetRef.current.close();
-          widgetRef.current.destroy();
-        } catch (e) {
-          console.log('Widget cleanup error:', e);
-        }
-      }
     };
   }, []);
   
@@ -123,12 +112,6 @@ export function CloudinaryUploadWidget({
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
       document.body.style.position = '';
-      
-      const htmlElement = document.querySelector('html');
-      if (htmlElement) {
-        htmlElement.style.overflow = '';
-        htmlElement.style.position = '';
-      }
     }, 500);
   }
 
@@ -187,7 +170,7 @@ export function CloudinaryUploadWidget({
             maxFileSize: 10000000, // 10MB
             showCompletedButton: true,  
             showUploadMoreButton: false, 
-            singleUploadAutoClose: false, // Mantener false para control manual
+            singleUploadAutoClose: false,
             showSkipCropButton: false,
             showPoweredBy: false,
             autoMinimize: false,
@@ -224,44 +207,22 @@ export function CloudinaryUploadWidget({
               }
             }
           }}
-          onQueuesEnd={(result: any, { widget }: any) => {
-            console.log('Queues ended', result);
-            setIsUploading(false);
-            if (widget) {
-              setTimeout(() => {
-                widget.close();
-                restoreScroll();
-              }, 1000);
-            }
-          }}
-          onSuccess={(result: any, { widget }: any) => {
+          // CAMBIADO: Solo onSuccess, onClose y onError sin segundo parámetro
+          onSuccess={(result: any) => {
             console.log('Success event:', result);
             handleUploadSuccess(result);
-            // Cerrar el widget después de un delay
-            if (widget) {
-              setTimeout(() => {
-                widget.close();
-                restoreScroll();
-              }, 1500);
-            }
-          }}
-          onUpload={(error: any, result: any, { widget }: any) => {
-            console.log('Upload event:', error, result);
-            if (!error) {
-              setIsUploading(true);
-            }
+            setTimeout(() => {
+              restoreScroll();
+            }, 1500);
           }}
           onClose={() => {
             console.log('Widget closed');
             restoreScroll();
           }}
-          onError={(error: any, { widget }: any) => {
+          onError={(error: any) => {
             console.error('Upload error:', error);
             toast.error('Error al subir la imagen');
             setIsUploading(false);
-            if (widget) {
-              widget.close();
-            }
             restoreScroll();
           }}
         >
@@ -270,7 +231,7 @@ export function CloudinaryUploadWidget({
               type="button"
               onClick={() => {
                 open();
-                setIsUploading(false);
+                setIsUploading(true);
               }}
               disabled={disabled || isUploading}
               className="relative block w-full border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -302,41 +263,21 @@ export function CloudinaryUploadWidget({
                 singleUploadAutoClose: false,
                 showCompletedButton: true,
               }}
-              onQueuesEnd={(result: any, { widget }: any) => {
-                console.log('Queues ended (replace)', result);
-                setIsUploading(false);
-                if (widget) {
-                  setTimeout(() => {
-                    widget.close();
-                    restoreScroll();
-                  }, 1000);
-                }
-              }}
-              onSuccess={(result: any, { widget }: any) => {
+              // CAMBIADO: Solo onSuccess, onClose y onError sin segundo parámetro
+              onSuccess={(result: any) => {
                 console.log('Success event (replace):', result);
                 handleUploadSuccess(result);
-                if (widget) {
-                  setTimeout(() => {
-                    widget.close();
-                    restoreScroll();
-                  }, 1500);
-                }
-              }}
-              onUpload={(error: any, result: any) => {
-                if (!error) {
-                  setIsUploading(true);
-                }
+                setTimeout(() => {
+                  restoreScroll();
+                }, 1500);
               }}
               onClose={() => {
                 restoreScroll();
               }}
-              onError={(error: any, { widget }: any) => {
+              onError={(error: any) => {
                 console.error('Upload error:', error);
                 toast.error('Error al subir la imagen');
                 setIsUploading(false);
-                if (widget) {
-                  widget.close();
-                }
                 restoreScroll();
               }}
             >
@@ -354,7 +295,7 @@ export function CloudinaryUploadWidget({
                   <div 
                     onClick={() => {
                       open();
-                      setIsUploading(false);
+                      setIsUploading(true);
                     }}
                     className="relative rounded-lg overflow-hidden bg-gray-100 shadow-lg cursor-pointer border-2 border-transparent hover:border-blue-500 transition-all group"
                     style={{ 
@@ -399,28 +340,12 @@ export function CloudinaryUploadWidget({
                 singleUploadAutoClose: false,
                 showCompletedButton: true,
               }}
-              onQueuesEnd={(result: any, { widget }: any) => {
-                setIsUploading(false);
-                if (widget) {
-                  setTimeout(() => {
-                    widget.close();
-                    restoreScroll();
-                  }, 1000);
-                }
-              }}
-              onSuccess={(result: any, { widget }: any) => {
+              // CAMBIADO: Solo onSuccess y onClose sin segundo parámetro
+              onSuccess={(result: any) => {
                 handleUploadSuccess(result);
-                if (widget) {
-                  setTimeout(() => {
-                    widget.close();
-                    restoreScroll();
-                  }, 1500);
-                }
-              }}
-              onUpload={(error: any) => {
-                if (!error) {
-                  setIsUploading(true);
-                }
+                setTimeout(() => {
+                  restoreScroll();
+                }, 1500);
               }}
               onClose={() => {
                 restoreScroll();
@@ -431,7 +356,7 @@ export function CloudinaryUploadWidget({
                   type="button"
                   onClick={() => {
                     open();
-                    setIsUploading(false);
+                    setIsUploading(true);
                   }}
                   disabled={isUploading}
                   className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
