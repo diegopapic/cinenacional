@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-23T18:37:44.492Z
+// Archivos del admin - 2025-08-23T19:37:03.972Z
 // ==================
 
 
@@ -5234,10 +5234,10 @@ export async function GET(request: NextRequest) {
           lastName: person.last_name,
           photoUrl: person.photo_url
         }));
-console.log('First person formatted:', formattedPeople[0]);
-console.log('Searching for "miguel k" should find:', formattedPeople.filter(p => 
-  p.name.toLowerCase().includes('miguel') && p.name.toLowerCase().includes('k')
-));
+        console.log('First person formatted:', formattedPeople[0]);
+        console.log('Searching for "miguel k" should find:', formattedPeople.filter(p =>
+          p.name.toLowerCase().includes('miguel') && p.name.toLowerCase().includes('k')
+        ));
         // Para búsquedas de autocomplete, retornar array simple
         return NextResponse.json(formattedPeople);
 
@@ -5440,6 +5440,7 @@ export async function POST(request: NextRequest) {
       deathLocationId: data.deathLocationId || null,
       biography: data.biography || null,
       photoUrl: data.photoUrl || null,
+      photoPublicId: data.photoPublicId || null,
       gender: data.gender || null,
       hideAge: data.hideAge || false,
       isActive: data.isActive ?? true,
@@ -5765,10 +5766,15 @@ export async function PUT(
             deathYear: data.deathYear || null,
             deathMonth: data.deathMonth || null,
             deathDay: data.deathDay || null,
-            birthLocationId: data.birthLocationId || null,
-            deathLocationId: data.deathLocationId || null,
+            birthLocation: data.birthLocationId
+                ? { connect: { id: data.birthLocationId } }
+                : { disconnect: true },
+            deathLocation: data.deathLocationId
+                ? { connect: { id: data.deathLocationId } }
+                : { disconnect: true },
             biography: data.biography || null,
             photoUrl: data.photoUrl || null,
+            photoPublicId: data.photoPublicId || null,
             gender: data.gender || null,
             hideAge: data.hideAge || false,
             isActive: data.isActive ?? true,
@@ -6182,7 +6188,7 @@ export function CloudinaryGallery({ movieId, images, onChange }: CloudinaryGalle
 'use client'
 
 import { CldUploadWidget } from 'next-cloudinary'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Upload, X, ImageIcon } from 'lucide-react'
 import Image from 'next/image'
 import { toast } from 'react-hot-toast'
@@ -6197,9 +6203,13 @@ interface CloudinaryUploadWidgetProps {
   value?: string
   onChange: (url: string, publicId?: string) => void
   label: string
-  type?: 'poster' | 'backdrop' | 'gallery'
+  type?: 'poster' | 'backdrop' | 'gallery' | 'person_photo'
   movieId?: string | number
+  personId?: string | number
   disabled?: boolean
+  aspectRatio?: string
+  maxWidth?: number
+  maxDisplayHeight?: number
 }
 
 export function CloudinaryUploadWidget({ 
@@ -6208,18 +6218,42 @@ export function CloudinaryUploadWidget({
   label, 
   type = 'poster',
   movieId,
-  disabled = false
+  personId,
+  disabled = false,
+  aspectRatio: customAspectRatio,
+  maxWidth = 1200,
+  maxDisplayHeight
 }: CloudinaryUploadWidgetProps) {
   const [imageUrl, setImageUrl] = useState(value || '')
+  const widgetRef = useRef<any>(null)
+  const [isUploading, setIsUploading] = useState(false)
   
   // Sincronizar con el valor externo
   useEffect(() => {
     setImageUrl(value || '')
   }, [value])
+
+  // Limpiar widget al desmontar el componente
+  useEffect(() => {
+    return () => {
+      // Restaurar el scroll al desmontar
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      
+      // Cerrar widget si existe
+      if (widgetRef.current) {
+        try {
+          widgetRef.current.close();
+          widgetRef.current.destroy();
+        } catch (e) {
+          console.log('Widget cleanup error:', e);
+        }
+      }
+    };
+  }, []);
   
   // Configuración según el tipo de imagen
   const getUploadPreset = () => {
-    // Puedes crear estos presets en tu dashboard de Cloudinary
     switch(type) {
       case 'poster':
         return {
@@ -6239,6 +6273,15 @@ export function CloudinaryUploadWidget({
           format: 'auto',
           quality: 'auto:best'
         }
+      case 'person_photo':
+        return {
+          folder: `cinenacional/people${personId ? `/${personId}` : ''}`,
+          transformation: [
+            { width: maxWidth || 800, height: Math.round((maxWidth || 800) * 4/3), crop: 'fill', gravity: 'face' }
+          ],
+          format: 'auto',
+          quality: 'auto:best'
+        }
       default:
         return {
           folder: `cinenacional/gallery${movieId ? `/${movieId}` : ''}`,
@@ -6252,27 +6295,71 @@ export function CloudinaryUploadWidget({
   }
 
   const handleUploadSuccess = (result: any) => {
-    console.log('Upload result:', result)
-    const { secure_url, public_id } = result.info
-    console.log('Setting imageUrl to:', secure_url)
-    setImageUrl(secure_url)
-    onChange(secure_url, public_id)
-    toast.success('Imagen subida exitosamente')
+    console.log('Upload success:', result)
+    if (result.info) {
+      const { secure_url, public_id } = result.info
+      setImageUrl(secure_url)
+      onChange(secure_url, public_id)
+      toast.success('Imagen subida exitosamente')
+      setIsUploading(false)
+    }
+    
+    // Restaurar el scroll después de un pequeño delay
+    setTimeout(() => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.position = '';
+      
+      const htmlElement = document.querySelector('html');
+      if (htmlElement) {
+        htmlElement.style.overflow = '';
+        htmlElement.style.position = '';
+      }
+    }, 500);
   }
 
   const handleRemove = () => {
     setImageUrl('')
     onChange('', '')
+    // Asegurar que el scroll esté habilitado
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
   }
 
-  const aspectRatio = type === 'poster' ? '2/3' : type === 'backdrop' ? '16/9' : '1/1'
-  const dimensions = type === 'poster' ? '500x750px' : type === 'backdrop' ? '1920x1080px' : '1200x1200px'
+  // Determinar aspect ratio y dimensiones
+  const aspectRatio = customAspectRatio || (
+    type === 'poster' ? '2/3' : 
+    type === 'backdrop' ? '16/9' : 
+    type === 'person_photo' ? '3/4' :
+    '1/1'
+  )
+  
+  // Calcular dimensiones reales basadas en aspect ratio
+  const [aspectWidth, aspectHeight] = aspectRatio.split('/').map(Number);
+  
+  const dimensions = 
+    type === 'poster' ? '500x750px' : 
+    type === 'backdrop' ? '1920x1080px' : 
+    type === 'person_photo' ? '600x800px' :
+    '1200x1200px'
+
+  // Función para restaurar el scroll
+  const restoreScroll = () => {
+    console.log('Restoring scroll');
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    document.body.style.position = '';
+    document.body.classList.remove('overflow-hidden');
+    document.documentElement.classList.remove('overflow-hidden');
+  }
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        {label}
-      </label>
+      {label && (
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {label}
+        </label>
+      )}
       
       {!imageUrl ? (
         <CldUploadWidget
@@ -6286,7 +6373,7 @@ export function CloudinaryUploadWidget({
             maxFileSize: 10000000, // 10MB
             showCompletedButton: true,  
             showUploadMoreButton: false, 
-            singleUploadAutoClose: false,
+            singleUploadAutoClose: false, // Mantener false para control manual
             showSkipCropButton: false,
             showPoweredBy: false,
             autoMinimize: false,
@@ -6323,42 +6410,60 @@ export function CloudinaryUploadWidget({
               }
             }
           }}
-          onOpen={(widget: any) => {
-            console.log('Widget opened')
-            // Guardar referencia al widget
-            window.cloudinaryWidget = widget
-          }}
-          onUpload={(result: any, widget: any) => {
-            handleUploadSuccess(result)
-            // Prevenir el cierre automático
-            if (widget && widget.isShowing()) {
-              console.log('Preventing auto-close')
+          onQueuesEnd={(result: any, { widget }: any) => {
+            console.log('Queues ended', result);
+            setIsUploading(false);
+            if (widget) {
               setTimeout(() => {
-                if (!widget.isShowing() && window.cloudinaryWidget) {
-                  console.log('Reopening widget')
-                  window.cloudinaryWidget.open()
-                }
-              }, 100)
+                widget.close();
+                restoreScroll();
+              }, 1000);
             }
           }}
-          onSuccess={(result: any) => {
-            console.log('Success event:', result)
-            handleUploadSuccess(result)
+          onSuccess={(result: any, { widget }: any) => {
+            console.log('Success event:', result);
+            handleUploadSuccess(result);
+            // Cerrar el widget después de un delay
+            if (widget) {
+              setTimeout(() => {
+                widget.close();
+                restoreScroll();
+              }, 1500);
+            }
           }}
-          onClose={(result: any) => {
-            console.log('Widget closed', result)
+          onUpload={(error: any, result: any, { widget }: any) => {
+            console.log('Upload event:', error, result);
+            if (!error) {
+              setIsUploading(true);
+            }
+          }}
+          onClose={() => {
+            console.log('Widget closed');
+            restoreScroll();
+          }}
+          onError={(error: any, { widget }: any) => {
+            console.error('Upload error:', error);
+            toast.error('Error al subir la imagen');
+            setIsUploading(false);
+            if (widget) {
+              widget.close();
+            }
+            restoreScroll();
           }}
         >
           {({ open }) => (
             <button
               type="button"
-              onClick={() => open()}
-              disabled={disabled}
+              onClick={() => {
+                open();
+                setIsUploading(false);
+              }}
+              disabled={disabled || isUploading}
               className="relative block w-full border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Upload className="mx-auto h-12 w-12 text-gray-400" />
               <p className="mt-2 text-sm font-medium text-gray-900">
-                Click para subir o arrastra una imagen aquí
+                {isUploading ? 'Subiendo imagen...' : 'Click para subir o arrastra una imagen aquí'}
               </p>
               <p className="mt-1 text-xs text-gray-500">
                 JPG, PNG o WEBP hasta 10MB
@@ -6371,40 +6476,102 @@ export function CloudinaryUploadWidget({
         </CldUploadWidget>
       ) : (
         <div className="space-y-2">
-          {/* Preview de la imagen con borde interactivo - envuelto en CldUploadWidget */}
-          <CldUploadWidget
-            uploadPreset="cinenacional-unsigned"
-            options={{
-              ...getUploadPreset(),
-              sources: ['local', 'url'],
-              multiple: false,
-              maxFiles: 1,
-              singleUploadAutoClose: false,
-              showCompletedButton: true,
-            }}
-            onUpload={(result: any) => handleUploadSuccess(result)}
-            onSuccess={(result: any) => handleUploadSuccess(result)}
-          >
-            {({ open }) => (
-              <div 
-                onClick={() => open()}
-                className="relative rounded-lg overflow-hidden bg-gray-100 shadow-lg cursor-pointer border-2 border-transparent hover:border-blue-500 transition-all group"
-                style={{ aspectRatio }}
-              >
-                <Image
-                  src={imageUrl}
-                  alt={label}
-                  fill
-                  className="object-cover"
-                />
+          {/* Preview de la imagen */}
+          <div className="flex justify-center">
+            <CldUploadWidget
+              uploadPreset="cinenacional-unsigned"
+              options={{
+                ...getUploadPreset(),
+                sources: ['local', 'url'],
+                multiple: false,
+                maxFiles: 1,
+                singleUploadAutoClose: false,
+                showCompletedButton: true,
+              }}
+              onQueuesEnd={(result: any, { widget }: any) => {
+                console.log('Queues ended (replace)', result);
+                setIsUploading(false);
+                if (widget) {
+                  setTimeout(() => {
+                    widget.close();
+                    restoreScroll();
+                  }, 1000);
+                }
+              }}
+              onSuccess={(result: any, { widget }: any) => {
+                console.log('Success event (replace):', result);
+                handleUploadSuccess(result);
+                if (widget) {
+                  setTimeout(() => {
+                    widget.close();
+                    restoreScroll();
+                  }, 1500);
+                }
+              }}
+              onUpload={(error: any, result: any) => {
+                if (!error) {
+                  setIsUploading(true);
+                }
+              }}
+              onClose={() => {
+                restoreScroll();
+              }}
+              onError={(error: any, { widget }: any) => {
+                console.error('Upload error:', error);
+                toast.error('Error al subir la imagen');
+                setIsUploading(false);
+                if (widget) {
+                  widget.close();
+                }
+                restoreScroll();
+              }}
+            >
+              {({ open }) => {
+                // Si hay maxDisplayHeight, calcular el ancho proporcional
+                let displayWidth = '100%';
+                let displayHeight = 'auto';
                 
-                {/* Overlay al hacer hover */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
-                  <p className="text-white font-medium text-lg drop-shadow-lg">Click para cambiar</p>
-                </div>
-              </div>
-            )}
-          </CldUploadWidget>
+                if (maxDisplayHeight) {
+                  displayHeight = `${maxDisplayHeight}px`;
+                  displayWidth = `${Math.round(maxDisplayHeight * aspectWidth / aspectHeight)}px`;
+                }
+
+                return (
+                  <div 
+                    onClick={() => {
+                      open();
+                      setIsUploading(false);
+                    }}
+                    className="relative rounded-lg overflow-hidden bg-gray-100 shadow-lg cursor-pointer border-2 border-transparent hover:border-blue-500 transition-all group"
+                    style={{ 
+                      width: displayWidth,
+                      height: displayHeight,
+                      maxWidth: '100%'
+                    }}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={label || 'Imagen'}
+                      className="w-full h-full object-cover"
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        height: '100%',
+                        objectFit: maxDisplayHeight ? 'contain' : 'cover'
+                      }}
+                    />
+                    
+                    {/* Overlay al hacer hover */}
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+                      <p className="text-white font-medium text-lg drop-shadow-lg">
+                        {isUploading ? 'Subiendo...' : 'Click para cambiar'}
+                      </p>
+                    </div>
+                  </div>
+                );
+              }}
+            </CldUploadWidget>
+          </div>
           
           {/* Botones siempre visibles */}
           <div className="flex gap-2">
@@ -6418,17 +6585,45 @@ export function CloudinaryUploadWidget({
                 singleUploadAutoClose: false,
                 showCompletedButton: true,
               }}
-              onUpload={(result: any) => handleUploadSuccess(result)}
-              onSuccess={(result: any) => handleUploadSuccess(result)}
+              onQueuesEnd={(result: any, { widget }: any) => {
+                setIsUploading(false);
+                if (widget) {
+                  setTimeout(() => {
+                    widget.close();
+                    restoreScroll();
+                  }, 1000);
+                }
+              }}
+              onSuccess={(result: any, { widget }: any) => {
+                handleUploadSuccess(result);
+                if (widget) {
+                  setTimeout(() => {
+                    widget.close();
+                    restoreScroll();
+                  }, 1500);
+                }
+              }}
+              onUpload={(error: any) => {
+                if (!error) {
+                  setIsUploading(true);
+                }
+              }}
+              onClose={() => {
+                restoreScroll();
+              }}
             >
               {({ open }) => (
                 <button
                   type="button"
-                  onClick={() => open()}
-                  className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                  onClick={() => {
+                    open();
+                    setIsUploading(false);
+                  }}
+                  disabled={isUploading}
+                  className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <ImageIcon className="w-4 h-4" />
-                  <span>Cambiar imagen</span>
+                  <span>{isUploading ? 'Subiendo...' : 'Cambiar imagen'}</span>
                 </button>
               )}
             </CldUploadWidget>
@@ -6436,7 +6631,8 @@ export function CloudinaryUploadWidget({
             <button
               type="button"
               onClick={handleRemove}
-              className="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
+              disabled={isUploading}
+              className="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               <X className="w-4 h-4" />
               <span>Eliminar</span>
@@ -11565,6 +11761,7 @@ import { Save, Loader2, AlertCircle } from 'lucide-react';
 import { usePeopleForm } from '@/hooks/usePeopleForm';
 import { PersonWithRelations } from '@/lib/people/peopleTypes';
 import NationalitiesField from './PersonFormFields/NationalitiesField'
+import { CloudinaryUploadWidget } from '@/components/admin/CloudinaryUploadWidget';
 
 // Importar sub-componentes del formulario
 import { BasicInfoFields } from './PersonFormFields/BasicInfoFields';
@@ -11634,18 +11831,12 @@ export function PersonForm({
     // Cargar nacionalidades cuando se edita una persona existente
     useEffect(() => {
         if (isEdit && formData.nationalities && formData.nationalities.length > 0 && !nationalitiesInitialized.current) {
-            console.log('PersonForm - Loading nationalities for edit');
-            console.log('PersonForm - formData.nationalities:', formData.nationalities);
-            // Asegurarse de que tenemos un array de IDs
             const nationalityIds = Array.isArray(formData.nationalities)
-                ? formData.nationalities.map((n: any) => {  // Cambiar de ( a {
-                    console.log('PersonForm - Processing nationality item:', n);
+                ? formData.nationalities.map((n: any) => {
                     const id = typeof n === 'object' ? n.locationId : n;
-                    console.log('PersonForm - Extracted ID:', id);
-                    return id;  // Agregar return explícito
-                })  // Cambiar de ) a }
+                    return id;
+                })
                 : [];
-            console.log('PersonForm - Final nationalityIds:', nationalityIds);
 
             setNationalities(nationalityIds);
             nationalitiesInitialized.current = true;
@@ -11700,7 +11891,7 @@ export function PersonForm({
                 </div>
             )}
 
-            {/* Información básica */}
+            {/* Información básica - SIN la foto */}
             <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-6">
                     Información Personal
@@ -11759,6 +11950,28 @@ export function PersonForm({
                 />
             </div>
 
+            {/* FOTO DE PERFIL - MOVIDA AL FINAL */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">
+                    Foto de Perfil
+                </h3>
+                <div className="max-w-md mx-auto">
+                    <CloudinaryUploadWidget
+                        value={formData.photoUrl}
+                        onChange={(url, publicId) => {
+                            updateField('photoUrl', url);
+                            updateField('photoPublicId', publicId);
+                        }}
+                        label=""
+                        type="person_photo"
+                        personId={formData.id}
+                        aspectRatio="3:4"
+                        maxWidth={800}
+                        maxDisplayHeight={400}  // NUEVO: limitar altura de display
+                    />
+                </div>
+            </div>
+
             {/* Botones de acción */}
             <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between">
@@ -11808,361 +12021,345 @@ export function PersonForm({
 // ==================================================
 // src/components/admin/people/PersonFormFields/BasicInfoFields.tsx
 
-import { useState, useEffect, useCallback } from 'react';
+'use client';
+
 import { PersonFormData } from '@/lib/people/peopleTypes';
-import { GENDER_OPTIONS } from '@/lib/people/peopleConstants';
-import { PartialDate, MONTHS } from '@/lib/shared/dateUtils';
+import { Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { PartialDate } from '@/lib/shared/dateUtils';
 
 interface BasicInfoFieldsProps {
-  formData: PersonFormData;
-  updateField: <K extends keyof PersonFormData>(field: K, value: PersonFormData[K]) => void;
-  isEdit?: boolean;
+    formData: PersonFormData;
+    updateField: <K extends keyof PersonFormData>(
+        field: K,
+        value: PersonFormData[K]
+    ) => void;
+    isEdit: boolean;
 }
 
-export function BasicInfoFields({ formData, updateField, isEdit }: BasicInfoFieldsProps) {
-  // Estados para fechas parciales
-  const [isPartialBirthDate, setIsPartialBirthDate] = useState(false);
-  const [partialBirthDate, setPartialBirthDate] = useState<PartialDate>({
-    year: null,
-    month: null,
-    day: null
-  });
-
-  const [isPartialDeathDate, setIsPartialDeathDate] = useState(false);
-  const [partialDeathDate, setPartialDeathDate] = useState<PartialDate>({
-    year: null,
-    month: null,
-    day: null
-  });
-
-  // Inicializar fechas parciales si estamos editando
-  useEffect(() => {
-    if (isEdit) {
-      // Verificar si hay fechas parciales en formData
-      if (formData.isPartialBirthDate && formData.partialBirthDate) {
-        setIsPartialBirthDate(true);
-        setPartialBirthDate(formData.partialBirthDate);
-      } else if (formData.birthDate) {
-        // Si hay fecha completa, mantener el checkbox desmarcado
-        setIsPartialBirthDate(false);
-      }
-      
-      if (formData.isPartialDeathDate && formData.partialDeathDate) {
-        setIsPartialDeathDate(true);
-        setPartialDeathDate(formData.partialDeathDate);
-      } else if (formData.deathDate) {
-        setIsPartialDeathDate(false);
-      }
-    }
-  }, [isEdit, formData.isPartialBirthDate, formData.isPartialDeathDate]);
-
-  // Handlers para cambios en fechas parciales
-  const handlePartialBirthDateToggle = useCallback((checked: boolean) => {
-    setIsPartialBirthDate(checked);
+export function BasicInfoFields({
+    formData,
+    updateField,
+    isEdit
+}: BasicInfoFieldsProps) {
+    // Estados para fechas parciales
+    const [isPartialBirthDate, setIsPartialBirthDate] = useState(false);
+    const [partialBirthDate, setPartialBirthDate] = useState<PartialDate>({
+        year: null,
+        month: null,
+        day: null
+    });
     
-    if (checked) {
-      // Al activar fecha parcial, limpiar fecha completa
-      updateField('birthDate', '');
-      updateField('isPartialBirthDate', true);
-      // Si hay una fecha completa, convertirla a parcial (solo año y mes)
-      if (formData.birthDate) {
-        const [year, month] = formData.birthDate.split('-').map(v => parseInt(v));
-        const newPartialDate = { 
-          year: year || null, 
-          month: month || null, 
-          day: null // Siempre null para fechas parciales
-        };
-        setPartialBirthDate(newPartialDate);
-        updateField('partialBirthDate', newPartialDate);
-      }
-    } else {
-      // Al desactivar fecha parcial, limpiar datos parciales
-      updateField('isPartialBirthDate', false);
-      updateField('partialBirthDate', { year: null, month: null, day: null });
-      setPartialBirthDate({ year: null, month: null, day: null });
-    }
-  }, [formData.birthDate, updateField]);
+    const [isPartialDeathDate, setIsPartialDeathDate] = useState(false);
+    const [partialDeathDate, setPartialDeathDate] = useState<PartialDate>({
+        year: null,
+        month: null,
+        day: null
+    });
 
-  const handlePartialDeathDateToggle = useCallback((checked: boolean) => {
-    setIsPartialDeathDate(checked);
-    
-    if (checked) {
-      updateField('deathDate', '');
-      updateField('isPartialDeathDate', true);
-      // Si hay una fecha completa, convertirla a parcial (solo año y mes)
-      if (formData.deathDate) {
-        const [year, month] = formData.deathDate.split('-').map(v => parseInt(v));
-        const newPartialDate = { 
-          year: year || null, 
-          month: month || null, 
-          day: null // Siempre null para fechas parciales
-        };
-        setPartialDeathDate(newPartialDate);
-        updateField('partialDeathDate', newPartialDate);
-      }
-    } else {
-      updateField('isPartialDeathDate', false);
-      updateField('partialDeathDate', { year: null, month: null, day: null });
-      setPartialDeathDate({ year: null, month: null, day: null });
-    }
-  }, [formData.deathDate, updateField]);
+    // Cargar estados de fechas parciales desde formData
+    useEffect(() => {
+        if (formData.isPartialBirthDate) {
+            setIsPartialBirthDate(true);
+            setPartialBirthDate(formData.partialBirthDate || { year: null, month: null, day: null });
+        }
+        if (formData.isPartialDeathDate) {
+            setIsPartialDeathDate(true);
+            setPartialDeathDate(formData.partialDeathDate || { year: null, month: null, day: null });
+        }
+    }, [formData.isPartialBirthDate, formData.isPartialDeathDate, formData.partialBirthDate, formData.partialDeathDate]);
 
-  // Handlers para cambios en los valores de las fechas parciales
-  const handlePartialBirthDateChange = useCallback((field: keyof PartialDate, value: number | null) => {
-    const newPartialDate = { ...partialBirthDate, [field]: value };
-    setPartialBirthDate(newPartialDate);
-    updateField('partialBirthDate', newPartialDate);
-  }, [partialBirthDate, updateField]);
+    // Manejar cambios en fechas parciales
+    const handlePartialBirthDateChange = (field: keyof PartialDate, value: any) => {
+        const updated = { ...partialBirthDate, [field]: value ? parseInt(value) : null };
+        setPartialBirthDate(updated);
+        updateField('partialBirthDate', updated);
+    };
 
-  const handlePartialDeathDateChange = useCallback((field: keyof PartialDate, value: number | null) => {
-    const newPartialDate = { ...partialDeathDate, [field]: value };
-    setPartialDeathDate(newPartialDate);
-    updateField('partialDeathDate', newPartialDate);
-  }, [partialDeathDate, updateField]);
+    const handlePartialDeathDateChange = (field: keyof PartialDate, value: any) => {
+        const updated = { ...partialDeathDate, [field]: value ? parseInt(value) : null };
+        setPartialDeathDate(updated);
+        updateField('partialDeathDate', updated);
+    };
 
-  return (
-    <div className="space-y-6">
-      {/* Nombre y Apellido */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-            Nombre <span className="text-gray-400">(opcional)</span>
-          </label>
-          <input
-            type="text"
-            id="firstName"
-            value={formData.firstName}
-            onChange={(e) => updateField('firstName', e.target.value)}
-            placeholder="Ej: Juan"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-            Apellido <span className="text-gray-400">(opcional)</span>
-          </label>
-          <input
-            type="text"
-            id="lastName"
-            value={formData.lastName}
-            onChange={(e) => updateField('lastName', e.target.value)}
-            placeholder="Ej: Pérez"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-          />
-        </div>
-      </div>
-      
-      <p className="text-sm text-gray-500">
-        Debe ingresar al menos el nombre o el apellido
-      </p>
+    const handleBirthDateTypeChange = (isPartial: boolean) => {
+        setIsPartialBirthDate(isPartial);
+        updateField('isPartialBirthDate', isPartial);
+        if (!isPartial) {
+            updateField('partialBirthDate', undefined);
+        } else {
+            updateField('birthDate', '');
+        }
+    };
 
-      {/* Nombre Real */}
-      <div>
-        <label htmlFor="realName" className="block text-sm font-medium text-gray-700 mb-1">
-          Nombre Real
-          <span className="text-gray-400 ml-1">(si es diferente al artístico)</span>
-        </label>
-        <input
-          type="text"
-          id="realName"
-          value={formData.realName}
-          onChange={(e) => updateField('realName', e.target.value)}
-          placeholder="Ej: Juan Carlos Pérez González"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-        />
-      </div>
+    const handleDeathDateTypeChange = (isPartial: boolean) => {
+        setIsPartialDeathDate(isPartial);
+        updateField('isPartialDeathDate', isPartial);
+        if (!isPartial) {
+            updateField('partialDeathDate', undefined);
+        } else {
+            updateField('deathDate', '');
+        }
+    };
 
-      {/* Género */}
-      <div>
-        <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
-          Género
-        </label>
-        <select
-          id="gender"
-          value={formData.gender}
-          onChange={(e) => updateField('gender', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-        >
-          <option value="">Seleccionar género</option>
-          {GENDER_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
+    // Generar opciones de años
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: 150 }, (_, i) => currentYear - i);
+    const months = [
+        { value: 1, label: 'Enero' },
+        { value: 2, label: 'Febrero' },
+        { value: 3, label: 'Marzo' },
+        { value: 4, label: 'Abril' },
+        { value: 5, label: 'Mayo' },
+        { value: 6, label: 'Junio' },
+        { value: 7, label: 'Julio' },
+        { value: 8, label: 'Agosto' },
+        { value: 9, label: 'Septiembre' },
+        { value: 10, label: 'Octubre' },
+        { value: 11, label: 'Noviembre' },
+        { value: 12, label: 'Diciembre' }
+    ];
 
-      {/* Fechas con soporte para fechas parciales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Fecha de Nacimiento */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Fecha de Nacimiento
-          </label>
-
-          <div className="mb-2">
-            <label className="inline-flex items-center">
-              <input
-                type="checkbox"
-                checked={isPartialBirthDate}
-                onChange={(e) => handlePartialBirthDateToggle(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="ml-2 text-sm text-gray-600">
-                Fecha incompleta
-              </span>
-            </label>
-          </div>
-
-          {!isPartialBirthDate ? (
-            <input
-              type="date"
-              value={formData.birthDate || ''}
-              onChange={(e) => updateField('birthDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            />
-          ) : (
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <input
-                    type="number"
-                    placeholder="Año"
-                    min="1800"
-                    max="2100"
-                    value={partialBirthDate.year || ''}
-                    onChange={(e) => handlePartialBirthDateChange(
-                      'year', 
-                      e.target.value ? parseInt(e.target.value) : null
-                    )}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  />
+    return (
+        <div className="space-y-6">
+            {/* Nombre y datos básicos */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nombre
+                    </label>
+                    <input
+                        type="text"
+                        value={formData.firstName}
+                        onChange={(e) => updateField('firstName', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Ej: Juan"
+                    />
                 </div>
-                <div className="flex-1">
-                  <select
-                    value={partialBirthDate.month || ''}
-                    onChange={(e) => handlePartialBirthDateChange(
-                      'month',
-                      e.target.value ? parseInt(e.target.value) : null
-                    )}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  >
-                    <option value="">Mes (opcional)</option>
-                    {MONTHS.map(month => (
-                      <option key={month.value} value={month.value}>
-                        {month.label}
-                      </option>
-                    ))}
-                  </select>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Apellido
+                    </label>
+                    <input
+                        type="text"
+                        value={formData.lastName}
+                        onChange={(e) => updateField('lastName', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Ej: Pérez"
+                    />
                 </div>
-              </div>
-              <p className="text-xs text-gray-500">
-                Ingrese el año (requerido) y mes (opcional) si los conoce
-              </p>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nombre Real/Completo
+                    </label>
+                    <input
+                        type="text"
+                        value={formData.realName || ''}
+                        onChange={(e) => updateField('realName', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Ej: Juan Carlos Pérez García"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Género
+                    </label>
+                    <select
+                        value={formData.gender || ''}
+                        onChange={(e) => updateField('gender', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                        <option value="">Seleccionar...</option>
+                        <option value="MALE">Masculino</option>
+                        <option value="FEMALE">Femenino</option>
+                        <option value="OTHER">Otro</option>
+                    </select>
+                </div>
             </div>
-          )}
-        </div>
-        
-        {/* Fecha de Fallecimiento */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Fecha de Fallecimiento
-          </label>
 
-          <div className="mb-2">
-            <label className="inline-flex items-center">
-              <input
-                type="checkbox"
-                checked={isPartialDeathDate}
-                onChange={(e) => handlePartialDeathDateToggle(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="ml-2 text-sm text-gray-600">
-                Fecha incompleta
-              </span>
-            </label>
-          </div>
+            {/* Fecha de nacimiento */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="inline w-4 h-4 mr-1" />
+                    Fecha de Nacimiento
+                </label>
+                
+                <div className="mb-2">
+                    <label className="inline-flex items-center">
+                        <input
+                            type="checkbox"
+                            checked={isPartialBirthDate}
+                            onChange={(e) => handleBirthDateTypeChange(e.target.checked)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-600">
+                            Fecha incompleta (solo año o año/mes)
+                        </span>
+                    </label>
+                </div>
 
-          {!isPartialDeathDate ? (
-            <input
-              type="date"
-              value={formData.deathDate || ''}
-              onChange={(e) => updateField('deathDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            />
-          ) : (
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <input
-                    type="number"
-                    placeholder="Año"
-                    min="1800"
-                    max="2100"
-                    value={partialDeathDate.year || ''}
-                    onChange={(e) => handlePartialDeathDateChange(
-                      'year',
-                      e.target.value ? parseInt(e.target.value) : null
-                    )}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  />
-                </div>
-                <div className="flex-1">
-                  <select
-                    value={partialDeathDate.month || ''}
-                    onChange={(e) => handlePartialDeathDateChange(
-                      'month',
-                      e.target.value ? parseInt(e.target.value) : null
-                    )}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  >
-                    <option value="">Mes (opcional)</option>
-                    {MONTHS.map(month => (
-                      <option key={month.value} value={month.value}>
-                        {month.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500">
-                Ingrese el año (requerido) y mes (opcional) si los conoce
-              </p>
+                {isPartialBirthDate ? (
+                    <div className="grid grid-cols-3 gap-2">
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1">Año</label>
+                            <select
+                                value={partialBirthDate.year || ''}
+                                onChange={(e) => handlePartialBirthDateChange('year', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">----</option>
+                                {years.map(year => (
+                                    <option key={year} value={year}>{year}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1">Mes</label>
+                            <select
+                                value={partialBirthDate.month || ''}
+                                onChange={(e) => handlePartialBirthDateChange('month', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                disabled={!partialBirthDate.year}
+                            >
+                                <option value="">--</option>
+                                {months.map(month => (
+                                    <option key={month.value} value={month.value}>
+                                        {month.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1">Día</label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="31"
+                                value={partialBirthDate.day || ''}
+                                onChange={(e) => handlePartialBirthDateChange('day', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                disabled={!partialBirthDate.month}
+                                placeholder="--"
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    <input
+                        type="date"
+                        value={formData.birthDate}
+                        onChange={(e) => updateField('birthDate', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                )}
             </div>
-          )}
+
+            {/* Fecha de muerte */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="inline w-4 h-4 mr-1" />
+                    Fecha de Fallecimiento
+                </label>
+                
+                <div className="mb-2">
+                    <label className="inline-flex items-center">
+                        <input
+                            type="checkbox"
+                            checked={isPartialDeathDate}
+                            onChange={(e) => handleDeathDateTypeChange(e.target.checked)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-600">
+                            Fecha incompleta (solo año o año/mes)
+                        </span>
+                    </label>
+                </div>
+
+                {isPartialDeathDate ? (
+                    <div className="grid grid-cols-3 gap-2">
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1">Año</label>
+                            <select
+                                value={partialDeathDate.year || ''}
+                                onChange={(e) => handlePartialDeathDateChange('year', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">----</option>
+                                {years.map(year => (
+                                    <option key={year} value={year}>{year}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1">Mes</label>
+                            <select
+                                value={partialDeathDate.month || ''}
+                                onChange={(e) => handlePartialDeathDateChange('month', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                disabled={!partialDeathDate.year}
+                            >
+                                <option value="">--</option>
+                                {months.map(month => (
+                                    <option key={month.value} value={month.value}>
+                                        {month.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-gray-500 mb-1">Día</label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="31"
+                                value={partialDeathDate.day || ''}
+                                onChange={(e) => handlePartialDeathDateChange('day', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                disabled={!partialDeathDate.month}
+                                placeholder="--"
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    <input
+                        type="date"
+                        value={formData.deathDate}
+                        onChange={(e) => updateField('deathDate', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                )}
+            </div>
+
+            {/* Opciones adicionales */}
+            <div className="space-y-3">
+                <label className="inline-flex items-center">
+                    <input
+                        type="checkbox"
+                        checked={formData.hideAge || false}
+                        onChange={(e) => updateField('hideAge', e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">
+                        Ocultar edad en el perfil público
+                    </span>
+                </label>
+
+                <label className="inline-flex items-center">
+                    <input
+                        type="checkbox"
+                        checked={formData.isActive !== false}
+                        onChange={(e) => updateField('isActive', e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">
+                        Persona activa (visible en el sitio)
+                    </span>
+                </label>
+            </div>
         </div>
-      </div>
-
-      {/* Ocultar edad */}
-      <div className="flex items-center">
-        <input
-          type="checkbox"
-          id="hideAge"
-          checked={formData.hideAge}
-          onChange={(e) => updateField('hideAge', e.target.checked)}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-        />
-        <label htmlFor="hideAge" className="ml-2 block text-sm text-gray-700">
-          Ocultar fecha de nacimiento en el sitio público
-        </label>
-      </div>
-
-      {/* Estado activo */}
-      <div className="flex items-center pt-2">
-        <input
-          type="checkbox"
-          id="isActive"
-          checked={formData.isActive}
-          onChange={(e) => updateField('isActive', e.target.checked)}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-        />
-        <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
-          Persona activa
-        </label>
-      </div>
-    </div>
-  );
+    );
 }
 
 // ==================================================
