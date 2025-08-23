@@ -14,8 +14,8 @@ interface PageProps {
 async function getMovieData(slug: string) {
   try {
     const movie = await prisma.movie.findFirst({
-      where: { 
-        slug: slug 
+      where: {
+        slug: slug
       },
       include: {
         genres: {
@@ -69,7 +69,12 @@ async function getMovieData(slug: string) {
         links: true
       }
     });
-
+    console.log('🔍 Película obtenida:', {
+      title: movie.title,
+      posterUrl: movie.posterUrl,
+      poster_url: (movie as any).poster_url,
+      allFields: Object.keys(movie)
+    });
     return movie;
   } catch (error) {
     console.error('Error fetching movie:', error);
@@ -80,13 +85,13 @@ async function getMovieData(slug: string) {
 // Metadata dinámica
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const movie = await getMovieData(params.slug);
-  
+
   if (!movie) {
     return {
       title: 'Película no encontrada - CineNacional',
     };
   }
-  
+
   return {
     title: `${movie.title} - cinenacional.com`,
     description: movie.synopsis || `${movie.title} (${movie.releaseYear || movie.year})`,
@@ -103,39 +108,39 @@ function formatPersonName(person: any): string {
 
 export default async function MoviePage({ params }: PageProps) {
   const movie = await getMovieData(params.slug);
-  
+
   if (!movie) {
     notFound();
   }
 
   // Formatear duración total en minutos
   const totalDuration = movie.duration || 0;
-  
+
   // Procesar géneros con estructura correcta
   const genres = movie.genres?.map((g: any) => ({
     id: g.genre.id,
     name: g.genre.name
   })).filter(Boolean) || [];
-  
+
   // Procesar temas con estructura correcta
   const themes = movie.themes?.map((t: any) => ({
     id: t.theme.id,
     name: t.theme.name
   })).filter(Boolean) || [];
-  
+
   // Procesar países coproductores (excluyendo Argentina si es el único)
   const countries = movie.movieCountries?.map((c: any) => ({
     id: c.country.id,
     name: c.country.name
   }))
-  .filter((c: any) => c.name !== 'Argentina' || movie.movieCountries.length > 1) || [];
+    .filter((c: any) => c.name !== 'Argentina' || movie.movieCountries.length > 1) || [];
 
   const rating = movie.rating ? {
     id: movie.rating.id,
     name: movie.rating.name,
     description: movie.rating.description || undefined
   } : null;
-  
+
   const colorType = movie.colorType ? {
     id: movie.colorType.id,
     name: movie.colorType.name
@@ -159,16 +164,16 @@ export default async function MoviePage({ params }: PageProps) {
   console.log('🎬 Película:', movie.title);
   console.log('👥 Total de actores:', allCast.length);
   console.log('🌟 Actores con isPrincipal:', allCast.filter((c: any) => c.isPrincipal).length);
-  
+
   // Separar cast principal del cast completo
   let mainCast: any[] = [];
   let fullCast: any[] = [];
-  
+
   // Primero buscar los que tienen isPrincipal = true
   const principalActors = allCast.filter((c: any) => c.isPrincipal === true);
-  
+
   console.log('✨ Actores principales encontrados:', principalActors.length);
-  
+
   if (principalActors.length > 0) {
     // Si hay actores marcados como principales, usarlos
     mainCast = principalActors;
@@ -192,10 +197,10 @@ export default async function MoviePage({ params }: PageProps) {
 
   // PROCESAR CREW - NUEVA LÓGICA PARA LEER DE LA BASE DE DATOS
   console.log('🎬 Procesando equipo técnico para:', movie.title);
-  
+
   // IDs de los roles principales según lo especificado
   const mainCrewRoleIds = [2, 3, 703, 526, 836, 636, 402, 641];
-  
+
   // Mapeo de roleId a nombre de departamento para el equipo principal
   const mainRoleDepartmentMap: { [key: number]: string } = {
     2: 'Dirección',
@@ -207,7 +212,7 @@ export default async function MoviePage({ params }: PageProps) {
     402: 'Dirección de Sonido',
     641: 'Música'
   };
-  
+
   // Procesar todo el crew
   const allCrew = movie.crew?.map((c: any) => ({
     name: formatPersonName(c.person),
@@ -218,19 +223,19 @@ export default async function MoviePage({ params }: PageProps) {
     personId: c.person.id,
     personSlug: c.person.slug
   })) || [];
-  
+
   console.log('👥 Total de crew:', allCrew.length);
-  
+
   // Separar crew principal del crew completo
   const basicCrewMembers = allCrew.filter((c: any) => mainCrewRoleIds.includes(c.roleId));
   const additionalCrewMembers = allCrew.filter((c: any) => !mainCrewRoleIds.includes(c.roleId));
-  
+
   console.log('⭐ Crew principal:', basicCrewMembers.length);
   console.log('📋 Crew adicional:', additionalCrewMembers.length);
-  
+
   // Organizar el crew principal por departamento (orden específico)
   const basicCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string }> } = {};
-  
+
   // Orden específico de los departamentos principales
   const mainDepartmentOrder = [
     'Dirección',
@@ -242,12 +247,12 @@ export default async function MoviePage({ params }: PageProps) {
     'Dirección de Sonido',
     'Música'
   ];
-  
+
   // Inicializar departamentos vacíos en el orden correcto
   mainDepartmentOrder.forEach(dept => {
     basicCrewByDepartment[dept] = [];
   });
-  
+
   // Llenar con los miembros del crew principal
   basicCrewMembers.forEach((member: any) => {
     const dept = mainRoleDepartmentMap[member.roleId] || member.department || 'Otros';
@@ -260,17 +265,17 @@ export default async function MoviePage({ params }: PageProps) {
       personSlug: member.personSlug
     });
   });
-  
+
   // Eliminar departamentos vacíos del crew principal
   Object.keys(basicCrewByDepartment).forEach(dept => {
     if (basicCrewByDepartment[dept].length === 0) {
       delete basicCrewByDepartment[dept];
     }
   });
-  
+
   // Organizar el crew completo por departamento
   const fullCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string }> } = {};
-  
+
   // Incluir TODO el crew (principal + adicional) en el crew completo
   allCrew
     .sort((a: any, b: any) => {
@@ -283,18 +288,18 @@ export default async function MoviePage({ params }: PageProps) {
     })
     .forEach((member: any) => {
       const dept = member.department || mainRoleDepartmentMap[member.roleId] || 'Otros';
-      
+
       if (!fullCrewByDepartment[dept]) {
         fullCrewByDepartment[dept] = [];
       }
-      
+
       fullCrewByDepartment[dept].push({
         name: member.name,
         role: member.role,
         personSlug: member.personSlug
       });
     });
-  
+
   console.log('📊 Departamentos en crew principal:', Object.keys(basicCrewByDepartment));
   console.log('📊 Departamentos en crew completo:', Object.keys(fullCrewByDepartment));
 
