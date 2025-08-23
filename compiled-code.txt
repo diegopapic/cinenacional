@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: fb27e8c0913fa7cf46139d90c6ba0104aab6011b
-// Fecha: 2025-08-23T02:29:53.939Z
+// Commit: 2e3c7269dc16471e53f018585179670a537a5d0d
+// Fecha: 2025-08-23T03:39:07.243Z
 // ============================================
 
 
@@ -6734,6 +6734,21 @@ export async function PUT(
     const cleanedData = {
       ...body,
       ratingId: body.ratingId === 0 ? null : body.ratingId,
+      genres: Array.isArray(body.genres) 
+        ? body.genres.filter((g: any) => g != null && g !== 0 && !isNaN(Number(g)))
+        : [],
+      countries: Array.isArray(body.countries)
+        ? body.countries.filter((c: any) => c != null && c !== 0 && !isNaN(Number(c)))
+        : body.countries || [],
+      productionCompanies: Array.isArray(body.productionCompanies)
+        ? body.productionCompanies.filter((pc: any) => pc != null && pc !== 0 && !isNaN(Number(pc)))
+        : [],
+      distributionCompanies: Array.isArray(body.distributionCompanies)
+        ? body.distributionCompanies.filter((dc: any) => dc != null && dc !== 0 && !isNaN(Number(dc)))
+        : [],
+      themes: Array.isArray(body.themes)
+        ? body.themes.filter((t: any) => t != null && t !== 0 && !isNaN(Number(t)))
+        : [],
       metaKeywords: body.metaKeywords
         ? Array.isArray(body.metaKeywords)
           ? body.metaKeywords
@@ -22475,7 +22490,9 @@ export function useMovieForm({
 
     // Callbacks para actualizar relaciones
     const handleGenresChange = useCallback((genres: number[]) => {
-        setMovieRelations(prev => ({ ...prev, genres }))
+        // Filtrar valores inválidos antes de guardar
+        const validGenres = (genres || []).filter(g => g != null && g !== 0 && !isNaN(g))
+        setMovieRelations(prev => ({ ...prev, genres: validGenres }))
     }, [])
 
     const handleLinksChange = useCallback((links: any[]) => {
@@ -22491,6 +22508,14 @@ export function useMovieForm({
     }, [])
 
     const handleCrewChange = useCallback((crew: any[]) => {
+        console.log('👥 handleCrewChange recibió:', crew)
+    crew?.forEach((member, index) => {
+        console.log(`👥 Crew[${index}]:`, {
+            personId: member.personId,
+            person: member.person,
+            roleId: member.roleId
+        })
+    })
         setMovieRelations(prev => ({ ...prev, crew }))
     }, [])
 
@@ -22654,20 +22679,30 @@ export function useMovieForm({
 
             // Configurar relaciones
             setMovieRelations({
-                genres: cleanedMovie.genres?.map((g: any) => g.genreId) || [],
+                genres: (cleanedMovie.genres?.map((g: any) => g.genreId) || [])
+                    .filter((g: number) => g != null && g !== 0 && !isNaN(g)),
                 cast: cleanedMovie.cast?.map((c: any) => ({
                     personId: c.personId,
                     characterName: c.characterName,
                     billingOrder: c.billingOrder,
                     isPrincipal: c.isPrincipal
                 })) || [],
-                crew: cleanedMovie.crew?.map((c: any) => ({
-                    personId: c.personId,
-                    roleId: c.roleId,
-                    billingOrder: c.billingOrder,
-                    person: c.person,
-                    role: c.role
-                })) || [],
+                crew: (() => {
+                    const crewData = cleanedMovie.crew?.map((c: any) => {
+                        console.log('📌 Crew item desde DB:', c)
+                        const mapped = {
+                            personId: c.personId || c.person?.id,  // Intentar obtener de person si no está en personId
+                            roleId: c.roleId,
+                            billingOrder: c.billingOrder,
+                            person: c.person,
+                            role: c.role
+                        }
+                        console.log('📌 Crew item mapeado:', mapped)
+                        return mapped
+                    }) || []
+                    console.log('📌 Crew final cargado:', crewData)
+                    return crewData
+                })(),
                 countries: cleanedMovie.movieCountries?.map((c: any) => c.countryId) || [],
                 productionCompanies: cleanedMovie.productionCompanies?.map((c: any) => c.companyId) || [],
                 distributionCompanies: cleanedMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
@@ -22782,6 +22817,29 @@ export function useMovieForm({
             delete preparedData.filmingStartDate;
             delete preparedData.filmingEndDate;
 
+            console.log('🎬 DEBUG - movieRelations.crew antes de procesar:', movieRelations.crew)
+            movieRelations.crew.forEach((member, index) => {
+                console.log(`🎬 Crew member ${index}:`, {
+                    personId: member.personId,
+                    personIdType: typeof member.personId,
+                    hasPersonObject: !!member.person,
+                    personFromObject: member.person?.id,
+                    roleId: member.roleId,
+                    fullMember: JSON.stringify(member)
+                })
+            })
+            // Línea 438 - AGREGAR NUEVO:
+            movieRelations.crew.forEach((member, index) => {
+                console.log(`🎬 Crew member ${index}:`, {
+                    personId: member.personId,
+                    personIdType: typeof member.personId,
+                    roleId: member.roleId,
+                    roleIdType: typeof member.roleId,
+                    roleFromObject: member.role?.id,
+                    fullMember: member
+                })
+            })
+
             // Construir el objeto completo de datos
             const movieData: any = {
                 ...preparedData,
@@ -22797,7 +22855,7 @@ export function useMovieForm({
                     : [],
 
                 // IMPORTANTE: Usar las relaciones del estado, no del data del formulario
-                genres: movieRelations.genres,
+                genres: movieRelations.genres.filter(g => g != null && g !== 0 && !isNaN(g)),
                 cast: movieRelations.cast,
                 crew: movieRelations.crew.map(member => ({
                     personId: member.personId,
@@ -25340,7 +25398,10 @@ export const movieSchema = z.object({
   production_type: z.string().optional(),
 
   // Relaciones (arrays de IDs)
-  genres: z.array(z.number()).optional(),
+   genres: z.array(z.number().positive())
+    .optional()
+    .default([])
+    .transform(val => val.filter(v => v > 0 && !isNaN(v))),
   cast: z.array(z.any()).optional(),
   crew: z.array(z.any()).optional(),
   productionCompanies: z.array(z.number()).optional(),

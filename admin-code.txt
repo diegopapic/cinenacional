@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-23T02:29:53.957Z
+// Archivos del admin - 2025-08-23T03:39:07.341Z
 // ==================
 
 
@@ -4768,6 +4768,21 @@ export async function PUT(
     const cleanedData = {
       ...body,
       ratingId: body.ratingId === 0 ? null : body.ratingId,
+      genres: Array.isArray(body.genres) 
+        ? body.genres.filter((g: any) => g != null && g !== 0 && !isNaN(Number(g)))
+        : [],
+      countries: Array.isArray(body.countries)
+        ? body.countries.filter((c: any) => c != null && c !== 0 && !isNaN(Number(c)))
+        : body.countries || [],
+      productionCompanies: Array.isArray(body.productionCompanies)
+        ? body.productionCompanies.filter((pc: any) => pc != null && pc !== 0 && !isNaN(Number(pc)))
+        : [],
+      distributionCompanies: Array.isArray(body.distributionCompanies)
+        ? body.distributionCompanies.filter((dc: any) => dc != null && dc !== 0 && !isNaN(Number(dc)))
+        : [],
+      themes: Array.isArray(body.themes)
+        ? body.themes.filter((t: any) => t != null && t !== 0 && !isNaN(Number(t)))
+        : [],
       metaKeywords: body.metaKeywords
         ? Array.isArray(body.metaKeywords)
           ? body.metaKeywords
@@ -13154,7 +13169,10 @@ export const movieSchema = z.object({
   production_type: z.string().optional(),
 
   // Relaciones (arrays de IDs)
-  genres: z.array(z.number()).optional(),
+   genres: z.array(z.number().positive())
+    .optional()
+    .default([])
+    .transform(val => val.filter(v => v > 0 && !isNaN(v))),
   cast: z.array(z.any()).optional(),
   crew: z.array(z.any()).optional(),
   productionCompanies: z.array(z.number()).optional(),

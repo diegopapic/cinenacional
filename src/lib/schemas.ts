@@ -89,7 +89,10 @@ export const movieSchema = z.object({
   production_type: z.string().optional(),
 
   // Relaciones (arrays de IDs)
-  genres: z.array(z.number()).optional(),
+   genres: z.array(z.number().positive())
+    .optional()
+    .default([])
+    .transform(val => val.filter(v => v > 0 && !isNaN(v))),
   cast: z.array(z.any()).optional(),
   crew: z.array(z.any()).optional(),
   productionCompanies: z.array(z.number()).optional(),

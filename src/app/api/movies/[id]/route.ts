@@ -216,6 +216,21 @@ export async function PUT(
     const cleanedData = {
       ...body,
       ratingId: body.ratingId === 0 ? null : body.ratingId,
+      genres: Array.isArray(body.genres) 
+        ? body.genres.filter((g: any) => g != null && g !== 0 && !isNaN(Number(g)))
+        : [],
+      countries: Array.isArray(body.countries)
+        ? body.countries.filter((c: any) => c != null && c !== 0 && !isNaN(Number(c)))
+        : body.countries || [],
+      productionCompanies: Array.isArray(body.productionCompanies)
+        ? body.productionCompanies.filter((pc: any) => pc != null && pc !== 0 && !isNaN(Number(pc)))
+        : [],
+      distributionCompanies: Array.isArray(body.distributionCompanies)
+        ? body.distributionCompanies.filter((dc: any) => dc != null && dc !== 0 && !isNaN(Number(dc)))
+        : [],
+      themes: Array.isArray(body.themes)
+        ? body.themes.filter((t: any) => t != null && t !== 0 && !isNaN(Number(t)))
+        : [],
       metaKeywords: body.metaKeywords
         ? Array.isArray(body.metaKeywords)
           ? body.metaKeywords

@@ -222,7 +222,9 @@ export function useMovieForm({
 
     // Callbacks para actualizar relaciones
     const handleGenresChange = useCallback((genres: number[]) => {
-        setMovieRelations(prev => ({ ...prev, genres }))
+        // Filtrar valores inválidos antes de guardar
+        const validGenres = (genres || []).filter(g => g != null && g !== 0 && !isNaN(g))
+        setMovieRelations(prev => ({ ...prev, genres: validGenres }))
     }, [])
 
     const handleLinksChange = useCallback((links: any[]) => {
@@ -238,6 +240,14 @@ export function useMovieForm({
     }, [])
 
     const handleCrewChange = useCallback((crew: any[]) => {
+        console.log('👥 handleCrewChange recibió:', crew)
+    crew?.forEach((member, index) => {
+        console.log(`👥 Crew[${index}]:`, {
+            personId: member.personId,
+            person: member.person,
+            roleId: member.roleId
+        })
+    })
         setMovieRelations(prev => ({ ...prev, crew }))
     }, [])
 
@@ -401,20 +411,30 @@ export function useMovieForm({
 
             // Configurar relaciones
             setMovieRelations({
-                genres: cleanedMovie.genres?.map((g: any) => g.genreId) || [],
+                genres: (cleanedMovie.genres?.map((g: any) => g.genreId) || [])
+                    .filter((g: number) => g != null && g !== 0 && !isNaN(g)),
                 cast: cleanedMovie.cast?.map((c: any) => ({
                     personId: c.personId,
                     characterName: c.characterName,
                     billingOrder: c.billingOrder,
                     isPrincipal: c.isPrincipal
                 })) || [],
-                crew: cleanedMovie.crew?.map((c: any) => ({
-                    personId: c.personId,
-                    roleId: c.roleId,
-                    billingOrder: c.billingOrder,
-                    person: c.person,
-                    role: c.role
-                })) || [],
+                crew: (() => {
+                    const crewData = cleanedMovie.crew?.map((c: any) => {
+                        console.log('📌 Crew item desde DB:', c)
+                        const mapped = {
+                            personId: c.personId || c.person?.id,  // Intentar obtener de person si no está en personId
+                            roleId: c.roleId,
+                            billingOrder: c.billingOrder,
+                            person: c.person,
+                            role: c.role
+                        }
+                        console.log('📌 Crew item mapeado:', mapped)
+                        return mapped
+                    }) || []
+                    console.log('📌 Crew final cargado:', crewData)
+                    return crewData
+                })(),
                 countries: cleanedMovie.movieCountries?.map((c: any) => c.countryId) || [],
                 productionCompanies: cleanedMovie.productionCompanies?.map((c: any) => c.companyId) || [],
                 distributionCompanies: cleanedMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
@@ -529,6 +549,29 @@ export function useMovieForm({
             delete preparedData.filmingStartDate;
             delete preparedData.filmingEndDate;
 
+            console.log('🎬 DEBUG - movieRelations.crew antes de procesar:', movieRelations.crew)
+            movieRelations.crew.forEach((member, index) => {
+                console.log(`🎬 Crew member ${index}:`, {
+                    personId: member.personId,
+                    personIdType: typeof member.personId,
+                    hasPersonObject: !!member.person,
+                    personFromObject: member.person?.id,
+                    roleId: member.roleId,
+                    fullMember: JSON.stringify(member)
+                })
+            })
+            // Línea 438 - AGREGAR NUEVO:
+            movieRelations.crew.forEach((member, index) => {
+                console.log(`🎬 Crew member ${index}:`, {
+                    personId: member.personId,
+                    personIdType: typeof member.personId,
+                    roleId: member.roleId,
+                    roleIdType: typeof member.roleId,
+                    roleFromObject: member.role?.id,
+                    fullMember: member
+                })
+            })
+
             // Construir el objeto completo de datos
             const movieData: any = {
                 ...preparedData,
@@ -544,7 +587,7 @@ export function useMovieForm({
                     : [],
 
                 // IMPORTANTE: Usar las relaciones del estado, no del data del formulario
-                genres: movieRelations.genres,
+                genres: movieRelations.genres.filter(g => g != null && g !== 0 && !isNaN(g)),
                 cast: movieRelations.cast,
                 crew: movieRelations.crew.map(member => ({
                     personId: member.personId,
