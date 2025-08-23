@@ -47,7 +47,6 @@ export async function GET() {
               }
             }
           },
-          take: 1
         }
       },
       orderBy: {

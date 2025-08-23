@@ -7,7 +7,7 @@ interface MovieCardProps {
   movie: MovieWithRelease;
   showDate?: boolean;
   dateFormatter?: (movie: MovieWithRelease) => string;
-  dateType?: 'past' | 'future'; // Nuevo prop para diferenciar el badge
+  dateType?: 'past' | 'future';
 }
 
 export default function MovieCard({ 
@@ -16,19 +16,43 @@ export default function MovieCard({
   dateFormatter,
   dateType = 'past' 
 }: MovieCardProps) {
-  const obtenerDirector = (movie: MovieWithRelease): string => {
+  
+  // Función actualizada para obtener TODOS los directores (solo roleId === 2)
+  const obtenerDirectores = (movie: MovieWithRelease): string => {
     if (movie.crew && movie.crew.length > 0) {
-      const director = movie.crew.find((c) => 
-        c.roleId === 2 || 
-        c.role?.toLowerCase() === 'director' || 
-        c.role?.toLowerCase() === 'dirección'
-      );
+      // DEBUG: Ver qué hay en el crew
+      console.log(`Película: ${movie.title}`);
+      console.log('Crew completo:', movie.crew);
       
-      if (director?.person) {
-        const firstName = director.person.firstName || '';
-        const lastName = director.person.lastName || '';
-        const fullName = `${firstName} ${lastName}`.trim();
-        if (fullName) return fullName;
+      // Filtrar todos los miembros del crew que sean directores (roleId === 2)
+      const directores = movie.crew.filter((c) => c.roleId === 2);
+      
+      console.log('Directores encontrados:', directores);
+      
+      // Si hay directores, construir la lista de nombres
+      if (directores.length > 0) {
+        const nombresDirectores = directores
+          .map((director) => {
+            if (director?.person) {
+              const firstName = director.person.firstName || '';
+              const lastName = director.person.lastName || '';
+              const fullName = `${firstName} ${lastName}`.trim();
+              console.log('Nombre director:', fullName);
+              return fullName;
+            }
+            return null;
+          })
+          .filter(Boolean); // Eliminar nulls/vacíos
+        
+        if (nombresDirectores.length > 0) {
+          console.log('Nombres finales:', nombresDirectores);
+          // Si hay múltiples directores, separarlos con coma
+          // Limitar a los primeros 2 directores si hay muchos para no ocupar mucho espacio
+          if (nombresDirectores.length > 2) {
+            return `${nombresDirectores.slice(0, 2).join(', ')} y otros`;
+          }
+          return nombresDirectores.join(' y ');
+        }
       }
     }
     return 'Director no especificado';
@@ -102,7 +126,7 @@ export default function MovieCard({
       </div>
       <h3 className="font-medium text-sm text-white line-clamp-2">{movie.title}</h3>
       <p className="text-gray-400 text-xs">{obtenerGeneros(movie)}</p>
-      <p className="text-gray-400 text-xs">Dir: {obtenerDirector(movie)}</p>
+      <p className="text-gray-400 text-xs">Dir: {obtenerDirectores(movie)}</p>
     </Link>
   );
 }
