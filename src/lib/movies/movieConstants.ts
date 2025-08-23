@@ -17,6 +17,22 @@ export const MOVIE_STAGES = [
   { value: 'INEDITA', label: 'Inédita', description: 'Completa pero sin estrenar' }
 ] as const
 
+export const POSTER_PLACEHOLDER = {
+  default: 'poster-placeholder-dark.jpg',
+  cloudinaryUrl: '/images/poster-placeholder-dark.jpg'  // ← Ruta local desde public
+} as const;
+
+export const BACKGROUND_PLACEHOLDER = {
+  url: '/images/background-placeholder.jpg'  // ← Agregar esta nueva constante
+} as const;
+
+export const POSTER_ASPECT_RATIO = 2/3;
+export const POSTER_SIZES = {
+  thumbnail: { width: 200, height: 300 },
+  card: { width: 342, height: 513 },
+  full: { width: 500, height: 750 }
+} as const;
+
 /**
  * TIPOS_DURACION
  * @TODO Add documentation

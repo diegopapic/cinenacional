@@ -455,8 +455,13 @@
     "size": 0
   },
   {
-    "path": "public/images/placeholder.jpg",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/placeholder.jpg",
+    "path": "public/images/background-placeholder.jpg",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/background-placeholder.jpg",
+    "size": 0
+  },
+  {
+    "path": "public/images/poster-placeholder-dark.jpg",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/poster-placeholder-dark.jpg",
     "size": 0
   },
   {

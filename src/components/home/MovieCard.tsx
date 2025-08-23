@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { MovieWithRelease } from '@/types/home.types';
 import { formatPartialDate } from '@/lib/shared/dateUtils';
+import { POSTER_PLACEHOLDER } from '@/lib/movies/movieConstants';
 
 interface MovieCardProps {
   movie: MovieWithRelease;
@@ -20,34 +21,21 @@ export default function MovieCard({
   // Función actualizada para obtener TODOS los directores (solo roleId === 2)
   const obtenerDirectores = (movie: MovieWithRelease): string => {
     if (movie.crew && movie.crew.length > 0) {
-      // DEBUG: Ver qué hay en el crew
-      console.log(`Película: ${movie.title}`);
-      console.log('Crew completo:', movie.crew);
-      
-      // Filtrar todos los miembros del crew que sean directores (roleId === 2)
       const directores = movie.crew.filter((c) => c.roleId === 2);
       
-      console.log('Directores encontrados:', directores);
-      
-      // Si hay directores, construir la lista de nombres
       if (directores.length > 0) {
         const nombresDirectores = directores
           .map((director) => {
             if (director?.person) {
               const firstName = director.person.firstName || '';
               const lastName = director.person.lastName || '';
-              const fullName = `${firstName} ${lastName}`.trim();
-              console.log('Nombre director:', fullName);
-              return fullName;
+              return `${firstName} ${lastName}`.trim();
             }
             return null;
           })
-          .filter(Boolean); // Eliminar nulls/vacíos
+          .filter(Boolean);
         
         if (nombresDirectores.length > 0) {
-          console.log('Nombres finales:', nombresDirectores);
-          // Si hay múltiples directores, separarlos con coma
-          // Limitar a los primeros 2 directores si hay muchos para no ocupar mucho espacio
           if (nombresDirectores.length > 2) {
             return `${nombresDirectores.slice(0, 2).join(', ')} y otros`;
           }
@@ -100,24 +88,17 @@ export default function MovieCard({
       className="group cursor-pointer"
     >
       <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform poster-shadow relative">
-        {movie.posterUrl ? (
-          <img
-            src={movie.posterUrl}
-            alt={movie.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
-        ) : null}
-        <div className={`movie-placeholder w-full h-full ${movie.posterUrl ? 'hidden' : ''}`}>
-          <svg className="w-12 h-12 text-cine-accent mb-2 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
-          </svg>
-          <p className="text-xs text-gray-400">Afiche</p>
-        </div>
+        <img
+          src={movie.posterUrl || POSTER_PLACEHOLDER.cloudinaryUrl}
+          alt={movie.title}
+          className="w-full h-full object-cover"
+          loading="lazy"
+          style={{
+            // Oscurecer un poco el placeholder para que se note que es genérico
+            filter: !movie.posterUrl ? 'brightness(0.5)' : 'none'
+          }}
+        />
+        
         {showDate && (
           <div className={`absolute top-2 right-2 ${badgeColor} backdrop-blur-sm px-2 py-1 rounded text-xs text-white`}>
             {formatDate(movie)}
