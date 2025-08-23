@@ -169,6 +169,7 @@ model Person {
   deathLocationId Int?                @map("death_location_id")
   biography       String?
   photoUrl        String?             @map("photo_url") @db.VarChar(500)
+  photoPublicId   String?             @map("photo_public_id") @db.VarChar(255)
   gender          Gender?
   hideAge         Boolean             @default(false) @map("hide_age")
   hasLinks        Boolean             @default(false) @map("has_links")

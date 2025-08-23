@@ -21,6 +21,7 @@ export interface Person {
   deathLocationId?: number | null;
   biography?: string | null;
   photoUrl?: string | null;
+  photoPublicId?: string;
   gender?: Gender | null;
   hideAge: boolean;
   hasLinks: boolean;
@@ -125,6 +126,7 @@ export interface PersonFormData {
   deathLocation?: string;            // <-- Mantener para compatibilidad/display
   biography?: string;
   photoUrl?: string;
+  photoPublicId?: string;
   gender?: string;
   hideAge?: boolean;
   isActive?: boolean;

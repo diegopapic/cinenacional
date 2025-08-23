@@ -108,10 +108,15 @@ export async function PUT(
             deathYear: data.deathYear || null,
             deathMonth: data.deathMonth || null,
             deathDay: data.deathDay || null,
-            birthLocationId: data.birthLocationId || null,
-            deathLocationId: data.deathLocationId || null,
+            birthLocation: data.birthLocationId
+                ? { connect: { id: data.birthLocationId } }
+                : { disconnect: true },
+            deathLocation: data.deathLocationId
+                ? { connect: { id: data.deathLocationId } }
+                : { disconnect: true },
             biography: data.biography || null,
             photoUrl: data.photoUrl || null,
+            photoPublicId: data.photoPublicId || null,
             gender: data.gender || null,
             hideAge: data.hideAge || false,
             isActive: data.isActive ?? true,

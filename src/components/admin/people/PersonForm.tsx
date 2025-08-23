@@ -7,6 +7,7 @@ import { Save, Loader2, AlertCircle } from 'lucide-react';
 import { usePeopleForm } from '@/hooks/usePeopleForm';
 import { PersonWithRelations } from '@/lib/people/peopleTypes';
 import NationalitiesField from './PersonFormFields/NationalitiesField'
+import { CloudinaryUploadWidget } from '@/components/admin/CloudinaryUploadWidget';
 
 // Importar sub-componentes del formulario
 import { BasicInfoFields } from './PersonFormFields/BasicInfoFields';
@@ -76,18 +77,12 @@ export function PersonForm({
     // Cargar nacionalidades cuando se edita una persona existente
     useEffect(() => {
         if (isEdit && formData.nationalities && formData.nationalities.length > 0 && !nationalitiesInitialized.current) {
-            console.log('PersonForm - Loading nationalities for edit');
-            console.log('PersonForm - formData.nationalities:', formData.nationalities);
-            // Asegurarse de que tenemos un array de IDs
             const nationalityIds = Array.isArray(formData.nationalities)
-                ? formData.nationalities.map((n: any) => {  // Cambiar de ( a {
-                    console.log('PersonForm - Processing nationality item:', n);
+                ? formData.nationalities.map((n: any) => {
                     const id = typeof n === 'object' ? n.locationId : n;
-                    console.log('PersonForm - Extracted ID:', id);
-                    return id;  // Agregar return explícito
-                })  // Cambiar de ) a }
+                    return id;
+                })
                 : [];
-            console.log('PersonForm - Final nationalityIds:', nationalityIds);
 
             setNationalities(nationalityIds);
             nationalitiesInitialized.current = true;
@@ -142,7 +137,7 @@ export function PersonForm({
                 </div>
             )}
 
-            {/* Información básica */}
+            {/* Información básica - SIN la foto */}
             <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-6">
                     Información Personal
@@ -199,6 +194,28 @@ export function PersonForm({
                     onUpdateLink={updateLink}
                     onRemoveLink={removeLink}
                 />
+            </div>
+
+            {/* FOTO DE PERFIL - MOVIDA AL FINAL */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">
+                    Foto de Perfil
+                </h3>
+                <div className="max-w-md mx-auto">
+                    <CloudinaryUploadWidget
+                        value={formData.photoUrl}
+                        onChange={(url, publicId) => {
+                            updateField('photoUrl', url);
+                            updateField('photoPublicId', publicId);
+                        }}
+                        label=""
+                        type="person_photo"
+                        personId={formData.id}
+                        aspectRatio="3:4"
+                        maxWidth={800}
+                        maxDisplayHeight={400}  // NUEVO: limitar altura de display
+                    />
+                </div>
             </div>
 
             {/* Botones de acción */}

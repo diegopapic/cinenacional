@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-23T18:37:44.678Z
+# Generado automáticamente el: 2025-08-23T19:37:04.177Z
 # ================================================
 
 ## Schema Prisma
@@ -176,6 +176,7 @@ model Person {
   deathLocationId Int?                @map("death_location_id")
   biography       String?
   photoUrl        String?             @map("photo_url") @db.VarChar(500)
+  photoPublicId   String?             @map("photo_public_id") @db.VarChar(255)
   gender          Gender?
   hideAge         Boolean             @default(false) @map("hide_age")
   hasLinks        Boolean             @default(false) @map("has_links")
@@ -882,6 +883,7 @@ CREATE TABLE "public"."people" (
     "death_location_id" INTEGER,
     "biography" TEXT,
     "photo_url" VARCHAR(500),
+    "photo_public_id" VARCHAR(255),
     "gender" "public"."gender",
     "hide_age" BOOLEAN NOT NULL DEFAULT false,
     "has_links" BOOLEAN NOT NULL DEFAULT false,
