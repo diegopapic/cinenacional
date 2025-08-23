@@ -106,6 +106,7 @@ export interface PersonWithRelations extends Person {
 
 // Tipo para el formulario
 export interface PersonFormData {
+  id?: number;
   firstName: string;
   lastName: string;
   realName?: string;
