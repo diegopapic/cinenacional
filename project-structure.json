@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-23T05:36:46.247Z",
+  "timestamp": "2025-08-23T06:14:23.763Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "0ea46b414a27a560277fbf4ae0a402cd9717cf8e",
+  "commit": "e9be5b5ec7a13588bc5b97aaef56a9dc088ed41a",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
@@ -506,7 +506,8 @@
             },
             "MoviesFilters.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesFilters.tsx",
             "MoviesPagination.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesPagination.tsx",
-            "MoviesTable.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesTable.tsx"
+            "MoviesTable.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MoviesTable.tsx",
+            "RoleSelector.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/RoleSelector.tsx"
           },
           "MoviesFilters.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MoviesFilters.tsx",
           "MoviesPagination.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MoviesPagination.tsx",
@@ -527,6 +528,9 @@
             "RoleModal.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/roles/RoleModal.tsx"
           },
           "ScreeningVenueSelector.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/ScreeningVenueSelector.tsx",
+          "shared": {
+            "PersonSearchInput.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/shared/PersonSearchInput.tsx"
+          },
           "ThemeSelector.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/ThemeSelector.tsx"
         },
         "home": {
