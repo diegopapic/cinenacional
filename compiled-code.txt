@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: ebca89edce5bf7107af8efbf82548e1ee9e69970
-// Fecha: 2025-08-23T21:38:41.113Z
+// Commit: 35ccdd79702292ee1252fc497f7dbd6bdcd8b763
+// Fecha: 2025-08-23T22:07:59.282Z
 // ============================================
 
 
@@ -14,6 +14,83 @@
 // NOTE: This file should not be edited
 // see https://nextjs.org/docs/app/building-your-application/configuring/typescript for more information.
 
+
+// ==================================================
+// scripts/monitor-db.ts
+// ==================================================
+// scripts/monitor-db.ts
+import fetch from 'node-fetch'
+
+const METRICS_URL = process.env.METRICS_URL || 'http://localhost:3000/api/metrics/database'
+const METRICS_SECRET = process.env.METRICS_SECRET || 'your-secret-key'
+const INTERVAL = 5000 // 5 segundos
+
+async function fetchMetrics() {
+  try {
+    const response = await fetch(METRICS_URL, {
+      headers: {
+        'Authorization': `Bearer ${METRICS_SECRET}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const data = await response.json()
+    
+    // Clear console
+    console.clear()
+    
+    // Display metrics
+    console.log('🎯 DATABASE CONNECTION POOL METRICS')
+    console.log('=====================================')
+    console.log(`📊 Timestamp: ${data.timestamp}`)
+    console.log('')
+    
+    if (data.connectionPool) {
+      console.log('📌 Connection Pool:')
+      console.log(`  Active: ${data.connectionPool.active}`)
+      console.log(`  Idle: ${data.connectionPool.idle}`)
+      console.log(`  Total: ${data.connectionPool.total}`)
+      console.log('')
+    }
+    
+    if (data.prisma) {
+      console.log('⚡ Prisma Metrics:')
+      console.log(`  Total Queries: ${data.prisma.totalQueries}`)
+      console.log(`  Slow Queries: ${data.prisma.slowQueries}`)
+      console.log(`  Errors: ${data.prisma.errors}`)
+      console.log(`  Avg Query Time: ${data.prisma.averageQueryTime}ms`)
+      console.log('')
+    }
+    
+    if (data.postgresql) {
+      console.log('🐘 PostgreSQL Stats:')
+      console.log(`  Active Connections: ${data.postgresql.active_connections}`)
+      console.log(`  Committed Transactions: ${data.postgresql.committed_transactions}`)
+      console.log(`  Cache Hit Ratio: ${(
+        (data.postgresql.blocks_hit / (data.postgresql.blocks_hit + data.postgresql.blocks_read)) * 100
+      ).toFixed(2)}%`)
+      console.log('')
+    }
+    
+    if (data.health) {
+      console.log('💚 Health:')
+      console.log(`  Status: ${data.health.status}`)
+      console.log(`  Uptime: ${Math.floor(data.health.uptime / 60)} minutes`)
+      console.log(`  Memory: ${Math.round(data.health.memory.heapUsed / 1024 / 1024)}MB / ${Math.round(data.health.memory.heapTotal / 1024 / 1024)}MB`)
+    }
+    
+  } catch (error) {
+    console.error('❌ Error fetching metrics:', error)
+  }
+}
+
+// Start monitoring
+console.log('🚀 Starting database monitoring...')
+setInterval(fetchMetrics, INTERVAL)
+fetchMetrics() // Initial fetch
 
 // ==================================================
 // src/app/admin/calificaciones/page.tsx
@@ -5028,6 +5105,113 @@ export async function DELETE(
 }
 
 // ==================================================
+// src/app/api/health/db/route.ts
+// ==================================================
+// src/app/api/health/db/route.ts
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+
+// Helper para convertir BigInt a string
+function serializeBigInt(obj: any): any {
+  return JSON.parse(JSON.stringify(obj, (key, value) =>
+    typeof value === 'bigint' ? value.toString() : value
+  ))
+}
+
+export async function GET() {
+  try {
+    // Test básico de conexión
+    const startTime = Date.now()
+    await prisma.$queryRaw`SELECT 1`
+    const queryTime = Date.now() - startTime
+
+    // Obtener estadísticas básicas de la BD - con CAST para evitar BigInt
+    const [movieCount, peopleCount, poolStatsRaw] = await Promise.all([
+      prisma.movie.count(),
+      prisma.person.count(),
+      prisma.$queryRaw`
+        SELECT 
+          CAST(count(*) AS INTEGER) as total_connections,
+          CAST(count(*) FILTER (WHERE state = 'active') AS INTEGER) as active_connections,
+          CAST(count(*) FILTER (WHERE state = 'idle') AS INTEGER) as idle_connections
+        FROM pg_stat_activity
+        WHERE datname = current_database()
+      ` as any[]
+    ])
+
+    // Convertir BigInt a números normales
+    const poolStats = poolStatsRaw[0] ? {
+      total_connections: Number(poolStatsRaw[0].total_connections),
+      active_connections: Number(poolStatsRaw[0].active_connections),
+      idle_connections: Number(poolStatsRaw[0].idle_connections)
+    } : {
+      total_connections: 0,
+      active_connections: 0,
+      idle_connections: 0
+    }
+
+    return NextResponse.json({
+      status: 'healthy',
+      database: {
+        connected: true,
+        responseTime: `${queryTime}ms`,
+        stats: {
+          movies: movieCount,
+          people: peopleCount
+        },
+        pool: poolStats
+      },
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Database health check failed:', error)
+    return NextResponse.json(
+      {
+        status: 'unhealthy',
+        database: {
+          connected: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        },
+        timestamp: new Date().toISOString()
+      },
+      { status: 503 }
+    )
+  }
+}
+
+// ==================================================
+// src/app/api/health/route.ts
+// ==================================================
+// src/app/api/health/route.ts
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+
+export async function GET() {
+  try {
+    // Verificar conexión a la base de datos
+    await prisma.$queryRaw`SELECT 1`
+    
+    return NextResponse.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV,
+      database: 'connected'
+    })
+  } catch (error) {
+    return NextResponse.json(
+      {
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+        database: 'disconnected'
+      },
+      { status: 503 }
+    )
+  }
+}
+
+// ==================================================
 // src/app/api/images/[movieId]/route.ts
 // ==================================================
 import fs from 'fs';
@@ -5731,6 +5915,122 @@ async function checkIfDescendant(ancestorId: number, descendantId: number): Prom
   }
 
   return checkIfDescendant(ancestorId, descendant.parentId)
+}
+
+// ==================================================
+// src/app/api/metrics/database/route.ts
+// ==================================================
+// src/app/api/metrics/database/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+
+// Proteger este endpoint en producción
+const METRICS_SECRET = process.env.METRICS_SECRET || 'your-secret-key'
+
+export async function GET(request: NextRequest) {
+  // Verificar autorización
+  const authHeader = request.headers.get('authorization')
+  if (authHeader !== `Bearer ${METRICS_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    // Obtener métricas de Prisma
+    const metrics = (prisma as any).getMetrics()
+    
+    // Intentar obtener métricas de PostgreSQL
+    let pgStats = null
+    try {
+      const result = await prisma.$queryRaw`
+        SELECT 
+          numbackends as active_connections,
+          xact_commit as committed_transactions,
+          xact_rollback as rolled_back_transactions,
+          blks_read as blocks_read,
+          blks_hit as blocks_hit,
+          tup_returned as rows_returned,
+          tup_fetched as rows_fetched,
+          tup_inserted as rows_inserted,
+          tup_updated as rows_updated,
+          tup_deleted as rows_deleted
+        FROM pg_stat_database 
+        WHERE datname = current_database()
+      ` as any[]
+      
+      pgStats = result[0]
+    } catch (error) {
+      console.error('Error fetching PG stats:', error)
+    }
+
+    // Pool stats
+    let poolStats = null
+    try {
+      const poolResult = await prisma.$queryRaw`
+        SELECT 
+          count(*) FILTER (WHERE state = 'active') as active,
+          count(*) FILTER (WHERE state = 'idle') as idle,
+          count(*) FILTER (WHERE state = 'idle in transaction') as idle_in_transaction,
+          count(*) FILTER (WHERE state = 'idle in transaction (aborted)') as idle_aborted,
+          count(*) FILTER (WHERE state = 'fastpath function call') as fastpath,
+          count(*) FILTER (WHERE state = 'disabled') as disabled,
+          count(*) as total
+        FROM pg_stat_activity
+        WHERE datname = current_database()
+      ` as any[]
+      
+      poolStats = poolResult[0]
+    } catch (error) {
+      console.error('Error fetching pool stats:', error)
+    }
+
+    // Query performance stats
+    let queryStats = null
+    try {
+      const queryResult = await prisma.$queryRaw`
+        SELECT 
+          calls,
+          total_exec_time,
+          mean_exec_time,
+          max_exec_time,
+          min_exec_time,
+          query
+        FROM pg_stat_statements
+        WHERE query NOT LIKE '%pg_stat%'
+        ORDER BY mean_exec_time DESC
+        LIMIT 10
+      ` as any[]
+      
+      queryStats = queryResult
+    } catch (error) {
+      // pg_stat_statements puede no estar habilitado
+      console.log('pg_stat_statements not available')
+    }
+
+    const response = {
+      timestamp: new Date().toISOString(),
+      prisma: metrics,
+      postgresql: pgStats,
+      connectionPool: poolStats,
+      slowQueries: queryStats,
+      health: {
+        status: 'healthy',
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        pid: process.pid
+      }
+    }
+
+    return NextResponse.json(response)
+  } catch (error) {
+    console.error('Error fetching metrics:', error)
+    return NextResponse.json(
+      { 
+        error: 'Failed to fetch metrics',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    )
+  }
 }
 
 // ==================================================
@@ -26086,17 +26386,113 @@ export function getPersonSummary(person: any): string {
 // ==================================================
 // src/lib/prisma.ts
 // ==================================================
+// src/lib/prisma.ts
 import { PrismaClient } from '@prisma/client'
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient }
+const globalForPrisma = global as unknown as { 
+  prisma: PrismaClient | undefined
+}
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+// Configuración de connection pooling a través de DATABASE_URL
+const DATABASE_URL = process.env.DATABASE_URL || ''
+
+// Agregar parámetros de pooling si no están presentes
+function getOptimizedDatabaseUrl(url: string): string {
+  // Si ya tiene parámetros de pooling, no modificar
+  if (url.includes('connection_limit') || url.includes('pool_timeout')) {
+    return url
+  }
+  
+  // Agregar parámetros de pooling optimizados
+  const separator = url.includes('?') ? '&' : '?'
+  const poolParams = [
+    'connection_limit=10',      // Límite de conexiones del pool
+    'pool_timeout=10',          // Timeout para obtener conexión del pool (segundos)
+    'connect_timeout=10',       // Timeout para conectar a la BD (segundos)
+    'statement_timeout=30000',  // Timeout para queries (30 segundos)
+  ].join('&')
+  
+  return `${url}${separator}${poolParams}`
+}
+
+// Crear cliente con configuración optimizada
+const createPrismaClient = () => {
+  const client = new PrismaClient({
+    datasources: {
+      db: {
+        url: getOptimizedDatabaseUrl(DATABASE_URL)
+      }
+    },
+    log: process.env.NODE_ENV === 'development' 
+      ? ['query', 'error', 'warn'] 
+      : ['error'],
+    errorFormat: 'minimal',
   })
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+  // Middleware para logging de queries lentas
+  client.$use(async (params, next) => {
+    const before = Date.now()
+    const result = await next(params)
+    const after = Date.now()
+    const duration = after - before
+
+    // Log queries que toman más de 1 segundo
+    if (duration > 1000) {
+      console.warn(`⚠️ Slow query (${duration}ms):`, {
+        model: params.model,
+        action: params.action,
+        duration: `${duration}ms`
+      })
+    }
+
+    return result
+  })
+
+  // Middleware para retry en errores de conexión
+  client.$use(async (params, next) => {
+    let retries = 0
+    const maxRetries = 3
+    
+    while (retries < maxRetries) {
+      try {
+        return await next(params)
+      } catch (error: any) {
+        retries++
+        
+        // Solo reintentar en errores de conexión específicos
+        const isRetryable = error?.code === 'P1001' || // Can't reach database
+                          error?.code === 'P1002' || // Database timeout
+                          error?.code === 'P2024'    // Pool timeout
+        
+        if (!isRetryable || retries >= maxRetries) {
+          throw error
+        }
+        
+        const delay = Math.min(retries * 100, 1000) // Max 1 segundo de espera
+        console.log(`🔄 Retrying query (attempt ${retries}/${maxRetries}) after ${delay}ms`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    }
+    
+    throw new Error('Max retries reached')
+  })
+
+  return client
+}
+
+export const prisma = globalForPrisma.prisma || createPrismaClient()
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma
+}
+
+// Graceful shutdown
+if (process.env.NODE_ENV === 'production') {
+  process.on('beforeExit', async () => {
+    console.log('📊 Disconnecting Prisma Client...')
+    await prisma.$disconnect()
+  })
+}
 
 // ==================================================
 // src/lib/roles/rolesTypes.ts
