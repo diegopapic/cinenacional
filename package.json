@@ -23,7 +23,9 @@
     "docs:build": "documentation build \"src/**/*.{ts,tsx,js,jsx}\" --shallow -f md -o docs/api.md",
     "docs:html": "documentation build \"src/**/*.{ts,tsx,js,jsx}\" --shallow -f html -o docs/html",
     "docs:jsdoc": "jsdoc src -r -d docs/jsdoc",
-    "docs:types": "typedoc --out docs/typedoc src"
+    "docs:types": "typedoc --out docs/typedoc src",
+    "monitor:db": "tsx scripts/monitor-db.ts",
+    "metrics": "curl -H 'Authorization: Bearer your-secret-key' http://localhost:3000/api/metrics/database | jq"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

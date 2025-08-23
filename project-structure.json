@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-23T21:38:40.793Z",
+  "timestamp": "2025-08-23T22:07:58.950Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "ebca89edce5bf7107af8efbf82548e1ee9e69970",
+  "commit": "35ccdd79702292ee1252fc497f7dbd6bdcd8b763",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
@@ -268,6 +268,7 @@
         "migrate-wp-roles-supabase.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-roles-supabase.js",
         "roles-not-found.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/roles-not-found.json"
       },
+      "monitor-db.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/monitor-db.ts",
       "populate-coordinates.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/populate-coordinates.js",
       "populate-gentilicios.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/populate-gentilicios.js",
       "pre-deploy-check.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/pre-deploy-check.js",
@@ -366,6 +367,12 @@
               "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/genres/[id]/route.ts"
             }
           },
+          "health": {
+            "db": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/health/db/route.ts"
+            },
+            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/health/route.ts"
+          },
           "images": {
             "[movieId]": {
               "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/images/[movieId]/route.ts"
@@ -387,6 +394,11 @@
             },
             "[id]": {
               "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/locations/[id]/route.ts"
+            }
+          },
+          "metrics": {
+            "database": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/metrics/database/route.ts"
             }
           },
           "movies": {

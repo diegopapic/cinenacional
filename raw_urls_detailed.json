@@ -1005,6 +1005,11 @@
     "size": 0
   },
   {
+    "path": "scripts/monitor-db.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/monitor-db.ts",
+    "size": 0
+  },
+  {
     "path": "scripts/populate-coordinates.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/populate-coordinates.js",
     "size": 0
@@ -1205,6 +1210,16 @@
     "size": 0
   },
   {
+    "path": "src/app/api/health/db/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/health/db/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/health/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/health/route.ts",
+    "size": 0
+  },
+  {
     "path": "src/app/api/images/[movieId]/route.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/images/[movieId]/route.ts",
     "size": 0
@@ -1237,6 +1252,11 @@
   {
     "path": "src/app/api/locations/[id]/route.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/locations/[id]/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/metrics/database/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/metrics/database/route.ts",
     "size": 0
   },
   {
