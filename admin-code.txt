@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-23T22:31:45.838Z
+// Archivos del admin - 2025-08-23T22:57:17.706Z
 // ==================
 
 
@@ -13975,38 +13975,34 @@ export function ThemeSelector({
 // src/lib/prisma.ts
 import { PrismaClient } from '@prisma/client'
 
+// Configurar serialización de BigInt globalmente
+(BigInt.prototype as any).toJSON = function() {
+  return this.toString()
+}
+
 const globalForPrisma = global as unknown as { 
   prisma: PrismaClient | undefined
 }
 
-// Configuración de connection pooling a través de DATABASE_URL
-const DATABASE_URL = process.env.DATABASE_URL || ''
-
-// Agregar parámetros de pooling si no están presentes
-function getOptimizedDatabaseUrl(url: string): string {
-  // Si ya tiene parámetros de pooling, no modificar
-  if (url.includes('connection_limit') || url.includes('pool_timeout')) {
-    return url
-  }
-  
-  // Agregar parámetros de pooling optimizados
-  const separator = url.includes('?') ? '&' : '?'
-  const poolParams = [
-    'connection_limit=10',      // Límite de conexiones del pool
-    'pool_timeout=10',          // Timeout para obtener conexión del pool (segundos)
-    'connect_timeout=10',       // Timeout para conectar a la BD (segundos)
-    'statement_timeout=30000',  // Timeout para queries (30 segundos)
-  ].join('&')
-  
-  return `${url}${separator}${poolParams}`
-}
-
 // Crear cliente con configuración optimizada
 const createPrismaClient = () => {
+  // Obtener DATABASE_URL
+  const DATABASE_URL = process.env.DATABASE_URL || ''
+  
+  // Extraer el connection_limit de la URL si existe
+  let connectionLimit = 20 // default
+  try {
+    const url = new URL(DATABASE_URL)
+    connectionLimit = parseInt(url.searchParams.get('connection_limit') || '20')
+    console.log(`🔧 Configurando pool con ${connectionLimit} conexiones`)
+  } catch (e) {
+    console.log('⚠️ No se pudo parsear DATABASE_URL, usando pool default de 20')
+  }
+
   const client = new PrismaClient({
     datasources: {
       db: {
-        url: getOptimizedDatabaseUrl(DATABASE_URL)
+        url: DATABASE_URL
       }
     },
     log: process.env.NODE_ENV === 'development' 
@@ -14014,6 +14010,11 @@ const createPrismaClient = () => {
       : ['error'],
     errorFormat: 'minimal',
   })
+
+  // Configurar el pool size en el engine
+  if ((client as any)._engineConfig) {
+    (client as any)._engineConfig.connectionLimit = connectionLimit
+  }
 
   // Middleware para logging de queries lentas
   client.$use(async (params, next) => {
@@ -14078,6 +14079,11 @@ if (process.env.NODE_ENV === 'production') {
     console.log('📊 Disconnecting Prisma Client...')
     await prisma.$disconnect()
   })
+}
+
+// Log inicial en producción
+if (process.env.NODE_ENV === 'production') {
+  console.log('🚀 Prisma Client inicializado en producción')
 }
 
 // ==================================================
