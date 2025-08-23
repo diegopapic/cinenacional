@@ -118,10 +118,25 @@ export default function PersonPage({ params }: PersonPageProps) {
   }, []);
 
   const getFirstAvailableTab = useCallback((filmographyData: any): string => {
-    if (filmographyData?.castRoles?.length > 0) return 'Actuación';
-    const grouped = groupFilmographyByRole(filmographyData?.crewRoles || []);
-    const roles = Object.keys(grouped).sort();
-    return roles[0] || '';
+    // Crear todas las pestañas primero
+    const allTabs: { [key: string]: number } = {};
+    
+    // Agregar pestaña de actuación si existe
+    if (filmographyData?.castRoles?.length > 0) {
+      allTabs['Actuación'] = filmographyData.castRoles.length;
+    }
+    
+    // Agregar pestañas de crew
+    if (filmographyData?.crewRoles?.length > 0) {
+      const grouped = groupFilmographyByRole(filmographyData.crewRoles);
+      Object.entries(grouped).forEach(([roleName, items]) => {
+        allTabs[roleName] = items.length;
+      });
+    }
+    
+    // Ordenar por cantidad y retornar la primera (la que tiene más películas)
+    const sortedTabs = Object.entries(allTabs).sort((a, b) => b[1] - a[1]);
+    return sortedTabs.length > 0 ? sortedTabs[0][0] : '';
   }, [groupFilmographyByRole]);
 
   const fetchPersonData = useCallback(async () => {
@@ -141,7 +156,7 @@ export default function PersonPage({ params }: PersonPageProps) {
         const filmographyData = await filmographyResponse.json();
         setFilmography(filmographyData);
         
-        // Establecer la primera pestaña activa
+        // Establecer la primera pestaña activa (la que tenga más películas)
         const firstTab = getFirstAvailableTab(filmographyData);
         if (firstTab) {
           setActiveTab(firstTab);
@@ -203,6 +218,11 @@ export default function PersonPage({ params }: PersonPageProps) {
       tabs[roleName] = items;
     });
   }
+
+  // Ordenar las pestañas por cantidad de películas (de mayor a menor)
+  const sortedTabEntries = Object.entries(tabs).sort((a, b) => {
+    return b[1].length - a[1].length;
+  });
 
   // Calcular estadísticas (sin duplicados)
   const uniqueMoviesAsActor = new Set(filmography?.castRoles?.map((r: CastRole) => r.movie.id) || []);
@@ -349,13 +369,13 @@ export default function PersonPage({ params }: PersonPageProps) {
       </section>
 
       {/* Filmography Section */}
-      {Object.keys(tabs).length > 0 && (
+      {sortedTabEntries.length > 0 && (
         <section className="py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Navigation Tabs */}
+            {/* Navigation Tabs - Ordenadas por cantidad */}
             <div className="border-b border-gray-700 mb-8">
               <nav className="flex space-x-8 overflow-x-auto">
-                {Object.entries(tabs).map(([key, items]) => (
+                {sortedTabEntries.map(([key, items]) => (
                   <button
                     key={key}
                     onClick={() => setActiveTab(key)}
