@@ -2,13 +2,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// Helper para convertir BigInt a string
-function serializeBigInt(obj: any): any {
-  return JSON.parse(JSON.stringify(obj, (key, value) =>
-    typeof value === 'bigint' ? value.toString() : value
-  ))
-}
-
 export async function GET() {
   try {
     // Test básico de conexión
@@ -16,18 +9,22 @@ export async function GET() {
     await prisma.$queryRaw`SELECT 1`
     const queryTime = Date.now() - startTime
 
-    // Obtener estadísticas básicas de la BD - con CAST para evitar BigInt
+    // Obtener estadísticas básicas de la BD
     const [movieCount, peopleCount, poolStatsRaw] = await Promise.all([
       prisma.movie.count(),
       prisma.person.count(),
-      prisma.$queryRaw`
+      prisma.$queryRaw<Array<{
+        total_connections: number
+        active_connections: number
+        idle_connections: number
+      }>>`
         SELECT 
           CAST(count(*) AS INTEGER) as total_connections,
           CAST(count(*) FILTER (WHERE state = 'active') AS INTEGER) as active_connections,
           CAST(count(*) FILTER (WHERE state = 'idle') AS INTEGER) as idle_connections
         FROM pg_stat_activity
         WHERE datname = current_database()
-      ` as any[]
+      `
     ])
 
     // Convertir BigInt a números normales
