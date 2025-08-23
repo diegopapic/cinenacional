@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 402df717cdd773766e71f76c6ea7de92e3cb356a
-// Fecha: 2025-08-23T01:51:30.765Z
+// Commit: ddc95883863cddff2a245e645d72d43d4ac8b8ae
+// Fecha: 2025-08-23T02:06:13.473Z
 // ============================================
 
 
@@ -11573,7 +11573,7 @@ export default async function MoviePage({ params }: PageProps) {
 // ==================================================
 // src/app/personas/[slug]/page.tsx
 // ==================================================
-// src/app/personas/[slug]/page.tsx - VERSIÓN TIPADA PARA VERCEL
+// src/app/personas/[slug]/page.tsx - VERSIÓN CORREGIDA
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -11635,6 +11635,62 @@ export default function PersonPage({ params }: PersonPageProps) {
   const [activeTab, setActiveTab] = useState<string>('');
   const [showAllFilmography, setShowAllFilmography] = useState(false);
 
+  // Función helper para obtener el año efectivo para ordenamiento
+  const getEffectiveYear = (movie: Movie): number => {
+    // Si tiene año de estreno, usarlo
+    if (movie.releaseYear) {
+      return movie.releaseYear;
+    }
+    // Si no, usar el año de producción
+    if (movie.year) {
+      return movie.year;
+    }
+    // Si no tiene ninguno, retornar 0 (aparecerá al final)
+    return 0;
+  };
+
+  // Función helper para obtener la fecha efectiva completa para ordenamiento más preciso
+  const getEffectiveDate = (movie: Movie): Date => {
+    // Si tiene fecha de estreno completa
+    if (movie.releaseYear && movie.releaseMonth && movie.releaseDay) {
+      return new Date(movie.releaseYear, movie.releaseMonth - 1, movie.releaseDay);
+    }
+    // Si tiene año y mes de estreno
+    if (movie.releaseYear && movie.releaseMonth) {
+      return new Date(movie.releaseYear, movie.releaseMonth - 1, 1);
+    }
+    // Si solo tiene año de estreno
+    if (movie.releaseYear) {
+      return new Date(movie.releaseYear, 0, 1);
+    }
+    // Si no tiene fecha de estreno, usar año de producción
+    if (movie.year) {
+      return new Date(movie.year, 0, 1);
+    }
+    // Si no tiene ninguna fecha, retornar fecha muy antigua
+    return new Date(1900, 0, 1);
+  };
+
+  // Función para ordenar películas cronológicamente
+  const sortMoviesChronologically = (movies: any[], descending: boolean = true): any[] => {
+    return [...movies].sort((a, b) => {
+      const dateA = getEffectiveDate(a.movie || a);
+      const dateB = getEffectiveDate(b.movie || b);
+      
+      // Si las fechas son iguales, usar el título como desempate
+      if (dateA.getTime() === dateB.getTime()) {
+        const titleA = (a.movie || a).title.toLowerCase();
+        const titleB = (b.movie || b).title.toLowerCase();
+        return titleA.localeCompare(titleB);
+      }
+      
+      // Ordenar por fecha
+      return descending 
+        ? dateB.getTime() - dateA.getTime()
+        : dateA.getTime() - dateB.getTime();
+    });
+  };
+
   // Agrupar filmografía por rol, combinando múltiples roles por película
   const groupFilmographyByRole = useCallback((crewRoles: CrewRole[]): { [key: string]: GroupedCrewRole[] } => {
     // Primero, agrupar todas las películas con sus roles
@@ -11680,13 +11736,9 @@ export default function PersonPage({ params }: PersonPageProps) {
       }
     });
 
-    // Ordenar cada grupo por año
+    // Ordenar cada grupo cronológicamente (descendente)
     Object.keys(groupedByRole).forEach(roleName => {
-      groupedByRole[roleName].sort((a, b) => {
-        const yearA = a.movie.releaseYear || a.movie.year || 0;
-        const yearB = b.movie.releaseYear || b.movie.year || 0;
-        return yearB - yearA;
-      });
+      groupedByRole[roleName] = sortMoviesChronologically(groupedByRole[roleName], true);
     });
 
     return groupedByRole;
@@ -11729,6 +11781,14 @@ export default function PersonPage({ params }: PersonPageProps) {
       const filmographyResponse = await fetch(`/api/people/${personData.id}/filmography`);
       if (filmographyResponse.ok) {
         const filmographyData = await filmographyResponse.json();
+        
+        // Ordenar castRoles cronológicamente
+        if (filmographyData.castRoles) {
+          filmographyData.castRoles = sortMoviesChronologically(filmographyData.castRoles, true);
+        }
+        
+        // crewRoles ya se ordenarán dentro de groupFilmographyByRole
+        
         setFilmography(filmographyData);
         
         // Establecer la primera pestaña activa (la que tenga más películas)
@@ -11977,13 +12037,19 @@ export default function PersonPage({ params }: PersonPageProps) {
                 {getFilmographyToShow().map((item: TabItem, index: number) => {
                   const isActing = activeTab === 'Actuación';
                   const movie = item.movie;
-                  const year = movie.releaseYear || movie.year;
+                  // Usar el año efectivo que considera el fallback
+                  const year = getEffectiveYear(movie);
+                  const displayYear = year > 0 ? year : '—';
+                  
+                  // Agregar indicador si es el año de producción (no estreno)
+                  const isProductionYear = !movie.releaseYear && movie.year;
                   
                   return (
                     <div key={`${movie.id}-${index}`} className="py-4 hover:bg-gray-800/30 transition-colors group">
                       <div className="flex items-center gap-4">
-                        <span className="text-gray-500 text-sm w-12 text-left">
-                          {year || '—'}
+                        <span className={`text-sm w-12 text-left ${isProductionYear ? 'text-gray-600 italic' : 'text-gray-500'}`}>
+                          {displayYear}
+                          {isProductionYear && <span className="text-xs">*</span>}
                         </span>
                         <div className="flex-grow">
                           <Link 
@@ -12002,12 +12068,24 @@ export default function PersonPage({ params }: PersonPageProps) {
                               (también: {item.roles.filter((r: string) => r !== activeTab).join(', ')})
                             </span>
                           )}
+                          {isProductionYear && (
+                            <span className="ml-2 text-xs text-gray-600 italic">
+                              (año de producción)
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
                   );
                 })}
               </div>
+              
+              {/* Nota al pie si hay películas con año de producción */}
+              {getFilmographyToShow().some((item: TabItem) => !item.movie.releaseYear && item.movie.year) && (
+                <div className="mt-4 text-xs text-gray-600 italic">
+                  * Año de producción (película no estrenada)
+                </div>
+              )}
             </div>
 
             {/* Show More Button */}
