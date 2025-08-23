@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 2b9ee8ad9ea1c65703641d5ae08f7cc1efe12988
-// Fecha: 2025-08-23T20:33:58.346Z
+// Commit: aa289e8ef7b4335b0955ff794f4920d492ffd515
+// Fecha: 2025-08-23T20:43:17.885Z
 // ============================================
 
 
@@ -25589,6 +25589,7 @@ export interface PersonWithRelations extends Person {
 
 // Tipo para el formulario
 export interface PersonFormData {
+  id?: number;
   firstName: string;
   lastName: string;
   realName?: string;
