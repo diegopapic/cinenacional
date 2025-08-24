@@ -245,6 +245,7 @@
 - [src/lib/people/peopleTypes.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/people/peopleTypes.ts)
 - [src/lib/people/peopleUtils.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/people/peopleUtils.ts)
 - [src/lib/prisma.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/prisma.ts)
+- [src/lib/redis.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/redis.ts)
 - [src/lib/roles/rolesTypes.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/roles/rolesTypes.ts)
 - [src/lib/roles/roleUtils.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/roles/roleUtils.ts)
 - [src/lib/schemas.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/schemas.ts)

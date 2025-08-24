@@ -51,6 +51,47 @@ services:
       -c max_wal_size=1GB
       -c log_min_duration_statement=1000
 
+  redis:
+    image: redis:7-alpine
+    container_name: cinenacional-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - cinenacional-network
+    volumes:
+      - redis_data:/data
+    # Configuración de Redis optimizada para caché
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --tcp-keepalive 60
+      --timeout 300
+      --tcp-backlog 511
+      --databases 16
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --rdbcompression yes
+      --rdbchecksum yes
+      --stop-writes-on-bgsave-error yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Límites de recursos
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 768M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
   app:
     build:
       context: .
@@ -62,11 +103,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - .env
     environment:
       - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dzndglyjr
       - DATABASE_URL=postgresql://cinenacional:Paganitzu@postgres:5432/cinenacional?schema=public&connection_limit=50&pool_timeout=10
+      - REDIS_URL=redis://redis:6379
       - NODE_ENV=production
     ports:
       - "3000:3000"
@@ -93,6 +137,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:  # Nuevo volumen para Redis
 
 networks:
   cinenacional-network:
