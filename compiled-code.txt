@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: a22e14cefce8e7eef7cdc048dd8e27614eb4305f
-// Fecha: 2025-08-24T22:51:05.919Z
+// Commit: 62c6a93826978ae70aebe2ae3358216e7d3ac0d3
+// Fecha: 2025-08-24T23:06:55.800Z
 // ============================================
 
 
@@ -11504,6 +11504,7 @@ import { notFound } from 'next/navigation';
 import { MoviePageClient } from './MoviePageClient';
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
+import { unstable_cache } from 'next/cache';
 
 interface PageProps {
   params: {
@@ -11511,85 +11512,271 @@ interface PageProps {
   };
 }
 
-// Función para obtener los datos de la película directamente desde la base de datos
-async function getMovieData(slug: string) {
+// NUEVO: Generar rutas estáticas para las películas más visitadas
+export async function generateStaticParams() {
   try {
+    // Pre-generar las 200 películas más recientes y las más importantes
+    const movies = await prisma.movie.findMany({
+      select: { slug: true },
+      where: {
+        // Solo películas completas para pre-generar
+        stage: 'COMPLETA'
+      },
+      orderBy: [
+        { createdAt: 'desc' }
+      ],
+      take: 200
+    });
+
+    console.log(`📊 Pre-generando ${movies.length} páginas de películas`);
+
+    return movies.map((movie) => ({
+      slug: movie.slug,
+    }));
+  } catch (error) {
+    console.error('Error generando rutas estáticas:', error);
+    return [];
+  }
+}
+
+// NUEVO: Configurar ISR - revalidar cada 1 hora
+export const revalidate = 3600; // 1 hora en segundos
+export const dynamicParams = true; // Permitir slugs no pre-generados
+
+// OPTIMIZACIÓN: Cachear la query de película con unstable_cache
+const getCachedMovieData = unstable_cache(
+  async (slug: string) => {
+    console.log(`🔍 Buscando película: ${slug}`);
+    
     const movie = await prisma.movie.findFirst({
       where: {
         slug: slug
       },
-      include: {
+      select: {
+        // Campos básicos - optimizado con select
+        id: true,
+        slug: true,
+        title: true,
+        year: true,
+        releaseYear: true,
+        releaseMonth: true,
+        releaseDay: true,
+        duration: true,
+        durationSeconds: true,
+        synopsis: true,
+        posterUrl: true,
+        trailerUrl: true,
+        soundType: true,
+        stage: true,
+        dataCompleteness: true,
+        notes: true,
+        tagline: true,
+        imdbId: true,
+        metaDescription: true,
+        metaKeywords: true,
+        
+        // Relaciones optimizadas
         genres: {
-          include: {
-            genre: true
+          select: {
+            genre: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
           }
         },
+        
         cast: {
-          include: {
-            person: true
+          select: {
+            characterName: true,
+            isPrincipal: true,
+            billingOrder: true,
+            person: {
+              select: {
+                id: true,
+                slug: true,
+                firstName: true,
+                lastName: true,
+                realName: true,
+                photoUrl: true
+              }
+            }
           },
           orderBy: [
             { isPrincipal: 'desc' },
             { billingOrder: 'asc' }
-          ]
+          ],
+          take: 100 // Limitar a 100 actores máximo
         },
+        
         crew: {
-          include: {
-            person: true,
-            role: true
+          select: {
+            roleId: true,
+            billingOrder: true,
+            person: {
+              select: {
+                id: true,
+                slug: true,
+                firstName: true,
+                lastName: true,
+                realName: true
+              }
+            },
+            role: {
+              select: {
+                id: true,
+                name: true,
+                department: true
+              }
+            }
           },
           orderBy: {
             billingOrder: 'asc'
-          }
+          },
+          take: 50 // Limitar a 50 miembros del crew
         },
+        
         movieCountries: {
-          include: {
-            country: true
+          select: {
+            country: {
+              select: {
+                id: true,
+                name: true,
+                code: true
+              }
+            }
           }
         },
+        
         themes: {
-          include: {
-            theme: true
+          select: {
+            theme: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
+          },
+          take: 20 // Limitar a 20 temas
+        },
+        
+        rating: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            abbreviation: true
           }
         },
-        rating: true,
-        colorType: true,
+        
+        colorType: {
+          select: {
+            id: true,
+            name: true,
+            category: true
+          }
+        },
+        
         productionCompanies: {
-          include: {
-            company: true
-          }
+          select: {
+            isPrimary: true,
+            company: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
+          },
+          take: 10
         },
+        
         distributionCompanies: {
-          include: {
-            company: true
-          }
+          select: {
+            territory: true,
+            company: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
+          },
+          take: 10
         },
-        images: true,
-        videos: true,
-        alternativeTitles: true,
-        links: true
+        
+        // Solo traer counts para estas relaciones pesadas
+        _count: {
+          select: {
+            images: true,
+            videos: true,
+            alternativeTitles: true,
+            links: true,
+            awards: true,
+            screenings: true
+          }
+        }
       }
     });
+    
+    if (movie) {
+      console.log(`✅ Película encontrada: ${movie.title}`);
+    }
+    
     return movie;
+  },
+  ['movie-detail'], // Tag para el cache
+  {
+    revalidate: 3600, // Cache por 1 hora
+    tags: ['movies'] // Tag genérico para todas las películas (FIX: removido el slug que no estaba definido)
+  }
+);
+
+// Función wrapper para manejar errores
+async function getMovieData(slug: string) {
+  try {
+    return await getCachedMovieData(slug);
   } catch (error) {
     console.error('Error fetching movie:', error);
     return null;
   }
 }
 
-// Metadata dinámica
+// Metadata dinámica - también optimizada con cache
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const movie = await getMovieData(params.slug);
 
   if (!movie) {
     return {
       title: 'Película no encontrada - CineNacional',
+      description: 'La película que buscas no existe o fue eliminada.'
     };
   }
 
+  // Generar descripción optimizada para SEO
+  const year = movie.releaseYear || movie.year;
+  const genres = movie.genres?.map(g => g.genre.name).slice(0, 3).join(', ');
+  const defaultDescription = `${movie.title}${year ? ` (${year})` : ''}${genres ? ` - ${genres}` : ''}. Película argentina.`;
+
   return {
-    title: `${movie.title} - cinenacional.com`,
-    description: movie.synopsis || `${movie.title} (${movie.releaseYear || movie.year})`,
+    title: `${movie.title}${year ? ` (${year})` : ''} - CineNacional`,
+    description: movie.metaDescription || movie.synopsis?.substring(0, 160) || defaultDescription,
+    keywords: movie.metaKeywords?.join(', ') || `${movie.title}, cine argentino, película argentina${genres ? `, ${genres}` : ''}`,
+    openGraph: {
+      title: movie.title,
+      description: movie.synopsis?.substring(0, 160) || defaultDescription,
+      images: movie.posterUrl ? [movie.posterUrl] : [],
+      type: 'video.movie',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: movie.title,
+      description: movie.synopsis?.substring(0, 160) || defaultDescription,
+      images: movie.posterUrl ? [movie.posterUrl] : [],
+    }
   };
 }
 
@@ -11644,7 +11831,7 @@ export default async function MoviePage({ params }: PageProps) {
   // Formatear año - usar releaseYear si existe, sino year
   const displayYear = movie.releaseYear || movie.year;
 
-  // PROCESAR CAST - LÓGICA CORREGIDA CON DEBUG
+  // PROCESAR CAST - LÓGICA CORREGIDA
   // Formatear todo el cast con estructura correcta
   const allCast = movie.cast?.map((c: any) => ({
     name: formatPersonName(c.person),
@@ -11656,9 +11843,12 @@ export default async function MoviePage({ params }: PageProps) {
     image: c.person.photoUrl || undefined
   })) || [];
 
-  console.log('🎬 Película:', movie.title);
-  console.log('👥 Total de actores:', allCast.length);
-  console.log('🌟 Actores con isPrincipal:', allCast.filter((c: any) => c.isPrincipal).length);
+  // Log reducido en producción
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🎬 Película:', movie.title);
+    console.log('👥 Total de actores:', allCast.length);
+    console.log('🌟 Actores con isPrincipal:', allCast.filter((c: any) => c.isPrincipal).length);
+  }
 
   // Separar cast principal del cast completo
   let mainCast: any[] = [];
@@ -11667,32 +11857,21 @@ export default async function MoviePage({ params }: PageProps) {
   // Primero buscar los que tienen isPrincipal = true
   const principalActors = allCast.filter((c: any) => c.isPrincipal === true);
 
-  console.log('✨ Actores principales encontrados:', principalActors.length);
-
   if (principalActors.length > 0) {
     // Si hay actores marcados como principales, usarlos
     mainCast = principalActors;
     // El resto va a fullCast
     fullCast = allCast.filter((c: any) => !c.isPrincipal);
-    console.log('Usando actores con isPrincipal=true');
   } else if (allCast.length > 0) {
-    // Si no hay ninguno marcado como principal, tomar EXACTAMENTE los primeros 3
+    // Si no hay ninguno marcado como principal, tomar los primeros 3
     mainCast = allCast.slice(0, Math.min(3, allCast.length));
     // El resto (desde el 4to en adelante) va a fullCast
     if (allCast.length > 3) {
       fullCast = allCast.slice(3);
     }
-    console.log('No hay principales marcados. Tomando los primeros 3');
   }
 
-  console.log('📊 Reparto principal:', mainCast.length, 'actores');
-  console.log('📊 Reparto completo adicional:', fullCast.length, 'actores');
-  console.log('Actores principales:', mainCast.map(a => a.name));
-  console.log('Actores en fullCast:', fullCast.map(a => a.name));
-
   // PROCESAR CREW - NUEVA LÓGICA PARA LEER DE LA BASE DE DATOS
-  console.log('🎬 Procesando equipo técnico para:', movie.title);
-
   // IDs de los roles principales según lo especificado
   const mainCrewRoleIds = [2, 3, 703, 526, 836, 636, 402, 641];
 
@@ -11713,20 +11892,14 @@ export default async function MoviePage({ params }: PageProps) {
     name: formatPersonName(c.person),
     role: c.role?.name || 'Sin rol especificado',
     roleId: c.roleId,
-    department: c.role.department || 'Otros',
+    department: c.role?.department || 'Otros',
     billingOrder: c.billingOrder || 999,
     personId: c.person.id,
     personSlug: c.person.slug
   })) || [];
 
-  console.log('👥 Total de crew:', allCrew.length);
-
   // Separar crew principal del crew completo
   const basicCrewMembers = allCrew.filter((c: any) => mainCrewRoleIds.includes(c.roleId));
-  const additionalCrewMembers = allCrew.filter((c: any) => !mainCrewRoleIds.includes(c.roleId));
-
-  console.log('⭐ Crew principal:', basicCrewMembers.length);
-  console.log('📋 Crew adicional:', additionalCrewMembers.length);
 
   // Organizar el crew principal por departamento (orden específico)
   const basicCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string }> } = {};
@@ -11795,13 +11968,25 @@ export default async function MoviePage({ params }: PageProps) {
       });
     });
 
-  console.log('📊 Departamentos en crew principal:', Object.keys(basicCrewByDepartment));
-  console.log('📊 Departamentos en crew completo:', Object.keys(fullCrewByDepartment));
+  if (process.env.NODE_ENV === 'development') {
+    console.log('📊 Departamentos en crew principal:', Object.keys(basicCrewByDepartment));
+    console.log('📊 Departamentos en crew completo:', Object.keys(fullCrewByDepartment));
+  }
 
   // Pasar los datos procesados al componente cliente
   return (
     <MoviePageClient
-      movie={movie}
+      movie={{
+        ...movie,
+        // Agregar contadores para que el cliente sepa si hay contenido adicional
+        hasImages: movie._count.images > 0,
+        hasVideos: movie._count.videos > 0,
+        hasAlternativeTitles: movie._count.alternativeTitles > 0,
+        hasLinks: movie._count.links > 0,
+        hasAwards: movie._count.awards > 0,
+        imageCount: movie._count.images,
+        videoCount: movie._count.videos
+      }}
       displayYear={displayYear}
       totalDuration={totalDuration}
       durationSeconds={movie.durationSeconds}
@@ -11813,8 +11998,8 @@ export default async function MoviePage({ params }: PageProps) {
       soundType={movie.soundType}
       mainCast={mainCast}
       fullCast={fullCast}
-      basicCrew={basicCrewByDepartment}  // NUEVO
-      fullCrew={fullCrewByDepartment}    // NUEVO
+      basicCrew={basicCrewByDepartment}
+      fullCrew={fullCrewByDepartment}
     />
   );
 }
