@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 25e2e1f27bead9d9030f00b58e4374bd50262798
-// Fecha: 2025-08-24T22:34:33.722Z
+// Commit: a22e14cefce8e7eef7cdc048dd8e27614eb4305f
+// Fecha: 2025-08-24T22:51:05.919Z
 // ============================================
 
 
@@ -5973,26 +5973,10 @@ export async function GET() {
       day: currentDay 
     });
 
-    // OPTIMIZACIÓN 1: Query específica para últimos estrenos (solo 6, no 200)
-    const ultimosEstrenos = await prisma.movie.findMany({
+    // Obtener todas las películas con fechas para procesarlas
+    const allMoviesWithDates = await prisma.movie.findMany({
       where: {
-        // Solo películas con fecha completa
-        releaseYear: { not: null },
-        releaseMonth: { not: null },
-        releaseDay: { not: null },
-        // Fecha en el pasado o hoy
-        OR: [
-          { releaseYear: { lt: currentYear } },
-          {
-            releaseYear: currentYear,
-            releaseMonth: { lt: currentMonth }
-          },
-          {
-            releaseYear: currentYear,
-            releaseMonth: currentMonth,
-            releaseDay: { lte: currentDay }
-          }
-        ]
+        releaseYear: { not: null }
       },
       select: {
         id: true,
@@ -6003,25 +5987,16 @@ export async function GET() {
         releaseDay: true,
         posterUrl: true,
         genres: {
-          select: {
-            genre: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
+          include: {
+            genre: true
           },
-          orderBy: {
-            isPrimary: 'desc'
-          },
-          take: 2 // Solo los 2 géneros principales
+          take: 3
         },
         crew: {
           where: {
-            roleId: 2 // Director
+            roleId: 2 // Solo buscar Director (roleId = 2)
           },
-          select: {
-            roleId: true,
+          include: {
             person: {
               select: {
                 id: true,
@@ -6030,149 +6005,160 @@ export async function GET() {
               }
             }
           },
-          take: 1 // Solo el primer director
         }
       },
-      orderBy: [
-        { releaseYear: 'desc' },
-        { releaseMonth: 'desc' },
-        { releaseDay: 'desc' }
-      ],
-      take: 6 // Solo 6, no 200
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 200
     });
 
-    // OPTIMIZACIÓN 2: Query específica para próximos estrenos
-    const proximosEstrenos = await prisma.movie.findMany({
-      where: {
-        releaseYear: { not: null },
-        OR: [
-          { releaseYear: { gt: currentYear } },
-          {
-            releaseYear: currentYear,
-            releaseMonth: { gt: currentMonth }
-          },
-          {
-            releaseYear: currentYear,
-            releaseMonth: currentMonth,
-            releaseDay: { gt: currentDay }
-          },
-          {
-            // Películas con solo año futuro (sin mes ni día)
-            releaseYear: { gt: currentYear },
-            releaseMonth: null,
-            releaseDay: null
-          },
-          {
-            // Películas del año actual con solo mes futuro
-            releaseYear: currentYear,
-            releaseMonth: { gt: currentMonth },
-            releaseDay: null
-          }
-        ]
-      },
+    // Función helper para comparar fechas parciales
+    const isDateInPast = (movie: any): boolean => {
+      const year = movie.releaseYear;
+      const month = movie.releaseMonth || 12;
+      const day = movie.releaseDay || 31;
+
+      if (year < currentYear) return true;
+      if (year > currentYear) return false;
+      
+      if (month < currentMonth) return true;
+      if (month > currentMonth) return false;
+      
+      return day <= currentDay;
+    };
+
+    const isDateInFuture = (movie: any): boolean => {
+      const year = movie.releaseYear;
+      const month = movie.releaseMonth || 1;
+      const day = movie.releaseDay || 1;
+
+      if (year > currentYear) return true;
+      if (year < currentYear) return false;
+      
+      if (month > currentMonth) return true;
+      if (month < currentMonth) return false;
+      
+      return day > currentDay;
+    };
+
+    // Función para calcular fecha efectiva para ordenamiento
+    const getEffectiveDate = (movie: any): Date => {
+      const year = movie.releaseYear;
+      const month = movie.releaseMonth || 1;
+      const day = movie.releaseDay || 1;
+      return new Date(year, month - 1, day);
+    };
+
+    // Filtrar últimos estrenos (películas con fecha completa en el pasado)
+    const ultimosEstrenosCompletos = allMoviesWithDates.filter(movie => {
+      // Solo películas con fecha completa (día, mes y año)
+      const hasCompleteDate = movie.releaseYear && movie.releaseMonth && movie.releaseDay;
+      if (!hasCompleteDate) return false;
+      
+      // Verificar que la fecha esté en el pasado
+      return isDateInPast(movie);
+    });
+
+    // Ordenar por fecha de estreno descendente (más recientes primero)
+    const ultimosEstrenos = ultimosEstrenosCompletos
+      .sort((a, b) => {
+        const dateA = getEffectiveDate(a);
+        const dateB = getEffectiveDate(b);
+        return dateB.getTime() - dateA.getTime();
+      })
+      .slice(0, 6);
+
+    // Filtrar próximos estrenos (películas con fecha futura)
+    const proximosEstrenosFiltrados = allMoviesWithDates.filter(movie => {
+      // Debe tener al menos el año
+      if (!movie.releaseYear) return false;
+      
+      // Verificar que la fecha esté en el futuro
+      return isDateInFuture(movie);
+    });
+
+    // Ordenar por fecha de estreno ascendente (próximos primero)
+    const proximosEstrenos = proximosEstrenosFiltrados
+      .sort((a, b) => {
+        const dateA = getEffectiveDate(a);
+        const dateB = getEffectiveDate(b);
+        return dateA.getTime() - dateB.getTime();
+      })
+      .slice(0, 6);
+
+    // Obtener últimas películas ingresadas
+    const ultimasPeliculas = await prisma.movie.findMany({
       select: {
         id: true,
         slug: true,
         title: true,
-        releaseYear: true,
-        releaseMonth: true,
-        releaseDay: true,
-        posterUrl: true,
-        genres: {
+        posterUrl: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 8
+    });
+
+    // Obtener últimas personas ingresadas
+    const ultimasPersonas = await prisma.person.findMany({
+      select: {
+        id: true,
+        slug: true,
+        firstName: true,
+        lastName: true,
+        photoUrl: true,
+        _count: {
           select: {
-            genre: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
-          },
-          orderBy: {
-            isPrimary: 'desc'
-          },
-          take: 2
-        },
-        crew: {
-          where: {
-            roleId: 2
-          },
-          select: {
-            roleId: true,
-            person: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true
-              }
-            }
-          },
-          take: 1
+            castRoles: true,
+            crewRoles: true
+          }
         }
       },
-      orderBy: [
-        { releaseYear: 'asc' },
-        { releaseMonth: 'asc' },
-        { releaseDay: 'asc' }
-      ],
+      orderBy: {
+        createdAt: 'desc'
+      },
       take: 6
     });
 
-    // OPTIMIZACIÓN 3: Queries paralelas con Promise.all
-    const [ultimasPeliculas, ultimasPersonas] = await Promise.all([
-      // Últimas películas (solo campos mínimos)
-      prisma.movie.findMany({
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          posterUrl: true
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        take: 8
-      }),
-      
-      // Últimas personas (con count optimizado)
-      prisma.person.findMany({
-        select: {
-          id: true,
-          slug: true,
-          firstName: true,
-          lastName: true,
-          photoUrl: true,
-          _count: {
-            select: {
-              castRoles: true,
-              crewRoles: true
-            }
-          }
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        take: 6
-      })
-    ]);
-
-    // Procesar personas (mínimo procesamiento en memoria)
+    // Agregar rol principal basado en el conteo
     const ultimasPersonasConRol = ultimasPersonas.map(person => {
-      const { _count, ...personData } = person;
-      const role = _count.castRoles > _count.crewRoles 
-        ? 'Actor/Actriz' 
-        : _count.crewRoles > 0 
-          ? 'Equipo técnico'
-          : 'Profesional del cine';
+      const castCount = person._count.castRoles;
+      const crewCount = person._count.crewRoles;
+      let role = 'Profesional del cine';
       
+      if (castCount > crewCount && castCount > 0) {
+        role = 'Actor/Actriz';
+      } else if (crewCount > 0) {
+        role = 'Equipo técnico';
+      }
+      
+      const { _count, ...personData } = person;
       return { ...personData, role };
     });
 
-    console.log('📊 Resultados optimizados:', {
+    console.log('📊 Resultados del home-feed:', {
       ultimosEstrenos: ultimosEstrenos.length,
       proximosEstrenos: proximosEstrenos.length,
       ultimasPeliculas: ultimasPeliculas.length,
       ultimasPersonas: ultimasPersonasConRol.length
     });
+
+    // Log de debug
+    if (ultimosEstrenos.length > 0) {
+      console.log('🎬 Últimos estrenos (muestra):', ultimosEstrenos.slice(0, 3).map(m => ({
+        title: m.title,
+        date: `${m.releaseDay}/${m.releaseMonth}/${m.releaseYear}`
+      })));
+    }
+
+    if (proximosEstrenos.length > 0) {
+      console.log('🎬 Próximos estrenos (muestra):', proximosEstrenos.slice(0, 3).map(m => ({
+        title: m.title,
+        date: `${m.releaseDay || '??'}/${m.releaseMonth || '??'}/${m.releaseYear}`
+      })));
+    }
 
     return NextResponse.json({
       ultimosEstrenos,
