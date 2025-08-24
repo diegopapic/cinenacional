@@ -1,0 +1,748 @@
+{
+  "timestamp": "2025-08-24T20:37:56.772Z",
+  "config": {
+    "baseUrl": "http://localhost:3000",
+    "isProduction": false,
+    "iterations": 5,
+    "concurrentUsers": [
+      1,
+      10,
+      50,
+      100
+    ]
+  },
+  "results": [
+    {
+      "endpoint": {
+        "name": "HomePage - HTML",
+        "path": "/",
+        "type": "page",
+        "critical": true
+      },
+      "results": [
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 1870.2149,
+          "ttfb": 1867.8429,
+          "dataSize": 32722,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "cache-control": "no-store, must-revalidate",
+            "x-powered-by": "Next.js",
+            "content-type": "text/html; charset=utf-8",
+            "date": "Sun, 24 Aug 2025 20:37:02 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 92.70160000000033,
+          "ttfb": 92.19399999999996,
+          "dataSize": 32722,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "cache-control": "no-store, must-revalidate",
+            "x-powered-by": "Next.js",
+            "content-type": "text/html; charset=utf-8",
+            "date": "Sun, 24 Aug 2025 20:37:02 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 126.22289999999975,
+          "ttfb": 125.50889999999981,
+          "dataSize": 32722,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "cache-control": "no-store, must-revalidate",
+            "x-powered-by": "Next.js",
+            "content-type": "text/html; charset=utf-8",
+            "date": "Sun, 24 Aug 2025 20:37:02 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 82.52179999999998,
+          "ttfb": 81.60030000000006,
+          "dataSize": 32722,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "cache-control": "no-store, must-revalidate",
+            "x-powered-by": "Next.js",
+            "content-type": "text/html; charset=utf-8",
+            "date": "Sun, 24 Aug 2025 20:37:03 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 49.22330000000011,
+          "ttfb": 48.777000000000044,
+          "dataSize": 32722,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "cache-control": "no-store, must-revalidate",
+            "x-powered-by": "Next.js",
+            "content-type": "text/html; charset=utf-8",
+            "date": "Sun, 24 Aug 2025 20:37:03 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        }
+      ],
+      "stats": {
+        "successRate": 100,
+        "avgTime": 444.17690000000005,
+        "minTime": 49.22330000000011,
+        "maxTime": 1870.2149,
+        "p50": 92.70160000000033,
+        "p95": 1870.2149,
+        "p99": 1870.2149,
+        "avgTTFB": 443.18462,
+        "avgSize": 32722,
+        "totalRequests": 5,
+        "successfulRequests": 5
+      },
+      "loadTests": [
+        {
+          "concurrentUsers": 1,
+          "totalTime": 32.77769999999873,
+          "successRate": 100,
+          "avgResponseTime": 32.653999999994994
+        },
+        {
+          "concurrentUsers": 10,
+          "totalTime": 90.2673000000068,
+          "successRate": 100,
+          "avgResponseTime": 75.97489999999962
+        },
+        {
+          "concurrentUsers": 50,
+          "totalTime": 362.96889999999985,
+          "successRate": 100,
+          "avgResponseTime": 294.089298
+        },
+        {
+          "concurrentUsers": 100,
+          "totalTime": 659.3431000000055,
+          "successRate": 100,
+          "avgResponseTime": 616.6372309999999
+        }
+      ]
+    },
+    {
+      "endpoint": {
+        "name": "API - Movies List (Current)",
+        "path": "/api/movies?limit=50",
+        "type": "api",
+        "critical": true
+      },
+      "results": [
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 4773.8922999999995,
+          "ttfb": 4773.651900000001,
+          "dataSize": 15504,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:08 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 1475.7797,
+          "ttfb": 1475.562499999999,
+          "dataSize": 15504,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:09 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 818.9408999999996,
+          "ttfb": 818.7736000000004,
+          "dataSize": 15504,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:10 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 874.6118000000006,
+          "ttfb": 874.2139999999999,
+          "dataSize": 15504,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:11 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 847.6900000000005,
+          "ttfb": 847.4912000000004,
+          "dataSize": 15504,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:12 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        }
+      ],
+      "stats": {
+        "successRate": 100,
+        "avgTime": 1758.1829400000001,
+        "minTime": 818.9408999999996,
+        "maxTime": 4773.8922999999995,
+        "p50": 874.6118000000006,
+        "p95": 4773.8922999999995,
+        "p99": 4773.8922999999995,
+        "avgTTFB": 1757.9386400000003,
+        "avgSize": 15504,
+        "totalRequests": 5,
+        "successfulRequests": 5
+      },
+      "loadTests": [
+        {
+          "concurrentUsers": 1,
+          "totalTime": 803.1767000000036,
+          "successRate": 100,
+          "avgResponseTime": 803.0922999999966
+        },
+        {
+          "concurrentUsers": 10,
+          "totalTime": 2574.6857999999993,
+          "successRate": 100,
+          "avgResponseTime": 1904.8575400000002
+        },
+        {
+          "concurrentUsers": 50,
+          "totalTime": 3982.9421999999977,
+          "successRate": 100,
+          "avgResponseTime": 2471.0968899999993
+        },
+        {
+          "concurrentUsers": 100,
+          "totalTime": 6641.908800000005,
+          "successRate": 100,
+          "avgResponseTime": 3700.4412709999997
+        }
+      ]
+    },
+    {
+      "endpoint": {
+        "name": "API - Home Sections - Últimos (Optimized)",
+        "path": "/api/movies/home-sections?section=ultimos&limit=6",
+        "type": "api",
+        "critical": true
+      },
+      "results": [
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 1295.5599999999995,
+          "ttfb": 1295.3522000000012,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:14 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 175.77590000000055,
+          "ttfb": 175.63690000000133,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:14 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 163.5723999999991,
+          "ttfb": 163.43349999999919,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:14 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 167.29340000000047,
+          "ttfb": 167.14210000000094,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:14 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 161.22440000000097,
+          "ttfb": 161.07380000000012,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:15 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        }
+      ],
+      "stats": {
+        "successRate": 100,
+        "avgTime": 392.68522000000013,
+        "minTime": 161.22440000000097,
+        "maxTime": 1295.5599999999995,
+        "p50": 167.29340000000047,
+        "p95": 1295.5599999999995,
+        "p99": 1295.5599999999995,
+        "avgTTFB": 392.52770000000055,
+        "avgSize": 35,
+        "totalRequests": 5,
+        "successfulRequests": 5
+      },
+      "loadTests": [
+        {
+          "concurrentUsers": 1,
+          "totalTime": 319.9288000000015,
+          "successRate": 100,
+          "avgResponseTime": 319.8686000000016
+        },
+        {
+          "concurrentUsers": 10,
+          "totalTime": 353.2531999999992,
+          "successRate": 100,
+          "avgResponseTime": 352.82673999999895
+        },
+        {
+          "concurrentUsers": 50,
+          "totalTime": 419.84560000000056,
+          "successRate": 100,
+          "avgResponseTime": 418.19310800000005
+        },
+        {
+          "concurrentUsers": 100,
+          "totalTime": 552.3453000000009,
+          "successRate": 100,
+          "avgResponseTime": 545.6705629999998
+        }
+      ]
+    },
+    {
+      "endpoint": {
+        "name": "API - Home Sections - Próximos (Optimized)",
+        "path": "/api/movies/home-sections?section=proximos&limit=6",
+        "type": "api",
+        "critical": true
+      },
+      "results": [
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 168.79579999999987,
+          "ttfb": 168.65890000000036,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:15 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 164.09410000000025,
+          "ttfb": 163.96029999999882,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:15 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 177.1254000000008,
+          "ttfb": 176.9823000000015,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:16 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 181.3110000000015,
+          "ttfb": 181.1834000000017,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:16 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 198.61299999999937,
+          "ttfb": 198.49269999999888,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:16 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        }
+      ],
+      "stats": {
+        "successRate": 100,
+        "avgTime": 177.98786000000035,
+        "minTime": 164.09410000000025,
+        "maxTime": 198.61299999999937,
+        "p50": 177.1254000000008,
+        "p95": 198.61299999999937,
+        "p99": 198.61299999999937,
+        "avgTTFB": 177.85552000000024,
+        "avgSize": 35,
+        "totalRequests": 5,
+        "successfulRequests": 5
+      },
+      "loadTests": [
+        {
+          "concurrentUsers": 1,
+          "totalTime": 169.30449999999837,
+          "successRate": 100,
+          "avgResponseTime": 169.24609999999666
+        },
+        {
+          "concurrentUsers": 10,
+          "totalTime": 332.4746000000014,
+          "successRate": 100,
+          "avgResponseTime": 315.80114000000106
+        },
+        {
+          "concurrentUsers": 50,
+          "totalTime": 412.55169999999634,
+          "successRate": 100,
+          "avgResponseTime": 406.882014
+        },
+        {
+          "concurrentUsers": 100,
+          "totalTime": 642.3796000000002,
+          "successRate": 100,
+          "avgResponseTime": 635.9783939999999
+        }
+      ]
+    },
+    {
+      "endpoint": {
+        "name": "API - Single Movie",
+        "path": "/api/movies/1",
+        "type": "api",
+        "critical": false
+      },
+      "results": [
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 316.96440000000075,
+          "ttfb": 316.8263999999981,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:17 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 164.5033000000003,
+          "ttfb": 164.33539999999994,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:17 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 176.12179999999717,
+          "ttfb": 175.97669999999925,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:17 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 165.7489999999998,
+          "ttfb": 165.56920000000173,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:17 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 167.85329999999885,
+          "ttfb": 167.71289999999863,
+          "dataSize": 35,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Sun, 24 Aug 2025 20:37:18 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        }
+      ],
+      "stats": {
+        "successRate": 100,
+        "avgTime": 198.23835999999937,
+        "minTime": 164.5033000000003,
+        "maxTime": 316.96440000000075,
+        "p50": 167.85329999999885,
+        "p95": 316.96440000000075,
+        "p99": 316.96440000000075,
+        "avgTTFB": 198.08411999999953,
+        "avgSize": 35,
+        "totalRequests": 5,
+        "successfulRequests": 5
+      }
+    },
+    {
+      "endpoint": {
+        "name": "Película Page",
+        "path": "/peliculas/el-secreto-de-sus-ojos",
+        "type": "page",
+        "critical": false
+      },
+      "results": [
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 7461.6567,
+          "ttfb": 7433.1855,
+          "dataSize": 151624,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "cache-control": "no-store, must-revalidate",
+            "x-powered-by": "Next.js",
+            "content-type": "text/html; charset=utf-8",
+            "date": "Sun, 24 Aug 2025 20:37:25 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 3184.9236999999994,
+          "ttfb": 3183.9545,
+          "dataSize": 151624,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "cache-control": "no-store, must-revalidate",
+            "x-powered-by": "Next.js",
+            "content-type": "text/html; charset=utf-8",
+            "date": "Sun, 24 Aug 2025 20:37:28 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 2999.5262999999977,
+          "ttfb": 2998.7088000000003,
+          "dataSize": 151624,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "cache-control": "no-store, must-revalidate",
+            "x-powered-by": "Next.js",
+            "content-type": "text/html; charset=utf-8",
+            "date": "Sun, 24 Aug 2025 20:37:32 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 2965.2364999999954,
+          "ttfb": 2964.440399999996,
+          "dataSize": 151624,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "cache-control": "no-store, must-revalidate",
+            "x-powered-by": "Next.js",
+            "content-type": "text/html; charset=utf-8",
+            "date": "Sun, 24 Aug 2025 20:37:35 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 3013.470000000001,
+          "ttfb": 3012.6157999999996,
+          "dataSize": 151624,
+          "headers": {
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "cache-control": "no-store, must-revalidate",
+            "x-powered-by": "Next.js",
+            "content-type": "text/html; charset=utf-8",
+            "date": "Sun, 24 Aug 2025 20:37:38 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        }
+      ],
+      "stats": {
+        "successRate": 100,
+        "avgTime": 3924.962639999999,
+        "minTime": 2965.2364999999954,
+        "maxTime": 7461.6567,
+        "p50": 3013.470000000001,
+        "p95": 7461.6567,
+        "p99": 7461.6567,
+        "avgTTFB": 3918.580999999999,
+        "avgSize": 151624,
+        "totalRequests": 5,
+        "successfulRequests": 5
+      }
+    }
+  ],
+  "summary": {
+    "totalEndpointsTested": 6,
+    "overallAvgResponseTime": 693.2582300000001,
+    "slowestEndpoint": "Película Page",
+    "fastestEndpoint": "API - Home Sections - Próximos (Optimized)",
+    "recommendations": [
+      {
+        "severity": "HIGH",
+        "endpoint": "API - Movies List (Current)",
+        "issue": "Response time too high (1758ms)",
+        "suggestion": "Consider implementing caching or query optimization"
+      },
+      {
+        "severity": "HIGH",
+        "endpoint": "Película Page",
+        "issue": "Response time too high (3925ms)",
+        "suggestion": "Consider implementing caching or query optimization"
+      }
+    ]
+  }
+}
