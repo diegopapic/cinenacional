@@ -252,6 +252,7 @@
 - [src/lib/utils/efemerides.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/utils/efemerides.ts)
 - [src/lib/utils/slugs.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/utils/slugs.ts)
 - [src/lib/utils.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/lib/utils.ts)
+- [src/middleware.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/middleware.ts)
 - [src/services/api-client.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/api-client.ts)
 - [src/services/index.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/index.ts)
 - [src/services/metadata.service.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/metadata.service.ts)
