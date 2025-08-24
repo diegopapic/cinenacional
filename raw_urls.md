@@ -91,7 +91,6 @@
 - [scripts/migration/migrate-wp-roles-only.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-roles-only.js)
 - [scripts/migration/migrate-wp-roles-supabase-final.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-roles-supabase-final.js)
 - [scripts/migration/migrate-wp-roles-supabase.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-roles-supabase.js)
-- [scripts/monitor-db.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/monitor-db.ts)
 - [scripts/populate-coordinates.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/populate-coordinates.js)
 - [scripts/populate-gentilicios.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/populate-gentilicios.js)
 - [scripts/pre-deploy-check.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/pre-deploy-check.js)
