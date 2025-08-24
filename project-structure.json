@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-24T21:45:05.178Z",
+  "timestamp": "2025-08-24T21:50:24.486Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "99d95038a68d3a4644e5d47dc79ed051c66b20a4",
+  "commit": "384cf6aca92e84795f70f4f2edeb5071ce8127bd",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
@@ -261,7 +261,6 @@
         "migrate-wp-roles-supabase.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/migrate-wp-roles-supabase.js",
         "roles-not-found.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migration/roles-not-found.json"
       },
-      "monitor-db.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/monitor-db.ts",
       "populate-coordinates.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/populate-coordinates.js",
       "populate-gentilicios.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/populate-gentilicios.js",
       "pre-deploy-check.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/pre-deploy-check.js",
