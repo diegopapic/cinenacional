@@ -25,7 +25,11 @@
     "docs:jsdoc": "jsdoc src -r -d docs/jsdoc",
     "docs:types": "typedoc --out docs/typedoc src",
     "monitor:db": "tsx scripts/monitor-db.ts",
-    "metrics": "curl -H 'Authorization: Bearer your-secret-key' http://localhost:3000/api/metrics/database | jq"
+    "metrics": "curl -H 'Authorization: Bearer your-secret-key' http://localhost:3000/api/metrics/database | jq",
+    "perf:test": "node scripts/measure-performance.js",
+    "perf:test:local": "BASE_URL=http://localhost:3000 node scripts/measure-performance.js",
+    "perf:test:prod": "BASE_URL=https://5.161.58.106:3000 NODE_ENV=production node scripts/measure-performance.js",
+    "perf:compare": "node scripts/compare-performance.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

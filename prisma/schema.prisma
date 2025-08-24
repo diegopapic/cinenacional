@@ -76,6 +76,8 @@ model Movie {
   @@index([stage])
   @@index([releaseYear])
   @@index([releaseYear, releaseMonth])
+  @@index([releaseYear, releaseMonth, releaseDay])
+  @@index([createdAt])
   @@map("movies")
 }
 
@@ -169,13 +171,13 @@ model Person {
   deathLocationId Int?                @map("death_location_id")
   biography       String?
   photoUrl        String?             @map("photo_url") @db.VarChar(500)
-  photoPublicId   String?             @map("photo_public_id") @db.VarChar(255)
   gender          Gender?
   hideAge         Boolean             @default(false) @map("hide_age")
   hasLinks        Boolean             @default(false) @map("has_links")
   isActive        Boolean             @default(true) @map("is_active")
   createdAt       DateTime            @default(now()) @map("created_at")
   updatedAt       DateTime            @updatedAt @map("updated_at")
+  photoPublicId   String?             @map("photo_public_id") @db.VarChar(255)
   awards          MovieAward[]
   castRoles       MovieCast[]
   crewRoles       MovieCrew[]
@@ -194,6 +196,7 @@ model Person {
   @@index([birthYear, birthMonth])
   @@index([deathYear])
   @@index([deathYear, deathMonth])
+  @@index([createdAt])
   @@map("people")
 }
 
@@ -305,6 +308,7 @@ model MovieCrew {
   @@index([movieId])
   @@index([personId])
   @@index([roleId])
+  @@index([movieId, roleId])
   @@map("movie_crew")
 }
 
