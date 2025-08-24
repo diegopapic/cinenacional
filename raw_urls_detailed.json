@@ -30,6 +30,11 @@
     "size": 0
   },
   {
+    "path": "backup_antes_sync.sql",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/backup_antes_sync.sql",
+    "size": 0
+  },
+  {
     "path": "color-analysis.json",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/color-analysis.json",
     "size": 0
@@ -350,6 +355,31 @@
     "size": 0
   },
   {
+    "path": "performance-reports/BASELINE-before-optimization.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/BASELINE-before-optimization.json",
+    "size": 0
+  },
+  {
+    "path": "performance-reports/report-2025-08-24T20-37-56-754Z.html",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/report-2025-08-24T20-37-56-754Z.html",
+    "size": 0
+  },
+  {
+    "path": "performance-reports/report-2025-08-24T20-37-56-754Z.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/report-2025-08-24T20-37-56-754Z.json",
+    "size": 0
+  },
+  {
+    "path": "performance-reports/report-2025-08-24T20-43-47-448Z.html",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/report-2025-08-24T20-43-47-448Z.html",
+    "size": 0
+  },
+  {
+    "path": "performance-reports/report-2025-08-24T20-43-47-448Z.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/report-2025-08-24T20-43-47-448Z.json",
+    "size": 0
+  },
+  {
     "path": "postcss.config.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.js",
     "size": 0
@@ -360,53 +390,18 @@
     "size": 0
   },
   {
-    "path": "prisma/migrations/20240729_add_data_completeness/migration.sql",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20240729_add_data_completeness/migration.sql",
+    "path": "prisma/migrations/0_init/migration.sql",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/0_init/migration.sql",
     "size": 0
   },
   {
-    "path": "prisma/migrations/20250130000820_add_alternative_titles/migration.sql",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250130000820_add_alternative_titles/migration.sql",
+    "path": "prisma/migrations/20250824211257_add_performance_indexes/migration.sql",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250824211257_add_performance_indexes/migration.sql",
     "size": 0
   },
   {
-    "path": "prisma/migrations/20250130000820_add_filming_dates/migration.sql",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250130000820_add_filming_dates/migration.sql",
-    "size": 0
-  },
-  {
-    "path": "prisma/migrations/20250130000820_add_movie_links/migration.sql",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250130000820_add_movie_links/migration.sql",
-    "size": 0
-  },
-  {
-    "path": "prisma/migrations/20250731005700__add_countries_and_production_type/migration.sql",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250731005700__add_countries_and_production_type/migration.sql",
-    "size": 0
-  },
-  {
-    "path": "prisma/migrations/20250731120000_add_locations/migration.sql",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250731120000_add_locations/migration.sql",
-    "size": 0
-  },
-  {
-    "path": "prisma/migrations/20250731181700_add_color_types/migration.sql",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250731181700_add_color_types/migration.sql",
-    "size": 0
-  },
-  {
-    "path": "prisma/migrations/20250802231700_add_movie_stages/migration.sql",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250802231700_add_movie_stages/migration.sql",
-    "size": 0
-  },
-  {
-    "path": "prisma/migrations/20250803141200_modify_date_format/migration.sql",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250803141200_modify_date_format/migration.sql",
-    "size": 0
-  },
-  {
-    "path": "prisma/migrations/[fecha]_add_duration_seconds/migration.sql",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/[fecha]_add_duration_seconds/migration.sql",
+    "path": "prisma/migrations/migration_lock.toml",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/migration_lock.toml",
     "size": 0
   },
   {
@@ -715,6 +710,11 @@
     "size": 0
   },
   {
+    "path": "scripts/compare-performance.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/compare-performance.js",
+    "size": 0
+  },
+  {
     "path": "scripts/compile-project-code.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/compile-project-code.js",
     "size": 0
@@ -867,6 +867,11 @@
   {
     "path": "scripts/map-wp-classification.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/map-wp-classification.js",
+    "size": 0
+  },
+  {
+    "path": "scripts/measure-performance.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/measure-performance.js",
     "size": 0
   },
   {
@@ -1262,6 +1267,11 @@
   {
     "path": "src/app/api/movies/home-feed/route.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/movies/home-feed/route.ts",
+    "size": 0
+  },
+  {
+    "path": "src/app/api/movies/home-sections/route.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/movies/home-sections/route.ts",
     "size": 0
   },
   {
