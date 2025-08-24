@@ -43,6 +43,12 @@ const ENDPOINTS = [
     type: 'api',
     critical: true,
   },
+  {
+    name: 'API - Home Feed (OPTIMIZED)',
+    path: '/api/movies/home-feed',
+    type: 'api',
+    critical: true,
+  },
 /*  {
     name: 'API - Home Sections - Últimos (Optimized)',
     path: '/api/movies/home-sections?section=ultimos&limit=6',
