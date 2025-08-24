@@ -1295,11 +1295,6 @@
     "size": 0
   },
   {
-    "path": "src/app/api/movies/home-sections/route.ts",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/movies/home-sections/route.ts",
-    "size": 0
-  },
-  {
     "path": "src/app/api/movies/route.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/movies/route.ts",
     "size": 0
