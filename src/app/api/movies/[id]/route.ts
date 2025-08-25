@@ -639,11 +639,6 @@ export async function PUT(
       'home-feed:movies:v1' // También invalidar home feed
     ];
 
-    // Si el slug cambió, también invalidar el nuevo slug
-    if (movieData.slug && movieData.slug !== existingMovie.slug) {
-      cacheKeysToInvalidate.push(`movie:slug:${movieData.slug}:v1`);
-    }
-
     // Invalidar en Redis
     await Promise.all(
       cacheKeysToInvalidate.map(key =>
