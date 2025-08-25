@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Search, User, X, Plus } from 'lucide-react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { peopleService } from '@/services/people.service'
+import toast from 'react-hot-toast' // Agregar import de toast
 
 interface Person {
   id: number
@@ -31,6 +32,7 @@ export default function PersonSearchInput({
   const [searchTerm, setSearchTerm] = useState('')
   const [people, setPeople] = useState<Person[]>([])
   const [loading, setLoading] = useState(false)
+  const [creating, setCreating] = useState(false) // Nuevo estado para crear persona
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
   
   const containerRef = useRef<HTMLDivElement>(null)
@@ -61,7 +63,7 @@ export default function PersonSearchInput({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Buscar personas - CORREGIDO
+  // Buscar personas
   useEffect(() => {
     const searchPeople = async () => {
       if (!debouncedSearch || debouncedSearch.length < 2) {
@@ -71,24 +73,21 @@ export default function PersonSearchInput({
 
       setLoading(true)
       try {
-        // Usar el endpoint directo para búsqueda
-        const response = await fetch(`/api/people?search=${encodeURIComponent(debouncedSearch)}&limit=20`)
+        // IMPORTANTE: Usar limit=10 para activar la búsqueda SQL concatenada
+        const response = await fetch(`/api/people?search=${encodeURIComponent(debouncedSearch)}&limit=10`)
         const result = await response.json()
         
         console.log('🔍 Search response:', result)
         
-        // Manejar diferentes formatos de respuesta
+        // El endpoint devuelve directamente un array para búsquedas con limit <= 10
         let peopleData: Person[] = []
         
         if (Array.isArray(result)) {
-          // Si es un array directo
+          // Si es un array directo (búsqueda autocomplete)
           peopleData = result
         } else if (result.data && Array.isArray(result.data)) {
-          // Si viene envuelto en { data: [...] }
+          // Si viene envuelto en { data: [...] } (búsqueda paginada)
           peopleData = result.data
-        } else if (result.people && Array.isArray(result.people)) {
-          // Si viene como { people: [...] }
-          peopleData = result.people
         } else {
           console.warn('Formato de respuesta inesperado:', result)
           peopleData = []
@@ -132,6 +131,51 @@ export default function PersonSearchInput({
     return `${person.firstName || ''} ${person.lastName || ''}`.trim() || 'Sin nombre'
   }
 
+  // Función mejorada para crear nueva persona
+  const handleCreatePerson = async () => {
+    if (!debouncedSearch || debouncedSearch.length < 2) {
+      toast.error('El nombre debe tener al menos 2 caracteres')
+      return
+    }
+
+    setCreating(true)
+    
+    try {
+      console.log('🚀 Creando nueva persona:', debouncedSearch)
+      
+      const response = await fetch('/api/people', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ 
+          name: debouncedSearch.trim() 
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        console.error('❌ Error response:', errorData)
+        throw new Error(`Error ${response.status}: ${errorData || response.statusText}`)
+      }
+
+      const newPerson = await response.json()
+      console.log('✅ Persona creada:', newPerson)
+      
+      // Mostrar toast de éxito
+      toast.success(`Persona "${formatPersonName(newPerson)}" creada exitosamente`)
+      
+      // Seleccionar la nueva persona
+      handleSelectPerson(newPerson)
+      
+    } catch (error) {
+      console.error('❌ Error creando persona:', error)
+      toast.error(error instanceof Error ? error.message : 'Error al crear la persona')
+    } finally {
+      setCreating(false)
+    }
+  }
+
   return (
     <div className="relative" ref={containerRef}>
       <div className="relative">
@@ -145,11 +189,11 @@ export default function PersonSearchInput({
           }}
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
-          disabled={disabled}
+          disabled={disabled || creating}
           required={required}
           className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
         />
-        {searchTerm && !disabled && (
+        {searchTerm && !disabled && !creating && (
           <button
             type="button"
             onClick={handleClear}
@@ -158,10 +202,15 @@ export default function PersonSearchInput({
             <X className="h-4 w-4" />
           </button>
         )}
+        {creating && (
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+            <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+          </div>
+        )}
       </div>
 
       {/* Dropdown de resultados */}
-      {isOpen && !disabled && (
+      {isOpen && !disabled && !creating && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
           {loading ? (
             <div className="p-3 text-center text-gray-500">
@@ -173,48 +222,58 @@ export default function PersonSearchInput({
               Escribe al menos 2 caracteres para buscar
             </div>
           ) : !Array.isArray(people) || people.length === 0 ? (
-            <div className="p-3 text-center text-gray-500">
-              No se encontraron personas con "{debouncedSearch}"
-            </div>
-          ) : (
-            <div className="py-1">
-              {people.map(person => (
+            <>
+              <div className="p-3 text-center text-gray-500">
+                No se encontraron personas con "{debouncedSearch}"
+              </div>
+              {/* Opción para crear nueva persona cuando no hay resultados */}
+              <div className="border-t border-gray-200">
                 <button
-                  key={person.id}
                   type="button"
-                  onClick={() => handleSelectPerson(person)}
-                  className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center space-x-3"
+                  className="w-full text-left px-3 py-2 hover:bg-green-50 flex items-center space-x-2 text-green-700 transition-colors"
+                  onClick={handleCreatePerson}
                 >
-                  <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 truncate">
-                      {formatPersonName(person)}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      ID: {person.id} • {person.slug}
-                    </div>
-                  </div>
+                  <Plus className="h-4 w-4" />
+                  <span className="text-sm font-medium">
+                    Crear nueva persona: "{debouncedSearch}"
+                  </span>
                 </button>
-              ))}
-            </div>
-          )}
-
-          {/* Opción para crear nueva persona */}
-          {!loading && debouncedSearch.length >= 2 && people.length === 0 && (
-            <div className="border-t border-gray-200">
-              <button
-                type="button"
-                className="w-full text-left px-3 py-2 hover:bg-green-50 flex items-center space-x-2 text-green-700"
-                onClick={() => {
-                  // Aquí podrías abrir un modal para crear nueva persona
-                  console.log('Crear nueva persona:', debouncedSearch)
-                  setIsOpen(false)
-                }}
-              >
-                <Plus className="h-4 w-4" />
-                <span className="text-sm">Crear nueva persona: "{debouncedSearch}"</span>
-              </button>
-            </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="py-1">
+                {people.map(person => (
+                  <button
+                    key={person.id}
+                    type="button"
+                    onClick={() => handleSelectPerson(person)}
+                    className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center space-x-3 transition-colors"
+                  >
+                    <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate">
+                        {formatPersonName(person)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        ID: {person.id} • {person.slug}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {/* También mostrar opción de crear si no encontró exactamente lo que busca */}
+              <div className="border-t border-gray-200">
+                <button
+                  type="button"
+                  className="w-full text-left px-3 py-2 hover:bg-green-50 flex items-center space-x-2 text-green-700 text-sm transition-colors"
+                  onClick={handleCreatePerson}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>¿No encuentras a quien buscas? Crear: "{debouncedSearch}"</span>
+                </button>
+              </div>
+            </>
           )}
         </div>
       )}
