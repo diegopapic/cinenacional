@@ -349,14 +349,6 @@ export async function DELETE(
         // Verificar si la persona tiene películas asociadas
         const person = await prisma.person.findUnique({
             where: { id: personId },
-            include: {
-                _count: {
-                    select: {
-                        castRoles: true,
-                        crewRoles: true,
-                    },
-                },
-            },
             select: {
                 slug: true,
                 _count: {
