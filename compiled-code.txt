@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: dbb37e004a7e483b04989685b6b25d59479fad45
-// Fecha: 2025-08-25T01:22:07.229Z
+// Commit: ebeb75d8eab821d12a8f4f4400f0ecd2e8ee5cd2
+// Fecha: 2025-08-25T01:42:36.046Z
 // ============================================
 
 
@@ -7470,11 +7470,6 @@ export async function PUT(
       `movie:slug:${existingMovie.slug}:v1`,
       'home-feed:movies:v1' // También invalidar home feed
     ];
-
-    // Si el slug cambió, también invalidar el nuevo slug
-    if (movieData.slug && movieData.slug !== existingMovie.slug) {
-      cacheKeysToInvalidate.push(`movie:slug:${movieData.slug}:v1`);
-    }
 
     // Invalidar en Redis
     await Promise.all(
