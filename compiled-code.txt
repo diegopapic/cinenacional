@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 53e93ffcf1f28eb3055143f6ac169e450f4655f1
-// Fecha: 2025-08-25T02:09:03.599Z
+// Commit: b2a9508b1b0faa520e95819dc29d4f46a8854b4d
+// Fecha: 2025-08-25T02:14:57.354Z
 // ============================================
 
 
@@ -8541,14 +8541,6 @@ export async function DELETE(
         // Verificar si la persona tiene películas asociadas
         const person = await prisma.person.findUnique({
             where: { id: personId },
-            include: {
-                _count: {
-                    select: {
-                        castRoles: true,
-                        crewRoles: true,
-                    },
-                },
-            },
             select: {
                 slug: true,
                 _count: {
