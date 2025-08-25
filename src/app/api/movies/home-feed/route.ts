@@ -1,4 +1,4 @@
-// src/app/api/movies/home-feed/route.ts - VERSIÓN OPTIMIZADA CON REDIS
+// src/app/api/movies/home-feed/route.ts - VERSIÓN CORREGIDA
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
@@ -10,7 +10,7 @@ let memoryCacheTime: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
 export async function GET() {
-  const cacheKey = 'home-feed:movies:v1';
+  const cacheKey = 'home-feed:movies:v2'; // ⚠️ IMPORTANTE: Cambié la versión del cache key para invalidar el caché anterior
   
   try {
     // 1. Intentar obtener de Redis primero
@@ -61,7 +61,7 @@ export async function GET() {
 
     // OPTIMIZACIÓN: Queries paralelas y específicas
     const [ultimosEstrenos, proximosEstrenos, ultimasPeliculas, ultimasPersonas] = await Promise.all([
-      // Últimos estrenos - solo películas con fecha completa
+      // Últimos estrenos - solo películas con fecha completa Y que ya se estrenaron
       prisma.movie.findMany({
         where: {
           AND: [
@@ -70,11 +70,21 @@ export async function GET() {
             { releaseDay: { not: null } },
             {
               OR: [
+                // Años anteriores
                 { releaseYear: { lt: currentYear } },
+                // Este año pero meses anteriores
                 {
                   AND: [
                     { releaseYear: currentYear },
-                    { releaseMonth: { lte: currentMonth } }
+                    { releaseMonth: { lt: currentMonth } }
+                  ]
+                },
+                // Este año, este mes, pero días anteriores o el día de hoy
+                {
+                  AND: [
+                    { releaseYear: currentYear },
+                    { releaseMonth: currentMonth },
+                    { releaseDay: { lte: currentDay } }  // ✅ FIX: Verificar también el día
                   ]
                 }
               ]
@@ -119,18 +129,28 @@ export async function GET() {
         take: 6
       }),
 
-      // Próximos estrenos
+      // Próximos estrenos - películas con fechas futuras
       prisma.movie.findMany({
         where: {
           AND: [
             { releaseYear: { not: null } },
             {
               OR: [
+                // Años futuros
                 { releaseYear: { gt: currentYear } },
+                // Este año pero meses futuros
                 {
                   AND: [
                     { releaseYear: currentYear },
                     { releaseMonth: { gt: currentMonth } }
+                  ]
+                },
+                // Este año, este mes, pero días futuros (no incluir hoy)
+                {
+                  AND: [
+                    { releaseYear: currentYear },
+                    { releaseMonth: currentMonth },
+                    { releaseDay: { gt: currentDay } }  // ✅ FIX: Solo días futuros, no el día de hoy
                   ]
                 }
               ]
@@ -290,14 +310,16 @@ export async function GET() {
 // Endpoint para invalidar caché manualmente (útil para testing)
 export async function DELETE() {
   try {
-    const deleted = await RedisClient.del('home-feed:movies:v1');
+    // Invalidar ambas versiones del caché por si acaso
+    const deleted1 = await RedisClient.del('home-feed:movies:v1');
+    const deleted2 = await RedisClient.del('home-feed:movies:v2');
     memoryCachedData = null;
     memoryCacheTime = 0;
     
     return NextResponse.json({
       success: true,
       message: 'Caché invalidado exitosamente',
-      redisDeleted: deleted
+      redisDeleted: deleted1 + deleted2
     });
   } catch (error) {
     return NextResponse.json(
