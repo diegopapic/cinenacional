@@ -1,0 +1,841 @@
+{
+  "timestamp": "2025-08-25T00:01:07.367Z",
+  "config": {
+    "baseUrl": "http://5.161.58.106:3000",
+    "isProduction": false,
+    "iterations": 5,
+    "concurrentUsers": [
+      1,
+      10,
+      50,
+      100
+    ]
+  },
+  "results": [
+    {
+      "endpoint": {
+        "name": "HomePage - HTML",
+        "path": "/",
+        "type": "page",
+        "critical": true
+      },
+      "results": [
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 485.7091,
+          "ttfb": 329.72369999999995,
+          "dataSize": 33188,
+          "headers": {
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "x-nextjs-cache": "HIT",
+            "x-powered-by": "Next.js",
+            "cache-control": "s-maxage=31536000, stale-while-revalidate",
+            "etag": "\"641d4wtf7npiy\"",
+            "content-type": "text/html; charset=utf-8",
+            "content-length": "33188",
+            "date": "Mon, 25 Aug 2025 00:00:57 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 165.99099999999999,
+          "ttfb": 165.59109999999998,
+          "dataSize": 33188,
+          "headers": {
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "x-nextjs-cache": "HIT",
+            "x-powered-by": "Next.js",
+            "cache-control": "s-maxage=31536000, stale-while-revalidate",
+            "etag": "\"641d4wtf7npiy\"",
+            "content-type": "text/html; charset=utf-8",
+            "content-length": "33188",
+            "date": "Mon, 25 Aug 2025 00:00:57 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 163.87849999999992,
+          "ttfb": 162.9219999999999,
+          "dataSize": 33188,
+          "headers": {
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "x-nextjs-cache": "HIT",
+            "x-powered-by": "Next.js",
+            "cache-control": "s-maxage=31536000, stale-while-revalidate",
+            "etag": "\"641d4wtf7npiy\"",
+            "content-type": "text/html; charset=utf-8",
+            "content-length": "33188",
+            "date": "Mon, 25 Aug 2025 00:00:58 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 160.08429999999998,
+          "ttfb": 159.84809999999993,
+          "dataSize": 33188,
+          "headers": {
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "x-nextjs-cache": "HIT",
+            "x-powered-by": "Next.js",
+            "cache-control": "s-maxage=31536000, stale-while-revalidate",
+            "etag": "\"641d4wtf7npiy\"",
+            "content-type": "text/html; charset=utf-8",
+            "content-length": "33188",
+            "date": "Mon, 25 Aug 2025 00:00:58 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 164.72879999999986,
+          "ttfb": 163.92830000000004,
+          "dataSize": 33188,
+          "headers": {
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "x-nextjs-cache": "HIT",
+            "x-powered-by": "Next.js",
+            "cache-control": "s-maxage=31536000, stale-while-revalidate",
+            "etag": "\"641d4wtf7npiy\"",
+            "content-type": "text/html; charset=utf-8",
+            "content-length": "33188",
+            "date": "Mon, 25 Aug 2025 00:00:58 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5"
+          }
+        }
+      ],
+      "stats": {
+        "successRate": 100,
+        "avgTime": 228.07833999999994,
+        "minTime": 160.08429999999998,
+        "maxTime": 485.7091,
+        "p50": 164.72879999999986,
+        "p95": 485.7091,
+        "p99": 485.7091,
+        "avgTTFB": 196.40263999999996,
+        "avgSize": 33188,
+        "totalRequests": 5,
+        "successfulRequests": 5
+      },
+      "loadTests": [
+        {
+          "concurrentUsers": 1,
+          "totalTime": 160.35090000000037,
+          "successRate": 100,
+          "avgResponseTime": 160.08939999999984
+        },
+        {
+          "concurrentUsers": 10,
+          "totalTime": 515.4314000000004,
+          "successRate": 100,
+          "avgResponseTime": 459.62812999999994
+        },
+        {
+          "concurrentUsers": 50,
+          "totalTime": 684.2873,
+          "successRate": 100,
+          "avgResponseTime": 507.16873
+        },
+        {
+          "concurrentUsers": 100,
+          "totalTime": 773.6188000000002,
+          "successRate": 100,
+          "avgResponseTime": 402.54764099999994
+        }
+      ]
+    },
+    {
+      "endpoint": {
+        "name": "API - Movies List (Current)",
+        "path": "/api/movies?limit=50",
+        "type": "api",
+        "critical": true
+      },
+      "results": [
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 189.32529999999997,
+          "ttfb": 186.88840000000005,
+          "dataSize": 15504,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Mon, 25 Aug 2025 00:00:58 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 177.74770000000012,
+          "ttfb": 177.58830000000012,
+          "dataSize": 15504,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Mon, 25 Aug 2025 00:00:59 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 177.70579999999973,
+          "ttfb": 177.29769999999962,
+          "dataSize": 15504,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Mon, 25 Aug 2025 00:00:59 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 172.9013,
+          "ttfb": 171.2745,
+          "dataSize": 15504,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Mon, 25 Aug 2025 00:00:59 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 171.33719999999994,
+          "ttfb": 169.60620000000017,
+          "dataSize": 15504,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Mon, 25 Aug 2025 00:01:00 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        }
+      ],
+      "stats": {
+        "successRate": 100,
+        "avgTime": 177.80345999999994,
+        "minTime": 171.33719999999994,
+        "maxTime": 189.32529999999997,
+        "p50": 177.70579999999973,
+        "p95": 189.32529999999997,
+        "p99": 189.32529999999997,
+        "avgTTFB": 176.53101999999998,
+        "avgSize": 15504,
+        "totalRequests": 5,
+        "successfulRequests": 5
+      },
+      "loadTests": [
+        {
+          "concurrentUsers": 1,
+          "totalTime": 152.89419999999882,
+          "successRate": 100,
+          "avgResponseTime": 152.8155999999999
+        },
+        {
+          "concurrentUsers": 10,
+          "totalTime": 175.82749999999942,
+          "successRate": 100,
+          "avgResponseTime": 164.79928999999993
+        },
+        {
+          "concurrentUsers": 50,
+          "totalTime": 257.4336999999996,
+          "successRate": 100,
+          "avgResponseTime": 207.9093979999999
+        },
+        {
+          "concurrentUsers": 100,
+          "totalTime": 328.4282999999996,
+          "successRate": 100,
+          "avgResponseTime": 251.34975200000005
+        }
+      ]
+    },
+    {
+      "endpoint": {
+        "name": "API - Home Feed (OPTIMIZED)",
+        "path": "/api/movies/home-feed",
+        "type": "api",
+        "critical": true
+      },
+      "results": [
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 158.60879999999997,
+          "ttfb": 158.45400000000018,
+          "dataSize": 5942,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "cache-control": "public, s-maxage=300, stale-while-revalidate=600",
+            "content-type": "application/json",
+            "x-cache": "HIT",
+            "x-cache-source": "redis",
+            "date": "Mon, 25 Aug 2025 00:01:00 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 156.57930000000033,
+          "ttfb": 156.4354000000003,
+          "dataSize": 5942,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "cache-control": "public, s-maxage=300, stale-while-revalidate=600",
+            "content-type": "application/json",
+            "x-cache": "HIT",
+            "x-cache-source": "redis",
+            "date": "Mon, 25 Aug 2025 00:01:00 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 157.8457999999996,
+          "ttfb": 157.7174,
+          "dataSize": 5942,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "cache-control": "public, s-maxage=300, stale-while-revalidate=600",
+            "content-type": "application/json",
+            "x-cache": "HIT",
+            "x-cache-source": "redis",
+            "date": "Mon, 25 Aug 2025 00:01:00 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 157.6555000000003,
+          "ttfb": 157.52840000000015,
+          "dataSize": 5942,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "cache-control": "public, s-maxage=300, stale-while-revalidate=600",
+            "content-type": "application/json",
+            "x-cache": "HIT",
+            "x-cache-source": "redis",
+            "date": "Mon, 25 Aug 2025 00:01:01 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 160.1888000000008,
+          "ttfb": 160.04140000000007,
+          "dataSize": 5942,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "cache-control": "public, s-maxage=300, stale-while-revalidate=600",
+            "content-type": "application/json",
+            "x-cache": "HIT",
+            "x-cache-source": "redis",
+            "date": "Mon, 25 Aug 2025 00:01:01 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        }
+      ],
+      "stats": {
+        "successRate": 100,
+        "avgTime": 158.17564000000021,
+        "minTime": 156.57930000000033,
+        "maxTime": 160.1888000000008,
+        "p50": 157.8457999999996,
+        "p95": 160.1888000000008,
+        "p99": 160.1888000000008,
+        "avgTTFB": 158.03532000000013,
+        "avgSize": 5942,
+        "totalRequests": 5,
+        "successfulRequests": 5
+      },
+      "loadTests": [
+        {
+          "concurrentUsers": 1,
+          "totalTime": 156.58309999999983,
+          "successRate": 100,
+          "avgResponseTime": 156.5090999999993
+        },
+        {
+          "concurrentUsers": 10,
+          "totalTime": 168.28189999999995,
+          "successRate": 100,
+          "avgResponseTime": 161.1049500000003
+        },
+        {
+          "concurrentUsers": 50,
+          "totalTime": 531.600699999999,
+          "successRate": 100,
+          "avgResponseTime": 201.17433200000008
+        },
+        {
+          "concurrentUsers": 100,
+          "totalTime": 531.0706999999984,
+          "successRate": 100,
+          "avgResponseTime": 238.75812699999997
+        }
+      ]
+    },
+    {
+      "endpoint": {
+        "name": "API - Single Movie",
+        "path": "/api/movies/1",
+        "type": "api",
+        "critical": false
+      },
+      "results": [
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 165.70360000000073,
+          "ttfb": 165.4902000000002,
+          "dataSize": 35,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Mon, 25 Aug 2025 00:01:01 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 161.33070000000043,
+          "ttfb": 161.20190000000002,
+          "dataSize": 35,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Mon, 25 Aug 2025 00:01:01 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 159.32290000000012,
+          "ttfb": 159.1903000000002,
+          "dataSize": 35,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Mon, 25 Aug 2025 00:01:02 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 162.7559000000001,
+          "ttfb": 162.6345999999994,
+          "dataSize": 35,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Mon, 25 Aug 2025 00:01:02 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 404,
+          "totalTime": 167.42680000000018,
+          "ttfb": 167.29060000000027,
+          "dataSize": 35,
+          "headers": {
+            "access-control-allow-headers": "Content-Type, Authorization",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "access-control-allow-origin": "*",
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch",
+            "content-type": "application/json",
+            "date": "Mon, 25 Aug 2025 00:01:02 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5",
+            "transfer-encoding": "chunked"
+          }
+        }
+      ],
+      "stats": {
+        "successRate": 100,
+        "avgTime": 163.30798000000033,
+        "minTime": 159.32290000000012,
+        "maxTime": 167.42680000000018,
+        "p50": 162.7559000000001,
+        "p95": 167.42680000000018,
+        "p99": 167.42680000000018,
+        "avgTTFB": 163.16152000000002,
+        "avgSize": 35,
+        "totalRequests": 5,
+        "successfulRequests": 5
+      }
+    },
+    {
+      "endpoint": {
+        "name": "Película Page",
+        "path": "/peliculas/el-secreto-de-sus-ojos",
+        "type": "page",
+        "critical": false
+      },
+      "results": [
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 406.7575000000006,
+          "ttfb": 255.41760000000068,
+          "dataSize": 67628,
+          "headers": {
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "x-nextjs-cache": "MISS",
+            "x-powered-by": "Next.js",
+            "cache-control": "s-maxage=3600, stale-while-revalidate",
+            "etag": "\"dnedhm9x2v1fxn\"",
+            "content-type": "text/html; charset=utf-8",
+            "content-length": "67628",
+            "date": "Mon, 25 Aug 2025 00:01:03 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 317.2566999999999,
+          "ttfb": 167.0074999999997,
+          "dataSize": 67628,
+          "headers": {
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "x-nextjs-cache": "HIT",
+            "x-powered-by": "Next.js",
+            "cache-control": "s-maxage=3600, stale-while-revalidate",
+            "etag": "\"dnedhm9x2v1fxn\"",
+            "content-type": "text/html; charset=utf-8",
+            "content-length": "67628",
+            "date": "Mon, 25 Aug 2025 00:01:03 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 169.16029999999955,
+          "ttfb": 168.8145999999997,
+          "dataSize": 67628,
+          "headers": {
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "x-nextjs-cache": "HIT",
+            "x-powered-by": "Next.js",
+            "cache-control": "s-maxage=3600, stale-while-revalidate",
+            "etag": "\"dnedhm9x2v1fxn\"",
+            "content-type": "text/html; charset=utf-8",
+            "content-length": "67628",
+            "date": "Mon, 25 Aug 2025 00:01:03 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 160.52670000000035,
+          "ttfb": 159.77000000000044,
+          "dataSize": 67628,
+          "headers": {
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "x-nextjs-cache": "HIT",
+            "x-powered-by": "Next.js",
+            "cache-control": "s-maxage=3600, stale-while-revalidate",
+            "etag": "\"dnedhm9x2v1fxn\"",
+            "content-type": "text/html; charset=utf-8",
+            "content-length": "67628",
+            "date": "Mon, 25 Aug 2025 00:01:04 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5"
+          }
+        },
+        {
+          "success": true,
+          "statusCode": 200,
+          "totalTime": 176.1875999999993,
+          "ttfb": 172.72549999999956,
+          "dataSize": 67628,
+          "headers": {
+            "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.cloudinary.com; frame-ancestors 'none';",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-content-type-options": "nosniff",
+            "x-dns-prefetch-control": "on",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "vary": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Accept-Encoding",
+            "x-nextjs-cache": "HIT",
+            "x-powered-by": "Next.js",
+            "cache-control": "s-maxage=3600, stale-while-revalidate",
+            "etag": "\"dnedhm9x2v1fxn\"",
+            "content-type": "text/html; charset=utf-8",
+            "content-length": "67628",
+            "date": "Mon, 25 Aug 2025 00:01:04 GMT",
+            "connection": "keep-alive",
+            "keep-alive": "timeout=5"
+          }
+        }
+      ],
+      "stats": {
+        "successRate": 100,
+        "avgTime": 245.97775999999993,
+        "minTime": 160.52670000000035,
+        "maxTime": 406.7575000000006,
+        "p50": 176.1875999999993,
+        "p95": 406.7575000000006,
+        "p99": 406.7575000000006,
+        "avgTTFB": 184.74704000000003,
+        "avgSize": 67628,
+        "totalRequests": 5,
+        "successfulRequests": 5
+      }
+    }
+  ],
+  "summary": {
+    "totalEndpointsTested": 5,
+    "overallAvgResponseTime": 188.01914666666667,
+    "slowestEndpoint": "Película Page",
+    "fastestEndpoint": "API - Home Feed (OPTIMIZED)",
+    "recommendations": []
+  }
+}

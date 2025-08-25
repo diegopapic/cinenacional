@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 3bbc67a810c325f894ae05c301dd119246c85397
-// Fecha: 2025-08-24T23:54:16.798Z
+// Commit: 3fcfef3de5bf14661b02713dbbc9835b77537fe3
+// Fecha: 2025-08-25T00:19:52.197Z
 // ============================================
 
 
@@ -26707,7 +26707,7 @@ const getRedisUrl = () => {
     return process.env.REDIS_URL;
   }
   // Fallback para desarrollo local
-  return 'redis://localhost:6379';
+  return 'redis://redis:6379';
 };
 
 class RedisClient {
