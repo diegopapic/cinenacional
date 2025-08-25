@@ -54,15 +54,17 @@ export function middleware(request: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('X-XSS-Protection', '1; mode=block')
   
-  // CSP básico (ajustar según necesidades)
+  // CSP ACTUALIZADO PARA CLOUDINARY
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com; " +
-    "style-src 'self' 'unsafe-inline'; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com https://upload-widget.cloudinary.com; " +  // AGREGADO upload-widget.cloudinary.com
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "img-src 'self' data: https: blob:; " +
-    "font-src 'self' data:; " +
-    "connect-src 'self' https://api.cloudinary.com; " +
+    "font-src 'self' data: https://fonts.gstatic.com; " +
+    "connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com https://*.cloudinary.com; " +  // AGREGADO más dominios de Cloudinary
+    "frame-src 'self' https://upload-widget.cloudinary.com https://*.cloudinary.com; " +  // AGREGADO frame-src para el widget
+    "media-src 'self' https://res.cloudinary.com; " +  // AGREGADO media-src
     "frame-ancestors 'none';"
   )
   
