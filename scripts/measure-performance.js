@@ -63,7 +63,7 @@ const ENDPOINTS = [
   },*/
   {
     name: 'API - Single Movie',
-    path: '/api/movies/1', // Ajustar ID según tu BD
+    path: '/api/movies/30', // Ajustar ID según tu BD
     type: 'api',
     critical: false,
   },

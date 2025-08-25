@@ -20,14 +20,14 @@ export async function GET(
   try {
     const idOrSlug = params.id
     const isId = /^\d+$/.test(idOrSlug)
-    
+
     // Generar clave de caché única
     const cacheKey = `movie:${isId ? 'id' : 'slug'}:${idOrSlug}:v1`;
-    
+
     // 1. Intentar obtener de Redis
     try {
       const redisCached = await RedisClient.get(cacheKey);
-      
+
       if (redisCached) {
         console.log(`✅ Cache HIT desde Redis para película: ${idOrSlug}`);
         return NextResponse.json(
@@ -45,18 +45,18 @@ export async function GET(
     } catch (redisError) {
       console.error('Redis error (non-fatal):', redisError);
     }
-    
+
     // 2. Verificar caché en memoria como fallback
     const now = Date.now();
     const memoryCached = memoryCache.get(cacheKey);
-    
+
     if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
       console.log(`✅ Cache HIT desde memoria para película: ${idOrSlug}`);
-      
+
       // Intentar guardar en Redis para próximas requests
       RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), REDIS_CACHE_TTL)
         .catch(err => console.error('Error guardando en Redis:', err));
-      
+
       return NextResponse.json(memoryCached.data, {
         headers: {
           'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
@@ -66,10 +66,10 @@ export async function GET(
         }
       });
     }
-    
+
     // 3. No hay caché, consultar base de datos
     console.log(`🔄 Cache MISS - Consultando BD para película: ${idOrSlug}`);
-    
+
     const movie = await prisma.movie.findUnique({
       where: isId ? { id: parseInt(idOrSlug) } : { slug: idOrSlug },
       select: {
@@ -101,10 +101,10 @@ export async function GET(
         filmingEndDay: true,
         createdAt: true,
         updatedAt: true,
-        
+
         // Relaciones - solo traer los campos necesarios
         colorType: true,
-        
+
         genres: {
           select: {
             genre: {
@@ -116,7 +116,7 @@ export async function GET(
             }
           }
         },
-        
+
         cast: {
           orderBy: { billingOrder: 'asc' },
           select: {
@@ -134,7 +134,7 @@ export async function GET(
             }
           }
         },
-        
+
         crew: {
           orderBy: { billingOrder: 'asc' },
           select: {
@@ -151,7 +151,7 @@ export async function GET(
             role: true
           }
         },
-        
+
         movieCountries: {
           select: {
             country: {
@@ -163,7 +163,7 @@ export async function GET(
             }
           }
         },
-        
+
         productionCompanies: {
           select: {
             company: {
@@ -174,7 +174,7 @@ export async function GET(
             }
           }
         },
-        
+
         distributionCompanies: {
           select: {
             company: {
@@ -185,7 +185,7 @@ export async function GET(
             }
           }
         },
-        
+
         themes: {
           select: {
             theme: {
@@ -197,27 +197,27 @@ export async function GET(
             }
           }
         },
-        
+
         images: {
           orderBy: { displayOrder: 'asc' }
         },
-        
+
         videos: {
           orderBy: { isPrimary: 'desc' }
         },
-        
+
         awards: {
           include: {
             award: true,
             recipient: true
           }
         },
-        
+
         links: {
           where: { isActive: true },
           orderBy: { type: 'asc' }
         },
-        
+
         screenings: {
           include: {
             venue: true
@@ -232,7 +232,7 @@ export async function GET(
         { status: 404 }
       )
     }
-    
+
     // 4. Guardar en ambos cachés
     // Redis con TTL de 1 hora
     RedisClient.set(cacheKey, JSON.stringify(movie), REDIS_CACHE_TTL)
@@ -242,17 +242,19 @@ export async function GET(
         }
       })
       .catch(err => console.error('Error guardando en Redis:', err));
-    
+
     // Memoria como fallback
     memoryCache.set(cacheKey, {
       data: movie,
       timestamp: now
     });
-    
+
     // Limpiar caché de memoria viejo (mantener máximo 100 películas)
     if (memoryCache.size > 100) {
       const oldestKey = memoryCache.keys().next().value;
-      memoryCache.delete(oldestKey);
+      if (oldestKey) {
+        memoryCache.delete(oldestKey);
+      }
     }
 
     return NextResponse.json(movie, {
@@ -265,11 +267,11 @@ export async function GET(
     })
   } catch (error) {
     console.error('Error fetching movie:', error)
-    
+
     // Intentar servir desde caché stale si hay error
     const cacheKey = `movie:${/^\d+$/.test(params.id) ? 'id' : 'slug'}:${params.id}:v1`;
     const staleCache = memoryCache.get(cacheKey);
-    
+
     if (staleCache) {
       console.log('⚠️ Sirviendo caché stale debido a error');
       return NextResponse.json(staleCache.data, {
@@ -280,7 +282,7 @@ export async function GET(
         }
       });
     }
-    
+
     return NextResponse.json(
       { error: 'Error al obtener la película' },
       { status: 500 }
@@ -307,12 +309,12 @@ export async function PUT(
       filmingEndMonth: body.filmingEndMonth,
       filmingEndDay: body.filmingEndDay
     })
-    
+
     // Limpiar datos antes de validar
     const cleanedData = {
       ...body,
       ratingId: body.ratingId === 0 ? null : body.ratingId,
-      genres: Array.isArray(body.genres) 
+      genres: Array.isArray(body.genres)
         ? body.genres.filter((g: any) => g != null && g !== 0 && !isNaN(Number(g)))
         : [],
       countries: Array.isArray(body.countries)
@@ -630,30 +632,30 @@ export async function PUT(
 
     // INVALIDAR CACHÉS después de actualizar exitosamente
     console.log('🗑️ Invalidando cachés para película actualizada');
-    
+
     const cacheKeysToInvalidate = [
       `movie:id:${id}:v1`,
       `movie:slug:${existingMovie.slug}:v1`,
       'home-feed:movies:v1' // También invalidar home feed
     ];
-    
+
     // Si el slug cambió, también invalidar el nuevo slug
     if (movieData.slug && movieData.slug !== existingMovie.slug) {
       cacheKeysToInvalidate.push(`movie:slug:${movieData.slug}:v1`);
     }
-    
+
     // Invalidar en Redis
     await Promise.all(
-      cacheKeysToInvalidate.map(key => 
-        RedisClient.del(key).catch(err => 
+      cacheKeysToInvalidate.map(key =>
+        RedisClient.del(key).catch(err =>
           console.error(`Error invalidando Redis key ${key}:`, err)
         )
       )
     );
-    
+
     // Invalidar en memoria
     cacheKeysToInvalidate.forEach(key => memoryCache.delete(key));
-    
+
     console.log(`✅ Cachés invalidados: ${cacheKeysToInvalidate.join(', ')}`);
 
     return NextResponse.json(movie)
@@ -701,28 +703,28 @@ export async function DELETE(
     await prisma.movie.delete({
       where: { id }
     })
-    
+
     // INVALIDAR CACHÉS después de eliminar
     console.log('🗑️ Invalidando cachés para película eliminada');
-    
+
     const cacheKeysToInvalidate = [
       `movie:id:${id}:v1`,
       `movie:slug:${movie.slug}:v1`,
       'home-feed:movies:v1'
     ];
-    
+
     // Invalidar en Redis
     await Promise.all(
-      cacheKeysToInvalidate.map(key => 
-        RedisClient.del(key).catch(err => 
+      cacheKeysToInvalidate.map(key =>
+        RedisClient.del(key).catch(err =>
           console.error(`Error invalidando Redis key ${key}:`, err)
         )
       )
     );
-    
+
     // Invalidar en memoria
     cacheKeysToInvalidate.forEach(key => memoryCache.delete(key));
-    
+
     console.log(`✅ Cachés invalidados tras eliminar: ${cacheKeysToInvalidate.join(', ')}`);
 
     return NextResponse.json(
