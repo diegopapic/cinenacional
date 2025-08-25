@@ -100,6 +100,7 @@ export async function GET() {
           crew: {
             where: { roleId: 2 }, // Solo Director
             select: {
+              roleId: true,
               person: {
                 select: {
                   firstName: true,
@@ -107,7 +108,7 @@ export async function GET() {
                 }
               }
             },
-            take: 1
+            take: 3 // Tomar hasta 3 directores si hay co-directores
           }
         },
         orderBy: [
@@ -155,6 +156,7 @@ export async function GET() {
           crew: {
             where: { roleId: 2 },
             select: {
+              roleId: true,
               person: {
                 select: {
                   firstName: true,
@@ -162,7 +164,7 @@ export async function GET() {
                 }
               }
             },
-            take: 1
+            take: 3 // Tomar hasta 3 directores si hay co-directores
           }
         },
         orderBy: [
@@ -206,23 +208,19 @@ export async function GET() {
     ]);
 
     // Formatear los datos de manera eficiente
+    // IMPORTANTE: NO eliminar el campo crew, el componente MovieCard lo necesita
     const formattedData = {
       ultimosEstrenos: ultimosEstrenos.map(movie => ({
         ...movie,
-        director: movie.crew[0]?.person ? 
-          `${movie.crew[0].person.firstName || ''} ${movie.crew[0].person.lastName || ''}`.trim() : 
-          null,
-        genres: movie.genres.map(g => g.genre.name),
-        crew: undefined // Eliminar el array crew del resultado
+        // Mantener crew para que MovieCard pueda procesarlo
+        // NO agregar: crew: undefined
+        genres: movie.genres.map(g => g.genre.name)
       })),
       
       proximosEstrenos: proximosEstrenos.map(movie => ({
         ...movie,
-        director: movie.crew[0]?.person ? 
-          `${movie.crew[0].person.firstName || ''} ${movie.crew[0].person.lastName || ''}`.trim() : 
-          null,
-        genres: movie.genres.map(g => g.genre.name),
-        crew: undefined
+        // Mantener crew para que MovieCard pueda procesarlo
+        genres: movie.genres.map(g => g.genre.name)
       })),
       
       ultimasPeliculas,
