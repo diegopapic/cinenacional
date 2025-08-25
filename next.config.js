@@ -35,6 +35,35 @@ const nextConfig = {
     return config;
   },
   productionBrowserSourceMaps: false,
+  
+  // AGREGAR ESTA SECCIÓN PARA RESOLVER EL PROBLEMA DE CSP
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com https://upload-widget.cloudinary.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "img-src 'self' blob: data: https://res.cloudinary.com https://*.cloudinary.com https://images.unsplash.com",
+              "font-src 'self' https://fonts.gstatic.com data:",
+              "connect-src 'self' https://res.cloudinary.com https://api.cloudinary.com https://*.cloudinary.com",
+              "frame-src 'self' https://upload-widget.cloudinary.com",
+              "media-src 'self' https://res.cloudinary.com",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'none'",
+              "upgrade-insecure-requests"
+            ].join('; ')
+          }
+        ]
+      }
+    ]
+  }
 }
 
 module.exports = nextConfig
