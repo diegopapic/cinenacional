@@ -1,0 +1,668 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Performance Report - 24/8/2025, 11:28:07</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
+        h2 { color: #666; margin-top: 30px; }
+        h3 { color: #888; margin-top: 20px; }
+        .metric { display: inline-block; margin: 10px 20px 10px 0; }
+        .metric-label { font-size: 12px; color: #888; text-transform: uppercase; }
+        .metric-value { font-size: 24px; font-weight: bold; color: #333; }
+        .good { color: #4CAF50; }
+        .warning { color: #FF9800; }
+        .bad { color: #F44336; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f8f8; font-weight: 600; position: sticky; top: 0; }
+        tr:hover { background: #f5f5f5; }
+        .recommendation { padding: 10px; margin: 10px 0; border-left: 4px solid; background: #f9f9f9; }
+        .recommendation.HIGH { border-color: #F44336; background: #ffebee; }
+        .recommendation.MEDIUM { border-color: #FF9800; background: #fff3e0; }
+        .recommendation.LOW { border-color: #4CAF50; background: #e8f5e9; }
+        .category-section { margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 5px; }
+        .category-title { font-weight: bold; color: #555; margin-bottom: 10px; }
+        .cache-badge { padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; }
+        .cache-hit { background: #4CAF50; color: white; }
+        .cache-miss { background: #FF9800; color: white; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }
+        .stat-card { background: #f8f8f8; padding: 15px; border-radius: 5px; }
+        .stat-card h4 { margin: 0 0 10px 0; color: #666; font-size: 14px; }
+        .stat-card .value { font-size: 28px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Performance Report - CineNacional</h1>
+        <p>Generated: 24/8/2025, 11:28:07</p>
+        <p>Environment: http://5.161.58.106:3000</p>
+        
+        <h2>📊 Overall Summary</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h4>Endpoints Tested</h4>
+                <div class="value">16</div>
+            </div>
+            <div class="stat-card">
+                <h4>Avg Response Time</h4>
+                <div class="value good">
+                    193ms
+                </div>
+            </div>
+            <div class="stat-card">
+                <h4>Movies Avg Time</h4>
+                <div class="value good">
+                    172ms
+                </div>
+            </div>
+            <div class="stat-card">
+                <h4>People Avg Time</h4>
+                <div class="value good">
+                    183ms
+                </div>
+            </div>
+            <div class="stat-card">
+                <h4>Cache Hit Rate</h4>
+                <div class="value bad">
+                    28%
+                </div>
+            </div>
+            <div class="stat-card">
+                <h4>Fastest Endpoint</h4>
+                <div class="value good" style="font-size: 14px;">API - Locations Search</div>
+            </div>
+        </div>
+        
+        <h2>📈 Endpoint Performance by Category</h2>
+        
+        
+            <div class="category-section">
+                <div class="category-title">
+                    PAGES 
+                    (1 endpoints, avg: 228ms, cache hit: 0%)
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Type</th>
+                            <th>Avg Time</th>
+                            <th>Min</th>
+                            <th>Max</th>
+                            <th>P95</th>
+                            <th>TTFB</th>
+                            <th>Size</th>
+                            <th>Cache Hit</th>
+                            <th>Success</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                            <tr>
+                                <td>
+                                    <strong>HomePage - HTML</strong>
+                                    <span class="bad">★</span>
+                                    <br><small>/</small>
+                                </td>
+                                <td>PAGE</td>
+                                <td class="warning">
+                                    <strong>228ms</strong>
+                                    
+                                </td>
+                                <td>160ms</td>
+                                <td>479ms</td>
+                                <td>479ms</td>
+                                <td>196ms</td>
+                                <td>32.4KB</td>
+                                <td>
+                                    <span class="cache-badge cache-miss">
+                                        0%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+        
+            <div class="category-section">
+                <div class="category-title">
+                    MOVIES 
+                    (6 endpoints, avg: 172ms, cache hit: 47%)
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Type</th>
+                            <th>Avg Time</th>
+                            <th>Min</th>
+                            <th>Max</th>
+                            <th>P95</th>
+                            <th>TTFB</th>
+                            <th>Size</th>
+                            <th>Cache Hit</th>
+                            <th>Success</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                            <tr>
+                                <td>
+                                    <strong>API - Movies List (Current)</strong>
+                                    <span class="bad">★</span>
+                                    <br><small>/api/movies?limit=50</small>
+                                </td>
+                                <td>API</td>
+                                <td class="good">
+                                    <strong>178ms</strong>
+                                    
+                                </td>
+                                <td>165ms</td>
+                                <td>196ms</td>
+                                <td>196ms</td>
+                                <td>176ms</td>
+                                <td>15.1KB</td>
+                                <td>
+                                    <span class="cache-badge cache-miss">
+                                        0%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                            <tr>
+                                <td>
+                                    <strong>API - Home Feed (OPTIMIZED)</strong>
+                                    <span class="bad">★</span>
+                                    <br><small>/api/movies/home-feed</small>
+                                </td>
+                                <td>API</td>
+                                <td class="good">
+                                    <strong>159ms</strong>
+                                    
+                                </td>
+                                <td>156ms</td>
+                                <td>164ms</td>
+                                <td>164ms</td>
+                                <td>159ms</td>
+                                <td>5.8KB</td>
+                                <td>
+                                    <span class="cache-badge cache-hit">
+                                        100%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                            <tr>
+                                <td>
+                                    <strong>API - Single Movie</strong>
+                                    
+                                    <br><small>/api/movies/30</small>
+                                </td>
+                                <td>API</td>
+                                <td class="good">
+                                    <strong>161ms</strong>
+                                    
+                                </td>
+                                <td>157ms</td>
+                                <td>169ms</td>
+                                <td>169ms</td>
+                                <td>159ms</td>
+                                <td>8.0KB</td>
+                                <td>
+                                    <span class="cache-badge cache-hit">
+                                        100%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                            <tr>
+                                <td>
+                                    <strong>API - Movie by Slug</strong>
+                                    
+                                    <br><small>/api/movies/el-secreto-de-sus-ojos</small>
+                                </td>
+                                <td>API</td>
+                                <td class="good">
+                                    <strong>166ms</strong>
+                                    
+                                        <br>
+                                        <small>Cached: 159ms</small>
+                                        <br>
+                                        <small>Uncached: 195ms</small>
+                                    
+                                </td>
+                                <td>158ms</td>
+                                <td>195ms</td>
+                                <td>195ms</td>
+                                <td>165ms</td>
+                                <td>36.6KB</td>
+                                <td>
+                                    <span class="cache-badge cache-hit">
+                                        80%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                            <tr>
+                                <td>
+                                    <strong>Película Page - Popular</strong>
+                                    <span class="bad">★</span>
+                                    <br><small>/peliculas/el-secreto-de-sus-ojos</small>
+                                </td>
+                                <td>PAGE</td>
+                                <td class="good">
+                                    <strong>197ms</strong>
+                                    
+                                </td>
+                                <td>161ms</td>
+                                <td>318ms</td>
+                                <td>318ms</td>
+                                <td>166ms</td>
+                                <td>66.1KB</td>
+                                <td>
+                                    <span class="cache-badge cache-miss">
+                                        0%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                            <tr>
+                                <td>
+                                    <strong>Listado de Películas</strong>
+                                    
+                                    <br><small>/listados/peliculas</small>
+                                </td>
+                                <td>PAGE</td>
+                                <td class="good">
+                                    <strong>171ms</strong>
+                                    
+                                </td>
+                                <td>162ms</td>
+                                <td>188ms</td>
+                                <td>188ms</td>
+                                <td>169ms</td>
+                                <td>49.8KB</td>
+                                <td>
+                                    <span class="cache-badge cache-miss">
+                                        0%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+        
+            <div class="category-section">
+                <div class="category-title">
+                    PEOPLE 
+                    (7 endpoints, avg: 183ms, cache hit: 23%)
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Type</th>
+                            <th>Avg Time</th>
+                            <th>Min</th>
+                            <th>Max</th>
+                            <th>P95</th>
+                            <th>TTFB</th>
+                            <th>Size</th>
+                            <th>Cache Hit</th>
+                            <th>Success</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                            <tr>
+                                <td>
+                                    <strong>API - People List</strong>
+                                    <span class="bad">★</span>
+                                    <br><small>/api/people?limit=20</small>
+                                </td>
+                                <td>API</td>
+                                <td class="warning">
+                                    <strong>289ms</strong>
+                                    
+                                </td>
+                                <td>276ms</td>
+                                <td>311ms</td>
+                                <td>311ms</td>
+                                <td>288ms</td>
+                                <td>12.3KB</td>
+                                <td>
+                                    <span class="cache-badge cache-miss">
+                                        0%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                            <tr>
+                                <td>
+                                    <strong>API - Single Person by ID</strong>
+                                    <span class="bad">★</span>
+                                    <br><small>/api/people/136714</small>
+                                </td>
+                                <td>API</td>
+                                <td class="good">
+                                    <strong>158ms</strong>
+                                    
+                                        <br>
+                                        <small>Cached: 156ms</small>
+                                        <br>
+                                        <small>Uncached: 164ms</small>
+                                    
+                                </td>
+                                <td>154ms</td>
+                                <td>164ms</td>
+                                <td>164ms</td>
+                                <td>158ms</td>
+                                <td>0.7KB</td>
+                                <td>
+                                    <span class="cache-badge cache-hit">
+                                        80%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                            <tr>
+                                <td>
+                                    <strong>API - Person Filmography</strong>
+                                    <span class="bad">★</span>
+                                    <br><small>/api/people/136714/filmography</small>
+                                </td>
+                                <td>API</td>
+                                <td class="good">
+                                    <strong>166ms</strong>
+                                    
+                                        <br>
+                                        <small>Cached: 162ms</small>
+                                        <br>
+                                        <small>Uncached: 185ms</small>
+                                    
+                                </td>
+                                <td>159ms</td>
+                                <td>185ms</td>
+                                <td>185ms</td>
+                                <td>163ms</td>
+                                <td>14.4KB</td>
+                                <td>
+                                    <span class="cache-badge cache-hit">
+                                        80%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                            <tr>
+                                <td>
+                                    <strong>API - People Search</strong>
+                                    
+                                    <br><small>/api/people/search?query=ricardo</small>
+                                </td>
+                                <td>API</td>
+                                <td class="good">
+                                    <strong>158ms</strong>
+                                    
+                                </td>
+                                <td>156ms</td>
+                                <td>159ms</td>
+                                <td>159ms</td>
+                                <td>158ms</td>
+                                <td>0.0KB</td>
+                                <td>
+                                    <span class="cache-badge cache-miss">
+                                        0%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                            <tr>
+                                <td>
+                                    <strong>Persona Page - Popular Actor</strong>
+                                    <span class="bad">★</span>
+                                    <br><small>/personas/ricardo-darin</small>
+                                </td>
+                                <td>PAGE</td>
+                                <td class="good">
+                                    <strong>173ms</strong>
+                                    
+                                </td>
+                                <td>167ms</td>
+                                <td>187ms</td>
+                                <td>187ms</td>
+                                <td>171ms</td>
+                                <td>25.5KB</td>
+                                <td>
+                                    <span class="cache-badge cache-miss">
+                                        0%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                            <tr>
+                                <td>
+                                    <strong>Persona Page - Director</strong>
+                                    
+                                    <br><small>/personas/juan-jose-campanella</small>
+                                </td>
+                                <td>PAGE</td>
+                                <td class="good">
+                                    <strong>176ms</strong>
+                                    
+                                </td>
+                                <td>170ms</td>
+                                <td>183ms</td>
+                                <td>183ms</td>
+                                <td>171ms</td>
+                                <td>25.5KB</td>
+                                <td>
+                                    <span class="cache-badge cache-miss">
+                                        0%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                            <tr>
+                                <td>
+                                    <strong>Listado de Personas</strong>
+                                    
+                                    <br><small>/listados/personas</small>
+                                </td>
+                                <td>PAGE</td>
+                                <td class="good">
+                                    <strong>162ms</strong>
+                                    
+                                </td>
+                                <td>158ms</td>
+                                <td>167ms</td>
+                                <td>167ms</td>
+                                <td>161ms</td>
+                                <td>48.7KB</td>
+                                <td>
+                                    <span class="cache-badge cache-miss">
+                                        0%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+        
+            <div class="category-section">
+                <div class="category-title">
+                    METADATA 
+                    (2 endpoints, avg: 158ms, cache hit: 0%)
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Type</th>
+                            <th>Avg Time</th>
+                            <th>Min</th>
+                            <th>Max</th>
+                            <th>P95</th>
+                            <th>TTFB</th>
+                            <th>Size</th>
+                            <th>Cache Hit</th>
+                            <th>Success</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                            <tr>
+                                <td>
+                                    <strong>API - Genres</strong>
+                                    
+                                    <br><small>/api/genres</small>
+                                </td>
+                                <td>API</td>
+                                <td class="good">
+                                    <strong>160ms</strong>
+                                    
+                                </td>
+                                <td>158ms</td>
+                                <td>164ms</td>
+                                <td>164ms</td>
+                                <td>159ms</td>
+                                <td>3.6KB</td>
+                                <td>
+                                    <span class="cache-badge cache-miss">
+                                        0%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                            <tr>
+                                <td>
+                                    <strong>API - Locations Search</strong>
+                                    
+                                    <br><small>/api/locations/search?query=buenos</small>
+                                </td>
+                                <td>API</td>
+                                <td class="good">
+                                    <strong>155ms</strong>
+                                    
+                                </td>
+                                <td>152ms</td>
+                                <td>157ms</td>
+                                <td>157ms</td>
+                                <td>155ms</td>
+                                <td>0.0KB</td>
+                                <td>
+                                    <span class="cache-badge cache-miss">
+                                        0%
+                                    </span>
+                                </td>
+                                <td class="good">
+                                    100%
+                                </td>
+                            </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+        
+        
+        <h2>⚠️ Recommendations</h2>
+        
+            <p>Found 5 issues to address:</p>
+            
+                <div class="recommendation LOW">
+                    <strong>LOW:</strong> API - Movies List (Current) (movies)<br>
+                    <strong>Issue:</strong> Low cache hit rate (0%)<br>
+                    <strong>Suggestion:</strong> Verify Redis cache is working properly
+                </div>
+            
+                <div class="recommendation LOW">
+                    <strong>LOW:</strong> API - People List (people)<br>
+                    <strong>Issue:</strong> Low cache hit rate (0%)<br>
+                    <strong>Suggestion:</strong> Verify Redis cache is working properly
+                </div>
+            
+                <div class="recommendation LOW">
+                    <strong>LOW:</strong> API - People Search (people)<br>
+                    <strong>Issue:</strong> Low cache hit rate (0%)<br>
+                    <strong>Suggestion:</strong> Verify Redis cache is working properly
+                </div>
+            
+                <div class="recommendation LOW">
+                    <strong>LOW:</strong> API - Genres (metadata)<br>
+                    <strong>Issue:</strong> Low cache hit rate (0%)<br>
+                    <strong>Suggestion:</strong> Verify Redis cache is working properly
+                </div>
+            
+                <div class="recommendation LOW">
+                    <strong>LOW:</strong> API - Locations Search (metadata)<br>
+                    <strong>Issue:</strong> Low cache hit rate (0%)<br>
+                    <strong>Suggestion:</strong> Verify Redis cache is working properly
+                </div>
+            
+            
+        
+        <h2>📊 Cache Performance Analysis</h2>
+        <div class="category-section">
+            <p>Cache implementation is <span class="warning">needs improvement</span> 
+                with an overall hit rate of <strong>27.5%</strong>
+            </p>
+            <ul>
+                <li>APIs with best cache performance benefit from Redis caching</li>
+                <li>Pages without cache headers may need CDN configuration</li>
+                <li>Consider implementing stale-while-revalidate for better UX</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
+  

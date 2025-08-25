@@ -469,7 +469,6 @@ export async function PUT(
               movieId: id,
               personId: item.personId,
               roleId: item.roleId,
-              role: item.role || 'Crew', // Agregar valor por defecto para role
               billingOrder: item.billingOrder || index + 1
             }))
           })
