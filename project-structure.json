@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-25T01:42:35.729Z",
+  "timestamp": "2025-08-25T02:09:03.247Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "ebeb75d8eab821d12a8f4f4400f0ecd2e8ee5cd2",
+  "commit": "53e93ffcf1f28eb3055143f6ac169e450f4655f1",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
@@ -20,6 +20,7 @@
     "color-analysis.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/color-analysis.json",
     "database-structure-meta.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/database-structure-meta.json",
     "database-structure.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/database-structure.txt",
+    "docker-compose.dev.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/docker-compose.dev.yml",
     "docker-compose.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/docker-compose.yml",
     "Dockerfile": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/Dockerfile",
     "docs": {
@@ -134,7 +135,9 @@
       "report-2025-08-25T01-03-57-739Z.html": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/report-2025-08-25T01-03-57-739Z.html",
       "report-2025-08-25T01-03-57-739Z.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/report-2025-08-25T01-03-57-739Z.json",
       "report-2025-08-25T01-06-40-337Z.html": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/report-2025-08-25T01-06-40-337Z.html",
-      "report-2025-08-25T01-06-40-337Z.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/report-2025-08-25T01-06-40-337Z.json"
+      "report-2025-08-25T01-06-40-337Z.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/report-2025-08-25T01-06-40-337Z.json",
+      "report-2025-08-25T01-48-46-981Z.html": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/report-2025-08-25T01-48-46-981Z.html",
+      "report-2025-08-25T01-48-46-981Z.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/report-2025-08-25T01-48-46-981Z.json"
     },
     "postcss.config.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.js",
     "postcss.config.mjs": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.mjs",

@@ -2,55 +2,99 @@
 import { Redis } from 'ioredis';
 
 const getRedisUrl = () => {
+  // Si hay una URL explícita, usarla
   if (process.env.REDIS_URL) {
     return process.env.REDIS_URL;
   }
-  // Fallback para desarrollo local
+  
+  // En desarrollo local, no intentar conectar a Redis por defecto
+  if (process.env.NODE_ENV === 'development') {
+    return null;
+  }
+  
+  // En producción (Docker), usar el hostname del servicio
   return 'redis://redis:6379';
 };
 
 class RedisClient {
   private static instance: Redis | null = null;
+  private static isRedisEnabled: boolean = true;
+  private static connectionAttempted: boolean = false;
   
   static getInstance(): Redis | null {
+    // Si ya intentamos y falló, no reintentar
+    if (this.connectionAttempted && !this.instance) {
+      return null;
+    }
+    
     if (!this.instance) {
+      const redisUrl = getRedisUrl();
+      
+      // Si no hay URL (desarrollo sin Redis), marcar como deshabilitado
+      if (!redisUrl) {
+        this.isRedisEnabled = false;
+        this.connectionAttempted = true;
+        console.log('📌 Redis deshabilitado - usando solo caché en memoria');
+        return null;
+      }
+      
       try {
-        this.instance = new Redis(getRedisUrl(), {
-          maxRetriesPerRequest: 3,
+        this.connectionAttempted = true;
+        this.instance = new Redis(redisUrl, {
+          maxRetriesPerRequest: 1,
+          enableOfflineQueue: false,
           retryStrategy: (times) => {
-            if (times > 3) {
-              console.error('Redis connection failed after 3 retries');
+            if (times > 1) {
+              this.isRedisEnabled = false;
+              console.log('⚠️ Redis no disponible - continuando con caché en memoria');
               return null;
             }
-            return Math.min(times * 200, 2000);
+            return 500;
           },
           lazyConnect: true,
+          connectTimeout: 3000,
         });
 
+        // Solo mostrar errores una vez
+        let errorShown = false;
         this.instance.on('error', (err) => {
-          console.error('Redis Client Error:', err);
+          if (!errorShown) {
+            console.log('⚠️ Redis no disponible - usando caché en memoria');
+            errorShown = true;
+          }
+          this.isRedisEnabled = false;
         });
 
         this.instance.on('connect', () => {
-          console.log('✅ Redis connected successfully');
+          console.log('✅ Redis conectado exitosamente');
+          this.isRedisEnabled = true;
+        });
+
+        // Intentar conectar de forma asíncrona
+        this.instance.connect().catch(() => {
+          this.isRedisEnabled = false;
+          this.instance = null;
         });
 
       } catch (error) {
-        console.error('Failed to create Redis client:', error);
+        this.isRedisEnabled = false;
         this.instance = null;
+        console.log('⚠️ Redis no configurado - usando caché en memoria');
       }
     }
-    return this.instance;
+    
+    return this.isRedisEnabled ? this.instance : null;
   }
 
   static async get(key: string): Promise<string | null> {
+    if (!this.isRedisEnabled) return null;
+    
     const client = this.getInstance();
     if (!client) return null;
     
     try {
       return await client.get(key);
     } catch (error) {
-      console.error('Redis GET error:', error);
       return null;
     }
   }
@@ -60,6 +104,8 @@ class RedisClient {
     value: string, 
     expirationInSeconds?: number
   ): Promise<boolean> {
+    if (!this.isRedisEnabled) return false;
+    
     const client = this.getInstance();
     if (!client) return false;
     
@@ -71,12 +117,13 @@ class RedisClient {
       }
       return true;
     } catch (error) {
-      console.error('Redis SET error:', error);
       return false;
     }
   }
 
   static async del(key: string): Promise<boolean> {
+    if (!this.isRedisEnabled) return false;
+    
     const client = this.getInstance();
     if (!client) return false;
     
@@ -84,12 +131,13 @@ class RedisClient {
       await client.del(key);
       return true;
     } catch (error) {
-      console.error('Redis DEL error:', error);
       return false;
     }
   }
 
   static async flush(): Promise<boolean> {
+    if (!this.isRedisEnabled) return false;
+    
     const client = this.getInstance();
     if (!client) return false;
     
@@ -97,7 +145,6 @@ class RedisClient {
       await client.flushdb();
       return true;
     } catch (error) {
-      console.error('Redis FLUSH error:', error);
       return false;
     }
   }
