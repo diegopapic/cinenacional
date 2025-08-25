@@ -50,6 +50,11 @@
     "size": 0
   },
   {
+    "path": "docker-compose.dev.yml",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/docker-compose.dev.yml",
+    "size": 0
+  },
+  {
     "path": "docker-compose.yml",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/docker-compose.yml",
     "size": 0
@@ -497,6 +502,16 @@
   {
     "path": "performance-reports/report-2025-08-25T01-06-40-337Z.json",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/report-2025-08-25T01-06-40-337Z.json",
+    "size": 0
+  },
+  {
+    "path": "performance-reports/report-2025-08-25T01-48-46-981Z.html",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/report-2025-08-25T01-48-46-981Z.html",
+    "size": 0
+  },
+  {
+    "path": "performance-reports/report-2025-08-25T01-48-46-981Z.json",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/performance-reports/report-2025-08-25T01-48-46-981Z.json",
     "size": 0
   },
   {
