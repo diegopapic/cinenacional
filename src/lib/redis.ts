@@ -6,7 +6,7 @@ const getRedisUrl = () => {
     return process.env.REDIS_URL;
   }
   // Fallback para desarrollo local
-  return 'redis://localhost:6379';
+  return 'redis://redis:6379';
 };
 
 class RedisClient {
