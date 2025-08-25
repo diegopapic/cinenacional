@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: ebff511742a6fdd42257587fb76676976ba2028c
-// Fecha: 2025-08-25T21:08:42.703Z
+// Commit: 668a6304b1315859e5bd55b094fa4c1730ae23af
+// Fecha: 2025-08-25T21:14:16.965Z
 // ============================================
 
 
@@ -29638,17 +29638,9 @@ export const rolesService = {
     if (filters.limit) params.limit = filters.limit.toString();
     
     // AÑADIR ORDENAMIENTO POR DEFECTO POR USOS
-    if (filters.sortBy) {
-      params.sortBy = filters.sortBy;
-    } else {
-      params.sortBy = 'usage'; // Por defecto ordenar por usos
-    }
-    
-    if (filters.sortOrder) {
-      params.sortOrder = filters.sortOrder;
-    } else {
-      params.sortOrder = 'desc'; // Descendente por defecto (más usados primero)
-    }
+    // Removido filters.sortBy y filters.sortOrder porque no existen en RoleFilters
+    params.sortBy = 'usage'; // Por defecto ordenar por usos
+    params.sortOrder = 'desc'; // Descendente por defecto (más usados primero)
 
     return apiClient.get<PaginatedRolesResponse>('/roles', { params });
   },
