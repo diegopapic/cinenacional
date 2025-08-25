@@ -28,17 +28,9 @@ export const rolesService = {
     if (filters.limit) params.limit = filters.limit.toString();
     
     // AÑADIR ORDENAMIENTO POR DEFECTO POR USOS
-    if (filters.sortBy) {
-      params.sortBy = filters.sortBy;
-    } else {
-      params.sortBy = 'usage'; // Por defecto ordenar por usos
-    }
-    
-    if (filters.sortOrder) {
-      params.sortOrder = filters.sortOrder;
-    } else {
-      params.sortOrder = 'desc'; // Descendente por defecto (más usados primero)
-    }
+    // Removido filters.sortBy y filters.sortOrder porque no existen en RoleFilters
+    params.sortBy = 'usage'; // Por defecto ordenar por usos
+    params.sortOrder = 'desc'; // Descendente por defecto (más usados primero)
 
     return apiClient.get<PaginatedRolesResponse>('/roles', { params });
   },
