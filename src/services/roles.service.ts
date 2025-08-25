@@ -26,6 +26,19 @@ export const rolesService = {
     }
     if (filters.page) params.page = filters.page.toString();
     if (filters.limit) params.limit = filters.limit.toString();
+    
+    // AÑADIR ORDENAMIENTO POR DEFECTO POR USOS
+    if (filters.sortBy) {
+      params.sortBy = filters.sortBy;
+    } else {
+      params.sortBy = 'usage'; // Por defecto ordenar por usos
+    }
+    
+    if (filters.sortOrder) {
+      params.sortOrder = filters.sortOrder;
+    } else {
+      params.sortOrder = 'desc'; // Descendente por defecto (más usados primero)
+    }
 
     return apiClient.get<PaginatedRolesResponse>('/roles', { params });
   },
@@ -37,7 +50,9 @@ export const rolesService = {
     const params = {
       department: department,
       isActive: 'true',
-      limit: '100'
+      limit: '100',
+      sortBy: 'usage', // AÑADIR ordenamiento por usos
+      sortOrder: 'desc'
     };
 
     const response = await apiClient.get<PaginatedRolesResponse>('/roles', { params });
@@ -60,7 +75,9 @@ export const rolesService = {
     const params: Record<string, string> = {
       search: query,
       limit: limit.toString(),
-      isActive: 'true'
+      isActive: 'true',
+      sortBy: 'usage', // AÑADIR ordenamiento por usos
+      sortOrder: 'desc'
     };
 
     if (department) params.department = department;
@@ -83,7 +100,9 @@ export const rolesService = {
   async getSimpleList(department?: Department): Promise<Pick<Role, 'id' | 'name' | 'department'>[]> {
     const params: Record<string, string> = {
       isActive: 'true',
-      limit: '200'
+      limit: '200',
+      sortBy: 'usage', // AÑADIR ordenamiento por usos
+      sortOrder: 'desc'
     };
 
     if (department) params.department = department;
