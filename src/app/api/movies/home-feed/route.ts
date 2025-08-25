@@ -11,11 +11,11 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
 export async function GET() {
   const cacheKey = 'home-feed:movies:v2'; // ⚠️ IMPORTANTE: Cambié la versión del cache key para invalidar el caché anterior
-  
+
   try {
     // 1. Intentar obtener de Redis primero
     const redisCached = await RedisClient.get(cacheKey);
-    
+
     if (redisCached) {
       console.log('✅ Cache HIT desde Redis');
       return NextResponse.json(
@@ -34,14 +34,14 @@ export async function GET() {
     const now = Date.now();
     if (memoryCachedData && (now - memoryCacheTime) < CACHE_DURATION) {
       console.log('✅ Cache HIT desde memoria (Redis fallback)');
-      
+
       // Intentar guardar en Redis para próximas requests
       await RedisClient.set(
         cacheKey,
         JSON.stringify(memoryCachedData),
         300 // 5 minutos
       );
-      
+
       return NextResponse.json(memoryCachedData, {
         headers: {
           'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
@@ -53,7 +53,7 @@ export async function GET() {
 
     // 3. Si no hay caché en ningún lado, generar nuevo
     console.log('🔄 Cache MISS - Generando datos desde la base de datos');
-    
+
     const today = new Date();
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth() + 1;
@@ -236,24 +236,24 @@ export async function GET() {
         // NO agregar: crew: undefined
         genres: movie.genres.map(g => g.genre.name)
       })),
-      
+
       proximosEstrenos: proximosEstrenos.map(movie => ({
         ...movie,
         // Mantener crew para que MovieCard pueda procesarlo
         genres: movie.genres.map(g => g.genre.name)
       })),
-      
+
       ultimasPeliculas,
-      
+
       ultimasPersonas: ultimasPersonas.map(person => {
         const { _count, ...personData } = person;
         return {
           ...personData,
-          role: _count.castRoles > _count.crewRoles ? 'Actor/Actriz' : 
-                _count.crewRoles > 0 ? 'Equipo técnico' : 'Profesional del cine'
+          role: _count.castRoles > _count.crewRoles ? 'Actor/Actriz' :
+            _count.crewRoles > 0 ? 'Equipo técnico' : 'Profesional del cine'
         };
       }),
-      
+
       // Agregar timestamp para debugging
       generatedAt: new Date().toISOString()
     };
@@ -265,13 +265,13 @@ export async function GET() {
       JSON.stringify(formattedData),
       300 // 5 minutos en segundos
     );
-    
+
     if (redisSaved) {
       console.log('✅ Datos guardados en Redis');
     } else {
       console.log('⚠️ No se pudo guardar en Redis, usando solo caché en memoria');
     }
-    
+
     // Actualizar caché en memoria como fallback
     memoryCachedData = formattedData;
     memoryCacheTime = now;
@@ -286,7 +286,7 @@ export async function GET() {
 
   } catch (error) {
     console.error('❌ Error fetching home feed:', error);
-    
+
     // Si hay error, intentar servir desde caché en memoria
     if (memoryCachedData) {
       console.log('⚠️ Sirviendo caché viejo desde memoria debido a error');
@@ -298,7 +298,7 @@ export async function GET() {
         }
       });
     }
-    
+
     // Si no hay ningún caché disponible, error 500
     return NextResponse.json(
       { error: 'Error al cargar los datos de la home' },
@@ -315,11 +315,11 @@ export async function DELETE() {
     const deleted2 = await RedisClient.del('home-feed:movies:v2');
     memoryCachedData = null;
     memoryCacheTime = 0;
-    
+
     return NextResponse.json({
       success: true,
       message: 'Caché invalidado exitosamente',
-      redisDeleted: deleted1 + deleted2
+      redisDeleted: { v1: deleted1, v2: deleted2 }
     });
   } catch (error) {
     return NextResponse.json(
