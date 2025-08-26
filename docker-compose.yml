@@ -16,8 +16,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
       - ./init:/docker-entrypoint-initdb.d  # Scripts de inicialización
-    ports:
-      - "5432:5432"
+    # REMOVIDO ports - Solo accesible internamente
+    # ports:
+    #   - "5432:5432"
+    expose:
+      - "5432"
     networks:
       - cinenacional-network
     healthcheck:
@@ -55,8 +58,11 @@ services:
     image: redis:7-alpine
     container_name: cinenacional-redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # REMOVIDO ports - Solo accesible internamente
+    # ports:
+    #   - "6379:6379"
+    expose:
+      - "6379"
     networks:
       - cinenacional-network
     volumes:
@@ -112,8 +118,11 @@ services:
       - DATABASE_URL=postgresql://cinenacional:Paganitzu@postgres:5432/cinenacional?schema=public&connection_limit=50&pool_timeout=10
       - REDIS_URL=redis://redis:6379
       - NODE_ENV=production
-    ports:
-      - "3000:3000"
+    # CAMBIO: ports -> expose
+    # ports:
+    #   - "3000:3000"
+    expose:
+      - "3000"
     networks:
       - cinenacional-network
     volumes:
@@ -137,7 +146,7 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:  # Nuevo volumen para Redis
+  redis_data:
 
 networks:
   cinenacional-network:
