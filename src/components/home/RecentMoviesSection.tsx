@@ -58,7 +58,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
           ))}
         </div>
       )}
-
+{/*
       <div className="mt-6 text-center">
         <Link
           href="/listados/peliculas?sort=createdAt"
@@ -67,6 +67,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
           Ver más películas recientes
         </Link>
       </div>
+      */}
     </section>
   );
 }

@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-26T18:31:04.564Z",
+  "timestamp": "2025-08-26T18:47:46.957Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "37a2fc117792290c725a8e553febdbb4aed82b4a",
+  "commit": "b894c8b23d799787def0360d22aea909c4b24799",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",

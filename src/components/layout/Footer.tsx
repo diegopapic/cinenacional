@@ -7,33 +7,33 @@ import { FaInstagram, FaFacebook, FaYoutube } from 'react-icons/fa'
 export default function Footer() {
   const currentYear = new Date().getFullYear()
 
-  const footerLinks = {
-    explore: [
-      { href: '/peliculas', label: 'Todas las Películas' },
-      { href: '/personas', label: 'Directores y Actores' },
-      { href: '/generos', label: 'Explorar por Género' },
-      { href: '/anos', label: 'Películas por Año' },
-    ],
-    about: [
-      { href: '/sobre-nosotros', label: 'Sobre CineNacional' },
-      { href: '/contacto', label: 'Contacto' },
-      { href: '/api', label: 'API para Desarrolladores' },
-      { href: '/colaborar', label: 'Cómo Colaborar' },
-    ],
-    legal: [
-      { href: '/terminos', label: 'Términos de Uso' },
-      { href: '/privacidad', label: 'Política de Privacidad' },
-      { href: '/copyright', label: 'Derechos de Autor' },
-    ],
-  }
+  // const footerLinks = {
+  //   explore: [
+  //     { href: '/peliculas', label: 'Todas las Películas' },
+  //     { href: '/personas', label: 'Directores y Actores' },
+  //     { href: '/generos', label: 'Explorar por Género' },
+  //     { href: '/anos', label: 'Películas por Año' },
+  //   ],
+  //   about: [
+  //     { href: '/sobre-nosotros', label: 'Sobre CineNacional' },
+  //     { href: '/contacto', label: 'Contacto' },
+  //     { href: '/api', label: 'API para Desarrolladores' },
+  //     { href: '/colaborar', label: 'Cómo Colaborar' },
+  //   ],
+  //   legal: [
+  //     { href: '/terminos', label: 'Términos de Uso' },
+  //     { href: '/privacidad', label: 'Política de Privacidad' },
+  //     { href: '/copyright', label: 'Derechos de Autor' },
+  //   ],
+  // }
 
   return (
     <footer className="bg-zinc-900 border-t border-zinc-800 mt-auto">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand Section */}
-          <div className="col-span-1">
-            <Link href="/" className="flex items-center space-x-2 text-white mb-4">
+          <div className="col-span-1 md:col-span-4 text-center md:text-left">
+            <Link href="/" className="flex items-center space-x-2 text-white mb-4 justify-center md:justify-start">
               <Image
                 src="/logo.svg"
                 alt="cinenacional.com"
@@ -46,7 +46,7 @@ export default function Footer() {
             <p className="text-gray-400 text-sm mb-4">
               La base de datos más completa del cine argentino.
             </p>
-            <div className="flex space-x-4">
+            <div className="flex space-x-4 justify-center md:justify-start">
               <a href="https://x.com/cinenacional" className="text-gray-400 hover:text-white transition-colors">
                 <X className="w-5 h-5" />
               </a>
@@ -60,7 +60,7 @@ export default function Footer() {
           </div>
 
           {/* Explore Links */}
-          <div>
+          {/* <div>
             <h3 className="text-white font-semibold mb-4">Explorar</h3>
             <ul className="space-y-2">
               {footerLinks.explore.map((link) => (
@@ -71,10 +71,10 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
 
           {/* About Links */}
-          <div>
+          {/* <div>
             <h3 className="text-white font-semibold mb-4">Información</h3>
             <ul className="space-y-2">
               {footerLinks.about.map((link) => (
@@ -85,10 +85,10 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
 
           {/* Legal Links */}
-          <div>
+          {/* <div>
             <h3 className="text-white font-semibold mb-4">Legal</h3>
             <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
@@ -99,7 +99,7 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
         </div>
 
         {/* Bottom Bar */}
