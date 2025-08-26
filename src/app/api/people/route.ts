@@ -11,118 +11,322 @@ export async function GET(request: NextRequest) {
     const gender = searchParams.get('gender');
     const isActive = searchParams.get('isActive');
     const hasLinks = searchParams.get('hasLinks');
-
-    // NUEVO: Parámetros para obituarios y ordenamiento
     const hasDeathDate = searchParams.get('hasDeathDate');
     const sortBy = searchParams.get('sortBy') || 'last_name';
     const sortOrder = searchParams.get('sortOrder') || 'asc';
-
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
-    // NUEVO: Si es una búsqueda para autocomplete (limit <= 10) y hay search term
-    // usar raw SQL para búsqueda concatenada
-    if (search && limit <= 10) {
+    // BÚSQUEDA MEJORADA
+    if (search && search.trim().length > 0) {
       const searchQuery = search.toLowerCase().trim();
+      
+      // Para búsquedas de autocomplete (limit <= 10)
+      if (limit <= 10) {
+        try {
+          // Intentar primero con unaccent
+          const searchPattern = `%${searchQuery}%`;
+          const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0);
+          
+          let people: any[] = [];
+          
+          if (searchTerms.length === 1) {
+            // Búsqueda simple con un término
+            people = await prisma.$queryRaw`
+              SELECT 
+                id,
+                slug,
+                first_name,
+                last_name,
+                real_name,
+                photo_url
+              FROM people
+              WHERE (
+                LOWER(unaccent(first_name)) LIKE ${searchPattern}
+                OR LOWER(unaccent(last_name)) LIKE ${searchPattern}
+                OR LOWER(unaccent(real_name)) LIKE ${searchPattern}
+                OR LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE ${searchPattern}
+              )
+              ${isActive !== null && isActive !== '' 
+                ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
+                : prisma.Prisma.empty
+              }
+              ORDER BY 
+                CASE 
+                  WHEN LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) = ${searchQuery} THEN 1
+                  WHEN LOWER(unaccent(first_name)) = ${searchQuery} OR LOWER(unaccent(last_name)) = ${searchQuery} THEN 2
+                  WHEN LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE ${searchQuery + '%'} THEN 3
+                  ELSE 4
+                END,
+                last_name ASC NULLS LAST,
+                first_name ASC NULLS LAST
+              LIMIT ${limit}
+            `;
+          } else {
+            // Búsqueda con múltiples términos
+            const firstTerm = `%${searchTerms[0]}%`;
+            const secondTerm = searchTerms.length > 1 ? `%${searchTerms[1]}%` : '';
+            const thirdTerm = searchTerms.length > 2 ? `%${searchTerms[2]}%` : '';
+            
+            // Query para múltiples términos
+            if (searchTerms.length === 2) {
+              people = await prisma.$queryRaw`
+                SELECT 
+                  id,
+                  slug,
+                  first_name,
+                  last_name,
+                  real_name,
+                  photo_url
+                FROM people
+                WHERE (
+                  -- Búsqueda de la frase completa
+                  LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE ${searchPattern}
+                  OR LOWER(unaccent(COALESCE(last_name, '') || ' ' || COALESCE(first_name, ''))) LIKE ${searchPattern}
+                  OR LOWER(unaccent(real_name)) LIKE ${searchPattern}
+                  -- O que contenga ambos términos en cualquier orden
+                  OR (
+                    (LOWER(unaccent(COALESCE(first_name, ''))) LIKE ${firstTerm} 
+                     OR LOWER(unaccent(COALESCE(last_name, ''))) LIKE ${firstTerm}
+                     OR LOWER(unaccent(COALESCE(real_name, ''))) LIKE ${firstTerm})
+                    AND
+                    (LOWER(unaccent(COALESCE(first_name, ''))) LIKE ${secondTerm}
+                     OR LOWER(unaccent(COALESCE(last_name, ''))) LIKE ${secondTerm}
+                     OR LOWER(unaccent(COALESCE(real_name, ''))) LIKE ${secondTerm})
+                  )
+                )
+                ${isActive !== null && isActive !== '' 
+                  ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
+                  : prisma.Prisma.empty
+                }
+                ORDER BY 
+                  CASE 
+                    WHEN LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) = ${searchQuery} THEN 1
+                    WHEN LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE ${searchQuery + '%'} THEN 2
+                    ELSE 3
+                  END,
+                  last_name ASC NULLS LAST,
+                  first_name ASC NULLS LAST
+                LIMIT ${limit}
+              `;
+            } else {
+              // Para 3 o más términos
+              people = await prisma.$queryRaw`
+                SELECT 
+                  id,
+                  slug,
+                  first_name,
+                  last_name,
+                  real_name,
+                  photo_url
+                FROM people
+                WHERE (
+                  LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE ${searchPattern}
+                  OR LOWER(unaccent(COALESCE(last_name, '') || ' ' || COALESCE(first_name, ''))) LIKE ${searchPattern}
+                  OR LOWER(unaccent(real_name)) LIKE ${searchPattern}
+                )
+                ${isActive !== null && isActive !== '' 
+                  ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
+                  : prisma.Prisma.empty
+                }
+                ORDER BY 
+                  last_name ASC NULLS LAST,
+                  first_name ASC NULLS LAST
+                LIMIT ${limit}
+              `;
+            }
+          }
 
-      // Debug log
-      console.log('Search query:', searchQuery);
-      console.log('Limit:', limit);
-      console.log('isActive param:', isActive);
+          const formattedPeople = people.map(person => ({
+            id: person.id,
+            slug: person.slug,
+            name: [person.first_name, person.last_name].filter(Boolean).join(' ') || person.real_name || 'Sin nombre',
+            firstName: person.first_name,
+            lastName: person.last_name,
+            photoUrl: person.photo_url
+          }));
 
-      try {
-        // Simplificar la query para ver si el problema es con isActive
-        const people = await prisma.$queryRaw<Array<{
-          id: number;
-          slug: string;
-          first_name: string | null;
-          last_name: string | null;
-          real_name: string | null;
-          photo_url: string | null;
-        }>>`
-          SELECT 
-            id,
-            slug,
-            "first_name",
-            "last_name",
-            "real_name",
-            "photo_url"
-          FROM people
-          WHERE 
-            (
-              -- Búsqueda en campos individuales
-              LOWER("first_name") LIKE ${`%${searchQuery}%`}
-              OR LOWER("last_name") LIKE ${`%${searchQuery}%`}
-              OR LOWER("real_name") LIKE ${`%${searchQuery}%`}
-              -- BÚSQUEDA CONCATENADA con || (operador de PostgreSQL)
-              OR LOWER(COALESCE("first_name", '') || ' ' || COALESCE("last_name", '')) LIKE ${`%${searchQuery}%`}
-              -- También buscar last_name, first_name por si buscan al revés
-              OR LOWER(COALESCE("last_name", '') || ' ' || COALESCE("first_name", '')) LIKE ${`%${searchQuery}%`}
-            )
-          ORDER BY 
-            -- Priorizar coincidencias exactas
-            CASE 
-              WHEN LOWER(COALESCE("first_name", '') || ' ' || COALESCE("last_name", '')) = ${searchQuery} THEN 1
-              WHEN LOWER("first_name") = ${searchQuery} OR LOWER("last_name") = ${searchQuery} THEN 2
-              WHEN LOWER(COALESCE("first_name", '') || ' ' || COALESCE("last_name", '')) LIKE ${`${searchQuery}%`} THEN 3
-              ELSE 4
-            END,
-            "last_name",
-            "first_name"
-          LIMIT ${limit}
-        `;
+          return NextResponse.json(formattedPeople);
 
-        console.log('Found people:', people.length);
-        console.log('First person raw data:', people[0]);
+        } catch (sqlError: any) {
+          console.error('SQL Error with unaccent:', sqlError);
+          
+          // Fallback sin unaccent
+          try {
+            const searchPattern = `%${searchQuery}%`;
+            const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0);
+            
+            let people: any[] = [];
+            
+            if (searchTerms.length === 1) {
+              people = await prisma.$queryRaw`
+                SELECT 
+                  id,
+                  slug,
+                  first_name,
+                  last_name,
+                  real_name,
+                  photo_url
+                FROM people
+                WHERE (
+                  LOWER(first_name) LIKE ${searchPattern}
+                  OR LOWER(last_name) LIKE ${searchPattern}
+                  OR LOWER(real_name) LIKE ${searchPattern}
+                  OR LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchPattern}
+                )
+                ${isActive !== null && isActive !== '' 
+                  ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
+                  : prisma.Prisma.empty
+                }
+                ORDER BY 
+                  CASE 
+                    WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) = ${searchQuery} THEN 1
+                    WHEN LOWER(first_name) = ${searchQuery} OR LOWER(last_name) = ${searchQuery} THEN 2
+                    WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchQuery + '%'} THEN 3
+                    ELSE 4
+                  END,
+                  last_name ASC NULLS LAST,
+                  first_name ASC NULLS LAST
+                LIMIT ${limit}
+              `;
+            } else {
+              const firstTerm = `%${searchTerms[0]}%`;
+              const secondTerm = searchTerms.length > 1 ? `%${searchTerms[1]}%` : '';
+              
+              if (searchTerms.length === 2) {
+                people = await prisma.$queryRaw`
+                  SELECT 
+                    id,
+                    slug,
+                    first_name,
+                    last_name,
+                    real_name,
+                    photo_url
+                  FROM people
+                  WHERE (
+                    LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchPattern}
+                    OR LOWER(COALESCE(last_name, '') || ' ' || COALESCE(first_name, '')) LIKE ${searchPattern}
+                    OR LOWER(real_name) LIKE ${searchPattern}
+                    OR (
+                      (LOWER(COALESCE(first_name, '')) LIKE ${firstTerm} 
+                       OR LOWER(COALESCE(last_name, '')) LIKE ${firstTerm}
+                       OR LOWER(COALESCE(real_name, '')) LIKE ${firstTerm})
+                      AND
+                      (LOWER(COALESCE(first_name, '')) LIKE ${secondTerm}
+                       OR LOWER(COALESCE(last_name, '')) LIKE ${secondTerm}
+                       OR LOWER(COALESCE(real_name, '')) LIKE ${secondTerm})
+                    )
+                  )
+                  ${isActive !== null && isActive !== '' 
+                    ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
+                    : prisma.Prisma.empty
+                  }
+                  ORDER BY 
+                    CASE 
+                      WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) = ${searchQuery} THEN 1
+                      WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchQuery + '%'} THEN 2
+                      ELSE 3
+                    END,
+                    last_name ASC NULLS LAST,
+                    first_name ASC NULLS LAST
+                  LIMIT ${limit}
+                `;
+              } else {
+                people = await prisma.$queryRaw`
+                  SELECT 
+                    id,
+                    slug,
+                    first_name,
+                    last_name,
+                    real_name,
+                    photo_url
+                  FROM people
+                  WHERE (
+                    LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchPattern}
+                    OR LOWER(COALESCE(last_name, '') || ' ' || COALESCE(first_name, '')) LIKE ${searchPattern}
+                    OR LOWER(real_name) LIKE ${searchPattern}
+                  )
+                  ${isActive !== null && isActive !== '' 
+                    ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
+                    : prisma.Prisma.empty
+                  }
+                  ORDER BY 
+                    last_name ASC NULLS LAST,
+                    first_name ASC NULLS LAST
+                  LIMIT ${limit}
+                `;
+              }
+            }
 
-        // Formatear respuesta para autocomplete
-        const formattedPeople = people.map(person => ({
-          id: person.id,
-          slug: person.slug,
-          name: [person.first_name, person.last_name].filter(Boolean).join(' ') || person.real_name || 'Sin nombre',
-          firstName: person.first_name,
-          lastName: person.last_name,
-          photoUrl: person.photo_url
-        }));
-        console.log('First person formatted:', formattedPeople[0]);
-        console.log('Searching for "miguel k" should find:', formattedPeople.filter(p =>
-          p.name.toLowerCase().includes('miguel') && p.name.toLowerCase().includes('k')
-        ));
-        // Para búsquedas de autocomplete, retornar array simple
-        return NextResponse.json(formattedPeople);
+            const formattedPeople = people.map(person => ({
+              id: person.id,
+              slug: person.slug,
+              name: [person.first_name, person.last_name].filter(Boolean).join(' ') || person.real_name || 'Sin nombre',
+              firstName: person.first_name,
+              lastName: person.last_name,
+              photoUrl: person.photo_url
+            }));
 
-      } catch (sqlError) {
-        console.error('SQL Error:', sqlError);
-        // Si falla el SQL, intentar con Prisma normal
-        const people = await prisma.person.findMany({
-          where: {
-            OR: [
-              { firstName: { contains: search, mode: 'insensitive' } },
-              { lastName: { contains: search, mode: 'insensitive' } },
-              { realName: { contains: search, mode: 'insensitive' } },
-            ]
-          },
-          select: {
-            id: true,
-            slug: true,
-            firstName: true,
-            lastName: true,
-            realName: true,
-            photoUrl: true
-          },
-          take: limit
-        });
+            return NextResponse.json(formattedPeople);
+            
+          } catch (fallbackError) {
+            console.error('Fallback SQL Error:', fallbackError);
+            
+            // Último fallback con Prisma ORM
+            const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0);
+            
+            const where: any = {};
+            
+            if (searchTerms.length === 1) {
+              where.OR = [
+                { firstName: { contains: search, mode: 'insensitive' } },
+                { lastName: { contains: search, mode: 'insensitive' } },
+                { realName: { contains: search, mode: 'insensitive' } },
+              ];
+            } else {
+              // Para múltiples términos, buscar que ambos estén presentes
+              where.AND = searchTerms.map(term => ({
+                OR: [
+                  { firstName: { contains: term, mode: 'insensitive' } },
+                  { lastName: { contains: term, mode: 'insensitive' } },
+                  { realName: { contains: term, mode: 'insensitive' } }
+                ]
+              }));
+            }
+            
+            if (isActive !== null && isActive !== '') {
+              where.isActive = isActive === 'true';
+            }
+            
+            const people = await prisma.person.findMany({
+              where,
+              select: {
+                id: true,
+                slug: true,
+                firstName: true,
+                lastName: true,
+                realName: true,
+                photoUrl: true
+              },
+              take: limit,
+              orderBy: [
+                { lastName: 'asc' },
+                { firstName: 'asc' }
+              ]
+            });
 
-        const formattedPeople = people.map(person => ({
-          id: person.id,
-          slug: person.slug,
-          name: [person.firstName, person.lastName].filter(Boolean).join(' ') || person.realName || 'Sin nombre',
-          firstName: person.firstName,
-          lastName: person.lastName,
-          photoUrl: person.photoUrl
-        }));
+            const formattedPeople = people.map(person => ({
+              id: person.id,
+              slug: person.slug,
+              name: [person.firstName, person.lastName].filter(Boolean).join(' ') || person.realName || 'Sin nombre',
+              firstName: person.firstName,
+              lastName: person.lastName,
+              photoUrl: person.photoUrl
+            }));
 
-        return NextResponse.json(formattedPeople);
+            return NextResponse.json(formattedPeople);
+          }
+        }
       }
     }
 
@@ -130,44 +334,40 @@ export async function GET(request: NextRequest) {
     const where: any = {};
 
     if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { realName: { contains: search, mode: 'insensitive' } },
-      ];
+      const searchTerms = search.trim().split(/\s+/).filter(term => term.length > 0);
+      
+      if (searchTerms.length === 1) {
+        where.OR = [
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { realName: { contains: search, mode: 'insensitive' } },
+        ];
+      } else {
+        // Para múltiples términos en listado paginado
+        where.AND = searchTerms.map(term => ({
+          OR: [
+            { firstName: { contains: term, mode: 'insensitive' } },
+            { lastName: { contains: term, mode: 'insensitive' } },
+            { realName: { contains: term, mode: 'insensitive' } }
+          ]
+        }));
+      }
     }
 
-    if (gender) {
-      where.gender = gender;
-    }
+    if (gender) where.gender = gender;
+    if (isActive !== null && isActive !== '') where.isActive = isActive === 'true';
+    if (hasLinks !== null && hasLinks !== '') where.hasLinks = hasLinks === 'true';
+    if (hasDeathDate === 'true') where.deathYear = { not: null };
+    else if (hasDeathDate === 'false') where.deathYear = null;
 
-    if (isActive !== null && isActive !== '') {
-      where.isActive = isActive === 'true';
-    }
-
-    if (hasLinks !== null && hasLinks !== '') {
-      where.hasLinks = hasLinks === 'true';
-    }
-
-    // NUEVO: Filtro para personas con fecha de muerte
-    if (hasDeathDate === 'true') {
-      where.deathYear = { not: null };
-    } else if (hasDeathDate === 'false') {
-      where.deathYear = null;
-    }
-
-    // Construir orderBy dinámicamente
     let orderBy: any = {};
-
     if (sortBy === 'deathDate') {
-      // Ordenar por fecha de muerte (año, mes, día)
       orderBy = [
         { deathYear: sortOrder },
         { deathMonth: sortOrder },
         { deathDay: sortOrder }
       ];
     } else if (sortBy === 'birthDate') {
-      // Ordenar por fecha de nacimiento (año, mes, día)
       orderBy = [
         { birthYear: sortOrder },
         { birthMonth: sortOrder },
@@ -178,23 +378,19 @@ export async function GET(request: NextRequest) {
     } else if (sortBy === 'updatedAt') {
       orderBy = { updatedAt: sortOrder };
     } else if (sortBy === 'name') {
-      // Ordenar por apellido y nombre
       orderBy = [
         { lastName: sortOrder },
         { firstName: sortOrder }
       ];
     } else {
-      // Default: ordenar por apellido y nombre
       orderBy = [
         { lastName: 'asc' },
         { firstName: 'asc' }
       ];
     }
 
-    // Obtener total para paginación
     const totalCount = await prisma.person.count({ where });
 
-    // Obtener personas con paginación
     const people = await prisma.person.findMany({
       where,
       include: {

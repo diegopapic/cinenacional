@@ -1,6 +1,7 @@
 // src/hooks/usePeople.ts
+// src/hooks/usePeople.ts
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { peopleService } from '@/services/people.service';
 import { 
@@ -27,6 +28,9 @@ export function usePeople(options: UsePeopleOptions = {}) {
   const [totalPages, setTotalPages] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   
+  // Referencia para el AbortController
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
   // Filtros
   const [filters, setFilters] = useState<PersonFilters>({
     page: PEOPLE_PAGINATION.DEFAULT_PAGE,
@@ -34,38 +38,78 @@ export function usePeople(options: UsePeopleOptions = {}) {
     ...initialFilters,
   });
   
-  // Debounce para búsqueda
-  const debouncedSearch = useDebounce(filters.search || '', 300);
+  // Debounce para búsqueda - aumentamos a 400ms para dar más tiempo cuando se escribe rápido
+  const debouncedSearch = useDebounce(filters.search || '', 400);
 
-  // Cargar personas
+  // Cargar personas con cancelación de requests anteriores
   const loadPeople = useCallback(async () => {
     try {
+      // Cancelar request anterior si existe
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // Crear nuevo AbortController
+      abortControllerRef.current = new AbortController();
+      
       setLoading(true);
       setError(null);
       
       const response = await peopleService.getAll({
         ...filters,
         search: debouncedSearch,
-      });
+      }, abortControllerRef.current.signal); // Pasar el signal al servicio
       
-      setPeople(response.data);
-      setTotalCount(response.totalCount);
-      setTotalPages(response.totalPages);
-      setHasMore(response.hasMore);
-    } catch (err) {
+      // Solo actualizar el estado si no fue cancelado
+      if (!abortControllerRef.current.signal.aborted) {
+        setPeople(response.data);
+        setTotalCount(response.totalCount);
+        setTotalPages(response.totalPages);
+        setHasMore(response.hasMore);
+      }
+    } catch (err: any) {
+      // Ignorar errores de cancelación
+      if (err?.name === 'AbortError') {
+        console.log('Request cancelado');
+        return;
+      }
+      
       console.error('Error loading people:', err);
       setError(err as Error);
-      toast.error('No se pudieron cargar las personas');
+      
+      // Solo mostrar toast si no es un error de cancelación
+      if (!abortControllerRef.current?.signal.aborted) {
+        toast.error('No se pudieron cargar las personas');
+      }
     } finally {
-      setLoading(false);
+      // Solo quitar loading si no fue cancelado
+      if (!abortControllerRef.current?.signal.aborted) {
+        setLoading(false);
+      }
     }
   }, [filters, debouncedSearch]);
+
+  // Cleanup al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Efecto para cargar personas
   useEffect(() => {
     if (autoLoad) {
       loadPeople();
     }
+    
+    // Cleanup al cambiar los filtros
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [loadPeople, autoLoad]);
 
   // Actualizar un filtro específico
@@ -81,17 +125,15 @@ export function usePeople(options: UsePeopleOptions = {}) {
     }));
   }, []);
 
-  // Actualizar múltiples filtros
+  // Resto del código permanece igual...
   const updateFilters = useCallback((newFilters: Partial<PersonFilters>) => {
     setFilters(prev => ({
       ...prev,
       ...newFilters,
-      // Resetear a página 1 si no se está cambiando la página
       ...(!newFilters.page && { page: 1 }),
     }));
   }, []);
 
-  // Resetear filtros
   const resetFilters = useCallback(() => {
     setFilters({
       page: PEOPLE_PAGINATION.DEFAULT_PAGE,
@@ -99,39 +141,28 @@ export function usePeople(options: UsePeopleOptions = {}) {
     });
   }, []);
 
-  // Cambiar página
   const goToPage = useCallback((page: number) => {
     updateFilter('page', page);
   }, [updateFilter]);
 
-  // Eliminar persona
   const deletePerson = useCallback(async (id: number) => {
     try {
       await peopleService.delete(id);
-      
       toast.success('Persona eliminada correctamente');
-      
-      // Recargar lista después de eliminar
       await loadPeople();
     } catch (err) {
       console.error('Error deleting person:', err);
-      
       const errorMessage = err instanceof Error 
         ? err.message 
         : 'Error al eliminar persona';
-      
       toast.error(errorMessage);
-      
       throw err;
     }
   }, [loadPeople]);
 
-  // Exportar a CSV
   const exportToCSV = useCallback(async () => {
     try {
       const blob = await peopleService.exportToCSV(filters);
-      
-      // Crear enlace de descarga
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -140,7 +171,6 @@ export function usePeople(options: UsePeopleOptions = {}) {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
       toast.success('Archivo CSV descargado correctamente');
     } catch (err) {
       console.error('Error exporting to CSV:', err);
@@ -149,20 +179,15 @@ export function usePeople(options: UsePeopleOptions = {}) {
   }, [filters]);
 
   return {
-    // Datos
     people,
     totalCount,
     totalPages,
     hasMore,
     currentPage: filters.page || 1,
     pageSize: filters.limit || PEOPLE_PAGINATION.DEFAULT_LIMIT,
-    
-    // Estado
     loading,
     error,
     filters,
-    
-    // Acciones
     loadPeople,
     updateFilter,
     updateFilters,
@@ -170,8 +195,6 @@ export function usePeople(options: UsePeopleOptions = {}) {
     goToPage,
     deletePerson,
     exportToCSV,
-    
-    // Navegación
     goToNextPage: () => goToPage((filters.page || 1) + 1),
     goToPreviousPage: () => goToPage(Math.max(1, (filters.page || 1) - 1)),
     canGoNext: hasMore,
@@ -179,21 +202,23 @@ export function usePeople(options: UsePeopleOptions = {}) {
   };
 }
 
+// Los otros hooks (usePeopleSearch y usePerson) permanecen igual...
+
 // Hook para búsqueda simple (autocomplete)
 export function usePeopleSearch() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Array<{ id: number; name: string; slug?: string }>>([]);
   const [loading, setLoading] = useState(false);
-  
+
   const debouncedQuery = useDebounce(query, 300);
-  
+
   useEffect(() => {
     const searchPeople = async () => {
       if (debouncedQuery.length < 2) {
         setResults([]);
         return;
       }
-      
+
       try {
         setLoading(true);
         const data = await peopleService.search(debouncedQuery);
@@ -205,10 +230,10 @@ export function usePeopleSearch() {
         setLoading(false);
       }
     };
-    
+
     searchPeople();
   }, [debouncedQuery]);
-  
+
   return {
     query,
     setQuery,
@@ -250,7 +275,7 @@ export function usePerson(id: number | string | null) {
 
   const reload = useCallback(async () => {
     if (!id || id === 'new') return;
-    
+
     try {
       setLoading(true);
       const personId = typeof id === 'string' ? parseInt(id) : id;
