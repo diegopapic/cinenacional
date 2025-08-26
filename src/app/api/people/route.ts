@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { generatePersonSlug } from '@/lib/people/peopleUtils';
 
 export async function GET(request: NextRequest) {
@@ -48,8 +49,8 @@ export async function GET(request: NextRequest) {
                 OR LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE ${searchPattern}
               )
               ${isActive !== null && isActive !== '' 
-                ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
-                : prisma.Prisma.empty
+                ? Prisma.sql`AND is_active = ${isActive === 'true'}`
+                : Prisma.empty
               }
               ORDER BY 
                 CASE 
@@ -96,8 +97,8 @@ export async function GET(request: NextRequest) {
                   )
                 )
                 ${isActive !== null && isActive !== '' 
-                  ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
-                  : prisma.Prisma.empty
+                  ? Prisma.sql`AND is_active = ${isActive === 'true'}`
+                  : Prisma.empty
                 }
                 ORDER BY 
                   CASE 
@@ -126,8 +127,8 @@ export async function GET(request: NextRequest) {
                   OR LOWER(unaccent(real_name)) LIKE ${searchPattern}
                 )
                 ${isActive !== null && isActive !== '' 
-                  ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
-                  : prisma.Prisma.empty
+                  ? Prisma.sql`AND is_active = ${isActive === 'true'}`
+                  : Prisma.empty
                 }
                 ORDER BY 
                   last_name ASC NULLS LAST,
@@ -175,8 +176,8 @@ export async function GET(request: NextRequest) {
                   OR LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchPattern}
                 )
                 ${isActive !== null && isActive !== '' 
-                  ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
-                  : prisma.Prisma.empty
+                  ? Prisma.sql`AND is_active = ${isActive === 'true'}`
+                  : Prisma.empty
                 }
                 ORDER BY 
                   CASE 
@@ -218,8 +219,8 @@ export async function GET(request: NextRequest) {
                     )
                   )
                   ${isActive !== null && isActive !== '' 
-                    ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
-                    : prisma.Prisma.empty
+                    ? Prisma.sql`AND is_active = ${isActive === 'true'}`
+                    : Prisma.empty
                   }
                   ORDER BY 
                     CASE 
@@ -247,8 +248,8 @@ export async function GET(request: NextRequest) {
                     OR LOWER(real_name) LIKE ${searchPattern}
                   )
                   ${isActive !== null && isActive !== '' 
-                    ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
-                    : prisma.Prisma.empty
+                    ? Prisma.sql`AND is_active = ${isActive === 'true'}`
+                    : Prisma.empty
                   }
                   ORDER BY 
                     last_name ASC NULLS LAST,
