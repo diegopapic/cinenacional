@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: ec9e93c55ab4aca0775e51710a9fc8cea91fd949
-// Fecha: 2025-08-26T03:06:55.535Z
+// Commit: b7c3aea0cb866fdfd896dc034854c5e709a70180
+// Fecha: 2025-08-26T18:04:29.756Z
 // ============================================
 
 
@@ -7950,118 +7950,322 @@ export async function GET(request: NextRequest) {
     const gender = searchParams.get('gender');
     const isActive = searchParams.get('isActive');
     const hasLinks = searchParams.get('hasLinks');
-
-    // NUEVO: Parámetros para obituarios y ordenamiento
     const hasDeathDate = searchParams.get('hasDeathDate');
     const sortBy = searchParams.get('sortBy') || 'last_name';
     const sortOrder = searchParams.get('sortOrder') || 'asc';
-
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
-    // NUEVO: Si es una búsqueda para autocomplete (limit <= 10) y hay search term
-    // usar raw SQL para búsqueda concatenada
-    if (search && limit <= 10) {
+    // BÚSQUEDA MEJORADA
+    if (search && search.trim().length > 0) {
       const searchQuery = search.toLowerCase().trim();
+      
+      // Para búsquedas de autocomplete (limit <= 10)
+      if (limit <= 10) {
+        try {
+          // Intentar primero con unaccent
+          const searchPattern = `%${searchQuery}%`;
+          const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0);
+          
+          let people: any[] = [];
+          
+          if (searchTerms.length === 1) {
+            // Búsqueda simple con un término
+            people = await prisma.$queryRaw`
+              SELECT 
+                id,
+                slug,
+                first_name,
+                last_name,
+                real_name,
+                photo_url
+              FROM people
+              WHERE (
+                LOWER(unaccent(first_name)) LIKE ${searchPattern}
+                OR LOWER(unaccent(last_name)) LIKE ${searchPattern}
+                OR LOWER(unaccent(real_name)) LIKE ${searchPattern}
+                OR LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE ${searchPattern}
+              )
+              ${isActive !== null && isActive !== '' 
+                ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
+                : prisma.Prisma.empty
+              }
+              ORDER BY 
+                CASE 
+                  WHEN LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) = ${searchQuery} THEN 1
+                  WHEN LOWER(unaccent(first_name)) = ${searchQuery} OR LOWER(unaccent(last_name)) = ${searchQuery} THEN 2
+                  WHEN LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE ${searchQuery + '%'} THEN 3
+                  ELSE 4
+                END,
+                last_name ASC NULLS LAST,
+                first_name ASC NULLS LAST
+              LIMIT ${limit}
+            `;
+          } else {
+            // Búsqueda con múltiples términos
+            const firstTerm = `%${searchTerms[0]}%`;
+            const secondTerm = searchTerms.length > 1 ? `%${searchTerms[1]}%` : '';
+            const thirdTerm = searchTerms.length > 2 ? `%${searchTerms[2]}%` : '';
+            
+            // Query para múltiples términos
+            if (searchTerms.length === 2) {
+              people = await prisma.$queryRaw`
+                SELECT 
+                  id,
+                  slug,
+                  first_name,
+                  last_name,
+                  real_name,
+                  photo_url
+                FROM people
+                WHERE (
+                  -- Búsqueda de la frase completa
+                  LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE ${searchPattern}
+                  OR LOWER(unaccent(COALESCE(last_name, '') || ' ' || COALESCE(first_name, ''))) LIKE ${searchPattern}
+                  OR LOWER(unaccent(real_name)) LIKE ${searchPattern}
+                  -- O que contenga ambos términos en cualquier orden
+                  OR (
+                    (LOWER(unaccent(COALESCE(first_name, ''))) LIKE ${firstTerm} 
+                     OR LOWER(unaccent(COALESCE(last_name, ''))) LIKE ${firstTerm}
+                     OR LOWER(unaccent(COALESCE(real_name, ''))) LIKE ${firstTerm})
+                    AND
+                    (LOWER(unaccent(COALESCE(first_name, ''))) LIKE ${secondTerm}
+                     OR LOWER(unaccent(COALESCE(last_name, ''))) LIKE ${secondTerm}
+                     OR LOWER(unaccent(COALESCE(real_name, ''))) LIKE ${secondTerm})
+                  )
+                )
+                ${isActive !== null && isActive !== '' 
+                  ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
+                  : prisma.Prisma.empty
+                }
+                ORDER BY 
+                  CASE 
+                    WHEN LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) = ${searchQuery} THEN 1
+                    WHEN LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE ${searchQuery + '%'} THEN 2
+                    ELSE 3
+                  END,
+                  last_name ASC NULLS LAST,
+                  first_name ASC NULLS LAST
+                LIMIT ${limit}
+              `;
+            } else {
+              // Para 3 o más términos
+              people = await prisma.$queryRaw`
+                SELECT 
+                  id,
+                  slug,
+                  first_name,
+                  last_name,
+                  real_name,
+                  photo_url
+                FROM people
+                WHERE (
+                  LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE ${searchPattern}
+                  OR LOWER(unaccent(COALESCE(last_name, '') || ' ' || COALESCE(first_name, ''))) LIKE ${searchPattern}
+                  OR LOWER(unaccent(real_name)) LIKE ${searchPattern}
+                )
+                ${isActive !== null && isActive !== '' 
+                  ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
+                  : prisma.Prisma.empty
+                }
+                ORDER BY 
+                  last_name ASC NULLS LAST,
+                  first_name ASC NULLS LAST
+                LIMIT ${limit}
+              `;
+            }
+          }
 
-      // Debug log
-      console.log('Search query:', searchQuery);
-      console.log('Limit:', limit);
-      console.log('isActive param:', isActive);
+          const formattedPeople = people.map(person => ({
+            id: person.id,
+            slug: person.slug,
+            name: [person.first_name, person.last_name].filter(Boolean).join(' ') || person.real_name || 'Sin nombre',
+            firstName: person.first_name,
+            lastName: person.last_name,
+            photoUrl: person.photo_url
+          }));
 
-      try {
-        // Simplificar la query para ver si el problema es con isActive
-        const people = await prisma.$queryRaw<Array<{
-          id: number;
-          slug: string;
-          first_name: string | null;
-          last_name: string | null;
-          real_name: string | null;
-          photo_url: string | null;
-        }>>`
-          SELECT 
-            id,
-            slug,
-            "first_name",
-            "last_name",
-            "real_name",
-            "photo_url"
-          FROM people
-          WHERE 
-            (
-              -- Búsqueda en campos individuales
-              LOWER("first_name") LIKE ${`%${searchQuery}%`}
-              OR LOWER("last_name") LIKE ${`%${searchQuery}%`}
-              OR LOWER("real_name") LIKE ${`%${searchQuery}%`}
-              -- BÚSQUEDA CONCATENADA con || (operador de PostgreSQL)
-              OR LOWER(COALESCE("first_name", '') || ' ' || COALESCE("last_name", '')) LIKE ${`%${searchQuery}%`}
-              -- También buscar last_name, first_name por si buscan al revés
-              OR LOWER(COALESCE("last_name", '') || ' ' || COALESCE("first_name", '')) LIKE ${`%${searchQuery}%`}
-            )
-          ORDER BY 
-            -- Priorizar coincidencias exactas
-            CASE 
-              WHEN LOWER(COALESCE("first_name", '') || ' ' || COALESCE("last_name", '')) = ${searchQuery} THEN 1
-              WHEN LOWER("first_name") = ${searchQuery} OR LOWER("last_name") = ${searchQuery} THEN 2
-              WHEN LOWER(COALESCE("first_name", '') || ' ' || COALESCE("last_name", '')) LIKE ${`${searchQuery}%`} THEN 3
-              ELSE 4
-            END,
-            "last_name",
-            "first_name"
-          LIMIT ${limit}
-        `;
+          return NextResponse.json(formattedPeople);
 
-        console.log('Found people:', people.length);
-        console.log('First person raw data:', people[0]);
+        } catch (sqlError: any) {
+          console.error('SQL Error with unaccent:', sqlError);
+          
+          // Fallback sin unaccent
+          try {
+            const searchPattern = `%${searchQuery}%`;
+            const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0);
+            
+            let people: any[] = [];
+            
+            if (searchTerms.length === 1) {
+              people = await prisma.$queryRaw`
+                SELECT 
+                  id,
+                  slug,
+                  first_name,
+                  last_name,
+                  real_name,
+                  photo_url
+                FROM people
+                WHERE (
+                  LOWER(first_name) LIKE ${searchPattern}
+                  OR LOWER(last_name) LIKE ${searchPattern}
+                  OR LOWER(real_name) LIKE ${searchPattern}
+                  OR LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchPattern}
+                )
+                ${isActive !== null && isActive !== '' 
+                  ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
+                  : prisma.Prisma.empty
+                }
+                ORDER BY 
+                  CASE 
+                    WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) = ${searchQuery} THEN 1
+                    WHEN LOWER(first_name) = ${searchQuery} OR LOWER(last_name) = ${searchQuery} THEN 2
+                    WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchQuery + '%'} THEN 3
+                    ELSE 4
+                  END,
+                  last_name ASC NULLS LAST,
+                  first_name ASC NULLS LAST
+                LIMIT ${limit}
+              `;
+            } else {
+              const firstTerm = `%${searchTerms[0]}%`;
+              const secondTerm = searchTerms.length > 1 ? `%${searchTerms[1]}%` : '';
+              
+              if (searchTerms.length === 2) {
+                people = await prisma.$queryRaw`
+                  SELECT 
+                    id,
+                    slug,
+                    first_name,
+                    last_name,
+                    real_name,
+                    photo_url
+                  FROM people
+                  WHERE (
+                    LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchPattern}
+                    OR LOWER(COALESCE(last_name, '') || ' ' || COALESCE(first_name, '')) LIKE ${searchPattern}
+                    OR LOWER(real_name) LIKE ${searchPattern}
+                    OR (
+                      (LOWER(COALESCE(first_name, '')) LIKE ${firstTerm} 
+                       OR LOWER(COALESCE(last_name, '')) LIKE ${firstTerm}
+                       OR LOWER(COALESCE(real_name, '')) LIKE ${firstTerm})
+                      AND
+                      (LOWER(COALESCE(first_name, '')) LIKE ${secondTerm}
+                       OR LOWER(COALESCE(last_name, '')) LIKE ${secondTerm}
+                       OR LOWER(COALESCE(real_name, '')) LIKE ${secondTerm})
+                    )
+                  )
+                  ${isActive !== null && isActive !== '' 
+                    ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
+                    : prisma.Prisma.empty
+                  }
+                  ORDER BY 
+                    CASE 
+                      WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) = ${searchQuery} THEN 1
+                      WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchQuery + '%'} THEN 2
+                      ELSE 3
+                    END,
+                    last_name ASC NULLS LAST,
+                    first_name ASC NULLS LAST
+                  LIMIT ${limit}
+                `;
+              } else {
+                people = await prisma.$queryRaw`
+                  SELECT 
+                    id,
+                    slug,
+                    first_name,
+                    last_name,
+                    real_name,
+                    photo_url
+                  FROM people
+                  WHERE (
+                    LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchPattern}
+                    OR LOWER(COALESCE(last_name, '') || ' ' || COALESCE(first_name, '')) LIKE ${searchPattern}
+                    OR LOWER(real_name) LIKE ${searchPattern}
+                  )
+                  ${isActive !== null && isActive !== '' 
+                    ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
+                    : prisma.Prisma.empty
+                  }
+                  ORDER BY 
+                    last_name ASC NULLS LAST,
+                    first_name ASC NULLS LAST
+                  LIMIT ${limit}
+                `;
+              }
+            }
 
-        // Formatear respuesta para autocomplete
-        const formattedPeople = people.map(person => ({
-          id: person.id,
-          slug: person.slug,
-          name: [person.first_name, person.last_name].filter(Boolean).join(' ') || person.real_name || 'Sin nombre',
-          firstName: person.first_name,
-          lastName: person.last_name,
-          photoUrl: person.photo_url
-        }));
-        console.log('First person formatted:', formattedPeople[0]);
-        console.log('Searching for "miguel k" should find:', formattedPeople.filter(p =>
-          p.name.toLowerCase().includes('miguel') && p.name.toLowerCase().includes('k')
-        ));
-        // Para búsquedas de autocomplete, retornar array simple
-        return NextResponse.json(formattedPeople);
+            const formattedPeople = people.map(person => ({
+              id: person.id,
+              slug: person.slug,
+              name: [person.first_name, person.last_name].filter(Boolean).join(' ') || person.real_name || 'Sin nombre',
+              firstName: person.first_name,
+              lastName: person.last_name,
+              photoUrl: person.photo_url
+            }));
 
-      } catch (sqlError) {
-        console.error('SQL Error:', sqlError);
-        // Si falla el SQL, intentar con Prisma normal
-        const people = await prisma.person.findMany({
-          where: {
-            OR: [
-              { firstName: { contains: search, mode: 'insensitive' } },
-              { lastName: { contains: search, mode: 'insensitive' } },
-              { realName: { contains: search, mode: 'insensitive' } },
-            ]
-          },
-          select: {
-            id: true,
-            slug: true,
-            firstName: true,
-            lastName: true,
-            realName: true,
-            photoUrl: true
-          },
-          take: limit
-        });
+            return NextResponse.json(formattedPeople);
+            
+          } catch (fallbackError) {
+            console.error('Fallback SQL Error:', fallbackError);
+            
+            // Último fallback con Prisma ORM
+            const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0);
+            
+            const where: any = {};
+            
+            if (searchTerms.length === 1) {
+              where.OR = [
+                { firstName: { contains: search, mode: 'insensitive' } },
+                { lastName: { contains: search, mode: 'insensitive' } },
+                { realName: { contains: search, mode: 'insensitive' } },
+              ];
+            } else {
+              // Para múltiples términos, buscar que ambos estén presentes
+              where.AND = searchTerms.map(term => ({
+                OR: [
+                  { firstName: { contains: term, mode: 'insensitive' } },
+                  { lastName: { contains: term, mode: 'insensitive' } },
+                  { realName: { contains: term, mode: 'insensitive' } }
+                ]
+              }));
+            }
+            
+            if (isActive !== null && isActive !== '') {
+              where.isActive = isActive === 'true';
+            }
+            
+            const people = await prisma.person.findMany({
+              where,
+              select: {
+                id: true,
+                slug: true,
+                firstName: true,
+                lastName: true,
+                realName: true,
+                photoUrl: true
+              },
+              take: limit,
+              orderBy: [
+                { lastName: 'asc' },
+                { firstName: 'asc' }
+              ]
+            });
 
-        const formattedPeople = people.map(person => ({
-          id: person.id,
-          slug: person.slug,
-          name: [person.firstName, person.lastName].filter(Boolean).join(' ') || person.realName || 'Sin nombre',
-          firstName: person.firstName,
-          lastName: person.lastName,
-          photoUrl: person.photoUrl
-        }));
+            const formattedPeople = people.map(person => ({
+              id: person.id,
+              slug: person.slug,
+              name: [person.firstName, person.lastName].filter(Boolean).join(' ') || person.realName || 'Sin nombre',
+              firstName: person.firstName,
+              lastName: person.lastName,
+              photoUrl: person.photoUrl
+            }));
 
-        return NextResponse.json(formattedPeople);
+            return NextResponse.json(formattedPeople);
+          }
+        }
       }
     }
 
@@ -8069,44 +8273,40 @@ export async function GET(request: NextRequest) {
     const where: any = {};
 
     if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { realName: { contains: search, mode: 'insensitive' } },
-      ];
+      const searchTerms = search.trim().split(/\s+/).filter(term => term.length > 0);
+      
+      if (searchTerms.length === 1) {
+        where.OR = [
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { realName: { contains: search, mode: 'insensitive' } },
+        ];
+      } else {
+        // Para múltiples términos en listado paginado
+        where.AND = searchTerms.map(term => ({
+          OR: [
+            { firstName: { contains: term, mode: 'insensitive' } },
+            { lastName: { contains: term, mode: 'insensitive' } },
+            { realName: { contains: term, mode: 'insensitive' } }
+          ]
+        }));
+      }
     }
 
-    if (gender) {
-      where.gender = gender;
-    }
+    if (gender) where.gender = gender;
+    if (isActive !== null && isActive !== '') where.isActive = isActive === 'true';
+    if (hasLinks !== null && hasLinks !== '') where.hasLinks = hasLinks === 'true';
+    if (hasDeathDate === 'true') where.deathYear = { not: null };
+    else if (hasDeathDate === 'false') where.deathYear = null;
 
-    if (isActive !== null && isActive !== '') {
-      where.isActive = isActive === 'true';
-    }
-
-    if (hasLinks !== null && hasLinks !== '') {
-      where.hasLinks = hasLinks === 'true';
-    }
-
-    // NUEVO: Filtro para personas con fecha de muerte
-    if (hasDeathDate === 'true') {
-      where.deathYear = { not: null };
-    } else if (hasDeathDate === 'false') {
-      where.deathYear = null;
-    }
-
-    // Construir orderBy dinámicamente
     let orderBy: any = {};
-
     if (sortBy === 'deathDate') {
-      // Ordenar por fecha de muerte (año, mes, día)
       orderBy = [
         { deathYear: sortOrder },
         { deathMonth: sortOrder },
         { deathDay: sortOrder }
       ];
     } else if (sortBy === 'birthDate') {
-      // Ordenar por fecha de nacimiento (año, mes, día)
       orderBy = [
         { birthYear: sortOrder },
         { birthMonth: sortOrder },
@@ -8117,23 +8317,19 @@ export async function GET(request: NextRequest) {
     } else if (sortBy === 'updatedAt') {
       orderBy = { updatedAt: sortOrder };
     } else if (sortBy === 'name') {
-      // Ordenar por apellido y nombre
       orderBy = [
         { lastName: sortOrder },
         { firstName: sortOrder }
       ];
     } else {
-      // Default: ordenar por apellido y nombre
       orderBy = [
         { lastName: 'asc' },
         { firstName: 'asc' }
       ];
     }
 
-    // Obtener total para paginación
     const totalCount = await prisma.person.count({ where });
 
-    // Obtener personas con paginación
     const people = await prisma.person.findMany({
       where,
       include: {
@@ -18985,15 +19181,21 @@ export function PeopleTable() {
       {/* Filtros */}
       <div className="mb-4 flex flex-wrap gap-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre..."
-            value={filters.search || ''}
-            onChange={(e) => updateFilter('search', e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-          />
-        </div>
+  <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+  <input
+    type="text"
+    placeholder="Buscar por nombre..."
+    value={filters.search || ''}
+    onChange={(e) => updateFilter('search', e.target.value)}
+    className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+  />
+  {/* Indicador de búsqueda en progreso */}
+  {loading && filters.search && (
+    <div className="absolute right-3 top-2.5">
+      <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
+    </div>
+  )}
+</div>
         
         <select
           value={filters.gender || ''}
@@ -25459,8 +25661,9 @@ export function useMovieForm({
 // src/hooks/usePeople.ts
 // ==================================================
 // src/hooks/usePeople.ts
+// src/hooks/usePeople.ts
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { peopleService } from '@/services/people.service';
 import { 
@@ -25487,6 +25690,9 @@ export function usePeople(options: UsePeopleOptions = {}) {
   const [totalPages, setTotalPages] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   
+  // Referencia para el AbortController
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
   // Filtros
   const [filters, setFilters] = useState<PersonFilters>({
     page: PEOPLE_PAGINATION.DEFAULT_PAGE,
@@ -25494,38 +25700,78 @@ export function usePeople(options: UsePeopleOptions = {}) {
     ...initialFilters,
   });
   
-  // Debounce para búsqueda
-  const debouncedSearch = useDebounce(filters.search || '', 300);
+  // Debounce para búsqueda - aumentamos a 400ms para dar más tiempo cuando se escribe rápido
+  const debouncedSearch = useDebounce(filters.search || '', 400);
 
-  // Cargar personas
+  // Cargar personas con cancelación de requests anteriores
   const loadPeople = useCallback(async () => {
     try {
+      // Cancelar request anterior si existe
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // Crear nuevo AbortController
+      abortControllerRef.current = new AbortController();
+      
       setLoading(true);
       setError(null);
       
       const response = await peopleService.getAll({
         ...filters,
         search: debouncedSearch,
-      });
+      }, abortControllerRef.current.signal); // Pasar el signal al servicio
       
-      setPeople(response.data);
-      setTotalCount(response.totalCount);
-      setTotalPages(response.totalPages);
-      setHasMore(response.hasMore);
-    } catch (err) {
+      // Solo actualizar el estado si no fue cancelado
+      if (!abortControllerRef.current.signal.aborted) {
+        setPeople(response.data);
+        setTotalCount(response.totalCount);
+        setTotalPages(response.totalPages);
+        setHasMore(response.hasMore);
+      }
+    } catch (err: any) {
+      // Ignorar errores de cancelación
+      if (err?.name === 'AbortError') {
+        console.log('Request cancelado');
+        return;
+      }
+      
       console.error('Error loading people:', err);
       setError(err as Error);
-      toast.error('No se pudieron cargar las personas');
+      
+      // Solo mostrar toast si no es un error de cancelación
+      if (!abortControllerRef.current?.signal.aborted) {
+        toast.error('No se pudieron cargar las personas');
+      }
     } finally {
-      setLoading(false);
+      // Solo quitar loading si no fue cancelado
+      if (!abortControllerRef.current?.signal.aborted) {
+        setLoading(false);
+      }
     }
   }, [filters, debouncedSearch]);
+
+  // Cleanup al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Efecto para cargar personas
   useEffect(() => {
     if (autoLoad) {
       loadPeople();
     }
+    
+    // Cleanup al cambiar los filtros
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [loadPeople, autoLoad]);
 
   // Actualizar un filtro específico
@@ -25541,17 +25787,15 @@ export function usePeople(options: UsePeopleOptions = {}) {
     }));
   }, []);
 
-  // Actualizar múltiples filtros
+  // Resto del código permanece igual...
   const updateFilters = useCallback((newFilters: Partial<PersonFilters>) => {
     setFilters(prev => ({
       ...prev,
       ...newFilters,
-      // Resetear a página 1 si no se está cambiando la página
       ...(!newFilters.page && { page: 1 }),
     }));
   }, []);
 
-  // Resetear filtros
   const resetFilters = useCallback(() => {
     setFilters({
       page: PEOPLE_PAGINATION.DEFAULT_PAGE,
@@ -25559,39 +25803,28 @@ export function usePeople(options: UsePeopleOptions = {}) {
     });
   }, []);
 
-  // Cambiar página
   const goToPage = useCallback((page: number) => {
     updateFilter('page', page);
   }, [updateFilter]);
 
-  // Eliminar persona
   const deletePerson = useCallback(async (id: number) => {
     try {
       await peopleService.delete(id);
-      
       toast.success('Persona eliminada correctamente');
-      
-      // Recargar lista después de eliminar
       await loadPeople();
     } catch (err) {
       console.error('Error deleting person:', err);
-      
       const errorMessage = err instanceof Error 
         ? err.message 
         : 'Error al eliminar persona';
-      
       toast.error(errorMessage);
-      
       throw err;
     }
   }, [loadPeople]);
 
-  // Exportar a CSV
   const exportToCSV = useCallback(async () => {
     try {
       const blob = await peopleService.exportToCSV(filters);
-      
-      // Crear enlace de descarga
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -25600,7 +25833,6 @@ export function usePeople(options: UsePeopleOptions = {}) {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
       toast.success('Archivo CSV descargado correctamente');
     } catch (err) {
       console.error('Error exporting to CSV:', err);
@@ -25609,20 +25841,15 @@ export function usePeople(options: UsePeopleOptions = {}) {
   }, [filters]);
 
   return {
-    // Datos
     people,
     totalCount,
     totalPages,
     hasMore,
     currentPage: filters.page || 1,
     pageSize: filters.limit || PEOPLE_PAGINATION.DEFAULT_LIMIT,
-    
-    // Estado
     loading,
     error,
     filters,
-    
-    // Acciones
     loadPeople,
     updateFilter,
     updateFilters,
@@ -25630,8 +25857,6 @@ export function usePeople(options: UsePeopleOptions = {}) {
     goToPage,
     deletePerson,
     exportToCSV,
-    
-    // Navegación
     goToNextPage: () => goToPage((filters.page || 1) + 1),
     goToPreviousPage: () => goToPage(Math.max(1, (filters.page || 1) - 1)),
     canGoNext: hasMore,
@@ -25639,21 +25864,23 @@ export function usePeople(options: UsePeopleOptions = {}) {
   };
 }
 
+// Los otros hooks (usePeopleSearch y usePerson) permanecen igual...
+
 // Hook para búsqueda simple (autocomplete)
 export function usePeopleSearch() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Array<{ id: number; name: string; slug?: string }>>([]);
   const [loading, setLoading] = useState(false);
-  
+
   const debouncedQuery = useDebounce(query, 300);
-  
+
   useEffect(() => {
     const searchPeople = async () => {
       if (debouncedQuery.length < 2) {
         setResults([]);
         return;
       }
-      
+
       try {
         setLoading(true);
         const data = await peopleService.search(debouncedQuery);
@@ -25665,10 +25892,10 @@ export function usePeopleSearch() {
         setLoading(false);
       }
     };
-    
+
     searchPeople();
   }, [debouncedQuery]);
-  
+
   return {
     query,
     setQuery,
@@ -25710,7 +25937,7 @@ export function usePerson(id: number | string | null) {
 
   const reload = useCallback(async () => {
     if (!id || id === 'new') return;
-    
+
     try {
       setLoading(true);
       const personId = typeof id === 'string' ? parseInt(id) : id;
@@ -29636,7 +29863,6 @@ import {
  PersonFilters,
  PaginatedPeopleResponse
 } from '@/lib/people/peopleTypes';
-import { formatPersonFormDataForAPI } from '@/lib/people/peopleUtils';
 import { dateToPartialFields, partialFieldsToDate } from '@/lib/shared/dateUtils';
 
 interface PersonSearchResult {
@@ -29718,9 +29944,6 @@ function formatPersonDataForAPI(data: PersonFormData): any {
 * Convierte los datos de la API al formato del formulario
 */
 function formatPersonFromAPI(person: any): PersonFormData {
- console.log('formatPersonFromAPI - Raw person data:', person); // Debug log
- console.log('formatPersonFromAPI - Nationalities raw:', person.nationalities); // Debug log
- 
  const formData: PersonFormData = {
    firstName: person.firstName || '',
    lastName: person.lastName || '',
@@ -29778,16 +30001,11 @@ function formatPersonFromAPI(person: any): PersonFormData {
    }
  }
 
- // Procesar nacionalidades - ACTUALIZADO para manejar la estructura con 'location'
+ // Procesar nacionalidades
  if (person.nationalities && Array.isArray(person.nationalities)) {
-   console.log('Processing nationalities, raw data:', person.nationalities); // Debug log
-   
    formData.nationalities = person.nationalities.map((n: any) => {
-     console.log('Processing nationality item:', n); // Debug log
-     
      // Si es un número directo
      if (typeof n === 'number') {
-       console.log('Direct number:', n);
        return n;
      }
      
@@ -29795,34 +30013,27 @@ function formatPersonFromAPI(person: any): PersonFormData {
      if (typeof n === 'object' && n !== null) {
        // Primero intentar con locationId (campo directo)
        if (n.locationId) {
-         console.log('Found locationId:', n.locationId);
          return n.locationId;
        }
        
        // Si tiene un campo 'location' con id (estructura que viene de la API con include)
        if (n.location && n.location.id) {
-         console.log('Found location.id:', n.location.id);
          return n.location.id;
        }
        
        // Si tiene un campo 'country' con id (por si acaso)
        if (n.country && n.country.id) {
-         console.log('Found country.id:', n.country.id);
          return n.country.id;
        }
        
        // Si tiene un id directo
        if (n.id) {
-         console.log('Found direct id:', n.id);
          return n.id;
        }
      }
      
-     console.log('Could not extract ID from:', n);
      return null;
    }).filter((id: any) => id !== null); // Filtrar nulls
-   
-   console.log('Final processed nationalities:', formData.nationalities); // Debug log
  }
 
  return formData;
@@ -29832,37 +30043,37 @@ export const peopleService = {
  /**
   * Obtiene una lista paginada de personas con filtros
   */
- async getAll(filters: PersonFilters = {}): Promise<PaginatedPeopleResponse> {
-   const params = new URLSearchParams();
-
-   if (filters.search) params.append('search', filters.search);
-   if (filters.gender) params.append('gender', filters.gender);
-   if (filters.hasLinks !== undefined && filters.hasLinks !== '') {
-     params.append('hasLinks', String(filters.hasLinks));
-   }
-   if (filters.isActive !== undefined && filters.isActive !== '') {
-     params.append('isActive', String(filters.isActive));
-   }
-   if (filters.page) params.append('page', String(filters.page));
-   if (filters.limit) params.append('limit', String(filters.limit));
-
-   const response = await apiClient.get<PaginatedPeopleResponse>(`/people?${params}`);
+ async getAll(filters?: PersonFilters, signal?: AbortSignal): Promise<PaginatedPeopleResponse> {
+   const params: Record<string, string> = {};
    
-   // Convertir las fechas de cada persona si es necesario
-   if (response.data && Array.isArray(response.data)) {
-     response.data = response.data.map((person: any) => ({
-       ...person,
-       // Mantener la estructura original pero asegurar que las fechas parciales estén disponibles
-       birthYear: person.birthYear,
-       birthMonth: person.birthMonth,
-       birthDay: person.birthDay,
-       deathYear: person.deathYear,
-       deathMonth: person.deathMonth,
-       deathDay: person.deathDay
-     }));
+   if (filters?.search) params.search = filters.search;
+   if (filters?.gender) params.gender = filters.gender;
+   if (filters?.hasLinks !== undefined) params.hasLinks = String(filters.hasLinks);
+   if (filters?.isActive !== undefined) params.isActive = String(filters.isActive);
+   if (filters?.page) params.page = String(filters.page);
+   if (filters?.limit) params.limit = String(filters.limit);
+   
+   // Construir URL con parámetros
+   const queryString = new URLSearchParams(params).toString();
+   const url = `/api/people${queryString ? `?${queryString}` : ''}`;
+   
+   // Usar fetch directamente con signal
+   const response = await fetch(url, { 
+     method: 'GET',
+     signal
+   });
+   
+   if (!response.ok) {
+     // Si el request fue abortado, lanzar error específico
+     if (signal?.aborted) {
+       const error = new Error('Request aborted');
+       error.name = 'AbortError';
+       throw error;
+     }
+     throw new Error('Error al obtener personas');
    }
-
-   return response;
+   
+   return response.json();
  },
 
  /**
@@ -29872,9 +30083,19 @@ export const peopleService = {
    if (query.length < 2) return [];
 
    try {
-     return await apiClient.get<PersonSearchResult[]>(
-       `/people?search=${encodeURIComponent(query)}&limit=${limit}`
-     );
+     // Usar fetch directamente para búsqueda
+     const params = new URLSearchParams({
+       search: query,
+       limit: String(limit)
+     });
+     
+     const response = await fetch(`/api/people?${params}`);
+     
+     if (!response.ok) {
+       throw new Error('Error searching people');
+     }
+     
+     return response.json();
    } catch (error) {
      console.error('Error searching people:', error);
      return [];
@@ -29885,11 +30106,7 @@ export const peopleService = {
   * Obtiene una persona por ID con todas sus relaciones
   */
  async getById(id: number): Promise<PersonWithRelations> {
-   const person = await apiClient.get<PersonWithRelations>(`/people/${id}`);
-   
-   // Si necesitas devolver el formato de formulario, usa formatPersonFromAPI
-   // De lo contrario, devuelve la persona tal cual con los campos de fecha parcial
-   return person;
+   return apiClient.get<PersonWithRelations>(`/people/${id}`);
  },
 
  /**
@@ -29897,21 +30114,14 @@ export const peopleService = {
   */
  async getByIdForEdit(id: number): Promise<PersonFormData> {
    const person = await apiClient.get<any>(`/people/${id}`);
-   console.log('getByIdForEdit - Raw person from API:', person); // Debug log
-   const formatted = formatPersonFromAPI(person);
-   console.log('getByIdForEdit - Formatted person:', formatted); // Debug log
-   return formatted;
+   return formatPersonFromAPI(person);
  },
 
  /**
   * Crea una nueva persona
   */
  async create(data: PersonFormData): Promise<PersonWithRelations> {
-   // Usar la nueva función que maneja fechas parciales
    const formattedData = formatPersonDataForAPI(data);
-   console.log('Formatted data for API:', formattedData); // <-- Log para debugging
-   console.log('Nationalities being sent:', formattedData.nationalities); // Log específico de nacionalidades
-
    return apiClient.post<PersonWithRelations>('/people', formattedData);
  },
 
@@ -29919,7 +30129,6 @@ export const peopleService = {
   * Crea una persona rápida (solo con nombre)
   */
  async createQuick(name: string): Promise<Person> {
-   // Separar el nombre en firstName y lastName si es posible
    const nameParts = name.trim().split(' ');
    const quickData = {
      firstName: nameParts[0] || null,
@@ -29934,11 +30143,7 @@ export const peopleService = {
   * Actualiza una persona
   */
  async update(id: number, data: PersonFormData): Promise<PersonWithRelations> {
-   // Usar la nueva función que maneja fechas parciales
    const formattedData = formatPersonDataForAPI(data);
-   console.log('Formatted data for API update:', formattedData); // <-- Log para debugging
-   console.log('Nationalities being updated:', formattedData.nationalities); // Log específico de nacionalidades
-
    return apiClient.put<PersonWithRelations>(`/people/${id}`, formattedData);
  },
 
@@ -29989,7 +30194,6 @@ export const peopleService = {
      params.append('isActive', String(filters.isActive));
    }
 
-   // Usamos fetch directamente para manejar el blob
    const response = await fetch(`/api/people/export?${params}`);
 
    if (!response.ok) {

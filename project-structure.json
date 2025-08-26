@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-26T03:06:55.212Z",
+  "timestamp": "2025-08-26T18:04:29.425Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "ec9e93c55ab4aca0775e51710a9fc8cea91fd949",
+  "commit": "b7c3aea0cb866fdfd896dc034854c5e709a70180",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
@@ -238,6 +238,7 @@
       "diagnose-crew-omitted.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/diagnose-crew-omitted.js",
       "diagnose-omitted-detailed.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/diagnose-omitted-detailed.js",
       "discover-crew-fields.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/discover-crew-fields.js",
+      "enable-unaccent.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/enable-unaccent.sql",
       "export-db-structure.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/export-db-structure.js",
       "extract-titles-to-json.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/extract-titles-to-json.js",
       "find-adolescencia-by-slugs.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/find-adolescencia-by-slugs.js",
