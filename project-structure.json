@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-26T02:07:40.545Z",
+  "timestamp": "2025-08-26T02:11:47.263Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "29698d1eb0c44e934e5ba734daf89d8cda7fb9da",
+  "commit": "68ce9c02d1d5692ca8bfa4cbe540f3d7051a745a",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
@@ -652,7 +652,8 @@
         "roles.service.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/roles.service.ts"
       },
       "types": {
-        "home.types.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/types/home.types.ts"
+        "home.types.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/types/home.types.ts",
+        "next-auth.d.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/types/next-auth.d.ts"
       },
       "utils": {
         "movieHelpers.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/utils/movieHelpers.ts"

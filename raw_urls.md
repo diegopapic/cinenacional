@@ -265,6 +265,7 @@
 - [src/services/people.service.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/people.service.ts)
 - [src/services/roles.service.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/services/roles.service.ts)
 - [src/types/home.types.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/types/home.types.ts)
+- [src/types/next-auth.d.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/types/next-auth.d.ts)
 - [src/utils/movieHelpers.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/utils/movieHelpers.ts)
 - [tailwind.config.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/tailwind.config.js)
 - [test-env.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/test-env.js)

@@ -2045,6 +2045,11 @@
     "size": 0
   },
   {
+    "path": "src/types/next-auth.d.ts",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/types/next-auth.d.ts",
+    "size": 0
+  },
+  {
     "path": "src/utils/movieHelpers.ts",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/utils/movieHelpers.ts",
     "size": 0
