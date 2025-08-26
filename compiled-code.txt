@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: b7c3aea0cb866fdfd896dc034854c5e709a70180
-// Fecha: 2025-08-26T18:04:29.756Z
+// Commit: e83489ba2b55f8f6f6362b226d8e6f3955a8e820
+// Fecha: 2025-08-26T18:11:35.730Z
 // ============================================
 
 
@@ -7941,6 +7941,7 @@ export async function DELETE(
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { generatePersonSlug } from '@/lib/people/peopleUtils';
 
 export async function GET(request: NextRequest) {
@@ -7987,8 +7988,8 @@ export async function GET(request: NextRequest) {
                 OR LOWER(unaccent(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE ${searchPattern}
               )
               ${isActive !== null && isActive !== '' 
-                ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
-                : prisma.Prisma.empty
+                ? Prisma.sql`AND is_active = ${isActive === 'true'}`
+                : Prisma.empty
               }
               ORDER BY 
                 CASE 
@@ -8035,8 +8036,8 @@ export async function GET(request: NextRequest) {
                   )
                 )
                 ${isActive !== null && isActive !== '' 
-                  ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
-                  : prisma.Prisma.empty
+                  ? Prisma.sql`AND is_active = ${isActive === 'true'}`
+                  : Prisma.empty
                 }
                 ORDER BY 
                   CASE 
@@ -8065,8 +8066,8 @@ export async function GET(request: NextRequest) {
                   OR LOWER(unaccent(real_name)) LIKE ${searchPattern}
                 )
                 ${isActive !== null && isActive !== '' 
-                  ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
-                  : prisma.Prisma.empty
+                  ? Prisma.sql`AND is_active = ${isActive === 'true'}`
+                  : Prisma.empty
                 }
                 ORDER BY 
                   last_name ASC NULLS LAST,
@@ -8114,8 +8115,8 @@ export async function GET(request: NextRequest) {
                   OR LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchPattern}
                 )
                 ${isActive !== null && isActive !== '' 
-                  ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
-                  : prisma.Prisma.empty
+                  ? Prisma.sql`AND is_active = ${isActive === 'true'}`
+                  : Prisma.empty
                 }
                 ORDER BY 
                   CASE 
@@ -8157,8 +8158,8 @@ export async function GET(request: NextRequest) {
                     )
                   )
                   ${isActive !== null && isActive !== '' 
-                    ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
-                    : prisma.Prisma.empty
+                    ? Prisma.sql`AND is_active = ${isActive === 'true'}`
+                    : Prisma.empty
                   }
                   ORDER BY 
                     CASE 
@@ -8186,8 +8187,8 @@ export async function GET(request: NextRequest) {
                     OR LOWER(real_name) LIKE ${searchPattern}
                   )
                   ${isActive !== null && isActive !== '' 
-                    ? prisma.Prisma.sql`AND is_active = ${isActive === 'true'}`
-                    : prisma.Prisma.empty
+                    ? Prisma.sql`AND is_active = ${isActive === 'true'}`
+                    : Prisma.empty
                   }
                   ORDER BY 
                     last_name ASC NULLS LAST,
