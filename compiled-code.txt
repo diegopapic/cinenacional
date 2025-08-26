@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: fcabcf3b482aa9d4ff7a3151a50d381940ef1007
-// Fecha: 2025-08-26T02:15:56.850Z
+// Commit: f2424a7921dee27fd73e22015ca2699c559b513e
+// Fecha: 2025-08-26T02:23:55.731Z
 // ============================================
 
 
@@ -1940,6 +1940,8 @@ export default function AdminMoviesPage() {
 // ==================================================
 // src/app/admin/page.tsx
 // ==================================================
+export const dynamic = 'force-dynamic'
+
 export default function AdminDashboard() {
   return (
     <div className="p-8">
