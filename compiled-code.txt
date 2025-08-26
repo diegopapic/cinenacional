@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 1c206fc16e1141047af6f260de917796dc10013d
-// Fecha: 2025-08-26T00:47:57.492Z
+// Commit: 29698d1eb0c44e934e5ba734daf89d8cda7fb9da
+// Fecha: 2025-08-26T02:07:40.883Z
 // ============================================
 
 
@@ -14,6 +14,79 @@
 // NOTE: This file should not be edited
 // see https://nextjs.org/docs/app/building-your-application/configuring/typescript for more information.
 
+
+// ==================================================
+// scripts/create-admin.ts
+// ==================================================
+// scripts/create-admin.ts
+
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
+import { config } from 'dotenv'
+import path from 'path'
+
+config()
+
+const prisma = new PrismaClient()
+
+// Cargar .env.local específicamente
+config({ path: path.resolve(process.cwd(), '.env.local') })
+
+async function createAdmin() {
+  const email = process.env.ADMIN_EMAIL || 'admin@cinenacional.com'
+  const password = process.env.ADMIN_PASSWORD || 'ChangeMeNow2024!'
+  const username = process.env.ADMIN_USERNAME || 'admin'
+  
+  try {
+    const hashedPassword = await bcrypt.hash(password, 12)
+    
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: {
+        password: hashedPassword,
+        role: 'ADMIN',
+        isAdmin: true,  // Por compatibilidad
+        isActive: true
+      },
+      create: {
+        email,
+        username,
+        password: hashedPassword,
+        displayName: 'Administrador',
+        role: 'ADMIN',
+        isAdmin: true,  // Por compatibilidad
+        isActive: true
+      }
+    })
+    
+    console.log('✅ Usuario admin creado/actualizado:')
+    console.log('📧 Email:', user.email)
+    console.log('👤 Username:', user.username || 'N/A')
+    console.log('🔑 Password temporal:', password)
+    console.log('\n⚠️  IMPORTANTE: Cambia la contraseña después del primer login')
+    
+    // Crear log de auditoría
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'ADMIN_CREATED',
+        entity: 'user',
+        entityId: user.id,
+        metadata: {
+          createdBy: 'script',
+          timestamp: new Date().toISOString()
+        }
+      }
+    })
+    
+  } catch (error) {
+    console.error('Error creando admin:', error)
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+createAdmin()
 
 // ==================================================
 // src/app/admin/calificaciones/page.tsx
@@ -1596,6 +1669,116 @@ export default async function EditLocationPage({ params }: EditLocationPageProps
 }
 
 // ==================================================
+// src/app/admin/login/page.tsx
+// ==================================================
+// src/app/login/page.tsx
+
+'use client'
+
+import { useState } from 'react'
+import { signIn } from 'next-auth/react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { toast } from 'react-hot-toast'
+
+export default function LoginPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get('callbackUrl') || '/admin'
+  
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  })
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    
+    try {
+      const result = await signIn('credentials', {
+        email: formData.email,
+        password: formData.password,
+        redirect: false
+      })
+      
+      if (result?.error) {
+        toast.error('Credenciales inválidas')
+      } else {
+        toast.success('¡Bienvenido!')
+        router.push(callbackUrl)
+      }
+    } catch (error) {
+      toast.error('Error al iniciar sesión')
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Acceso Administrativo
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            CineNacional Admin Panel
+          </p>
+        </div>
+        
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="email" className="sr-only">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Email"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">
+                Contraseña
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Contraseña"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            >
+              {loading ? 'Ingresando...' : 'Ingresar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ==================================================
 // src/app/admin/movies/page.tsx
 // ==================================================
 // src/app/admin/movies/page.tsx
@@ -1742,6 +1925,49 @@ export default function AdminMoviesPage() {
             onClose={handleCloseModal}
           />
         </MovieModalProvider>
+      </div>
+    </div>
+  )
+}
+
+// ==================================================
+// src/app/admin/page.tsx
+// ==================================================
+export default function AdminDashboard() {
+  return (
+    <div className="p-8">
+      <h1 className="text-3xl font-bold mb-6">Panel de Administración</h1>
+      
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <a href="/admin/movies" className="p-6 bg-white rounded-lg shadow hover:shadow-lg">
+          <h2 className="text-xl font-semibold">Películas</h2>
+          <p className="text-gray-600">Gestionar películas</p>
+        </a>
+        
+        <a href="/admin/people" className="p-6 bg-white rounded-lg shadow hover:shadow-lg">
+          <h2 className="text-xl font-semibold">Personas</h2>
+          <p className="text-gray-600">Gestionar personas</p>
+        </a>
+        
+        <a href="/admin/genres" className="p-6 bg-white rounded-lg shadow hover:shadow-lg">
+          <h2 className="text-xl font-semibold">Géneros</h2>
+          <p className="text-gray-600">Gestionar géneros</p>
+        </a>
+        
+        <a href="/admin/locations" className="p-6 bg-white rounded-lg shadow hover:shadow-lg">
+          <h2 className="text-xl font-semibold">Ubicaciones</h2>
+          <p className="text-gray-600">Gestionar ubicaciones</p>
+        </a>
+        
+        <a href="/admin/themes" className="p-6 bg-white rounded-lg shadow hover:shadow-lg">
+          <h2 className="text-xl font-semibold">Temas</h2>
+          <p className="text-gray-600">Gestionar temas</p>
+        </a>
+        
+        <a href="/admin/roles" className="p-6 bg-white rounded-lg shadow hover:shadow-lg">
+          <h2 className="text-xl font-semibold">Roles</h2>
+          <p className="text-gray-600">Gestionar roles</p>
+        </a>
       </div>
     </div>
   )
@@ -3778,6 +4004,117 @@ export default function AdminThemesPage() {
     </div>
   )
 }
+
+// ==================================================
+// src/app/api/auth/[...nextauth]/route.ts
+// ==================================================
+// src/app/api/auth/[...nextauth]/route.ts
+
+import NextAuth from "next-auth"
+import CredentialsProvider from "next-auth/providers/credentials"
+import { PrismaAdapter } from "@next-auth/prisma-adapter"
+import { prisma } from "@/lib/prisma"
+import bcrypt from "bcryptjs"
+import { z } from "zod"
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6)
+})
+
+const handler = NextAuth({
+  adapter: PrismaAdapter(prisma),
+  session: {
+    strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 24 horas
+  },
+  pages: {
+    signIn: "/admin/login",  // Página de login dentro de /admin
+    error: "/admin/login",
+  },
+  providers: [
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        try {
+          const { email, password } = loginSchema.parse(credentials)
+          
+          const user = await prisma.user.findUnique({
+            where: { email }
+          })
+          
+          if (!user || !user.isActive) {
+            return null
+          }
+          
+          // Verificar password
+          const isValid = await bcrypt.compare(password, user.password)
+          
+          if (!isValid) {
+            return null
+          }
+          
+          // Verificar que tenga permisos de admin
+          if (user.role !== 'ADMIN' && user.role !== 'EDITOR' && !user.isAdmin) {
+            return null
+          }
+          
+          // Actualizar último login
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { lastLogin: new Date() }
+          })
+          
+          // Log de auditoría
+          await prisma.auditLog.create({
+            data: {
+              userId: user.id,
+              action: 'LOGIN',
+              entity: 'auth',
+              metadata: {
+                timestamp: new Date().toISOString()
+              }
+            }
+          })
+          
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.displayName || user.username || user.email,
+            role: user.role,
+            image: user.avatarUrl
+          }
+        } catch (error) {
+          console.error('Auth error:', error)
+          return null
+        }
+      }
+    })
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role
+        token.id = user.id
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (session?.user) {
+        session.user.role = token.role as string
+        session.user.id = token.id as string
+      }
+      return session
+    }
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+})
+
+export { handler as GET, handler as POST }
 
 // ==================================================
 // src/app/api/calificaciones/route.ts
@@ -28319,6 +28656,7 @@ export function formatDuration(minutes: number | null): string {
 // ==================================================
 // src/middleware.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
 // Rate limiting con memoria (temporal hasta tener Redis)
 const requestCounts = new Map<string, { count: number; resetTime: number }>()
@@ -28327,7 +28665,7 @@ const requestCounts = new Map<string, { count: number; resetTime: number }>()
 const RATE_LIMITS = {
   api: { requests: 100, window: 60000 }, // 100 req/min para API
   static: { requests: 200, window: 60000 }, // 200 req/min para páginas
-  auth: { requests: 5, window: 300000 }, // 5 req/5min para auth (futuro)
+  auth: { requests: 5, window: 300000 }, // 5 req/5min para auth
 }
 
 function getRateLimitKey(req: NextRequest): string {
@@ -28363,10 +28701,46 @@ setInterval(() => {
   }
 }, 300000)
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const response = NextResponse.next()
+  const path = request.nextUrl.pathname
   
-  // 1. Headers de seguridad
+  // ============ PROTECCIÓN DE ADMIN ============
+  if (path.startsWith('/admin')) {
+    // Permitir acceso a la página de login
+    if (path === '/admin/login') {
+      return response
+    }
+    
+    try {
+      const token = await getToken({ 
+        req: request, 
+        secret: process.env.NEXTAUTH_SECRET 
+      })
+      
+      // No autenticado
+      if (!token) {
+        const loginUrl = new URL('/admin/login', request.url)
+        loginUrl.searchParams.set('callbackUrl', path)
+        return NextResponse.redirect(loginUrl)
+      }
+      
+      // Verificar rol (considerando el campo legacy isAdmin)
+      const hasAdminAccess = 
+        token.role === 'ADMIN' || 
+        token.role === 'EDITOR' ||
+        token.isAdmin === true
+      
+      if (!hasAdminAccess) {
+        return NextResponse.redirect(new URL('/unauthorized', request.url))
+      }
+    } catch (error) {
+      console.error('Auth middleware error:', error)
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+  }
+  
+  // ============ HEADERS DE SEGURIDAD ============
   response.headers.set('X-DNS-Prefetch-Control', 'on')
   response.headers.set('X-Frame-Options', 'SAMEORIGIN')
   response.headers.set('X-Content-Type-Options', 'nosniff')
@@ -28377,24 +28751,23 @@ export function middleware(request: NextRequest) {
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com https://upload-widget.cloudinary.com; " +  // AGREGADO upload-widget.cloudinary.com
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com https://upload-widget.cloudinary.com; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "img-src 'self' data: https: blob:; " +
     "font-src 'self' data: https://fonts.gstatic.com; " +
-    "connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com https://*.cloudinary.com; " +  // AGREGADO más dominios de Cloudinary
-    "frame-src 'self' https://upload-widget.cloudinary.com https://*.cloudinary.com; " +  // AGREGADO frame-src para el widget
-    "media-src 'self' https://res.cloudinary.com; " +  // AGREGADO media-src
+    "connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com https://*.cloudinary.com; " +
+    "frame-src 'self' https://upload-widget.cloudinary.com https://*.cloudinary.com; " +
+    "media-src 'self' https://res.cloudinary.com; " +
     "frame-ancestors 'none';"
   )
   
-  // 2. Rate limiting
-  const path = request.nextUrl.pathname
+  // ============ RATE LIMITING ============
   const clientKey = getRateLimitKey(request)
   
   let rateLimit = RATE_LIMITS.static
   if (path.startsWith('/api/')) {
     rateLimit = RATE_LIMITS.api
-  } else if (path.startsWith('/auth/')) {
+  } else if (path.startsWith('/api/auth/') || path === '/admin/login') {
     rateLimit = RATE_LIMITS.auth
   }
   
@@ -28410,11 +28783,21 @@ export function middleware(request: NextRequest) {
     })
   }
   
-  // 3. CORS para API (ajustar origins según necesidad)
+  // ============ CORS PARA API ============
   if (path.startsWith('/api/')) {
-    response.headers.set('Access-Control-Allow-Origin', '*') // Cambiar a dominio específico en producción
+    // Solo permitir desde el dominio en producción
+    const allowedOrigins = process.env.NODE_ENV === 'production' 
+      ? ['https://cinenacional.com', 'https://www.cinenacional.com']
+      : ['http://localhost:3000', 'http://5.161.58.106:3000']
+    
+    const origin = request.headers.get('origin')
+    if (origin && allowedOrigins.includes(origin)) {
+      response.headers.set('Access-Control-Allow-Origin', origin)
+    }
+    
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    response.headers.set('Access-Control-Max-Age', '86400')
     
     // Handle preflight
     if (request.method === 'OPTIONS') {
@@ -28422,13 +28805,14 @@ export function middleware(request: NextRequest) {
     }
   }
   
-  // 4. Protección básica contra bots maliciosos
+  // ============ PROTECCIÓN CONTRA BOTS ============
   const userAgent = request.headers.get('user-agent') || ''
   const blockedBots = ['bot', 'crawler', 'spider', 'scraper']
+  const allowedBots = ['googlebot', 'bingbot', 'facebookexternalhit', 'twitterbot']
+  
   const isBlockedBot = blockedBots.some(bot => 
     userAgent.toLowerCase().includes(bot) && 
-    !userAgent.includes('googlebot') && 
-    !userAgent.includes('bingbot')
+    !allowedBots.some(allowed => userAgent.toLowerCase().includes(allowed))
   )
   
   if (isBlockedBot && path.startsWith('/api/')) {

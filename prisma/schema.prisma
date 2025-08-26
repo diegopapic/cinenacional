@@ -106,6 +106,24 @@ model ScreeningVenue {
   @@map("screening_venues")
 }
 
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
 model MovieScreening {
   id            Int            @id @default(autoincrement())
   movieId       Int            @map("movie_id")
@@ -517,6 +535,45 @@ model Country {
   @@map("countries")
 }
 
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
 model MovieCountry {
   movieId   Int     @map("movie_id")
   countryId Int     @map("country_id")
@@ -538,26 +595,32 @@ model Language {
 }
 
 model User {
-  id           Int             @id @default(autoincrement())
-  email        String          @unique @db.VarChar(255)
-  username     String          @unique @db.VarChar(100)
-  passwordHash String          @map("password_hash") @db.VarChar(255)
-  displayName  String?         @map("display_name") @db.VarChar(255)
-  avatarUrl    String?         @map("avatar_url") @db.VarChar(500)
-  bio          String?
-  isActive     Boolean         @default(true) @map("is_active")
-  isAdmin      Boolean         @default(false) @map("is_admin")
-  createdAt    DateTime        @default(now()) @map("created_at")
-  updatedAt    DateTime        @updatedAt @map("updated_at")
-  ratings      UserRating[]
-  watched      UserWatched[]
-  watchlist    UserWatchlist[]
+  id            String          @id @default(cuid())
+  email         String          @unique @db.VarChar(255)
+  username      String?         @unique @db.VarChar(100)
+  password      String
+  displayName   String?         @map("display_name") @db.VarChar(255)
+  avatarUrl     String?         @map("avatar_url") @db.VarChar(500)
+  bio           String?
+  role          UserRole        @default(VIEWER)
+  isActive      Boolean         @default(true) @map("is_active")
+  isAdmin       Boolean         @default(false) @map("is_admin")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  lastLogin     DateTime?       @map("last_login")
+  
+  accounts      Account[]
+  sessions      Session[]
+  ratings       UserRating[]
+  watched       UserWatched[]
+  watchlist     UserWatchlist[]
+  auditLogs     AuditLog[]
 
   @@map("users")
 }
 
 model UserRating {
-  userId     Int      @map("user_id")
+  userId     String   @map("user_id")
   movieId    Int      @map("movie_id")
   rating     Decimal  @db.Decimal(3, 1)
   reviewText String?  @map("review_text")
@@ -571,7 +634,7 @@ model UserRating {
 }
 
 model UserWatchlist {
-  userId  Int      @map("user_id")
+  userId  String   @map("user_id")
   movieId Int      @map("movie_id")
   addedAt DateTime @default(now()) @map("added_at")
   movie   Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
@@ -582,7 +645,7 @@ model UserWatchlist {
 }
 
 model UserWatched {
-  userId    Int      @map("user_id")
+  userId    String   @map("user_id")
   movieId   Int      @map("movie_id")
   watchedAt DateTime @default(now()) @map("watched_at")
   movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
@@ -599,6 +662,12 @@ enum ImageType {
   BEHIND_SCENES
 
   @@map("image_type")
+}
+
+enum UserRole {
+  ADMIN
+  EDITOR
+  VIEWER
 }
 
 enum Department {

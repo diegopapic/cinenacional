@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-26T00:47:57.167Z",
+  "timestamp": "2025-08-26T02:07:40.545Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "1c206fc16e1141047af6f260de917796dc10013d",
+  "commit": "29698d1eb0c44e934e5ba734daf89d8cda7fb9da",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
@@ -147,11 +147,8 @@
     "postcss.config.mjs": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/postcss.config.mjs",
     "prisma": {
       "migrations": {
-        "0_init": {
-          "migration.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/0_init/migration.sql"
-        },
-        "20250824211257_add_performance_indexes": {
-          "migration.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250824211257_add_performance_indexes/migration.sql"
+        "20240101000000_baseline": {
+          "migration.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20240101000000_baseline/migration.sql"
         },
         "migration_lock.toml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/migration_lock.toml"
       },
@@ -228,6 +225,7 @@
       "compile-project-code.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/compile-project-code.js",
       "countries-list.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/countries-list.json",
       "countries-names.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/countries-names.txt",
+      "create-admin.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/create-admin.ts",
       "create-missing-roles.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/create-missing-roles.js",
       "crew-omitted-diagnosis.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/crew-omitted-diagnosis.json",
       "debug-dates.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/debug-dates.js",
@@ -326,9 +324,13 @@
               }
             }
           },
+          "login": {
+            "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/login/page.tsx"
+          },
           "movies": {
             "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/movies/page.tsx"
           },
+          "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/page.tsx",
           "people": {
             "new": {
               "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/people/new/page.tsx"
@@ -352,6 +354,11 @@
           }
         },
         "api": {
+          "auth": {
+            "[...nextauth]": {
+              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/auth/[...nextauth]/route.ts"
+            }
+          },
           "calificaciones": {
             "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/calificaciones/route.ts",
             "[id]": {

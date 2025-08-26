@@ -1,7 +1,80 @@
-// Archivos del admin - 2025-08-26T00:47:57.511Z
+// Archivos del admin - 2025-08-26T02:07:40.960Z
 // ==================
 
 
+
+// ==================================================
+// scripts/create-admin.ts
+// ==================================================
+// scripts/create-admin.ts
+
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
+import { config } from 'dotenv'
+import path from 'path'
+
+config()
+
+const prisma = new PrismaClient()
+
+// Cargar .env.local específicamente
+config({ path: path.resolve(process.cwd(), '.env.local') })
+
+async function createAdmin() {
+  const email = process.env.ADMIN_EMAIL || 'admin@cinenacional.com'
+  const password = process.env.ADMIN_PASSWORD || 'ChangeMeNow2024!'
+  const username = process.env.ADMIN_USERNAME || 'admin'
+  
+  try {
+    const hashedPassword = await bcrypt.hash(password, 12)
+    
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: {
+        password: hashedPassword,
+        role: 'ADMIN',
+        isAdmin: true,  // Por compatibilidad
+        isActive: true
+      },
+      create: {
+        email,
+        username,
+        password: hashedPassword,
+        displayName: 'Administrador',
+        role: 'ADMIN',
+        isAdmin: true,  // Por compatibilidad
+        isActive: true
+      }
+    })
+    
+    console.log('✅ Usuario admin creado/actualizado:')
+    console.log('📧 Email:', user.email)
+    console.log('👤 Username:', user.username || 'N/A')
+    console.log('🔑 Password temporal:', password)
+    console.log('\n⚠️  IMPORTANTE: Cambia la contraseña después del primer login')
+    
+    // Crear log de auditoría
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'ADMIN_CREATED',
+        entity: 'user',
+        entityId: user.id,
+        metadata: {
+          createdBy: 'script',
+          timestamp: new Date().toISOString()
+        }
+      }
+    })
+    
+  } catch (error) {
+    console.error('Error creando admin:', error)
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+createAdmin()
 
 // ==================================================
 // src/app/admin/calificaciones/page.tsx
@@ -1584,6 +1657,116 @@ export default async function EditLocationPage({ params }: EditLocationPageProps
 }
 
 // ==================================================
+// src/app/admin/login/page.tsx
+// ==================================================
+// src/app/login/page.tsx
+
+'use client'
+
+import { useState } from 'react'
+import { signIn } from 'next-auth/react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { toast } from 'react-hot-toast'
+
+export default function LoginPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get('callbackUrl') || '/admin'
+  
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  })
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    
+    try {
+      const result = await signIn('credentials', {
+        email: formData.email,
+        password: formData.password,
+        redirect: false
+      })
+      
+      if (result?.error) {
+        toast.error('Credenciales inválidas')
+      } else {
+        toast.success('¡Bienvenido!')
+        router.push(callbackUrl)
+      }
+    } catch (error) {
+      toast.error('Error al iniciar sesión')
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Acceso Administrativo
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            CineNacional Admin Panel
+          </p>
+        </div>
+        
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="email" className="sr-only">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Email"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">
+                Contraseña
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Contraseña"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            >
+              {loading ? 'Ingresando...' : 'Ingresar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ==================================================
 // src/app/admin/movies/page.tsx
 // ==================================================
 // src/app/admin/movies/page.tsx
@@ -1730,6 +1913,49 @@ export default function AdminMoviesPage() {
             onClose={handleCloseModal}
           />
         </MovieModalProvider>
+      </div>
+    </div>
+  )
+}
+
+// ==================================================
+// src/app/admin/page.tsx
+// ==================================================
+export default function AdminDashboard() {
+  return (
+    <div className="p-8">
+      <h1 className="text-3xl font-bold mb-6">Panel de Administración</h1>
+      
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <a href="/admin/movies" className="p-6 bg-white rounded-lg shadow hover:shadow-lg">
+          <h2 className="text-xl font-semibold">Películas</h2>
+          <p className="text-gray-600">Gestionar películas</p>
+        </a>
+        
+        <a href="/admin/people" className="p-6 bg-white rounded-lg shadow hover:shadow-lg">
+          <h2 className="text-xl font-semibold">Personas</h2>
+          <p className="text-gray-600">Gestionar personas</p>
+        </a>
+        
+        <a href="/admin/genres" className="p-6 bg-white rounded-lg shadow hover:shadow-lg">
+          <h2 className="text-xl font-semibold">Géneros</h2>
+          <p className="text-gray-600">Gestionar géneros</p>
+        </a>
+        
+        <a href="/admin/locations" className="p-6 bg-white rounded-lg shadow hover:shadow-lg">
+          <h2 className="text-xl font-semibold">Ubicaciones</h2>
+          <p className="text-gray-600">Gestionar ubicaciones</p>
+        </a>
+        
+        <a href="/admin/themes" className="p-6 bg-white rounded-lg shadow hover:shadow-lg">
+          <h2 className="text-xl font-semibold">Temas</h2>
+          <p className="text-gray-600">Gestionar temas</p>
+        </a>
+        
+        <a href="/admin/roles" className="p-6 bg-white rounded-lg shadow hover:shadow-lg">
+          <h2 className="text-xl font-semibold">Roles</h2>
+          <p className="text-gray-600">Gestionar roles</p>
+        </a>
       </div>
     </div>
   )
