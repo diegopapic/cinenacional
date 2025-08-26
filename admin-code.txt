@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-26T02:15:56.866Z
+// Archivos del admin - 2025-08-26T02:23:55.748Z
 // ==================
 
 
@@ -1928,6 +1928,8 @@ export default function AdminMoviesPage() {
 // ==================================================
 // src/app/admin/page.tsx
 // ==================================================
+export const dynamic = 'force-dynamic'
+
 export default function AdminDashboard() {
   return (
     <div className="p-8">
