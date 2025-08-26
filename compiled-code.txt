@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 4c2a57e46bbb802717ffe7255be051f1a4f65708
-// Fecha: 2025-08-26T02:59:17.983Z
+// Commit: ec9e93c55ab4aca0775e51710a9fc8cea91fd949
+// Fecha: 2025-08-26T03:06:55.535Z
 // ============================================
 
 
@@ -1707,7 +1707,7 @@ function LoginForm() {
         toast.error('Credenciales inválidas')
       } else {
         toast.success('¡Bienvenido!')
-        router.push(callbackUrl)
+        window.location.href = callbackUrl
       }
     } catch (error) {
       toast.error('Error al iniciar sesión')
