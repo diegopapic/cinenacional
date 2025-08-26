@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-26T00:47:57.688Z
+# Generado automáticamente el: 2025-08-26T02:07:41.157Z
 # ================================================
 
 ## Schema Prisma
@@ -111,6 +111,24 @@ model ScreeningVenue {
   @@index([type])
   @@index([isActive])
   @@map("screening_venues")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 
 model MovieScreening {
@@ -524,6 +542,45 @@ model Country {
   @@map("countries")
 }
 
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
 model MovieCountry {
   movieId   Int     @map("movie_id")
   countryId Int     @map("country_id")
@@ -545,26 +602,32 @@ model Language {
 }
 
 model User {
-  id           Int             @id @default(autoincrement())
-  email        String          @unique @db.VarChar(255)
-  username     String          @unique @db.VarChar(100)
-  passwordHash String          @map("password_hash") @db.VarChar(255)
-  displayName  String?         @map("display_name") @db.VarChar(255)
-  avatarUrl    String?         @map("avatar_url") @db.VarChar(500)
-  bio          String?
-  isActive     Boolean         @default(true) @map("is_active")
-  isAdmin      Boolean         @default(false) @map("is_admin")
-  createdAt    DateTime        @default(now()) @map("created_at")
-  updatedAt    DateTime        @updatedAt @map("updated_at")
-  ratings      UserRating[]
-  watched      UserWatched[]
-  watchlist    UserWatchlist[]
+  id            String          @id @default(cuid())
+  email         String          @unique @db.VarChar(255)
+  username      String?         @unique @db.VarChar(100)
+  password      String
+  displayName   String?         @map("display_name") @db.VarChar(255)
+  avatarUrl     String?         @map("avatar_url") @db.VarChar(500)
+  bio           String?
+  role          UserRole        @default(VIEWER)
+  isActive      Boolean         @default(true) @map("is_active")
+  isAdmin       Boolean         @default(false) @map("is_admin")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  lastLogin     DateTime?       @map("last_login")
+  
+  accounts      Account[]
+  sessions      Session[]
+  ratings       UserRating[]
+  watched       UserWatched[]
+  watchlist     UserWatchlist[]
+  auditLogs     AuditLog[]
 
   @@map("users")
 }
 
 model UserRating {
-  userId     Int      @map("user_id")
+  userId     String   @map("user_id")
   movieId    Int      @map("movie_id")
   rating     Decimal  @db.Decimal(3, 1)
   reviewText String?  @map("review_text")
@@ -578,7 +641,7 @@ model UserRating {
 }
 
 model UserWatchlist {
-  userId  Int      @map("user_id")
+  userId  String   @map("user_id")
   movieId Int      @map("movie_id")
   addedAt DateTime @default(now()) @map("added_at")
   movie   Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
@@ -589,7 +652,7 @@ model UserWatchlist {
 }
 
 model UserWatched {
-  userId    Int      @map("user_id")
+  userId    String   @map("user_id")
   movieId   Int      @map("movie_id")
   watchedAt DateTime @default(now()) @map("watched_at")
   movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
@@ -606,6 +669,12 @@ enum ImageType {
   BEHIND_SCENES
 
   @@map("image_type")
+}
+
+enum UserRole {
+  ADMIN
+  EDITOR
+  VIEWER
 }
 
 enum Department {
@@ -725,7 +794,6 @@ enum MovieStage {
 
   @@map("movie_stage")
 }
-
 ```
 
 ## SQL Generado
@@ -736,6 +804,9 @@ CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateEnum
 CREATE TYPE "public"."image_type" AS ENUM ('POSTER', 'BACKDROP', 'STILL', 'BEHIND_SCENES');
+
+-- CreateEnum
+CREATE TYPE "public"."UserRole" AS ENUM ('ADMIN', 'EDITOR', 'VIEWER');
 
 -- CreateEnum
 CREATE TYPE "public"."Department" AS ENUM ('DIRECCION', 'PRODUCCION', 'GUION', 'FOTOGRAFIA', 'ARTE', 'MONTAJE', 'SONIDO', 'MUSICA', 'VESTUARIO', 'MAQUILLAJE', 'EFECTOS', 'ANIMACION', 'OTROS');
@@ -828,6 +899,21 @@ CREATE TABLE "public"."screening_venues" (
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "screening_venues_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."audit_logs" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "entity" TEXT,
+    "entityId" TEXT,
+    "metadata" JSONB,
+    "ip" TEXT,
+    "userAgent" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -1173,6 +1259,41 @@ CREATE TABLE "public"."countries" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."sessions" (
+    "id" TEXT NOT NULL,
+    "sessionToken" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "sessions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."accounts" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "providerAccountId" TEXT NOT NULL,
+    "refresh_token" TEXT,
+    "access_token" TEXT,
+    "expires_at" INTEGER,
+    "token_type" TEXT,
+    "scope" TEXT,
+    "id_token" TEXT,
+    "session_state" TEXT,
+
+    CONSTRAINT "accounts_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."verification_tokens" (
+    "identifier" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL
+);
+
+-- CreateTable
 CREATE TABLE "public"."movie_countries" (
     "movie_id" INTEGER NOT NULL,
     "country_id" INTEGER NOT NULL,
@@ -1193,24 +1314,26 @@ CREATE TABLE "public"."languages" (
 
 -- CreateTable
 CREATE TABLE "public"."users" (
-    "id" SERIAL NOT NULL,
+    "id" TEXT NOT NULL,
     "email" VARCHAR(255) NOT NULL,
-    "username" VARCHAR(100) NOT NULL,
-    "password_hash" VARCHAR(255) NOT NULL,
+    "username" VARCHAR(100),
+    "password" TEXT NOT NULL,
     "display_name" VARCHAR(255),
     "avatar_url" VARCHAR(500),
     "bio" TEXT,
+    "role" "public"."UserRole" NOT NULL DEFAULT 'VIEWER',
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "is_admin" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "last_login" TIMESTAMP(3),
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "public"."user_ratings" (
-    "user_id" INTEGER NOT NULL,
+    "user_id" TEXT NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "rating" DECIMAL(3,1) NOT NULL,
     "review_text" TEXT,
@@ -1222,7 +1345,7 @@ CREATE TABLE "public"."user_ratings" (
 
 -- CreateTable
 CREATE TABLE "public"."user_watchlist" (
-    "user_id" INTEGER NOT NULL,
+    "user_id" TEXT NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "added_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -1231,7 +1354,7 @@ CREATE TABLE "public"."user_watchlist" (
 
 -- CreateTable
 CREATE TABLE "public"."user_watched" (
-    "user_id" INTEGER NOT NULL,
+    "user_id" TEXT NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "watched_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -1297,6 +1420,12 @@ CREATE INDEX "screening_venues_type_idx" ON "public"."screening_venues"("type");
 
 -- CreateIndex
 CREATE INDEX "screening_venues_is_active_idx" ON "public"."screening_venues"("is_active");
+
+-- CreateIndex
+CREATE INDEX "audit_logs_user_id_idx" ON "public"."audit_logs"("user_id");
+
+-- CreateIndex
+CREATE INDEX "audit_logs_createdAt_idx" ON "public"."audit_logs"("createdAt");
 
 -- CreateIndex
 CREATE INDEX "movie_screenings_movie_id_idx" ON "public"."movie_screenings"("movie_id");
@@ -1461,6 +1590,18 @@ CREATE INDEX "ratings_order_idx" ON "public"."ratings"("order");
 CREATE UNIQUE INDEX "countries_code_key" ON "public"."countries"("code");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "sessions_sessionToken_key" ON "public"."sessions"("sessionToken");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "accounts_provider_providerAccountId_key" ON "public"."accounts"("provider", "providerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "verification_tokens_token_key" ON "public"."verification_tokens"("token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "verification_tokens_identifier_token_key" ON "public"."verification_tokens"("identifier", "token");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "languages_code_key" ON "public"."languages"("code");
 
 -- CreateIndex
@@ -1474,6 +1615,9 @@ ALTER TABLE "public"."movies" ADD CONSTRAINT "movies_color_type_id_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "public"."movies" ADD CONSTRAINT "movies_rating_id_fkey" FOREIGN KEY ("rating_id") REFERENCES "public"."ratings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."audit_logs" ADD CONSTRAINT "audit_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_screenings" ADD CONSTRAINT "movie_screenings_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1558,6 +1702,12 @@ ALTER TABLE "public"."movie_themes" ADD CONSTRAINT "movie_themes_movie_id_fkey" 
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_themes" ADD CONSTRAINT "movie_themes_theme_id_fkey" FOREIGN KEY ("theme_id") REFERENCES "public"."themes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."sessions" ADD CONSTRAINT "sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."accounts" ADD CONSTRAINT "accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "public"."countries"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -5,6 +5,9 @@ CREATE SCHEMA IF NOT EXISTS "public";
 CREATE TYPE "public"."image_type" AS ENUM ('POSTER', 'BACKDROP', 'STILL', 'BEHIND_SCENES');
 
 -- CreateEnum
+CREATE TYPE "public"."UserRole" AS ENUM ('ADMIN', 'EDITOR', 'VIEWER');
+
+-- CreateEnum
 CREATE TYPE "public"."Department" AS ENUM ('DIRECCION', 'PRODUCCION', 'GUION', 'FOTOGRAFIA', 'ARTE', 'MONTAJE', 'SONIDO', 'MUSICA', 'VESTUARIO', 'MAQUILLAJE', 'EFECTOS', 'ANIMACION', 'OTROS');
 
 -- CreateEnum
@@ -95,6 +98,21 @@ CREATE TABLE "public"."screening_venues" (
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "screening_venues_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."audit_logs" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "entity" TEXT,
+    "entityId" TEXT,
+    "metadata" JSONB,
+    "ip" TEXT,
+    "userAgent" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -440,6 +458,41 @@ CREATE TABLE "public"."countries" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."sessions" (
+    "id" TEXT NOT NULL,
+    "sessionToken" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "sessions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."accounts" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "providerAccountId" TEXT NOT NULL,
+    "refresh_token" TEXT,
+    "access_token" TEXT,
+    "expires_at" INTEGER,
+    "token_type" TEXT,
+    "scope" TEXT,
+    "id_token" TEXT,
+    "session_state" TEXT,
+
+    CONSTRAINT "accounts_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."verification_tokens" (
+    "identifier" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL
+);
+
+-- CreateTable
 CREATE TABLE "public"."movie_countries" (
     "movie_id" INTEGER NOT NULL,
     "country_id" INTEGER NOT NULL,
@@ -460,24 +513,26 @@ CREATE TABLE "public"."languages" (
 
 -- CreateTable
 CREATE TABLE "public"."users" (
-    "id" SERIAL NOT NULL,
+    "id" TEXT NOT NULL,
     "email" VARCHAR(255) NOT NULL,
-    "username" VARCHAR(100) NOT NULL,
-    "password_hash" VARCHAR(255) NOT NULL,
+    "username" VARCHAR(100),
+    "password" TEXT NOT NULL,
     "display_name" VARCHAR(255),
     "avatar_url" VARCHAR(500),
     "bio" TEXT,
+    "role" "public"."UserRole" NOT NULL DEFAULT 'VIEWER',
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "is_admin" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "last_login" TIMESTAMP(3),
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "public"."user_ratings" (
-    "user_id" INTEGER NOT NULL,
+    "user_id" TEXT NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "rating" DECIMAL(3,1) NOT NULL,
     "review_text" TEXT,
@@ -489,7 +544,7 @@ CREATE TABLE "public"."user_ratings" (
 
 -- CreateTable
 CREATE TABLE "public"."user_watchlist" (
-    "user_id" INTEGER NOT NULL,
+    "user_id" TEXT NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "added_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -498,7 +553,7 @@ CREATE TABLE "public"."user_watchlist" (
 
 -- CreateTable
 CREATE TABLE "public"."user_watched" (
-    "user_id" INTEGER NOT NULL,
+    "user_id" TEXT NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "watched_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -548,6 +603,12 @@ CREATE INDEX "movies_release_year_idx" ON "public"."movies"("release_year");
 CREATE INDEX "movies_release_year_release_month_idx" ON "public"."movies"("release_year", "release_month");
 
 -- CreateIndex
+CREATE INDEX "movies_release_year_release_month_release_day_idx" ON "public"."movies"("release_year", "release_month", "release_day");
+
+-- CreateIndex
+CREATE INDEX "movies_created_at_idx" ON "public"."movies"("created_at");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "screening_venues_slug_key" ON "public"."screening_venues"("slug");
 
 -- CreateIndex
@@ -558,6 +619,12 @@ CREATE INDEX "screening_venues_type_idx" ON "public"."screening_venues"("type");
 
 -- CreateIndex
 CREATE INDEX "screening_venues_is_active_idx" ON "public"."screening_venues"("is_active");
+
+-- CreateIndex
+CREATE INDEX "audit_logs_user_id_idx" ON "public"."audit_logs"("user_id");
+
+-- CreateIndex
+CREATE INDEX "audit_logs_createdAt_idx" ON "public"."audit_logs"("createdAt");
 
 -- CreateIndex
 CREATE INDEX "movie_screenings_movie_id_idx" ON "public"."movie_screenings"("movie_id");
@@ -617,6 +684,9 @@ CREATE INDEX "people_death_year_idx" ON "public"."people"("death_year");
 CREATE INDEX "people_death_year_death_month_idx" ON "public"."people"("death_year", "death_month");
 
 -- CreateIndex
+CREATE INDEX "people_created_at_idx" ON "public"."people"("created_at");
+
+-- CreateIndex
 CREATE INDEX "person_links_person_id_idx" ON "public"."person_links"("person_id");
 
 -- CreateIndex
@@ -651,6 +721,9 @@ CREATE INDEX "movie_crew_person_id_idx" ON "public"."movie_crew"("person_id");
 
 -- CreateIndex
 CREATE INDEX "movie_crew_role_id_idx" ON "public"."movie_crew"("role_id");
+
+-- CreateIndex
+CREATE INDEX "movie_crew_movie_id_role_id_idx" ON "public"."movie_crew"("movie_id", "role_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "movie_crew_movie_id_person_id_role_id_key" ON "public"."movie_crew"("movie_id", "person_id", "role_id");
@@ -716,6 +789,18 @@ CREATE INDEX "ratings_order_idx" ON "public"."ratings"("order");
 CREATE UNIQUE INDEX "countries_code_key" ON "public"."countries"("code");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "sessions_sessionToken_key" ON "public"."sessions"("sessionToken");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "accounts_provider_providerAccountId_key" ON "public"."accounts"("provider", "providerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "verification_tokens_token_key" ON "public"."verification_tokens"("token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "verification_tokens_identifier_token_key" ON "public"."verification_tokens"("identifier", "token");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "languages_code_key" ON "public"."languages"("code");
 
 -- CreateIndex
@@ -729,6 +814,9 @@ ALTER TABLE "public"."movies" ADD CONSTRAINT "movies_color_type_id_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "public"."movies" ADD CONSTRAINT "movies_rating_id_fkey" FOREIGN KEY ("rating_id") REFERENCES "public"."ratings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."audit_logs" ADD CONSTRAINT "audit_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_screenings" ADD CONSTRAINT "movie_screenings_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -813,6 +901,12 @@ ALTER TABLE "public"."movie_themes" ADD CONSTRAINT "movie_themes_movie_id_fkey" 
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_themes" ADD CONSTRAINT "movie_themes_theme_id_fkey" FOREIGN KEY ("theme_id") REFERENCES "public"."themes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."sessions" ADD CONSTRAINT "sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."accounts" ADD CONSTRAINT "accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "public"."countries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
