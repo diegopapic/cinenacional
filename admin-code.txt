@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-26T02:59:18.002Z
+// Archivos del admin - 2025-08-26T03:06:55.561Z
 // ==================
 
 
@@ -1695,7 +1695,7 @@ function LoginForm() {
         toast.error('Credenciales inválidas')
       } else {
         toast.success('¡Bienvenido!')
-        router.push(callbackUrl)
+        window.location.href = callbackUrl
       }
     } catch (error) {
       toast.error('Error al iniciar sesión')

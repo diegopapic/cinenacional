@@ -32,7 +32,7 @@ function LoginForm() {
         toast.error('Credenciales inválidas')
       } else {
         toast.success('¡Bienvenido!')
-        router.push(callbackUrl)
+        window.location.href = callbackUrl
       }
     } catch (error) {
       toast.error('Error al iniciar sesión')
