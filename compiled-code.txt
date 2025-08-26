@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 29698d1eb0c44e934e5ba734daf89d8cda7fb9da
-// Fecha: 2025-08-26T02:07:40.883Z
+// Commit: 68ce9c02d1d5692ca8bfa4cbe540f3d7051a745a
+// Fecha: 2025-08-26T02:11:47.584Z
 // ============================================
 
 
@@ -30320,6 +30320,31 @@ export interface HomeDataResponse {
   proximosEstrenos: MovieWithRelease[];
   ultimasPeliculas: SimpleMovie[];
   ultimasPersonas: SimplePerson[];
+}
+
+// ==================================================
+// src/types/next-auth.d.ts
+// ==================================================
+import { DefaultSession } from "next-auth"
+
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string
+      role: string
+    } & DefaultSession["user"]
+  }
+
+  interface User {
+    role: string
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string
+    role: string
+  }
 }
 
 // ==================================================
