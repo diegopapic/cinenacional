@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 37a2fc117792290c725a8e553febdbb4aed82b4a
-// Fecha: 2025-08-26T18:31:04.891Z
+// Commit: b894c8b23d799787def0360d22aea909c4b24799
+// Fecha: 2025-08-26T18:47:47.275Z
 // ============================================
 
 
@@ -22012,6 +22012,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
           </div>
         )}
       </div>
+      {/*
       <div className="mt-6 text-center">
         <Link
           href="/efemerides"
@@ -22020,6 +22021,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
           Ver más efemérides
         </Link>
       </div>
+      */}
     </section>
   );
 }
@@ -22332,8 +22334,7 @@ export default function MoviesGrid({
           ))}
         </div>
       )}
-
-      {ctaText && ctaHref && (
+      {/*ctaText && ctaHref && (
         <div className="mt-6 text-center">
           <Link
             href={ctaHref}
@@ -22342,7 +22343,7 @@ export default function MoviesGrid({
             {ctaText}
           </Link>
         </div>
-      )}
+      )*/}
     </section>
   );
 }
@@ -22463,6 +22464,7 @@ export default function ObituariosSection({ obituarios, loading = false }: Obitu
           })}
         </div>
       </div>
+      {/*
       <div className="mt-6 text-center">
         <Link
           href="/listados/personas?hasDeathDate=true&sortBy=deathDate&sortOrder=desc"
@@ -22471,6 +22473,7 @@ export default function ObituariosSection({ obituarios, loading = false }: Obitu
           Ver más obituarios
         </Link>
       </div>
+      */}
     </section>
   );
 }
@@ -22538,7 +22541,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
           ))}
         </div>
       )}
-
+{/*
       <div className="mt-6 text-center">
         <Link
           href="/listados/peliculas?sort=createdAt"
@@ -22547,6 +22550,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
           Ver más películas recientes
         </Link>
       </div>
+      */}
     </section>
   );
 }
@@ -22625,7 +22629,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
           ))}
         </div>
       )}
-
+{/*
       <div className="mt-6 text-center">
         <Link
           href="/listados/personas?sort=createdAt"
@@ -22634,6 +22638,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
           Ver más personas recientes
         </Link>
       </div>
+      */}
     </section>
   );
 }
@@ -22678,33 +22683,33 @@ import { FaInstagram, FaFacebook, FaYoutube } from 'react-icons/fa'
 export default function Footer() {
   const currentYear = new Date().getFullYear()
 
-  const footerLinks = {
-    explore: [
-      { href: '/peliculas', label: 'Todas las Películas' },
-      { href: '/personas', label: 'Directores y Actores' },
-      { href: '/generos', label: 'Explorar por Género' },
-      { href: '/anos', label: 'Películas por Año' },
-    ],
-    about: [
-      { href: '/sobre-nosotros', label: 'Sobre CineNacional' },
-      { href: '/contacto', label: 'Contacto' },
-      { href: '/api', label: 'API para Desarrolladores' },
-      { href: '/colaborar', label: 'Cómo Colaborar' },
-    ],
-    legal: [
-      { href: '/terminos', label: 'Términos de Uso' },
-      { href: '/privacidad', label: 'Política de Privacidad' },
-      { href: '/copyright', label: 'Derechos de Autor' },
-    ],
-  }
+  // const footerLinks = {
+  //   explore: [
+  //     { href: '/peliculas', label: 'Todas las Películas' },
+  //     { href: '/personas', label: 'Directores y Actores' },
+  //     { href: '/generos', label: 'Explorar por Género' },
+  //     { href: '/anos', label: 'Películas por Año' },
+  //   ],
+  //   about: [
+  //     { href: '/sobre-nosotros', label: 'Sobre CineNacional' },
+  //     { href: '/contacto', label: 'Contacto' },
+  //     { href: '/api', label: 'API para Desarrolladores' },
+  //     { href: '/colaborar', label: 'Cómo Colaborar' },
+  //   ],
+  //   legal: [
+  //     { href: '/terminos', label: 'Términos de Uso' },
+  //     { href: '/privacidad', label: 'Política de Privacidad' },
+  //     { href: '/copyright', label: 'Derechos de Autor' },
+  //   ],
+  // }
 
   return (
     <footer className="bg-zinc-900 border-t border-zinc-800 mt-auto">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand Section */}
-          <div className="col-span-1">
-            <Link href="/" className="flex items-center space-x-2 text-white mb-4">
+          <div className="col-span-1 md:col-span-4 text-center md:text-left">
+            <Link href="/" className="flex items-center space-x-2 text-white mb-4 justify-center md:justify-start">
               <Image
                 src="/logo.svg"
                 alt="cinenacional.com"
@@ -22717,7 +22722,7 @@ export default function Footer() {
             <p className="text-gray-400 text-sm mb-4">
               La base de datos más completa del cine argentino.
             </p>
-            <div className="flex space-x-4">
+            <div className="flex space-x-4 justify-center md:justify-start">
               <a href="https://x.com/cinenacional" className="text-gray-400 hover:text-white transition-colors">
                 <X className="w-5 h-5" />
               </a>
@@ -22731,7 +22736,7 @@ export default function Footer() {
           </div>
 
           {/* Explore Links */}
-          <div>
+          {/* <div>
             <h3 className="text-white font-semibold mb-4">Explorar</h3>
             <ul className="space-y-2">
               {footerLinks.explore.map((link) => (
@@ -22742,10 +22747,10 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
 
           {/* About Links */}
-          <div>
+          {/* <div>
             <h3 className="text-white font-semibold mb-4">Información</h3>
             <ul className="space-y-2">
               {footerLinks.about.map((link) => (
@@ -22756,10 +22761,10 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
 
           {/* Legal Links */}
-          <div>
+          {/* <div>
             <h3 className="text-white font-semibold mb-4">Legal</h3>
             <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
@@ -22770,7 +22775,7 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
         </div>
 
         {/* Bottom Bar */}
@@ -22791,25 +22796,25 @@ export default function Footer() {
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Menu, X } from 'lucide-react'
+// import { Menu, X } from 'lucide-react'
 import SearchBar from './SearchBar'
-import { useState } from 'react'
-import { usePathname } from 'next/navigation'
+// import { useState } from 'react'
+// import { usePathname } from 'next/navigation'
 
 export default function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const pathname = usePathname()
+  // const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  // const pathname = usePathname()
 
-  const navigation = [
-    { name: 'Películas', href: '/listados/peliculas' },
-    { name: 'Personas', href: '/listados/personas' },
-    { name: 'Géneros', href: '/generos' },
-    { name: 'Sobre Nosotros', href: '/sobre-nosotros' },
-  ]
+  // const navigation = [
+  //   { name: 'Películas', href: '/listados/peliculas' },
+  //   { name: 'Personas', href: '/listados/personas' },
+  //   { name: 'Géneros', href: '/generos' },
+  //   { name: 'Sobre Nosotros', href: '/sobre-nosotros' },
+  // ]
 
-  const isActive = (href: string) => {
-    return pathname.startsWith(href)
-  }
+  // const isActive = (href: string) => {
+  //   return pathname.startsWith(href)
+  // }
 
   return (
     <header className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-40">
@@ -22833,7 +22838,7 @@ export default function Header() {
           </div>
 
           {/* Navegación principal - desktop */}
-          <nav className="hidden md:flex items-center space-x-6 flex-shrink-0">
+          {/* <nav className="hidden md:flex items-center space-x-6 flex-shrink-0">
             {navigation.map((item) => (
               <Link
                 key={item.name}
@@ -22847,10 +22852,10 @@ export default function Header() {
                 {item.name}
               </Link>
             ))}
-          </nav>
+          </nav> */}
 
           {/* Botón menú móvil */}
-          <button
+          {/* <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 rounded-md text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
             aria-label="Abrir menú"
@@ -22860,7 +22865,7 @@ export default function Header() {
             ) : (
               <Menu className="w-6 h-6" />
             )}
-          </button>
+          </button> */}
         </div>
 
         {/* Buscador móvil - debajo del header principal */}
@@ -22870,7 +22875,7 @@ export default function Header() {
       </div>
 
       {/* Menú móvil */}
-      {mobileMenuOpen && (
+      {/* {mobileMenuOpen && (
         <div className="md:hidden border-t border-zinc-800 bg-zinc-900">
           <nav className="px-4 py-2 space-y-1">
             {navigation.map((item) => (
@@ -22889,7 +22894,7 @@ export default function Header() {
             ))}
           </nav>
         </div>
-      )}
+      )} */}
     </header>
   )
 }
