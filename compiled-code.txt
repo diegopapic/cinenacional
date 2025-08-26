@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: f2424a7921dee27fd73e22015ca2699c559b513e
-// Fecha: 2025-08-26T02:23:55.731Z
+// Commit: d85112e22143589d428737797abe2e57f9c6a512
+// Fecha: 2025-08-26T02:27:45.716Z
 // ============================================
 
 
@@ -1380,6 +1380,8 @@ export default function AdminGenresPage() {
 // ==================================================
 // src/app/admin/layout.tsx
 'use client'
+
+import '../globals.css'
 
 import Link from 'next/link'
 import { 
