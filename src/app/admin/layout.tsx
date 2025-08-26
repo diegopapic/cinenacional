@@ -1,7 +1,7 @@
 // src/app/admin/layout.tsx
 'use client'
 
-import '../globals.css'
+import './admin.css'
 
 import Link from 'next/link'
 import { 

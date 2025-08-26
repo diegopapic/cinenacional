@@ -1240,6 +1240,11 @@
     "size": 0
   },
   {
+    "path": "src/app/admin/admin.css",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/admin.css",
+    "size": 0
+  },
+  {
     "path": "src/app/admin/calificaciones/page.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/calificaciones/page.tsx",
     "size": 0
