@@ -8,7 +8,6 @@ import {
  PersonFilters,
  PaginatedPeopleResponse
 } from '@/lib/people/peopleTypes';
-import { formatPersonFormDataForAPI } from '@/lib/people/peopleUtils';
 import { dateToPartialFields, partialFieldsToDate } from '@/lib/shared/dateUtils';
 
 interface PersonSearchResult {
@@ -90,9 +89,6 @@ function formatPersonDataForAPI(data: PersonFormData): any {
 * Convierte los datos de la API al formato del formulario
 */
 function formatPersonFromAPI(person: any): PersonFormData {
- console.log('formatPersonFromAPI - Raw person data:', person); // Debug log
- console.log('formatPersonFromAPI - Nationalities raw:', person.nationalities); // Debug log
- 
  const formData: PersonFormData = {
    firstName: person.firstName || '',
    lastName: person.lastName || '',
@@ -150,16 +146,11 @@ function formatPersonFromAPI(person: any): PersonFormData {
    }
  }
 
- // Procesar nacionalidades - ACTUALIZADO para manejar la estructura con 'location'
+ // Procesar nacionalidades
  if (person.nationalities && Array.isArray(person.nationalities)) {
-   console.log('Processing nationalities, raw data:', person.nationalities); // Debug log
-   
    formData.nationalities = person.nationalities.map((n: any) => {
-     console.log('Processing nationality item:', n); // Debug log
-     
      // Si es un número directo
      if (typeof n === 'number') {
-       console.log('Direct number:', n);
        return n;
      }
      
@@ -167,34 +158,27 @@ function formatPersonFromAPI(person: any): PersonFormData {
      if (typeof n === 'object' && n !== null) {
        // Primero intentar con locationId (campo directo)
        if (n.locationId) {
-         console.log('Found locationId:', n.locationId);
          return n.locationId;
        }
        
        // Si tiene un campo 'location' con id (estructura que viene de la API con include)
        if (n.location && n.location.id) {
-         console.log('Found location.id:', n.location.id);
          return n.location.id;
        }
        
        // Si tiene un campo 'country' con id (por si acaso)
        if (n.country && n.country.id) {
-         console.log('Found country.id:', n.country.id);
          return n.country.id;
        }
        
        // Si tiene un id directo
        if (n.id) {
-         console.log('Found direct id:', n.id);
          return n.id;
        }
      }
      
-     console.log('Could not extract ID from:', n);
      return null;
    }).filter((id: any) => id !== null); // Filtrar nulls
-   
-   console.log('Final processed nationalities:', formData.nationalities); // Debug log
  }
 
  return formData;
@@ -204,37 +188,37 @@ export const peopleService = {
  /**
   * Obtiene una lista paginada de personas con filtros
   */
- async getAll(filters: PersonFilters = {}): Promise<PaginatedPeopleResponse> {
-   const params = new URLSearchParams();
-
-   if (filters.search) params.append('search', filters.search);
-   if (filters.gender) params.append('gender', filters.gender);
-   if (filters.hasLinks !== undefined && filters.hasLinks !== '') {
-     params.append('hasLinks', String(filters.hasLinks));
-   }
-   if (filters.isActive !== undefined && filters.isActive !== '') {
-     params.append('isActive', String(filters.isActive));
-   }
-   if (filters.page) params.append('page', String(filters.page));
-   if (filters.limit) params.append('limit', String(filters.limit));
-
-   const response = await apiClient.get<PaginatedPeopleResponse>(`/people?${params}`);
+ async getAll(filters?: PersonFilters, signal?: AbortSignal): Promise<PaginatedPeopleResponse> {
+   const params: Record<string, string> = {};
    
-   // Convertir las fechas de cada persona si es necesario
-   if (response.data && Array.isArray(response.data)) {
-     response.data = response.data.map((person: any) => ({
-       ...person,
-       // Mantener la estructura original pero asegurar que las fechas parciales estén disponibles
-       birthYear: person.birthYear,
-       birthMonth: person.birthMonth,
-       birthDay: person.birthDay,
-       deathYear: person.deathYear,
-       deathMonth: person.deathMonth,
-       deathDay: person.deathDay
-     }));
+   if (filters?.search) params.search = filters.search;
+   if (filters?.gender) params.gender = filters.gender;
+   if (filters?.hasLinks !== undefined) params.hasLinks = String(filters.hasLinks);
+   if (filters?.isActive !== undefined) params.isActive = String(filters.isActive);
+   if (filters?.page) params.page = String(filters.page);
+   if (filters?.limit) params.limit = String(filters.limit);
+   
+   // Construir URL con parámetros
+   const queryString = new URLSearchParams(params).toString();
+   const url = `/api/people${queryString ? `?${queryString}` : ''}`;
+   
+   // Usar fetch directamente con signal
+   const response = await fetch(url, { 
+     method: 'GET',
+     signal
+   });
+   
+   if (!response.ok) {
+     // Si el request fue abortado, lanzar error específico
+     if (signal?.aborted) {
+       const error = new Error('Request aborted');
+       error.name = 'AbortError';
+       throw error;
+     }
+     throw new Error('Error al obtener personas');
    }
-
-   return response;
+   
+   return response.json();
  },
 
  /**
@@ -244,9 +228,19 @@ export const peopleService = {
    if (query.length < 2) return [];
 
    try {
-     return await apiClient.get<PersonSearchResult[]>(
-       `/people?search=${encodeURIComponent(query)}&limit=${limit}`
-     );
+     // Usar fetch directamente para búsqueda
+     const params = new URLSearchParams({
+       search: query,
+       limit: String(limit)
+     });
+     
+     const response = await fetch(`/api/people?${params}`);
+     
+     if (!response.ok) {
+       throw new Error('Error searching people');
+     }
+     
+     return response.json();
    } catch (error) {
      console.error('Error searching people:', error);
      return [];
@@ -257,11 +251,7 @@ export const peopleService = {
   * Obtiene una persona por ID con todas sus relaciones
   */
  async getById(id: number): Promise<PersonWithRelations> {
-   const person = await apiClient.get<PersonWithRelations>(`/people/${id}`);
-   
-   // Si necesitas devolver el formato de formulario, usa formatPersonFromAPI
-   // De lo contrario, devuelve la persona tal cual con los campos de fecha parcial
-   return person;
+   return apiClient.get<PersonWithRelations>(`/people/${id}`);
  },
 
  /**
@@ -269,21 +259,14 @@ export const peopleService = {
   */
  async getByIdForEdit(id: number): Promise<PersonFormData> {
    const person = await apiClient.get<any>(`/people/${id}`);
-   console.log('getByIdForEdit - Raw person from API:', person); // Debug log
-   const formatted = formatPersonFromAPI(person);
-   console.log('getByIdForEdit - Formatted person:', formatted); // Debug log
-   return formatted;
+   return formatPersonFromAPI(person);
  },
 
  /**
   * Crea una nueva persona
   */
  async create(data: PersonFormData): Promise<PersonWithRelations> {
-   // Usar la nueva función que maneja fechas parciales
    const formattedData = formatPersonDataForAPI(data);
-   console.log('Formatted data for API:', formattedData); // <-- Log para debugging
-   console.log('Nationalities being sent:', formattedData.nationalities); // Log específico de nacionalidades
-
    return apiClient.post<PersonWithRelations>('/people', formattedData);
  },
 
@@ -291,7 +274,6 @@ export const peopleService = {
   * Crea una persona rápida (solo con nombre)
   */
  async createQuick(name: string): Promise<Person> {
-   // Separar el nombre en firstName y lastName si es posible
    const nameParts = name.trim().split(' ');
    const quickData = {
      firstName: nameParts[0] || null,
@@ -306,11 +288,7 @@ export const peopleService = {
   * Actualiza una persona
   */
  async update(id: number, data: PersonFormData): Promise<PersonWithRelations> {
-   // Usar la nueva función que maneja fechas parciales
    const formattedData = formatPersonDataForAPI(data);
-   console.log('Formatted data for API update:', formattedData); // <-- Log para debugging
-   console.log('Nationalities being updated:', formattedData.nationalities); // Log específico de nacionalidades
-
    return apiClient.put<PersonWithRelations>(`/people/${id}`, formattedData);
  },
 
@@ -361,7 +339,6 @@ export const peopleService = {
      params.append('isActive', String(filters.isActive));
    }
 
-   // Usamos fetch directamente para manejar el blob
    const response = await fetch(`/api/people/export?${params}`);
 
    if (!response.ok) {

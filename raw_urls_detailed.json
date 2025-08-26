@@ -945,6 +945,11 @@
     "size": 0
   },
   {
+    "path": "scripts/enable-unaccent.sql",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/enable-unaccent.sql",
+    "size": 0
+  },
+  {
     "path": "scripts/export-db-structure.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/export-db-structure.js",
     "size": 0
