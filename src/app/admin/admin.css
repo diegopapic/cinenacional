@@ -1,0 +1,21 @@
+.admin-wrapper * {
+  color: rgb(17 24 39) !important;
+  background-color: transparent;
+}
+
+.admin-wrapper {
+  background-color: rgb(249 250 251);
+  color: rgb(17 24 39);
+}
+
+.admin-wrapper input,
+.admin-wrapper textarea,
+.admin-wrapper select {
+  color: rgb(17 24 39) !important;
+  background-color: white !important;
+  border-color: rgb(209 213 219) !important;
+}
+
+.admin-wrapper button {
+  color: inherit;
+}

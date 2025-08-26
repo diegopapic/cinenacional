@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-26T02:27:45.735Z
+// Archivos del admin - 2025-08-26T02:35:31.426Z
 // ==================
 
 
@@ -1369,7 +1369,7 @@ export default function AdminGenresPage() {
 // src/app/admin/layout.tsx
 'use client'
 
-import '../globals.css'
+import './admin.css'
 
 import Link from 'next/link'
 import { 
