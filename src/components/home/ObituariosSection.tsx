@@ -111,6 +111,7 @@ export default function ObituariosSection({ obituarios, loading = false }: Obitu
           })}
         </div>
       </div>
+      {/*
       <div className="mt-6 text-center">
         <Link
           href="/listados/personas?hasDeathDate=true&sortBy=deathDate&sortOrder=desc"
@@ -119,6 +120,7 @@ export default function ObituariosSection({ obituarios, loading = false }: Obitu
           Ver más obituarios
         </Link>
       </div>
+      */}
     </section>
   );
 }

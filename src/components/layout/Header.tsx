@@ -2,25 +2,25 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Menu, X } from 'lucide-react'
+// import { Menu, X } from 'lucide-react'
 import SearchBar from './SearchBar'
-import { useState } from 'react'
-import { usePathname } from 'next/navigation'
+// import { useState } from 'react'
+// import { usePathname } from 'next/navigation'
 
 export default function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const pathname = usePathname()
+  // const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  // const pathname = usePathname()
 
-  const navigation = [
-    { name: 'Películas', href: '/listados/peliculas' },
-    { name: 'Personas', href: '/listados/personas' },
-    { name: 'Géneros', href: '/generos' },
-    { name: 'Sobre Nosotros', href: '/sobre-nosotros' },
-  ]
+  // const navigation = [
+  //   { name: 'Películas', href: '/listados/peliculas' },
+  //   { name: 'Personas', href: '/listados/personas' },
+  //   { name: 'Géneros', href: '/generos' },
+  //   { name: 'Sobre Nosotros', href: '/sobre-nosotros' },
+  // ]
 
-  const isActive = (href: string) => {
-    return pathname.startsWith(href)
-  }
+  // const isActive = (href: string) => {
+  //   return pathname.startsWith(href)
+  // }
 
   return (
     <header className="bg-zinc-900 border-b border-zinc-800 sticky top-0 z-40">
@@ -44,7 +44,7 @@ export default function Header() {
           </div>
 
           {/* Navegación principal - desktop */}
-          <nav className="hidden md:flex items-center space-x-6 flex-shrink-0">
+          {/* <nav className="hidden md:flex items-center space-x-6 flex-shrink-0">
             {navigation.map((item) => (
               <Link
                 key={item.name}
@@ -58,10 +58,10 @@ export default function Header() {
                 {item.name}
               </Link>
             ))}
-          </nav>
+          </nav> */}
 
           {/* Botón menú móvil */}
-          <button
+          {/* <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 rounded-md text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
             aria-label="Abrir menú"
@@ -71,7 +71,7 @@ export default function Header() {
             ) : (
               <Menu className="w-6 h-6" />
             )}
-          </button>
+          </button> */}
         </div>
 
         {/* Buscador móvil - debajo del header principal */}
@@ -81,7 +81,7 @@ export default function Header() {
       </div>
 
       {/* Menú móvil */}
-      {mobileMenuOpen && (
+      {/* {mobileMenuOpen && (
         <div className="md:hidden border-t border-zinc-800 bg-zinc-900">
           <nav className="px-4 py-2 space-y-1">
             {navigation.map((item) => (
@@ -100,7 +100,7 @@ export default function Header() {
             ))}
           </nav>
         </div>
-      )}
+      )} */}
     </header>
   )
 }

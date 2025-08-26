@@ -69,7 +69,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
           ))}
         </div>
       )}
-
+{/*
       <div className="mt-6 text-center">
         <Link
           href="/listados/personas?sort=createdAt"
@@ -78,6 +78,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
           Ver más personas recientes
         </Link>
       </div>
+      */}
     </section>
   );
 }
