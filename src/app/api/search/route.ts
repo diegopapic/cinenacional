@@ -2,7 +2,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,29 +17,56 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Búsqueda de películas (sin cambios)
-    const movies = await prisma.movie.findMany({
-      where: {
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-        ]
-      },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        releaseYear: true,
-        posterUrl: true
-      },
-      take: limit,
-      orderBy: { title: 'asc' }
-    })
-
-    // BÚSQUEDA MEJORADA DE PERSONAS - Usando SQL raw para búsqueda concatenada
     const searchQuery = query.toLowerCase().trim()
     const searchPattern = `%${searchQuery}%`
-    const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0)
     
+    // Búsqueda de películas con normalización de acentos
+    let movies: any[] = []
+    try {
+      movies = await prisma.$queryRaw`
+        SELECT 
+          id,
+          slug,
+          title,
+          release_year as "releaseYear",
+          poster_url as "posterUrl"
+        FROM movies
+        WHERE 
+          unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
+        ORDER BY 
+          CASE 
+            WHEN unaccent(LOWER(title)) = unaccent(${searchQuery}) THEN 1
+            WHEN unaccent(LOWER(title)) LIKE unaccent(${searchQuery + '%'}) THEN 2
+            ELSE 3
+          END,
+          title ASC
+        LIMIT ${limit}
+      `
+    } catch (err) {
+      console.log('Falling back to standard search for movies')
+      // Fallback si unaccent no está instalado
+      const movieResults = await prisma.movie.findMany({
+        where: {
+          title: { contains: query, mode: 'insensitive' }
+        },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          releaseYear: true,
+          posterUrl: true
+        },
+        take: limit,
+        orderBy: { title: 'asc' }
+      })
+      movies = movieResults.map(m => ({
+        ...m,
+        releaseYear: m.releaseYear
+      }))
+    }
+
+    // Búsqueda de personas con normalización de acentos
+    const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0)
     let people: any[] = []
     
     try {
@@ -58,16 +84,16 @@ export async function GET(request: NextRequest) {
           FROM people
           WHERE is_active = true
           AND (
-            LOWER(first_name) LIKE ${searchPattern}
-            OR LOWER(last_name) LIKE ${searchPattern}
-            OR LOWER(real_name) LIKE ${searchPattern}
-            OR LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchPattern}
+            unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${searchPattern})
+            OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${searchPattern})
+            OR unaccent(LOWER(COALESCE(real_name, ''))) LIKE unaccent(${searchPattern})
+            OR unaccent(LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE unaccent(${searchPattern})
           )
           ORDER BY 
             CASE 
-              WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) = ${searchQuery} THEN 1
-              WHEN LOWER(first_name) = ${searchQuery} OR LOWER(last_name) = ${searchQuery} THEN 2
-              WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchQuery + '%'} THEN 3
+              WHEN unaccent(LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) = unaccent(${searchQuery}) THEN 1
+              WHEN unaccent(LOWER(COALESCE(first_name, ''))) = unaccent(${searchQuery}) OR unaccent(LOWER(COALESCE(last_name, ''))) = unaccent(${searchQuery}) THEN 2
+              WHEN unaccent(LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE unaccent(${searchQuery + '%'}) THEN 3
               ELSE 4
             END,
             last_name ASC NULLS LAST,
@@ -75,7 +101,7 @@ export async function GET(request: NextRequest) {
           LIMIT ${limit}
         `
       } else {
-        // Búsqueda con múltiples términos (ej: "Juan Pérez")
+        // Búsqueda con múltiples términos
         const firstTerm = `%${searchTerms[0]}%`
         const secondTerm = `%${searchTerms[1]}%`
         
@@ -91,24 +117,20 @@ export async function GET(request: NextRequest) {
           FROM people
           WHERE is_active = true
           AND (
-            -- Búsqueda en nombre completo concatenado
-            LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchPattern}
-            OR LOWER(COALESCE(last_name, '') || ' ' || COALESCE(first_name, '')) LIKE ${searchPattern}
-            OR LOWER(real_name) LIKE ${searchPattern}
-            -- O búsqueda de ambos términos en cualquier orden
+            unaccent(LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE unaccent(${searchPattern})
+            OR unaccent(LOWER(COALESCE(last_name, '') || ' ' || COALESCE(first_name, ''))) LIKE unaccent(${searchPattern})
+            OR unaccent(LOWER(COALESCE(real_name, ''))) LIKE unaccent(${searchPattern})
             OR (
-              (LOWER(first_name) LIKE ${firstTerm} OR LOWER(last_name) LIKE ${firstTerm})
+              (unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${firstTerm}) OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${firstTerm}))
               AND
-              (LOWER(first_name) LIKE ${secondTerm} OR LOWER(last_name) LIKE ${secondTerm})
+              (unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${secondTerm}) OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${secondTerm}))
             )
           )
           ORDER BY 
             CASE 
-              -- Priorizar coincidencia exacta
-              WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) = ${searchQuery} THEN 1
-              WHEN LOWER(COALESCE(last_name, '') || ' ' || COALESCE(first_name, '')) = ${searchQuery} THEN 2
-              -- Luego coincidencias que empiezan con la búsqueda
-              WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchQuery + '%'} THEN 3
+              WHEN unaccent(LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) = unaccent(${searchQuery}) THEN 1
+              WHEN unaccent(LOWER(COALESCE(last_name, '') || ' ' || COALESCE(first_name, ''))) = unaccent(${searchQuery}) THEN 2
+              WHEN unaccent(LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE unaccent(${searchQuery + '%'}) THEN 3
               ELSE 4
             END,
             last_name ASC NULLS LAST,
@@ -116,10 +138,9 @@ export async function GET(request: NextRequest) {
           LIMIT ${limit}
         `
       }
-    } catch (rawQueryError) {
-      console.error('Error en búsqueda SQL raw, usando fallback:', rawQueryError)
-      
-      // Fallback con Prisma ORM si falla el SQL raw
+    } catch (err) {
+      console.log('Falling back to standard search for people')
+      // Fallback si unaccent no está instalado
       const peopleResults = await prisma.person.findMany({
         where: {
           isActive: true,
@@ -155,7 +176,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Formatear resultados
-    const formattedMovies = movies.map(movie => ({
+    const formattedMovies = movies.map((movie: any) => ({
       id: movie.id,
       slug: movie.slug,
       title: movie.title,

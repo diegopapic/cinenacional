@@ -24,8 +24,8 @@ export const movieSchema = z.object({
   filmingEndDay: z.number().nullable().optional(),
 
   // Duración
-  duration: z.number().optional(),
-  durationSeconds: z.number().optional(),
+  duration: z.number().optional().transform(val => val === 0 ? null : val),
+durationSeconds: z.number().optional().transform(val => val === 0 ? null : val),
   tipoDuracion: z.string().optional(),
 
   // Contenido
