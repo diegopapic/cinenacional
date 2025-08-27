@@ -16,7 +16,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               se estrenaba{' '}
               {item.slug ? (
                 <Link 
-                  href={`/peliculas/${item.slug}`}
+                  href={`/pelicula/${item.slug}`}
                   className="text-white hover:text-cine-accent transition-colors"
                 >
                   {item.titulo}
@@ -47,7 +47,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               empezaba el rodaje de{' '}
               {item.slug ? (
                 <Link 
-                  href={`/peliculas/${item.slug}`}
+                  href={`/pelicula/${item.slug}`}
                   className="text-white hover:text-cine-accent transition-colors"
                 >
                   {item.titulo}
@@ -78,7 +78,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               terminaba el rodaje de{' '}
               {item.slug ? (
                 <Link 
-                  href={`/peliculas/${item.slug}`}
+                  href={`/pelicula/${item.slug}`}
                   className="text-white hover:text-cine-accent transition-colors"
                 >
                   {item.titulo}
@@ -156,7 +156,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
         // Si tiene poster, mostrarlo
         return item.slug ? (
           <Link 
-            href={`/peliculas/${item.slug}`}
+            href={`/pelicula/${item.slug}`}
             className="block w-16 h-24 rounded overflow-hidden hover:opacity-80 transition-opacity"
           >
             <img 
@@ -178,7 +178,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
         // Si no tiene poster, mostrar placeholder
         return item.slug ? (
           <Link 
-            href={`/peliculas/${item.slug}`}
+            href={`/pelicula/${item.slug}`}
             className="w-16 h-24 rounded movie-placeholder flex items-center justify-center hover:opacity-80 transition-opacity"
           >
             <svg className="w-8 h-8 text-cine-accent opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">

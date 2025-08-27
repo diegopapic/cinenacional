@@ -25,7 +25,7 @@ export function SimilarMovies({ movies }: SimilarMoviesProps) {
           return (
             <Link 
               key={movie.id || index} 
-              href={`/peliculas/${movieLink}`}
+              href={`/pelicula/${movieLink}`}
               className="group cursor-pointer block"
             >
               <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform">

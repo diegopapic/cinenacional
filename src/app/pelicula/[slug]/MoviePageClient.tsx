@@ -1,4 +1,4 @@
-// src/app/peliculas/[slug]/MoviePageClient.tsx
+// src/app/pelicula/[slug]/MoviePageClient.tsx
 
 'use client';
 
@@ -66,10 +66,6 @@ export function MoviePageClient({
     basicCrew,  // NUEVO
     fullCrew    // NUEVO
 }: MoviePageClientProps) {
-    console.log('🔍 MoviePageClient - movie completo:', movie);
-    console.log('🔍 MoviePageClient - posterUrl:', movie.posterUrl);
-    console.log('🔍 MoviePageClient - images:', movie.images);
-    console.log('🔍 MoviePageClient - todos los campos:', Object.keys(movie));
     const [movieGallery, setMovieGallery] = useState<string[]>([]);
 
     // Función para cargar imágenes desde la API

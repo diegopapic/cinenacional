@@ -12,7 +12,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
   return (
     <section className="mb-12">
       <h2 className="serif-heading text-3xl mb-6 text-white">Últimas Películas Ingresadas</h2>
-      
+
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
           {[...Array(8)].map((_, index) => (
@@ -31,7 +31,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
           {movies.map((pelicula) => (
             <Link
               key={pelicula.id}
-              href={`/peliculas/${pelicula.slug}`}
+              href={`/pelicula/${pelicula.slug}`}
               className="group cursor-pointer"
             >
               <div className="aspect-[2/3] rounded overflow-hidden mb-1 transform group-hover:scale-105 transition-transform">
@@ -58,7 +58,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
           ))}
         </div>
       )}
-{/*
+      {/*
       <div className="mt-6 text-center">
         <Link
           href="/listados/peliculas?sort=createdAt"
