@@ -91,15 +91,15 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('X-XSS-Protection', '1; mode=block')
   
-  // CSP ACTUALIZADO PARA CLOUDINARY
+  // CSP ACTUALIZADO PARA CLOUDINARY Y GOOGLE ANALYTICS
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com https://upload-widget.cloudinary.com; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://res.cloudinary.com https://upload-widget.cloudinary.com; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "img-src 'self' data: https: blob:; " +
+    "img-src 'self' data: https: blob: https://www.googletagmanager.com https://www.google-analytics.com; " +
     "font-src 'self' data: https://fonts.gstatic.com; " +
-    "connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com https://*.cloudinary.com; " +
+    "connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com https://*.cloudinary.com https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://region1.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; " +
     "frame-src 'self' https://upload-widget.cloudinary.com https://*.cloudinary.com; " +
     "media-src 'self' https://res.cloudinary.com; " +
     "frame-ancestors 'none';"
