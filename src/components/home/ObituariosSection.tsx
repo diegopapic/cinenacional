@@ -75,7 +75,7 @@ export default function ObituariosSection({ obituarios, loading = false }: Obitu
             return (
               <Link 
                 key={persona.id} 
-                href={`/personas/${persona.slug}`}
+                href={`/persona/${persona.slug}`}
                 className="flex items-center space-x-4 pb-4 border-b border-gray-700 last:border-0 last:pb-0 hover:bg-gray-800/30 transition-colors rounded-lg p-2 -m-2"
               >
                 <div className="w-24 h-24 rounded-full flex-shrink-0 overflow-hidden bg-gray-800">

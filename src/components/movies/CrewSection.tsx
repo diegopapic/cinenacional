@@ -26,7 +26,7 @@ export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
     // Crear el elemento del nombre con o sin enlace
     const nameElement = member.personSlug ? (
       <Link 
-        href={`/personas/${member.personSlug}`} 
+        href={`/persona/${member.personSlug}`} 
         className="text-white hover:text-cine-accent transition-colors"
       >
         {member.name}

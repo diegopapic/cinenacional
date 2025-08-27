@@ -53,7 +53,7 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
                 )}
               </div>
               {actor.personSlug ? (
-                <Link href={`/personas/${actor.personSlug}`} className="hover:text-cine-accent transition-colors">
+                <Link href={`/persona/${actor.personSlug}`} className="hover:text-cine-accent transition-colors">
                   <p className="font-medium text-white">{actor.name}</p>
                 </Link>
               ) : (
@@ -91,7 +91,7 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
                     )}
                   </div>
                   {actor.personSlug ? (
-                    <Link href={`/personas/${actor.personSlug}`} className="hover:text-cine-accent transition-colors">
+                    <Link href={`/persona/${actor.personSlug}`} className="hover:text-cine-accent transition-colors">
                       <p className="font-medium text-white text-sm">{actor.name}</p>
                     </Link>
                   ) : (

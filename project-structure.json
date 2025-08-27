@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-27T02:05:14.654Z",
+  "timestamp": "2025-08-27T02:38:40.739Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "42818bcc276feb292e5b28a116f2ca8ee9c1725e",
+  "commit": "06c6deeafaaa93dbe2db9299fbcc61f1deefe075",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
@@ -507,9 +507,9 @@
             "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/peliculas/[slug]/page.tsx"
           }
         },
-        "personas": {
+        "persona": {
           "[slug]": {
-            "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/personas/[slug]/page.tsx"
+            "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/persona/[slug]/page.tsx"
           }
         },
         "test-env": {

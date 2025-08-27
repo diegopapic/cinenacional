@@ -1,4 +1,4 @@
-// src/app/personas/[slug]/page.tsx - VERSIÓN CORREGIDA
+// src/app/persona/[slug]/page.tsx - VERSIÓN CORREGIDA
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';

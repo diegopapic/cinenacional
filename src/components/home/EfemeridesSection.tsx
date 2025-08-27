@@ -29,7 +29,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
                   , de{' '}
                   {item.directorSlug ? (
                     <Link 
-                      href={`/personas/${item.directorSlug}`}
+                      href={`/persona/${item.directorSlug}`}
                       className="text-white hover:text-cine-accent transition-colors"
                     >
                       {item.director}
@@ -60,7 +60,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
                   , de{' '}
                   {item.directorSlug ? (
                     <Link 
-                      href={`/personas/${item.directorSlug}`}
+                      href={`/persona/${item.directorSlug}`}
                       className="text-white hover:text-cine-accent transition-colors"
                     >
                       {item.director}
@@ -91,7 +91,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
                   , de{' '}
                   {item.directorSlug ? (
                     <Link 
-                      href={`/personas/${item.directorSlug}`}
+                      href={`/persona/${item.directorSlug}`}
                       className="text-white hover:text-cine-accent transition-colors"
                     >
                       {item.director}
@@ -114,7 +114,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               nacía{' '}
               {item.slug ? (
                 <Link 
-                  href={`/personas/${item.slug}`}
+                  href={`/persona/${item.slug}`}
                   className="text-white hover:text-cine-accent transition-colors"
                 >
                   {item.titulo}
@@ -130,7 +130,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               moría{' '}
               {item.slug ? (
                 <Link 
-                  href={`/personas/${item.slug}`}
+                  href={`/persona/${item.slug}`}
                   className="text-white hover:text-cine-accent transition-colors"
                 >
                   {item.titulo}
@@ -199,7 +199,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
         // Si tiene foto, mostrarla
         return item.slug ? (
           <Link 
-            href={`/personas/${item.slug}`}
+            href={`/persona/${item.slug}`}
             className="block w-24 h-24 rounded-full overflow-hidden hover:opacity-80 transition-opacity"
           >
             <img 
@@ -221,7 +221,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
         // Si no tiene foto, mostrar placeholder
         return item.slug ? (
           <Link 
-            href={`/personas/${item.slug}`}
+            href={`/persona/${item.slug}`}
             className="w-24 h-24 rounded-full person-placeholder flex items-center justify-center hover:opacity-80 transition-opacity"
           >
             <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

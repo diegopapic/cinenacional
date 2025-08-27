@@ -275,7 +275,7 @@ export default function SearchPage() {
                 {filteredPeople.map((person) => (
                   <Link
                     key={person.id}
-                    href={`/personas/${person.slug}`}
+                    href={`/persona/${person.slug}`}
                     className="bg-zinc-900 rounded-lg hover:bg-zinc-800 transition-colors p-4 flex gap-4 group"
                   >
                     <div className="flex-shrink-0 w-20 h-20 bg-zinc-800 rounded-full overflow-hidden">

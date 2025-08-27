@@ -96,7 +96,7 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
                   </div>
                   <div>
                     <a 
-                      href={`/personas/${director.slug}`}
+                      href={`/persona/${director.slug}`}
                       className="font-medium text-white hover:text-cine-accent transition-colors"
                     >
                       {director.name}
