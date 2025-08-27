@@ -1585,8 +1585,8 @@
     "size": 0
   },
   {
-    "path": "src/app/personas/[slug]/page.tsx",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/personas/[slug]/page.tsx",
+    "path": "src/app/persona/[slug]/page.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/persona/[slug]/page.tsx",
     "size": 0
   },
   {
