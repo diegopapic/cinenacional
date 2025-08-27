@@ -8,7 +8,7 @@ on:
 jobs:
   deploy-staging:
     runs-on: ubuntu-latest
-    environment: staging  # Environment de GitHub (opcional)
+    # environment: staging  # Environment de GitHub (opcional)
     
     steps:
     - name: Deploy to Staging Environment
