@@ -36,7 +36,7 @@ const nextConfig = {
   },
   productionBrowserSourceMaps: false,
   
-  // AGREGAR ESTA SECCIÓN PARA RESOLVER EL PROBLEMA DE CSP
+  // CSP actualizada para incluir Google Analytics
   async headers() {
     return [
       {
@@ -46,11 +46,11 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://res.cloudinary.com https://upload-widget.cloudinary.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://res.cloudinary.com https://upload-widget.cloudinary.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "img-src 'self' blob: data: https://res.cloudinary.com https://*.cloudinary.com https://images.unsplash.com",
+              "img-src 'self' blob: data: https://res.cloudinary.com https://*.cloudinary.com https://images.unsplash.com https://www.googletagmanager.com https://www.google-analytics.com",
               "font-src 'self' https://fonts.gstatic.com data:",
-              "connect-src 'self' https://res.cloudinary.com https://api.cloudinary.com https://*.cloudinary.com",
+              "connect-src 'self' https://res.cloudinary.com https://api.cloudinary.com https://*.cloudinary.com https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://region1.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com",
               "frame-src 'self' https://upload-widget.cloudinary.com",
               "media-src 'self' https://res.cloudinary.com",
               "object-src 'none'",
