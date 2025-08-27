@@ -1,13 +1,15 @@
 {
-  "timestamp": "2025-08-27T02:47:21.618Z",
+  "timestamp": "2025-08-27T12:01:31.318Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "5366e13adfef6b0e25ec5304c5b4115f9b1aa6f3",
+  "commit": "dc5fdc5bccdacec33f839cd69e570b47ba98663c",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
       "workflows": {
+        "deploy-production.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/deploy-production.yml",
+        "deploy-staging.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/deploy-staging.yml",
         "deploy.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/deploy.yml",
         "update-project-docs.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/update-project-docs.yml"
       }
@@ -21,6 +23,7 @@
     "database-structure-meta.json": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/database-structure-meta.json",
     "database-structure.txt": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/database-structure.txt",
     "docker-compose.dev.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/docker-compose.dev.yml",
+    "docker-compose.staging.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/docker-compose.staging.yml",
     "docker-compose.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/docker-compose.yml",
     "Dockerfile": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/Dockerfile",
     "docs": {
