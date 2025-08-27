@@ -111,7 +111,7 @@ export default function SearchBar() {
                                         {results!.movies.map((movie) => (
                                             <Link
                                                 key={movie.id}
-                                                href={`/peliculas/${movie.slug}`}
+                                                href={`/pelicula/${movie.slug}`}
                                                 onClick={handleResultClick}
                                                 className="flex items-center px-4 py-3 hover:bg-zinc-800 transition-colors group"
                                             >

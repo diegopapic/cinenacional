@@ -1,4 +1,4 @@
-// src/app/peliculas/[slug]/page.tsx
+// src/app/pelicula/[slug]/page.tsx
 import { notFound } from 'next/navigation';
 import { MoviePageClient } from './MoviePageClient';
 import type { Metadata } from 'next';

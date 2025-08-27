@@ -218,7 +218,7 @@ export default function SearchPage() {
                 {filteredMovies.map((movie) => (
                   <Link
                     key={movie.id}
-                    href={`/peliculas/${movie.slug}`}
+                    href={`/pelicula/${movie.slug}`}
                     className="bg-zinc-900 rounded-lg hover:bg-zinc-800 transition-colors p-4 flex gap-4 group"
                   >
                     <div className="flex-shrink-0 w-20 h-28 bg-zinc-800 rounded overflow-hidden">
