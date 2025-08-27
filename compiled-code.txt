@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: c779e20720f21ec44e91b668bbe407d364642cbb
-// Fecha: 2025-08-27T01:51:45.017Z
+// Commit: 582ccbb0a7d252b053cc97f57c3c03d69dc14778
+// Fecha: 2025-08-27T01:56:37.925Z
 // ============================================
 
 
@@ -24798,17 +24798,6 @@ export function useHomeData(): UseHomeDataReturn {
       }
 
       const data: HomeDataResponse = await response.json();
-      console.log('✅ Datos recibidos del home-feed:', {
-        ultimosEstrenos: data.ultimosEstrenos?.length || 0,
-        proximosEstrenos: data.proximosEstrenos?.length || 0,
-        ultimasPeliculas: data.ultimasPeliculas?.length || 0,
-        ultimasPersonas: data.ultimasPersonas?.length || 0
-      });
-
-      console.log('🎬 Primer último estreno:', data.ultimosEstrenos?.[0]);
-      console.log('🖼️ PosterUrl del primer último estreno:', data.ultimosEstrenos?.[0]?.posterUrl);
-      console.log('🎬 Primer próximo estreno:', data.proximosEstrenos?.[0]);
-      console.log('🖼️ PosterUrl del primer próximo estreno:', data.proximosEstrenos?.[0]?.posterUrl);
 
       setUltimosEstrenos(data.ultimosEstrenos || []);
       setProximosEstrenos(data.proximosEstrenos || []);

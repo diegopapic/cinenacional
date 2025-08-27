@@ -47,17 +47,6 @@ export function useHomeData(): UseHomeDataReturn {
       }
 
       const data: HomeDataResponse = await response.json();
-      console.log('✅ Datos recibidos del home-feed:', {
-        ultimosEstrenos: data.ultimosEstrenos?.length || 0,
-        proximosEstrenos: data.proximosEstrenos?.length || 0,
-        ultimasPeliculas: data.ultimasPeliculas?.length || 0,
-        ultimasPersonas: data.ultimasPersonas?.length || 0
-      });
-
-      console.log('🎬 Primer último estreno:', data.ultimosEstrenos?.[0]);
-      console.log('🖼️ PosterUrl del primer último estreno:', data.ultimosEstrenos?.[0]?.posterUrl);
-      console.log('🎬 Primer próximo estreno:', data.proximosEstrenos?.[0]);
-      console.log('🖼️ PosterUrl del primer próximo estreno:', data.proximosEstrenos?.[0]?.posterUrl);
 
       setUltimosEstrenos(data.ultimosEstrenos || []);
       setProximosEstrenos(data.proximosEstrenos || []);
