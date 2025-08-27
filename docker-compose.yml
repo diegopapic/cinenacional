@@ -9,14 +9,12 @@ services:
       POSTGRES_USER: cinenacional
       POSTGRES_PASSWORD: Paganitzu
       POSTGRES_DB: cinenacional
-      # Configuración de pool
       POSTGRES_MAX_CONNECTIONS: 200
       POSTGRES_SHARED_BUFFERS: 256MB
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
-      - ./init:/docker-entrypoint-initdb.d  # Scripts de inicialización
-    # Puerto solo accesible desde localhost
+      - ./init:/docker-entrypoint-initdb.d
     ports:
       - "127.0.0.1:5432:5432"
     networks:
@@ -26,7 +24,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # Límites de recursos
     deploy:
       resources:
         limits:
@@ -35,7 +32,6 @@ services:
         reservations:
           cpus: '1'
           memory: 1G
-    # Configuración adicional
     command: >
       postgres
       -c max_connections=200
@@ -56,14 +52,12 @@ services:
     image: redis:7-alpine
     container_name: cinenacional-redis
     restart: unless-stopped
-    # Puerto solo accesible desde localhost
     ports:
       - "127.0.0.1:6379:6379"
     networks:
       - cinenacional-network
     volumes:
       - redis_data:/data
-    # Configuración de Redis optimizada para caché
     command: >
       redis-server
       --appendonly yes
@@ -84,7 +78,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # Límites de recursos
     deploy:
       resources:
         limits:
@@ -114,14 +107,12 @@ services:
       - DATABASE_URL=postgresql://cinenacional:Paganitzu@postgres:5432/cinenacional?schema=public&connection_limit=50&pool_timeout=10
       - REDIS_URL=redis://redis:6379
       - NODE_ENV=production
-    # Puerto solo accesible desde localhost (para Nginx)
     ports:
       - "127.0.0.1:3000:3000"
     networks:
       - cinenacional-network
     volumes:
       - ./public/uploads:/app/public/uploads
-    # Límites de recursos
     deploy:
       resources:
         limits:
@@ -130,7 +121,6 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
-    # Health check para la app
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
@@ -138,9 +128,34 @@ services:
       retries: 3
       start_period: 40s
 
+  # NUEVO: Uptime Kuma
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: cinenacional-uptime
+    restart: unless-stopped
+    volumes:
+      - uptime_kuma_data:/app/data
+    ports:
+      - "3001:3001"  # Accesible directamente en puerto 3001
+    networks:
+      - cinenacional-network
+    depends_on:
+      - app
+      - postgres
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
 volumes:
   postgres_data:
   redis_data:
+  uptime_kuma_data:  # NUEVO
 
 networks:
   cinenacional-network:
