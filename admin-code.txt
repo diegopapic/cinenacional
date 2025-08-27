@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-27T01:31:50.584Z
+// Archivos del admin - 2025-08-27T01:51:45.034Z
 // ==================
 
 
@@ -8507,7 +8507,7 @@ export default function MovieFormEnhanced({
           console.log('🎭 Procesando género:', g)
           return g.genre?.id || g.genreId || g.id
         })
-      console.log('🎭 IDs extraídos:', genreIds)
+        console.log('🎭 IDs extraídos:', genreIds)
 
         setSelectedGenres(genreIds)
       }

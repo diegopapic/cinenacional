@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: e2f8baf787bf5946f1dc5fc403b6a2f972fe515f
-// Fecha: 2025-08-27T01:31:50.564Z
+// Commit: c779e20720f21ec44e91b668bbe407d364642cbb
+// Fecha: 2025-08-27T01:51:45.017Z
 // ============================================
 
 
@@ -15467,7 +15467,7 @@ export default function MovieFormEnhanced({
           console.log('🎭 Procesando género:', g)
           return g.genre?.id || g.genreId || g.id
         })
-      console.log('🎭 IDs extraídos:', genreIds)
+        console.log('🎭 IDs extraídos:', genreIds)
 
         setSelectedGenres(genreIds)
       }
