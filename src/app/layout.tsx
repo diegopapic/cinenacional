@@ -1,6 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata } from 'next'
 import { Inter, Crimson_Text } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -23,20 +24,20 @@ const crimsonText = Crimson_Text({
 })
 
 export const metadata: Metadata = {
-  title: 'CineNacional - Base de Datos del Cine Argentino',
-  description: 'La base de datos más completa del cine argentino. Descubre películas, directores, actores y toda la historia cinematográfica de Argentina.',
+  title: 'cinenacional.com - Base de datos del cine argentino',
+  description: 'La base de datos más completa del cine argentino. Descubrí películas, directores, actores y toda la historia cinematográfica de Argentina.',
   keywords: 'cine argentino, películas argentinas, actores argentinos, directores argentinos, base de datos cine',
   openGraph: {
-    title: 'CineNacional - Base de Datos del Cine Argentino',
+    title: 'cinenacional.com - Base de datos del cine argentino',
     description: 'La base de datos más completa del cine argentino',
-    url: 'https://cinenacional.vercel.app',
-    siteName: 'CineNacional',
+    url: 'https://cinenacional.com',
+    siteName: 'cinenacional.com',
     images: [
       {
         url: '/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'CineNacional',
+        alt: 'cinenacional.com',
       },
     ],
     locale: 'es_AR',
@@ -60,8 +61,35 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Google Analytics Measurement ID
+  const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-5SGTLPHYYX'
+  
   return (
     <html lang="es" className={`h-full ${inter.variable} ${crimsonText.variable}`}>
+      <head>
+        {/* Google Analytics */}
+        {GA_MEASUREMENT_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${GA_MEASUREMENT_ID}', {
+                  page_path: window.location.pathname,
+                });
+                
+                // Log para verificar que GA está funcionando (quitar en producción)
+                console.log('📊 Google Analytics inicializado con ID:', '${GA_MEASUREMENT_ID}');
+              `}
+            </Script>
+          </>
+        )}
+      </head>
       <body className={`${inter.className} min-h-full flex flex-col bg-zinc-950 text-white`}>
         <Header />
         <main className="flex-grow">
