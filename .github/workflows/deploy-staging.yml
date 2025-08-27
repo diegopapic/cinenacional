@@ -1,0 +1,52 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [ staging, develop ]  # Activa con push a staging o develop
+  workflow_dispatch:  # Permite deploy manual
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    environment: staging  # Environment de GitHub (opcional)
+    
+    steps:
+    - name: Deploy to Staging Environment
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          cd ${{ secrets.VPS_PATH }}
+          
+          echo "🚀 Starting staging deployment..."
+          
+          # Cambiar a rama staging (o la que uses)
+          git fetch origin
+          git checkout staging  # o develop
+          git reset --hard origin/staging
+          
+          # Verificar que existe el archivo de configuración de staging
+          if [ ! -f "docker-compose.staging.yml" ]; then
+            echo "❌ docker-compose.staging.yml not found"
+            exit 1
+          fi
+          
+          # Deploy staging
+          docker compose -f docker-compose.staging.yml down
+          docker compose -f docker-compose.staging.yml build --no-cache app-staging
+          docker compose -f docker-compose.staging.yml up -d
+          
+          # Esperar que inicie
+          echo "⏳ Waiting for services to start..."
+          sleep 30
+          
+          # Verificar que estén corriendo
+          docker compose -f docker-compose.staging.yml ps
+          
+          # Ejecutar migraciones de Prisma si es necesario
+          docker compose -f docker-compose.staging.yml exec -T app-staging npx prisma db push
+          
+          echo "✅ Staging deployment completed"
+          echo "🌐 Staging URL: https://staging.cinenacional.com"

@@ -10,6 +10,16 @@
     "size": 0
   },
   {
+    "path": ".github/workflows/deploy-production.yml",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/deploy-production.yml",
+    "size": 0
+  },
+  {
+    "path": ".github/workflows/deploy-staging.yml",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/deploy-staging.yml",
+    "size": 0
+  },
+  {
     "path": ".github/workflows/deploy.yml",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/deploy.yml",
     "size": 0
@@ -52,6 +62,11 @@
   {
     "path": "docker-compose.dev.yml",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/docker-compose.dev.yml",
+    "size": 0
+  },
+  {
+    "path": "docker-compose.staging.yml",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/docker-compose.staging.yml",
     "size": 0
   },
   {
