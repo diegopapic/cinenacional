@@ -1,0 +1,133 @@
+version: '3.8'
+
+services:
+  postgres-staging:
+    image: postgres:15-alpine
+    container_name: cinenacional-db-staging
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cinenacional
+      POSTGRES_PASSWORD: Paganitzu
+      POSTGRES_DB: cinenacional_staging  # Base de datos separada
+      POSTGRES_MAX_CONNECTIONS: 100      # Menos conexiones para staging
+      POSTGRES_SHARED_BUFFERS: 128MB     # Menos memoria
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+      - ./backups:/backups
+      - ./init:/docker-entrypoint-initdb.d
+    ports:
+      - "127.0.0.1:5433:5432"  # Puerto diferente
+    networks:
+      - cinenacional-staging-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cinenacional"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    command: >
+      postgres
+      -c max_connections=100
+      -c shared_buffers=128MB
+      -c effective_cache_size=512MB
+      -c maintenance_work_mem=32MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=8MB
+      -c default_statistics_target=50
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=2MB
+      -c min_wal_size=40MB
+      -c max_wal_size=512MB
+
+  redis-staging:
+    image: redis:7-alpine
+    container_name: cinenacional-redis-staging
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6380:6379"  # Puerto diferente
+    networks:
+      - cinenacional-staging-network
+    volumes:
+      - redis_staging_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --tcp-keepalive 60
+      --timeout 300
+      --tcp-backlog 511
+      --databases 8
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  app-staging:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: dzndglyjr
+    container_name: cinenacional-app-staging
+    restart: unless-stopped
+    depends_on:
+      postgres-staging:
+        condition: service_healthy
+      redis-staging:
+        condition: service_healthy
+    env_file:
+      - .env.staging  # Archivo de entorno específico para staging
+    environment:
+      - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dzndglyjr
+      - DATABASE_URL=postgresql://cinenacional:Paganitzu@postgres-staging:5432/cinenacional_staging?schema=public&connection_limit=25&pool_timeout=10
+      - REDIS_URL=redis://redis-staging:6379
+      - NODE_ENV=staging
+    ports:
+      - "127.0.0.1:3002:3000"  # Puerto diferente para staging
+    networks:
+      - cinenacional-staging-network
+    volumes:
+      - ./public/uploads:/app/public/uploads
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_staging_data:
+  redis_staging_data:
+
+networks:
+  cinenacional-staging-network:
+    driver: bridge
