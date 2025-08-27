@@ -16,10 +16,6 @@ export type PartialFilmingDate = PartialDate
 // ============================================================================
 
 // Schema para campos del formulario (solo campos que se manejan con register)
-/**
- * movieFormFieldsSchema
- * @TODO Add documentation
- */
 export const movieFormFieldsSchema = z.object({
   // Campos requeridos
   title: z.string().min(1, 'El título es requerido'),
@@ -39,24 +35,24 @@ export const movieFormFieldsSchema = z.object({
   // Campos numéricos
   year: z.number().nullable().optional(),
   duration: z.preprocess(
-  (val) => {
-    if (val === '' || val === null || val === undefined || isNaN(Number(val))) {
-      return null;
-    }
-    return Number(val);
-  },
-  z.number().positive().nullable().optional()
-),
+    (val) => {
+      if (val === '' || val === null || val === undefined || val === 0|| isNaN(Number(val))) {
+        return null;
+      }
+      return Number(val);
+    },
+    z.number().positive().nullable().optional()
+  ),
   durationSeconds: z.preprocess(
-  (val) => {
-    if (val === '' || val === null || val === undefined || isNaN(Number(val))) {
-      return null;
-    }
-    const num = Number(val);
-    return num >= 0 && num <= 59 ? num : null;
-  },
-  z.number().min(0).max(59).nullable().optional()
-),
+    (val) => {
+      if (val === '' || val === null || val === undefined || val === 0 || isNaN(Number(val))) {
+        return null;
+      }
+      const num = Number(val);
+      return num ===0 || num < 0 || num > 59 ? num : null;
+    },
+    z.number().min(1).max(59).nullable().optional()
+  ),
   colorTypeId: z.number().nullable().optional(),
   ratingId: z.union([
     z.number().positive(),
@@ -117,10 +113,6 @@ export const movieFormFieldsSchema = z.object({
 })
 
 // Schema para fechas parciales (estado interno del formulario)
-/**
- * moviePartialDatesSchema
- * @TODO Add documentation
- */
 export const moviePartialDatesSchema = z.object({
   isPartialReleaseDate: z.boolean().optional(),
   partialReleaseDate: z.object({
@@ -145,10 +137,6 @@ export const moviePartialDatesSchema = z.object({
 })
 
 // Schema para relaciones (manejadas por callbacks, no validadas por React Hook Form)
-/**
- * movieRelationsSchema
- * @TODO Add documentation
- */
 export const movieRelationsSchema = z.object({
   genres: z.array(z.number()).optional(),
   cast: z.array(z.object({
@@ -189,17 +177,9 @@ export const movieRelationsSchema = z.object({
 })
 
 // Schema principal para React Hook Form (solo valida campos del formulario)
-/**
- * movieFormSchema
- * @TODO Add documentation
- */
 export const movieFormSchema = movieFormFieldsSchema.merge(moviePartialDatesSchema)
 
 // Schema completo para la API (incluye todo)
-/**
- * movieCompleteSchema
- * @TODO Add documentation
- */
 export const movieCompleteSchema = movieFormFieldsSchema
   .merge(moviePartialDatesSchema)
   .merge(movieRelationsSchema)

@@ -343,7 +343,10 @@ export default function PersonPage({ params }: PersonPageProps) {
               <div className="space-y-3 text-gray-300">
                 {birthDateFormatted && (
                   <div className="text-sm">
-                    <span className="text-gray-500">Nació el </span>
+                    {/* Usar "el" solo si tiene día completo, sino usar "en" */}
+                    <span className="text-gray-500">
+                      {person.birthDay ? 'Nació el ' : 'Nació en '}
+                    </span>
                     <span>{birthDateFormatted}</span>
                     {person.birthLocation && (
                       <>
@@ -359,7 +362,10 @@ export default function PersonPage({ params }: PersonPageProps) {
                 
                 {deathDateFormatted && (
                   <div className="text-sm">
-                    <span className="text-gray-500">Falleció el </span>
+                    {/* Usar "el" solo si tiene día completo, sino usar "en" */}
+                    <span className="text-gray-500">
+                      {person.deathDay ? 'Murió el ' : 'Murió en '}
+                    </span>
                     <span>{deathDateFormatted}</span>
                     {person.deathLocation && (
                       <>

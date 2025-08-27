@@ -17,6 +17,8 @@ node_modules/
 .env.production 
 .env.test.local
 .env.production.local
+.env.staging
+!.env.example
 
 # Debug
 npm-debug.log*

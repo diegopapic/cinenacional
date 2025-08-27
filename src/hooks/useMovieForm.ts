@@ -414,7 +414,7 @@ export function useMovieForm({
             setMovieRelations({
                 genres: (cleanedMovie.genres?.map((g: any) => g.genre?.id || g.id) || [])
                     .filter((g: number) => g != null && g !== 0 && !isNaN(g)),
-                    
+
                 // PROCESAMIENTO MEJORADO DEL CAST
                 cast: cleanedMovie.cast?.map((c: any) => {
                     console.log('🎬 Procesando cast item desde DB:', c)
@@ -428,7 +428,7 @@ export function useMovieForm({
                     console.log('🎬 Cast item mapeado:', mapped)
                     return mapped
                 }) || [],
-                
+
                 // PROCESAMIENTO DEL CREW
                 crew: (() => {
                     const crewData = cleanedMovie.crew?.map((c: any) => {
@@ -446,7 +446,7 @@ export function useMovieForm({
                     console.log('📌 Crew final cargado:', crewData)
                     return crewData
                 })(),
-                
+
                 countries: cleanedMovie.movieCountries?.map((c: any) => c.countryId) || [],
                 productionCompanies: cleanedMovie.productionCompanies?.map((c: any) => c.companyId) || [],
                 distributionCompanies: cleanedMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
@@ -590,6 +590,9 @@ export function useMovieForm({
                 ...releaseDateData,
                 ...filmingStartDateData,
                 ...filmingEndDateData,
+                // AGREGAR: Convertir 0 a null para duración
+                duration: preparedData.duration === 0 ? null : preparedData.duration,
+                durationSeconds: preparedData.durationSeconds === 0 ? null : preparedData.durationSeconds,
                 stage: data.stage || 'COMPLETA',
                 ratingId: preparedData.ratingId === '' || preparedData.ratingId === undefined ? null : preparedData.ratingId,
                 metaKeywords: preparedData.metaKeywords
@@ -600,29 +603,29 @@ export function useMovieForm({
 
                 // IMPORTANTE: Usar las relaciones del estado, no del data del formulario
                 genres: movieRelations.genres.filter(g => g != null && g !== 0 && !isNaN(g)),
-                
+
                 // PROCESAMIENTO MEJORADO DEL CAST
                 cast: movieRelations.cast
                     .map(member => {
                         // Intentar obtener personId de diferentes fuentes
                         let personId = member.personId
-                        
+
                         // Si no hay personId directo, intentar obtenerlo del objeto person
                         if (!personId && member.person) {
                             personId = member.person.id || member.person.personId
                         }
-                        
+
                         console.log(`📍 Procesando cast member:`, {
                             original: member,
                             extractedPersonId: personId,
                             willInclude: personId && personId > 0
                         })
-                        
+
                         // Solo incluir si hay un personId válido
                         if (!personId || personId <= 0) {
                             return null
                         }
-                        
+
                         return {
                             personId: personId,
                             characterName: member.characterName || '',
@@ -631,7 +634,7 @@ export function useMovieForm({
                         }
                     })
                     .filter(member => member !== null), // Filtrar los nulls
-                
+
                 // PROCESAMIENTO MEJORADO DEL CREW
                 crew: movieRelations.crew
                     .map(member => {
@@ -639,23 +642,23 @@ export function useMovieForm({
                         if (!personId && member.person) {
                             personId = member.person.id || member.person.personId
                         }
-                        
+
                         let roleId = member.roleId
                         if (!roleId && member.role && typeof member.role === 'object') {
                             roleId = member.role.id
                         }
-                        
+
                         console.log(`📍 Procesando crew member:`, {
                             original: member,
                             extractedPersonId: personId,
                             extractedRoleId: roleId,
                             willInclude: personId && personId > 0 && roleId && roleId > 0
                         })
-                        
+
                         if (!personId || personId <= 0 || !roleId || roleId <= 0) {
                             return null
                         }
-                        
+
                         return {
                             personId: personId,
                             roleId: roleId,
@@ -663,7 +666,7 @@ export function useMovieForm({
                         }
                     })
                     .filter(member => member !== null),
-                
+
                 countries: movieRelations.countries,
                 productionCompanies: movieRelations.productionCompanies,
                 distributionCompanies: movieRelations.distributionCompanies,
@@ -697,7 +700,7 @@ export function useMovieForm({
             if (!editingMovie) {
                 delete movieData.id;
             }
-            
+
             // Usar el servicio para crear o actualizar
             let result: Movie;
             if (editingMovie) {

@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: d96e5cc231ab8fa5f5aaaf8c74f1ffe8a17ac314
-// Fecha: 2025-08-27T12:42:16.701Z
+// Commit: 839a77fcfd1ab75defe6ac09728e71d8dc6596dd
+// Fecha: 2025-08-27T14:16:46.547Z
 // ============================================
 
 
@@ -7498,17 +7498,6 @@ export async function PUT(
   try {
     const id = parseInt(params.id)
     const body = await request.json()
-    console.log('🔥 Datos recibidos en API PUT:', {
-      releaseYear: body.releaseYear,
-      releaseMonth: body.releaseMonth,
-      releaseDay: body.releaseDay,
-      filmingStartYear: body.filmingStartYear,
-      filmingStartMonth: body.filmingStartMonth,
-      filmingStartDay: body.filmingStartDay,
-      filmingEndYear: body.filmingEndYear,
-      filmingEndMonth: body.filmingEndMonth,
-      filmingEndDay: body.filmingEndDay
-    })
 
     // Limpiar datos antes de validar
     const cleanedData = {
@@ -7540,6 +7529,13 @@ export async function PUT(
 
     // Validar datos
     const validatedData = movieSchema.parse(cleanedData)
+
+    if (validatedData.duration === 0) {
+    validatedData.duration = null;
+}
+if (validatedData.durationSeconds === 0) {
+    validatedData.durationSeconds = null;
+}
 
     // Verificar que la película existe y obtener slug para invalidar caché
     const existingMovie = await prisma.movie.findUnique({
@@ -7587,18 +7583,6 @@ export async function PUT(
         metaKeywords,
         ...movieDataClean
       } = movieData
-
-      console.log('💾 Datos a guardar en DB:', {
-        releaseYear,
-        releaseMonth,
-        releaseDay,
-        filmingStartYear,
-        filmingStartMonth,
-        filmingStartDay,
-        filmingEndYear,
-        filmingEndMonth,
-        filmingEndDay
-      })
 
       // 1. Actualizar datos básicos de la película - EXACTAMENTE COMO EN EL POST
       const updatedMovie = await tx.movie.update({
@@ -10155,73 +10139,151 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    const [movies, people] = await Promise.all([
-      prisma.movie.findMany({
-        where: {
-          OR: [
-            { title: { contains: query, mode: 'insensitive' } },
-          ]
-        },
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          releaseYear: true,
-          releaseMonth: true,
-          releaseDay: true,
-          posterUrl: true,
-          synopsis: true
-        },
-        orderBy: [
-          { releaseYear: 'desc' },
-          { title: 'asc' }
-        ],
-        take: 50
-      }),
-      
-      prisma.person.findMany({
-        where: {
-          isActive: true,
-          OR: [
-            { firstName: { contains: query, mode: 'insensitive' } },
-            { lastName: { contains: query, mode: 'insensitive' } },
-            { realName: { contains: query, mode: 'insensitive' } }
-          ]
-        },
-        select: {
-          id: true,
-          slug: true,
-          firstName: true,
-          lastName: true,
-          photoUrl: true,
-          birthYear: true,
-          birthMonth: true,
-          birthDay: true,
-          biography: true,
-          _count: {
-            select: {
-              castRoles: true,
-              crewRoles: true
-            }
-          }
-        },
-        take: 50
+    const searchQuery = query.toLowerCase().trim()
+    const searchPattern = `%${searchQuery}%`
+
+    // Intentar búsqueda con unaccent primero
+    try {
+      // Búsqueda de películas con normalización
+      const movies = await prisma.$queryRaw<any[]>`
+        SELECT 
+          id,
+          slug,
+          title,
+          release_year as "releaseYear",
+          release_month as "releaseMonth",
+          release_day as "releaseDay",
+          poster_url as "posterUrl",
+          synopsis
+        FROM movies
+        WHERE 
+          unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
+        ORDER BY 
+          release_year DESC NULLS LAST,
+          title ASC
+        LIMIT 50
+      `
+
+      // Búsqueda de personas con normalización
+      const people = await prisma.$queryRaw<any[]>`
+        SELECT 
+          p.id,
+          p.slug,
+          p.first_name as "firstName",
+          p.last_name as "lastName",
+          p.photo_url as "photoUrl",
+          p.birth_year as "birthYear",
+          p.birth_month as "birthMonth",
+          p.birth_day as "birthDay",
+          p.biography,
+          (SELECT COUNT(*)::int FROM movie_cast WHERE person_id = p.id) as cast_roles,
+          (SELECT COUNT(*)::int FROM movie_crew WHERE person_id = p.id) as crew_roles
+        FROM people p
+        WHERE p.is_active = true
+        AND (
+          unaccent(LOWER(COALESCE(p.first_name, ''))) LIKE unaccent(${searchPattern})
+          OR unaccent(LOWER(COALESCE(p.last_name, ''))) LIKE unaccent(${searchPattern})
+          OR unaccent(LOWER(COALESCE(p.real_name, ''))) LIKE unaccent(${searchPattern})
+          OR unaccent(LOWER(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, ''))) LIKE unaccent(${searchPattern})
+        )
+        ORDER BY 
+          (
+            (SELECT COUNT(*) FROM movie_cast WHERE person_id = p.id) +
+            (SELECT COUNT(*) FROM movie_crew WHERE person_id = p.id)
+          ) DESC,
+          p.last_name ASC NULLS LAST,
+          p.first_name ASC NULLS LAST
+        LIMIT 50
+      `
+
+      // Formatear personas con _count
+      const formattedPeople = people.map(person => ({
+        ...person,
+        _count: {
+          castRoles: person.cast_roles || 0,
+          crewRoles: person.crew_roles || 0
+        }
+      }))
+
+      return NextResponse.json({
+        movies: movies,
+        people: formattedPeople,
+        totalMovies: movies.length,
+        totalPeople: formattedPeople.length
       })
-    ])
 
-    // Ordenar personas por total de participaciones (castRoles + crewRoles) de mayor a menor
-    const sortedPeople = people.sort((a, b) => {
-      const totalA = (a._count?.castRoles || 0) + (a._count?.crewRoles || 0)
-      const totalB = (b._count?.castRoles || 0) + (b._count?.crewRoles || 0)
-      return totalB - totalA // Orden descendente (mayor a menor)
-    })
+    } catch (err) {
+      console.log('Unaccent not available, using fallback search')
+      
+      // Fallback: búsqueda estándar sin normalización
+      const [movies, people] = await Promise.all([
+        prisma.movie.findMany({
+          where: {
+            OR: [
+              { title: { contains: query, mode: 'insensitive' } },
+            ]
+          },
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            releaseYear: true,
+            releaseMonth: true,
+            releaseDay: true,
+            posterUrl: true,
+            synopsis: true
+          },
+          orderBy: [
+            { releaseYear: 'desc' },
+            { title: 'asc' }
+          ],
+          take: 50
+        }),
+        
+        prisma.person.findMany({
+          where: {
+            isActive: true,
+            OR: [
+              { firstName: { contains: query, mode: 'insensitive' } },
+              { lastName: { contains: query, mode: 'insensitive' } },
+              { realName: { contains: query, mode: 'insensitive' } }
+            ]
+          },
+          select: {
+            id: true,
+            slug: true,
+            firstName: true,
+            lastName: true,
+            photoUrl: true,
+            birthYear: true,
+            birthMonth: true,
+            birthDay: true,
+            biography: true,
+            _count: {
+              select: {
+                castRoles: true,
+                crewRoles: true
+              }
+            }
+          },
+          take: 50
+        })
+      ])
 
-    return NextResponse.json({
-      movies: movies,
-      people: sortedPeople,
-      totalMovies: movies.length,
-      totalPeople: sortedPeople.length
-    })
+      // Ordenar personas por total de participaciones
+      const sortedPeople = people.sort((a, b) => {
+        const totalA = (a._count?.castRoles || 0) + (a._count?.crewRoles || 0)
+        const totalB = (b._count?.castRoles || 0) + (b._count?.crewRoles || 0)
+        return totalB - totalA
+      })
+
+      return NextResponse.json({
+        movies: movies,
+        people: sortedPeople,
+        totalMovies: movies.length,
+        totalPeople: sortedPeople.length
+      })
+    }
 
   } catch (error) {
     console.error('Full search error:', error)
@@ -10239,7 +10301,6 @@ export async function GET(request: NextRequest) {
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -10255,29 +10316,56 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Búsqueda de películas (sin cambios)
-    const movies = await prisma.movie.findMany({
-      where: {
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-        ]
-      },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        releaseYear: true,
-        posterUrl: true
-      },
-      take: limit,
-      orderBy: { title: 'asc' }
-    })
-
-    // BÚSQUEDA MEJORADA DE PERSONAS - Usando SQL raw para búsqueda concatenada
     const searchQuery = query.toLowerCase().trim()
     const searchPattern = `%${searchQuery}%`
-    const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0)
     
+    // Búsqueda de películas con normalización de acentos
+    let movies: any[] = []
+    try {
+      movies = await prisma.$queryRaw`
+        SELECT 
+          id,
+          slug,
+          title,
+          release_year as "releaseYear",
+          poster_url as "posterUrl"
+        FROM movies
+        WHERE 
+          unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
+        ORDER BY 
+          CASE 
+            WHEN unaccent(LOWER(title)) = unaccent(${searchQuery}) THEN 1
+            WHEN unaccent(LOWER(title)) LIKE unaccent(${searchQuery + '%'}) THEN 2
+            ELSE 3
+          END,
+          title ASC
+        LIMIT ${limit}
+      `
+    } catch (err) {
+      console.log('Falling back to standard search for movies')
+      // Fallback si unaccent no está instalado
+      const movieResults = await prisma.movie.findMany({
+        where: {
+          title: { contains: query, mode: 'insensitive' }
+        },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          releaseYear: true,
+          posterUrl: true
+        },
+        take: limit,
+        orderBy: { title: 'asc' }
+      })
+      movies = movieResults.map(m => ({
+        ...m,
+        releaseYear: m.releaseYear
+      }))
+    }
+
+    // Búsqueda de personas con normalización de acentos
+    const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0)
     let people: any[] = []
     
     try {
@@ -10295,16 +10383,16 @@ export async function GET(request: NextRequest) {
           FROM people
           WHERE is_active = true
           AND (
-            LOWER(first_name) LIKE ${searchPattern}
-            OR LOWER(last_name) LIKE ${searchPattern}
-            OR LOWER(real_name) LIKE ${searchPattern}
-            OR LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchPattern}
+            unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${searchPattern})
+            OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${searchPattern})
+            OR unaccent(LOWER(COALESCE(real_name, ''))) LIKE unaccent(${searchPattern})
+            OR unaccent(LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE unaccent(${searchPattern})
           )
           ORDER BY 
             CASE 
-              WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) = ${searchQuery} THEN 1
-              WHEN LOWER(first_name) = ${searchQuery} OR LOWER(last_name) = ${searchQuery} THEN 2
-              WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchQuery + '%'} THEN 3
+              WHEN unaccent(LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) = unaccent(${searchQuery}) THEN 1
+              WHEN unaccent(LOWER(COALESCE(first_name, ''))) = unaccent(${searchQuery}) OR unaccent(LOWER(COALESCE(last_name, ''))) = unaccent(${searchQuery}) THEN 2
+              WHEN unaccent(LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE unaccent(${searchQuery + '%'}) THEN 3
               ELSE 4
             END,
             last_name ASC NULLS LAST,
@@ -10312,7 +10400,7 @@ export async function GET(request: NextRequest) {
           LIMIT ${limit}
         `
       } else {
-        // Búsqueda con múltiples términos (ej: "Juan Pérez")
+        // Búsqueda con múltiples términos
         const firstTerm = `%${searchTerms[0]}%`
         const secondTerm = `%${searchTerms[1]}%`
         
@@ -10328,24 +10416,20 @@ export async function GET(request: NextRequest) {
           FROM people
           WHERE is_active = true
           AND (
-            -- Búsqueda en nombre completo concatenado
-            LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchPattern}
-            OR LOWER(COALESCE(last_name, '') || ' ' || COALESCE(first_name, '')) LIKE ${searchPattern}
-            OR LOWER(real_name) LIKE ${searchPattern}
-            -- O búsqueda de ambos términos en cualquier orden
+            unaccent(LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE unaccent(${searchPattern})
+            OR unaccent(LOWER(COALESCE(last_name, '') || ' ' || COALESCE(first_name, ''))) LIKE unaccent(${searchPattern})
+            OR unaccent(LOWER(COALESCE(real_name, ''))) LIKE unaccent(${searchPattern})
             OR (
-              (LOWER(first_name) LIKE ${firstTerm} OR LOWER(last_name) LIKE ${firstTerm})
+              (unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${firstTerm}) OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${firstTerm}))
               AND
-              (LOWER(first_name) LIKE ${secondTerm} OR LOWER(last_name) LIKE ${secondTerm})
+              (unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${secondTerm}) OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${secondTerm}))
             )
           )
           ORDER BY 
             CASE 
-              -- Priorizar coincidencia exacta
-              WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) = ${searchQuery} THEN 1
-              WHEN LOWER(COALESCE(last_name, '') || ' ' || COALESCE(first_name, '')) = ${searchQuery} THEN 2
-              -- Luego coincidencias que empiezan con la búsqueda
-              WHEN LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, '')) LIKE ${searchQuery + '%'} THEN 3
+              WHEN unaccent(LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) = unaccent(${searchQuery}) THEN 1
+              WHEN unaccent(LOWER(COALESCE(last_name, '') || ' ' || COALESCE(first_name, ''))) = unaccent(${searchQuery}) THEN 2
+              WHEN unaccent(LOWER(COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''))) LIKE unaccent(${searchQuery + '%'}) THEN 3
               ELSE 4
             END,
             last_name ASC NULLS LAST,
@@ -10353,10 +10437,9 @@ export async function GET(request: NextRequest) {
           LIMIT ${limit}
         `
       }
-    } catch (rawQueryError) {
-      console.error('Error en búsqueda SQL raw, usando fallback:', rawQueryError)
-      
-      // Fallback con Prisma ORM si falla el SQL raw
+    } catch (err) {
+      console.log('Falling back to standard search for people')
+      // Fallback si unaccent no está instalado
       const peopleResults = await prisma.person.findMany({
         where: {
           isActive: true,
@@ -10392,7 +10475,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Formatear resultados
-    const formattedMovies = movies.map(movie => ({
+    const formattedMovies = movies.map((movie: any) => ({
       id: movie.id,
       slug: movie.slug,
       title: movie.title,
@@ -13529,7 +13612,10 @@ export default function PersonPage({ params }: PersonPageProps) {
               <div className="space-y-3 text-gray-300">
                 {birthDateFormatted && (
                   <div className="text-sm">
-                    <span className="text-gray-500">Nació el </span>
+                    {/* Usar "el" solo si tiene día completo, sino usar "en" */}
+                    <span className="text-gray-500">
+                      {person.birthDay ? 'Nació el ' : 'Nació en '}
+                    </span>
                     <span>{birthDateFormatted}</span>
                     {person.birthLocation && (
                       <>
@@ -13545,7 +13631,10 @@ export default function PersonPage({ params }: PersonPageProps) {
                 
                 {deathDateFormatted && (
                   <div className="text-sm">
-                    <span className="text-gray-500">Falleció el </span>
+                    {/* Usar "el" solo si tiene día completo, sino usar "en" */}
+                    <span className="text-gray-500">
+                      {person.deathDay ? 'Murió el ' : 'Murió en '}
+                    </span>
                     <span>{deathDateFormatted}</span>
                     {person.deathLocation && (
                       <>
@@ -25269,7 +25358,7 @@ export function useMovieForm({
             setMovieRelations({
                 genres: (cleanedMovie.genres?.map((g: any) => g.genre?.id || g.id) || [])
                     .filter((g: number) => g != null && g !== 0 && !isNaN(g)),
-                    
+
                 // PROCESAMIENTO MEJORADO DEL CAST
                 cast: cleanedMovie.cast?.map((c: any) => {
                     console.log('🎬 Procesando cast item desde DB:', c)
@@ -25283,7 +25372,7 @@ export function useMovieForm({
                     console.log('🎬 Cast item mapeado:', mapped)
                     return mapped
                 }) || [],
-                
+
                 // PROCESAMIENTO DEL CREW
                 crew: (() => {
                     const crewData = cleanedMovie.crew?.map((c: any) => {
@@ -25301,7 +25390,7 @@ export function useMovieForm({
                     console.log('📌 Crew final cargado:', crewData)
                     return crewData
                 })(),
-                
+
                 countries: cleanedMovie.movieCountries?.map((c: any) => c.countryId) || [],
                 productionCompanies: cleanedMovie.productionCompanies?.map((c: any) => c.companyId) || [],
                 distributionCompanies: cleanedMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
@@ -25445,6 +25534,9 @@ export function useMovieForm({
                 ...releaseDateData,
                 ...filmingStartDateData,
                 ...filmingEndDateData,
+                // AGREGAR: Convertir 0 a null para duración
+                duration: preparedData.duration === 0 ? null : preparedData.duration,
+                durationSeconds: preparedData.durationSeconds === 0 ? null : preparedData.durationSeconds,
                 stage: data.stage || 'COMPLETA',
                 ratingId: preparedData.ratingId === '' || preparedData.ratingId === undefined ? null : preparedData.ratingId,
                 metaKeywords: preparedData.metaKeywords
@@ -25455,29 +25547,29 @@ export function useMovieForm({
 
                 // IMPORTANTE: Usar las relaciones del estado, no del data del formulario
                 genres: movieRelations.genres.filter(g => g != null && g !== 0 && !isNaN(g)),
-                
+
                 // PROCESAMIENTO MEJORADO DEL CAST
                 cast: movieRelations.cast
                     .map(member => {
                         // Intentar obtener personId de diferentes fuentes
                         let personId = member.personId
-                        
+
                         // Si no hay personId directo, intentar obtenerlo del objeto person
                         if (!personId && member.person) {
                             personId = member.person.id || member.person.personId
                         }
-                        
+
                         console.log(`📍 Procesando cast member:`, {
                             original: member,
                             extractedPersonId: personId,
                             willInclude: personId && personId > 0
                         })
-                        
+
                         // Solo incluir si hay un personId válido
                         if (!personId || personId <= 0) {
                             return null
                         }
-                        
+
                         return {
                             personId: personId,
                             characterName: member.characterName || '',
@@ -25486,7 +25578,7 @@ export function useMovieForm({
                         }
                     })
                     .filter(member => member !== null), // Filtrar los nulls
-                
+
                 // PROCESAMIENTO MEJORADO DEL CREW
                 crew: movieRelations.crew
                     .map(member => {
@@ -25494,23 +25586,23 @@ export function useMovieForm({
                         if (!personId && member.person) {
                             personId = member.person.id || member.person.personId
                         }
-                        
+
                         let roleId = member.roleId
                         if (!roleId && member.role && typeof member.role === 'object') {
                             roleId = member.role.id
                         }
-                        
+
                         console.log(`📍 Procesando crew member:`, {
                             original: member,
                             extractedPersonId: personId,
                             extractedRoleId: roleId,
                             willInclude: personId && personId > 0 && roleId && roleId > 0
                         })
-                        
+
                         if (!personId || personId <= 0 || !roleId || roleId <= 0) {
                             return null
                         }
-                        
+
                         return {
                             personId: personId,
                             roleId: roleId,
@@ -25518,7 +25610,7 @@ export function useMovieForm({
                         }
                     })
                     .filter(member => member !== null),
-                
+
                 countries: movieRelations.countries,
                 productionCompanies: movieRelations.productionCompanies,
                 distributionCompanies: movieRelations.distributionCompanies,
@@ -25552,7 +25644,7 @@ export function useMovieForm({
             if (!editingMovie) {
                 delete movieData.id;
             }
-            
+
             // Usar el servicio para crear o actualizar
             let result: Movie;
             if (editingMovie) {
@@ -26571,10 +26663,6 @@ export type PartialFilmingDate = PartialDate
 // ============================================================================
 
 // Schema para campos del formulario (solo campos que se manejan con register)
-/**
- * movieFormFieldsSchema
- * @TODO Add documentation
- */
 export const movieFormFieldsSchema = z.object({
   // Campos requeridos
   title: z.string().min(1, 'El título es requerido'),
@@ -26594,24 +26682,24 @@ export const movieFormFieldsSchema = z.object({
   // Campos numéricos
   year: z.number().nullable().optional(),
   duration: z.preprocess(
-  (val) => {
-    if (val === '' || val === null || val === undefined || isNaN(Number(val))) {
-      return null;
-    }
-    return Number(val);
-  },
-  z.number().positive().nullable().optional()
-),
+    (val) => {
+      if (val === '' || val === null || val === undefined || val === 0|| isNaN(Number(val))) {
+        return null;
+      }
+      return Number(val);
+    },
+    z.number().positive().nullable().optional()
+  ),
   durationSeconds: z.preprocess(
-  (val) => {
-    if (val === '' || val === null || val === undefined || isNaN(Number(val))) {
-      return null;
-    }
-    const num = Number(val);
-    return num >= 0 && num <= 59 ? num : null;
-  },
-  z.number().min(0).max(59).nullable().optional()
-),
+    (val) => {
+      if (val === '' || val === null || val === undefined || val === 0 || isNaN(Number(val))) {
+        return null;
+      }
+      const num = Number(val);
+      return num ===0 || num < 0 || num > 59 ? num : null;
+    },
+    z.number().min(1).max(59).nullable().optional()
+  ),
   colorTypeId: z.number().nullable().optional(),
   ratingId: z.union([
     z.number().positive(),
@@ -26672,10 +26760,6 @@ export const movieFormFieldsSchema = z.object({
 })
 
 // Schema para fechas parciales (estado interno del formulario)
-/**
- * moviePartialDatesSchema
- * @TODO Add documentation
- */
 export const moviePartialDatesSchema = z.object({
   isPartialReleaseDate: z.boolean().optional(),
   partialReleaseDate: z.object({
@@ -26700,10 +26784,6 @@ export const moviePartialDatesSchema = z.object({
 })
 
 // Schema para relaciones (manejadas por callbacks, no validadas por React Hook Form)
-/**
- * movieRelationsSchema
- * @TODO Add documentation
- */
 export const movieRelationsSchema = z.object({
   genres: z.array(z.number()).optional(),
   cast: z.array(z.object({
@@ -26744,17 +26824,9 @@ export const movieRelationsSchema = z.object({
 })
 
 // Schema principal para React Hook Form (solo valida campos del formulario)
-/**
- * movieFormSchema
- * @TODO Add documentation
- */
 export const movieFormSchema = movieFormFieldsSchema.merge(moviePartialDatesSchema)
 
 // Schema completo para la API (incluye todo)
-/**
- * movieCompleteSchema
- * @TODO Add documentation
- */
 export const movieCompleteSchema = movieFormFieldsSchema
   .merge(moviePartialDatesSchema)
   .merge(movieRelationsSchema)
@@ -28292,8 +28364,8 @@ export const movieSchema = z.object({
   filmingEndDay: z.number().nullable().optional(),
 
   // Duración
-  duration: z.number().optional(),
-  durationSeconds: z.number().optional(),
+  duration: z.number().optional().transform(val => val === 0 ? null : val),
+durationSeconds: z.number().optional().transform(val => val === 0 ? null : val),
   tipoDuracion: z.string().optional(),
 
   // Contenido

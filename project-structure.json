@@ -1,10 +1,11 @@
 {
-  "timestamp": "2025-08-27T12:42:16.376Z",
+  "timestamp": "2025-08-27T14:16:46.205Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "d96e5cc231ab8fa5f5aaaf8c74f1ffe8a17ac314",
+  "commit": "839a77fcfd1ab75defe6ac09728e71d8dc6596dd",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
+    ".env.staging": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.staging",
     ".gitattributes": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.gitattributes",
     ".github": {
       "workflows": {
@@ -152,6 +153,9 @@
       "migrations": {
         "20240101000000_baseline": {
           "migration.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20240101000000_baseline/migration.sql"
+        },
+        "20250827000000_add_unaccent": {
+          "migration.sql": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/20250827000000_add_unaccent/migration.sql"
         },
         "migration_lock.toml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/prisma/migrations/migration_lock.toml"
       },
