@@ -298,17 +298,6 @@ export async function PUT(
   try {
     const id = parseInt(params.id)
     const body = await request.json()
-    console.log('🔥 Datos recibidos en API PUT:', {
-      releaseYear: body.releaseYear,
-      releaseMonth: body.releaseMonth,
-      releaseDay: body.releaseDay,
-      filmingStartYear: body.filmingStartYear,
-      filmingStartMonth: body.filmingStartMonth,
-      filmingStartDay: body.filmingStartDay,
-      filmingEndYear: body.filmingEndYear,
-      filmingEndMonth: body.filmingEndMonth,
-      filmingEndDay: body.filmingEndDay
-    })
 
     // Limpiar datos antes de validar
     const cleanedData = {
@@ -340,6 +329,13 @@ export async function PUT(
 
     // Validar datos
     const validatedData = movieSchema.parse(cleanedData)
+
+    if (validatedData.duration === 0) {
+    validatedData.duration = null;
+}
+if (validatedData.durationSeconds === 0) {
+    validatedData.durationSeconds = null;
+}
 
     // Verificar que la película existe y obtener slug para invalidar caché
     const existingMovie = await prisma.movie.findUnique({
@@ -387,18 +383,6 @@ export async function PUT(
         metaKeywords,
         ...movieDataClean
       } = movieData
-
-      console.log('💾 Datos a guardar en DB:', {
-        releaseYear,
-        releaseMonth,
-        releaseDay,
-        filmingStartYear,
-        filmingStartMonth,
-        filmingStartDay,
-        filmingEndYear,
-        filmingEndMonth,
-        filmingEndDay
-      })
 
       // 1. Actualizar datos básicos de la película - EXACTAMENTE COMO EN EL POST
       const updatedMovie = await tx.movie.update({
