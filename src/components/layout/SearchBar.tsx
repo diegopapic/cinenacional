@@ -155,7 +155,7 @@ export default function SearchBar() {
                                         {results!.people.map((person) => (
                                             <Link
                                                 key={person.id}
-                                                href={`/personas/${person.slug}`}
+                                                href={`/persona/${person.slug}`}
                                                 onClick={handleResultClick}
                                                 className="flex items-center px-4 py-3 hover:bg-zinc-800 transition-colors group"
                                             >

@@ -24,7 +24,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
   return (
     <section className="mb-12">
       <h2 className="serif-heading text-3xl mb-6 text-white">Últimas Personas Ingresadas</h2>
-      
+
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {[...Array(6)].map((_, index) => (
@@ -40,7 +40,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
           {people.map((persona) => (
             <Link
               key={persona.id}
-              href={`/personas/${persona.slug}`}
+              href={`/persona/${persona.slug}`}
               className="text-center cursor-pointer group"
             >
               <div className="w-24 h-24 mx-auto rounded-full overflow-hidden mb-2 person-placeholder group-hover:ring-2 group-hover:ring-cine-accent transition-all">
@@ -69,7 +69,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
           ))}
         </div>
       )}
-{/*
+      {/*
       <div className="mt-6 text-center">
         <Link
           href="/listados/personas?sort=createdAt"

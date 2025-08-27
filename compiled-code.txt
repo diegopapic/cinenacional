@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 42818bcc276feb292e5b28a116f2ca8ee9c1725e
-// Fecha: 2025-08-27T02:05:14.976Z
+// Commit: 06c6deeafaaa93dbe2db9299fbcc61f1deefe075
+// Fecha: 2025-08-27T02:38:41.070Z
 // ============================================
 
 
@@ -11042,7 +11042,7 @@ export default function SearchPage() {
                 {filteredPeople.map((person) => (
                   <Link
                     key={person.id}
-                    href={`/personas/${person.slug}`}
+                    href={`/persona/${person.slug}`}
                     className="bg-zinc-900 rounded-lg hover:bg-zinc-800 transition-colors p-4 flex gap-4 group"
                   >
                     <div className="flex-shrink-0 w-20 h-20 bg-zinc-800 rounded-full overflow-hidden">
@@ -13186,9 +13186,9 @@ export default async function MoviePage({ params }: PageProps) {
 }
 
 // ==================================================
-// src/app/personas/[slug]/page.tsx
+// src/app/persona/[slug]/page.tsx
 // ==================================================
-// src/app/personas/[slug]/page.tsx - VERSIÓN CORREGIDA
+// src/app/persona/[slug]/page.tsx - VERSIÓN CORREGIDA
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -21899,7 +21899,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
                   , de{' '}
                   {item.directorSlug ? (
                     <Link 
-                      href={`/personas/${item.directorSlug}`}
+                      href={`/persona/${item.directorSlug}`}
                       className="text-white hover:text-cine-accent transition-colors"
                     >
                       {item.director}
@@ -21930,7 +21930,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
                   , de{' '}
                   {item.directorSlug ? (
                     <Link 
-                      href={`/personas/${item.directorSlug}`}
+                      href={`/persona/${item.directorSlug}`}
                       className="text-white hover:text-cine-accent transition-colors"
                     >
                       {item.director}
@@ -21961,7 +21961,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
                   , de{' '}
                   {item.directorSlug ? (
                     <Link 
-                      href={`/personas/${item.directorSlug}`}
+                      href={`/persona/${item.directorSlug}`}
                       className="text-white hover:text-cine-accent transition-colors"
                     >
                       {item.director}
@@ -21984,7 +21984,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               nacía{' '}
               {item.slug ? (
                 <Link 
-                  href={`/personas/${item.slug}`}
+                  href={`/persona/${item.slug}`}
                   className="text-white hover:text-cine-accent transition-colors"
                 >
                   {item.titulo}
@@ -22000,7 +22000,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               moría{' '}
               {item.slug ? (
                 <Link 
-                  href={`/personas/${item.slug}`}
+                  href={`/persona/${item.slug}`}
                   className="text-white hover:text-cine-accent transition-colors"
                 >
                   {item.titulo}
@@ -22069,7 +22069,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
         // Si tiene foto, mostrarla
         return item.slug ? (
           <Link 
-            href={`/personas/${item.slug}`}
+            href={`/persona/${item.slug}`}
             className="block w-24 h-24 rounded-full overflow-hidden hover:opacity-80 transition-opacity"
           >
             <img 
@@ -22091,7 +22091,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
         // Si no tiene foto, mostrar placeholder
         return item.slug ? (
           <Link 
-            href={`/personas/${item.slug}`}
+            href={`/persona/${item.slug}`}
             className="w-24 h-24 rounded-full person-placeholder flex items-center justify-center hover:opacity-80 transition-opacity"
           >
             <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22551,7 +22551,7 @@ export default function ObituariosSection({ obituarios, loading = false }: Obitu
             return (
               <Link 
                 key={persona.id} 
-                href={`/personas/${persona.slug}`}
+                href={`/persona/${persona.slug}`}
                 className="flex items-center space-x-4 pb-4 border-b border-gray-700 last:border-0 last:pb-0 hover:bg-gray-800/30 transition-colors rounded-lg p-2 -m-2"
               >
                 <div className="w-24 h-24 rounded-full flex-shrink-0 overflow-hidden bg-gray-800">
@@ -22707,7 +22707,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
   return (
     <section className="mb-12">
       <h2 className="serif-heading text-3xl mb-6 text-white">Últimas Personas Ingresadas</h2>
-      
+
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {[...Array(6)].map((_, index) => (
@@ -22723,7 +22723,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
           {people.map((persona) => (
             <Link
               key={persona.id}
-              href={`/personas/${persona.slug}`}
+              href={`/persona/${persona.slug}`}
               className="text-center cursor-pointer group"
             >
               <div className="w-24 h-24 mx-auto rounded-full overflow-hidden mb-2 person-placeholder group-hover:ring-2 group-hover:ring-cine-accent transition-all">
@@ -22752,7 +22752,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
           ))}
         </div>
       )}
-{/*
+      {/*
       <div className="mt-6 text-center">
         <Link
           href="/listados/personas?sort=createdAt"
@@ -23182,7 +23182,7 @@ export default function SearchBar() {
                                         {results!.people.map((person) => (
                                             <Link
                                                 key={person.id}
-                                                href={`/personas/${person.slug}`}
+                                                href={`/persona/${person.slug}`}
                                                 onClick={handleResultClick}
                                                 className="flex items-center px-4 py-3 hover:bg-zinc-800 transition-colors group"
                                             >
@@ -23300,7 +23300,7 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
                 )}
               </div>
               {actor.personSlug ? (
-                <Link href={`/personas/${actor.personSlug}`} className="hover:text-cine-accent transition-colors">
+                <Link href={`/persona/${actor.personSlug}`} className="hover:text-cine-accent transition-colors">
                   <p className="font-medium text-white">{actor.name}</p>
                 </Link>
               ) : (
@@ -23338,7 +23338,7 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
                     )}
                   </div>
                   {actor.personSlug ? (
-                    <Link href={`/personas/${actor.personSlug}`} className="hover:text-cine-accent transition-colors">
+                    <Link href={`/persona/${actor.personSlug}`} className="hover:text-cine-accent transition-colors">
                       <p className="font-medium text-white text-sm">{actor.name}</p>
                     </Link>
                   ) : (
@@ -23491,7 +23491,7 @@ export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
     // Crear el elemento del nombre con o sin enlace
     const nameElement = member.personSlug ? (
       <Link 
-        href={`/personas/${member.personSlug}`} 
+        href={`/persona/${member.personSlug}`} 
         className="text-white hover:text-cine-accent transition-colors"
       >
         {member.name}
@@ -23984,7 +23984,7 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
                   </div>
                   <div>
                     <a 
-                      href={`/personas/${director.slug}`}
+                      href={`/persona/${director.slug}`}
                       className="font-medium text-white hover:text-cine-accent transition-colors"
                     >
                       {director.name}
