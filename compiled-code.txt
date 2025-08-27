@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 06c6deeafaaa93dbe2db9299fbcc61f1deefe075
-// Fecha: 2025-08-27T02:38:41.070Z
+// Commit: 5366e13adfef6b0e25ec5304c5b4115f9b1aa6f3
+// Fecha: 2025-08-27T02:47:21.937Z
 // ============================================
 
 
@@ -10985,7 +10985,7 @@ export default function SearchPage() {
                 {filteredMovies.map((movie) => (
                   <Link
                     key={movie.id}
-                    href={`/peliculas/${movie.slug}`}
+                    href={`/pelicula/${movie.slug}`}
                     className="bg-zinc-900 rounded-lg hover:bg-zinc-800 transition-colors p-4 flex gap-4 group"
                   >
                     <div className="flex-shrink-0 w-20 h-28 bg-zinc-800 rounded overflow-hidden">
@@ -12415,9 +12415,9 @@ export default function HomePage() {
 }
 
 // ==================================================
-// src/app/peliculas/[slug]/MoviePageClient.tsx
+// src/app/pelicula/[slug]/MoviePageClient.tsx
 // ==================================================
-// src/app/peliculas/[slug]/MoviePageClient.tsx
+// src/app/pelicula/[slug]/MoviePageClient.tsx
 
 'use client';
 
@@ -12485,10 +12485,6 @@ export function MoviePageClient({
     basicCrew,  // NUEVO
     fullCrew    // NUEVO
 }: MoviePageClientProps) {
-    console.log('🔍 MoviePageClient - movie completo:', movie);
-    console.log('🔍 MoviePageClient - posterUrl:', movie.posterUrl);
-    console.log('🔍 MoviePageClient - images:', movie.images);
-    console.log('🔍 MoviePageClient - todos los campos:', Object.keys(movie));
     const [movieGallery, setMovieGallery] = useState<string[]>([]);
 
     // Función para cargar imágenes desde la API
@@ -12678,9 +12674,9 @@ export function MoviePageClient({
 }
 
 // ==================================================
-// src/app/peliculas/[slug]/page.tsx
+// src/app/pelicula/[slug]/page.tsx
 // ==================================================
-// src/app/peliculas/[slug]/page.tsx
+// src/app/pelicula/[slug]/page.tsx
 import { notFound } from 'next/navigation';
 import { MoviePageClient } from './MoviePageClient';
 import type { Metadata } from 'next';
@@ -13668,7 +13664,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                         </span>
                         <div className="flex-grow">
                           <Link 
-                            href={`/peliculas/${movie.slug}`}
+                            href={`/pelicula/${movie.slug}`}
                             className="text-lg text-white hover:text-blue-400 transition-colors inline-block"
                           >
                             {movie.title}
@@ -18440,7 +18436,7 @@ function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
         <div className="flex items-center justify-end gap-2">
           <a
-            href={`/peliculas/${movie.slug}`}
+            href={`/pelicula/${movie.slug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-gray-600 hover:text-gray-900 transition-colors"
@@ -19110,7 +19106,7 @@ export default function MoviesTable({
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex items-center justify-end gap-2">
                     <a
-                      href={`/peliculas/${movie.slug}`}
+                      href={`/pelicula/${movie.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-gray-600 hover:text-gray-900 transition-colors"
@@ -21886,7 +21882,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               se estrenaba{' '}
               {item.slug ? (
                 <Link 
-                  href={`/peliculas/${item.slug}`}
+                  href={`/pelicula/${item.slug}`}
                   className="text-white hover:text-cine-accent transition-colors"
                 >
                   {item.titulo}
@@ -21917,7 +21913,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               empezaba el rodaje de{' '}
               {item.slug ? (
                 <Link 
-                  href={`/peliculas/${item.slug}`}
+                  href={`/pelicula/${item.slug}`}
                   className="text-white hover:text-cine-accent transition-colors"
                 >
                   {item.titulo}
@@ -21948,7 +21944,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               terminaba el rodaje de{' '}
               {item.slug ? (
                 <Link 
-                  href={`/peliculas/${item.slug}`}
+                  href={`/pelicula/${item.slug}`}
                   className="text-white hover:text-cine-accent transition-colors"
                 >
                   {item.titulo}
@@ -22026,7 +22022,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
         // Si tiene poster, mostrarlo
         return item.slug ? (
           <Link 
-            href={`/peliculas/${item.slug}`}
+            href={`/pelicula/${item.slug}`}
             className="block w-16 h-24 rounded overflow-hidden hover:opacity-80 transition-opacity"
           >
             <img 
@@ -22048,7 +22044,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
         // Si no tiene poster, mostrar placeholder
         return item.slug ? (
           <Link 
-            href={`/peliculas/${item.slug}`}
+            href={`/pelicula/${item.slug}`}
             className="w-16 h-24 rounded movie-placeholder flex items-center justify-center hover:opacity-80 transition-opacity"
           >
             <svg className="w-8 h-8 text-cine-accent opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22370,7 +22366,7 @@ export default function MovieCard({
 
   return (
     <Link
-      href={`/peliculas/${movie.slug}`}
+      href={`/pelicula/${movie.slug}`}
       className="group cursor-pointer"
     >
       <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform poster-shadow relative">
@@ -22618,7 +22614,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
   return (
     <section className="mb-12">
       <h2 className="serif-heading text-3xl mb-6 text-white">Últimas Películas Ingresadas</h2>
-      
+
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
           {[...Array(8)].map((_, index) => (
@@ -22637,7 +22633,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
           {movies.map((pelicula) => (
             <Link
               key={pelicula.id}
-              href={`/peliculas/${pelicula.slug}`}
+              href={`/pelicula/${pelicula.slug}`}
               className="group cursor-pointer"
             >
               <div className="aspect-[2/3] rounded overflow-hidden mb-1 transform group-hover:scale-105 transition-transform">
@@ -22664,7 +22660,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
           ))}
         </div>
       )}
-{/*
+      {/*
       <div className="mt-6 text-center">
         <Link
           href="/listados/peliculas?sort=createdAt"
@@ -23138,7 +23134,7 @@ export default function SearchBar() {
                                         {results!.movies.map((movie) => (
                                             <Link
                                                 key={movie.id}
-                                                href={`/peliculas/${movie.slug}`}
+                                                href={`/pelicula/${movie.slug}`}
                                                 onClick={handleResultClick}
                                                 className="flex items-center px-4 py-3 hover:bg-zinc-800 transition-colors group"
                                             >
@@ -24244,7 +24240,7 @@ export function SimilarMovies({ movies }: SimilarMoviesProps) {
           return (
             <Link 
               key={movie.id || index} 
-              href={`/peliculas/${movieLink}`}
+              href={`/pelicula/${movieLink}`}
               className="group cursor-pointer block"
             >
               <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform">

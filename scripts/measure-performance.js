@@ -77,7 +77,7 @@ const ENDPOINTS = [
   // ========== PÁGINAS DE PELÍCULAS ==========
   {
     name: 'Película Page - Popular',
-    path: '/peliculas/el-secreto-de-sus-ojos',
+    path: '/pelicula/el-secreto-de-sus-ojos',
     type: 'page',
     category: 'movies',
     critical: true,

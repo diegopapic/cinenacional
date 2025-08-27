@@ -84,7 +84,7 @@ export default function MovieCard({
 
   return (
     <Link
-      href={`/peliculas/${movie.slug}`}
+      href={`/pelicula/${movie.slug}`}
       className="group cursor-pointer"
     >
       <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform poster-shadow relative">

@@ -153,7 +153,7 @@ export default function MoviesTable({
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex items-center justify-end gap-2">
                     <a
-                      href={`/peliculas/${movie.slug}`}
+                      href={`/pelicula/${movie.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-gray-600 hover:text-gray-900 transition-colors"

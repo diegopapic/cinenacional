@@ -478,7 +478,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                         </span>
                         <div className="flex-grow">
                           <Link 
-                            href={`/peliculas/${movie.slug}`}
+                            href={`/pelicula/${movie.slug}`}
                             className="text-lg text-white hover:text-blue-400 transition-colors inline-block"
                           >
                             {movie.title}
