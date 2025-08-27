@@ -115,7 +115,7 @@ export default function MovieFormEnhanced({
           console.log('🎭 Procesando género:', g)
           return g.genre?.id || g.genreId || g.id
         })
-      console.log('🎭 IDs extraídos:', genreIds)
+        console.log('🎭 IDs extraídos:', genreIds)
 
         setSelectedGenres(genreIds)
       }
