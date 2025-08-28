@@ -18,7 +18,117 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'createdAt'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
 
-    // Construir where clause
+    // Si hay búsqueda, usar query SQL con unaccent
+    // Si hay búsqueda, usar query SQL con unaccent
+if (search) {
+  try {
+    const searchQuery = search.toLowerCase().trim()
+    const searchPattern = `%${searchQuery}%`
+    const skip = (page - 1) * limit
+    
+    // Especificar el tipo de retorno
+    const movies = await prisma.$queryRaw<any[]>`
+      SELECT 
+        id,
+        slug,
+        title,
+        year,
+        release_year as "releaseYear",
+        release_month as "releaseMonth",
+        release_day as "releaseDay",
+        duration,
+        poster_url as "posterUrl",
+        stage
+      FROM movies
+      WHERE 
+        unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
+      ORDER BY title ASC
+      LIMIT ${limit}
+      OFFSET ${skip}
+    `
+
+    // Especificar el tipo para el count
+    const totalResult = await prisma.$queryRaw<{count: number}[]>`
+      SELECT COUNT(*)::int as count
+      FROM movies
+      WHERE 
+        unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
+    `
+    
+    const total = totalResult[0]?.count || 0
+
+    // Obtener IDs para buscar géneros y países
+    const movieIds = movies.map(m => m.id)
+    
+    if (movieIds.length > 0) {
+      const [genres, countries] = await Promise.all([
+        prisma.movieGenre.findMany({
+          where: { movieId: { in: movieIds } },
+          include: { genre: true }
+        }),
+        prisma.movieCountry.findMany({
+          where: { movieId: { in: movieIds }, isPrimary: true },
+          include: { country: true }
+        })
+      ])
+
+      // Formatear respuesta
+      const formattedMovies = movies.map((movie: any) => {
+        const movieGenres = genres.filter(g => g.movieId === movie.id)
+        const movieCountry = countries.find(c => c.movieId === movie.id)
+        
+        return {
+          id: movie.id,
+          slug: movie.slug,
+          title: movie.title,
+          year: movie.year,
+          releaseYear: movie.releaseYear,
+          releaseMonth: movie.releaseMonth,
+          releaseDay: movie.releaseDay,
+          duration: movie.duration,
+          posterUrl: movie.posterUrl,
+          stage: movie.stage,
+          genres: movieGenres.map(g => ({
+            id: g.genre.id,
+            name: g.genre.name
+          })),
+          country: movieCountry?.country?.name || 'Argentina'
+        }
+      })
+
+      return NextResponse.json({
+        movies: formattedMovies,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+          totalItems: total
+        }
+      })
+    }
+    
+    // Si no hay resultados
+    return NextResponse.json({
+      movies: [],
+      pagination: {
+        page,
+        limit,
+        total: 0,
+        totalPages: 0,
+        currentPage: page,
+        totalItems: 0
+      }
+    })
+
+      } catch (err) {
+        console.error('Error with unaccent search:', err)
+        // Continuar con fallback
+      }
+    }
+
+    // Búsqueda estándar sin unaccent (fallback o cuando no hay término de búsqueda)
     const where: any = {}
 
     if (search) {
@@ -46,10 +156,8 @@ export async function GET(request: NextRequest) {
       where.stage = stage
     }
 
-    // Calcular skip para paginación
     const skip = (page - 1) * limit
 
-    // Obtener películas y total
     const [movies, total] = await Promise.all([
       prisma.movie.findMany({
         where,
@@ -77,10 +185,6 @@ export async function GET(request: NextRequest) {
       prisma.movie.count({ where })
     ])
 
-    console.log('Primera película raw:', movies[0]?.posterUrl);
-    console.log('Campos de la primera película:', Object.keys(movies[0] || {}));
-
-    // Formatear respuesta
     const formattedMovies = movies.map(movie => ({
       id: movie.id,
       slug: movie.slug,
@@ -108,7 +212,9 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+        totalItems: total
       }
     })
 
@@ -121,8 +227,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/movies - Crear nueva película
+
+// POST /api/movies - Crear nueva película (sin cambios)
 export async function POST(request: NextRequest) {
+  // ... resto del código sin cambios ...
   try {
     const body = await request.json()
 
