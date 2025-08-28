@@ -6,6 +6,9 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { formatPartialDate } from '@/lib/shared/dateUtils';
 
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs' // opcional
+
 interface PersonPageProps {
   params: {
     slug: string;

@@ -13,6 +13,9 @@ import { HeroMovie, Efemeride } from '@/types/home.types';
 import { formatPartialDate } from '@/lib/shared/dateUtils';
 import { useState, useEffect } from 'react';
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // Datos estáticos (mover a constants/homeData.ts)
 const PELICULAS_HERO: HeroMovie[] = [
   { id: 1, titulo: "El Secreto de Sus Ojos", año: "2009", genero: "Drama, Thriller", director: "Juan José Campanella", imagen: "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=1024&fit=crop&auto=format" },
@@ -103,8 +106,6 @@ export default function HomePage() {
         
         const response = await fetch('/api/efemerides');
         
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
         
         if (!response.ok) {
           // Intentar obtener el mensaje de error del servidor
@@ -114,7 +115,6 @@ export default function HomePage() {
         }
         
         const data = await response.json();
-        console.log('Efemérides recibidas:', data);
         
         // Solo usar los datos recibidos, sin fallback
         setEfemerides(data.efemerides || []);
