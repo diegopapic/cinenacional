@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Cambiar a standalone para Docker
+  output: 'standalone',
+  
   reactStrictMode: true,
+  poweredByHeader: false,
+  
   images: {
     remotePatterns: [
       {
@@ -15,11 +20,18 @@ const nextConfig = {
       }
     ],
   },
+  
   swcMinify: true,
+  
   experimental: {
     workerThreads: false,
-    cpus: 1
+    cpus: 1,
+    // Agregar para mejorar el build
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
+  
   webpack: (config, { isServer }) => {
     config.optimization.minimize = true;
     
@@ -34,6 +46,7 @@ const nextConfig = {
     
     return config;
   },
+  
   productionBrowserSourceMaps: false,
   
   // CSP actualizada para incluir Google Analytics
