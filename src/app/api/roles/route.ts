@@ -15,12 +15,116 @@ export async function GET(request: NextRequest) {
     const isActive = searchParams.get('isActive');
     const isMainRole = searchParams.get('isMainRole');
     const exportFormat = searchParams.get('export');
-    const sortBy = searchParams.get('sortBy') || 'usage'; // Por defecto ordenar por usos
+    const sortBy = searchParams.get('sortBy') || 'usage';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
     const offset = (page - 1) * limit;
 
-    // Construir where clause
+    // Si hay búsqueda, usar unaccent
+    if (search && search.trim().length >= 2) {
+      try {
+        const searchPattern = `%${search.toLowerCase().trim()}%`;
+        
+        // Buscar con unaccent
+        const rolesWithSearch = await prisma.$queryRaw<{id: number}[]>`
+          SELECT id
+          FROM roles
+          WHERE 
+            unaccent(LOWER(name)) LIKE unaccent(${searchPattern})
+            OR unaccent(LOWER(COALESCE(description, ''))) LIKE unaccent(${searchPattern})
+        `;
+        
+        if (rolesWithSearch.length === 0) {
+          return NextResponse.json({
+            data: [],
+            totalCount: 0,
+            page,
+            totalPages: 0,
+            hasMore: false
+          });
+        }
+        
+        // Construir where para los IDs encontrados
+        const where: any = {
+          id: { in: rolesWithSearch.map(r => r.id) }
+        };
+        
+        // Agregar filtros adicionales
+        if (department && Object.values(Department).includes(department)) {
+          where.department = department;
+        }
+        
+        if (isActive !== null && isActive !== '') {
+          where.isActive = isActive === 'true';
+        }
+        
+        if (isMainRole !== null && isMainRole !== '') {
+          where.isMainRole = isMainRole === 'true';
+        }
+        
+        // Obtener roles completos
+        const roles = await prisma.role.findMany({
+          where,
+          include: {
+            _count: {
+              select: {
+                crewRoles: true
+              }
+            }
+          }
+        });
+        
+        // Ordenar según sortBy
+        if (sortBy === 'usage') {
+          roles.sort((a, b) => {
+            const countA = a._count?.crewRoles || 0;
+            const countB = b._count?.crewRoles || 0;
+            return sortOrder === 'desc' ? countB - countA : countA - countB;
+          });
+        } else if (sortBy === 'name') {
+          roles.sort((a, b) => {
+            return sortOrder === 'desc' 
+              ? b.name.localeCompare(a.name)
+              : a.name.localeCompare(b.name);
+          });
+        }
+        
+        // Paginar manualmente
+        const paginatedRoles = roles.slice(offset, offset + limit);
+        const totalCount = roles.length;
+        const totalPages = Math.ceil(totalCount / limit);
+        
+        if (exportFormat === 'csv') {
+          const csv = [
+            'ID,Nombre,Departamento,Descripción,Principal,Activo,Usos',
+            ...roles.map(role => 
+              `${role.id},"${role.name}","${role.department}","${role.description || ''}",${role.isMainRole ? 'Sí' : 'No'},${role.isActive ? 'Sí' : 'No'},${role._count.crewRoles}`
+            )
+          ].join('\n');
+
+          return new NextResponse(csv, {
+            headers: {
+              'Content-Type': 'text/csv',
+              'Content-Disposition': `attachment; filename="roles_${new Date().toISOString().split('T')[0]}.csv"`
+            }
+          });
+        }
+        
+        return NextResponse.json({
+          data: paginatedRoles,
+          totalCount,
+          page,
+          totalPages,
+          hasMore: page < totalPages
+        });
+        
+      } catch (error) {
+        console.error('Error con unaccent:', error);
+        // Continuar con búsqueda normal
+      }
+    }
+
+    // Búsqueda normal sin unaccent
     const where: any = {};
 
     if (search) {
@@ -42,12 +146,11 @@ export async function GET(request: NextRequest) {
       where.isMainRole = isMainRole === 'true';
     }
 
-    // Configurar ordenamiento
+    // El resto del código continúa igual...
     let orderBy: any;
     
     if (sortBy === 'usage') {
-      // ORDENAR POR CANTIDAD DE USOS
-      // Primero obtener todos los roles con sus conteos
+      // Para ordenar por uso necesitamos hacerlo manualmente
       const rolesWithCount = await prisma.role.findMany({
         where,
         include: {
@@ -59,19 +162,16 @@ export async function GET(request: NextRequest) {
         }
       });
 
-      // Ordenar manualmente por count
       rolesWithCount.sort((a, b) => {
         const countA = a._count?.crewRoles || 0;
         const countB = b._count?.crewRoles || 0;
         return sortOrder === 'desc' ? countB - countA : countA - countB;
       });
 
-      // Aplicar paginación manualmente
       const paginatedRoles = rolesWithCount.slice(offset, offset + limit);
       const totalCount = rolesWithCount.length;
       const totalPages = Math.ceil(totalCount / limit);
 
-      // Para exportación CSV
       if (exportFormat === 'csv') {
         const csv = [
           'ID,Nombre,Departamento,Descripción,Principal,Activo,Usos',
@@ -97,7 +197,6 @@ export async function GET(request: NextRequest) {
       });
       
     } else {
-      // Para otros ordenamientos
       if (sortBy === 'name') {
         orderBy = { name: sortOrder };
       } else if (sortBy === 'department') {
@@ -108,14 +207,12 @@ export async function GET(request: NextRequest) {
       } else if (sortBy === 'createdAt') {
         orderBy = { createdAt: sortOrder };
       } else {
-        // Por defecto, ordenar por departamento y nombre
         orderBy = [
           { department: 'asc' },
           { name: 'asc' }
         ];
       }
 
-      // Para exportación CSV
       if (exportFormat === 'csv') {
         const roles = await prisma.role.findMany({
           where,
@@ -144,7 +241,6 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      // Query principal con ordenamiento normal
       const [roles, totalCount] = await Promise.all([
         prisma.role.findMany({
           where,
@@ -186,10 +282,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    // Validar datos
     const validatedData = roleSchema.parse(body);
     
-    // Generar slug único
     const baseSlug = generateSlug(validatedData.name);
     let slug = baseSlug;
     let counter = 1;
@@ -199,7 +293,6 @@ export async function POST(request: NextRequest) {
       counter++;
     }
 
-    // Crear rol
     const role = await prisma.role.create({
       data: {
         ...validatedData,
