@@ -11,36 +11,36 @@ interface PageProps {
   };
 }
 
-// NUEVO: Generar rutas estáticas para las películas más visitadas
+// Configuración para build y runtime
+const isBuilding = process.env.BUILDING === 'true';
+
+// Configuración de página dinámica
+export const dynamic = isBuilding ? 'force-dynamic' : 'auto';
+export const revalidate = isBuilding ? 0 : 3600; // 1 hora cuando NO estamos en build
+export const dynamicParams = true; // Permitir slugs no pre-generados
+
+// Generar parámetros estáticos (solo cuando no estamos en build de Docker)
 export async function generateStaticParams() {
+  // Durante el build de Docker, no pre-generar nada
+  if (isBuilding) {
+    return [];
+  }
+  
   try {
-    // Pre-generar las 200 películas más recientes y las más importantes
     const movies = await prisma.movie.findMany({
       select: { slug: true },
-      where: {
-        // Solo películas completas para pre-generar
-        stage: 'COMPLETA'
-      },
-      orderBy: [
-        { createdAt: 'desc' }
-      ],
-      take: 200
+      take: 50, // Limitar a las 50 más recientes
+      orderBy: { updatedAt: 'desc' }
     });
-
-    console.log(`📊 Pre-generando ${movies.length} páginas de películas`);
-
+    
     return movies.map((movie) => ({
       slug: movie.slug,
     }));
   } catch (error) {
-    console.error('Error generando rutas estáticas:', error);
+    console.error('Error generating static params:', error);
     return [];
   }
 }
-
-// NUEVO: Configurar ISR - revalidar cada 1 hora
-export const revalidate = 3600; // 1 hora en segundos
-export const dynamicParams = true; // Permitir slugs no pre-generados
 
 // OPTIMIZACIÓN: Cachear la query de película con unstable_cache
 const getCachedMovieData = unstable_cache(
@@ -230,13 +230,17 @@ const getCachedMovieData = unstable_cache(
   ['movie-detail'], // Tag para el cache
   {
     revalidate: 3600, // Cache por 1 hora
-    tags: ['movies'] // Tag genérico para todas las películas (FIX: removido el slug que no estaba definido)
+    tags: ['movies'] // Tag genérico para todas las películas
   }
 );
 
 // Función wrapper para manejar errores
 async function getMovieData(slug: string) {
   try {
+    // Durante el build, simular que no hay datos
+    if (isBuilding) {
+      return null;
+    }
     return await getCachedMovieData(slug);
   } catch (error) {
     console.error('Error fetching movie:', error);
@@ -246,6 +250,14 @@ async function getMovieData(slug: string) {
 
 // Metadata dinámica - también optimizada con cache
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  // Durante el build, retornar metadata básica
+  if (isBuilding) {
+    return {
+      title: 'CineNacional',
+      description: 'Cine argentino'
+    };
+  }
+
   const movie = await getMovieData(params.slug);
 
   if (!movie) {
@@ -288,6 +300,11 @@ function formatPersonName(person: any): string {
 }
 
 export default async function MoviePage({ params }: PageProps) {
+  // Durante el build, retornar un placeholder
+  if (isBuilding) {
+    return <div>Loading...</div>;
+  }
+
   const movie = await getMovieData(params.slug);
 
   if (!movie) {
