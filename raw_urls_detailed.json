@@ -620,6 +620,11 @@
     "size": 0
   },
   {
+    "path": "public/fuc.png",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/fuc.png",
+    "size": 0
+  },
+  {
     "path": "public/globe.svg",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/globe.svg",
     "size": 0
@@ -1612,6 +1617,11 @@
   {
     "path": "src/app/persona/[slug]/page.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/persona/[slug]/page.tsx",
+    "size": 0
+  },
+  {
+    "path": "src/app/test/page.tsx",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/test/page.tsx",
     "size": 0
   },
   {
