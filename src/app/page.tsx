@@ -12,9 +12,11 @@ import ErrorMessage from '@/components/home/ErrorMessage';
 import { HeroMovie, Efemeride } from '@/types/home.types';
 import { formatPartialDate } from '@/lib/shared/dateUtils';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// export const dynamic = 'force-dynamic'
+// export const revalidate = 0
 
 // Datos estáticos (mover a constants/homeData.ts)
 const PELICULAS_HERO: HeroMovie[] = [
@@ -49,7 +51,7 @@ export default function HomePage() {
     const year = person[`${prefix}Year`];
     const month = person[`${prefix}Month`] || 12;
     const day = person[`${prefix}Day`] || new Date(year, month, 0).getDate(); // Último día del mes
-    
+
     return new Date(year, month - 1, day);
   };
 
@@ -58,7 +60,7 @@ export default function HomePage() {
     const fetchObituarios = async () => {
       try {
         setLoadingObituarios(true);
-        
+
         // Obtener personas con fecha de muerte más reciente
         const params = {
           limit: '50',
@@ -66,25 +68,25 @@ export default function HomePage() {
           sortBy: 'deathDate',
           sortOrder: 'desc'
         };
-        
+
         const response = await fetch(`/api/people?${new URLSearchParams(params)}`);
-        
+
         if (!response.ok) {
           throw new Error('Error al cargar obituarios');
         }
-        
+
         const data = await response.json();
-        
+
         // Filtrar personas con fecha de muerte y ordenar por fecha más reciente
         const personasConFecha = data.data.filter((person: any) => person.deathYear);
-        
+
         // Ordenar por fecha de muerte más reciente considerando fechas parciales
         const personasOrdenadas = personasConFecha.sort((a: any, b: any) => {
           const dateA = calcularFechaEfectivaPersona(a, 'death');
           const dateB = calcularFechaEfectivaPersona(b, 'death');
           return dateB.getTime() - dateA.getTime();
         });
-        
+
         // Tomar solo las 2 más recientes
         setObituarios(personasOrdenadas.slice(0, 2));
       } catch (error) {
@@ -103,19 +105,19 @@ export default function HomePage() {
     const fetchEfemerides = async () => {
       try {
         setLoadingEfemerides(true);
-        
+
         const response = await fetch('/api/efemerides');
-        
-        
+
+
         if (!response.ok) {
           // Intentar obtener el mensaje de error del servidor
           const errorData = await response.text();
           console.error('Error response:', errorData);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         // Solo usar los datos recibidos, sin fallback
         setEfemerides(data.efemerides || []);
       } catch (error) {
@@ -150,22 +152,22 @@ export default function HomePage() {
   // Formateador para fechas futuras (próximos estrenos)
   const formatearFechaProxima = (movie: any): string => {
     if (!movie.releaseYear) return 'Fecha por confirmar';
-    
+
     // Si solo tiene año
     if (!movie.releaseMonth) {
       return movie.releaseYear.toString();
     }
-    
+
     const meses = [
       'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
-    
+
     // Si tiene mes pero no día
     if (!movie.releaseDay) {
       return `${meses[movie.releaseMonth - 1]} ${movie.releaseYear}`;
     }
-    
+
     // Si tiene fecha completa
     return `${movie.releaseDay} de ${meses[movie.releaseMonth - 1].toLowerCase()} de ${movie.releaseYear}`;
   };
@@ -174,10 +176,9 @@ export default function HomePage() {
     <div className="bg-cine-dark text-white min-h-screen">
       {/* Comentada la parte de imágenes de la home */}
       {/*<HeroSection peliculas={PELICULAS_HERO} />*/}
-
       <div className="bg-cine-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          
+
           {error && <ErrorMessage message={error} onRetry={retry} />}
 
           {/* Sección de Últimos Estrenos - con badge negro para fechas pasadas */}
@@ -208,23 +209,39 @@ export default function HomePage() {
 
           {/* Grid de Obituarios y Efemérides */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-            <ObituariosSection 
-              obituarios={obituarios} 
+            <ObituariosSection
+              obituarios={obituarios}
               loading={loadingObituarios}
             />
             <EfemeridesSection efemerides={efemerides} />
           </div>
-
+<div className="w-full flex justify-center py-4 bg-cine-dark">
+        <Link
+          href="https://www.ucine.edu.ar"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block max-w-[601px] w-full px-4"
+        >
+          <Image
+            src="/fuc.png"
+            alt="Programas de formación UCINE"
+            width={601}
+            height={101}
+            className="w-full h-auto"
+            priority
+          />
+        </Link>
+      </div>
           {/* Últimas Películas Ingresadas */}
-          <RecentMoviesSection 
-            movies={ultimasPeliculas} 
-            loading={loadingRecientes} 
+          <RecentMoviesSection
+            movies={ultimasPeliculas}
+            loading={loadingRecientes}
           />
 
           {/* Últimas Personas Ingresadas */}
-          <RecentPeopleSection 
-            people={ultimasPersonas} 
-            loading={loadingRecientes} 
+          <RecentPeopleSection
+            people={ultimasPersonas}
+            loading={loadingRecientes}
           />
         </div>
       </div>

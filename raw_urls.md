@@ -173,6 +173,7 @@
 - [src/app/pelicula/[slug]/MoviePageClient.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/pelicula/[slug]/MoviePageClient.tsx)
 - [src/app/pelicula/[slug]/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/pelicula/[slug]/page.tsx)
 - [src/app/persona/[slug]/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/persona/[slug]/page.tsx)
+- [src/app/test/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/test/page.tsx)
 - [src/app/test-env/page.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/test-env/page.tsx)
 - [src/components/admin/AlternativeTitlesManager.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/AlternativeTitlesManager.tsx)
 - [src/components/admin/CloudinaryGallery.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/CloudinaryGallery.tsx)
