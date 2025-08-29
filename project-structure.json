@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-28T04:05:21.058Z",
+  "timestamp": "2025-08-29T22:41:41.700Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "b10f2bf67e6078c7ae60c6c2cce0c4779b10d7ae",
+  "commit": "8019fd5d8e1bffb4d0d6f9db2daefbc52c21317d",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".env.staging": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.staging",
@@ -169,6 +169,7 @@
     "PROJECT_DOCS.md": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/PROJECT_DOCS.md",
     "public": {
       "file.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/file.svg",
+      "fuc.png": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/fuc.png",
       "globe.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/globe.svg",
       "images": {
         "background-placeholder.jpg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/background-placeholder.jpg",
@@ -518,6 +519,9 @@
           "[slug]": {
             "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/persona/[slug]/page.tsx"
           }
+        },
+        "test": {
+          "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/test/page.tsx"
         },
         "test-env": {
           "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/test-env/page.tsx"
