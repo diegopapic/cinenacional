@@ -132,8 +132,6 @@
 - [src/app/api/color-types/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/color-types/route.ts)
 - [src/app/api/companies/distribution/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/companies/distribution/route.ts)
 - [src/app/api/companies/production/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/companies/production/route.ts)
-- [src/app/api/countries/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/countries/route.ts)
-- [src/app/api/countries/[id]/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/countries/[id]/route.ts)
 - [src/app/api/efemerides/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/efemerides/route.ts)
 - [src/app/api/genres/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/genres/route.ts)
 - [src/app/api/genres/[id]/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/genres/[id]/route.ts)
