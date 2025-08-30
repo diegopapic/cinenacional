@@ -84,7 +84,7 @@ export function MovieSidebar({
           {hasCountries && (
             <div className="flex items-start">
               <span className="text-gray-400 w-32 flex-shrink-0">
-                {countries.length === 1 ? 'País coproductor:' : 'Países coproductores:'}
+                Coproducción con:
               </span>
               <span className="ml-2 text-white">
                 {countries.map(c => c.name).join(', ')}
