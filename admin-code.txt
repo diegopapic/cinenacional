@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-08-30T03:22:27.188Z
+// Archivos del admin - 2025-08-30T05:22:18.457Z
 // ==================
 
 
@@ -4243,13 +4243,13 @@ export async function GET() {
         ...movie,
         // Mantener crew para que MovieCard pueda procesarlo
         // NO agregar: crew: undefined
-        genres: movie.genres.map(g => g.genre.name)
+        genres: movie.genres.map(g => ({ name: g.genre.name }))
       })),
 
       proximosEstrenos: proximosEstrenos.map(movie => ({
         ...movie,
         // Mantener crew para que MovieCard pueda procesarlo
-        genres: movie.genres.map(g => g.genre.name)
+        genres: movie.genres.map(g => ({ name: g.genre.name }))
       })),
 
       ultimasPeliculas,
