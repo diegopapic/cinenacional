@@ -394,6 +394,7 @@ model Location {
   peopleBornHere      Person[]            @relation("BirthLocation")
   peopleDiedHere      Person[]            @relation("DeathLocation")
   personNationalities PersonNationality[]
+  movieCountries      MovieCountry[]      @relation("MovieCountries")
 
   @@index([parentId])
   @@index([name])
@@ -525,15 +526,15 @@ model MovieTheme {
   @@map("movie_themes")
 }
 
-model Country {
-  id        Int            @id @default(autoincrement())
-  code      String         @unique @db.VarChar(2)
-  name      String         @db.VarChar(100)
-  createdAt DateTime       @default(now()) @map("created_at")
-  movies    MovieCountry[]
+// model Country {
+//  id        Int            @id @default(autoincrement())
+//  code      String         @unique @db.VarChar(2)
+//  name      String         @db.VarChar(100)
+//  createdAt DateTime       @default(now()) @map("created_at")
+//  movies    MovieCountry[]
 
-  @@map("countries")
-}
+//  @@map("countries")
+// }
 
 model Session {
   id           String   @id @default(cuid())
@@ -575,12 +576,13 @@ model VerificationToken {
 }
 
 model MovieCountry {
-  movieId   Int     @map("movie_id")
-  countryId Int     @map("country_id")
-  isPrimary Boolean @default(false) @map("is_primary")
-  country   Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
-  movie     Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
-
+  movieId   Int      @map("movie_id")
+  countryId Int      @map("country_id")  // Ahora apuntará a Location.id
+  isPrimary Boolean  @default(false) @map("is_primary")
+  
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  location  Location @relation("MovieCountries", fields: [countryId], references: [id])
+  
   @@id([movieId, countryId])
   @@map("movie_countries")
 }
