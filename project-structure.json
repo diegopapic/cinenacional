@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-30T02:53:53.338Z",
+  "timestamp": "2025-08-30T03:22:24.568Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "f9ddee2008f03daaeb1506ae922b9f5ea6ad0e20",
+  "commit": "38b540de7782dcc5a7d6b5f5249a5284c30f25d9",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".env.staging": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.staging",
@@ -11,7 +11,6 @@
       "workflows": {
         "deploy-production.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/deploy-production.yml",
         "deploy-staging.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/deploy-staging.yml",
-        "deploy.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/deploy.yml",
         "update-project-docs.yml": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.github/workflows/update-project-docs.yml"
       }
     },
