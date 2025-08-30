@@ -234,13 +234,13 @@ export async function GET() {
         ...movie,
         // Mantener crew para que MovieCard pueda procesarlo
         // NO agregar: crew: undefined
-        genres: movie.genres.map(g => g.genre.name)
+        genres: movie.genres.map(g => ({ name: g.genre.name }))
       })),
 
       proximosEstrenos: proximosEstrenos.map(movie => ({
         ...movie,
         // Mantener crew para que MovieCard pueda procesarlo
-        genres: movie.genres.map(g => g.genre.name)
+        genres: movie.genres.map(g => ({ name: g.genre.name }))
       })),
 
       ultimasPeliculas,
