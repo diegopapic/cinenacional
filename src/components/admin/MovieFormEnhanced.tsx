@@ -220,7 +220,7 @@ export default function MovieFormEnhanced({
     try {
       const [genresRes, countriesRes, prodCompaniesRes, distCompaniesRes, themesRes, rolesRes] = await Promise.all([
         fetch('/api/genres'),
-        fetch('/api/countries'),
+        fetch('/api/locations/countries'),
         fetch('/api/companies/production'),
         fetch('/api/companies/distribution'),
         fetch('/api/themes').catch(() => ({ ok: false, json: () => [] })),

@@ -1070,6 +1070,11 @@
     "size": 0
   },
   {
+    "path": "scripts/migrate-countries-to-locations.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-countries-to-locations.js",
+    "size": 0
+  },
+  {
     "path": "scripts/migrate-titles-simple.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-titles-simple.js",
     "size": 0
@@ -1220,6 +1225,11 @@
     "size": 0
   },
   {
+    "path": "scripts/rebuild-movie-countries-from-wp.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/rebuild-movie-countries-from-wp.js",
+    "size": 0
+  },
+  {
     "path": "scripts/script.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/script.js",
     "size": 0
@@ -1250,6 +1260,11 @@
     "size": 0
   },
   {
+    "path": "scripts/update-movie-countries-direct.js",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/update-movie-countries-direct.js",
+    "size": 0
+  },
+  {
     "path": "scripts/update-movies-coproduction-fields.js",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/update-movies-coproduction-fields.js",
     "size": 0
@@ -1277,11 +1292,6 @@
   {
     "path": "src/app/admin/calificaciones/page.tsx",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/calificaciones/page.tsx",
-    "size": 0
-  },
-  {
-    "path": "src/app/admin/countries/page.tsx",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/countries/page.tsx",
     "size": 0
   },
   {

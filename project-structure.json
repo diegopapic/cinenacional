@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-30T05:46:37.041Z",
+  "timestamp": "2025-08-30T16:15:47.996Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "2353f63f67b15742d27eaee3635c16339aff5680",
+  "commit": "0a6e798f982344946bce81b69b81c72d1389d2e3",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".env.staging": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.staging",
@@ -265,6 +265,7 @@
       "measure-performance.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/measure-performance.js",
       "migrate-countries-final.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-countries-final.js",
       "migrate-countries-simple.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-countries-simple.js",
+      "migrate-countries-to-locations.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-countries-to-locations.js",
       "migrate-titles-simple.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-titles-simple.js",
       "migrate-titles.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-titles.js",
       "migrate-wp-countries-correct.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-countries-correct.js",
@@ -297,12 +298,14 @@
       "pre-deploy-check.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/pre-deploy-check.js",
       "prepare-person-dates-migration.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/prepare-person-dates-migration.js",
       "read-countries.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/read-countries.js",
+      "rebuild-movie-countries-from-wp.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/rebuild-movie-countries-from-wp.js",
       "script.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/script.js",
       "search-tandil-everywhere.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/search-tandil-everywhere.js",
       "test-connection.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/test-connection.js",
       "test-fechas.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/test-fechas.js",
       "test-locations.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/test-locations.js",
       "update-docs.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/update-docs.js",
+      "update-movie-countries-direct.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/update-movie-countries-direct.js",
       "update-movies-coproduction-fields.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/update-movies-coproduction-fields.js",
       "verify-changes.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/verify-changes.js",
       "verify-las-palmas-gc.js": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/verify-las-palmas-gc.js",
@@ -314,9 +317,6 @@
           "admin.css": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/admin.css",
           "calificaciones": {
             "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/calificaciones/page.tsx"
-          },
-          "countries": {
-            "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/countries/page.tsx"
           },
           "genres": {
             "page.tsx": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/admin/genres/page.tsx"

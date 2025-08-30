@@ -68,7 +68,7 @@ if (search) {
         }),
         prisma.movieCountry.findMany({
           where: { movieId: { in: movieIds }, isPrimary: true },
-          include: { country: true }
+          include: { location: true }
         })
       ])
 
@@ -92,7 +92,7 @@ if (search) {
             id: g.genre.id,
             name: g.genre.name
           })),
-          country: movieCountry?.country?.name || 'Argentina'
+          country: movieCountry?.location?.name || 'Argentina'
         }
       })
 
@@ -177,7 +177,7 @@ if (search) {
               isPrimary: true
             },
             include: {
-              country: true
+              location: true
             }
           }
         }
@@ -203,7 +203,7 @@ if (search) {
         id: g.genre.id,
         name: g.genre.name
       })),
-      country: movie.movieCountries[0]?.country?.name || 'Argentina'
+      country: movie.movieCountries[0]?.location?.name || 'Argentina'
     }))
 
     return NextResponse.json({
