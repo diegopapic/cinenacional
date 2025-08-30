@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-08-30T05:46:38.147Z
+# Generado automáticamente el: 2025-08-30T16:15:49.254Z
 # ================================================
 
 ## Schema Prisma
@@ -401,6 +401,7 @@ model Location {
   peopleBornHere      Person[]            @relation("BirthLocation")
   peopleDiedHere      Person[]            @relation("DeathLocation")
   personNationalities PersonNationality[]
+  movieCountries      MovieCountry[]      @relation("MovieCountries")
 
   @@index([parentId])
   @@index([name])
@@ -532,15 +533,15 @@ model MovieTheme {
   @@map("movie_themes")
 }
 
-model Country {
-  id        Int            @id @default(autoincrement())
-  code      String         @unique @db.VarChar(2)
-  name      String         @db.VarChar(100)
-  createdAt DateTime       @default(now()) @map("created_at")
-  movies    MovieCountry[]
+// model Country {
+//  id        Int            @id @default(autoincrement())
+//  code      String         @unique @db.VarChar(2)
+//  name      String         @db.VarChar(100)
+//  createdAt DateTime       @default(now()) @map("created_at")
+//  movies    MovieCountry[]
 
-  @@map("countries")
-}
+//  @@map("countries")
+// }
 
 model Session {
   id           String   @id @default(cuid())
@@ -582,12 +583,13 @@ model VerificationToken {
 }
 
 model MovieCountry {
-  movieId   Int     @map("movie_id")
-  countryId Int     @map("country_id")
-  isPrimary Boolean @default(false) @map("is_primary")
-  country   Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
-  movie     Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
-
+  movieId   Int      @map("movie_id")
+  countryId Int      @map("country_id")  // Ahora apuntará a Location.id
+  isPrimary Boolean  @default(false) @map("is_primary")
+  
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  location  Location @relation("MovieCountries", fields: [countryId], references: [id])
+  
   @@id([movieId, countryId])
   @@map("movie_countries")
 }
@@ -1249,16 +1251,6 @@ CREATE TABLE "public"."movie_themes" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."countries" (
-    "id" SERIAL NOT NULL,
-    "code" VARCHAR(2) NOT NULL,
-    "name" VARCHAR(100) NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "countries_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "public"."sessions" (
     "id" TEXT NOT NULL,
     "sessionToken" TEXT NOT NULL,
@@ -1587,9 +1579,6 @@ CREATE INDEX "ratings_slug_idx" ON "public"."ratings"("slug");
 CREATE INDEX "ratings_order_idx" ON "public"."ratings"("order");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "countries_code_key" ON "public"."countries"("code");
-
--- CreateIndex
 CREATE UNIQUE INDEX "sessions_sessionToken_key" ON "public"."sessions"("sessionToken");
 
 -- CreateIndex
@@ -1710,10 +1699,10 @@ ALTER TABLE "public"."sessions" ADD CONSTRAINT "sessions_userId_fkey" FOREIGN KE
 ALTER TABLE "public"."accounts" ADD CONSTRAINT "accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "public"."countries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "public"."locations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."user_ratings" ADD CONSTRAINT "user_ratings_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -154,13 +154,16 @@ export async function GET(
 
         movieCountries: {
           select: {
-            country: {
+            location: {
               select: {
                 id: true,
                 name: true,
-                code: true
+                slug: true
               }
-            }
+            },
+            countryId: true,
+            isPrimary: true
+
           }
         },
 
@@ -331,11 +334,11 @@ export async function PUT(
     const validatedData = movieSchema.parse(cleanedData)
 
     if (validatedData.duration === 0) {
-    validatedData.duration = null;
-}
-if (validatedData.durationSeconds === 0) {
-    validatedData.durationSeconds = null;
-}
+      validatedData.duration = null;
+    }
+    if (validatedData.durationSeconds === 0) {
+      validatedData.durationSeconds = null;
+    }
 
     // Verificar que la película existe y obtener slug para invalidar caché
     const existingMovie = await prisma.movie.findUnique({
@@ -586,7 +589,7 @@ if (validatedData.durationSeconds === 0) {
           },
           movieCountries: {
             include: {
-              country: true
+              location: true
             }
           },
           productionCompanies: {
