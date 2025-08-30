@@ -337,7 +337,7 @@ export default async function MoviePage({ params }: PageProps) {
     id: movie.rating.id,
     name: movie.rating.name,
     description: movie.rating.description || undefined
-  } : null;
+  } : null; 
 
   const colorType = movie.colorType ? {
     id: movie.colorType.id,
@@ -516,6 +516,15 @@ export default async function MoviePage({ params }: PageProps) {
       fullCast={fullCast}
       basicCrew={basicCrewByDepartment}
       fullCrew={fullCrewByDepartment}
+      releaseDate={
+        movie.releaseDay && movie.releaseMonth && movie.releaseYear
+          ? {
+              day: movie.releaseDay,
+              month: movie.releaseMonth,
+              year: movie.releaseYear
+            }
+          : null
+      }
     />
   );
 }
