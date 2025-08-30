@@ -101,36 +101,54 @@ export default function HomePage() {
   }, []);
 
   // Fetch efemérides
-  useEffect(() => {
-    const fetchEfemerides = async () => {
-      try {
-        setLoadingEfemerides(true);
+ // Reemplazar el useEffect de efemérides completo
+useEffect(() => {
+  const fetchEfemerides = async () => {
+    try {
+      setLoadingEfemerides(true);
 
-        const response = await fetch('/api/efemerides');
+      const response = await fetch('/api/efemerides');
 
-
-        if (!response.ok) {
-          // Intentar obtener el mensaje de error del servidor
-          const errorData = await response.text();
-          console.error('Error response:', errorData);
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        // Solo usar los datos recibidos, sin fallback
-        setEfemerides(data.efemerides || []);
-      } catch (error) {
-        console.error('Error fetching efemérides:', error);
-        // En caso de error, dejar vacío
-        setEfemerides([]);
-      } finally {
-        setLoadingEfemerides(false);
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Error response:', errorData);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    };
 
-    fetchEfemerides();
-  }, []);
+      const data = await response.json();
+      
+      // Seleccionar 2 efemérides al azar del día
+      if (data.efemerides && data.efemerides.length > 0) {
+        // Si hay 2 o menos, mostrar todas
+        if (data.efemerides.length <= 2) {
+          setEfemerides(data.efemerides);
+        } else {
+          // Algoritmo Fisher-Yates para mezclar aleatoriamente
+          const shuffled = [...data.efemerides];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+          
+          // Tomar las primeras 2 del array mezclado
+          const dosAleatorias = shuffled.slice(0, 2);
+          setEfemerides(dosAleatorias);
+        }
+        
+        console.log(`📅 Total efemérides del día: ${data.efemerides.length}, mostrando: ${efemerides.length}`);
+      } else {
+        setEfemerides([]);
+      }
+    } catch (error) {
+      console.error('Error fetching efemérides:', error);
+      setEfemerides([]);
+    } finally {
+      setLoadingEfemerides(false);
+    }
+  };
+
+  fetchEfemerides();
+}, []);
 
   // Formateador para fechas pasadas (últimos estrenos)
   const formatearFechaEstreno = (movie: any): string => {
@@ -215,23 +233,23 @@ export default function HomePage() {
             />
             <EfemeridesSection efemerides={efemerides} />
           </div>
-<div className="w-full flex justify-center py-4 bg-cine-dark">
-        <Link
-          href="https://www.ucine.edu.ar"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block max-w-[601px] w-full px-4"
-        >
-          <Image
-            src="/fuc.png"
-            alt="Programas de formación UCINE"
-            width={601}
-            height={101}
-            className="w-full h-auto"
-            priority
-          />
-        </Link>
-      </div>
+          <div className="w-full flex justify-center py-4 bg-cine-dark">
+            <Link
+              href="https://www.ucine.edu.ar"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block max-w-[601px] w-full px-4"
+            >
+              <Image
+                src="/fuc.png"
+                alt="Programas de formación UCINE"
+                width={601}
+                height={101}
+                className="w-full h-auto"
+                priority
+              />
+            </Link>
+          </div>
           {/* Últimas Películas Ingresadas */}
           <RecentMoviesSection
             movies={ultimasPeliculas}

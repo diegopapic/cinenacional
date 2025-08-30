@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
     const dia = hoy.getDate();
     const mes = hoy.getMonth() + 1;
     
-    console.log(`🔍 Buscando efemérides para día: ${dia}, mes: ${mes}`);
     
     // Obtener películas con fechas de estreno para hoy
     const peliculasEstreno = await prisma.movie.findMany({
@@ -44,8 +43,6 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    console.log(`📽️ Películas con estreno hoy: ${peliculasEstreno.length}`);
-    
     // Obtener películas con inicio de rodaje para hoy
     const peliculasInicioRodaje = await prisma.movie.findMany({
       where: {
@@ -78,8 +75,6 @@ export async function GET(request: NextRequest) {
         }
       }
     });
-    
-    console.log(`🎬 Películas con inicio de rodaje hoy: ${peliculasInicioRodaje.length}`);
     
     // Obtener películas con fin de rodaje para hoy
     const peliculasFinRodaje = await prisma.movie.findMany({
@@ -114,8 +109,6 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    console.log(`🎬 Películas con fin de rodaje hoy: ${peliculasFinRodaje.length}`);
-    
     // Obtener personas nacidas hoy
     const personasNacimiento = await prisma.person.findMany({
       where: {
@@ -134,8 +127,6 @@ export async function GET(request: NextRequest) {
         photoUrl: true
       }
     });
-    
-    console.log(`👶 Personas nacidas hoy: ${personasNacimiento.length}`);
     
     // Obtener personas fallecidas hoy
     const personasMuerte = await prisma.person.findMany({
@@ -156,15 +147,12 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    console.log(`💀 Personas fallecidas hoy: ${personasMuerte.length}`);
-    
     // Si no hay efemérides para hoy, buscar algunas de ejemplo para testing
     let totalEfemerides = peliculasEstreno.length + peliculasInicioRodaje.length + 
                           peliculasFinRodaje.length + personasNacimiento.length + 
                           personasMuerte.length;
     
     if (totalEfemerides === 0) {
-      console.log('⚠️ No hay efemérides para hoy, buscando algunas de ejemplo...');
       
       // Buscar cualquier película con fecha de estreno completa
       const peliculasEjemplo = await prisma.movie.findMany({
@@ -198,8 +186,6 @@ export async function GET(request: NextRequest) {
         },
         take: 5
       });
-      
-      console.log(`📽️ Películas de ejemplo encontradas: ${peliculasEjemplo.length}`);
       
       // Usar las primeras 2 como ejemplo, cambiando el día y mes al de hoy
       const efemeridesEjemplo = peliculasEjemplo.slice(0, 2).map(pelicula => {
@@ -340,10 +326,7 @@ export async function GET(request: NextRequest) {
         const añosA = parseInt(a.hace.match(/\d+/)?.[0] || '0');
         const añosB = parseInt(b.hace.match(/\d+/)?.[0] || '0');
         return añosA - añosB; // Menos años primero (más reciente)
-      })
-      .slice(0, 2); // LIMITAR A 2 EFEMÉRIDES
-    
-    console.log(`✅ Efemérides válidas encontradas: ${efemeridesValidas.length}`);
+      });
     
     return NextResponse.json({ efemerides: efemeridesValidas });
     
