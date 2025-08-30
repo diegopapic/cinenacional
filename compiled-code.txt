@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: aebffbcbd05bcb174e697e5cc74be683dcb53586
-// Fecha: 2025-08-30T05:22:16.831Z
+// Commit: 2353f63f67b15742d27eaee3635c16339aff5680
+// Fecha: 2025-08-30T05:46:37.936Z
 // ============================================
 
 
@@ -4770,7 +4770,6 @@ export async function GET(request: NextRequest) {
     const dia = hoy.getDate();
     const mes = hoy.getMonth() + 1;
     
-    console.log(`🔍 Buscando efemérides para día: ${dia}, mes: ${mes}`);
     
     // Obtener películas con fechas de estreno para hoy
     const peliculasEstreno = await prisma.movie.findMany({
@@ -4805,8 +4804,6 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    console.log(`📽️ Películas con estreno hoy: ${peliculasEstreno.length}`);
-    
     // Obtener películas con inicio de rodaje para hoy
     const peliculasInicioRodaje = await prisma.movie.findMany({
       where: {
@@ -4839,8 +4836,6 @@ export async function GET(request: NextRequest) {
         }
       }
     });
-    
-    console.log(`🎬 Películas con inicio de rodaje hoy: ${peliculasInicioRodaje.length}`);
     
     // Obtener películas con fin de rodaje para hoy
     const peliculasFinRodaje = await prisma.movie.findMany({
@@ -4875,8 +4870,6 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    console.log(`🎬 Películas con fin de rodaje hoy: ${peliculasFinRodaje.length}`);
-    
     // Obtener personas nacidas hoy
     const personasNacimiento = await prisma.person.findMany({
       where: {
@@ -4895,8 +4888,6 @@ export async function GET(request: NextRequest) {
         photoUrl: true
       }
     });
-    
-    console.log(`👶 Personas nacidas hoy: ${personasNacimiento.length}`);
     
     // Obtener personas fallecidas hoy
     const personasMuerte = await prisma.person.findMany({
@@ -4917,15 +4908,12 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    console.log(`💀 Personas fallecidas hoy: ${personasMuerte.length}`);
-    
     // Si no hay efemérides para hoy, buscar algunas de ejemplo para testing
     let totalEfemerides = peliculasEstreno.length + peliculasInicioRodaje.length + 
                           peliculasFinRodaje.length + personasNacimiento.length + 
                           personasMuerte.length;
     
     if (totalEfemerides === 0) {
-      console.log('⚠️ No hay efemérides para hoy, buscando algunas de ejemplo...');
       
       // Buscar cualquier película con fecha de estreno completa
       const peliculasEjemplo = await prisma.movie.findMany({
@@ -4959,8 +4947,6 @@ export async function GET(request: NextRequest) {
         },
         take: 5
       });
-      
-      console.log(`📽️ Películas de ejemplo encontradas: ${peliculasEjemplo.length}`);
       
       // Usar las primeras 2 como ejemplo, cambiando el día y mes al de hoy
       const efemeridesEjemplo = peliculasEjemplo.slice(0, 2).map(pelicula => {
@@ -5101,10 +5087,7 @@ export async function GET(request: NextRequest) {
         const añosA = parseInt(a.hace.match(/\d+/)?.[0] || '0');
         const añosB = parseInt(b.hace.match(/\d+/)?.[0] || '0');
         return añosA - añosB; // Menos años primero (más reciente)
-      })
-      .slice(0, 2); // LIMITAR A 2 EFEMÉRIDES
-    
-    console.log(`✅ Efemérides válidas encontradas: ${efemeridesValidas.length}`);
+      });
     
     return NextResponse.json({ efemerides: efemeridesValidas });
     
@@ -12448,36 +12431,54 @@ export default function HomePage() {
   }, []);
 
   // Fetch efemérides
-  useEffect(() => {
-    const fetchEfemerides = async () => {
-      try {
-        setLoadingEfemerides(true);
+ // Reemplazar el useEffect de efemérides completo
+useEffect(() => {
+  const fetchEfemerides = async () => {
+    try {
+      setLoadingEfemerides(true);
 
-        const response = await fetch('/api/efemerides');
+      const response = await fetch('/api/efemerides');
 
-
-        if (!response.ok) {
-          // Intentar obtener el mensaje de error del servidor
-          const errorData = await response.text();
-          console.error('Error response:', errorData);
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        // Solo usar los datos recibidos, sin fallback
-        setEfemerides(data.efemerides || []);
-      } catch (error) {
-        console.error('Error fetching efemérides:', error);
-        // En caso de error, dejar vacío
-        setEfemerides([]);
-      } finally {
-        setLoadingEfemerides(false);
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Error response:', errorData);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    };
 
-    fetchEfemerides();
-  }, []);
+      const data = await response.json();
+      
+      // Seleccionar 2 efemérides al azar del día
+      if (data.efemerides && data.efemerides.length > 0) {
+        // Si hay 2 o menos, mostrar todas
+        if (data.efemerides.length <= 2) {
+          setEfemerides(data.efemerides);
+        } else {
+          // Algoritmo Fisher-Yates para mezclar aleatoriamente
+          const shuffled = [...data.efemerides];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+          
+          // Tomar las primeras 2 del array mezclado
+          const dosAleatorias = shuffled.slice(0, 2);
+          setEfemerides(dosAleatorias);
+        }
+        
+        console.log(`📅 Total efemérides del día: ${data.efemerides.length}, mostrando: ${efemerides.length}`);
+      } else {
+        setEfemerides([]);
+      }
+    } catch (error) {
+      console.error('Error fetching efemérides:', error);
+      setEfemerides([]);
+    } finally {
+      setLoadingEfemerides(false);
+    }
+  };
+
+  fetchEfemerides();
+}, []);
 
   // Formateador para fechas pasadas (últimos estrenos)
   const formatearFechaEstreno = (movie: any): string => {
@@ -12562,23 +12563,23 @@ export default function HomePage() {
             />
             <EfemeridesSection efemerides={efemerides} />
           </div>
-<div className="w-full flex justify-center py-4 bg-cine-dark">
-        <Link
-          href="https://www.ucine.edu.ar"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block max-w-[601px] w-full px-4"
-        >
-          <Image
-            src="/fuc.png"
-            alt="Programas de formación UCINE"
-            width={601}
-            height={101}
-            className="w-full h-auto"
-            priority
-          />
-        </Link>
-      </div>
+          <div className="w-full flex justify-center py-4 bg-cine-dark">
+            <Link
+              href="https://www.ucine.edu.ar"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block max-w-[601px] w-full px-4"
+            >
+              <Image
+                src="/fuc.png"
+                alt="Programas de formación UCINE"
+                width={601}
+                height={101}
+                className="w-full h-auto"
+                priority
+              />
+            </Link>
+          </div>
           {/* Últimas Películas Ingresadas */}
           <RecentMoviesSection
             movies={ultimasPeliculas}
