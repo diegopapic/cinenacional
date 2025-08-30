@@ -2,14 +2,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
-// Rate limiting con memoria (temporal hasta tener Redis)
+// Rate limiting con memoria (el middleware no soporta Redis)
 const requestCounts = new Map<string, { count: number; resetTime: number }>()
 
-// Límites por tipo de ruta
+// LÍMITES ACTUALIZADOS PARA PRODUCCIÓN
 const RATE_LIMITS = {
-  api: { requests: 100, window: 60000 }, // 100 req/min para API
-  static: { requests: 200, window: 60000 }, // 200 req/min para páginas
-  auth: { requests: 5, window: 300000 }, // 5 req/5min para auth
+  api: { requests: 1000, window: 60000 },      // 1000 req/min
+  static: { requests: 2000, window: 60000 },   // 2000 req/min  
+  auth: { requests: 10, window: 300000 },      // 10 req/5min
+  search: { requests: 500, window: 60000 }     // 500 req/min para búsquedas
 }
 
 function getRateLimitKey(req: NextRequest): string {
@@ -36,14 +37,16 @@ function checkRateLimit(key: string, limit: typeof RATE_LIMITS.api): boolean {
 }
 
 // Limpiar registros viejos cada 5 minutos
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, value] of requestCounts.entries()) {
-    if (value.resetTime < now) {
-      requestCounts.delete(key)
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now()
+    for (const [key, value] of requestCounts.entries()) {
+      if (value.resetTime < now) {
+        requestCounts.delete(key)
+      }
     }
-  }
-}, 300000)
+  }, 300000)
+}
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next()
@@ -51,7 +54,6 @@ export async function middleware(request: NextRequest) {
   
   // ============ PROTECCIÓN DE ADMIN ============
   if (path.startsWith('/admin')) {
-    // Permitir acceso a la página de login
     if (path === '/admin/login') {
       return response
     }
@@ -62,14 +64,12 @@ export async function middleware(request: NextRequest) {
         secret: process.env.NEXTAUTH_SECRET 
       })
       
-      // No autenticado
       if (!token) {
         const loginUrl = new URL('/admin/login', request.url)
         loginUrl.searchParams.set('callbackUrl', path)
         return NextResponse.redirect(loginUrl)
       }
       
-      // Verificar rol (considerando el campo legacy isAdmin)
       const hasAdminAccess = 
         token.role === 'ADMIN' || 
         token.role === 'EDITOR' ||
@@ -91,7 +91,7 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('X-XSS-Protection', '1; mode=block')
   
-  // CSP ACTUALIZADO PARA CLOUDINARY Y GOOGLE ANALYTICS
+  // CSP para Cloudinary y Google Analytics
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
@@ -106,16 +106,30 @@ export async function middleware(request: NextRequest) {
   )
   
   // ============ RATE LIMITING ============
+  // Excluir assets estáticos del rate limiting
+  if (path.match(/\.(jpg|jpeg|png|gif|webp|svg|ico|css|js|woff|woff2|ttf)$/)) {
+    return response
+  }
+  
   const clientKey = getRateLimitKey(request)
   
+  // Determinar límite según el tipo de ruta
   let rateLimit = RATE_LIMITS.static
   if (path.startsWith('/api/')) {
-    rateLimit = RATE_LIMITS.api
+    // Límite especial para búsquedas
+    if (path.includes('/search') || path.includes('/autocomplete')) {
+      rateLimit = RATE_LIMITS.search
+    } else {
+      rateLimit = RATE_LIMITS.api
+    }
   } else if (path.startsWith('/api/auth/') || path === '/admin/login') {
     rateLimit = RATE_LIMITS.auth
   }
   
+  // Verificar rate limit
   if (!checkRateLimit(clientKey, rateLimit)) {
+    console.log(`Rate limit exceeded for IP: ${clientKey} on path: ${path}`)
+    
     return new NextResponse('Too Many Requests', {
       status: 429,
       headers: {
@@ -129,9 +143,8 @@ export async function middleware(request: NextRequest) {
   
   // ============ CORS PARA API ============
   if (path.startsWith('/api/')) {
-    // Solo permitir desde el dominio en producción
     const allowedOrigins = process.env.NODE_ENV === 'production' 
-      ? ['https://cinenacional.com', 'https://www.cinenacional.com']
+      ? ['https://cinenacional.com', 'https://www.cinenacional.com', 'https://5.161.58.106:3000']
       : ['http://localhost:3000', 'http://5.161.58.106:3000']
     
     const origin = request.headers.get('origin')
@@ -143,7 +156,6 @@ export async function middleware(request: NextRequest) {
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     response.headers.set('Access-Control-Max-Age', '86400')
     
-    // Handle preflight
     if (request.method === 'OPTIONS') {
       return new NextResponse(null, { status: 200, headers: response.headers })
     }
@@ -166,16 +178,8 @@ export async function middleware(request: NextRequest) {
   return response
 }
 
-// Configurar en qué rutas aplicar el middleware
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
