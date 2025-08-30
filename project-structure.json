@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-08-30T16:15:47.996Z",
+  "timestamp": "2025-08-30T16:36:49.523Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "0a6e798f982344946bce81b69b81c72d1389d2e3",
+  "commit": "80a3c1c071f03e66c518cd93bcd491f760019994",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".env.staging": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.staging",
@@ -383,12 +383,6 @@
             },
             "production": {
               "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/companies/production/route.ts"
-            }
-          },
-          "countries": {
-            "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/countries/route.ts",
-            "[id]": {
-              "route.ts": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/countries/[id]/route.ts"
             }
           },
           "efemerides": {

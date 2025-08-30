@@ -139,11 +139,11 @@ const getCachedMovieData = unstable_cache(
         
         movieCountries: {
           select: {
-            country: {
+            location: {
               select: {
                 id: true,
                 name: true,
-                code: true
+                slug: true
               }
             }
           }
@@ -328,8 +328,8 @@ export default async function MoviePage({ params }: PageProps) {
 
   // Procesar países coproductores (excluyendo Argentina si es el único)
   const countries = movie.movieCountries?.map((c: any) => ({
-    id: c.country.id,
-    name: c.country.name
+    id: c.location.id,
+    name: c.location.name
   }))
     .filter((c: any) => c.name !== 'Argentina' || movie.movieCountries.length > 1) || [];
 
