@@ -46,8 +46,13 @@ interface MoviePageClientProps {
     soundType?: string | null;
     mainCast: CastMember[];
     fullCast: CastMember[];
-    basicCrew: CrewDepartment;  // NUEVO
-    fullCrew: CrewDepartment;   // NUEVO
+    basicCrew: CrewDepartment;
+    fullCrew: CrewDepartment;
+    releaseDate?: {
+        day: number | null;
+        month: number | null;
+        year: number | null;
+    } | null;
 }
 
 export function MoviePageClient({
@@ -63,8 +68,9 @@ export function MoviePageClient({
     soundType,
     mainCast,
     fullCast,
-    basicCrew,  // NUEVO
-    fullCrew    // NUEVO
+    basicCrew,
+    fullCrew,
+    releaseDate
 }: MoviePageClientProps) {
     const [movieGallery, setMovieGallery] = useState<string[]>([]);
 
@@ -126,6 +132,7 @@ export function MoviePageClient({
                 duration={totalDuration}
                 genres={genres.map(g => g.name)}
                 posterUrl={movie.posterUrl}
+                releaseDate={releaseDate}
             />
 
             {/* Movie Content */}

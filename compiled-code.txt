@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 80a3c1c071f03e66c518cd93bcd491f760019994
-// Fecha: 2025-08-30T16:36:50.429Z
+// Commit: a459b972b788a2794380dd4f6580834a1467bf67
+// Fecha: 2025-08-30T17:18:51.342Z
 // ============================================
 
 
@@ -11974,8 +11974,13 @@ interface MoviePageClientProps {
     soundType?: string | null;
     mainCast: CastMember[];
     fullCast: CastMember[];
-    basicCrew: CrewDepartment;  // NUEVO
-    fullCrew: CrewDepartment;   // NUEVO
+    basicCrew: CrewDepartment;
+    fullCrew: CrewDepartment;
+    releaseDate?: {
+        day: number | null;
+        month: number | null;
+        year: number | null;
+    } | null;
 }
 
 export function MoviePageClient({
@@ -11991,8 +11996,9 @@ export function MoviePageClient({
     soundType,
     mainCast,
     fullCast,
-    basicCrew,  // NUEVO
-    fullCrew    // NUEVO
+    basicCrew,
+    fullCrew,
+    releaseDate
 }: MoviePageClientProps) {
     const [movieGallery, setMovieGallery] = useState<string[]>([]);
 
@@ -12054,6 +12060,7 @@ export function MoviePageClient({
                 duration={totalDuration}
                 genres={genres.map(g => g.name)}
                 posterUrl={movie.posterUrl}
+                releaseDate={releaseDate}
             />
 
             {/* Movie Content */}
@@ -12524,7 +12531,7 @@ export default async function MoviePage({ params }: PageProps) {
     id: movie.rating.id,
     name: movie.rating.name,
     description: movie.rating.description || undefined
-  } : null;
+  } : null; 
 
   const colorType = movie.colorType ? {
     id: movie.colorType.id,
@@ -12703,6 +12710,15 @@ export default async function MoviePage({ params }: PageProps) {
       fullCast={fullCast}
       basicCrew={basicCrewByDepartment}
       fullCrew={fullCrewByDepartment}
+      releaseDate={
+        movie.releaseDay && movie.releaseMonth && movie.releaseYear
+          ? {
+              day: movie.releaseDay,
+              month: movie.releaseMonth,
+              year: movie.releaseYear
+            }
+          : null
+      }
     />
   );
 }
@@ -23359,9 +23375,14 @@ interface MovieHeroProps {
   duration: number;
   genres: string[];
   posterUrl?: string | null;
+  releaseDate?: {  // Nuevo prop opcional
+    day: number | null;
+    month: number | null;
+    year: number | null;
+  } | null;
 }
 
-export function MovieHero({ title, year, duration, genres, posterUrl }: MovieHeroProps) {
+export function MovieHero({ title, year, duration, genres, posterUrl, releaseDate }: MovieHeroProps) {
   const [imageError, setImageError] = useState(false);
 
   // Determinar si tenemos un poster válido
@@ -23370,6 +23391,22 @@ export function MovieHero({ title, year, duration, genres, posterUrl }: MovieHer
   // Usar poster o placeholder
   const backgroundImage = BACKGROUND_PLACEHOLDER.url;
 
+  // Formatear fecha de estreno
+  const formatReleaseDate = () => {
+    if (!releaseDate || !releaseDate.day || !releaseDate.month || !releaseDate.year) {
+      return null;
+    }
+    
+    const months = [
+      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+    ];
+    
+    return `${releaseDate.day} de ${months[releaseDate.month - 1]} de ${releaseDate.year}`;
+  };
+
+  const formattedReleaseDate = formatReleaseDate();
+
   return (
     <div className="relative h-[50vh] overflow-hidden bg-gray-900">
       {/* Background Image */}
@@ -23377,7 +23414,7 @@ export function MovieHero({ title, year, duration, genres, posterUrl }: MovieHer
         className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
         style={{ 
           backgroundImage: `url(${backgroundImage})`,
-          filter: hasValidPoster ? 'brightness(0.7)' : 'brightness(0.3)'  // ← Usar hasValidPoster
+          filter: hasValidPoster ? 'brightness(0.7)' : 'brightness(0.3)'
         }}
       />
       
@@ -23400,6 +23437,13 @@ export function MovieHero({ title, year, duration, genres, posterUrl }: MovieHer
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
             {title}
           </h1>
+          
+          {formattedReleaseDate && (
+            <p className="text-gray-100 mb-3 font-light">
+              Estreno comercial en Argentina: 
+              <span className="font-medium ml-2">{formattedReleaseDate}</span>
+            </p>
+          )}
           
           <div className="flex flex-wrap items-center gap-4 text-gray-300">
             {year && <span>{year}</span>}

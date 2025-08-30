@@ -9,9 +9,14 @@ interface MovieHeroProps {
   duration: number;
   genres: string[];
   posterUrl?: string | null;
+  releaseDate?: {  // Nuevo prop opcional
+    day: number | null;
+    month: number | null;
+    year: number | null;
+  } | null;
 }
 
-export function MovieHero({ title, year, duration, genres, posterUrl }: MovieHeroProps) {
+export function MovieHero({ title, year, duration, genres, posterUrl, releaseDate }: MovieHeroProps) {
   const [imageError, setImageError] = useState(false);
 
   // Determinar si tenemos un poster válido
@@ -20,6 +25,22 @@ export function MovieHero({ title, year, duration, genres, posterUrl }: MovieHer
   // Usar poster o placeholder
   const backgroundImage = BACKGROUND_PLACEHOLDER.url;
 
+  // Formatear fecha de estreno
+  const formatReleaseDate = () => {
+    if (!releaseDate || !releaseDate.day || !releaseDate.month || !releaseDate.year) {
+      return null;
+    }
+    
+    const months = [
+      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+    ];
+    
+    return `${releaseDate.day} de ${months[releaseDate.month - 1]} de ${releaseDate.year}`;
+  };
+
+  const formattedReleaseDate = formatReleaseDate();
+
   return (
     <div className="relative h-[50vh] overflow-hidden bg-gray-900">
       {/* Background Image */}
@@ -27,7 +48,7 @@ export function MovieHero({ title, year, duration, genres, posterUrl }: MovieHer
         className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
         style={{ 
           backgroundImage: `url(${backgroundImage})`,
-          filter: hasValidPoster ? 'brightness(0.7)' : 'brightness(0.3)'  // ← Usar hasValidPoster
+          filter: hasValidPoster ? 'brightness(0.7)' : 'brightness(0.3)'
         }}
       />
       
@@ -50,6 +71,13 @@ export function MovieHero({ title, year, duration, genres, posterUrl }: MovieHer
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
             {title}
           </h1>
+          
+          {formattedReleaseDate && (
+            <p className="text-gray-100 mb-3 font-light">
+              Estreno comercial en Argentina: 
+              <span className="font-medium ml-2">{formattedReleaseDate}</span>
+            </p>
+          )}
           
           <div className="flex flex-wrap items-center gap-4 text-gray-300">
             {year && <span>{year}</span>}
