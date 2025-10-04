@@ -93,9 +93,6 @@ export default function RootLayout({
                 gtag('config', '${GA_MEASUREMENT_ID}', {
                   page_path: window.location.pathname,
                 });
-                
-                // Log para verificar que GA está funcionando (quitar en producción)
-                console.log('📊 Google Analytics inicializado con ID:', '${GA_MEASUREMENT_ID}');
               `}
             </Script>
           </>

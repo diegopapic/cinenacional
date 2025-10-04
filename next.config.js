@@ -26,7 +26,6 @@ const nextConfig = {
   experimental: {
     workerThreads: false,
     cpus: 1,
-    // Agregar para mejorar el build
     serverActions: {
       bodySizeLimit: '10mb',
     },
