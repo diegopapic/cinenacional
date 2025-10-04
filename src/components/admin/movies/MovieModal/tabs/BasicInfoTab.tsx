@@ -1,10 +1,9 @@
 // src/components/admin/movies/MovieModal/tabs/BasicInfoTab.tsx
-import { TIPOS_DURACION, DATA_COMPLETENESS_LEVELS } from '@/lib/movies/movieConstants'
+import { TIPOS_DURACION, DATA_COMPLETENESS_LEVELS, SOUND_TYPES } from '@/lib/movies/movieConstants'
 import { MONTHS } from '@/lib/shared/dateUtils'
 import { getErrorMessage } from '@/lib/movies/movieUtils'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
-import MovieLinksManager from '@/components/admin/MovieLinksManager'
 
 export default function BasicInfoTab() {
   // Obtener todos los datos necesarios del context
@@ -21,27 +20,19 @@ export default function BasicInfoTab() {
     partialReleaseDate,
     setPartialReleaseDate,
 
-    // Filming date states
-    isPartialFilmingStartDate,
-    setIsPartialFilmingStartDate,
-    partialFilmingStartDate,
-    setPartialFilmingStartDate,
-    isPartialFilmingEndDate,
-    setIsPartialFilmingEndDate,
-    partialFilmingEndDate,
-    setPartialFilmingEndDate,
-
     // UI states
     tipoDuracionDisabled,
 
+    // Metadata
+    availableRatings,
+    availableColorTypes,
+
     // Data and handlers
     movieFormInitialData,
-    movieLinks,
     editingMovie,
     handleGenresChange,
     handleCountriesChange,
     handleThemesChange,
-    handleLinksChange,
     handleScreeningVenuesChange
   } = useMovieModalContext()
 
@@ -110,8 +101,33 @@ export default function BasicInfoTab() {
 
               {!isPartialDate ? (
                 <input
-                  type="date"
-                  {...register('releaseDate')}
+                  type="text"
+                  placeholder="DD/MM/YYYY"
+                  maxLength={10}
+                  value={(() => {
+                    const isoValue = watch('releaseDate');
+                    if (!isoValue) return '';
+                    if (isoValue.includes('/')) return isoValue; // Ya está en formato DD/MM/YYYY
+                    // Convertir de YYYY-MM-DD a DD/MM/YYYY
+                    const [year, month, day] = isoValue.split('-');
+                    return day && month && year ? `${day}/${month}/${year}` : '';
+                  })()}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length >= 2) value = value.slice(0, 2) + '/' + value.slice(2);
+                    if (value.length >= 5) value = value.slice(0, 5) + '/' + value.slice(5, 9);
+                    
+                    // Convertir a formato YYYY-MM-DD para guardar en el form
+                    if (value.length === 10) {
+                      const [day, month, year] = value.split('/');
+                      if (day && month && year && year.length === 4) {
+                        setValue('releaseDate', `${year}-${month}-${day}`, { shouldValidate: true });
+                        return;
+                      }
+                    }
+                    // Si no está completo, guardar el formato display
+                    setValue('releaseDate', value, { shouldValidate: false });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 />
               ) : (
@@ -135,135 +151,6 @@ export default function BasicInfoTab() {
                       value={partialReleaseDate.month || ''}
                       onChange={(e) => setPartialReleaseDate({
                         ...partialReleaseDate,
-                        month: e.target.value ? parseInt(e.target.value) : null
-                      })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                    >
-                      <option value="">Mes</option>
-                      {MONTHS.map(month => (
-                        <option key={month.value} value={month.value}>
-                          {month.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Fechas de rodaje */}
-          <div className="space-y-4">
-            {/* Fecha Inicio de Rodaje */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fecha Inicio de Rodaje
-              </label>
-
-              <div className="mb-2">
-                <label className="inline-flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={isPartialFilmingStartDate}
-                    onChange={(e) => setIsPartialFilmingStartDate(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-600">
-                    Fecha incompleta
-                  </span>
-                </label>
-              </div>
-
-              {!isPartialFilmingStartDate ? (
-                <input
-                  type="date"
-                  {...register('filmingStartDate')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                />
-              ) : (
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <input
-                      type="number"
-                      placeholder="Año"
-                      min="1800"
-                      max="2100"
-                      value={partialFilmingStartDate.year || ''}
-                      onChange={(e) => setPartialFilmingStartDate({
-                        ...partialFilmingStartDate,
-                        year: e.target.value ? parseInt(e.target.value) : null
-                      })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <select
-                      value={partialFilmingStartDate.month || ''}
-                      onChange={(e) => setPartialFilmingStartDate({
-                        ...partialFilmingStartDate,
-                        month: e.target.value ? parseInt(e.target.value) : null
-                      })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                    >
-                      <option value="">Mes</option>
-                      {MONTHS.map(month => (
-                        <option key={month.value} value={month.value}>
-                          {month.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Fecha Fin de Rodaje */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fecha Fin de Rodaje
-              </label>
-
-              <div className="mb-2">
-                <label className="inline-flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={isPartialFilmingEndDate}
-                    onChange={(e) => setIsPartialFilmingEndDate(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-600">
-                    Fecha incompleta
-                  </span>
-                </label>
-              </div>
-
-              {!isPartialFilmingEndDate ? (
-                <input
-                  type="date"
-                  {...register('filmingEndDate')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                />
-              ) : (
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <input
-                      type="number"
-                      placeholder="Año"
-                      min="1800"
-                      max="2100"
-                      value={partialFilmingEndDate.year || ''}
-                      onChange={(e) => setPartialFilmingEndDate({
-                        ...partialFilmingEndDate,
-                        year: e.target.value ? parseInt(e.target.value) : null
-                      })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <select
-                      value={partialFilmingEndDate.month || ''}
-                      onChange={(e) => setPartialFilmingEndDate({
-                        ...partialFilmingEndDate,
                         month: e.target.value ? parseInt(e.target.value) : null
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
@@ -334,6 +221,81 @@ export default function BasicInfoTab() {
             </select>
           </div>
 
+          {/* Información Técnica */}
+          <div className="space-y-4 pt-4 border-t border-gray-200">
+            <h4 className="text-md font-medium text-gray-900">
+              Información Técnica
+            </h4>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Color */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Color
+                </label>
+                <select
+                  {...register('colorTypeId', { valueAsNumber: true })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                >
+                  <option value="">Seleccionar...</option>
+                  {availableColorTypes.map((colorType) => (
+                    <option key={colorType.id} value={colorType.id}>
+                      {colorType.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Sonido */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sonido
+                </label>
+                <select
+                  {...register('soundType')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                >
+                  <option value="">Seleccionar...</option>
+                  {SOUND_TYPES.map(sound => (
+                    <option key={sound.value} value={sound.value}>
+                      {sound.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Calificación */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Calificación
+              </label>
+              <select
+                {...register('ratingId', {
+                  setValueAs: (v: string | number) => {
+                    if (v === '' || v === '0' || v === 0) return null;
+                    return Number(v);
+                  }
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              >
+                <option value="">Sin calificación</option>
+                {availableRatings.map((rating) => (
+                  <option key={rating.id} value={rating.id}>
+                    {rating.name} {rating.abbreviation && `(${rating.abbreviation})`}
+                  </option>
+                ))}
+              </select>
+              {(() => {
+                const selectedRating = availableRatings.find(r => r.id === watch('ratingId'))
+                return selectedRating?.description && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    {selectedRating.description}
+                  </p>
+                )
+              })()}
+            </div>
+          </div>
         </div>
 
         {/* Columna derecha */}
@@ -397,16 +359,7 @@ export default function BasicInfoTab() {
         </div>
       </div>
 
-      {/* Links Oficiales */}
-      <div className="mt-6">
-        <MovieLinksManager
-          key={`links-${editingMovieId || 'new'}-${movieLinks.length}`}
-          initialLinks={movieLinks}
-          onLinksChange={handleLinksChange}
-        />
-      </div>
-
-      {/* Géneros, Países e Idiomas */}
+      {/* Géneros, Países, Screening Venues y Temas */}
       <MovieFormEnhanced
         key={editingMovieId || 'new'}
         onGenresChange={handleGenresChange}

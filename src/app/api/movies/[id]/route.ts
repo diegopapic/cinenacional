@@ -99,6 +99,9 @@ export async function GET(
         filmingEndYear: true,
         filmingEndMonth: true,
         filmingEndDay: true,
+        soundType: true,
+        rating: true,
+        ratingId: true,
         createdAt: true,
         updatedAt: true,
 
