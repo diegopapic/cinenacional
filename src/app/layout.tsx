@@ -64,9 +64,20 @@ export default function RootLayout({
   // Google Analytics Measurement ID
   const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-5SGTLPHYYX'
   
+  // AdSense Publisher ID
+  const ADSENSE_PUBLISHER_ID = 'ca-pub-9695271411409237'
+  
   return (
     <html lang="es" className={`h-full ${inter.variable} ${crimsonText.variable}`}>
       <head>
+        {/* Google AdSense */}
+        <Script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUBLISHER_ID}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+        
         {/* Google Analytics */}
         {GA_MEASUREMENT_ID && (
           <>
