@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 521655b12bc73516bba6cab6b707efafbfa8b071
-// Fecha: 2025-10-04T05:06:54.779Z
+// Commit: d2b776f48657001d50585228cab041cc88afd85b
+// Fecha: 2025-10-04T14:32:23.684Z
 // ============================================
 
 
@@ -10649,9 +10649,20 @@ export default function RootLayout({
   // Google Analytics Measurement ID
   const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-5SGTLPHYYX'
   
+  // AdSense Publisher ID
+  const ADSENSE_PUBLISHER_ID = 'ca-pub-9695271411409237'
+  
   return (
     <html lang="es" className={`h-full ${inter.variable} ${crimsonText.variable}`}>
       <head>
+        {/* Google AdSense */}
+        <Script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUBLISHER_ID}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+        
         {/* Google Analytics */}
         {GA_MEASUREMENT_ID && (
           <>
