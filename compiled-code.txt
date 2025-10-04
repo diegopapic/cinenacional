@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: d2b776f48657001d50585228cab041cc88afd85b
-// Fecha: 2025-10-04T14:32:23.684Z
+// Commit: 6819b38e47c539ef033086686e1a7be99ab6c1e2
+// Fecha: 2025-10-04T14:39:58.717Z
 // ============================================
 
 
@@ -10678,9 +10678,6 @@ export default function RootLayout({
                 gtag('config', '${GA_MEASUREMENT_ID}', {
                   page_path: window.location.pathname,
                 });
-                
-                // Log para verificar que GA está funcionando (quitar en producción)
-                console.log('📊 Google Analytics inicializado con ID:', '${GA_MEASUREMENT_ID}');
               `}
             </Script>
           </>
