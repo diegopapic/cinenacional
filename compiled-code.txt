@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: ed189f157a9a2c202ccd24c65fba75479980885f
-// Fecha: 2025-10-05T21:56:16.954Z
+// Commit: b3d8342a2d8ecea47c32d8d643eedff4b0a2343d
+// Fecha: 2025-10-05T22:07:13.345Z
 // ============================================
 
 
@@ -4766,6 +4766,8 @@ export async function GET() {
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     // Verificar conexión a la base de datos
@@ -5505,6 +5507,8 @@ async function checkIfDescendant(ancestorId: number, descendantId: number): Prom
 // src/app/api/metrics/database/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+
+export const dynamic = 'force-dynamic'
 
 // Proteger este endpoint en producción
 const METRICS_SECRET = process.env.METRICS_SECRET || 'your-secret-key'
