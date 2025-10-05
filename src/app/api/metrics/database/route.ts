@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 // Proteger este endpoint en producción
 const METRICS_SECRET = process.env.METRICS_SECRET || 'your-secret-key'
 
