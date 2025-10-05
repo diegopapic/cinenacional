@@ -168,10 +168,10 @@ export default function MovieFormEnhanced({
 
   // Notificar cambios al componente padre
   useEffect(() => {
-    if (isInitialized) {
+    if (isInitialized || !initialData) {
       onGenresChange(selectedGenres)
     }
-  }, [selectedGenres, onGenresChange, isInitialized])
+  }, [selectedGenres, onGenresChange, isInitialized, initialData])
 
   useEffect(() => {
     if (isInitialized) {
@@ -192,10 +192,10 @@ export default function MovieFormEnhanced({
   }, [crew, onCrewChange, isInitialized])
 
   useEffect(() => {
-    if (isInitialized) {
+    if (isInitialized || !initialData) {
       onCountriesChange(selectedCountries)
     }
-  }, [selectedCountries, onCountriesChange, isInitialized])
+  }, [selectedCountries, onCountriesChange, isInitialized, initialData])
 
   useEffect(() => {
     if (isInitialized) {
