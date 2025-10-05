@@ -197,6 +197,8 @@ export const peopleService = {
    if (filters?.isActive !== undefined) params.isActive = String(filters.isActive);
    if (filters?.page) params.page = String(filters.page);
    if (filters?.limit) params.limit = String(filters.limit);
+   if (filters?.sortBy) params.sortBy = filters.sortBy;
+    if (filters?.sortOrder) params.sortOrder = filters.sortOrder;
    
    // Construir URL con parámetros
    const queryString = new URLSearchParams(params).toString();
