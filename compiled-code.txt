@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 0a62824a0c1c0220caa97884ad90a320daeb0aa2
-// Fecha: 2025-10-05T21:27:40.133Z
+// Commit: 8b8146ec15d629eb6520483b11ab301fa7bfad4c
+// Fecha: 2025-10-05T21:40:04.718Z
 // ============================================
 
 
@@ -3927,6 +3927,8 @@ export async function DELETE(
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/color-types - Listar todos los tipos de color
 export async function GET() {
   try {
@@ -4086,6 +4088,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { calcularAniosDesde, formatearEfemeride, EfemerideData } from '@/lib/utils/efemerides';
 import { Efemeride } from '@/types/home.types';
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
@@ -5081,6 +5085,8 @@ export async function POST(request: NextRequest) {
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
@@ -9519,6 +9525,8 @@ export async function DELETE(
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -9695,6 +9703,8 @@ export async function GET(request: NextRequest) {
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
