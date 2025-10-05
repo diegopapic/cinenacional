@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-10-04T15:52:17.977Z
+// Archivos del admin - 2025-10-05T21:27:40.218Z
 // ==================
 
 
@@ -10066,6 +10066,7 @@ export default function AdvancedTab() {
 // src/components/admin/movies/MovieModal/tabs/BasicInfoTab.tsx
 // ==================================================
 // src/components/admin/movies/MovieModal/tabs/BasicInfoTab.tsx
+import { useState, useEffect } from 'react'
 import { TIPOS_DURACION, DATA_COMPLETENESS_LEVELS, SOUND_TYPES } from '@/lib/movies/movieConstants'
 import { MONTHS } from '@/lib/shared/dateUtils'
 import { getErrorMessage } from '@/lib/movies/movieUtils'
@@ -10105,6 +10106,27 @@ export default function BasicInfoTab() {
 
   const errors = formState?.errors || {}
   const editingMovieId = editingMovie?.id
+
+  // Estado local para el valor visual de la fecha (DD/MM/YYYY)
+  const [releaseDateDisplay, setReleaseDateDisplay] = useState('')
+
+  // Sincronizar estado local con el valor del formulario al cargar/editar
+  useEffect(() => {
+    const releaseDate = watch('releaseDate')
+    if (!releaseDate) {
+      setReleaseDateDisplay('')
+      return
+    }
+    
+    // Si es formato YYYY-MM-DD, convertir a DD/MM/YYYY
+    if (releaseDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = releaseDate.split('-')
+      setReleaseDateDisplay(`${day}/${month}/${year}`)
+    } else if (releaseDate.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+      // Ya está en formato DD/MM/YYYY
+      setReleaseDateDisplay(releaseDate)
+    }
+  }, [watch('releaseDate')])
 
   return (
     <div className="space-y-6">
@@ -10171,29 +10193,56 @@ export default function BasicInfoTab() {
                   type="text"
                   placeholder="DD/MM/YYYY"
                   maxLength={10}
-                  value={(() => {
-                    const isoValue = watch('releaseDate');
-                    if (!isoValue) return '';
-                    if (isoValue.includes('/')) return isoValue; // Ya está en formato DD/MM/YYYY
-                    // Convertir de YYYY-MM-DD a DD/MM/YYYY
-                    const [year, month, day] = isoValue.split('-');
-                    return day && month && year ? `${day}/${month}/${year}` : '';
-                  })()}
+                  value={releaseDateDisplay}
                   onChange={(e) => {
-                    let value = e.target.value.replace(/\D/g, '');
-                    if (value.length >= 2) value = value.slice(0, 2) + '/' + value.slice(2);
-                    if (value.length >= 5) value = value.slice(0, 5) + '/' + value.slice(5, 9);
+                    const input = e.target.value
                     
-                    // Convertir a formato YYYY-MM-DD para guardar en el form
-                    if (value.length === 10) {
-                      const [day, month, year] = value.split('/');
-                      if (day && month && year && year.length === 4) {
-                        setValue('releaseDate', `${year}-${month}-${day}`, { shouldValidate: true });
-                        return;
+                    // Permitir solo números y barras
+                    let cleaned = input.replace(/[^\d/]/g, '')
+                    
+                    // Auto-formatear: agregar barras automáticamente
+                    const numbers = cleaned.replace(/\//g, '')
+                    let formatted = ''
+                    
+                    if (numbers.length > 0) {
+                      formatted = numbers.slice(0, 2)
+                      if (numbers.length >= 2) {
+                        formatted += '/' + numbers.slice(2, 4)
+                      }
+                      if (numbers.length >= 4) {
+                        formatted += '/' + numbers.slice(4, 8)
                       }
                     }
-                    // Si no está completo, guardar el formato display
-                    setValue('releaseDate', value, { shouldValidate: false });
+                    
+                    // Actualizar estado local
+                    setReleaseDateDisplay(formatted)
+                    
+                    // Si la fecha está completa (DD/MM/YYYY), convertir a YYYY-MM-DD y guardar en el form
+                    if (formatted.length === 10) {
+                      const [day, month, year] = formatted.split('/')
+                      
+                      // Validación básica
+                      const dayNum = parseInt(day)
+                      const monthNum = parseInt(month)
+                      const yearNum = parseInt(year)
+                      
+                      if (dayNum >= 1 && dayNum <= 31 && 
+                          monthNum >= 1 && monthNum <= 12 && 
+                          yearNum >= 1800 && yearNum <= 2100) {
+                        setValue('releaseDate', `${year}-${month}-${day}`, { shouldValidate: true })
+                      }
+                    } else {
+                      // Si no está completa, limpiar el valor en el form
+                      setValue('releaseDate', '', { shouldValidate: false })
+                    }
+                  }}
+                  onBlur={() => {
+                    // Al perder el foco, validar formato completo
+                    if (releaseDateDisplay && releaseDateDisplay.length !== 10) {
+                      // Si no está completo, limpiar
+                      setReleaseDateDisplay('')
+                      setValue('releaseDate', '', { shouldValidate: false })
+                    }
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 />
