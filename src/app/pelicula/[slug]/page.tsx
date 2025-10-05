@@ -11,41 +11,21 @@ interface PageProps {
   };
 }
 
-// Configuración para build y runtime
-const isBuilding = process.env.BUILDING === 'true';
-
-// Configuración de página dinámica
-export const dynamic = isBuilding ? 'force-dynamic' : 'auto';
-export const revalidate = isBuilding ? 0 : 3600; // 1 hora cuando NO estamos en build
+// Configuración de página dinámica - CORREGIDO
+export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // 1 hora
 export const dynamicParams = true; // Permitir slugs no pre-generados
 
-// Generar parámetros estáticos (solo cuando no estamos en build de Docker)
+// Generar parámetros estáticos - SIMPLIFICADO
 export async function generateStaticParams() {
-  // Durante el build de Docker, no pre-generar nada
-  if (isBuilding) {
-    return [];
-  }
-  
-  try {
-    const movies = await prisma.movie.findMany({
-      select: { slug: true },
-      take: 50, // Limitar a las 50 más recientes
-      orderBy: { updatedAt: 'desc' }
-    });
-    
-    return movies.map((movie) => ({
-      slug: movie.slug,
-    }));
-  } catch (error) {
-    console.error('Error generating static params:', error);
-    return [];
-  }
+  // Retornar array vacío - las páginas se generarán bajo demanda
+  return [];
 }
 
 // OPTIMIZACIÓN: Cachear la query de película con unstable_cache
 const getCachedMovieData = unstable_cache(
   async (slug: string) => {
-    console.log(`🔍 Buscando película: ${slug}`);
+    console.log(`Buscando película: ${slug}`);
     
     const movie = await prisma.movie.findFirst({
       where: {
@@ -222,7 +202,7 @@ const getCachedMovieData = unstable_cache(
     });
     
     if (movie) {
-      console.log(`✅ Película encontrada: ${movie.title}`);
+      console.log(`Película encontrada: ${movie.title}`);
     }
     
     return movie;
@@ -237,10 +217,6 @@ const getCachedMovieData = unstable_cache(
 // Función wrapper para manejar errores
 async function getMovieData(slug: string) {
   try {
-    // Durante el build, simular que no hay datos
-    if (isBuilding) {
-      return null;
-    }
     return await getCachedMovieData(slug);
   } catch (error) {
     console.error('Error fetching movie:', error);
@@ -250,14 +226,6 @@ async function getMovieData(slug: string) {
 
 // Metadata dinámica - también optimizada con cache
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  // Durante el build, retornar metadata básica
-  if (isBuilding) {
-    return {
-      title: 'CineNacional',
-      description: 'Cine argentino'
-    };
-  }
-
   const movie = await getMovieData(params.slug);
 
   if (!movie) {
@@ -300,11 +268,6 @@ function formatPersonName(person: any): string {
 }
 
 export default async function MoviePage({ params }: PageProps) {
-  // Durante el build, retornar un placeholder
-  if (isBuilding) {
-    return <div>Loading...</div>;
-  }
-
   const movie = await getMovieData(params.slug);
 
   if (!movie) {
@@ -361,9 +324,9 @@ export default async function MoviePage({ params }: PageProps) {
 
   // Log reducido en producción
   if (process.env.NODE_ENV === 'development') {
-    console.log('🎬 Película:', movie.title);
-    console.log('👥 Total de actores:', allCast.length);
-    console.log('🌟 Actores con isPrincipal:', allCast.filter((c: any) => c.isPrincipal).length);
+    console.log('Película:', movie.title);
+    console.log('Total de actores:', allCast.length);
+    console.log('Actores con isPrincipal:', allCast.filter((c: any) => c.isPrincipal).length);
   }
 
   // Separar cast principal del cast completo
@@ -485,8 +448,8 @@ export default async function MoviePage({ params }: PageProps) {
     });
 
   if (process.env.NODE_ENV === 'development') {
-    console.log('📊 Departamentos en crew principal:', Object.keys(basicCrewByDepartment));
-    console.log('📊 Departamentos en crew completo:', Object.keys(fullCrewByDepartment));
+    console.log('Departamentos en crew principal:', Object.keys(basicCrewByDepartment));
+    console.log('Departamentos en crew completo:', Object.keys(fullCrewByDepartment));
   }
 
   // Pasar los datos procesados al componente cliente
