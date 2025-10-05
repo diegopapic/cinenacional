@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 1957bace27953861dbba5792537d7f4d6a26609a
-// Fecha: 2025-10-05T22:23:35.870Z
+// Commit: 0814b16be0cbff01a02a6198e655b536c3bfcdff
+// Fecha: 2025-10-05T22:54:53.607Z
 // ============================================
 
 
@@ -25411,7 +25411,6 @@ export function useMovieForm({
 // src/hooks/usePeople.ts
 // ==================================================
 // src/hooks/usePeople.ts
-// src/hooks/usePeople.ts
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -25447,6 +25446,8 @@ export function usePeople(options: UsePeopleOptions = {}) {
   const [filters, setFilters] = useState<PersonFilters>({
     page: PEOPLE_PAGINATION.DEFAULT_PAGE,
     limit: PEOPLE_PAGINATION.DEFAULT_LIMIT,
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
     ...initialFilters,
   });
   
@@ -27045,6 +27046,8 @@ export interface PersonFilters {
   isActive?: boolean | '';
   page?: number;
   limit?: number;
+  sortBy?: 'name' | 'createdAt' | 'updatedAt' | 'birthDate' | 'deathDate' | 'last_name';
+  sortOrder?: 'asc' | 'desc';
 }
 
 // Tipo para respuesta paginada
@@ -29789,6 +29792,8 @@ export const peopleService = {
    if (filters?.isActive !== undefined) params.isActive = String(filters.isActive);
    if (filters?.page) params.page = String(filters.page);
    if (filters?.limit) params.limit = String(filters.limit);
+   if (filters?.sortBy) params.sortBy = filters.sortBy;
+    if (filters?.sortOrder) params.sortOrder = filters.sortOrder;
    
    // Construir URL con parámetros
    const queryString = new URLSearchParams(params).toString();

@@ -1,5 +1,4 @@
 // src/hooks/usePeople.ts
-// src/hooks/usePeople.ts
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -35,6 +34,8 @@ export function usePeople(options: UsePeopleOptions = {}) {
   const [filters, setFilters] = useState<PersonFilters>({
     page: PEOPLE_PAGINATION.DEFAULT_PAGE,
     limit: PEOPLE_PAGINATION.DEFAULT_LIMIT,
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
     ...initialFilters,
   });
   

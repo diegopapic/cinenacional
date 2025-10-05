@@ -143,6 +143,8 @@ export interface PersonFilters {
   isActive?: boolean | '';
   page?: number;
   limit?: number;
+  sortBy?: 'name' | 'createdAt' | 'updatedAt' | 'birthDate' | 'deathDate' | 'last_name';
+  sortOrder?: 'asc' | 'desc';
 }
 
 // Tipo para respuesta paginada
