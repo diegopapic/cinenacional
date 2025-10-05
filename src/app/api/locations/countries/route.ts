@@ -3,6 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     // Obtener todas las locations que no tienen parent (son países)
@@ -20,8 +22,6 @@ export async function GET(request: NextRequest) {
         slug: true
       }
     });
-
-    console.log('Countries found:', countries.length); // Log para debugging
 
     return NextResponse.json(countries);
   } catch (error) {
