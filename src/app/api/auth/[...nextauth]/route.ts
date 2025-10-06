@@ -3,7 +3,7 @@
 import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
-import { prisma } from "@/lib/prisma"
+import { prismaBase } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 
@@ -13,7 +13,7 @@ const loginSchema = z.object({
 })
 
 const handler = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(prismaBase),
   session: {
     strategy: "jwt",
     maxAge: 24 * 60 * 60, // 24 horas
@@ -33,7 +33,7 @@ const handler = NextAuth({
         try {
           const { email, password } = loginSchema.parse(credentials)
           
-          const user = await prisma.user.findUnique({
+          const user = await prismaBase.user.findUnique({
             where: { email }
           })
           
@@ -54,13 +54,13 @@ const handler = NextAuth({
           }
           
           // Actualizar último login
-          await prisma.user.update({
+          await prismaBase.user.update({
             where: { id: user.id },
             data: { lastLogin: new Date() }
           })
           
           // Log de auditoría
-          await prisma.auditLog.create({
+          await prismaBase.auditLog.create({
             data: {
               userId: user.id,
               action: 'LOGIN',

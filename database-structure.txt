@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-10-05T22:54:53.844Z
+# Generado automáticamente el: 2025-10-06T22:06:00.907Z
 # ================================================
 
 ## Schema Prisma
@@ -801,47 +801,44 @@ enum MovieStage {
 ## SQL Generado
 
 ```sql
--- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "public";
+-- CreateEnum
+CREATE TYPE "image_type" AS ENUM ('POSTER', 'BACKDROP', 'STILL', 'BEHIND_SCENES');
 
 -- CreateEnum
-CREATE TYPE "public"."image_type" AS ENUM ('POSTER', 'BACKDROP', 'STILL', 'BEHIND_SCENES');
+CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'EDITOR', 'VIEWER');
 
 -- CreateEnum
-CREATE TYPE "public"."UserRole" AS ENUM ('ADMIN', 'EDITOR', 'VIEWER');
+CREATE TYPE "Department" AS ENUM ('DIRECCION', 'PRODUCCION', 'GUION', 'FOTOGRAFIA', 'ARTE', 'MONTAJE', 'SONIDO', 'MUSICA', 'VESTUARIO', 'MAQUILLAJE', 'EFECTOS', 'ANIMACION', 'OTROS');
 
 -- CreateEnum
-CREATE TYPE "public"."Department" AS ENUM ('DIRECCION', 'PRODUCCION', 'GUION', 'FOTOGRAFIA', 'ARTE', 'MONTAJE', 'SONIDO', 'MUSICA', 'VESTUARIO', 'MAQUILLAJE', 'EFECTOS', 'ANIMACION', 'OTROS');
+CREATE TYPE "gender" AS ENUM ('MALE', 'FEMALE', 'OTHER');
 
 -- CreateEnum
-CREATE TYPE "public"."gender" AS ENUM ('MALE', 'FEMALE', 'OTHER');
+CREATE TYPE "person_link_type" AS ENUM ('IMDB', 'TMDB', 'CINENACIONAL', 'WIKIPEDIA', 'OFFICIAL_WEBSITE', 'PORTFOLIO', 'BLOG', 'INSTAGRAM', 'TWITTER', 'FACEBOOK', 'YOUTUBE', 'TIKTOK', 'LINKEDIN', 'VIMEO', 'LETTERBOXD', 'SPOTIFY', 'PODCAST', 'INTERVIEW', 'ARTICLE', 'OTHER');
 
 -- CreateEnum
-CREATE TYPE "public"."person_link_type" AS ENUM ('IMDB', 'TMDB', 'CINENACIONAL', 'WIKIPEDIA', 'OFFICIAL_WEBSITE', 'PORTFOLIO', 'BLOG', 'INSTAGRAM', 'TWITTER', 'FACEBOOK', 'YOUTUBE', 'TIKTOK', 'LINKEDIN', 'VIMEO', 'LETTERBOXD', 'SPOTIFY', 'PODCAST', 'INTERVIEW', 'ARTICLE', 'OTHER');
+CREATE TYPE "venue_type" AS ENUM ('CINEMA', 'STREAMING', 'TV_CHANNEL', 'OTHER');
 
 -- CreateEnum
-CREATE TYPE "public"."venue_type" AS ENUM ('CINEMA', 'STREAMING', 'TV_CHANNEL', 'OTHER');
+CREATE TYPE "video_type" AS ENUM ('TRAILER', 'TEASER', 'BEHIND_SCENES', 'INTERVIEW', 'CLIP');
 
 -- CreateEnum
-CREATE TYPE "public"."video_type" AS ENUM ('TRAILER', 'TEASER', 'BEHIND_SCENES', 'INTERVIEW', 'CLIP');
+CREATE TYPE "award_result" AS ENUM ('WON', 'NOMINATED');
 
 -- CreateEnum
-CREATE TYPE "public"."award_result" AS ENUM ('WON', 'NOMINATED');
+CREATE TYPE "data_completeness" AS ENUM ('BASIC_PRESS_KIT', 'FULL_PRESS_KIT', 'MAIN_CAST', 'MAIN_CREW', 'FULL_CAST', 'FULL_CREW');
 
 -- CreateEnum
-CREATE TYPE "public"."data_completeness" AS ENUM ('BASIC_PRESS_KIT', 'FULL_PRESS_KIT', 'MAIN_CAST', 'MAIN_CREW', 'FULL_CAST', 'FULL_CREW');
+CREATE TYPE "link_type" AS ENUM ('INSTAGRAM', 'TWITTER', 'FACEBOOK', 'TIKTOK', 'YOUTUBE', 'WEBSITE');
 
 -- CreateEnum
-CREATE TYPE "public"."link_type" AS ENUM ('INSTAGRAM', 'TWITTER', 'FACEBOOK', 'TIKTOK', 'YOUTUBE', 'WEBSITE');
+CREATE TYPE "color_category" AS ENUM ('COLOR', 'BLACK_AND_WHITE', 'MIXED', 'UNKNOWN');
 
 -- CreateEnum
-CREATE TYPE "public"."color_category" AS ENUM ('COLOR', 'BLACK_AND_WHITE', 'MIXED', 'UNKNOWN');
-
--- CreateEnum
-CREATE TYPE "public"."movie_stage" AS ENUM ('COMPLETA', 'EN_DESARROLLO', 'EN_POSTPRODUCCION', 'EN_PREPRODUCCION', 'EN_RODAJE', 'INCONCLUSA', 'INEDITA');
+CREATE TYPE "movie_stage" AS ENUM ('COMPLETA', 'EN_DESARROLLO', 'EN_POSTPRODUCCION', 'EN_PREPRODUCCION', 'EN_RODAJE', 'INCONCLUSA', 'INEDITA');
 
 -- CreateTable
-CREATE TABLE "public"."movies" (
+CREATE TABLE "movies" (
     "id" SERIAL NOT NULL,
     "slug" VARCHAR(255) NOT NULL,
     "title" VARCHAR(255) NOT NULL,
@@ -859,7 +856,7 @@ CREATE TABLE "public"."movies" (
     "poster_public_id" VARCHAR(500),
     "trailer_url" VARCHAR(500),
     "imdb_id" VARCHAR(20),
-    "stage" "public"."movie_stage" NOT NULL DEFAULT 'COMPLETA',
+    "stage" "movie_stage" NOT NULL DEFAULT 'COMPLETA',
     "color_type_id" INTEGER,
     "sound_type" VARCHAR(50),
     "rating_id" INTEGER,
@@ -874,7 +871,7 @@ CREATE TABLE "public"."movies" (
     "filming_end_day" SMALLINT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
-    "data_completeness" "public"."data_completeness" NOT NULL DEFAULT 'BASIC_PRESS_KIT',
+    "data_completeness" "data_completeness" NOT NULL DEFAULT 'BASIC_PRESS_KIT',
     "meta_description" TEXT,
     "meta_keywords" TEXT[],
 
@@ -882,11 +879,11 @@ CREATE TABLE "public"."movies" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."screening_venues" (
+CREATE TABLE "screening_venues" (
     "id" SERIAL NOT NULL,
     "slug" VARCHAR(255) NOT NULL,
     "name" VARCHAR(255) NOT NULL,
-    "type" "public"."venue_type" NOT NULL,
+    "type" "venue_type" NOT NULL,
     "description" TEXT,
     "logo_url" VARCHAR(500),
     "website" VARCHAR(500),
@@ -904,7 +901,7 @@ CREATE TABLE "public"."screening_venues" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."audit_logs" (
+CREATE TABLE "audit_logs" (
     "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
     "action" TEXT NOT NULL,
@@ -919,7 +916,7 @@ CREATE TABLE "public"."audit_logs" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."movie_screenings" (
+CREATE TABLE "movie_screenings" (
     "id" SERIAL NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "venue_id" INTEGER NOT NULL,
@@ -934,7 +931,7 @@ CREATE TABLE "public"."movie_screenings" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."movie_alternative_titles" (
+CREATE TABLE "movie_alternative_titles" (
     "id" SERIAL NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "title" VARCHAR(255) NOT NULL,
@@ -945,10 +942,10 @@ CREATE TABLE "public"."movie_alternative_titles" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."movie_links" (
+CREATE TABLE "movie_links" (
     "id" SERIAL NOT NULL,
     "movie_id" INTEGER NOT NULL,
-    "type" "public"."link_type" NOT NULL,
+    "type" "link_type" NOT NULL,
     "url" TEXT NOT NULL,
     "title" VARCHAR(255),
     "is_active" BOOLEAN NOT NULL DEFAULT true,
@@ -959,7 +956,7 @@ CREATE TABLE "public"."movie_links" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."people" (
+CREATE TABLE "people" (
     "id" SERIAL NOT NULL,
     "slug" VARCHAR(255) NOT NULL,
     "first_name" VARCHAR(255),
@@ -975,7 +972,7 @@ CREATE TABLE "public"."people" (
     "death_location_id" INTEGER,
     "biography" TEXT,
     "photo_url" VARCHAR(500),
-    "gender" "public"."gender",
+    "gender" "gender",
     "hide_age" BOOLEAN NOT NULL DEFAULT false,
     "has_links" BOOLEAN NOT NULL DEFAULT false,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
@@ -987,7 +984,7 @@ CREATE TABLE "public"."people" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."person_nationalities" (
+CREATE TABLE "person_nationalities" (
     "person_id" INTEGER NOT NULL,
     "location_id" INTEGER NOT NULL,
     "is_primary" BOOLEAN NOT NULL DEFAULT false,
@@ -996,10 +993,10 @@ CREATE TABLE "public"."person_nationalities" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."person_links" (
+CREATE TABLE "person_links" (
     "id" SERIAL NOT NULL,
     "person_id" INTEGER NOT NULL,
-    "type" "public"."person_link_type" NOT NULL,
+    "type" "person_link_type" NOT NULL,
     "url" VARCHAR(500) NOT NULL,
     "title" VARCHAR(255),
     "display_order" INTEGER NOT NULL DEFAULT 0,
@@ -1013,7 +1010,7 @@ CREATE TABLE "public"."person_links" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."genres" (
+CREATE TABLE "genres" (
     "id" SERIAL NOT NULL,
     "slug" VARCHAR(100) NOT NULL,
     "name" VARCHAR(100) NOT NULL,
@@ -1024,7 +1021,7 @@ CREATE TABLE "public"."genres" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."production_companies" (
+CREATE TABLE "production_companies" (
     "id" SERIAL NOT NULL,
     "slug" VARCHAR(255) NOT NULL,
     "name" VARCHAR(255) NOT NULL,
@@ -1040,7 +1037,7 @@ CREATE TABLE "public"."production_companies" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."distribution_companies" (
+CREATE TABLE "distribution_companies" (
     "id" SERIAL NOT NULL,
     "slug" VARCHAR(255) NOT NULL,
     "name" VARCHAR(255) NOT NULL,
@@ -1055,7 +1052,7 @@ CREATE TABLE "public"."distribution_companies" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."movie_cast" (
+CREATE TABLE "movie_cast" (
     "id" SERIAL NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "person_id" INTEGER NOT NULL,
@@ -1069,7 +1066,7 @@ CREATE TABLE "public"."movie_cast" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."movie_crew" (
+CREATE TABLE "movie_crew" (
     "id" SERIAL NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "person_id" INTEGER NOT NULL,
@@ -1083,7 +1080,7 @@ CREATE TABLE "public"."movie_crew" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."movie_genres" (
+CREATE TABLE "movie_genres" (
     "movie_id" INTEGER NOT NULL,
     "genre_id" INTEGER NOT NULL,
     "is_primary" BOOLEAN NOT NULL DEFAULT false,
@@ -1092,7 +1089,7 @@ CREATE TABLE "public"."movie_genres" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."movie_production_companies" (
+CREATE TABLE "movie_production_companies" (
     "movie_id" INTEGER NOT NULL,
     "company_id" INTEGER NOT NULL,
     "is_primary" BOOLEAN NOT NULL DEFAULT false,
@@ -1101,7 +1098,7 @@ CREATE TABLE "public"."movie_production_companies" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."movie_distribution_companies" (
+CREATE TABLE "movie_distribution_companies" (
     "movie_id" INTEGER NOT NULL,
     "company_id" INTEGER NOT NULL,
     "territory" VARCHAR(100) NOT NULL DEFAULT 'Argentina',
@@ -1110,11 +1107,11 @@ CREATE TABLE "public"."movie_distribution_companies" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."color_types" (
+CREATE TABLE "color_types" (
     "id" SERIAL NOT NULL,
     "name" VARCHAR(50) NOT NULL,
     "slug" VARCHAR(50) NOT NULL,
-    "category" "public"."color_category" NOT NULL,
+    "category" "color_category" NOT NULL,
     "technical_name" VARCHAR(50),
     "display_order" INTEGER NOT NULL DEFAULT 0,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1124,7 +1121,7 @@ CREATE TABLE "public"."color_types" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."locations" (
+CREATE TABLE "locations" (
     "id" SERIAL NOT NULL,
     "name" VARCHAR(255) NOT NULL,
     "slug" VARCHAR(255) NOT NULL,
@@ -1139,11 +1136,11 @@ CREATE TABLE "public"."locations" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."movie_images" (
+CREATE TABLE "movie_images" (
     "id" SERIAL NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "url" VARCHAR(500) NOT NULL,
-    "type" "public"."image_type" NOT NULL,
+    "type" "image_type" NOT NULL,
     "width" INTEGER,
     "height" INTEGER,
     "caption" TEXT,
@@ -1156,13 +1153,13 @@ CREATE TABLE "public"."movie_images" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."movie_videos" (
+CREATE TABLE "movie_videos" (
     "id" SERIAL NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "url" VARCHAR(500) NOT NULL,
     "platform" VARCHAR(50),
     "video_key" VARCHAR(100),
-    "type" "public"."video_type" NOT NULL,
+    "type" "video_type" NOT NULL,
     "title" VARCHAR(255),
     "duration" INTEGER,
     "language" VARCHAR(10) NOT NULL DEFAULT 'es',
@@ -1173,7 +1170,7 @@ CREATE TABLE "public"."movie_videos" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."awards" (
+CREATE TABLE "awards" (
     "id" SERIAL NOT NULL,
     "name" VARCHAR(255) NOT NULL,
     "organization" VARCHAR(255),
@@ -1186,13 +1183,13 @@ CREATE TABLE "public"."awards" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."movie_awards" (
+CREATE TABLE "movie_awards" (
     "id" SERIAL NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "award_id" INTEGER NOT NULL,
     "category" VARCHAR(255) NOT NULL,
     "year" INTEGER NOT NULL,
-    "result" "public"."award_result" NOT NULL,
+    "result" "award_result" NOT NULL,
     "recipient_person_id" INTEGER,
     "notes" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1201,7 +1198,7 @@ CREATE TABLE "public"."movie_awards" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."themes" (
+CREATE TABLE "themes" (
     "id" SERIAL NOT NULL,
     "slug" VARCHAR(100) NOT NULL,
     "name" VARCHAR(100) NOT NULL,
@@ -1213,11 +1210,11 @@ CREATE TABLE "public"."themes" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."roles" (
+CREATE TABLE "roles" (
     "id" SERIAL NOT NULL,
     "name" VARCHAR(100) NOT NULL,
     "slug" VARCHAR(100) NOT NULL,
-    "department" "public"."Department" NOT NULL,
+    "department" "Department" NOT NULL,
     "description" TEXT,
     "is_main_role" BOOLEAN NOT NULL DEFAULT false,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
@@ -1228,7 +1225,7 @@ CREATE TABLE "public"."roles" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."ratings" (
+CREATE TABLE "ratings" (
     "id" SERIAL NOT NULL,
     "slug" VARCHAR(100) NOT NULL,
     "name" VARCHAR(255) NOT NULL,
@@ -1242,7 +1239,7 @@ CREATE TABLE "public"."ratings" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."movie_themes" (
+CREATE TABLE "movie_themes" (
     "movie_id" INTEGER NOT NULL,
     "theme_id" INTEGER NOT NULL,
     "relevance" INTEGER NOT NULL DEFAULT 1,
@@ -1251,7 +1248,7 @@ CREATE TABLE "public"."movie_themes" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."sessions" (
+CREATE TABLE "sessions" (
     "id" TEXT NOT NULL,
     "sessionToken" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -1261,7 +1258,7 @@ CREATE TABLE "public"."sessions" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."accounts" (
+CREATE TABLE "accounts" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "type" TEXT NOT NULL,
@@ -1279,14 +1276,14 @@ CREATE TABLE "public"."accounts" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."verification_tokens" (
+CREATE TABLE "verification_tokens" (
     "identifier" TEXT NOT NULL,
     "token" TEXT NOT NULL,
     "expires" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
-CREATE TABLE "public"."movie_countries" (
+CREATE TABLE "movie_countries" (
     "movie_id" INTEGER NOT NULL,
     "country_id" INTEGER NOT NULL,
     "is_primary" BOOLEAN NOT NULL DEFAULT false,
@@ -1295,7 +1292,7 @@ CREATE TABLE "public"."movie_countries" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."languages" (
+CREATE TABLE "languages" (
     "id" SERIAL NOT NULL,
     "code" VARCHAR(10) NOT NULL,
     "name" VARCHAR(100) NOT NULL,
@@ -1305,7 +1302,7 @@ CREATE TABLE "public"."languages" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."users" (
+CREATE TABLE "users" (
     "id" TEXT NOT NULL,
     "email" VARCHAR(255) NOT NULL,
     "username" VARCHAR(100),
@@ -1313,7 +1310,7 @@ CREATE TABLE "public"."users" (
     "display_name" VARCHAR(255),
     "avatar_url" VARCHAR(500),
     "bio" TEXT,
-    "role" "public"."UserRole" NOT NULL DEFAULT 'VIEWER',
+    "role" "UserRole" NOT NULL DEFAULT 'VIEWER',
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "is_admin" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1324,7 +1321,7 @@ CREATE TABLE "public"."users" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."user_ratings" (
+CREATE TABLE "user_ratings" (
     "user_id" TEXT NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "rating" DECIMAL(3,1) NOT NULL,
@@ -1336,7 +1333,7 @@ CREATE TABLE "public"."user_ratings" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."user_watchlist" (
+CREATE TABLE "user_watchlist" (
     "user_id" TEXT NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "added_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1345,7 +1342,7 @@ CREATE TABLE "public"."user_watchlist" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."user_watched" (
+CREATE TABLE "user_watched" (
     "user_id" TEXT NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "watched_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1354,373 +1351,373 @@ CREATE TABLE "public"."user_watched" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "movies_slug_key" ON "public"."movies"("slug");
+CREATE UNIQUE INDEX "movies_slug_key" ON "movies"("slug");
 
 -- CreateIndex
-CREATE INDEX "movies_slug_idx" ON "public"."movies"("slug");
+CREATE INDEX "movies_slug_idx" ON "movies"("slug");
 
 -- CreateIndex
-CREATE INDEX "movies_title_idx" ON "public"."movies"("title");
+CREATE INDEX "movies_title_idx" ON "movies"("title");
 
 -- CreateIndex
-CREATE INDEX "movies_year_idx" ON "public"."movies"("year");
+CREATE INDEX "movies_year_idx" ON "movies"("year");
 
 -- CreateIndex
-CREATE INDEX "movies_tipo_duracion_idx" ON "public"."movies"("tipo_duracion");
+CREATE INDEX "movies_tipo_duracion_idx" ON "movies"("tipo_duracion");
 
 -- CreateIndex
-CREATE INDEX "movies_rating_id_idx" ON "public"."movies"("rating_id");
+CREATE INDEX "movies_rating_id_idx" ON "movies"("rating_id");
 
 -- CreateIndex
-CREATE INDEX "movies_filming_start_year_idx" ON "public"."movies"("filming_start_year");
+CREATE INDEX "movies_filming_start_year_idx" ON "movies"("filming_start_year");
 
 -- CreateIndex
-CREATE INDEX "movies_filming_start_year_filming_start_month_idx" ON "public"."movies"("filming_start_year", "filming_start_month");
+CREATE INDEX "movies_filming_start_year_filming_start_month_idx" ON "movies"("filming_start_year", "filming_start_month");
 
 -- CreateIndex
-CREATE INDEX "movies_is_coproduction_idx" ON "public"."movies"("is_coproduction");
+CREATE INDEX "movies_is_coproduction_idx" ON "movies"("is_coproduction");
 
 -- CreateIndex
-CREATE INDEX "movies_production_type_idx" ON "public"."movies"("production_type");
+CREATE INDEX "movies_production_type_idx" ON "movies"("production_type");
 
 -- CreateIndex
-CREATE INDEX "movies_color_type_id_idx" ON "public"."movies"("color_type_id");
+CREATE INDEX "movies_color_type_id_idx" ON "movies"("color_type_id");
 
 -- CreateIndex
-CREATE INDEX "movies_stage_idx" ON "public"."movies"("stage");
+CREATE INDEX "movies_stage_idx" ON "movies"("stage");
 
 -- CreateIndex
-CREATE INDEX "movies_release_year_idx" ON "public"."movies"("release_year");
+CREATE INDEX "movies_release_year_idx" ON "movies"("release_year");
 
 -- CreateIndex
-CREATE INDEX "movies_release_year_release_month_idx" ON "public"."movies"("release_year", "release_month");
+CREATE INDEX "movies_release_year_release_month_idx" ON "movies"("release_year", "release_month");
 
 -- CreateIndex
-CREATE INDEX "movies_release_year_release_month_release_day_idx" ON "public"."movies"("release_year", "release_month", "release_day");
+CREATE INDEX "movies_release_year_release_month_release_day_idx" ON "movies"("release_year", "release_month", "release_day");
 
 -- CreateIndex
-CREATE INDEX "movies_created_at_idx" ON "public"."movies"("created_at");
+CREATE INDEX "movies_created_at_idx" ON "movies"("created_at");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "screening_venues_slug_key" ON "public"."screening_venues"("slug");
+CREATE UNIQUE INDEX "screening_venues_slug_key" ON "screening_venues"("slug");
 
 -- CreateIndex
-CREATE INDEX "screening_venues_name_idx" ON "public"."screening_venues"("name");
+CREATE INDEX "screening_venues_name_idx" ON "screening_venues"("name");
 
 -- CreateIndex
-CREATE INDEX "screening_venues_type_idx" ON "public"."screening_venues"("type");
+CREATE INDEX "screening_venues_type_idx" ON "screening_venues"("type");
 
 -- CreateIndex
-CREATE INDEX "screening_venues_is_active_idx" ON "public"."screening_venues"("is_active");
+CREATE INDEX "screening_venues_is_active_idx" ON "screening_venues"("is_active");
 
 -- CreateIndex
-CREATE INDEX "audit_logs_user_id_idx" ON "public"."audit_logs"("user_id");
+CREATE INDEX "audit_logs_user_id_idx" ON "audit_logs"("user_id");
 
 -- CreateIndex
-CREATE INDEX "audit_logs_createdAt_idx" ON "public"."audit_logs"("createdAt");
+CREATE INDEX "audit_logs_createdAt_idx" ON "audit_logs"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "movie_screenings_movie_id_idx" ON "public"."movie_screenings"("movie_id");
+CREATE INDEX "movie_screenings_movie_id_idx" ON "movie_screenings"("movie_id");
 
 -- CreateIndex
-CREATE INDEX "movie_screenings_venue_id_idx" ON "public"."movie_screenings"("venue_id");
+CREATE INDEX "movie_screenings_venue_id_idx" ON "movie_screenings"("venue_id");
 
 -- CreateIndex
-CREATE INDEX "movie_screenings_screening_date_idx" ON "public"."movie_screenings"("screening_date");
+CREATE INDEX "movie_screenings_screening_date_idx" ON "movie_screenings"("screening_date");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "movie_screenings_movie_id_venue_id_screening_date_key" ON "public"."movie_screenings"("movie_id", "venue_id", "screening_date");
+CREATE UNIQUE INDEX "movie_screenings_movie_id_venue_id_screening_date_key" ON "movie_screenings"("movie_id", "venue_id", "screening_date");
 
 -- CreateIndex
-CREATE INDEX "movie_alternative_titles_movie_id_idx" ON "public"."movie_alternative_titles"("movie_id");
+CREATE INDEX "movie_alternative_titles_movie_id_idx" ON "movie_alternative_titles"("movie_id");
 
 -- CreateIndex
-CREATE INDEX "movie_alternative_titles_title_idx" ON "public"."movie_alternative_titles"("title");
+CREATE INDEX "movie_alternative_titles_title_idx" ON "movie_alternative_titles"("title");
 
 -- CreateIndex
-CREATE INDEX "movie_links_movie_id_idx" ON "public"."movie_links"("movie_id");
+CREATE INDEX "movie_links_movie_id_idx" ON "movie_links"("movie_id");
 
 -- CreateIndex
-CREATE INDEX "movie_links_type_idx" ON "public"."movie_links"("type");
+CREATE INDEX "movie_links_type_idx" ON "movie_links"("type");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "people_slug_key" ON "public"."people"("slug");
+CREATE UNIQUE INDEX "people_slug_key" ON "people"("slug");
 
 -- CreateIndex
-CREATE INDEX "people_slug_idx" ON "public"."people"("slug");
+CREATE INDEX "people_slug_idx" ON "people"("slug");
 
 -- CreateIndex
-CREATE INDEX "people_first_name_idx" ON "public"."people"("first_name");
+CREATE INDEX "people_first_name_idx" ON "people"("first_name");
 
 -- CreateIndex
-CREATE INDEX "people_last_name_idx" ON "public"."people"("last_name");
+CREATE INDEX "people_last_name_idx" ON "people"("last_name");
 
 -- CreateIndex
-CREATE INDEX "people_birth_location_id_idx" ON "public"."people"("birth_location_id");
+CREATE INDEX "people_birth_location_id_idx" ON "people"("birth_location_id");
 
 -- CreateIndex
-CREATE INDEX "people_death_location_id_idx" ON "public"."people"("death_location_id");
+CREATE INDEX "people_death_location_id_idx" ON "people"("death_location_id");
 
 -- CreateIndex
-CREATE INDEX "people_is_active_idx" ON "public"."people"("is_active");
+CREATE INDEX "people_is_active_idx" ON "people"("is_active");
 
 -- CreateIndex
-CREATE INDEX "people_birth_year_idx" ON "public"."people"("birth_year");
+CREATE INDEX "people_birth_year_idx" ON "people"("birth_year");
 
 -- CreateIndex
-CREATE INDEX "people_birth_year_birth_month_idx" ON "public"."people"("birth_year", "birth_month");
+CREATE INDEX "people_birth_year_birth_month_idx" ON "people"("birth_year", "birth_month");
 
 -- CreateIndex
-CREATE INDEX "people_death_year_idx" ON "public"."people"("death_year");
+CREATE INDEX "people_death_year_idx" ON "people"("death_year");
 
 -- CreateIndex
-CREATE INDEX "people_death_year_death_month_idx" ON "public"."people"("death_year", "death_month");
+CREATE INDEX "people_death_year_death_month_idx" ON "people"("death_year", "death_month");
 
 -- CreateIndex
-CREATE INDEX "people_created_at_idx" ON "public"."people"("created_at");
+CREATE INDEX "people_created_at_idx" ON "people"("created_at");
 
 -- CreateIndex
-CREATE INDEX "person_links_person_id_idx" ON "public"."person_links"("person_id");
+CREATE INDEX "person_links_person_id_idx" ON "person_links"("person_id");
 
 -- CreateIndex
-CREATE INDEX "person_links_type_idx" ON "public"."person_links"("type");
+CREATE INDEX "person_links_type_idx" ON "person_links"("type");
 
 -- CreateIndex
-CREATE INDEX "person_links_is_active_idx" ON "public"."person_links"("is_active");
+CREATE INDEX "person_links_is_active_idx" ON "person_links"("is_active");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "genres_slug_key" ON "public"."genres"("slug");
+CREATE UNIQUE INDEX "genres_slug_key" ON "genres"("slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "production_companies_slug_key" ON "public"."production_companies"("slug");
+CREATE UNIQUE INDEX "production_companies_slug_key" ON "production_companies"("slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "distribution_companies_slug_key" ON "public"."distribution_companies"("slug");
+CREATE UNIQUE INDEX "distribution_companies_slug_key" ON "distribution_companies"("slug");
 
 -- CreateIndex
-CREATE INDEX "movie_cast_movie_id_idx" ON "public"."movie_cast"("movie_id");
+CREATE INDEX "movie_cast_movie_id_idx" ON "movie_cast"("movie_id");
 
 -- CreateIndex
-CREATE INDEX "movie_cast_person_id_idx" ON "public"."movie_cast"("person_id");
+CREATE INDEX "movie_cast_person_id_idx" ON "movie_cast"("person_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "movie_cast_movie_id_person_id_character_name_key" ON "public"."movie_cast"("movie_id", "person_id", "character_name");
+CREATE UNIQUE INDEX "movie_cast_movie_id_person_id_character_name_key" ON "movie_cast"("movie_id", "person_id", "character_name");
 
 -- CreateIndex
-CREATE INDEX "movie_crew_movie_id_idx" ON "public"."movie_crew"("movie_id");
+CREATE INDEX "movie_crew_movie_id_idx" ON "movie_crew"("movie_id");
 
 -- CreateIndex
-CREATE INDEX "movie_crew_person_id_idx" ON "public"."movie_crew"("person_id");
+CREATE INDEX "movie_crew_person_id_idx" ON "movie_crew"("person_id");
 
 -- CreateIndex
-CREATE INDEX "movie_crew_role_id_idx" ON "public"."movie_crew"("role_id");
+CREATE INDEX "movie_crew_role_id_idx" ON "movie_crew"("role_id");
 
 -- CreateIndex
-CREATE INDEX "movie_crew_movie_id_role_id_idx" ON "public"."movie_crew"("movie_id", "role_id");
+CREATE INDEX "movie_crew_movie_id_role_id_idx" ON "movie_crew"("movie_id", "role_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "movie_crew_movie_id_person_id_role_id_key" ON "public"."movie_crew"("movie_id", "person_id", "role_id");
+CREATE UNIQUE INDEX "movie_crew_movie_id_person_id_role_id_key" ON "movie_crew"("movie_id", "person_id", "role_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "color_types_slug_key" ON "public"."color_types"("slug");
+CREATE UNIQUE INDEX "color_types_slug_key" ON "color_types"("slug");
 
 -- CreateIndex
-CREATE INDEX "color_types_category_idx" ON "public"."color_types"("category");
+CREATE INDEX "color_types_category_idx" ON "color_types"("category");
 
 -- CreateIndex
-CREATE INDEX "color_types_slug_idx" ON "public"."color_types"("slug");
+CREATE INDEX "color_types_slug_idx" ON "color_types"("slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "locations_slug_key" ON "public"."locations"("slug");
+CREATE UNIQUE INDEX "locations_slug_key" ON "locations"("slug");
 
 -- CreateIndex
-CREATE INDEX "locations_parent_id_idx" ON "public"."locations"("parent_id");
+CREATE INDEX "locations_parent_id_idx" ON "locations"("parent_id");
 
 -- CreateIndex
-CREATE INDEX "locations_name_idx" ON "public"."locations"("name");
+CREATE INDEX "locations_name_idx" ON "locations"("name");
 
 -- CreateIndex
-CREATE INDEX "locations_slug_idx" ON "public"."locations"("slug");
+CREATE INDEX "locations_slug_idx" ON "locations"("slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "themes_slug_key" ON "public"."themes"("slug");
+CREATE UNIQUE INDEX "themes_slug_key" ON "themes"("slug");
 
 -- CreateIndex
-CREATE INDEX "themes_slug_idx" ON "public"."themes"("slug");
+CREATE INDEX "themes_slug_idx" ON "themes"("slug");
 
 -- CreateIndex
-CREATE INDEX "themes_name_idx" ON "public"."themes"("name");
+CREATE INDEX "themes_name_idx" ON "themes"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "roles_slug_key" ON "public"."roles"("slug");
+CREATE UNIQUE INDEX "roles_slug_key" ON "roles"("slug");
 
 -- CreateIndex
-CREATE INDEX "roles_department_idx" ON "public"."roles"("department");
+CREATE INDEX "roles_department_idx" ON "roles"("department");
 
 -- CreateIndex
-CREATE INDEX "roles_is_active_idx" ON "public"."roles"("is_active");
+CREATE INDEX "roles_is_active_idx" ON "roles"("is_active");
 
 -- CreateIndex
-CREATE INDEX "roles_is_main_role_idx" ON "public"."roles"("is_main_role");
+CREATE INDEX "roles_is_main_role_idx" ON "roles"("is_main_role");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "roles_name_department_key" ON "public"."roles"("name", "department");
+CREATE UNIQUE INDEX "roles_name_department_key" ON "roles"("name", "department");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ratings_slug_key" ON "public"."ratings"("slug");
+CREATE UNIQUE INDEX "ratings_slug_key" ON "ratings"("slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ratings_name_key" ON "public"."ratings"("name");
+CREATE UNIQUE INDEX "ratings_name_key" ON "ratings"("name");
 
 -- CreateIndex
-CREATE INDEX "ratings_slug_idx" ON "public"."ratings"("slug");
+CREATE INDEX "ratings_slug_idx" ON "ratings"("slug");
 
 -- CreateIndex
-CREATE INDEX "ratings_order_idx" ON "public"."ratings"("order");
+CREATE INDEX "ratings_order_idx" ON "ratings"("order");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "sessions_sessionToken_key" ON "public"."sessions"("sessionToken");
+CREATE UNIQUE INDEX "sessions_sessionToken_key" ON "sessions"("sessionToken");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "accounts_provider_providerAccountId_key" ON "public"."accounts"("provider", "providerAccountId");
+CREATE UNIQUE INDEX "accounts_provider_providerAccountId_key" ON "accounts"("provider", "providerAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "verification_tokens_token_key" ON "public"."verification_tokens"("token");
+CREATE UNIQUE INDEX "verification_tokens_token_key" ON "verification_tokens"("token");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "verification_tokens_identifier_token_key" ON "public"."verification_tokens"("identifier", "token");
+CREATE UNIQUE INDEX "verification_tokens_identifier_token_key" ON "verification_tokens"("identifier", "token");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "languages_code_key" ON "public"."languages"("code");
+CREATE UNIQUE INDEX "languages_code_key" ON "languages"("code");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "users_email_key" ON "public"."users"("email");
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "users_username_key" ON "public"."users"("username");
+CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 
 -- AddForeignKey
-ALTER TABLE "public"."movies" ADD CONSTRAINT "movies_color_type_id_fkey" FOREIGN KEY ("color_type_id") REFERENCES "public"."color_types"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "movies" ADD CONSTRAINT "movies_color_type_id_fkey" FOREIGN KEY ("color_type_id") REFERENCES "color_types"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movies" ADD CONSTRAINT "movies_rating_id_fkey" FOREIGN KEY ("rating_id") REFERENCES "public"."ratings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "movies" ADD CONSTRAINT "movies_rating_id_fkey" FOREIGN KEY ("rating_id") REFERENCES "ratings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."audit_logs" ADD CONSTRAINT "audit_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_screenings" ADD CONSTRAINT "movie_screenings_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_screenings" ADD CONSTRAINT "movie_screenings_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_screenings" ADD CONSTRAINT "movie_screenings_venue_id_fkey" FOREIGN KEY ("venue_id") REFERENCES "public"."screening_venues"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_screenings" ADD CONSTRAINT "movie_screenings_venue_id_fkey" FOREIGN KEY ("venue_id") REFERENCES "screening_venues"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_alternative_titles" ADD CONSTRAINT "movie_alternative_titles_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_alternative_titles" ADD CONSTRAINT "movie_alternative_titles_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_links" ADD CONSTRAINT "movie_links_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_links" ADD CONSTRAINT "movie_links_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."people" ADD CONSTRAINT "people_birth_location_id_fkey" FOREIGN KEY ("birth_location_id") REFERENCES "public"."locations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "people" ADD CONSTRAINT "people_birth_location_id_fkey" FOREIGN KEY ("birth_location_id") REFERENCES "locations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."people" ADD CONSTRAINT "people_death_location_id_fkey" FOREIGN KEY ("death_location_id") REFERENCES "public"."locations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "people" ADD CONSTRAINT "people_death_location_id_fkey" FOREIGN KEY ("death_location_id") REFERENCES "locations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."person_nationalities" ADD CONSTRAINT "person_nationalities_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."locations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "person_nationalities" ADD CONSTRAINT "person_nationalities_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "locations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."person_nationalities" ADD CONSTRAINT "person_nationalities_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "person_nationalities" ADD CONSTRAINT "person_nationalities_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."person_links" ADD CONSTRAINT "person_links_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "person_links" ADD CONSTRAINT "person_links_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_cast" ADD CONSTRAINT "movie_cast_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_cast" ADD CONSTRAINT "movie_cast_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_cast" ADD CONSTRAINT "movie_cast_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_cast" ADD CONSTRAINT "movie_cast_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_crew" ADD CONSTRAINT "movie_crew_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_crew" ADD CONSTRAINT "movie_crew_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_crew" ADD CONSTRAINT "movie_crew_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_crew" ADD CONSTRAINT "movie_crew_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_crew" ADD CONSTRAINT "movie_crew_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "movie_crew" ADD CONSTRAINT "movie_crew_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_genres" ADD CONSTRAINT "movie_genres_genre_id_fkey" FOREIGN KEY ("genre_id") REFERENCES "public"."genres"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_genres" ADD CONSTRAINT "movie_genres_genre_id_fkey" FOREIGN KEY ("genre_id") REFERENCES "genres"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_genres" ADD CONSTRAINT "movie_genres_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_genres" ADD CONSTRAINT "movie_genres_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_production_companies" ADD CONSTRAINT "movie_production_companies_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."production_companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_production_companies" ADD CONSTRAINT "movie_production_companies_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "production_companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_production_companies" ADD CONSTRAINT "movie_production_companies_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_production_companies" ADD CONSTRAINT "movie_production_companies_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_distribution_companies" ADD CONSTRAINT "movie_distribution_companies_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "public"."distribution_companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_distribution_companies" ADD CONSTRAINT "movie_distribution_companies_company_id_fkey" FOREIGN KEY ("company_id") REFERENCES "distribution_companies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_distribution_companies" ADD CONSTRAINT "movie_distribution_companies_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_distribution_companies" ADD CONSTRAINT "movie_distribution_companies_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."locations" ADD CONSTRAINT "locations_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."locations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "locations" ADD CONSTRAINT "locations_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "locations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_images" ADD CONSTRAINT "movie_images_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_images" ADD CONSTRAINT "movie_images_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_videos" ADD CONSTRAINT "movie_videos_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_videos" ADD CONSTRAINT "movie_videos_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_awards" ADD CONSTRAINT "movie_awards_award_id_fkey" FOREIGN KEY ("award_id") REFERENCES "public"."awards"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_awards" ADD CONSTRAINT "movie_awards_award_id_fkey" FOREIGN KEY ("award_id") REFERENCES "awards"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_awards" ADD CONSTRAINT "movie_awards_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_awards" ADD CONSTRAINT "movie_awards_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_awards" ADD CONSTRAINT "movie_awards_recipient_person_id_fkey" FOREIGN KEY ("recipient_person_id") REFERENCES "public"."people"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "movie_awards" ADD CONSTRAINT "movie_awards_recipient_person_id_fkey" FOREIGN KEY ("recipient_person_id") REFERENCES "people"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_themes" ADD CONSTRAINT "movie_themes_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_themes" ADD CONSTRAINT "movie_themes_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_themes" ADD CONSTRAINT "movie_themes_theme_id_fkey" FOREIGN KEY ("theme_id") REFERENCES "public"."themes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_themes" ADD CONSTRAINT "movie_themes_theme_id_fkey" FOREIGN KEY ("theme_id") REFERENCES "themes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."sessions" ADD CONSTRAINT "sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "sessions" ADD CONSTRAINT "sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."accounts" ADD CONSTRAINT "accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "accounts" ADD CONSTRAINT "accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_countries" ADD CONSTRAINT "movie_countries_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."movie_countries" ADD CONSTRAINT "movie_countries_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "public"."locations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "movie_countries" ADD CONSTRAINT "movie_countries_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "locations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_ratings" ADD CONSTRAINT "user_ratings_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_ratings" ADD CONSTRAINT "user_ratings_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_ratings" ADD CONSTRAINT "user_ratings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_ratings" ADD CONSTRAINT "user_ratings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_watchlist" ADD CONSTRAINT "user_watchlist_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_watchlist" ADD CONSTRAINT "user_watchlist_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_watchlist" ADD CONSTRAINT "user_watchlist_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_watchlist" ADD CONSTRAINT "user_watchlist_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_watched" ADD CONSTRAINT "user_watched_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_watched" ADD CONSTRAINT "user_watched_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."user_watched" ADD CONSTRAINT "user_watched_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_watched" ADD CONSTRAINT "user_watched_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 
 ```

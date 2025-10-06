@@ -21,7 +21,7 @@ export function generateSlug(text: string): string {
 export async function generateUniqueSlug(
   text: string,
   model: 'location' | 'movie' | 'person' | 'genre' | 'productionCompany' | 'distributionCompany',
-  prisma: PrismaClient,
+  prisma: any,
   excludeId?: number
 ): Promise<string> {
   const baseSlug = generateSlug(text)
