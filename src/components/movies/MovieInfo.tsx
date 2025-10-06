@@ -47,7 +47,7 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
     if (movie.crew && Array.isArray(movie.crew) && movie.crew.length > 0) {
       // Filtrar todos los miembros del crew que sean directores (roleId === 2)
       const directorsCrew = movie.crew.filter(member => member.roleId === 2);
-      
+
       const directorsData = directorsCrew.map(directorCrew => {
         if (directorCrew?.person) {
           const { id, firstName, lastName, slug, photoUrl } = directorCrew.person;
@@ -61,27 +61,29 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
         }
         return null;
       }).filter(Boolean) as Director[];
-      
+
       setDirectors(directorsData);
     }
   }, [movie]);
 
   // Sanitizar la sinopsis para prevenir XSS
-  const sanitizedSynopsis = movie.synopsis 
+  const sanitizedSynopsis = movie.synopsis
     ? DOMPurify.sanitize(movie.synopsis, {
-        ALLOWED_TAGS: ['p', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'b', 'i', 'span'],
-        ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
-        ADD_ATTR: ['target'],
-      })
-    : 'Sinopsis no disponible.';
+      ALLOWED_TAGS: ['p', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'b', 'i', 'span'],
+      ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+      ADD_ATTR: ['target'],
+    })
+    : null;
 
   return (
     <div className="space-y-6">
-      {/* Sinopsis - Renderiza HTML sanitizado */}
-      <div 
-        className="serif-body text-lg text-gray-300 leading-relaxed"
-        dangerouslySetInnerHTML={{ __html: sanitizedSynopsis }}
-      />
+      {/* Sinopsis - Solo renderizar si existe */}
+      {sanitizedSynopsis && (
+        <div
+          className="serif-body text-lg text-gray-300 leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: sanitizedSynopsis }}
+        />
+      )}
 
       {/* Directores */}
       {directors.length > 0 && (
@@ -93,8 +95,8 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
                 <div key={director.id} className="flex items-center space-x-3">
                   <div className="w-12 h-12 rounded-full person-placeholder">
                     {director.photoUrl ? (
-                      <img 
-                        src={director.photoUrl} 
+                      <img
+                        src={director.photoUrl}
                         alt={director.name}
                         className="w-full h-full object-cover rounded-full"
                       />
@@ -105,7 +107,7 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
                     )}
                   </div>
                   <div>
-                    <a 
+                    <a
                       href={`/persona/${director.slug}`}
                       className="font-medium text-white hover:text-cine-accent transition-colors"
                     >
@@ -121,7 +123,7 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
 
       {/* Botones de acción */}
       <div className="flex flex-wrap gap-4">
-        <button 
+        <button
           onClick={onShareClick}
           className="border border-gray-600 hover:border-cine-accent px-6 py-3 rounded-lg font-medium transition-colors text-white"
         >
