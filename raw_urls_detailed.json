@@ -610,6 +610,36 @@
     "size": 0
   },
   {
+    "path": "public/android-chrome-192x192.png",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/android-chrome-192x192.png",
+    "size": 0
+  },
+  {
+    "path": "public/android-chrome-512x512.png",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/android-chrome-512x512.png",
+    "size": 0
+  },
+  {
+    "path": "public/apple-touch-icon.png",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/apple-touch-icon.png",
+    "size": 0
+  },
+  {
+    "path": "public/favicon-16x16.png",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/favicon-16x16.png",
+    "size": 0
+  },
+  {
+    "path": "public/favicon-32x32.png",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/favicon-32x32.png",
+    "size": 0
+  },
+  {
+    "path": "public/favicon.ico",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/favicon.ico",
+    "size": 0
+  },
+  {
     "path": "public/file.svg",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/file.svg",
     "size": 0
@@ -627,6 +657,11 @@
   {
     "path": "public/images/background-placeholder.jpg",
     "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/background-placeholder.jpg",
+    "size": 0
+  },
+  {
+    "path": "public/images/logo.svg",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/logo.svg",
     "size": 0
   },
   {
@@ -660,13 +695,13 @@
     "size": 0
   },
   {
-    "path": "public/logo.svg",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/logo.svg",
+    "path": "public/next.svg",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/next.svg",
     "size": 0
   },
   {
-    "path": "public/next.svg",
-    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/next.svg",
+    "path": "public/site.webmanifest",
+    "raw_url": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/site.webmanifest",
     "size": 0
   },
   {
