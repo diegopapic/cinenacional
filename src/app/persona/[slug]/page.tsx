@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { formatPartialDate } from '@/lib/shared/dateUtils';
+import DOMPurify from 'isomorphic-dompurify';
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs' // opcional
@@ -104,16 +105,16 @@ export default function PersonPage({ params }: PersonPageProps) {
     return [...movies].sort((a, b) => {
       const dateA = getEffectiveDate(a.movie || a);
       const dateB = getEffectiveDate(b.movie || b);
-      
+
       // Si las fechas son iguales, usar el título como desempate
       if (dateA.getTime() === dateB.getTime()) {
         const titleA = (a.movie || a).title.toLowerCase();
         const titleB = (b.movie || b).title.toLowerCase();
         return titleA.localeCompare(titleB);
       }
-      
+
       // Ordenar por fecha
-      return descending 
+      return descending
         ? dateB.getTime() - dateA.getTime()
         : dateA.getTime() - dateB.getTime();
     });
@@ -123,37 +124,37 @@ export default function PersonPage({ params }: PersonPageProps) {
   const groupFilmographyByRole = useCallback((crewRoles: CrewRole[]): { [key: string]: GroupedCrewRole[] } => {
     // Primero, agrupar todas las películas con sus roles
     const movieRolesMap: { [movieId: number]: { movie: Movie; roles: Set<string> } } = {};
-    
+
     crewRoles.forEach((item) => {
       const movieId = item.movie.id;
       const roleName = item.role?.name || 'Rol desconocido';
-      
+
       if (!movieRolesMap[movieId]) {
         movieRolesMap[movieId] = {
           movie: item.movie,
           roles: new Set()
         };
       }
-      
+
       movieRolesMap[movieId].roles.add(roleName);
     });
 
     // Ahora crear las pestañas por rol individual
     const groupedByRole: { [roleName: string]: GroupedCrewRole[] } = {};
-    
+
     crewRoles.forEach((item) => {
       const roleName = item.role?.name || 'Rol desconocido';
-      
+
       if (!groupedByRole[roleName]) {
         groupedByRole[roleName] = [];
-        
+
         // Para este rol, obtener todas las películas donde la persona tiene este rol
         const moviesWithThisRole = crewRoles
           .filter(cr => cr.role?.name === roleName)
           .map(cr => cr.movie.id);
-        
+
         const uniqueMovieIds = [...new Set(moviesWithThisRole)];
-        
+
         uniqueMovieIds.forEach(movieId => {
           const movieData = movieRolesMap[movieId];
           groupedByRole[roleName].push({
@@ -175,12 +176,12 @@ export default function PersonPage({ params }: PersonPageProps) {
   const getFirstAvailableTab = useCallback((filmographyData: any): string => {
     // Crear todas las pestañas primero
     const allTabs: { [key: string]: number } = {};
-    
+
     // Agregar pestaña de actuación si existe
     if (filmographyData?.castRoles?.length > 0) {
       allTabs['Actuación'] = filmographyData.castRoles.length;
     }
-    
+
     // Agregar pestañas de crew
     if (filmographyData?.crewRoles?.length > 0) {
       const grouped = groupFilmographyByRole(filmographyData.crewRoles);
@@ -188,7 +189,7 @@ export default function PersonPage({ params }: PersonPageProps) {
         allTabs[roleName] = items.length;
       });
     }
-    
+
     // Ordenar por cantidad y retornar la primera (la que tiene más películas)
     const sortedTabs = Object.entries(allTabs).sort((a, b) => b[1] - a[1]);
     return sortedTabs.length > 0 ? sortedTabs[0][0] : '';
@@ -209,16 +210,16 @@ export default function PersonPage({ params }: PersonPageProps) {
       const filmographyResponse = await fetch(`/api/people/${personData.id}/filmography`);
       if (filmographyResponse.ok) {
         const filmographyData = await filmographyResponse.json();
-        
+
         // Ordenar castRoles cronológicamente
         if (filmographyData.castRoles) {
           filmographyData.castRoles = sortMoviesChronologically(filmographyData.castRoles, true);
         }
-        
+
         // crewRoles ya se ordenarán dentro de groupFilmographyByRole
-        
+
         setFilmography(filmographyData);
-        
+
         // Establecer la primera pestaña activa (la que tenga más películas)
         const firstTab = getFirstAvailableTab(filmographyData);
         if (firstTab) {
@@ -252,14 +253,14 @@ export default function PersonPage({ params }: PersonPageProps) {
   }
 
   const fullName = [person.firstName, person.lastName].filter(Boolean).join(' ');
-  
+
   // Formatear fechas
   const birthDateFormatted = person.birthYear ? formatPartialDate({
     year: person.birthYear,
     month: person.birthMonth,
     day: person.birthDay
   }, { monthFormat: 'long', includeDay: true }) : null;
-  
+
   const deathDateFormatted = person.deathYear ? formatPartialDate({
     year: person.deathYear,
     month: person.deathMonth,
@@ -268,7 +269,7 @@ export default function PersonPage({ params }: PersonPageProps) {
 
   // Preparar las pestañas dinámicamente
   const tabs: { [key: string]: TabItem[] } = {};
-  
+
   // Agregar pestaña de actuación si tiene roles como actor/actriz
   if (filmography?.castRoles?.length > 0) {
     tabs['Actuación'] = filmography.castRoles;
@@ -291,7 +292,7 @@ export default function PersonPage({ params }: PersonPageProps) {
   const uniqueMoviesAsActor = new Set(filmography?.castRoles?.map((r: CastRole) => r.movie.id) || []);
   const uniqueMoviesAsCrew = new Set(filmography?.crewRoles?.map((r: CrewRole) => r.movie.id) || []);
   const allUniqueMovies = new Set([...uniqueMoviesAsActor, ...uniqueMoviesAsCrew]);
-  
+
   const stats = {
     totalMovies: allUniqueMovies.size,
     asActor: uniqueMoviesAsActor.size,
@@ -315,15 +316,15 @@ export default function PersonPage({ params }: PersonPageProps) {
               <div className="relative">
                 <div className="w-48 h-64 md:w-64 md:h-80 rounded-lg overflow-hidden shadow-2xl">
                   {person.photoUrl ? (
-                    <img 
-                      src={person.photoUrl} 
+                    <img
+                      src={person.photoUrl}
                       alt={fullName}
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-800 flex flex-col justify-center items-center">
                       <svg className="w-16 h-16 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                       <p className="text-sm text-gray-500">Foto no disponible</p>
                     </div>
@@ -331,18 +332,18 @@ export default function PersonPage({ params }: PersonPageProps) {
                 </div>
               </div>
             </div>
-            
+
             {/* Person Info */}
             <div className="flex-grow">
               <h1 className="text-5xl md:text-6xl font-bold mb-4">{fullName}</h1>
-              
+
               {person.realName && person.realName !== fullName && (
                 <p className="text-gray-400 mb-2">
                   <span className="text-gray-500">Nombre real: </span>
                   {person.realName}
                 </p>
               )}
-              
+
               <div className="space-y-3 text-gray-300">
                 {birthDateFormatted && (
                   <div className="text-sm">
@@ -362,7 +363,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                     )}
                   </div>
                 )}
-                
+
                 {deathDateFormatted && (
                   <div className="text-sm">
                     {/* Usar "el" solo si tiene día completo, sino usar "en" */}
@@ -381,13 +382,18 @@ export default function PersonPage({ params }: PersonPageProps) {
                     )}
                   </div>
                 )}
-                
+
                 {person.biography && (
-                  <div className="mt-6">
-                    <p className="text-gray-300 leading-relaxed max-w-3xl">
-                      {person.biography}
-                    </p>
-                  </div>
+                  <div
+                    className="mt-6 text-gray-300 leading-relaxed max-w-3xl"
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(person.biography, {
+                        ALLOWED_TAGS: ['p', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'b', 'i', 'span'],
+                        ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+                        ADD_ATTR: ['target'],
+                      })
+                    }}
+                  />
                 )}
 
                 {/* Quick Stats */}
@@ -422,11 +428,11 @@ export default function PersonPage({ params }: PersonPageProps) {
                         className="text-gray-400 hover:text-white transition-colors"
                         title={link.type}
                       >
-                        {link.type === 'IMDB' ? 'IMDb' : 
-                         link.type === 'WIKIPEDIA' ? 'Wikipedia' :
-                         link.type === 'OFFICIAL_WEBSITE' ? 'Sitio Web' :
-                         link.type === 'INSTAGRAM' ? 'Instagram' :
-                         link.type === 'TWITTER' ? 'Twitter' : link.type}
+                        {link.type === 'IMDB' ? 'IMDb' :
+                          link.type === 'WIKIPEDIA' ? 'Wikipedia' :
+                            link.type === 'OFFICIAL_WEBSITE' ? 'Sitio Web' :
+                              link.type === 'INSTAGRAM' ? 'Instagram' :
+                                link.type === 'TWITTER' ? 'Twitter' : link.type}
                       </a>
                     ))}
                   </div>
@@ -448,11 +454,10 @@ export default function PersonPage({ params }: PersonPageProps) {
                   <button
                     key={key}
                     onClick={() => setActiveTab(key)}
-                    className={`pb-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
-                      activeTab === key
+                    className={`pb-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === key
                         ? 'border-blue-400 text-white'
                         : 'border-transparent text-gray-400 hover:text-white'
-                    }`}
+                      }`}
                   >
                     {key} ({items.length})
                   </button>
@@ -465,7 +470,7 @@ export default function PersonPage({ params }: PersonPageProps) {
               <h2 className="text-2xl font-light mb-6 text-white">
                 Filmografía - {activeTab}
               </h2>
-              
+
               {/* Film Items */}
               <div className="divide-y divide-gray-800/50">
                 {getFilmographyToShow().map((item: TabItem, index: number) => {
@@ -474,10 +479,10 @@ export default function PersonPage({ params }: PersonPageProps) {
                   // Usar el año efectivo que considera el fallback
                   const year = getEffectiveYear(movie);
                   const displayYear = year > 0 ? year : '—';
-                  
+
                   // Agregar indicador si es el año de producción (no estreno)
                   const isProductionYear = !movie.releaseYear && movie.year;
-                  
+
                   return (
                     <div key={`${movie.id}-${index}`} className="py-4 hover:bg-gray-800/30 transition-colors group">
                       <div className="flex items-center gap-4">
@@ -486,7 +491,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                           {isProductionYear && <span className="text-xs">*</span>}
                         </span>
                         <div className="flex-grow">
-                          <Link 
+                          <Link
                             href={`/pelicula/${movie.slug}`}
                             className="text-lg text-white hover:text-blue-400 transition-colors inline-block"
                           >
@@ -513,7 +518,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                   );
                 })}
               </div>
-              
+
               {/* Nota al pie si hay películas con año de producción */}
               {getFilmographyToShow().some((item: TabItem) => !item.movie.releaseYear && item.movie.year) && (
                 <div className="mt-4 text-xs text-gray-600 italic">
@@ -525,15 +530,15 @@ export default function PersonPage({ params }: PersonPageProps) {
             {/* Show More Button */}
             {tabs[activeTab] && tabs[activeTab].length > 10 && (
               <div className="mt-8 text-center">
-                <button 
+                <button
                   onClick={() => setShowAllFilmography(!showAllFilmography)}
                   className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors flex items-center space-x-2 mx-auto"
                 >
                   <span>{showAllFilmography ? 'Ver menos' : 'Ver filmografía completa'}</span>
-                  <svg 
-                    className={`w-4 h-4 transition-transform duration-200 ${showAllFilmography ? 'rotate-180' : ''}`} 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    className={`w-4 h-4 transition-transform duration-200 ${showAllFilmography ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
