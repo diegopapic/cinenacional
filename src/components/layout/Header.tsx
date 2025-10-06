@@ -29,7 +29,7 @@ export default function Header() {
           {/* Logo y nombre */}
           <Link href="/" className="flex items-center space-x-2 flex-shrink-0">
             <Image 
-              src="/logo.svg" 
+              src="/images/logo.svg" 
               alt="cinenacional.com" 
               width={180} 
               height={40}
@@ -103,4 +103,4 @@ export default function Header() {
       )} */}
     </header>
   )
-}
+} 

@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 61f93b841e17110080912f1729073bdf317d1219
-// Fecha: 2025-10-06T22:57:45.288Z
+// Commit: 4be1ca79623a0a04329bd9f3c5bfb7d944b8a251
+// Fecha: 2025-10-06T23:52:54.107Z
 // ============================================
 
 
@@ -10629,6 +10629,17 @@ const crimsonText = Crimson_Text({
 export const metadata: Metadata = {
   title: 'cinenacional.com - Base de datos del cine argentino',
   description: 'La base de datos más completa del cine argentino. Descubrí películas, directores, actores y toda la historia cinematográfica de Argentina.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '48x48' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
   keywords: 'cine argentino, películas argentinas, actores argentinos, directores argentinos, base de datos cine',
   openGraph: {
     title: 'cinenacional.com - Base de datos del cine argentino',
@@ -22527,7 +22538,7 @@ export default function Footer() {
           <div className="col-span-1 md:col-span-4 text-center md:text-left">
             <Link href="/" className="flex items-center space-x-2 text-white mb-4 justify-center md:justify-start">
               <Image
-                src="/logo.svg"
+                src="/images/logo.svg"
                 alt="cinenacional.com"
                 width={180}
                 height={40}
@@ -22603,7 +22614,7 @@ export default function Footer() {
       </div>
     </footer>
   )
-}
+}   
 
 // ==================================================
 // src/components/layout/Header.tsx
@@ -22639,7 +22650,7 @@ export default function Header() {
           {/* Logo y nombre */}
           <Link href="/" className="flex items-center space-x-2 flex-shrink-0">
             <Image 
-              src="/logo.svg" 
+              src="/images/logo.svg" 
               alt="cinenacional.com" 
               width={180} 
               height={40}
@@ -22713,7 +22724,7 @@ export default function Header() {
       )} */}
     </header>
   )
-}
+} 
 
 // ==================================================
 // src/components/layout/SearchBar.tsx

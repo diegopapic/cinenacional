@@ -35,7 +35,7 @@ export default function Footer() {
           <div className="col-span-1 md:col-span-4 text-center md:text-left">
             <Link href="/" className="flex items-center space-x-2 text-white mb-4 justify-center md:justify-start">
               <Image
-                src="/logo.svg"
+                src="/images/logo.svg"
                 alt="cinenacional.com"
                 width={180}
                 height={40}
@@ -111,4 +111,4 @@ export default function Footer() {
       </div>
     </footer>
   )
-}
+}   

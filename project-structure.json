@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-10-06T22:57:44.880Z",
+  "timestamp": "2025-10-06T23:52:53.675Z",
   "repository": "diegopapic/cinenacional",
   "branch": "main",
-  "commit": "61f93b841e17110080912f1729073bdf317d1219",
+  "commit": "4be1ca79623a0a04329bd9f3c5bfb7d944b8a251",
   "structure": {
     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",
     ".env.staging": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.staging",
@@ -167,11 +167,18 @@
     "PROJECT_DOCS v2.2.0.md": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/PROJECT_DOCS v2.2.0.md",
     "PROJECT_DOCS.md": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/PROJECT_DOCS.md",
     "public": {
+      "android-chrome-192x192.png": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/android-chrome-192x192.png",
+      "android-chrome-512x512.png": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/android-chrome-512x512.png",
+      "apple-touch-icon.png": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/apple-touch-icon.png",
+      "favicon-16x16.png": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/favicon-16x16.png",
+      "favicon-32x32.png": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/favicon-32x32.png",
+      "favicon.ico": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/favicon.ico",
       "file.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/file.svg",
       "fuc.png": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/fuc.png",
       "globe.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/globe.svg",
       "images": {
         "background-placeholder.jpg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/background-placeholder.jpg",
+        "logo.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/logo.svg",
         "poster-placeholder-dark.jpg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/poster-placeholder-dark.jpg",
         "relatos-salvajes": {
           "relatossalvajes.jpeg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/relatossalvajes.jpeg",
@@ -181,8 +188,8 @@
           "unnamed.jpg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/images/relatos-salvajes/unnamed.jpg"
         }
       },
-      "logo.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/logo.svg",
       "next.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/next.svg",
+      "site.webmanifest": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/site.webmanifest",
       "vercel.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/vercel.svg",
       "window.svg": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/public/window.svg"
     },
