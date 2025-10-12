@@ -42,3 +42,7 @@ dumps/
 # PostgreSQL
 
 pgsql/
+
+# Directorio uploads de Wordpress
+
+/uploads
