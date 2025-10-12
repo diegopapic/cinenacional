@@ -19,10 +19,26 @@ export default function EstrenosYearBar({
     onYearChange,
     onPeriodChange
 }: EstrenosYearBarProps) {
-    // ✅ Ref para el contenedor scrolleable
+    // ✅ HOOKS PRIMERO - ANTES DE CUALQUIER RETURN
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    // Solo mostrar si hay una década seleccionada
+    // ✅ Hacer scroll al año seleccionado cuando cambie
+    useEffect(() => {
+        if (scrollContainerRef.current && period !== 'all' && period !== 'upcoming') {
+            const elementId = selectedYear === null ? 'decade-button' : `year-${selectedYear}`;
+            const element = document.getElementById(elementId);
+            
+            if (element) {
+                element.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'center'
+                });
+            }
+        }
+    }, [selectedYear, period]);
+
+    // AHORA SÍ LOS RETURNS CONDICIONALES
     if (period === 'all' || period === 'upcoming') {
         return null;
     }
@@ -45,22 +61,6 @@ export default function EstrenosYearBar({
     // Obtener década anterior y posterior
     const previousDecade = hasPreviousDecade ? allDecades[currentDecadeIndex + 1] : null;
     const nextDecade = hasNextDecade ? allDecades[currentDecadeIndex - 1] : null;
-
-    // ✅ Hacer scroll al año seleccionado cuando cambie
-    useEffect(() => {
-        if (scrollContainerRef.current) {
-            const elementId = selectedYear === null ? 'decade-button' : `year-${selectedYear}`;
-            const element = document.getElementById(elementId);
-            
-            if (element) {
-                element.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'center'
-                });
-            }
-        }
-    }, [selectedYear, period]); // ✅ También re-ejecutar cuando cambie la década
 
     const handlePreviousDecade = () => {
         if (previousDecade) {
