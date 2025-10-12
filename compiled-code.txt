@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 0f963ff738846d9480ba22ce895a491bb6ecde80
-// Fecha: 2025-10-12T03:06:45.833Z
+// Commit: 54876fb95976f0f1f3f80acc45420fe7e7012907
+// Fecha: 2025-10-12T03:13:11.536Z
 // ============================================
 
 
@@ -6268,18 +6268,21 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
+    // Definir orderBy con tipo explícito
+    const orderByClause = sortBy === 'releaseYear' 
+      ? [
+          { releaseYear: sortOrder as 'asc' | 'desc' },
+          { releaseMonth: sortOrder as 'asc' | 'desc' },
+          { releaseDay: sortOrder as 'asc' | 'desc' }
+        ]
+      : { [sortBy]: sortOrder as 'asc' | 'desc' };
+
     const [movies, total] = await Promise.all([
       prisma.movie.findMany({
         where,
         skip,
         take: limit,
-        orderBy: sortBy === 'releaseYear' ? [
-          { releaseYear: sortOrder },
-          { releaseMonth: sortOrder },
-          { releaseDay: sortOrder }
-        ] : {
-          [sortBy]: sortOrder
-        },
+        orderBy: orderByClause,
         include: {
           genres: {
             include: {
