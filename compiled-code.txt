@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 983f748525e529c265709b0cbc07ffac6e0a16ee
-// Fecha: 2025-10-12T03:18:44.560Z
+// Commit: 7cde09ba34b5d7f780e002e0be5f3358133fb7e3
+// Fecha: 2025-10-12T03:26:17.680Z
 // ============================================
 
 
@@ -11001,9 +11001,9 @@ export default function RootLayout({
 }
 
 // ==================================================
-// src/app/listados/estrenos/page.tsx
+// src/app/listados/estrenos/EstrenosContent.tsx
 // ==================================================
-// src/app/listados/estrenos/page.tsx
+// src/app/listados/estrenos/EstrenosContent.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11020,9 +11020,7 @@ import {
 } from '@/lib/estrenos/estrenosUtils';
 import { MovieWithRelease } from '@/types/home.types';
 
-export const dynamic = 'force-dynamic';
-
-export default function EstrenosPage() {
+export default function EstrenosContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -11050,14 +11048,16 @@ export default function EstrenosPage() {
                 setSelectedYear(parseInt(yearParam));
             }
         } else {
+            // Por defecto: año actual de la década actual
             const currentYear = getCurrentYear();
             const currentDecade = getCurrentDecade();
             setPeriod(currentDecade.id);
             setSelectedYear(currentYear);
         }
 
+        // Marcar como inicializado
         setIsInitialized(true);
-    }, []);
+    }, []); // ✅ Array vacío - solo se ejecuta al montar
 
     // Resetear a página 1 cuando cambian los filtros
     useEffect(() => {
@@ -11136,9 +11136,9 @@ export default function EstrenosPage() {
             }
 
             setMovies(finalMovies);
-            // Para "upcoming", usar el total filtrado en el frontend
-            const actualTotal = period === 'upcoming'
-                ? finalMovies.length
+            
+            const actualTotal = period === 'upcoming' 
+                ? finalMovies.length 
                 : (data.pagination?.total || data.pagination?.totalItems || 0);
 
             setPagination({
@@ -11157,8 +11157,6 @@ export default function EstrenosPage() {
 
     const handlePeriodChange = (newPeriod: DecadePeriod) => {
         setPeriod(newPeriod);
-
-        // Siempre resetear el año a null para mostrar toda la década/período
         setSelectedYear(null);
     };
 
@@ -11166,7 +11164,6 @@ export default function EstrenosPage() {
         setSelectedYear(year);
     };
 
-    // Funciones de navegación de página
     const handlePreviousPage = () => {
         if (currentPage > 1) {
             setCurrentPage(currentPage - 1);
@@ -11229,12 +11226,12 @@ export default function EstrenosPage() {
                             onClick={handlePreviousPage}
                             disabled={currentPage === 1}
                             className={`
-          px-4 py-2 rounded-lg font-medium transition-all
-          ${currentPage === 1
+                                px-4 py-2 rounded-lg font-medium transition-all
+                                ${currentPage === 1
                                     ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                                     : 'bg-gray-800 text-white hover:bg-gray-700'
                                 }
-        `}
+                            `}
                         >
                             ← Anterior
                         </button>
@@ -11247,12 +11244,12 @@ export default function EstrenosPage() {
                             onClick={handleNextPage}
                             disabled={currentPage === pagination.totalPages}
                             className={`
-          px-4 py-2 rounded-lg font-medium transition-all
-          ${currentPage === pagination.totalPages
+                                px-4 py-2 rounded-lg font-medium transition-all
+                                ${currentPage === pagination.totalPages
                                     ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                                     : 'bg-gray-800 text-white hover:bg-gray-700'
                                 }
-        `}
+                            `}
                         >
                             Siguiente →
                         </button>
@@ -11261,6 +11258,32 @@ export default function EstrenosPage() {
             </div>
         </div>
     );
+}
+
+// ==================================================
+// src/app/listados/estrenos/page.tsx
+// ==================================================
+// src/app/listados/estrenos/page.tsx
+'use client';
+
+import { Suspense } from 'react';
+import EstrenosContent from './EstrenosContent';
+
+export const dynamic = 'force-dynamic';
+
+export default function EstrenosPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-gray-400">Cargando estrenos...</p>
+        </div>
+      </div>
+    }>
+      <EstrenosContent />
+    </Suspense>
+  );
 }
 
 // ==================================================
