@@ -54,7 +54,7 @@ export default function MoviesGrid({
           ))}
         </div>
       )}
-      {/*ctaText && ctaHref && (
+      {ctaText && ctaHref && (
         <div className="mt-6 text-center">
           <Link
             href={ctaHref}
@@ -63,7 +63,7 @@ export default function MoviesGrid({
             {ctaText}
           </Link>
         </div>
-      )*/}
+      ) }
     </section>
   );
 }
