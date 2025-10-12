@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 0b8ce90332fae13b183fc3a1ed433529dabaae2f
-// Fecha: 2025-10-12T02:50:36.620Z
+// Commit: 0f963ff738846d9480ba22ce895a491bb6ecde80
+// Fecha: 2025-10-12T03:06:45.833Z
 // ============================================
 
 
@@ -6080,7 +6080,7 @@ export async function GET(request: NextRequest) {
     const year = searchParams.get('year') || ''
     const stage = searchParams.get('stage') || ''
     const sortBy = searchParams.get('sortBy') || 'createdAt'
-    const sortOrder = searchParams.get('sortOrder') || 'desc'
+    const sortOrder = searchParams.get('sortOrder') || 'desc' as 'asc' | 'desc'
     const yearFrom = searchParams.get('yearFrom') || ''
     const yearTo = searchParams.get('yearTo') || ''
     const upcoming = searchParams.get('upcoming') || ''

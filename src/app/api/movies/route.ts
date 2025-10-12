@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
     const year = searchParams.get('year') || ''
     const stage = searchParams.get('stage') || ''
     const sortBy = searchParams.get('sortBy') || 'createdAt'
-    const sortOrder = searchParams.get('sortOrder') || 'desc'
+    const sortOrder = searchParams.get('sortOrder') || 'desc' as 'asc' | 'desc'
     const yearFrom = searchParams.get('yearFrom') || ''
     const yearTo = searchParams.get('yearTo') || ''
     const upcoming = searchParams.get('upcoming') || ''
