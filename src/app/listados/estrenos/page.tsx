@@ -15,6 +15,8 @@ import {
 } from '@/lib/estrenos/estrenosUtils';
 import { MovieWithRelease } from '@/types/home.types';
 
+export const dynamic = 'force-dynamic';
+
 export default function EstrenosPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -33,56 +35,56 @@ export default function EstrenosPage() {
     const [currentPage, setCurrentPage] = useState(1);
 
     // Inicializar desde URL params - SOLO UNA VEZ
-useEffect(() => {
-    const periodParam = searchParams.get('period');
-    const yearParam = searchParams.get('year');
+    useEffect(() => {
+        const periodParam = searchParams.get('period');
+        const yearParam = searchParams.get('year');
 
-    if (periodParam) {
-        setPeriod(periodParam as DecadePeriod);
-        if (yearParam) {
-            setSelectedYear(parseInt(yearParam));
+        if (periodParam) {
+            setPeriod(periodParam as DecadePeriod);
+            if (yearParam) {
+                setSelectedYear(parseInt(yearParam));
+            }
+        } else {
+            const currentYear = getCurrentYear();
+            const currentDecade = getCurrentDecade();
+            setPeriod(currentDecade.id);
+            setSelectedYear(currentYear);
         }
-    } else {
-        const currentYear = getCurrentYear();
-        const currentDecade = getCurrentDecade();
-        setPeriod(currentDecade.id);
-        setSelectedYear(currentYear);
-    }
 
-    setIsInitialized(true);
-}, []);
+        setIsInitialized(true);
+    }, []);
 
-// Resetear a página 1 cuando cambian los filtros
-useEffect(() => {
-    if (!isInitialized) return;
-    setCurrentPage(1);
-}, [period, selectedYear]);
+    // Resetear a página 1 cuando cambian los filtros
+    useEffect(() => {
+        if (!isInitialized) return;
+        setCurrentPage(1);
+    }, [period, selectedYear]);
 
-// Cargar películas cuando cambian filtros o página
-useEffect(() => {
-    if (!isInitialized) return;
-    loadMovies();
-}, [period, selectedYear, currentPage, isInitialized]);
+    // Cargar películas cuando cambian filtros o página
+    useEffect(() => {
+        if (!isInitialized) return;
+        loadMovies();
+    }, [period, selectedYear, currentPage, isInitialized]);
 
-// Actualizar URL cuando cambian los filtros
-useEffect(() => {
-    if (!isInitialized) return;
+    // Actualizar URL cuando cambian los filtros
+    useEffect(() => {
+        if (!isInitialized) return;
 
-    const params = new URLSearchParams();
+        const params = new URLSearchParams();
 
-    if (period !== 'all' && period !== 'upcoming') {
-        params.set('period', period);
-    }
+        if (period !== 'all' && period !== 'upcoming') {
+            params.set('period', period);
+        }
 
-    if (selectedYear !== null) {
-        params.set('year', selectedYear.toString());
-    }
+        if (selectedYear !== null) {
+            params.set('year', selectedYear.toString());
+        }
 
-    const queryString = params.toString();
-    const newUrl = queryString ? `/listados/estrenos?${queryString}` : '/listados/estrenos';
+        const queryString = params.toString();
+        const newUrl = queryString ? `/listados/estrenos?${queryString}` : '/listados/estrenos';
 
-    router.replace(newUrl, { scroll: false });
-}, [period, selectedYear, router, isInitialized]);
+        router.replace(newUrl, { scroll: false });
+    }, [period, selectedYear, router, isInitialized]);
 
     const loadMovies = async () => {
         setIsLoading(true);
