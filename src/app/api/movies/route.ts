@@ -310,18 +310,21 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
+    // Definir orderBy con tipo explícito
+    const orderByClause = sortBy === 'releaseYear' 
+      ? [
+          { releaseYear: sortOrder as 'asc' | 'desc' },
+          { releaseMonth: sortOrder as 'asc' | 'desc' },
+          { releaseDay: sortOrder as 'asc' | 'desc' }
+        ]
+      : { [sortBy]: sortOrder as 'asc' | 'desc' };
+
     const [movies, total] = await Promise.all([
       prisma.movie.findMany({
         where,
         skip,
         take: limit,
-        orderBy: sortBy === 'releaseYear' ? [
-          { releaseYear: sortOrder },
-          { releaseMonth: sortOrder },
-          { releaseDay: sortOrder }
-        ] : {
-          [sortBy]: sortOrder
-        },
+        orderBy: orderByClause,
         include: {
           genres: {
             include: {
