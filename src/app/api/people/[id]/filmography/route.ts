@@ -1,4 +1,4 @@
-// src/app/api/people/[id]/filmography/route.ts - CON REDIS CACHE
+// src/app/api/people/[id]/filmography/route.ts - ACTUALIZADO
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import RedisClient from '@/lib/redis';
@@ -15,8 +15,8 @@ export async function GET(
   try {
     const personId = parseInt(params.id);
     
-    // Generar clave de caché única
-    const cacheKey = `person:filmography:${personId}:v1`;
+    // Generar clave de caché única - VERSIÓN v2 para invalidar cache anterior
+    const cacheKey = `person:filmography:${personId}:v2`;
 
     // 1. Intentar obtener de Redis
     try {
@@ -80,7 +80,8 @@ export async function GET(
             releaseMonth: true,
             releaseDay: true,
             posterUrl: true,
-            stage: true
+            stage: true,
+            tipoDuracion: true // ✅ AGREGADO
           }
         }
       },
@@ -106,7 +107,8 @@ export async function GET(
             releaseMonth: true,
             releaseDay: true,
             posterUrl: true,
-            stage: true
+            stage: true,
+            tipoDuracion: true // ✅ AGREGADO
           }
         },
         role: true // Incluir la referencia al rol si existe
@@ -162,7 +164,7 @@ export async function GET(
     console.error('Error fetching person filmography:', error);
 
     // Intentar servir desde caché stale si hay error
-    const cacheKey = `person:filmography:${parseInt(params.id)}:v1`;
+    const cacheKey = `person:filmography:${parseInt(params.id)}:v2`;
     const staleCache = memoryCache.get(cacheKey);
 
     if (staleCache) {
