@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 4be1ca79623a0a04329bd9f3c5bfb7d944b8a251
-// Fecha: 2025-10-06T23:52:54.107Z
+// Commit: 0b8ce90332fae13b183fc3a1ed433529dabaae2f
+// Fecha: 2025-10-12T02:50:36.620Z
 // ============================================
 
 
@@ -5956,17 +5956,123 @@ export async function DELETE() {
 // ==================================================
 // src/app/api/movies/route.ts
 // ==================================================
-// src/app/api/movies/route.ts
+// src/app/api/movies/route.ts - CON REDIS CACHE
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { movieSchema } from '@/lib/schemas'
 import { createSlug } from '@/lib/utils'
+import RedisClient from '@/lib/redis'
 
+// ============================================
+// CACHE CONFIGURATION
+// ============================================
+
+// Cache en memoria como fallback
+const memoryCache = new Map<string, { data: any; timestamp: number }>();
+const MEMORY_CACHE_TTL = 60 * 60 * 1000; // 1 hora en ms
+
+// TTL diferenciado según tipo de consulta
+function getRedisTTL(searchParams: URLSearchParams): number {
+  const upcoming = searchParams.get('upcoming');
+  const year = searchParams.get('year');
+  const yearFrom = searchParams.get('yearFrom');
+  
+  // Próximos estrenos: 15 minutos (cambian frecuentemente)
+  if (upcoming === 'true') {
+    return 900; // 15 minutos
+  }
+  
+  // Datos históricos: 24 horas (no cambian)
+  if (year || yearFrom) {
+    return 86400; // 24 horas
+  }
+  
+  // Por defecto: 1 hora
+  return 3600;
+}
+
+// Genera clave única basada en los parámetros de búsqueda
+function generateCacheKey(searchParams: URLSearchParams): string {
+  const relevantParams = [
+    'page',
+    'limit',
+    'search',
+    'genre',
+    'year',
+    'yearFrom',
+    'yearTo',
+    'stage',
+    'sortBy',
+    'sortOrder',
+    'upcoming'
+  ];
+  
+  const keyParts = relevantParams
+    .map(param => {
+      const value = searchParams.get(param);
+      return value ? `${param}:${value}` : null;
+    })
+    .filter(Boolean);
+  
+  return `movies:list:${keyParts.join(':')}:v1`;
+}
+
+// ============================================
 // GET /api/movies - Obtener lista de películas con filtros
+// ============================================
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams
+    const searchParams = request.nextUrl.searchParams;
+    
+    // Generar clave de caché única
+    const cacheKey = generateCacheKey(searchParams);
+    const redisTTL = getRedisTTL(searchParams);
+    
+    // 1. Intentar obtener de Redis
+    try {
+      const redisCached = await RedisClient.get(cacheKey);
+      
+      if (redisCached) {
+        console.log(`✅ Cache HIT desde Redis para listado: ${cacheKey.substring(0, 60)}...`);
+        return NextResponse.json(
+          JSON.parse(redisCached),
+          {
+            headers: {
+              'Cache-Control': `public, s-maxage=${redisTTL}, stale-while-revalidate=${redisTTL * 2}`,
+              'X-Cache': 'HIT',
+              'X-Cache-Source': 'redis'
+            }
+          }
+        );
+      }
+    } catch (redisError) {
+      console.error('Redis error (non-fatal):', redisError);
+    }
+    
+    // 2. Verificar caché en memoria como fallback
+    const now = Date.now();
+    const memoryCached = memoryCache.get(cacheKey);
+    
+    if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
+      console.log(`✅ Cache HIT desde memoria para listado: ${cacheKey.substring(0, 60)}...`);
+      
+      // Intentar guardar en Redis para próximas requests
+      RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), redisTTL)
+        .catch(err => console.error('Error guardando en Redis:', err));
+      
+      return NextResponse.json(memoryCached.data, {
+        headers: {
+          'Cache-Control': `public, s-maxage=${redisTTL}, stale-while-revalidate=${redisTTL * 2}`,
+          'X-Cache': 'HIT',
+          'X-Cache-Source': 'memory'
+        }
+      });
+    }
+    
+    // 3. No hay caché, consultar base de datos
+    console.log(`🔄 Cache MISS - Consultando BD para listado: ${cacheKey.substring(0, 60)}...`);
+    
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const search = searchParams.get('search') || ''
@@ -5975,110 +6081,140 @@ export async function GET(request: NextRequest) {
     const stage = searchParams.get('stage') || ''
     const sortBy = searchParams.get('sortBy') || 'createdAt'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
+    const yearFrom = searchParams.get('yearFrom') || ''
+    const yearTo = searchParams.get('yearTo') || ''
+    const upcoming = searchParams.get('upcoming') || ''
 
     // Si hay búsqueda, usar query SQL con unaccent
-    // Si hay búsqueda, usar query SQL con unaccent
-if (search) {
-  try {
-    const searchQuery = search.toLowerCase().trim()
-    const searchPattern = `%${searchQuery}%`
-    const skip = (page - 1) * limit
-    
-    // Especificar el tipo de retorno
-    const movies = await prisma.$queryRaw<any[]>`
-      SELECT 
-        id,
-        slug,
-        title,
-        year,
-        release_year as "releaseYear",
-        release_month as "releaseMonth",
-        release_day as "releaseDay",
-        duration,
-        poster_url as "posterUrl",
-        stage
-      FROM movies
-      WHERE 
-        unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
-      ORDER BY title ASC
-      LIMIT ${limit}
-      OFFSET ${skip}
-    `
+    if (search) {
+      try {
+        const searchQuery = search.toLowerCase().trim()
+        const searchPattern = `%${searchQuery}%`
+        const skip = (page - 1) * limit
 
-    // Especificar el tipo para el count
-    const totalResult = await prisma.$queryRaw<{count: number}[]>`
-      SELECT COUNT(*)::int as count
-      FROM movies
-      WHERE 
-        unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
-    `
-    
-    const total = totalResult[0]?.count || 0
+        const movies = await prisma.$queryRaw<any[]>`
+          SELECT 
+            id,
+            slug,
+            title,
+            year,
+            release_year as "releaseYear",
+            release_month as "releaseMonth",
+            release_day as "releaseDay",
+            duration,
+            poster_url as "posterUrl",
+            stage
+          FROM movies
+          WHERE 
+            unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
+          ORDER BY title ASC
+          LIMIT ${limit}
+          OFFSET ${skip}
+        `
 
-    // Obtener IDs para buscar géneros y países
-    const movieIds = movies.map(m => m.id)
-    
-    if (movieIds.length > 0) {
-      const [genres, countries] = await Promise.all([
-        prisma.movieGenre.findMany({
-          where: { movieId: { in: movieIds } },
-          include: { genre: true }
-        }),
-        prisma.movieCountry.findMany({
-          where: { movieId: { in: movieIds }, isPrimary: true },
-          include: { location: true }
-        })
-      ])
+        const totalResult = await prisma.$queryRaw<{ count: number }[]>`
+          SELECT COUNT(*)::int as count
+          FROM movies
+          WHERE 
+            unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
+        `
 
-      // Formatear respuesta
-      const formattedMovies = movies.map((movie: any) => {
-        const movieGenres = genres.filter(g => g.movieId === movie.id)
-        const movieCountry = countries.find(c => c.movieId === movie.id)
+        const total = totalResult[0]?.count || 0
+        const movieIds = movies.map(m => m.id)
+
+        if (movieIds.length > 0) {
+          const [genres, countries] = await Promise.all([
+            prisma.movieGenre.findMany({
+              where: { movieId: { in: movieIds } },
+              include: { genre: true }
+            }),
+            prisma.movieCountry.findMany({
+              where: { movieId: { in: movieIds }, isPrimary: true },
+              include: { location: true }
+            })
+          ])
+
+          const formattedMovies = movies.map((movie: any) => {
+            const movieGenres = genres.filter(g => g.movieId === movie.id)
+            const movieCountry = countries.find(c => c.movieId === movie.id)
+
+            return {
+              id: movie.id,
+              slug: movie.slug,
+              title: movie.title,
+              year: movie.year,
+              releaseYear: movie.releaseYear,
+              releaseMonth: movie.releaseMonth,
+              releaseDay: movie.releaseDay,
+              duration: movie.duration,
+              posterUrl: movie.posterUrl,
+              stage: movie.stage,
+              genres: movieGenres.map(g => ({
+                id: g.genre.id,
+                name: g.genre.name
+              })),
+              country: movieCountry?.location?.name || 'Argentina'
+            }
+          })
+
+          const result = {
+            movies: formattedMovies,
+            pagination: {
+              page,
+              limit,
+              total,
+              totalPages: Math.ceil(total / limit),
+              currentPage: page,
+              totalItems: total
+            }
+          };
+          
+          // Guardar en ambos cachés
+          RedisClient.set(cacheKey, JSON.stringify(result), redisTTL)
+            .then(saved => {
+              if (saved) {
+                console.log(`✅ Listado guardado en Redis con TTL ${redisTTL}s (${redisTTL/60} min)`);
+              }
+            })
+            .catch(err => console.error('Error guardando en Redis:', err));
+          
+          memoryCache.set(cacheKey, {
+            data: result,
+            timestamp: now
+          });
+
+          return NextResponse.json(result, {
+            headers: {
+              'Cache-Control': `public, s-maxage=${redisTTL}, stale-while-revalidate=${redisTTL * 2}`,
+              'X-Cache': 'MISS',
+              'X-Cache-Source': 'database'
+            }
+          });
+        }
+
+        const emptyResult = {
+          movies: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+            currentPage: page,
+            totalItems: 0
+          }
+        };
         
-        return {
-          id: movie.id,
-          slug: movie.slug,
-          title: movie.title,
-          year: movie.year,
-          releaseYear: movie.releaseYear,
-          releaseMonth: movie.releaseMonth,
-          releaseDay: movie.releaseDay,
-          duration: movie.duration,
-          posterUrl: movie.posterUrl,
-          stage: movie.stage,
-          genres: movieGenres.map(g => ({
-            id: g.genre.id,
-            name: g.genre.name
-          })),
-          country: movieCountry?.location?.name || 'Argentina'
-        }
-      })
+        // También cachear resultados vacíos (por menos tiempo)
+        RedisClient.set(cacheKey, JSON.stringify(emptyResult), 300)
+          .catch(err => console.error('Error guardando en Redis:', err));
 
-      return NextResponse.json({
-        movies: formattedMovies,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-          currentPage: page,
-          totalItems: total
-        }
-      })
-    }
-    
-    // Si no hay resultados
-    return NextResponse.json({
-      movies: [],
-      pagination: {
-        page,
-        limit,
-        total: 0,
-        totalPages: 0,
-        currentPage: page,
-        totalItems: 0
-      }
-    })
+        return NextResponse.json(emptyResult, {
+          headers: {
+            'Cache-Control': 'public, s-maxage=300',
+            'X-Cache': 'MISS',
+            'X-Cache-Source': 'database'
+          }
+        });
 
       } catch (err) {
         console.error('Error with unaccent search:', err)
@@ -6086,7 +6222,7 @@ if (search) {
       }
     }
 
-    // Búsqueda estándar sin unaccent (fallback o cuando no hay término de búsqueda)
+    // Búsqueda estándar sin unaccent
     const where: any = {}
 
     if (search) {
@@ -6107,7 +6243,23 @@ if (search) {
     }
 
     if (year) {
-      where.year = parseInt(year)
+      where.releaseYear = parseInt(year)
+    }
+
+    if (yearFrom && yearTo && !year) {
+      where.releaseYear = {
+        gte: parseInt(yearFrom),
+        lte: parseInt(yearTo)
+      }
+    }
+
+    if (upcoming === 'true') {
+      const now = new Date()
+      const currentYear = now.getFullYear()
+
+      where.releaseYear = {
+        gte: currentYear
+      }
     }
 
     if (stage) {
@@ -6121,7 +6273,11 @@ if (search) {
         where,
         skip,
         take: limit,
-        orderBy: {
+        orderBy: sortBy === 'releaseYear' ? [
+          { releaseYear: sortOrder },
+          { releaseMonth: sortOrder },
+          { releaseDay: sortOrder }
+        ] : {
           [sortBy]: sortOrder
         },
         include: {
@@ -6136,6 +6292,25 @@ if (search) {
             },
             include: {
               location: true
+            }
+          },
+          crew: {
+            where: {
+              roleId: 2
+            },
+            include: {
+              person: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  slug: true
+                }
+              },
+              role: true
+            },
+            orderBy: {
+              billingOrder: 'asc'
             }
           }
         }
@@ -6161,10 +6336,15 @@ if (search) {
         id: g.genre.id,
         name: g.genre.name
       })),
-      country: movie.movieCountries[0]?.location?.name || 'Argentina'
+      country: movie.movieCountries[0]?.location?.name || 'Argentina',
+      crew: movie.crew?.map(c => ({
+        roleId: c.roleId,
+        role: c.role?.name || c.role,
+        person: c.person
+      })) || []
     }))
 
-    return NextResponse.json({
+    const result = {
       movies: formattedMovies,
       pagination: {
         page,
@@ -6174,10 +6354,56 @@ if (search) {
         currentPage: page,
         totalItems: total
       }
-    })
+    };
+    
+    // 4. Guardar en ambos cachés
+    RedisClient.set(cacheKey, JSON.stringify(result), redisTTL)
+      .then(saved => {
+        if (saved) {
+          console.log(`✅ Listado guardado en Redis con TTL ${redisTTL}s (${redisTTL/60} min)`);
+        }
+      })
+      .catch(err => console.error('Error guardando en Redis:', err));
+    
+    memoryCache.set(cacheKey, {
+      data: result,
+      timestamp: now
+    });
+    
+    // Limpiar caché de memoria viejo (mantener máximo 200 listados)
+    if (memoryCache.size > 200) {
+      const oldestKey = memoryCache.keys().next().value;
+      if (oldestKey) {
+        memoryCache.delete(oldestKey);
+      }
+    }
+
+    return NextResponse.json(result, {
+      headers: {
+        'Cache-Control': `public, s-maxage=${redisTTL}, stale-while-revalidate=${redisTTL * 2}`,
+        'X-Cache': 'MISS',
+        'X-Cache-Source': 'database'
+      }
+    });
 
   } catch (error) {
     console.error('Error fetching movies:', error)
+    
+    // Intentar servir desde caché stale si hay error
+    const cacheKey = generateCacheKey(request.nextUrl.searchParams);
+    const staleCache = memoryCache.get(cacheKey);
+    
+    if (staleCache) {
+      console.log('⚠️ Sirviendo caché stale debido a error');
+      return NextResponse.json(staleCache.data, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60',
+          'X-Cache': 'STALE',
+          'X-Cache-Source': 'memory-fallback'
+        }
+      });
+    }
+    
     return NextResponse.json(
       { error: 'Error al obtener las películas' },
       { status: 500 }
@@ -6185,10 +6411,10 @@ if (search) {
   }
 }
 
-
-// POST /api/movies - Crear nueva película (sin cambios)
+// ============================================
+// POST /api/movies - Crear nueva película
+// ============================================
 export async function POST(request: NextRequest) {
-  // ... resto del código sin cambios ...
   try {
     const body = await request.json()
 
@@ -6395,6 +6621,34 @@ export async function POST(request: NextRequest) {
         }
       }
     })
+
+    // INVALIDAR CACHÉS de listados después de crear
+    console.log('🗑️ Invalidando cachés de listados tras crear película');
+    
+    const redisClient = RedisClient.getInstance();
+    if (redisClient) {
+      try {
+        const keys = await redisClient.keys('movies:list:*');
+        if (keys.length > 0) {
+          await redisClient.del(...keys);
+          console.log(`✅ ${keys.length} cachés de listados invalidados en Redis`);
+        }
+      } catch (err) {
+        console.error('Error invalidando cachés de Redis:', err);
+      }
+    }
+    
+    // Limpiar memoria también
+    let memoryKeysDeleted = 0;
+    for (const key of memoryCache.keys()) {
+      if (key.startsWith('movies:list:')) {
+        memoryCache.delete(key);
+        memoryKeysDeleted++;
+      }
+    }
+    if (memoryKeysDeleted > 0) {
+      console.log(`✅ ${memoryKeysDeleted} cachés de listados invalidados en memoria`);
+    }
 
     return NextResponse.json(movie, { status: 201 })
 
@@ -10741,6 +10995,267 @@ export default function RootLayout({
       </body>
     </html>
   )
+}
+
+// ==================================================
+// src/app/listados/estrenos/page.tsx
+// ==================================================
+// src/app/listados/estrenos/page.tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import EstrenosDecadeSelector from '@/components/listados/estrenos/EstrenosDecadeSelector';
+import EstrenosYearBar from '@/components/listados/estrenos/EstrenosYearBar';
+import EstrenosGrid from '@/components/listados/estrenos/EstrenosGrid';
+import { DecadePeriod } from '@/lib/estrenos/estrenosTypes';
+import {
+    getCurrentYear,
+    getCurrentDecade,
+    formatPeriodLabel,
+    periodToApiFilters
+} from '@/lib/estrenos/estrenosUtils';
+import { MovieWithRelease } from '@/types/home.types';
+
+export default function EstrenosPage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // Estado
+    const [period, setPeriod] = useState<DecadePeriod>('all');
+    const [selectedYear, setSelectedYear] = useState<number | null>(null);
+    const [movies, setMovies] = useState<MovieWithRelease[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isInitialized, setIsInitialized] = useState(false);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        totalPages: 1,
+        total: 0
+    });
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // Inicializar desde URL params - SOLO UNA VEZ
+useEffect(() => {
+    const periodParam = searchParams.get('period');
+    const yearParam = searchParams.get('year');
+
+    if (periodParam) {
+        setPeriod(periodParam as DecadePeriod);
+        if (yearParam) {
+            setSelectedYear(parseInt(yearParam));
+        }
+    } else {
+        const currentYear = getCurrentYear();
+        const currentDecade = getCurrentDecade();
+        setPeriod(currentDecade.id);
+        setSelectedYear(currentYear);
+    }
+
+    setIsInitialized(true);
+}, []);
+
+// Resetear a página 1 cuando cambian los filtros
+useEffect(() => {
+    if (!isInitialized) return;
+    setCurrentPage(1);
+}, [period, selectedYear]);
+
+// Cargar películas cuando cambian filtros o página
+useEffect(() => {
+    if (!isInitialized) return;
+    loadMovies();
+}, [period, selectedYear, currentPage, isInitialized]);
+
+// Actualizar URL cuando cambian los filtros
+useEffect(() => {
+    if (!isInitialized) return;
+
+    const params = new URLSearchParams();
+
+    if (period !== 'all' && period !== 'upcoming') {
+        params.set('period', period);
+    }
+
+    if (selectedYear !== null) {
+        params.set('year', selectedYear.toString());
+    }
+
+    const queryString = params.toString();
+    const newUrl = queryString ? `/listados/estrenos?${queryString}` : '/listados/estrenos';
+
+    router.replace(newUrl, { scroll: false });
+}, [period, selectedYear, router, isInitialized]);
+
+    const loadMovies = async () => {
+        setIsLoading(true);
+
+        try {
+            // Construir filtros para la API
+            const apiFilters = periodToApiFilters(period, selectedYear);
+
+            const params = new URLSearchParams({
+                page: currentPage.toString(),
+                limit: period === 'upcoming' ? '1000' : '90',
+                sortBy: 'releaseYear',
+                sortOrder: 'asc',
+                ...apiFilters
+            });
+
+            const response = await fetch(`/api/movies?${params}`);
+
+            if (!response.ok) {
+                throw new Error('Error al cargar estrenos');
+            }
+
+            const data = await response.json();
+
+            // Filtrar películas que tengan al menos releaseYear
+            const filteredMovies = (data.movies || []).filter((m: any) => m.releaseYear);
+
+            // Si es "upcoming", filtrar solo futuras
+            let finalMovies = filteredMovies;
+            if (period === 'upcoming') {
+                const currentYear = getCurrentYear();
+                finalMovies = filteredMovies.filter((m: any) => {
+                    if (!m.releaseYear) return false;
+
+                    // Si tiene fecha completa, verificar que sea futura
+                    if (m.releaseMonth && m.releaseDay) {
+                        const releaseDate = new Date(m.releaseYear, m.releaseMonth - 1, m.releaseDay);
+                        return releaseDate > new Date();
+                    }
+
+                    // Si solo tiene año o año-mes, considerar futura si el año es mayor
+                    return m.releaseYear >= currentYear;
+                });
+            }
+
+            setMovies(finalMovies);
+            // Para "upcoming", usar el total filtrado en el frontend
+            const actualTotal = period === 'upcoming'
+                ? finalMovies.length
+                : (data.pagination?.total || data.pagination?.totalItems || 0);
+
+            setPagination({
+                page: period === 'upcoming' ? 1 : (data.pagination?.page || 1),
+                totalPages: period === 'upcoming' ? 1 : Math.ceil(actualTotal / 90),
+                total: actualTotal
+            });
+
+        } catch (error) {
+            console.error('Error loading movies:', error);
+            setMovies([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handlePeriodChange = (newPeriod: DecadePeriod) => {
+        setPeriod(newPeriod);
+
+        // Siempre resetear el año a null para mostrar toda la década/período
+        setSelectedYear(null);
+    };
+
+    const handleYearChange = (year: number | null) => {
+        setSelectedYear(year);
+    };
+
+    // Funciones de navegación de página
+    const handlePreviousPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < pagination.totalPages) {
+            setCurrentPage(currentPage + 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-black text-white">
+            {/* Header */}
+            <div className="bg-gray-900/50 backdrop-blur-sm border-b border-gray-800 relative z-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h1 className="text-3xl font-bold mb-2">
+                                {formatPeriodLabel(period, selectedYear)}
+                            </h1>
+                            {pagination.total > 0 && (
+                                <p className="text-gray-400 text-sm">
+                                    {pagination.total} película{pagination.total !== 1 ? 's' : ''}
+                                </p>
+                            )}
+                        </div>
+
+                        <EstrenosDecadeSelector
+                            value={period}
+                            onChange={handlePeriodChange}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Year Bar */}
+            <EstrenosYearBar
+                period={period}
+                selectedYear={selectedYear}
+                onYearChange={handleYearChange}
+                onPeriodChange={handlePeriodChange}
+            />
+
+            {/* Grid de películas */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <EstrenosGrid
+                    movies={movies}
+                    isLoading={isLoading}
+                    dateType={period === 'upcoming' ? 'future' : 'past'}
+                />
+
+                {/* Paginación */}
+                {!isLoading && pagination.totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-4 mt-8">
+                        <button
+                            onClick={handlePreviousPage}
+                            disabled={currentPage === 1}
+                            className={`
+          px-4 py-2 rounded-lg font-medium transition-all
+          ${currentPage === 1
+                                    ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                                    : 'bg-gray-800 text-white hover:bg-gray-700'
+                                }
+        `}
+                        >
+                            ← Anterior
+                        </button>
+
+                        <span className="text-gray-400">
+                            Página {currentPage} de {pagination.totalPages}
+                        </span>
+
+                        <button
+                            onClick={handleNextPage}
+                            disabled={currentPage === pagination.totalPages}
+                            className={`
+          px-4 py-2 rounded-lg font-medium transition-all
+          ${currentPage === pagination.totalPages
+                                    ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                                    : 'bg-gray-800 text-white hover:bg-gray-700'
+                                }
+        `}
+                        >
+                            Siguiente →
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 }
 
 // ==================================================
@@ -22947,6 +23462,383 @@ export default function SearchBar() {
 }
 
 // ==================================================
+// src/components/listados/estrenos/EstrenosDecadeSelector.tsx
+// ==================================================
+// src/components/listados/estrenos/EstrenosDecadeSelector.tsx
+'use client';
+
+import { DecadePeriod } from '@/lib/estrenos/estrenosTypes';
+import { generateDecades } from '@/lib/estrenos/estrenosUtils';
+import { ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+
+interface EstrenosDecadeSelectorProps {
+  value: DecadePeriod;
+  onChange: (period: DecadePeriod) => void;
+}
+
+export default function EstrenosDecadeSelector({ value, onChange }: EstrenosDecadeSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  
+  const decades = generateDecades();
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+  }, [isOpen]);
+  
+  // ✅ Cerrar dropdown al hacer clic fuera - CORREGIDO
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(target)
+      ) {
+        setIsOpen(false);
+      }
+    }
+    
+    if (isOpen) {
+      // Usar setTimeout para evitar que el evento se dispare inmediatamente
+      setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 0);
+      
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+  
+  useEffect(() => {
+    function handleScroll() {
+      if (isOpen) {
+        setIsOpen(false);
+      }
+    }
+    
+    if (isOpen) {
+      window.addEventListener('scroll', handleScroll);
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+  }, [isOpen]);
+  
+  const getCurrentLabel = () => {
+    if (value === 'all') return 'Todos';
+    if (value === 'upcoming') return 'Próximos';
+    
+    const decade = decades.find(d => d.id === value);
+    return decade ? decade.label : 'Seleccionar';
+  };
+  
+  // ✅ Mejorado con logs y event handling
+  const handleSelect = (period: DecadePeriod) => {
+    console.log('🎯 Selecting period:', period);
+    onChange(period);
+    setIsOpen(false);
+  };
+  
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors min-w-[140px] justify-between"
+      >
+        <span className="font-medium">{getCurrentLabel()}</span>
+        <ChevronDown 
+          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+        />
+      </button>
+      
+      {mounted && isOpen && dropdownPosition.top > 0 && createPortal(
+        <div 
+          ref={dropdownRef}
+          className="fixed bg-gray-800 rounded-lg shadow-xl min-w-[140px] max-h-[400px] overflow-y-auto"
+          style={{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`,
+            zIndex: 9999
+          }}
+        >
+          {/* All */}
+          <button
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSelect('all');
+            }}
+            className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors first:rounded-t-lg ${
+              value === 'all' ? 'bg-gray-700 text-orange-400' : 'text-white'
+            }`}
+          >
+            Todos
+          </button>
+          
+          {/* Upcoming */}
+          <button
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSelect('upcoming');
+            }}
+            className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors ${
+              value === 'upcoming' ? 'bg-gray-700 text-orange-400' : 'text-white'
+            }`}
+          >
+            Próximos
+          </button>
+          
+          <div className="border-t border-gray-700 my-1" />
+          
+          {/* Décadas */}
+          {decades.map((decade) => (
+            <button
+              key={decade.id}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSelect(decade.id);
+              }}
+              className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors last:rounded-b-lg ${
+                value === decade.id ? 'bg-gray-700 text-orange-400' : 'text-white'
+              }`}
+            >
+              {decade.label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
+// ==================================================
+// src/components/listados/estrenos/EstrenosGrid.tsx
+// ==================================================
+// src/components/listados/estrenos/EstrenosGrid.tsx
+'use client';
+
+import MovieCard from '@/components/home/MovieCard';
+import { MovieWithRelease } from '@/types/home.types';
+
+interface EstrenosGridProps {
+  movies: MovieWithRelease[];
+  isLoading: boolean;
+  showDates?: boolean;
+  dateType?: 'past' | 'future';
+}
+
+export default function EstrenosGrid({ 
+  movies, 
+  isLoading, 
+  showDates = true,
+  dateType = 'past'
+}: EstrenosGridProps) {
+  
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div key={i} className="animate-pulse">
+            <div className="aspect-[2/3] bg-gray-800 rounded-lg mb-2" />
+            <div className="h-4 bg-gray-800 rounded mb-1" />
+            <div className="h-3 bg-gray-800 rounded w-2/3" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  
+  if (movies.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <div className="text-gray-400 text-lg mb-2">
+          No se encontraron estrenos
+        </div>
+        <p className="text-gray-500 text-sm">
+          Intenta seleccionar otro período
+        </p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+      {movies.map((movie) => (
+        <MovieCard 
+          key={movie.id} 
+          movie={movie} 
+          showDate={showDates}
+          dateType={dateType}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ==================================================
+// src/components/listados/estrenos/EstrenosYearBar.tsx
+// ==================================================
+// src/components/listados/estrenos/EstrenosYearBar.tsx
+'use client';
+
+import { getDecadeById, getCurrentYear, generateDecades } from '@/lib/estrenos/estrenosUtils';
+import { DecadePeriod } from '@/lib/estrenos/estrenosTypes';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+interface EstrenosYearBarProps {
+    period: DecadePeriod;
+    selectedYear: number | null;
+    onYearChange: (year: number | null) => void; // Ahora acepta null
+    onPeriodChange: (period: DecadePeriod) => void;
+}
+
+export default function EstrenosYearBar({
+    period,
+    selectedYear,
+    onYearChange,
+    onPeriodChange
+}: EstrenosYearBarProps) {
+    // Solo mostrar si hay una década seleccionada
+    if (period === 'all' || period === 'upcoming') {
+        return null;
+    }
+
+    const decade = getDecadeById(period);
+    if (!decade) {
+        return null;
+    }
+
+    const currentYear = getCurrentYear();
+    const allDecades = generateDecades();
+
+    // Encontrar índice de la década actual
+    const currentDecadeIndex = allDecades.findIndex(d => d.id === period);
+
+    // Verificar si hay década anterior y posterior
+    const hasPreviousDecade = currentDecadeIndex < allDecades.length - 1; // Recordar que está en orden inverso
+    const hasNextDecade = currentDecadeIndex > 0;
+
+    // Obtener década anterior y posterior
+    const previousDecade = hasPreviousDecade ? allDecades[currentDecadeIndex + 1] : null;
+    const nextDecade = hasNextDecade ? allDecades[currentDecadeIndex - 1] : null;
+
+    const handlePreviousDecade = () => {
+        if (previousDecade) {
+            onPeriodChange(previousDecade.id);
+        }
+    };
+
+    const handleNextDecade = () => {
+        if (nextDecade) {
+            onPeriodChange(nextDecade.id);
+        }
+    };
+
+    return (
+        <div className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm sticky top-0 z-40">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-center gap-2 py-2">
+                    {/* Flecha izquierda - Década anterior */}
+                    <button
+                        onClick={handlePreviousDecade}
+                        disabled={!hasPreviousDecade}
+                        className={`
+              flex-shrink-0 p-2 rounded-lg transition-all
+              ${hasPreviousDecade
+                                ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'
+                                : 'bg-gray-800/50 text-gray-600 cursor-not-allowed'
+                            }
+            `}
+                        title={previousDecade ? `${previousDecade.label}` : 'No hay década anterior'}
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    {/* Años de la década */}
+                    <div className="flex items-center gap-2 overflow-x-auto px-2 
+  [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+
+                        {/* Botón de la década completa */}
+<button
+  onClick={() => onYearChange(null as any)} // null = toda la década
+  className={`
+    flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-all
+    ${selectedYear === null
+      ? 'bg-orange-600 text-white shadow-lg scale-105' 
+      : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'
+    }
+  `}
+>
+  {decade.label}
+</button>
+
+                        {decade.years.map((year) => {
+                            const isSelected = selectedYear === year;
+                            const isFuture = year > currentYear;
+
+                            return (
+                                <button
+                                    key={year}
+                                    onClick={() => onYearChange(year)}
+                                    disabled={isFuture}
+                                    className={`
+          flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-all
+          ${isSelected
+                                            ? 'bg-orange-600 text-white shadow-lg scale-105'
+                                            : isFuture
+                                                ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                                                : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'
+                                        }
+        `}
+                                >
+                                    {year}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    {/* Flecha derecha - Década posterior */}
+                    <button
+                        onClick={handleNextDecade}
+                        disabled={!hasNextDecade}
+                        className={`
+              flex-shrink-0 p-2 rounded-lg transition-all
+              ${hasNextDecade
+                                ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'
+                                : 'bg-gray-800/50 text-gray-600 cursor-not-allowed'
+                            }
+            `}
+                        title={nextDecade ? `${nextDecade.label}` : 'No hay década posterior'}
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ==================================================
 // src/components/movies/CastSection.tsx
 // ==================================================
 // src/components/movies/CastSection.tsx
@@ -26179,6 +27071,175 @@ export function useRoles(): UseRolesReturn {
     canGoNext,
     canGoPrevious
   };
+}
+
+// ==================================================
+// src/lib/estrenos/estrenosTypes.ts
+// ==================================================
+// src/lib/estrenos/estrenosTypes.ts
+
+export type DecadePeriod = 'all' | 'upcoming' | string; // '2020s', '2010s', etc.
+
+export interface EstrenosFilters {
+  period: DecadePeriod;
+  year: number | null;
+  page: number;
+  limit: number;
+}
+
+export interface Decade {
+  id: string;
+  label: string;
+  startYear: number;
+  endYear: number;
+  years: number[];
+}
+
+export interface EstrenosResponse {
+  movies: any[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  filters: {
+    period: DecadePeriod;
+    year: number | null;
+  };
+}
+
+// ==================================================
+// src/lib/estrenos/estrenosUtils.ts
+// ==================================================
+// src/lib/estrenos/estrenosUtils.ts
+
+import { Decade, DecadePeriod } from './estrenosTypes';
+
+/**
+ * Genera la lista de décadas desde 1890 hasta la década actual
+ */
+export function generateDecades(): Decade[] {
+  const currentYear = new Date().getFullYear();
+  const currentDecadeStart = Math.floor(currentYear / 10) * 10;
+  
+  const decades: Decade[] = [];
+  
+  // Desde 1890 hasta la década actual
+  for (let decadeStart = 1890; decadeStart <= currentDecadeStart; decadeStart += 10) {
+    const decadeEnd = decadeStart + 9;
+    const years = Array.from({ length: 10 }, (_, i) => decadeStart + i);
+    
+    decades.push({
+      id: `${decadeStart}s`,
+      label: `${decadeStart}s`,
+      startYear: decadeStart,
+      endYear: decadeEnd,
+      years
+    });
+  }
+  
+  // Ordenar de más reciente a más antigua
+  return decades.reverse();
+}
+
+/**
+ * Obtiene la década actual
+ */
+export function getCurrentDecade(): Decade {
+  const currentYear = new Date().getFullYear();
+  const decadeStart = Math.floor(currentYear / 10) * 10;
+  const decadeEnd = decadeStart + 9;
+  const years = Array.from({ length: 10 }, (_, i) => decadeStart + i);
+  
+  return {
+    id: `${decadeStart}s`,
+    label: `${decadeStart}s`,
+    startYear: decadeStart,
+    endYear: decadeEnd,
+    years
+  };
+}
+
+/**
+ * Encuentra una década por su ID
+ */
+export function getDecadeById(decadeId: string): Decade | null {
+  if (decadeId === 'all' || decadeId === 'upcoming') {
+    return null;
+  }
+  
+  const decades = generateDecades();
+  return decades.find(d => d.id === decadeId) || null;
+}
+
+/**
+ * Obtiene el año actual
+ */
+export function getCurrentYear(): number {
+  return new Date().getFullYear();
+}
+
+/**
+ * Verifica si un año está en el futuro
+ */
+export function isFutureYear(year: number): boolean {
+  return year > getCurrentYear();
+}
+
+/**
+ * Formatea el período para mostrar en la UI
+ */
+export function formatPeriodLabel(period: DecadePeriod, year: number | null): string {
+  if (period === 'all') {
+    return 'Todos los estrenos de la historia';
+  }
+  
+  if (period === 'upcoming') {
+    return 'Próximos estrenos';
+  }
+  
+  if (year) {
+    return `Estrenos de ${year}`;
+  }
+  
+  // Si es una década sin año específico
+  const decade = getDecadeById(period);
+  if (decade) {
+    return `Estrenos de los ${decade.label}`;
+  }
+  
+  return 'Estrenos';
+}
+
+/**
+ * Convierte el período a filtros de API
+ */
+export function periodToApiFilters(period: DecadePeriod, year: number | null): {
+  year?: string;
+  yearFrom?: string;
+  yearTo?: string;
+  upcoming?: string;
+} {
+  if (period === 'upcoming') {
+    return { upcoming: 'true' };
+  }
+  
+  if (year) {
+    return { year: year.toString() };
+  }
+  
+  if (period !== 'all') {
+    const decade = getDecadeById(period);
+    if (decade) {
+      return {
+        yearFrom: decade.startYear.toString(),
+        yearTo: decade.endYear.toString()
+      };
+    }
+  }
+  
+  return {};
 }
 
 // ==================================================
