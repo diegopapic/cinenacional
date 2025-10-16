@@ -1,0 +1,24 @@
+{
+  "total_personas": 65008,
+  "con_imagen": 4992,
+  "sin_imagen": 60016,
+  "por_estado": {
+    "publish": 64998,
+    "draft": 10
+  },
+  "por_mime_type": {
+    "image/jpeg": 4989,
+    "image/png": 3
+  },
+  "por_año": {
+    "2018": 46753,
+    "2019": 1186,
+    "2020": 1589,
+    "2021": 3868,
+    "2022": 4674,
+    "2023": 4845,
+    "2024": 1662,
+    "2025": 431
+  },
+  "urls_problematicas": []
+}

@@ -3,6 +3,66 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generatePersonSlug } from '@/lib/people/peopleUtils';
+import RedisClient from '@/lib/redis';
+
+// ============================================
+// CACHE CONFIGURATION
+// ============================================
+
+// Cache en memoria como fallback
+const memoryCache = new Map<string, { data: any; timestamp: number }>();
+const MEMORY_CACHE_TTL = 60 * 60 * 1000; // 1 hora en ms
+
+// TTL diferenciado según tipo de consulta
+function getRedisTTL(searchParams: URLSearchParams): number {
+  const deathYear = searchParams.get('deathYear');
+  
+  // Obituarios de años pasados: 24 horas (no cambian)
+  if (deathYear) {
+    const year = parseInt(deathYear);
+    const currentYear = new Date().getFullYear();
+    
+    if (year < currentYear) {
+      return 86400; // 24 horas
+    } else {
+      return 3600; // 1 hora para año actual
+    }
+  }
+  
+  // Por defecto: 1 hora
+  return 3600;
+}
+
+// Genera clave única basada en los parámetros de búsqueda
+function generateCacheKey(searchParams: URLSearchParams): string {
+  const relevantParams = [
+    'page',
+    'limit',
+    'search',
+    'gender',
+    'isActive',
+    'hasLinks',
+    'hasDeathDate',
+    'deathYear',
+    'sortBy',
+    'sortOrder'
+  ];
+  
+  const keyParts = relevantParams
+    .map(param => {
+      const value = searchParams.get(param);
+      return value ? `${param}:${value}` : null;
+    })
+    .filter(Boolean);
+  
+  return `people:list:${keyParts.join(':')}:v1`;
+}
+
+// Verificar si debe cachear esta consulta
+function shouldCache(searchParams: URLSearchParams): boolean {
+  // Solo cachear obituarios (deathYear presente)
+  return searchParams.has('deathYear');
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,10 +72,67 @@ export async function GET(request: NextRequest) {
     const isActive = searchParams.get('isActive');
     const hasLinks = searchParams.get('hasLinks');
     const hasDeathDate = searchParams.get('hasDeathDate');
+    const deathYear = searchParams.get('deathYear'); // 🆕 NUEVO FILTRO
     const sortBy = searchParams.get('sortBy') || 'last_name';
     const sortOrder = searchParams.get('sortOrder') || 'asc';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
+
+    // ============================================
+    // CACHE LOGIC (solo para obituarios)
+    // ============================================
+    if (shouldCache(searchParams)) {
+      const cacheKey = generateCacheKey(searchParams);
+      const redisTTL = getRedisTTL(searchParams);
+      const now = Date.now();
+      
+      // 1. Intentar obtener de Redis
+      try {
+        const redisCached = await RedisClient.get(cacheKey);
+        
+        if (redisCached) {
+          console.log(`✅ Cache HIT desde Redis para obituarios: ${cacheKey.substring(0, 60)}...`);
+          return NextResponse.json(
+            JSON.parse(redisCached),
+            {
+              headers: {
+                'Cache-Control': `public, s-maxage=${redisTTL}, stale-while-revalidate=${redisTTL * 2}`,
+                'X-Cache': 'HIT',
+                'X-Cache-Source': 'redis'
+              }
+            }
+          );
+        }
+      } catch (redisError) {
+        console.error('Redis error (non-fatal):', redisError);
+      }
+      
+      // 2. Verificar caché en memoria como fallback
+      const memoryCached = memoryCache.get(cacheKey);
+      
+      if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
+        console.log(`✅ Cache HIT desde memoria para obituarios: ${cacheKey.substring(0, 60)}...`);
+        
+        // Intentar guardar en Redis para próximas requests
+        RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), redisTTL)
+          .catch(err => console.error('Error guardando en Redis:', err));
+        
+        return NextResponse.json(memoryCached.data, {
+          headers: {
+            'Cache-Control': `public, s-maxage=${redisTTL}, stale-while-revalidate=${redisTTL * 2}`,
+            'X-Cache': 'HIT',
+            'X-Cache-Source': 'memory'
+          }
+        });
+      }
+      
+      // 3. No hay caché, consultar base de datos
+      console.log(`🔄 Cache MISS - Consultando BD para obituarios: ${cacheKey.substring(0, 60)}...`);
+    }
+    
+    // ============================================
+    // QUERY LOGIC (existente)
+    // ============================================
 
     // Si hay búsqueda, usar SQL con unaccent para búsqueda mejorada
     if (search && search.trim().length >= 2) {
@@ -158,11 +275,20 @@ export async function GET(request: NextRequest) {
     if (gender) where.gender = gender;
     if (isActive !== null && isActive !== '') where.isActive = isActive === 'true';
     if (hasLinks !== null && hasLinks !== '') where.hasLinks = hasLinks === 'true';
-    if (hasDeathDate === 'true') where.deathYear = { not: null };
-    else if (hasDeathDate === 'false') where.deathYear = null;
+    
+    // 🆕 NUEVO: Filtro por año de defunción específico
+    if (deathYear) {
+      where.deathYear = parseInt(deathYear);
+    } else if (hasDeathDate === 'true') {
+      // Si no se especifica año pero se pide hasDeathDate, filtrar los que tienen
+      where.deathYear = { not: null };
+    } else if (hasDeathDate === 'false') {
+      where.deathYear = null;
+    }
 
     let orderBy: any = {};
-    if (sortBy === 'deathDate') {
+    if (sortBy === 'deathDate' || sortBy === 'deathYear') {
+      // 🆕 MEJORADO: Ordenar por año de muerte considerando mes y día
       orderBy = [
         { deathYear: sortOrder },
         { deathMonth: sortOrder },
@@ -234,16 +360,85 @@ export async function GET(request: NextRequest) {
       name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre'
     }));
 
-    return NextResponse.json({
+    const result = {
       data: peopleWithName,
       totalCount,
       page,
       totalPages,
       hasMore: page < totalPages,
-    });
+    };
+    
+    // ============================================
+    // SAVE TO CACHE (solo para obituarios)
+    // ============================================
+    const useCache = shouldCache(request.nextUrl.searchParams);
+    
+    if (useCache) {
+      const cacheKey = generateCacheKey(request.nextUrl.searchParams);
+      const redisTTL = getRedisTTL(request.nextUrl.searchParams);
+      const now = Date.now();
+      
+      console.log(`💾 Guardando en caché: ${cacheKey.substring(0, 60)}...`);
+      
+      // Guardar en Redis
+      RedisClient.set(cacheKey, JSON.stringify(result), redisTTL)
+        .then(saved => {
+          if (saved) {
+            console.log(`✅ Obituarios guardados en Redis con TTL ${redisTTL}s (${redisTTL/60} min)`);
+          }
+        })
+        .catch(err => console.error('Error guardando en Redis:', err));
+      
+      // Guardar en memoria
+      memoryCache.set(cacheKey, {
+        data: result,
+        timestamp: now
+      });
+      
+      // Limpiar caché de memoria viejo (mantener máximo 200 listados)
+      if (memoryCache.size > 200) {
+        const oldestKey = memoryCache.keys().next().value;
+        if (oldestKey) {
+          memoryCache.delete(oldestKey);
+        }
+      }
+    }
+
+    // Retornar con headers apropiados
+    if (useCache) {
+      const redisTTL = getRedisTTL(request.nextUrl.searchParams);
+      return NextResponse.json(result, {
+        headers: {
+          'Cache-Control': `public, s-maxage=${redisTTL}, stale-while-revalidate=${redisTTL * 2}`,
+          'X-Cache': 'MISS',
+          'X-Cache-Source': 'database'
+        }
+      });
+    }
+
+    // Sin caché (búsquedas normales)
+    return NextResponse.json(result);
     
   } catch (error) {
     console.error('Error fetching people:', error);
+    
+    // Intentar servir desde caché stale si hay error (solo obituarios)
+    if (shouldCache(request.nextUrl.searchParams)) {
+      const cacheKey = generateCacheKey(request.nextUrl.searchParams);
+      const staleCache = memoryCache.get(cacheKey);
+      
+      if (staleCache) {
+        console.log('⚠️ Sirviendo caché stale debido a error');
+        return NextResponse.json(staleCache.data, {
+          headers: {
+            'Cache-Control': 'public, s-maxage=60',
+            'X-Cache': 'STALE',
+            'X-Cache-Source': 'memory-fallback'
+          }
+        });
+      }
+    }
+    
     return NextResponse.json(
       { message: 'Error al obtener personas' },
       { status: 500 }
@@ -350,6 +545,42 @@ export async function POST(request: NextRequest) {
       ...person,
       name: `${person?.firstName || ''} ${person?.lastName || ''}`.trim() || person?.realName || 'Sin nombre'
     };
+
+    // ============================================
+    // INVALIDAR CACHÉS si es un obituario
+    // ============================================
+    if (person?.deathYear) {
+      console.log('🗑️ Invalidando cachés de obituarios tras crear persona fallecida');
+      
+      const redisClient = RedisClient.getInstance();
+      if (redisClient) {
+        try {
+          const keys = await redisClient.keys('people:list:*deathYear*');
+          if (keys.length > 0) {
+            await redisClient.del(...keys);
+            console.log(`✅ ${keys.length} cachés de obituarios invalidados en Redis`);
+          }
+          
+          // También invalidar death-years
+          await redisClient.del('people:death-years:v1');
+          console.log('✅ Caché de death-years invalidado en Redis');
+        } catch (err) {
+          console.error('Error invalidando cachés de Redis:', err);
+        }
+      }
+      
+      // Limpiar memoria también
+      let memoryKeysDeleted = 0;
+      for (const key of memoryCache.keys()) {
+        if (key.includes('deathYear') || key === 'people:death-years:v1') {
+          memoryCache.delete(key);
+          memoryKeysDeleted++;
+        }
+      }
+      if (memoryKeysDeleted > 0) {
+        console.log(`✅ ${memoryKeysDeleted} cachés de obituarios invalidados en memoria`);
+      }
+    }
 
     return NextResponse.json(personWithName, { status: 201 });
   } catch (error) {
