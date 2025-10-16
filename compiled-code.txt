@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 8ac5fbdf9359c78d355c9242c6ae258f8237ba41
-// Fecha: 2025-10-16T11:31:44.066Z
+// Commit: 22ac8a5205395f20f0f6764337ba5ed8c1aabe18
+// Fecha: 2025-10-16T12:07:40.986Z
 // ============================================
 
 
@@ -7777,7 +7777,7 @@ function getRedisTTL(searchParams: URLSearchParams): number {
     if (year < currentYear) {
       return 86400; // 24 horas
     } else {
-      return 3600; // 1 hora para año actual
+      return 900; // 1 hora para año actual
     }
   }
   

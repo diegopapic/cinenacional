@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-10-16T11:31:44.448Z
+// Archivos del admin - 2025-10-16T12:07:41.099Z
 // ==================
 
 
@@ -5733,7 +5733,7 @@ function getRedisTTL(searchParams: URLSearchParams): number {
     if (year < currentYear) {
       return 86400; // 24 horas
     } else {
-      return 3600; // 1 hora para año actual
+      return 900; // 1 hora para año actual
     }
   }
   

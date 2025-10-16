@@ -25,7 +25,7 @@ function getRedisTTL(searchParams: URLSearchParams): number {
     if (year < currentYear) {
       return 86400; // 24 horas
     } else {
-      return 3600; // 1 hora para año actual
+      return 900; // 1 hora para año actual
     }
   }
   
