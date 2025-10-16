@@ -1,0 +1,908 @@
+[1mdiff --git a/admin-code.txt b/admin-code.txt[m
+[1mindex 1e28a64..2d77a02 100644[m
+[1m--- a/admin-code.txt[m
+[1m+++ b/admin-code.txt[m
+[36m@@ -1,4 +1,4 @@[m
+[31m-// Archivos del admin - 2025-10-12T05:40:54.984Z[m
+[32m+[m[32m// Archivos del admin - 2025-10-12T14:30:25.418Z[m
+ // ==================[m
+ [m
+ [m
+[36m@@ -5989,7 +5989,7 @@[m [mexport async function GET([m
+ // ==================================================[m
+ // src/app/api/people/[id]/filmography/route.ts[m
+ // ==================================================[m
+[31m-// src/app/api/people/[id]/filmography/route.ts - CON REDIS CACHE[m
+[32m+[m[32m// src/app/api/people/[id]/filmography/route.ts - ACTUALIZADO[m
+ import { NextRequest, NextResponse } from 'next/server';[m
+ import { prisma } from '@/lib/prisma';[m
+ import RedisClient from '@/lib/redis';[m
+[36m@@ -6006,8 +6006,8 @@[m [mexport async function GET([m
+   try {[m
+     const personId = parseInt(params.id);[m
+     [m
+[31m-    // Generar clave de caché única[m
+[31m-    const cacheKey = `person:filmography:${personId}:v1`;[m
+[32m+[m[32m    // Generar clave de caché única - VERSIÓN v2 para invalidar cache anterior[m
+[32m+[m[32m    const cacheKey = `person:filmography:${personId}:v2`;[m
+ [m
+     // 1. Intentar obtener de Redis[m
+     try {[m
+[36m@@ -6071,7 +6071,8 @@[m [mexport async function GET([m
+             releaseMonth: true,[m
+             releaseDay: true,[m
+             posterUrl: true,[m
+[31m-            stage: true[m
+[32m+[m[32m            stage: true,[m
+[32m+[m[32m            tipoDuracion: true // ✅ AGREGADO[m
+           }[m
+         }[m
+       },[m
+[36m@@ -6097,7 +6098,8 @@[m [mexport async function GET([m
+             releaseMonth: true,[m
+             releaseDay: true,[m
+             posterUrl: true,[m
+[31m-            stage: true[m
+[32m+[m[32m            stage: true,[m
+[32m+[m[32m            tipoDuracion: true // ✅ AGREGADO[m
+           }[m
+         },[m
+         role: true // Incluir la referencia al rol si existe[m
+[36m@@ -6153,7 +6155,7 @@[m [mexport async function GET([m
+     console.error('Error fetching person filmography:', error);[m
+ [m
+     // Intentar servir desde caché stale si hay error[m
+[31m-    const cacheKey = `person:filmography:${parseInt(params.id)}:v1`;[m
+[32m+[m[32m    const cacheKey = `person:filmography:${parseInt(params.id)}:v2`;[m
+     const staleCache = memoryCache.get(cacheKey);[m
+ [m
+     if (staleCache) {[m
+[1mdiff --git a/compiled-code.txt b/compiled-code.txt[m
+[1mindex 7af8dfb..cfd2455 100644[m
+[1m--- a/compiled-code.txt[m
+[1m+++ b/compiled-code.txt[m
+[36m@@ -1,6 +1,6 @@[m
+ // Código compilado del proyecto: diegopapic/cinenacional[m
+[31m-// Commit: e0635eba9da26b7fac75eed4a79e48c47751e840[m
+[31m-// Fecha: 2025-10-12T05:40:54.963Z[m
+[32m+[m[32m// Commit: 9b9f11d8cbad965e765f37a664ff82149bba8008[m
+[32m+[m[32m// Fecha: 2025-10-12T14:30:22.824Z[m
+ // ============================================[m
+ [m
+ [m
+[36m@@ -8033,7 +8033,7 @@[m [mexport async function GET([m
+ // ==================================================[m
+ // src/app/api/people/[id]/filmography/route.ts[m
+ // ==================================================[m
+[31m-// src/app/api/people/[id]/filmography/route.ts - CON REDIS CACHE[m
+[32m+[m[32m// src/app/api/people/[id]/filmography/route.ts - ACTUALIZADO[m
+ import { NextRequest, NextResponse } from 'next/server';[m
+ import { prisma } from '@/lib/prisma';[m
+ import RedisClient from '@/lib/redis';[m
+[36m@@ -8050,8 +8050,8 @@[m [mexport async function GET([m
+   try {[m
+     const personId = parseInt(params.id);[m
+     [m
+[31m-    // Generar clave de caché única[m
+[31m-    const cacheKey = `person:filmography:${personId}:v1`;[m
+[32m+[m[32m    // Generar clave de caché única - VERSIÓN v2 para invalidar cache anterior[m
+[32m+[m[32m    const cacheKey = `person:filmography:${personId}:v2`;[m
+ [m
+     // 1. Intentar obtener de Redis[m
+     try {[m
+[36m@@ -8115,7 +8115,8 @@[m [mexport async function GET([m
+             releaseMonth: true,[m
+             releaseDay: true,[m
+             posterUrl: true,[m
+[31m-            stage: true[m
+[32m+[m[32m            stage: true,[m
+[32m+[m[32m            tipoDuracion: true // ✅ AGREGADO[m
+           }[m
+         }[m
+       },[m
+[36m@@ -8141,7 +8142,8 @@[m [mexport async function GET([m
+             releaseMonth: true,[m
+             releaseDay: true,[m
+             posterUrl: true,[m
+[31m-            stage: true[m
+[32m+[m[32m            stage: true,[m
+[32m+[m[32m            tipoDuracion: true // ✅ AGREGADO[m
+           }[m
+         },[m
+         role: true // Incluir la referencia al rol si existe[m
+[36m@@ -8197,7 +8199,7 @@[m [mexport async function GET([m
+     console.error('Error fetching person filmography:', error);[m
+ [m
+     // Intentar servir desde caché stale si hay error[m
+[31m-    const cacheKey = `person:filmography:${parseInt(params.id)}:v1`;[m
+[32m+[m[32m    const cacheKey = `person:filmography:${parseInt(params.id)}:v2`;[m
+     const staleCache = memoryCache.get(cacheKey);[m
+ [m
+     if (staleCache) {[m
+[36m@@ -13272,7 +13274,7 @@[m [mexport default async function MoviePage({ params }: PageProps) {[m
+ // ==================================================[m
+ // src/app/persona/[slug]/page.tsx[m
+ // ==================================================[m
+[31m-// src/app/persona/[slug]/page.tsx - VERSIÓN CORREGIDA[m
+[32m+[m[32m// src/app/persona/[slug]/page.tsx - VERSIÓN CORREGIDA COMPLETA[m
+ 'use client';[m
+ [m
+ import { useState, useEffect, useCallback } from 'react';[m
+[36m@@ -13282,7 +13284,7 @@[m [mimport { formatPartialDate } from '@/lib/shared/dateUtils';[m
+ import DOMPurify from 'isomorphic-dompurify';[m
+ [m
+ export const dynamic = 'force-dynamic'[m
+[31m-export const runtime = 'nodejs' // opcional[m
+[32m+[m[32mexport const runtime = 'nodejs'[m
+ [m
+ interface PersonPageProps {[m
+   params: {[m
+[36m@@ -13298,6 +13300,7 @@[m [minterface Movie {[m
+   releaseYear?: number;[m
+   releaseMonth?: number;[m
+   releaseDay?: number;[m
+[32m+[m[32m  tipoDuracion?: 'largometraje' | 'mediometraje' | 'cortometraje';[m
+ }[m
+ [m
+ interface Role {[m
+[36m@@ -13340,37 +13343,29 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+ [m
+   // Función helper para obtener el año efectivo para ordenamiento[m
+   const getEffectiveYear = (movie: Movie): number => {[m
+[31m-    // Si tiene año de estreno, usarlo[m
+     if (movie.releaseYear) {[m
+       return movie.releaseYear;[m
+     }[m
+[31m-    // Si no, usar el año de producción[m
+     if (movie.year) {[m
+       return movie.year;[m
+     }[m
+[31m-    // Si no tiene ninguno, retornar 0 (aparecerá al final)[m
+     return 0;[m
+   };[m
+ [m
+   // Función helper para obtener la fecha efectiva completa para ordenamiento más preciso[m
+   const getEffectiveDate = (movie: Movie): Date => {[m
+[31m-    // Si tiene fecha de estreno completa[m
+     if (movie.releaseYear && movie.releaseMonth && movie.releaseDay) {[m
+       return new Date(movie.releaseYear, movie.releaseMonth - 1, movie.releaseDay);[m
+     }[m
+[31m-    // Si tiene año y mes de estreno[m
+     if (movie.releaseYear && movie.releaseMonth) {[m
+       return new Date(movie.releaseYear, movie.releaseMonth - 1, 1);[m
+     }[m
+[31m-    // Si solo tiene año de estreno[m
+     if (movie.releaseYear) {[m
+       return new Date(movie.releaseYear, 0, 1);[m
+     }[m
+[31m-    // Si no tiene fecha de estreno, usar año de producción[m
+     if (movie.year) {[m
+       return new Date(movie.year, 0, 1);[m
+     }[m
+[31m-    // Si no tiene ninguna fecha, retornar fecha muy antigua[m
+     return new Date(1900, 0, 1);[m
+   };[m
+ [m
+[36m@@ -13380,14 +13375,12 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+       const dateA = getEffectiveDate(a.movie || a);[m
+       const dateB = getEffectiveDate(b.movie || b);[m
+ [m
+[31m-      // Si las fechas son iguales, usar el título como desempate[m
+       if (dateA.getTime() === dateB.getTime()) {[m
+         const titleA = (a.movie || a).title.toLowerCase();[m
+         const titleB = (b.movie || b).title.toLowerCase();[m
+         return titleA.localeCompare(titleB);[m
+       }[m
+ [m
+[31m-      // Ordenar por fecha[m
+       return descending[m
+         ? dateB.getTime() - dateA.getTime()[m
+         : dateA.getTime() - dateB.getTime();[m
+[36m@@ -13396,7 +13389,6 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+ [m
+   // Agrupar filmografía por rol, combinando múltiples roles por película[m
+   const groupFilmographyByRole = useCallback((crewRoles: CrewRole[]): { [key: string]: GroupedCrewRole[] } => {[m
+[31m-    // Primero, agrupar todas las películas con sus roles[m
+     const movieRolesMap: { [movieId: number]: { movie: Movie; roles: Set<string> } } = {};[m
+ [m
+     crewRoles.forEach((item) => {[m
+[36m@@ -13413,7 +13405,6 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+       movieRolesMap[movieId].roles.add(roleName);[m
+     });[m
+ [m
+[31m-    // Ahora crear las pestañas por rol individual[m
+     const groupedByRole: { [roleName: string]: GroupedCrewRole[] } = {};[m
+ [m
+     crewRoles.forEach((item) => {[m
+[36m@@ -13422,7 +13413,6 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+       if (!groupedByRole[roleName]) {[m
+         groupedByRole[roleName] = [];[m
+ [m
+[31m-        // Para este rol, obtener todas las películas donde la persona tiene este rol[m
+         const moviesWithThisRole = crewRoles[m
+           .filter(cr => cr.role?.name === roleName)[m
+           .map(cr => cr.movie.id);[m
+[36m@@ -13439,7 +13429,6 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+       }[m
+     });[m
+ [m
+[31m-    // Ordenar cada grupo cronológicamente (descendente)[m
+     Object.keys(groupedByRole).forEach(roleName => {[m
+       groupedByRole[roleName] = sortMoviesChronologically(groupedByRole[roleName], true);[m
+     });[m
+[36m@@ -13448,15 +13437,12 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+   }, []);[m
+ [m
+   const getFirstAvailableTab = useCallback((filmographyData: any): string => {[m
+[31m-    // Crear todas las pestañas primero[m
+     const allTabs: { [key: string]: number } = {};[m
+ [m
+[31m-    // Agregar pestaña de actuación si existe[m
+     if (filmographyData?.castRoles?.length > 0) {[m
+       allTabs['Actuación'] = filmographyData.castRoles.length;[m
+     }[m
+ [m
+[31m-    // Agregar pestañas de crew[m
+     if (filmographyData?.crewRoles?.length > 0) {[m
+       const grouped = groupFilmographyByRole(filmographyData.crewRoles);[m
+       Object.entries(grouped).forEach(([roleName, items]) => {[m
+[36m@@ -13464,14 +13450,12 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+       });[m
+     }[m
+ [m
+[31m-    // Ordenar por cantidad y retornar la primera (la que tiene más películas)[m
+     const sortedTabs = Object.entries(allTabs).sort((a, b) => b[1] - a[1]);[m
+     return sortedTabs.length > 0 ? sortedTabs[0][0] : '';[m
+   }, [groupFilmographyByRole]);[m
+ [m
+   const fetchPersonData = useCallback(async () => {[m
+     try {[m
+[31m-      // Obtener datos de la persona[m
+       const personResponse = await fetch(`/api/people/slug/${params.slug}`);[m
+       if (!personResponse.ok) {[m
+         setLoading(false);[m
+[36m@@ -13480,21 +13464,16 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+       const personData = await personResponse.json();[m
+       setPerson(personData);[m
+ [m
+[31m-      // Obtener filmografía[m
+       const filmographyResponse = await fetch(`/api/people/${personData.id}/filmography`);[m
+       if (filmographyResponse.ok) {[m
+         const filmographyData = await filmographyResponse.json();[m
+ [m
+[31m-        // Ordenar castRoles cronológicamente[m
+         if (filmographyData.castRoles) {[m
+           filmographyData.castRoles = sortMoviesChronologically(filmographyData.castRoles, true);[m
+         }[m
+ [m
+[31m-        // crewRoles ya se ordenarán dentro de groupFilmographyByRole[m
+[31m-[m
+         setFilmography(filmographyData);[m
+ [m
+[31m-        // Establecer la primera pestaña activa (la que tenga más películas)[m
+         const firstTab = getFirstAvailableTab(filmographyData);[m
+         if (firstTab) {[m
+           setActiveTab(firstTab);[m
+[36m@@ -13528,7 +13507,6 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+ [m
+   const fullName = [person.firstName, person.lastName].filter(Boolean).join(' ');[m
+ [m
+[31m-  // Formatear fechas[m
+   const birthDateFormatted = person.birthYear ? formatPartialDate({[m
+     year: person.birthYear,[m
+     month: person.birthMonth,[m
+[36m@@ -13541,15 +13519,12 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+     day: person.deathDay[m
+   }, { monthFormat: 'long', includeDay: true }) : null;[m
+ [m
+[31m-  // Preparar las pestañas dinámicamente[m
+   const tabs: { [key: string]: TabItem[] } = {};[m
+ [m
+[31m-  // Agregar pestaña de actuación si tiene roles como actor/actriz[m
+   if (filmography?.castRoles?.length > 0) {[m
+     tabs['Actuación'] = filmography.castRoles;[m
+   }[m
+ [m
+[31m-  // Agrupar roles de crew por rol específico[m
+   if (filmography?.crewRoles?.length > 0) {[m
+     const groupedCrew = groupFilmographyByRole(filmography.crewRoles);[m
+     Object.entries(groupedCrew).forEach(([roleName, items]) => {[m
+[36m@@ -13557,12 +13532,10 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+     });[m
+   }[m
+ [m
+[31m-  // Ordenar las pestañas por cantidad de películas (de mayor a menor)[m
+   const sortedTabEntries = Object.entries(tabs).sort((a, b) => {[m
+     return b[1].length - a[1].length;[m
+   });[m
+ [m
+[31m-  // Calcular estadísticas (sin duplicados)[m
+   const uniqueMoviesAsActor = new Set(filmography?.castRoles?.map((r: CastRole) => r.movie.id) || []);[m
+   const uniqueMoviesAsCrew = new Set(filmography?.crewRoles?.map((r: CrewRole) => r.movie.id) || []);[m
+   const allUniqueMovies = new Set([...uniqueMoviesAsActor, ...uniqueMoviesAsCrew]);[m
+[36m@@ -13573,12 +13546,42 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+     asCrew: uniqueMoviesAsCrew.size[m
+   };[m
+ [m
+[31m-  // Obtener items a mostrar según la pestaña activa[m
+   const getFilmographyToShow = (): TabItem[] => {[m
+     const items = tabs[activeTab] || [];[m
+     return showAllFilmography ? items : items.slice(0, 10);[m
+   };[m
+ [m
+[32m+[m[32m  // ✅ NUEVA FUNCIÓN: Determinar el badge a mostrar[m
+[32m+[m[32m  const getMovieBadge = (movie: Movie): { text: string; color: string } | null => {[m
+[32m+[m[32m    const isUnreleased = !movie.releaseYear;[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Cortometraje[m
+[32m+[m[32m    if (movie.tipoDuracion === 'cortometraje') {[m
+[32m+[m[32m      return {[m
+[32m+[m[32m        text: 'Cortometraje',[m
+[32m+[m[32m        color: 'bg-purple-500/20 text-purple-300 border border-purple-500/30'[m
+[32m+[m[32m      };[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Mediometraje[m
+[32m+[m[32m    if (movie.tipoDuracion === 'mediometraje') {[m
+[32m+[m[32m      return {[m
+[32m+[m[32m        text: 'Mediometraje',[m
+[32m+[m[32m        color: 'bg-blue-500/20 text-blue-300 border border-blue-500/30'[m
+[32m+[m[32m      };[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Largometraje no estrenado[m
+[32m+[m[32m    if (movie.tipoDuracion === 'largometraje' && isUnreleased) {[m
+[32m+[m[32m      return {[m
+[32m+[m[32m        text: 'No estrenada',[m
+[32m+[m[32m        color: 'bg-amber-500/20 text-amber-300 border border-amber-500/30'[m
+[32m+[m[32m      };[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    return null;[m
+[32m+[m[32m  };[m
+[32m+[m
+   return ([m
+     <div className="bg-gray-900 text-white min-h-screen">[m
+       {/* Person Header Section */}[m
+[36m@@ -13621,7 +13624,6 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+               <div className="space-y-3 text-gray-300">[m
+                 {birthDateFormatted && ([m
+                   <div className="text-sm">[m
+[31m-                    {/* Usar "el" solo si tiene día completo, sino usar "en" */}[m
+                     <span className="text-gray-500">[m
+                       {person.birthDay ? 'Nació el ' : 'Nació en '}[m
+                     </span>[m
+[36m@@ -13640,7 +13642,6 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+ [m
+                 {deathDateFormatted && ([m
+                   <div className="text-sm">[m
+[31m-                    {/* Usar "el" solo si tiene día completo, sino usar "en" */}[m
+                     <span className="text-gray-500">[m
+                       {person.deathDay ? 'Murió el ' : 'Murió en '}[m
+                     </span>[m
+[36m@@ -13721,7 +13722,7 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+       {sortedTabEntries.length > 0 && ([m
+         <section className="py-12">[m
+           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">[m
+[31m-            {/* Navigation Tabs - Ordenadas por cantidad */}[m
+[32m+[m[32m            {/* Navigation Tabs */}[m
+             <div className="border-b border-gray-700 mb-8">[m
+               <nav className="flex space-x-8 overflow-x-auto">[m
+                 {sortedTabEntries.map(([key, items]) => ([m
+[36m@@ -13750,55 +13751,50 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+                 {getFilmographyToShow().map((item: TabItem, index: number) => {[m
+                   const isActing = activeTab === 'Actuación';[m
+                   const movie = item.movie;[m
+[31m-                  // Usar el año efectivo que considera el fallback[m
+                   const year = getEffectiveYear(movie);[m
+                   const displayYear = year > 0 ? year : '—';[m
+[31m-[m
+[31m-                  // Agregar indicador si es el año de producción (no estreno)[m
+[31m-                  const isProductionYear = !movie.releaseYear && movie.year;[m
+[32m+[m[32m                  const badge = getMovieBadge(movie);[m
+ [m
+                   return ([m
+                     <div key={`${movie.id}-${index}`} className="py-4 hover:bg-gray-800/30 transition-colors group">[m
+                       <div className="flex items-center gap-4">[m
+[31m-                        <span className={`text-sm w-12 text-left ${isProductionYear ? 'text-gray-600 italic' : 'text-gray-500'}`}>[m
+[32m+[m[32m                        <span className="text-sm w-12 text-left text-gray-500">[m
+                           {displayYear}[m
+[31m-                          {isProductionYear && <span className="text-xs">*</span>}[m
+                         </span>[m
+                         <div className="flex-grow">[m
+[31m-                          <Link[m
+[31m-                            href={`/pelicula/${movie.slug}`}[m
+[31m-                            className="text-lg text-white hover:text-blue-400 transition-colors inline-block"[m
+[31m-                          >[m
+[31m-                            {movie.title}[m
+[31m-                          </Link>[m
+[31m-                          {isActing && item.characterName && ([m
+[31m-                            <span className="ml-2 text-sm text-gray-500">[m
+[31m-                              como {item.characterName}[m
+[31m-                            </span>[m
+[31m-                          )}[m
+[31m-                          {!isActing && item.roles && item.roles.length > 1 && ([m
+[31m-                            <span className="ml-2 text-sm text-gray-500">[m
+[31m-                              (también: {item.roles.filter((r: string) => r !== activeTab).join(', ')})[m
+[31m-                            </span>[m
+[31m-                          )}[m
+[31m-                          {isProductionYear && ([m
+[31m-                            <span className="ml-2 text-xs text-gray-600 italic">[m
+[31m-                              (año de producción)[m
+[31m-                            </span>[m
+[31m-                          )}[m
+[32m+[m[32m                          <div className="flex items-center gap-2 flex-wrap">[m
+[32m+[m[32m                            <Link[m
+[32m+[m[32m                              href={`/pelicula/${movie.slug}`}[m
+[32m+[m[32m                              className="text-lg text-white hover:text-blue-400 transition-colors inline-block"[m
+[32m+[m[32m                            >[m
+[32m+[m[32m                              {movie.title}[m
+[32m+[m[32m                            </Link>[m
+[32m+[m[41m                            [m
+[32m+[m[32m                            {/* ✅ BADGE */}[m
+[32m+[m[32m                            {badge && ([m
+[32m+[m[32m                              <span className={`text-xs px-2 py-0.5 rounded-full ${badge.color}`}>[m
+[32m+[m[32m                                {badge.text}[m
+[32m+[m[32m                              </span>[m
+[32m+[m[32m                            )}[m
+[32m+[m[41m                            [m
+[32m+[m[32m                            {isActing && item.characterName && ([m
+[32m+[m[32m                              <span className="text-sm text-gray-500">[m
+[32m+[m[32m                                como {item.characterName}[m
+[32m+[m[32m                              </span>[m
+[32m+[m[32m                            )}[m
+[32m+[m[41m                            [m
+[32m+[m[32m                            {!isActing && item.roles && item.roles.length > 1 && ([m
+[32m+[m[32m                              <span className="text-sm text-gray-500">[m
+[32m+[m[32m                                (también: {item.roles.filter((r: string) => r !== activeTab).join(', ')})[m
+[32m+[m[32m                              </span>[m
+[32m+[m[32m                            )}[m
+[32m+[m[32m                          </div>[m
+                         </div>[m
+                       </div>[m
+                     </div>[m
+                   );[m
+                 })}[m
+               </div>[m
+[31m-[m
+[31m-              {/* Nota al pie si hay películas con año de producción */}[m
+[31m-              {getFilmographyToShow().some((item: TabItem) => !item.movie.releaseYear && item.movie.year) && ([m
+[31m-                <div className="mt-4 text-xs text-gray-600 italic">[m
+[31m-                  * Año de producción (película no estrenada)[m
+[31m-                </div>[m
+[31m-              )}[m
+             </div>[m
+ [m
+             {/* Show More Button */}[m
+[1mdiff --git a/database-structure.txt b/database-structure.txt[m
+[1mindex 09eaa33..8774eb2 100644[m
+[1m--- a/database-structure.txt[m
+[1m+++ b/database-structure.txt[m
+[36m@@ -1,5 +1,5 @@[m
+ # Estructura de Base de Datos - CineNacional[m
+[31m-# Generado automáticamente el: 2025-10-12T05:40:55.386Z[m
+[32m+[m[32m# Generado automáticamente el: 2025-10-12T14:30:25.940Z[m
+ # ================================================[m
+ [m
+ ## Schema Prisma[m
+[1mdiff --git a/project-structure.json b/project-structure.json[m
+[1mindex f8aec0b..347cbfe 100644[m
+[1m--- a/project-structure.json[m
+[1m+++ b/project-structure.json[m
+[36m@@ -1,8 +1,8 @@[m
+ {[m
+[31m-  "timestamp": "2025-10-12T05:40:53.972Z",[m
+[32m+[m[32m  "timestamp": "2025-10-12T14:30:21.652Z",[m
+   "repository": "diegopapic/cinenacional",[m
+   "branch": "main",[m
+[31m-  "commit": "e0635eba9da26b7fac75eed4a79e48c47751e840",[m
+[32m+[m[32m  "commit": "9b9f11d8cbad965e765f37a664ff82149bba8008",[m
+   "structure": {[m
+     ".env.production.backup": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.production.backup",[m
+     ".env.staging": "https://raw.githubusercontent.com/diegopapic/cinenacional/main/.env.staging",[m
+[1mdiff --git a/src/app/api/people/[id]/filmography/route.ts b/src/app/api/people/[id]/filmography/route.ts[m
+[1mindex 8e18322..48266c5 100644[m
+[1m--- a/src/app/api/people/[id]/filmography/route.ts[m
+[1m+++ b/src/app/api/people/[id]/filmography/route.ts[m
+[36m@@ -1,4 +1,4 @@[m
+[31m-// src/app/api/people/[id]/filmography/route.ts - CON REDIS CACHE[m
+[32m+[m[32m// src/app/api/people/[id]/filmography/route.ts - ACTUALIZADO[m
+ import { NextRequest, NextResponse } from 'next/server';[m
+ import { prisma } from '@/lib/prisma';[m
+ import RedisClient from '@/lib/redis';[m
+[36m@@ -15,8 +15,8 @@[m [mexport async function GET([m
+   try {[m
+     const personId = parseInt(params.id);[m
+     [m
+[31m-    // Generar clave de caché única[m
+[31m-    const cacheKey = `person:filmography:${personId}:v1`;[m
+[32m+[m[32m    // Generar clave de caché única - VERSIÓN v2 para invalidar cache anterior[m
+[32m+[m[32m    const cacheKey = `person:filmography:${personId}:v2`;[m
+ [m
+     // 1. Intentar obtener de Redis[m
+     try {[m
+[36m@@ -80,7 +80,8 @@[m [mexport async function GET([m
+             releaseMonth: true,[m
+             releaseDay: true,[m
+             posterUrl: true,[m
+[31m-            stage: true[m
+[32m+[m[32m            stage: true,[m
+[32m+[m[32m            tipoDuracion: true // ✅ AGREGADO[m
+           }[m
+         }[m
+       },[m
+[36m@@ -106,7 +107,8 @@[m [mexport async function GET([m
+             releaseMonth: true,[m
+             releaseDay: true,[m
+             posterUrl: true,[m
+[31m-            stage: true[m
+[32m+[m[32m            stage: true,[m
+[32m+[m[32m            tipoDuracion: true // ✅ AGREGADO[m
+           }[m
+         },[m
+         role: true // Incluir la referencia al rol si existe[m
+[36m@@ -162,7 +164,7 @@[m [mexport async function GET([m
+     console.error('Error fetching person filmography:', error);[m
+ [m
+     // Intentar servir desde caché stale si hay error[m
+[31m-    const cacheKey = `person:filmography:${parseInt(params.id)}:v1`;[m
+[32m+[m[32m    const cacheKey = `person:filmography:${parseInt(params.id)}:v2`;[m
+     const staleCache = memoryCache.get(cacheKey);[m
+ [m
+     if (staleCache) {[m
+[1mdiff --git a/src/app/persona/[slug]/page.tsx b/src/app/persona/[slug]/page.tsx[m
+[1mindex 4fe473e..986c914 100644[m
+[1m--- a/src/app/persona/[slug]/page.tsx[m
+[1m+++ b/src/app/persona/[slug]/page.tsx[m
+[36m@@ -1,4 +1,4 @@[m
+[31m-// src/app/persona/[slug]/page.tsx - VERSIÓN CORREGIDA[m
+[32m+[m[32m// src/app/persona/[slug]/page.tsx - VERSIÓN CORREGIDA COMPLETA[m
+ 'use client';[m
+ [m
+ import { useState, useEffect, useCallback } from 'react';[m
+[36m@@ -8,7 +8,7 @@[m [mimport { formatPartialDate } from '@/lib/shared/dateUtils';[m
+ import DOMPurify from 'isomorphic-dompurify';[m
+ [m
+ export const dynamic = 'force-dynamic'[m
+[31m-export const runtime = 'nodejs' // opcional[m
+[32m+[m[32mexport const runtime = 'nodejs'[m
+ [m
+ interface PersonPageProps {[m
+   params: {[m
+[36m@@ -24,6 +24,7 @@[m [minterface Movie {[m
+   releaseYear?: number;[m
+   releaseMonth?: number;[m
+   releaseDay?: number;[m
+[32m+[m[32m  tipoDuracion?: 'largometraje' | 'mediometraje' | 'cortometraje';[m
+ }[m
+ [m
+ interface Role {[m
+[36m@@ -66,37 +67,29 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+ [m
+   // Función helper para obtener el año efectivo para ordenamiento[m
+   const getEffectiveYear = (movie: Movie): number => {[m
+[31m-    // Si tiene año de estreno, usarlo[m
+     if (movie.releaseYear) {[m
+       return movie.releaseYear;[m
+     }[m
+[31m-    // Si no, usar el año de producción[m
+     if (movie.year) {[m
+       return movie.year;[m
+     }[m
+[31m-    // Si no tiene ninguno, retornar 0 (aparecerá al final)[m
+     return 0;[m
+   };[m
+ [m
+   // Función helper para obtener la fecha efectiva completa para ordenamiento más preciso[m
+   const getEffectiveDate = (movie: Movie): Date => {[m
+[31m-    // Si tiene fecha de estreno completa[m
+     if (movie.releaseYear && movie.releaseMonth && movie.releaseDay) {[m
+       return new Date(movie.releaseYear, movie.releaseMonth - 1, movie.releaseDay);[m
+     }[m
+[31m-    // Si tiene año y mes de estreno[m
+     if (movie.releaseYear && movie.releaseMonth) {[m
+       return new Date(movie.releaseYear, movie.releaseMonth - 1, 1);[m
+     }[m
+[31m-    // Si solo tiene año de estreno[m
+     if (movie.releaseYear) {[m
+       return new Date(movie.releaseYear, 0, 1);[m
+     }[m
+[31m-    // Si no tiene fecha de estreno, usar año de producción[m
+     if (movie.year) {[m
+       return new Date(movie.year, 0, 1);[m
+     }[m
+[31m-    // Si no tiene ninguna fecha, retornar fecha muy antigua[m
+     return new Date(1900, 0, 1);[m
+   };[m
+ [m
+[36m@@ -106,14 +99,12 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+       const dateA = getEffectiveDate(a.movie || a);[m
+       const dateB = getEffectiveDate(b.movie || b);[m
+ [m
+[31m-      // Si las fechas son iguales, usar el título como desempate[m
+       if (dateA.getTime() === dateB.getTime()) {[m
+         const titleA = (a.movie || a).title.toLowerCase();[m
+         const titleB = (b.movie || b).title.toLowerCase();[m
+         return titleA.localeCompare(titleB);[m
+       }[m
+ [m
+[31m-      // Ordenar por fecha[m
+       return descending[m
+         ? dateB.getTime() - dateA.getTime()[m
+         : dateA.getTime() - dateB.getTime();[m
+[36m@@ -122,7 +113,6 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+ [m
+   // Agrupar filmografía por rol, combinando múltiples roles por película[m
+   const groupFilmographyByRole = useCallback((crewRoles: CrewRole[]): { [key: string]: GroupedCrewRole[] } => {[m
+[31m-    // Primero, agrupar todas las películas con sus roles[m
+     const movieRolesMap: { [movieId: number]: { movie: Movie; roles: Set<string> } } = {};[m
+ [m
+     crewRoles.forEach((item) => {[m
+[36m@@ -139,7 +129,6 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+       movieRolesMap[movieId].roles.add(roleName);[m
+     });[m
+ [m
+[31m-    // Ahora crear las pestañas por rol individual[m
+     const groupedByRole: { [roleName: string]: GroupedCrewRole[] } = {};[m
+ [m
+     crewRoles.forEach((item) => {[m
+[36m@@ -148,7 +137,6 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+       if (!groupedByRole[roleName]) {[m
+         groupedByRole[roleName] = [];[m
+ [m
+[31m-        // Para este rol, obtener todas las películas donde la persona tiene este rol[m
+         const moviesWithThisRole = crewRoles[m
+           .filter(cr => cr.role?.name === roleName)[m
+           .map(cr => cr.movie.id);[m
+[36m@@ -165,7 +153,6 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+       }[m
+     });[m
+ [m
+[31m-    // Ordenar cada grupo cronológicamente (descendente)[m
+     Object.keys(groupedByRole).forEach(roleName => {[m
+       groupedByRole[roleName] = sortMoviesChronologically(groupedByRole[roleName], true);[m
+     });[m
+[36m@@ -174,15 +161,12 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+   }, []);[m
+ [m
+   const getFirstAvailableTab = useCallback((filmographyData: any): string => {[m
+[31m-    // Crear todas las pestañas primero[m
+     const allTabs: { [key: string]: number } = {};[m
+ [m
+[31m-    // Agregar pestaña de actuación si existe[m
+     if (filmographyData?.castRoles?.length > 0) {[m
+       allTabs['Actuación'] = filmographyData.castRoles.length;[m
+     }[m
+ [m
+[31m-    // Agregar pestañas de crew[m
+     if (filmographyData?.crewRoles?.length > 0) {[m
+       const grouped = groupFilmographyByRole(filmographyData.crewRoles);[m
+       Object.entries(grouped).forEach(([roleName, items]) => {[m
+[36m@@ -190,14 +174,12 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+       });[m
+     }[m
+ [m
+[31m-    // Ordenar por cantidad y retornar la primera (la que tiene más películas)[m
+     const sortedTabs = Object.entries(allTabs).sort((a, b) => b[1] - a[1]);[m
+     return sortedTabs.length > 0 ? sortedTabs[0][0] : '';[m
+   }, [groupFilmographyByRole]);[m
+ [m
+   const fetchPersonData = useCallback(async () => {[m
+     try {[m
+[31m-      // Obtener datos de la persona[m
+       const personResponse = await fetch(`/api/people/slug/${params.slug}`);[m
+       if (!personResponse.ok) {[m
+         setLoading(false);[m
+[36m@@ -206,21 +188,16 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+       const personData = await personResponse.json();[m
+       setPerson(personData);[m
+ [m
+[31m-      // Obtener filmografía[m
+       const filmographyResponse = await fetch(`/api/people/${personData.id}/filmography`);[m
+       if (filmographyResponse.ok) {[m
+         const filmographyData = await filmographyResponse.json();[m
+ [m
+[31m-        // Ordenar castRoles cronológicamente[m
+         if (filmographyData.castRoles) {[m
+           filmographyData.castRoles = sortMoviesChronologically(filmographyData.castRoles, true);[m
+         }[m
+ [m
+[31m-        // crewRoles ya se ordenarán dentro de groupFilmographyByRole[m
+[31m-[m
+         setFilmography(filmographyData);[m
+ [m
+[31m-        // Establecer la primera pestaña activa (la que tenga más películas)[m
+         const firstTab = getFirstAvailableTab(filmographyData);[m
+         if (firstTab) {[m
+           setActiveTab(firstTab);[m
+[36m@@ -254,7 +231,6 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+ [m
+   const fullName = [person.firstName, person.lastName].filter(Boolean).join(' ');[m
+ [m
+[31m-  // Formatear fechas[m
+   const birthDateFormatted = person.birthYear ? formatPartialDate({[m
+     year: person.birthYear,[m
+     month: person.birthMonth,[m
+[36m@@ -267,15 +243,12 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+     day: person.deathDay[m
+   }, { monthFormat: 'long', includeDay: true }) : null;[m
+ [m
+[31m-  // Preparar las pestañas dinámicamente[m
+   const tabs: { [key: string]: TabItem[] } = {};[m
+ [m
+[31m-  // Agregar pestaña de actuación si tiene roles como actor/actriz[m
+   if (filmography?.castRoles?.length > 0) {[m
+     tabs['Actuación'] = filmography.castRoles;[m
+   }[m
+ [m
+[31m-  // Agrupar roles de crew por rol específico[m
+   if (filmography?.crewRoles?.length > 0) {[m
+     const groupedCrew = groupFilmographyByRole(filmography.crewRoles);[m
+     Object.entries(groupedCrew).forEach(([roleName, items]) => {[m
+[36m@@ -283,12 +256,10 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+     });[m
+   }[m
+ [m
+[31m-  // Ordenar las pestañas por cantidad de películas (de mayor a menor)[m
+   const sortedTabEntries = Object.entries(tabs).sort((a, b) => {[m
+     return b[1].length - a[1].length;[m
+   });[m
+ [m
+[31m-  // Calcular estadísticas (sin duplicados)[m
+   const uniqueMoviesAsActor = new Set(filmography?.castRoles?.map((r: CastRole) => r.movie.id) || []);[m
+   const uniqueMoviesAsCrew = new Set(filmography?.crewRoles?.map((r: CrewRole) => r.movie.id) || []);[m
+   const allUniqueMovies = new Set([...uniqueMoviesAsActor, ...uniqueMoviesAsCrew]);[m
+[36m@@ -299,12 +270,42 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+     asCrew: uniqueMoviesAsCrew.size[m
+   };[m
+ [m
+[31m-  // Obtener items a mostrar según la pestaña activa[m
+   const getFilmographyToShow = (): TabItem[] => {[m
+     const items = tabs[activeTab] || [];[m
+     return showAllFilmography ? items : items.slice(0, 10);[m
+   };[m
+ [m
+[32m+[m[32m  // ✅ NUEVA FUNCIÓN: Determinar el badge a mostrar[m
+[32m+[m[32m  const getMovieBadge = (movie: Movie): { text: string; color: string } | null => {[m
+[32m+[m[32m    const isUnreleased = !movie.releaseYear;[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Cortometraje[m
+[32m+[m[32m    if (movie.tipoDuracion === 'cortometraje') {[m
+[32m+[m[32m      return {[m
+[32m+[m[32m        text: 'Cortometraje',[m
+[32m+[m[32m        color: 'bg-purple-500/20 text-purple-300 border border-purple-500/30'[m
+[32m+[m[32m      };[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Mediometraje[m
+[32m+[m[32m    if (movie.tipoDuracion === 'mediometraje') {[m
+[32m+[m[32m      return {[m
+[32m+[m[32m        text: 'Mediometraje',[m
+[32m+[m[32m        color: 'bg-blue-500/20 text-blue-300 border border-blue-500/30'[m
+[32m+[m[32m      };[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Largometraje no estrenado[m
+[32m+[m[32m    if (movie.tipoDuracion === 'largometraje' && isUnreleased) {[m
+[32m+[m[32m      return {[m
+[32m+[m[32m        text: 'No estrenada',[m
+[32m+[m[32m        color: 'bg-amber-500/20 text-amber-300 border border-amber-500/30'[m
+[32m+[m[32m      };[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    return null;[m
+[32m+[m[32m  };[m
+[32m+[m
+   return ([m
+     <div className="bg-gray-900 text-white min-h-screen">[m
+       {/* Person Header Section */}[m
+[36m@@ -347,7 +348,6 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+               <div className="space-y-3 text-gray-300">[m
+                 {birthDateFormatted && ([m
+                   <div className="text-sm">[m
+[31m-                    {/* Usar "el" solo si tiene día completo, sino usar "en" */}[m
+                     <span className="text-gray-500">[m
+                       {person.birthDay ? 'Nació el ' : 'Nació en '}[m
+                     </span>[m
+[36m@@ -366,7 +366,6 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+ [m
+                 {deathDateFormatted && ([m
+                   <div className="text-sm">[m
+[31m-                    {/* Usar "el" solo si tiene día completo, sino usar "en" */}[m
+                     <span className="text-gray-500">[m
+                       {person.deathDay ? 'Murió el ' : 'Murió en '}[m
+                     </span>[m
+[36m@@ -447,7 +446,7 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+       {sortedTabEntries.length > 0 && ([m
+         <section className="py-12">[m
+           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">[m
+[31m-            {/* Navigation Tabs - Ordenadas por cantidad */}[m
+[32m+[m[32m            {/* Navigation Tabs */}[m
+             <div className="border-b border-gray-700 mb-8">[m
+               <nav className="flex space-x-8 overflow-x-auto">[m
+                 {sortedTabEntries.map(([key, items]) => ([m
+[36m@@ -476,55 +475,50 @@[m [mexport default function PersonPage({ params }: PersonPageProps) {[m
+                 {getFilmographyToShow().map((item: TabItem, index: number) => {[m
+                   const isActing = activeTab === 'Actuación';[m
+                   const movie = item.movie;[m
+[31m-                  // Usar el año efectivo que considera el fallback[m
+                   const year = getEffectiveYear(movie);[m
+                   const displayYear = year > 0 ? year : '—';[m
+[31m-[m
+[31m-                  // Agregar indicador si es el año de producción (no estreno)[m
+[31m-                  const isProductionYear = !movie.releaseYear && movie.year;[m
+[32m+[m[32m                  const badge = getMovieBadge(movie);[m
+ [m
+                   return ([m
+                     <div key={`${movie.id}-${index}`} className="py-4 hover:bg-gray-800/30 transition-colors group">[m
+                       <div className="flex items-center gap-4">[m
+[31m-                        <span className={`text-sm w-12 text-left ${isProductionYear ? 'text-gray-600 italic' : 'text-gray-500'}`}>[m
+[32m+[m[32m                        <span className="text-sm w-12 text-left text-gray-500">[m
+                           {displayYear}[m
+[31m-                          {isProductionYear && <span className="text-xs">*</span>}[m
+                         </span>[m
+                         <div className="flex-grow">[m
+[31m-                          <Link[m
+[31m-                            href={`/pelicula/${movie.slug}`}[m
+[31m-                            className="text-lg text-white hover:text-blue-400 transition-colors inline-block"[m
+[31m-                          >[m
+[31m-                            {movie.title}[m
+[31m-                          </Link>[m
+[31m-                          {isActing && item.characterName && ([m
+[31m-                            <span className="ml-2 text-sm text-gray-500">[m
+[31m-                              como {item.characterName}[m
+[31m-                            </span>[m
+[31m-                          )}[m
+[31m-                          {!isActing && item.roles && item.roles.length > 1 && ([m
+[31m-                            <span className="ml-2 text-sm text-gray-500">[m
+[31m-                              (también: {item.roles.filter((r: string) => r !== activeTab).join(', ')})[m
+[31m-                            </span>[m
+[31m-                          )}[m
+[31m-                          {isProductionYear && ([m
+[31m-                            <span className="ml-2 text-xs text-gray-600 italic">[m
+[31m-                              (año de producción)[m
+[31m-                            </span>[m
+[31m-                          )}[m
+[32m+[m[32m                          <div className="flex items-center gap-2 flex-wrap">[m
+[32m+[m[32m                            <Link[m
+[32m+[m[32m                              href={`/pelicula/${movie.slug}`}[m
+[32m+[m[32m                              className="text-lg text-white hover:text-blue-400 transition-colors inline-block"[m
+[32m+[m[32m                            >[m
+[32m+[m[32m                              {movie.title}[m
+[32m+[m[32m                            </Link>[m
+[32m+[m[41m                            [m
+[32m+[m[32m                            {/* ✅ BADGE */}[m
+[32m+[m[32m                            {badge && ([m
+[32m+[m[32m                              <span className={`text-xs px-2 py-0.5 rounded-full ${badge.color}`}>[m
+[32m+[m[32m                                {badge.text}[m
+[32m+[m[32m                              </span>[m
+[32m+[m[32m                            )}[m
+[32m+[m[41m                            [m
+[32m+[m[32m                            {isActing && item.characterName && ([m
+[32m+[m[32m                              <span className="text-sm text-gray-500">[m
+[32m+[m[32m                                como {item.characterName}[m
+[32m+[m[32m                              </span>[m
+[32m+[m[32m                            )}[m
+[32m+[m[41m                            [m
+[32m+[m[32m                            {!isActing && item.roles && item.roles.length > 1 && ([m
+[32m+[m[32m                              <span className="text-sm text-gray-500">[m
+[32m+[m[32m                                (también: {item.roles.filter((r: string) => r !== activeTab).join(', ')})[m
+[32m+[m[32m                              </span>[m
+[32m+[m[32m                            )}[m
+[32m+[m[32m                          </div>[m
+                         </div>[m
+                       </div>[m
+                     </div>[m
+                   );[m
+                 })}[m
+               </div>[m
+[31m-[m
+[31m-              {/* Nota al pie si hay películas con año de producción */}[m
+[31m-              {getFilmographyToShow().some((item: TabItem) => !item.movie.releaseYear && item.movie.year) && ([m
+[31m-                <div className="mt-4 text-xs text-gray-600 italic">[m
+[31m-                  * Año de producción (película no estrenada)[m
+[31m-                </div>[m
+[31m-              )}[m
+             </div>[m
+ [m
+             {/* Show More Button */}[m
