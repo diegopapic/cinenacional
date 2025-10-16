@@ -111,16 +111,16 @@ export default function ObituariosSection({ obituarios, loading = false }: Obitu
           })}
         </div>
       </div>
-      {/*
+      {
       <div className="mt-6 text-center">
         <Link
-          href="/listados/personas?hasDeathDate=true&sortBy=deathDate&sortOrder=desc"
+          href="/listados/obituarios"
           className="inline-block border border-cine-accent text-cine-accent hover:bg-cine-accent hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
         >
           Ver más obituarios
         </Link>
       </div>
-      */}
+      }
     </section>
   );
 }

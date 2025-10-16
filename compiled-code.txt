@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 9b9f11d8cbad965e765f37a664ff82149bba8008
-// Fecha: 2025-10-12T14:30:22.824Z
+// Commit: 8ac5fbdf9359c78d355c9242c6ae258f8237ba41
+// Fecha: 2025-10-16T11:31:44.066Z
 // ============================================
 
 
@@ -7608,6 +7608,146 @@ export async function DELETE(
 }
 
 // ==================================================
+// src/app/api/people/death-years/route.ts
+// ==================================================
+// src/app/api/people/death-years/route.ts
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import RedisClient from '@/lib/redis';
+
+// Cache en memoria como fallback
+const memoryCache = new Map<string, { data: any; timestamp: number }>();
+const MEMORY_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 horas en ms
+
+/**
+ * GET /api/people/death-years
+ * Obtiene todos los años únicos en que hay personas fallecidas
+ * Retorna array ordenado descendente (más reciente primero)
+ * 
+ * CACHÉ: 24 horas (los años históricos no cambian)
+ */
+export async function GET() {
+  const cacheKey = 'people:death-years:v1';
+  const redisTTL = 86400; // 24 horas
+  const now = Date.now();
+
+  try {
+    // 1. Intentar obtener de Redis
+    try {
+      const redisCached = await RedisClient.get(cacheKey);
+      
+      if (redisCached) {
+        console.log('✅ Cache HIT desde Redis para death-years');
+        return NextResponse.json(
+          JSON.parse(redisCached),
+          {
+            headers: {
+              'Cache-Control': `public, s-maxage=${redisTTL}, stale-while-revalidate=${redisTTL * 2}`,
+              'X-Cache': 'HIT',
+              'X-Cache-Source': 'redis'
+            }
+          }
+        );
+      }
+    } catch (redisError) {
+      console.error('Redis error (non-fatal):', redisError);
+    }
+    
+    // 2. Verificar caché en memoria como fallback
+    const memoryCached = memoryCache.get(cacheKey);
+    
+    if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
+      console.log('✅ Cache HIT desde memoria para death-years');
+      
+      // Intentar guardar en Redis para próximas requests
+      RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), redisTTL)
+        .catch(err => console.error('Error guardando en Redis:', err));
+      
+      return NextResponse.json(memoryCached.data, {
+        headers: {
+          'Cache-Control': `public, s-maxage=${redisTTL}, stale-while-revalidate=${redisTTL * 2}`,
+          'X-Cache': 'HIT',
+          'X-Cache-Source': 'memory'
+        }
+      });
+    }
+    
+    // 3. No hay caché, consultar base de datos
+    console.log('🔄 Cache MISS - Consultando BD para death-years');
+    
+    // Obtener años únicos de defunción
+    const result = await prisma.person.findMany({
+      where: {
+        deathYear: {
+          not: null
+        }
+      },
+      select: {
+        deathYear: true
+      },
+      distinct: ['deathYear'],
+      orderBy: {
+        deathYear: 'desc'
+      }
+    });
+
+    // Extraer solo los años y filtrar nulls
+    const years = result
+      .map(r => r.deathYear)
+      .filter((year): year is number => year !== null);
+
+    const response = {
+      years,
+      count: years.length
+    };
+    
+    // 4. Guardar en ambos cachés
+    RedisClient.set(cacheKey, JSON.stringify(response), redisTTL)
+      .then(saved => {
+        if (saved) {
+          console.log(`✅ Death-years guardado en Redis con TTL ${redisTTL}s (24h)`);
+        }
+      })
+      .catch(err => console.error('Error guardando en Redis:', err));
+    
+    memoryCache.set(cacheKey, {
+      data: response,
+      timestamp: now
+    });
+
+    return NextResponse.json(response, {
+      headers: {
+        'Cache-Control': `public, s-maxage=${redisTTL}, stale-while-revalidate=${redisTTL * 2}`,
+        'X-Cache': 'MISS',
+        'X-Cache-Source': 'database'
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching death years:', error);
+    
+    // Intentar servir desde caché stale si hay error
+    const staleCache = memoryCache.get(cacheKey);
+    
+    if (staleCache) {
+      console.log('⚠️ Sirviendo caché stale debido a error');
+      return NextResponse.json(staleCache.data, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60',
+          'X-Cache': 'STALE',
+          'X-Cache-Source': 'memory-fallback'
+        }
+      });
+    }
+    
+    return NextResponse.json(
+      { error: 'Error al obtener años de defunción' },
+      { status: 500 }
+    );
+  }
+}
+
+// ==================================================
 // src/app/api/people/route.ts
 // ==================================================
 // src/app/api/people/route.ts
@@ -7615,6 +7755,66 @@ export async function DELETE(
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generatePersonSlug } from '@/lib/people/peopleUtils';
+import RedisClient from '@/lib/redis';
+
+// ============================================
+// CACHE CONFIGURATION
+// ============================================
+
+// Cache en memoria como fallback
+const memoryCache = new Map<string, { data: any; timestamp: number }>();
+const MEMORY_CACHE_TTL = 60 * 60 * 1000; // 1 hora en ms
+
+// TTL diferenciado según tipo de consulta
+function getRedisTTL(searchParams: URLSearchParams): number {
+  const deathYear = searchParams.get('deathYear');
+  
+  // Obituarios de años pasados: 24 horas (no cambian)
+  if (deathYear) {
+    const year = parseInt(deathYear);
+    const currentYear = new Date().getFullYear();
+    
+    if (year < currentYear) {
+      return 86400; // 24 horas
+    } else {
+      return 3600; // 1 hora para año actual
+    }
+  }
+  
+  // Por defecto: 1 hora
+  return 3600;
+}
+
+// Genera clave única basada en los parámetros de búsqueda
+function generateCacheKey(searchParams: URLSearchParams): string {
+  const relevantParams = [
+    'page',
+    'limit',
+    'search',
+    'gender',
+    'isActive',
+    'hasLinks',
+    'hasDeathDate',
+    'deathYear',
+    'sortBy',
+    'sortOrder'
+  ];
+  
+  const keyParts = relevantParams
+    .map(param => {
+      const value = searchParams.get(param);
+      return value ? `${param}:${value}` : null;
+    })
+    .filter(Boolean);
+  
+  return `people:list:${keyParts.join(':')}:v1`;
+}
+
+// Verificar si debe cachear esta consulta
+function shouldCache(searchParams: URLSearchParams): boolean {
+  // Solo cachear obituarios (deathYear presente)
+  return searchParams.has('deathYear');
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -7624,10 +7824,67 @@ export async function GET(request: NextRequest) {
     const isActive = searchParams.get('isActive');
     const hasLinks = searchParams.get('hasLinks');
     const hasDeathDate = searchParams.get('hasDeathDate');
+    const deathYear = searchParams.get('deathYear'); // 🆕 NUEVO FILTRO
     const sortBy = searchParams.get('sortBy') || 'last_name';
     const sortOrder = searchParams.get('sortOrder') || 'asc';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
+
+    // ============================================
+    // CACHE LOGIC (solo para obituarios)
+    // ============================================
+    if (shouldCache(searchParams)) {
+      const cacheKey = generateCacheKey(searchParams);
+      const redisTTL = getRedisTTL(searchParams);
+      const now = Date.now();
+      
+      // 1. Intentar obtener de Redis
+      try {
+        const redisCached = await RedisClient.get(cacheKey);
+        
+        if (redisCached) {
+          console.log(`✅ Cache HIT desde Redis para obituarios: ${cacheKey.substring(0, 60)}...`);
+          return NextResponse.json(
+            JSON.parse(redisCached),
+            {
+              headers: {
+                'Cache-Control': `public, s-maxage=${redisTTL}, stale-while-revalidate=${redisTTL * 2}`,
+                'X-Cache': 'HIT',
+                'X-Cache-Source': 'redis'
+              }
+            }
+          );
+        }
+      } catch (redisError) {
+        console.error('Redis error (non-fatal):', redisError);
+      }
+      
+      // 2. Verificar caché en memoria como fallback
+      const memoryCached = memoryCache.get(cacheKey);
+      
+      if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
+        console.log(`✅ Cache HIT desde memoria para obituarios: ${cacheKey.substring(0, 60)}...`);
+        
+        // Intentar guardar en Redis para próximas requests
+        RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), redisTTL)
+          .catch(err => console.error('Error guardando en Redis:', err));
+        
+        return NextResponse.json(memoryCached.data, {
+          headers: {
+            'Cache-Control': `public, s-maxage=${redisTTL}, stale-while-revalidate=${redisTTL * 2}`,
+            'X-Cache': 'HIT',
+            'X-Cache-Source': 'memory'
+          }
+        });
+      }
+      
+      // 3. No hay caché, consultar base de datos
+      console.log(`🔄 Cache MISS - Consultando BD para obituarios: ${cacheKey.substring(0, 60)}...`);
+    }
+    
+    // ============================================
+    // QUERY LOGIC (existente)
+    // ============================================
 
     // Si hay búsqueda, usar SQL con unaccent para búsqueda mejorada
     if (search && search.trim().length >= 2) {
@@ -7770,11 +8027,20 @@ export async function GET(request: NextRequest) {
     if (gender) where.gender = gender;
     if (isActive !== null && isActive !== '') where.isActive = isActive === 'true';
     if (hasLinks !== null && hasLinks !== '') where.hasLinks = hasLinks === 'true';
-    if (hasDeathDate === 'true') where.deathYear = { not: null };
-    else if (hasDeathDate === 'false') where.deathYear = null;
+    
+    // 🆕 NUEVO: Filtro por año de defunción específico
+    if (deathYear) {
+      where.deathYear = parseInt(deathYear);
+    } else if (hasDeathDate === 'true') {
+      // Si no se especifica año pero se pide hasDeathDate, filtrar los que tienen
+      where.deathYear = { not: null };
+    } else if (hasDeathDate === 'false') {
+      where.deathYear = null;
+    }
 
     let orderBy: any = {};
-    if (sortBy === 'deathDate') {
+    if (sortBy === 'deathDate' || sortBy === 'deathYear') {
+      // 🆕 MEJORADO: Ordenar por año de muerte considerando mes y día
       orderBy = [
         { deathYear: sortOrder },
         { deathMonth: sortOrder },
@@ -7846,16 +8112,85 @@ export async function GET(request: NextRequest) {
       name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre'
     }));
 
-    return NextResponse.json({
+    const result = {
       data: peopleWithName,
       totalCount,
       page,
       totalPages,
       hasMore: page < totalPages,
-    });
+    };
+    
+    // ============================================
+    // SAVE TO CACHE (solo para obituarios)
+    // ============================================
+    const useCache = shouldCache(request.nextUrl.searchParams);
+    
+    if (useCache) {
+      const cacheKey = generateCacheKey(request.nextUrl.searchParams);
+      const redisTTL = getRedisTTL(request.nextUrl.searchParams);
+      const now = Date.now();
+      
+      console.log(`💾 Guardando en caché: ${cacheKey.substring(0, 60)}...`);
+      
+      // Guardar en Redis
+      RedisClient.set(cacheKey, JSON.stringify(result), redisTTL)
+        .then(saved => {
+          if (saved) {
+            console.log(`✅ Obituarios guardados en Redis con TTL ${redisTTL}s (${redisTTL/60} min)`);
+          }
+        })
+        .catch(err => console.error('Error guardando en Redis:', err));
+      
+      // Guardar en memoria
+      memoryCache.set(cacheKey, {
+        data: result,
+        timestamp: now
+      });
+      
+      // Limpiar caché de memoria viejo (mantener máximo 200 listados)
+      if (memoryCache.size > 200) {
+        const oldestKey = memoryCache.keys().next().value;
+        if (oldestKey) {
+          memoryCache.delete(oldestKey);
+        }
+      }
+    }
+
+    // Retornar con headers apropiados
+    if (useCache) {
+      const redisTTL = getRedisTTL(request.nextUrl.searchParams);
+      return NextResponse.json(result, {
+        headers: {
+          'Cache-Control': `public, s-maxage=${redisTTL}, stale-while-revalidate=${redisTTL * 2}`,
+          'X-Cache': 'MISS',
+          'X-Cache-Source': 'database'
+        }
+      });
+    }
+
+    // Sin caché (búsquedas normales)
+    return NextResponse.json(result);
     
   } catch (error) {
     console.error('Error fetching people:', error);
+    
+    // Intentar servir desde caché stale si hay error (solo obituarios)
+    if (shouldCache(request.nextUrl.searchParams)) {
+      const cacheKey = generateCacheKey(request.nextUrl.searchParams);
+      const staleCache = memoryCache.get(cacheKey);
+      
+      if (staleCache) {
+        console.log('⚠️ Sirviendo caché stale debido a error');
+        return NextResponse.json(staleCache.data, {
+          headers: {
+            'Cache-Control': 'public, s-maxage=60',
+            'X-Cache': 'STALE',
+            'X-Cache-Source': 'memory-fallback'
+          }
+        });
+      }
+    }
+    
     return NextResponse.json(
       { message: 'Error al obtener personas' },
       { status: 500 }
@@ -7962,6 +8297,42 @@ export async function POST(request: NextRequest) {
       ...person,
       name: `${person?.firstName || ''} ${person?.lastName || ''}`.trim() || person?.realName || 'Sin nombre'
     };
+
+    // ============================================
+    // INVALIDAR CACHÉS si es un obituario
+    // ============================================
+    if (person?.deathYear) {
+      console.log('🗑️ Invalidando cachés de obituarios tras crear persona fallecida');
+      
+      const redisClient = RedisClient.getInstance();
+      if (redisClient) {
+        try {
+          const keys = await redisClient.keys('people:list:*deathYear*');
+          if (keys.length > 0) {
+            await redisClient.del(...keys);
+            console.log(`✅ ${keys.length} cachés de obituarios invalidados en Redis`);
+          }
+          
+          // También invalidar death-years
+          await redisClient.del('people:death-years:v1');
+          console.log('✅ Caché de death-years invalidado en Redis');
+        } catch (err) {
+          console.error('Error invalidando cachés de Redis:', err);
+        }
+      }
+      
+      // Limpiar memoria también
+      let memoryKeysDeleted = 0;
+      for (const key of memoryCache.keys()) {
+        if (key.includes('deathYear') || key === 'people:death-years:v1') {
+          memoryCache.delete(key);
+          memoryKeysDeleted++;
+        }
+      }
+      if (memoryKeysDeleted > 0) {
+        console.log(`✅ ${memoryKeysDeleted} cachés de obituarios invalidados en memoria`);
+      }
+    }
 
     return NextResponse.json(personWithName, { status: 201 });
   } catch (error) {
@@ -11284,6 +11655,300 @@ export default function EstrenosPage() {
       </div>
     }>
       <EstrenosContent />
+    </Suspense>
+  );
+}
+
+// ==================================================
+// src/app/listados/obituarios/ObituariosContent.tsx
+// ==================================================
+// src/app/listados/obituarios/ObituariosContent.tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import ObituariosYearSelector from '@/components/listados/obituarios/ObituariosYearSelector';
+import ObituariosGrid from '@/app/listados/obituarios/ObituariosGrid';
+import { PersonWithDeath, ObituariosPagination } from '@/lib/obituarios/obituariosTypes';
+import { getCurrentYear, filtersToApiParams } from '@/lib/obituarios/obituariosUtils';
+
+export default function ObituariosContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Estado
+  const [selectedYear, setSelectedYear] = useState<number>(getCurrentYear());
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [people, setPeople] = useState<PersonWithDeath[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [pagination, setPagination] = useState<ObituariosPagination>({
+    page: 1,
+    totalPages: 1,
+    total: 0
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Cargar años disponibles al montar
+  useEffect(() => {
+    loadAvailableYears();
+  }, []);
+
+  // Inicializar desde URL params - SOLO UNA VEZ
+  useEffect(() => {
+    const yearParam = searchParams.get('year');
+
+    if (yearParam) {
+      const year = parseInt(yearParam);
+      if (!isNaN(year)) {
+        setSelectedYear(year);
+      }
+    }
+
+    // Marcar como inicializado
+    setIsInitialized(true);
+  }, []);
+
+  // Resetear a página 1 cuando cambia el año
+  useEffect(() => {
+    if (!isInitialized) return;
+    setCurrentPage(1);
+  }, [selectedYear]);
+
+  // Cargar personas cuando cambian filtros o página
+  useEffect(() => {
+    if (!isInitialized) return;
+    loadPeople();
+  }, [selectedYear, currentPage, isInitialized]);
+
+  // Actualizar URL cuando cambia el año
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const params = new URLSearchParams();
+    params.set('year', selectedYear.toString());
+
+    const queryString = params.toString();
+    const newUrl = `/listados/obituarios?${queryString}`;
+
+    router.replace(newUrl, { scroll: false });
+  }, [selectedYear, router, isInitialized]);
+
+  const loadAvailableYears = async () => {
+    try {
+      const response = await fetch('/api/people/death-years');
+      
+      if (!response.ok) {
+        throw new Error('Error al cargar años');
+      }
+
+      const data = await response.json();
+      setAvailableYears(data.years || []);
+    } catch (error) {
+      console.error('Error loading death years:', error);
+      setAvailableYears([]);
+    }
+  };
+
+  const loadPeople = async () => {
+    setIsLoading(true);
+
+    try {
+      const apiParams = filtersToApiParams(selectedYear, currentPage, 90);
+      const params = new URLSearchParams(apiParams);
+
+      const response = await fetch(`/api/people?${params}`);
+
+      if (!response.ok) {
+        throw new Error('Error al cargar obituarios');
+      }
+
+      const data = await response.json();
+
+      setPeople(data.data || []);
+      
+      setPagination({
+        page: data.page || 1,
+        totalPages: data.totalPages || 1,
+        total: data.totalCount || 0
+      });
+
+    } catch (error) {
+      console.error('Error loading people:', error);
+      setPeople([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleYearChange = (year: number) => {
+    setSelectedYear(year);
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < pagination.totalPages) {
+      setCurrentPage(currentPage + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* Header */}
+      <div className="bg-gray-900/50 backdrop-blur-sm border-b border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">
+                Obituarios de {selectedYear}
+              </h1>
+              {pagination.total > 0 && (
+                <p className="text-gray-400 text-sm">
+                  {pagination.total} persona{pagination.total !== 1 ? 's' : ''} fallecida{pagination.total !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
+
+            {availableYears.length > 0 && (
+              <ObituariosYearSelector
+                availableYears={availableYears}
+                selectedYear={selectedYear}
+                onChange={handleYearChange}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Grid de personas */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <ObituariosGrid
+          people={people}
+          isLoading={isLoading}
+        />
+
+        {/* Paginación */}
+        {!isLoading && pagination.totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <button
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              className={`
+                px-4 py-2 rounded-lg font-medium transition-all
+                ${currentPage === 1
+                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                  : 'bg-gray-800 text-white hover:bg-gray-700'
+                }
+              `}
+            >
+              ← Anterior
+            </button>
+
+            <span className="text-gray-400">
+              Página {currentPage} de {pagination.totalPages}
+            </span>
+
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === pagination.totalPages}
+              className={`
+                px-4 py-2 rounded-lg font-medium transition-all
+                ${currentPage === pagination.totalPages
+                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                  : 'bg-gray-800 text-white hover:bg-gray-700'
+                }
+              `}
+            >
+              Siguiente →
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ==================================================
+// src/app/listados/obituarios/ObituariosGrid.tsx
+// ==================================================
+// src/components/listados/obituarios/ObituariosGrid.tsx
+'use client';
+
+import PersonCard from '@/components/home/PersonCard';
+import { PersonWithDeath } from '@/lib/obituarios/obituariosTypes';
+
+interface ObituariosGridProps {
+  people: PersonWithDeath[];
+  isLoading: boolean;
+}
+
+export default function ObituariosGrid({ people, isLoading }: ObituariosGridProps) {
+  
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div key={i} className="animate-pulse">
+            <div className="aspect-[2/3] bg-gray-800 rounded-lg mb-2" />
+            <div className="h-4 bg-gray-800 rounded mb-1" />
+            <div className="h-3 bg-gray-800 rounded w-2/3" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  
+  if (people.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <div className="text-gray-400 text-lg mb-2">
+          No se encontraron obituarios para este año
+        </div>
+        <p className="text-gray-500 text-sm">
+          Intenta seleccionar otro año
+        </p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+      {people.map((person) => (
+        <PersonCard key={person.id} person={person} />
+      ))}
+    </div>
+  );
+}
+
+// ==================================================
+// src/app/listados/obituarios/page.tsx
+// ==================================================
+// src/app/listados/obituarios/page.tsx
+'use client';
+
+import { Suspense } from 'react';
+import ObituariosContent from './ObituariosContent';
+
+export const dynamic = 'force-dynamic';
+
+export default function ObituariosPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-gray-400">Cargando obituarios...</p>
+        </div>
+      </div>
+    }>
+      <ObituariosContent />
     </Suspense>
   );
 }
@@ -22830,17 +23495,106 @@ export default function ObituariosSection({ obituarios, loading = false }: Obitu
           })}
         </div>
       </div>
-      {/*
+      {
       <div className="mt-6 text-center">
         <Link
-          href="/listados/personas?hasDeathDate=true&sortBy=deathDate&sortOrder=desc"
+          href="/listados/obituarios"
           className="inline-block border border-cine-accent text-cine-accent hover:bg-cine-accent hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
         >
           Ver más obituarios
         </Link>
       </div>
-      */}
+      }
     </section>
+  );
+}
+
+// ==================================================
+// src/components/home/PersonCard.tsx
+// ==================================================
+// src/components/home/PersonCard.tsx
+'use client';
+
+import Link from 'next/link';
+import { PersonWithDeath } from '@/lib/obituarios/obituariosTypes';
+import { formatPersonName, calculateAge } from '@/lib/obituarios/obituariosUtils';
+
+interface PersonCardProps {
+  person: PersonWithDeath;
+}
+
+export default function PersonCard({ person }: PersonCardProps) {
+  const personName = formatPersonName(person);
+  const photoUrl = person.photoUrl;
+  
+  // Calcular edad
+  const age = calculateAge(
+    person.birthYear,
+    person.birthMonth,
+    person.birthDay,
+    person.deathYear,
+    person.deathMonth,
+    person.deathDay
+  );
+
+  return (
+    <Link 
+      href={`/persona/${person.slug}`}
+      className="group block text-center"
+    >
+      {/* Imagen circular */}
+      <div className="relative w-full aspect-square rounded-full overflow-hidden bg-gray-800 mb-3 transition-transform duration-300 group-hover:scale-105">
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt={personName}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          // Placeholder SVG - igual al de la home
+          <div className="w-full h-full flex items-center justify-center">
+            <svg 
+              className="w-1/2 h-1/2 text-gray-500" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth="1.5" 
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
+              />
+            </svg>
+          </div>
+        )}
+        
+        {/* Overlay en hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      </div>
+
+      {/* Información */}
+      <div className="space-y-1">
+        <h3 className="font-medium text-white group-hover:text-orange-400 transition-colors line-clamp-2">
+          {personName}
+        </h3>
+        
+        {/* Fechas: 1950 - 2024 (74 años) */}
+        {person.birthYear && person.deathYear && (
+          <p className="text-sm text-gray-400">
+            {person.birthYear} - {person.deathYear}
+            {age !== null && ` (${age} años)`}
+          </p>
+        )}
+        
+        {/* Si solo tiene año de muerte */}
+        {!person.birthYear && person.deathYear && (
+          <p className="text-sm text-gray-400">
+            † {person.deathYear}
+          </p>
+        )}
+      </div>
+    </Link>
   );
 }
 
@@ -23885,6 +24639,136 @@ export default function EstrenosYearBar({
             </div>
         </div>
     );
+}
+
+// ==================================================
+// src/components/listados/obituarios/ObituariosYearSelector.tsx
+// ==================================================
+// src/components/listados/obituarios/ObituariosYearSelector.tsx
+'use client';
+
+import { ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+
+interface ObituariosYearSelectorProps {
+  availableYears: number[];
+  selectedYear: number;
+  onChange: (year: number) => void;
+}
+
+export default function ObituariosYearSelector({ 
+  availableYears, 
+  selectedYear, 
+  onChange 
+}: ObituariosYearSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+  }, [isOpen]);
+  
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(target)
+      ) {
+        setIsOpen(false);
+      }
+    }
+    
+    if (isOpen) {
+      setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 0);
+      
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+  
+  useEffect(() => {
+    function handleScroll() {
+      if (isOpen) {
+        setIsOpen(false);
+      }
+    }
+    
+    if (isOpen) {
+      window.addEventListener('scroll', handleScroll);
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+  }, [isOpen]);
+  
+  const handleSelect = (year: number) => {
+    onChange(year);
+    setIsOpen(false);
+  };
+  
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors min-w-[140px] justify-between"
+      >
+        <span className="font-medium">{selectedYear}</span>
+        <ChevronDown 
+          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+        />
+      </button>
+      
+      {mounted && isOpen && dropdownPosition.top > 0 && createPortal(
+        <div 
+          ref={dropdownRef}
+          className="fixed bg-gray-800 rounded-lg shadow-xl min-w-[140px] max-h-[400px] overflow-y-auto"
+          style={{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`,
+            zIndex: 9999
+          }}
+        >
+          {availableYears.map((year) => (
+            <button
+              key={year}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSelect(year);
+              }}
+              className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                year === selectedYear ? 'bg-gray-700 text-orange-400' : 'text-white'
+              }`}
+            >
+              {year}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
+  );
 }
 
 // ==================================================
@@ -27837,6 +28721,164 @@ export const shouldDisableDurationType = (
   segundos: number | undefined | null
 ): boolean => {
   return (minutos && minutos > 0) || (segundos && segundos > 0) ? true : false
+}
+
+// ==================================================
+// src/lib/obituarios/obituariosTypes.ts
+// ==================================================
+// src/lib/obituarios/obituariosTypes.ts
+
+export interface PersonWithDeath {
+  id: number;
+  slug: string;
+  firstName: string | null;
+  lastName: string | null;
+  photoUrl: string | null;
+  birthYear: number | null;
+  birthMonth: number | null;
+  birthDay: number | null;
+  deathYear: number;
+  deathMonth: number | null;
+  deathDay: number | null;
+}
+
+export interface ObituariosFilters {
+  year?: number;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface ObituariosPagination {
+  page: number;
+  totalPages: number;
+  total: number;
+}
+
+// ==================================================
+// src/lib/obituarios/obituariosUtils.ts
+// ==================================================
+// src/lib/obituarios/obituariosUtils.ts
+
+import { PersonWithDeath } from './obituariosTypes';
+
+/**
+ * Obtiene el año actual
+ */
+export function getCurrentYear(): number {
+  return new Date().getFullYear();
+}
+
+/**
+ * Genera array de años desde el primer año con defunciones hasta el actual
+ */
+export async function getAvailableYears(): Promise<number[]> {
+  try {
+    const response = await fetch('/api/people/death-years');
+    if (!response.ok) {
+      throw new Error('Error al obtener años');
+    }
+    
+    const data = await response.json();
+    return data.years || [];
+  } catch (error) {
+    console.error('Error loading death years:', error);
+    return [];
+  }
+}
+
+/**
+ * Calcula la edad de una persona
+ */
+export function calculateAge(
+  birthYear: number | null,
+  birthMonth: number | null,
+  birthDay: number | null,
+  deathYear: number,
+  deathMonth: number | null,
+  deathDay: number | null
+): number | null {
+  if (!birthYear) return null;
+
+  let age = deathYear - birthYear;
+
+  // Ajustar si no ha llegado el cumpleaños
+  if (birthMonth && deathMonth) {
+    if (deathMonth < birthMonth) {
+      age--;
+    } else if (deathMonth === birthMonth && birthDay && deathDay) {
+      if (deathDay < birthDay) {
+        age--;
+      }
+    }
+  }
+
+  return age;
+}
+
+/**
+ * Formatea el nombre completo de una persona
+ */
+export function formatPersonName(person: PersonWithDeath): string {
+  const parts = [];
+  if (person.firstName) parts.push(person.firstName);
+  if (person.lastName) parts.push(person.lastName);
+  return parts.join(' ') || 'Sin nombre';
+}
+
+/**
+ * Formatea las fechas de vida "n. 1950 - f. 2024 (74 años)"
+ */
+export function formatLifeDates(person: PersonWithDeath): string {
+  const parts = [];
+  
+  // Fecha de nacimiento
+  if (person.birthYear) {
+    parts.push(`n. ${person.birthYear}`);
+  }
+  
+  // Fecha de muerte
+  if (person.deathYear) {
+    parts.push(`f. ${person.deathYear}`);
+  }
+  
+  const result = parts.join(' - ');
+  
+  // Agregar edad si es posible calcularla
+  const age = calculateAge(
+    person.birthYear,
+    person.birthMonth,
+    person.birthDay,
+    person.deathYear,
+    person.deathMonth,
+    person.deathDay
+  );
+  
+  if (age !== null) {
+    return `${result} (${age} años)`;
+  }
+  
+  return result;
+}
+
+/**
+ * Convierte filtros a query params para la API
+ */
+export function filtersToApiParams(year?: number, page = 1, limit = 90): Record<string, string> {
+  const params: Record<string, string> = {
+    page: page.toString(),
+    limit: limit.toString(),
+    sortBy: 'deathYear',
+    sortOrder: 'desc',
+    hasDeathDate: 'true' // Solo personas fallecidas
+  };
+  
+  if (year) {
+    params.deathYear = year.toString();
+  }
+  
+  return params;
 }
 
 // ==================================================
