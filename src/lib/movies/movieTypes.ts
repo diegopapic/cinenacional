@@ -143,7 +143,8 @@ export const movieRelationsSchema = z.object({
     personId: z.number(),
     characterName: z.string().optional(),
     billingOrder: z.number().optional(),
-    isPrincipal: z.boolean().optional()
+    isPrincipal: z.boolean().optional(),
+    notes: z.string().optional(),
   })).optional(),
   crew: z.array(z.object({
     personId: z.number(),

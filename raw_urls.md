@@ -206,6 +206,7 @@
 - [src/components/admin/locations/LocationTreeNode.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/locations/LocationTreeNode.tsx)
 - [src/components/admin/MovieFormEnhanced.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MovieFormEnhanced.tsx)
 - [src/components/admin/MovieLinksManager.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MovieLinksManager.tsx)
+- [src/components/admin/movies/CastList.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/CastList.tsx)
 - [src/components/admin/movies/MovieModal/index.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/index.tsx)
 - [src/components/admin/movies/MovieModal/MovieModalFooter.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/MovieModalFooter.tsx)
 - [src/components/admin/movies/MovieModal/MovieModalHeader.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/movies/MovieModal/MovieModalHeader.tsx)
