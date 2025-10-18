@@ -265,7 +265,6 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
           </div>
         )}
       </div>
-      {/*
       <div className="mt-6 text-center">
         <Link
           href="/efemerides"
@@ -274,7 +273,6 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
           Ver más efemérides
         </Link>
       </div>
-      */}
     </section>
   );
 }
