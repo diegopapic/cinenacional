@@ -1,0 +1,1333 @@
+movie_id,movie_title,movie_year,person_id,person_first_name,person_last_name,death_year,years_difference,work_type
+6438,"Plumíferos",2019,121114,"Claudio","Monteverdi",1643,376,crew
+6671,"La muestra",2010,121114,"Claudio","Monteverdi",1643,367,crew
+321,"Cantando llegó el amor",1938,154457,"Miguel","de Cervantes Saavedra",1616,322,crew
+8812,"El hombre de Paso Piedra",2017,156205,"Johann","Sebastian Bach",1750,267,crew
+8797,"Panke",2016,156205,"Johann","Sebastian Bach",1750,266,crew
+539,"La dama duende",1945,152340,"Pedro Calderón","de la Barca",1681,264,crew
+2297,"Los libros y la noche",2000,140906,"Giovanni","B. Pergolesi",1736,264,crew
+10259,"¡El archiduque debe morir!",2021,104991,"Georg","Friedrich Händel",1759,262,crew
+6770,"Ernesto Sabato, mi padre",2010,156205,"Johann","Sebastian Bach",1750,260,crew
+2504,"Perón, sinfonía del sentimiento",1999,151356,"Antonio","Vivaldi",1741,258,crew
+4536,"El sueño del errante",2003,156205,"Johann","Sebastian Bach",1750,253,crew
+500,"Crónica de un niño solo",1965,152657,"Arcángelo","Corelli",1713,252,crew
+2850,"Balnearios",2001,156205,"Johann","Sebastian Bach",1750,251,crew
+8788,"El teorema de Santiago",2017,110837,"Georg","Philipp Telemann",1767,250,crew
+2297,"Los libros y la noche",2000,156205,"Johann","Sebastian Bach",1750,250,crew
+1887,"Últimas imágenes del naufragio",1990,156205,"Johann","Sebastian Bach",1750,240,crew
+10317,"Las chinas",2021,104508,"Pietro","Metastasio",1782,239,crew
+399,"Chorros",1987,156205,"Johann","Sebastian Bach",1750,237,crew
+2112,"Ana, ¿dónde estás?",1985,156205,"Johann","Sebastian Bach",1750,235,crew
+10317,"Las chinas",2021,143257,"Christoph","Willibald Gluck",1787,234,crew
+464,"La conquista del paraíso",1981,156205,"Johann","Sebastian Bach",1750,231,crew
+675,"Éste es el romance del Aniceto y la Francisca, de cómo quedó trunco, comenzó la tristeza y unas pocas cosas más...",1967,151356,"Antonio","Vivaldi",1741,226,crew
+2579,"Sobre todas estas estrellas",1965,151356,"Antonio","Vivaldi",1741,224,crew
+172,"Autocine mon amour",1972,156205,"Johann","Sebastian Bach",1750,222,crew
+1590,"Prisioneros de una noche",1962,151356,"Antonio","Vivaldi",1741,221,crew
+604,"El dependiente",1969,156205,"Johann","Sebastian Bach",1750,219,crew
+620,"En la selva no hay estrellas",1968,156205,"Johann","Sebastian Bach",1750,218,crew
+2291,"Ojos que no ven",2008,157209,"Wolfgang","Amadeus Mozart",1791,217,crew
+4054,"Carta de Fader",1965,156205,"Johann","Sebastian Bach",1750,215,crew
+2578,"Un largo silencio",1963,156205,"Johann","Sebastian Bach",1750,213,crew
+4536,"El sueño del errante",2003,157209,"Wolfgang","Amadeus Mozart",1791,212,crew
+2909,"Cuatro piernas",2002,157209,"Wolfgang","Amadeus Mozart",1791,211,crew
+2133,"Buenos Aires viceversa",1997,143257,"Christoph","Willibald Gluck",1787,210,crew
+160971,"Ojos que no ven",2000,157209,"Wolfgang","Amadeus Mozart",1791,209,crew
+2504,"Perón, sinfonía del sentimiento",1999,157209,"Wolfgang","Amadeus Mozart",1791,208,crew
+450,"Concierto para una lágrima",1955,156205,"Johann","Sebastian Bach",1750,205,crew
+1696,"Romance sin palabras",1948,156205,"Johann","Sebastian Bach",1750,198,crew
+110,"Los amores de Kafka",1988,157209,"Wolfgang","Amadeus Mozart",1791,197,crew
+768,"Donde mueren las palabras",1946,156205,"Johann","Sebastian Bach",1750,196,crew
+9506,"Gotas de lluvia",2019,156929,"Ludwig","van Beethoven",1827,192,crew
+969,"El hombre del subsuelo",1981,157209,"Wolfgang","Amadeus Mozart",1791,190,crew
+2909,"Cuatro piernas",2002,156929,"Ludwig","van Beethoven",1827,175,crew
+2297,"Los libros y la noche",2000,156929,"Ludwig","van Beethoven",1827,173,crew
+8162,"El escarabajo de oro",2014,143725,"Edgar","Allan Poe",1849,165,crew
+450,"Concierto para una lágrima",1955,157209,"Wolfgang","Amadeus Mozart",1791,164,crew
+973,"Hombre mirando al sudeste",1987,156929,"Ludwig","van Beethoven",1827,160,crew
+8797,"Panke",2016,152463,"Robert","Schumann",1856,160,crew
+8289,"La princesa de Francia",2015,152463,"Robert","Schumann",1856,159,crew
+1831,"La serpiente de cascabel",1948,157209,"Wolfgang","Amadeus Mozart",1791,157,crew
+5454,"A propósito de Buenos Aires",2007,138387,"Esteban","Echeverría",1851,156,crew
+4666,"El hombre largo",2004,143725,"Edgar","Allan Poe",1849,155,crew
+2909,"Cuatro piernas",2002,154103,"Frédéric","Chopin",1849,153,crew
+2612,"La cautiva",2001,138387,"Esteban","Echeverría",1851,150,crew
+843,"Gente en Buenos Aires",1974,156929,"Ludwig","van Beethoven",1827,147,crew
+9882,"Sangre Vurdalak",2022,107160,"Alekséi","Konstantínovich Tolstói",1875,147,crew
+2289,"Acrobacias del corazón",2000,152463,"Robert","Schumann",1856,144,crew
+887,"Los herederos",1970,156929,"Ludwig","van Beethoven",1827,143,crew
+3964,"La triste y penosa historia de Mateo Praxedes Calsado",1994,139129,"Nikolai","Gogol",1852,142,crew
+6671,"La muestra",2010,143778,"Gioacchino","Antonio Rossini",1868,142,crew
+5454,"A propósito de Buenos Aires",2007,157482,"José","Mármol",1871,136,crew
+6671,"La muestra",2010,154220,"Georges","Bizet",1875,135,crew
+1071,"El jugador",2016,149470,"Fiodor","Dostoievsky",1881,135,crew
+2469,"La nariz",1985,139129,"Nikolai","Gogol",1852,133,crew
+756,"El Fausto criollo",2011,150802,"Estanislao","del Campo",1880,131,crew
+756,"El Fausto criollo",2011,150802,"Estanislao","del Campo",1880,131,crew
+5079,"Que ne suis-je fougère?",2005,154220,"Georges","Bizet",1875,130,crew
+450,"Concierto para una lágrima",1955,156929,"Ludwig","van Beethoven",1827,128,crew
+2092,"El acomodador",1975,143725,"Edgar","Allan Poe",1849,126,crew
+8162,"El escarabajo de oro",2014,113819,"Victoria","Benedictsson",1888,126,crew
+4758,"Fausto",2003,150802,"Estanislao","del Campo",1880,123,crew
+10497,"Alicia en el teatro de las maravillas",2021,157864,"Lewis","Carroll",1898,123,crew
+546,"Danza del fuego",1949,156929,"Ludwig","van Beethoven",1827,122,crew
+5834,"Martín Fierro: la película",2007,149762,"José","Hernández",1886,121,crew
+1696,"Romance sin palabras",1948,156929,"Ludwig","van Beethoven",1827,121,crew
+3636,"Martín Fierro, el ave solitaria",2006,149762,"José","Hernández",1886,120,crew
+8162,"El escarabajo de oro",2014,150983,"Robert","Louis Stevenson",1894,120,crew
+5454,"A propósito de Buenos Aires",2007,149099,"Domingo","Faustino Sarmiento",1888,119,crew
+768,"Donde mueren las palabras",1946,156929,"Ludwig","van Beethoven",1827,119,crew
+8162,"El escarabajo de oro",2014,113818,"Leandro","N. Alem",1896,118,crew
+2853,"La sombra",2015,147965,"Georges","Rodenbach",1898,117,crew
+132,"Apasionadamente",1944,156929,"Ludwig","van Beethoven",1827,117,crew
+10259,"¡El archiduque debe morir!",2021,108868,"Antonín","Dvořák",1904,117,crew
+8564,"Buscamos vida, los crímenes del ejército argentino en Campo de Mayo",2013,152725,"Johannes","Brahms",1897,116,crew
+889,"La herencia",2008,153824,"Guy","de Maupassant",1893,115,crew
+420,"Claro de luna",1942,156929,"Ludwig","van Beethoven",1827,115,crew
+1610,"Las ratas",1963,154103,"Frédéric","Chopin",1849,114,crew
+9307,"Trainspotter",2017,108868,"Antonín","Dvořák",1904,113,crew
+1199,"El marido perfecto",1993,149470,"Fiodor","Dostoievsky",1881,112,crew
+2406,"Obras maestras del terror",1960,143725,"Edgar","Allan Poe",1849,111,crew
+450,"Concierto para una lágrima",1955,153166,"Félix","Mendelssohn",1847,108,crew
+1876,"Sinfonía de juventud",1955,153166,"Félix","Mendelssohn",1847,108,crew
+614,"Enigma de mujer",1956,154103,"Frédéric","Chopin",1849,107,crew
+2035,"Viento norte",2020,151202,"Lucio","V. Mansilla",1913,107,crew
+1610,"Las ratas",1963,152463,"Robert","Schumann",1856,107,crew
+3447,"Safo",2003,156157,"Alphonse","Daudet",1897,106,crew
+450,"Concierto para una lágrima",1955,154103,"Frédéric","Chopin",1849,106,crew
+1350,"Pájaros de cristal",1955,154103,"Frédéric","Chopin",1849,106,crew
+6844,"Si se pudiera saber...",2009,143659,"Antón","Chéjov",1904,105,crew
+6346,"La tristeza",2007,143659,"Antón","Chéjov",1904,103,crew
+1214,"Martín Fierro",1989,149762,"José","Hernández",1886,103,crew
+1214,"Martín Fierro",1989,149762,"José","Hernández",1886,103,crew
+2297,"Los libros y la noche",2000,152725,"Johannes","Brahms",1897,103,crew
+546,"Danza del fuego",1949,153166,"Félix","Mendelssohn",1847,102,crew
+68,"Alejandra",2013,158037,"Alexandre","Bisson",1912,101,crew
+1696,"Romance sin palabras",1948,153166,"Félix","Mendelssohn",1847,101,crew
+546,"Danza del fuego",1949,154103,"Frédéric","Chopin",1849,100,crew
+5202,"Emancipación",2006,154089,"Henrik","Ibsen",1906,100,crew
+969,"El hombre del subsuelo",1981,149470,"Fiodor","Dostoievsky",1881,100,crew
+8788,"El teorema de Santiago",2017,152729,"Claude","Debussy",1918,99,crew
+160531,"El Fausto criollo",1979,150802,"Estanislao","del Campo",1880,99,crew
+525,"La dama del collar",1948,154103,"Frédéric","Chopin",1849,99,crew
+1831,"La serpiente de cascabel",1948,154103,"Frédéric","Chopin",1849,99,crew
+1350,"Pájaros de cristal",1955,152463,"Robert","Schumann",1856,99,crew
+918,"Los hijos de Fierro",1984,149762,"José","Hernández",1886,98,crew
+5091,"La ventana abierta",2014,112072,"Saki","",1916,98,crew
+2504,"Perón, sinfonía del sentimiento",1999,149465,"Giuseppe","Verdi",1901,98,crew
+768,"Donde mueren las palabras",1946,154103,"Frédéric","Chopin",1849,97,crew
+272,"Caballos salvajes",1995,154896,"Johann","Strauss",1899,96,crew
+1926,"Veinticuatro horas en la vida de una mujer",1944,154103,"Frédéric","Chopin",1849,95,crew
+1975,"La verdadera victoria",1944,154103,"Frédéric","Chopin",1849,95,crew
+2112,"Ana, ¿dónde estás?",1985,154121,"César","Franck",1890,95,crew
+1511,"La piel de zapa",1943,146521,"Honoré","de Balzac",1850,93,crew
+1603,"La pródiga",1984,154319,"Pedro Antonio","de Alarcón",1891,93,crew
+2095,"Amor de otoño",1996,143659,"Antón","Chéjov",1904,92,crew
+68,"Alejandra",2013,158039,"Georges","Feydeau",1921,92,crew
+357,"La casa del recuerdo",1940,154103,"Frédéric","Chopin",1849,91,crew
+523,"Dama de compañía",1940,154103,"Frédéric","Chopin",1849,91,crew
+6671,"La muestra",2010,121115,"Ruggero","Leoncavallo",1919,91,crew
+1023,"Hormiga negra",1979,149176,"Eduardo","Gutiérrez",1889,90,crew
+2133,"Buenos Aires viceversa",1997,143259,"Nikolai","Rimsky-Korsakov",1908,89,crew
+1887,"Últimas imágenes del naufragio",1990,149465,"Giuseppe","Verdi",1901,89,crew
+2086,"La vuelta de Martín Fierro",1974,149762,"José","Hernández",1886,88,crew
+756,"El Fausto criollo",2011,150799,"Julián","Aguirre",1924,87,crew
+1988,"Viaje al infinito",1956,152728,"Louis","Héctor Berlioz",1869,87,crew
+9314,"El escuerzo",2024,149581,"Leopoldo","Lugones",1938,86,crew
+233,"Blancanieves y el Príncipe Azul",1945,155487,"Wilhelm","Carl Grimm",1859,86,crew
+10498,"Buscando a Vassa",2021,158106,"Máximo","Gorki",1936,85,crew
+894,"Los hermanos corsos",1955,153161,"Alejandro","Dumas (p)",1870,85,crew
+9635,"Gardeliana",2020,155245,"Carlos","Gardel",1935,85,crew
+10500,"Muy bodas de sangre, un biodrama trágico",2021,155441,"Federico","García Lorca",1936,85,crew
+159856,"La vida de Juan Moreira, en colores, con sonido y todo. A pedido del cariñoso público.",1973,149176,"Eduardo","Gutiérrez",1889,84,crew
+523,"Dama de compañía",1940,152463,"Robert","Schumann",1856,84,crew
+451,"El conde de Montecristo",1953,153161,"Alejandro","Dumas (p)",1870,83,crew
+9356,"Bailar la sangre",2019,155441,"Federico","García Lorca",1936,83,crew
+160913,"Martín Fierro",1968,149762,"José","Hernández",1886,82,crew
+233,"Blancanieves y el Príncipe Azul",1945,155488,"Jacob Ludwig","Carl Grimm",1863,82,crew
+2176,"De los Apeninos a los Andes",1990,152940,"Edmondo","de Amicis",1908,82,crew
+2176,"De los Apeninos a los Andes",1990,152940,"Edmondo","de Amicis",1908,82,crew
+1767,"Santos Vega",1971,149176,"Eduardo","Gutiérrez",1889,82,crew
+5202,"Emancipación",2006,131732,"Franz","Kafka",1924,82,crew
+301,"Las campanas de Teresa",1957,154618,"Hans","Christian Andersen",1875,82,crew
+2083,"La voz del tambor",1938,152463,"Robert","Schumann",1856,82,crew
+492,"El crimen de Oribe",1950,152728,"Louis","Héctor Berlioz",1869,81,crew
+4941,"Sardinas",2005,127730,"Erik","Satie",1925,80,crew
+3745,"Días enteros bajo las piedras",2004,131732,"Franz","Kafka",1924,80,crew
+969,"El hombre del subsuelo",1981,149465,"Giuseppe","Verdi",1901,80,crew
+4006,"La oscilación del péndulo",2002,130906,"Katherine","Mansfield",1923,79,crew
+2035,"Viento norte",2020,156451,"Elías","Alippi",1942,78,cast
+3006,"¿Te dije que te quiero?",2002,150858,"Giácomo","Puccini",1924,78,crew
+1242,"La novela de un joven pobre",1968,147892,"Octave","Feuillet",1890,78,crew
+76,"Alicia en el país de las maravillas",1976,157864,"Lewis","Carroll",1898,78,crew
+10546,"Todo lo que se olvida en un instante",2022,103180,"Franklin","Delano Roosevelt",1945,77,cast
+1767,"Santos Vega",1971,156033,"Ricardo","Gutiérrez",1896,75,crew
+4989,"La gallina degollada",2011,149596,"Horacio","Quiroga",1937,74,crew
+344,"Carmen",1943,154222,"Prosper","Mérimée",1870,73,crew
+2458,"La dialéctica tiene sus cositas",1972,154896,"Johann","Strauss",1899,73,crew
+1361,"Mi noche triste",1997,147369,"Eduardo","Arolas",1924,73,crew
+2750,"El fusilamiento de Dorrego",2002,137825,"Eliseo","Gutiérrez",1929,73,cast
+6727,"Cuentos de la selva",2010,149596,"Horacio","Quiroga",1937,73,crew
+2750,"El fusilamiento de Dorrego",2002,137824,"Roberto","Casaux",1929,73,cast
+160934,"Muerte civil",1954,146706,"Paolo","Giacometti",1882,72,crew
+160764,"La herencia",1964,153824,"Guy","de Maupassant",1893,71,crew
+2083,"La voz del tambor",1938,143778,"Gioacchino","Antonio Rossini",1868,70,crew
+2267,"Lisboa",2004,139857,"Fernando","Pessoa",1935,69,crew
+2267,"Lisboa",2004,139857,"Fernando","Pessoa",1935,69,crew
+344,"Carmen",1943,154220,"Georges","Bizet",1875,68,crew
+384,"Chafalonías",1960,153824,"Guy","de Maupassant",1893,67,crew
+1696,"Romance sin palabras",1948,145530,"Modest","Petrovich Mussorgsky",1881,67,crew
+160549,"El jugador",1947,149470,"Fiodor","Dostoievsky",1881,66,crew
+160349,"Amalia",1936,157482,"José","Mármol",1871,65,crew
+1361,"Mi noche triste",1997,152898,"Pascual","Contursi",1932,65,crew
+1361,"Mi noche triste",1997,152898,"Pascual","Contursi",1932,65,crew
+5454,"A propósito de Buenos Aires",2007,148842,"Roberto","Arlt",1942,65,crew
+1361,"Mi noche triste",1997,147372,"Samuel","Castriota",1932,65,crew
+691,"El día que me quieras",1999,155243,"Alfredo","Le Pera",1935,64,crew
+2887,"Los rubios",2003,104779,"Stanisław","Ignacy Witkiewicz",1939,64,crew
+835,"La fuga",2013,154866,"María","Santos",1949,64,cast
+7964,"Las enfermeras de Evita",2015,155004,"María","Eva Duarte",1952,63,cast
+835,"La fuga",2013,156925,"Sebastián","Chiola",1950,63,cast
+9698,"Las sombras",2020,107612,"Lord","Dunsany",1957,63,crew
+1874,"Sin fin",2005,144713,"Glenn","Miller",1944,61,crew
+3628,"El marfil",2004,132639,"W.","W. Jacobs",1943,61,crew
+2035,"Viento norte",2020,156880,"Alberto","Vacarezza",1959,61,crew
+754,"Fascinación",2016,158495,"Carlos","Olivari",1955,61,crew
+754,"Fascinación",2016,158495,"Carlos","Olivari",1955,61,crew
+2425,"Cuesta abajo",1995,155243,"Alfredo","Le Pera",1935,60,crew
+1653,"La pulga en la oreja",1981,158039,"Georges","Feydeau",1921,60,crew
+835,"La fuga",2013,156453,"Juan Carlos","Cobián",1953,60,crew
+2425,"Cuesta abajo",1995,155245,"Carlos","Gardel",1935,60,crew
+6671,"La muestra",2010,149983,"Arnold","Schönberg",1951,59,crew
+754,"Fascinación",2016,158057,"Carlos","Schlieper",1957,59,crew
+614,"Enigma de mujer",1956,152725,"Johannes","Brahms",1897,59,crew
+1060,"Juan Moreira",1948,149176,"Eduardo","Gutiérrez",1889,59,crew
+1060,"Juan Moreira",1948,149176,"Eduardo","Gutiérrez",1889,59,crew
+943,"Historias de amor, de locura y de muerte",1996,149596,"Horacio","Quiroga",1937,59,crew
+837,"El gaucho y el diablo",1952,150983,"Robert","Louis Stevenson",1894,58,crew
+1230,"Más allá del olvido",1956,147965,"Georges","Rodenbach",1898,58,crew
+1495,"La mujer de las camelias",1953,146582,"Alejandro","Dumas (h)",1895,58,crew
+159,"Así es la vida",1977,156443,"Ángel","Villoldo",1919,58,crew
+721,"El extraño caso del hombre y la bestia",1951,150983,"Robert","Louis Stevenson",1894,57,crew
+5079,"Que ne suis-je fougère?",2005,127188,"Kurt","Schwitters",1948,57,crew
+2750,"El fusilamiento de Dorrego",2002,137827,"Mario","Gallo",1945,57,crew
+1998,"Su mejor alumno",1944,149099,"Domingo","Faustino Sarmiento",1888,56,crew
+81,"Allá lejos y hace tiempo",1978,157762,"Guillermo","Enrique Hudson",1922,56,crew
+68,"Alejandra",2013,158057,"Carlos","Schlieper",1957,56,crew
+309,"Canción de cuna",2005,154866,"María","Santos",1949,56,cast
+50,"Adolescencia",2011,158495,"Carlos","Olivari",1955,56,crew
+651,"Después del silencio",2020,158376,"Francisco","Audenino",1964,56,cast
+3171,"Mocoso malcriado",1993,149596,"Horacio","Quiroga",1937,56,crew
+1075,"El juguete rabioso",1998,148842,"Roberto","Arlt",1942,56,crew
+1449,"Muchacho",1970,146863,"José","Betinotti",1915,55,crew
+160531,"El Fausto criollo",1979,150799,"Julián","Aguirre",1924,55,crew
+9694,"Desaparición incompleta",2020,152800,"Ezequiel","Martínez Estrada",1965,55,crew
+525,"La dama del collar",1948,153824,"Guy","de Maupassant",1893,55,crew
+754,"Fascinación",2016,157776,"Julián","Bautista",1961,55,crew
+50,"Adolescencia",2011,158506,"Felisa","Mary",1956,55,cast
+229,"La bestia humana",1957,155524,"Emilio","Zola",1902,55,crew
+5454,"A propósito de Buenos Aires",2007,125974,"Macedonio","Fernández",1952,55,crew
+651,"Después del silencio",2020,158381,"Pedro","Laxalt",1965,55,cast
+1438,"Mosquita muerta",1946,146975,"Albert","Millaud",1892,54,crew
+5079,"Que ne suis-je fougère?",2005,149983,"Arnold","Schönberg",1951,54,crew
+639,"La despedida",2012,157080,"Fernando","de Fuentes",1958,54,crew
+1291,"La mentirosa",1999,149215,"Consuelo","Abad",1945,54,cast
+1438,"Mosquita muerta",1946,146973,"Hervé","",1892,54,crew
+1774,"Todo el año es Navidad",2018,157274,"Pepita","Serrador",1964,54,cast
+201,"El baldío",2021,158917,"Alfredo","Traverso",1967,54,crew
+1926,"Veinticuatro horas en la vida de una mujer",1944,154121,"César","Franck",1890,54,crew
+1759,"La Tigra",1964,155720,"Florencio","Sánchez",1910,54,crew
+1418,"La patota",2015,147091,"Gastón","Marchetto",1961,54,cast
+651,"Después del silencio",2020,155984,"Julio","Bianquet",1966,54,cast
+9810,"Che, memorias de un año secreto",2020,135736,"Ernesto","""Che"" Guevara",1967,53,cast
+1887,"Últimas imágenes del naufragio",1990,148941,"José","González Castillo",1937,53,crew
+1203,"Noche de bodas",2009,158506,"Felisa","Mary",1956,53,cast
+492,"El crimen de Oribe",1950,152725,"Johannes","Brahms",1897,53,crew
+1071,"El jugador",2016,157784,"Alberto","Bello",1963,53,cast
+1071,"El jugador",2016,148871,"Julio","Perceval",1963,53,crew
+176,"Las aventuras de Jack",1949,156157,"Alphonse","Daudet",1897,52,crew
+1039,"Huella",1940,149099,"Domingo","Faustino Sarmiento",1888,52,crew
+930,"Guacho",2007,149685,"Concha","Espina",1955,52,crew
+160785,"La novela de un joven pobre",1942,147892,"Octave","Feuillet",1890,52,crew
+335,"Capitán Veneno",1943,154319,"Pedro Antonio","de Alarcón",1891,52,crew
+10343,"Juana",2021,104602,"Juana","Rouco Buela",1969,52,cast
+160021,"Dagli Apennini alle Ande",1960,152940,"Edmondo","de Amicis",1908,52,crew
+208,"Barcos de papel",2020,158853,"José","Serra",1968,52,crew
+698,"Una excursión a los indios ranqueles",1965,151202,"Lucio","V. Mansilla",1913,52,crew
+955,"Un idilio de estación",1978,150653,"Ricardo","Güiraldes",1927,51,crew
+150,"Arroz con leche",2008,158057,"Carlos","Schlieper",1957,51,crew
+984,"Los inocentes",2016,158160,"Alberto","Etchebehere",1965,51,crew
+355,"La casa de los cuervos",1941,154121,"César","Franck",1890,51,crew
+2054,"Yo quiero ser bataclana",2005,157988,"Enrique","Roldán",1954,51,cast
+2054,"Yo quiero ser bataclana",2005,158629,"Manuel","Romero",1954,51,crew
+1071,"El jugador",2016,158381,"Pedro","Laxalt",1965,51,cast
+1767,"Santos Vega",1971,145172,"Rafael","Obligado",1920,51,crew
+7718,"Imágenes del Tío Sam",2013,115905,"Eric","Johnston",1963,50,cast
+162246,"中孚 61. La verdad interior",2022,162414,"Alejandra","Pizarnik",1972,50,crew
+2853,"La sombra",2015,158160,"Alberto","Etchebehere",1965,50,crew
+161171,"Una excursión a los indios ranqueles",1963,151202,"Lucio","V. Mansilla",1913,50,crew
+66,"Al compás de tu mentira",1950,158083,"Oscar","Wilde",1900,50,crew
+2853,"La sombra",2015,158381,"Pedro","Laxalt",1965,50,cast
+1676,"Río Turbio",2022,147532,"Robert","Le Vigan",1972,50,cast
+208,"Barcos de papel",2020,158966,"Román","Viñoly Barreto",1970,50,crew
+651,"Después del silencio",2020,151529,"Violeta","Antier",1970,50,cast
+3057,"Pueblo chico",2005,156397,"Edmo","Cominetti",1956,49,crew
+1438,"Mosquita muerta",1946,154218,"Henri","Meilhac",1897,49,crew
+2035,"Viento norte",2020,158119,"Orestes","Caviglia",1971,49,cast
+2356,"Notas de tango",2000,158088,"Osmar","Maderna",1951,49,crew
+362,"El casamiento de Laucha",1977,154077,"Roberto","J. Payró",1928,49,crew
+3745,"Días enteros bajo las piedras",2004,131730,"Robert","Walser",1956,48,crew
+1224,"No habrá más penas ni olvido",1983,155243,"Alfredo","Le Pera",1935,48,crew
+2850,"Balnearios",2001,137316,"Django","Reinhardt",1953,48,crew
+2850,"Balnearios",2001,137316,"Django","Reinhardt",1953,48,crew
+2850,"Balnearios",2001,137316,"Django","Reinhardt",1953,48,crew
+531,"La dama del mar",1954,154089,"Henrik","Ibsen",1906,48,crew
+1224,"No habrá más penas ni olvido",1983,155245,"Carlos","Gardel",1935,48,crew
+984,"Los inocentes",2016,158360,"Eduardo","Borrás",1968,48,crew
+2035,"Viento norte",2020,155233,"Francisco","Amor",1972,48,cast
+318,"El candidato",2017,158685,"Héctor","Calcaño",1969,48,cast
+290,"La cama",2018,157708,"Lalo","Malcolm",1970,48,cast
+117,"Amor prohibido",1958,157093,"León","Tolstoi",1910,48,crew
+934,"Historia de una mala mujer",1948,158083,"Oscar","Wilde",1900,48,crew
+1071,"El jugador",2016,158602,"Amalia","Sánchez Ariño",1969,47,cast
+4308,"Tierra: Infierno",2003,129830,"Austin","Osman Spare",1956,47,crew
+160343,"Allá lejos y hace tiempo",1969,157762,"Guillermo","Enrique Hudson",1922,47,crew
+739,"La familia unida esperando la llegada de Hallewyn",1971,150858,"Giácomo","Puccini",1924,47,crew
+768,"Donde mueren las palabras",1946,154896,"Johann","Strauss",1899,47,crew
+2356,"Notas de tango",2000,156453,"Juan Carlos","Cobián",1953,47,crew
+2083,"La voz del tambor",1938,143775,"Léo","Delibes",1891,47,crew
+1345,"Mi marido y mi novio",1955,148724,"Victorien","Sardou",1908,47,crew
+160726,"Juan Moreira",1936,149176,"Eduardo","Gutiérrez",1889,47,crew
+161074,"Santos Vega",1936,149176,"Eduardo","Gutiérrez",1889,47,crew
+1418,"La patota",2015,158360,"Eduardo","Borrás",1968,47,crew
+2853,"La sombra",2015,158360,"Eduardo","Borrás",1968,47,crew
+1038,"El jefe",2011,158376,"Francisco","Audenino",1964,47,cast
+754,"Fascinación",2016,158685,"Héctor","Calcaño",1969,47,cast
+10138,"Una casa sin cortinas",2021,146759,"Juan","Domingo Perón",1974,47,cast
+1196,"Un marido ideal",1947,158083,"Oscar","Wilde",1900,47,crew
+651,"Después del silencio",2020,158382,"Raúl","del Valle",1973,47,cast
+1732,"Safo, historia de una pasión",1943,156157,"Alphonse","Daudet",1897,46,crew
+344,"Carmen",1943,154218,"Henri","Meilhac",1897,46,crew
+835,"La fuga",2013,158354,"Francisco","Petrone",1967,46,cast
+651,"Después del silencio",2020,156695,"Lucio","Demare",1974,46,crew
+1651,"Puertos de ensueño",1942,152725,"Johannes","Brahms",1897,45,crew
+1926,"Veinticuatro horas en la vida de una mujer",1944,154896,"Johann","Strauss",1899,45,crew
+10234,"El libro de los placeres",2022,105076,"Clarice","Lispector",1977,45,crew
+613,"Derecho viejo",1998,158935,"Carlos","Belluci",1953,45,cast
+309,"Canción de cuna",2005,154555,"Enrique","Amorim",1960,45,crew
+1527,"Una mujer sin importancia",1945,158083,"Oscar","Wilde",1900,45,crew
+628,"El deseo",1944,151707,"Eça","de Queiroz",1900,44,crew
+160338,"Alejandra",1956,158037,"Alexandre","Bisson",1912,44,crew
+309,"Canción de cuna",2005,157776,"Julián","Bautista",1961,44,crew
+50,"Adolescencia",2011,158492,"Enrique","Pedro Delfino",1967,44,crew
+159968,"La muerte no es ninguna solución",1988,144713,"Glenn","Miller",1944,44,crew
+1203,"Noche de bodas",2009,158742,"Enrique","Serrano",1965,44,cast
+651,"Después del silencio",2020,158925,"Jorge","Villoldo",1976,44,cast
+613,"Derecho viejo",1998,158629,"Manuel","Romero",1954,44,crew
+309,"Canción de cuna",2005,157685,"Miguel","Gómez Bao",1961,44,cast
+208,"Barcos de papel",2020,158705,"Ubaldo","Martínez",1977,43,cast
+2035,"Viento norte",2020,158786,"Mario","Soffici",1977,43,crew
+160642,"Fausto",1923,150802,"Estanislao","del Campo",1880,43,crew
+1009,"Invasión",2015,154824,"Juan Carlos","Paz",1972,43,cast
+6393,"De corte antiguo",2007,153935,"Anselmo","Aieta",1964,43,crew
+754,"Fascinación",2016,155845,"Arturo","de Córdova",1973,43,cast
+283,"La calle",1953,155720,"Florencio","Sánchez",1910,43,crew
+930,"Guacho",2007,158376,"Francisco","Audenino",1964,43,cast
+98,"Amalia",1914,157482,"José","Mármol",1871,43,crew
+3369,"El malentendido",2002,146643,"Albert","Camus",1960,42,crew
+782,"Don Segundo Sombra",1969,150653,"Ricardo","Güiraldes",1927,42,crew
+5454,"A propósito de Buenos Aires",2007,152800,"Ezequiel","Martínez Estrada",1965,42,crew
+10215,"No va más",2022,158079,"Luis","Sandrini",1980,42,cast
+1378,"Papá tiene novia",1941,154896,"Johann","Strauss",1899,42,crew
+930,"Guacho",2007,158160,"Alberto","Etchebehere",1965,42,crew
+1203,"Noche de bodas",2009,158917,"Alfredo","Traverso",1967,42,crew
+349,"Cartas de amor",2005,158351,"Eduardo","Cuitiño",1963,42,cast
+160551,"El juguete rabioso",1984,148842,"Roberto","Arlt",1942,42,crew
+10215,"No va más",2022,155474,"Lucas","Demare",1981,41,crew
+1905,"Sola",2021,156224,"Claudio","Levrino",1980,41,cast
+10499,"Esto no está pasando. Imaginaciones a partir de lecturas de Jean-Paul Sartre",2021,149088,"Jean-Paul","Sartre",1980,41,crew
+6774,"Verano maldito",2011,120512,"Yukio","Mishima",1970,41,crew
+1361,"Mi noche triste",1997,147371,"Antonio","Scatasso",1956,41,crew
+160376,"Bajo la superficie",2021,157698,"Eduardo","Rovira",1980,41,crew
+413,"Circe",2009,158853,"José","Serra",1968,41,crew
+2035,"Viento norte",2020,157638,"Juan","Bono",1979,41,cast
+318,"El candidato",2017,158783,"Julián","Bourges",1976,41,cast
+1038,"El jefe",2011,151529,"Violeta","Antier",1970,41,cast
+2853,"La sombra",2015,158953,"Alberto","Barcel",1975,40,cast
+1009,"Invasión",2015,155271,"Aníbal","Troilo",1975,40,crew
+925,"Los hipócritas",2019,156973,"Carlos","Bianquet",1979,40,cast
+2504,"Perón, sinfonía del sentimiento",1999,138833,"Raúl","Scalabrini Ortiz",1959,40,crew
+2054,"Yo quiero ser bataclana",2005,157932,"Roberto","Blanco",1965,40,cast
+1731,"La tía de Carlitos",1953,145373,"Brandon","Thomas",1914,39,crew
+191390,"Hedy Crilla, maestra de actores",2023,153929,"Hedy","Crilla",1984,39,cast
+651,"Después del silencio",2020,155474,"Lucas","Demare",1981,39,crew
+2850,"Balnearios",2001,137309,"Eddie","South",1962,39,crew
+1627,"El regreso",2003,152308,"Graciliano","Batista",1964,39,cast
+475,"Corazón",1947,152940,"Edmondo","de Amicis",1908,39,crew
+1578,"El precio de una vida",1947,148724,"Victorien","Sardou",1908,39,crew
+8259,"Pichuco",2014,155271,"Aníbal","Troilo",1975,39,crew
+2850,"Balnearios",2001,137312,"Carlos","Montbrun Ocampo",1962,39,crew
+150,"Arroz con leche",2008,158685,"Héctor","Calcaño",1969,39,cast
+930,"Guacho",2007,158853,"José","Serra",1968,39,crew
+7718,"Imágenes del Tío Sam",2013,146759,"Juan","Domingo Perón",1974,39,cast
+68,"Alejandra",2013,158766,"Pablo","Acciardi",1974,39,cast
+185,"Ayer y hoy",1934,156033,"Ricardo","Gutiérrez",1896,38,crew
+1081,"Juvenilia",1943,148823,"Miguel","Cané",1905,38,crew
+208,"Barcos de papel",2020,155756,"Álvaro","Yunque",1982,38,crew
+68,"Alejandra",2013,158953,"Alberto","Barcel",1975,38,cast
+349,"Cartas de amor",2005,158917,"Alfredo","Traverso",1967,38,crew
+64,"Albéniz",1947,158124,"Isaac","Albéniz",1909,38,crew
+1291,"La mentirosa",1999,157685,"Miguel","Gómez Bao",1961,38,cast
+290,"La cama",2018,156909,"Rodolfo","Crespi",1980,38,cast
+835,"La fuga",2013,157695,"Santiago","Arrieta",1975,38,cast
+10215,"No va más",2022,158854,"Tito","Ribero",1984,38,crew
+2035,"Viento norte",2020,158712,"Ángel","Magaña",1982,38,cast
+3209,"El Nüremberg argentino",2004,138033,"Manuelita","Poli",1966,38,crew
+3055,"Diarios de motocicleta",2004,135736,"Ernesto","""Che"" Guevara",1967,37,crew
+160914,"Martín Fierro",1923,149762,"José","Hernández",1886,37,crew
+660,"Destino de un capricho",1972,155243,"Alfredo","Le Pera",1935,37,crew
+1418,"La patota",2015,158688,"Florén","Delbene",1978,37,cast
+359,"Casa de muñecas",1943,154089,"Henrik","Ibsen",1906,37,crew
+208,"Barcos de papel",2020,155759,"Jardel","Filho",1983,37,cast
+651,"Después del silencio",2020,158905,"Warly","Ceriani",1983,37,cast
+1104,"Madame Sans Gene",1945,148724,"Victorien","Sardou",1908,37,crew
+1822,"La señora de Pérez se divorcia",1945,148724,"Victorien","Sardou",1908,37,crew
+413,"Circe",2009,153957,"Adolfo","Morpurgo",1972,37,crew
+660,"Destino de un capricho",1972,155245,"Carlos","Gardel",1935,37,crew
+1983,"El viaje",1992,158495,"Carlos","Olivari",1955,37,crew
+150,"Arroz con leche",2008,156839,"Carlos","Enríquez",1971,37,cast
+925,"Los hipócritas",2019,158356,"Carmelo","Lobótrico",1982,37,crew
+1115,"Madreselva",1938,149465,"Giuseppe","Verdi",1901,37,crew
+5454,"A propósito de Buenos Aires",2007,125972,"Leopoldo","Marechal",1970,37,crew
+50,"Adolescencia",2011,155920,"Ricardo","Passano",1974,37,cast
+613,"Derecho viejo",1998,157273,"Severo","Fernández",1961,37,cast
+201,"El baldío",2021,158854,"Tito","Ribero",1984,37,crew
+752,"El Domador",1996,157674,"Carlos","Perelli",1960,36,cast
+10215,"No va más",2022,156987,"Cayetano","Biondo",1986,36,cast
+160413,"Celos",1946,157093,"León","Tolstoi",1910,36,crew
+201,"El baldío",2021,156340,"Pascual","Pellicciotta",1985,36,cast
+208,"Barcos de papel",2020,158854,"Tito","Ribero",1984,36,crew
+9058,"La película infinita",2018,158712,"Ángel","Magaña",1982,36,cast
+9058,"La película infinita",2018,153869,"Alba","Mujica",1983,35,cast
+1430,"El pecado de Julia",1947,146992,"August","Strindberg",1912,35,crew
+7687,"Blackie: una vida en blanco y negro",2012,152907,"Blackie","",1977,35,cast
+1769,"Tiro de gracia",2014,145156,"Oscar","Masotta",1979,35,cast
+160338,"Alejandra",1956,158039,"Georges","Feydeau",1921,35,crew
+344,"Carmen",1943,154217,"Ludovic","Halévy",1908,35,crew
+1418,"La patota",2015,158114,"Milagros","de la Vega",1980,35,cast
+835,"La fuga",2013,155734,"Augusto","Codecá",1978,35,cast
+1189,"Marianela",1955,158950,"Benito","Pérez Galdós",1920,35,crew
+754,"Fascinación",2016,156738,"Bernardo","Perrone",1981,35,cast
+752,"El Domador",1996,158377,"Eloy","Alvarez",1961,35,cast
+349,"Cartas de amor",2005,158945,"Mario","C. Lugones",1970,35,crew
+1203,"Noche de bodas",2009,155920,"Ricardo","Passano",1974,35,cast
+1779,"Saverio el cruel",1977,148842,"Roberto","Arlt",1942,35,crew
+925,"Los hipócritas",2019,158854,"Tito","Ribero",1984,35,crew
+2035,"Viento norte",2020,158184,"Malisa","Zini",1985,35,cast
+160522,"El día que me quieras",1969,155243,"Alfredo","Le Pera",1935,34,crew
+201,"El baldío",2021,155824,"Agustín","Irusta",1987,34,cast
+68,"Alejandra",2013,158770,"Lalo","Hartich",1979,34,cast
+309,"Canción de cuna",2005,154600,"Nury","Montsé",1971,34,cast
+1345,"Mi marido y mi novio",1955,158039,"Georges","Feydeau",1921,34,crew
+1117,"La maestrita de los obreros",1942,152940,"Edmondo","de Amicis",1908,34,crew
+413,"Circe",2009,158953,"Alberto","Barcel",1975,34,cast
+1291,"La mentirosa",1999,158160,"Alberto","Etchebehere",1965,34,crew
+32,"El abuelo",1954,158950,"Benito","Pérez Galdós",1920,34,crew
+3525,"El último centauro",1923,149176,"Eduardo","Gutiérrez",1889,34,crew
+613,"Derecho viejo",1998,158376,"Francisco","Audenino",1964,34,cast
+253,"La buena vida",2002,158853,"José","Serra",1968,34,crew
+2111,"La maestra normal",1996,150760,"Manuel","Gálvez",1962,34,crew
+1905,"Sola",2021,157190,"Mario","Luciani",1987,34,cast
+1774,"Todo el año es Navidad",2018,158854,"Tito","Ribero",1984,34,crew
+50,"Adolescencia",2011,158504,"Ana","Arneodo",1977,34,cast
+1483,"La peste",1993,146643,"Albert","Camus",1960,33,crew
+1767,"Santos Vega",1971,145170,"Robert","Lehmann-Nitsche",1938,33,crew
+1545,"Pobre mi madre querida",1948,146863,"José","Betinotti",1915,33,crew
+881,"Gracias por el fuego",1984,149983,"Arnold","Schönberg",1951,33,crew
+1361,"Mi noche triste",1997,152308,"Graciliano","Batista",1964,33,cast
+3466,"Cien pesos",2003,155335,"Carlos","Adén",1970,33,crew
+1404,"Pasión imposible",1943,155720,"Florencio","Sánchez",1910,33,crew
+6940,"El derrotado",2011,158526,"Leopoldo","Torre Nilsson",1978,33,crew
+9466,"El nombrador",2021,155177,"Miguel","Abuelo",1988,33,cast
+8076,"Él piensa, ella piensa",2013,157023,"Oscar","Alemán",1980,33,crew
+856,"Gitano",2004,157470,"Pedro","Buchardo",1971,33,cast
+208,"Barcos de papel",2020,157595,"Alberto","Olmedo",1988,32,cast
+1733,"La tía de Carlos",1946,145373,"Brandon","Thomas",1914,32,crew
+1603,"La pródiga",1984,155004,"María","Eva Duarte",1952,32,cast
+195779,"Atahualpa Yupanqui, un trashumante",2024,156824,"Atahualpa","Yupanqui",1992,32,cast
+492,"El crimen de Oribe",1950,152729,"Claude","Debussy",1918,32,crew
+930,"Guacho",2007,158953,"Alberto","Barcel",1975,32,cast
+926,"El grito sagrado",2003,153556,"Antonio","Martiánez",1971,32,cast
+651,"Después del silencio",2020,158849,"Guillermo","Battaglia",1988,32,cast
+2504,"Perón, sinfonía del sentimiento",1999,138823,"Héctor","Panizza",1967,32,crew
+9058,"La película infinita",2018,133970,"Mario","Pardo",1986,32,cast
+1361,"Mi noche triste",1997,157932,"Roberto","Blanco",1965,32,cast
+2054,"Yo quiero ser bataclana",2005,158661,"Rodolfo","Sciammarella",1973,32,crew
+1071,"El jugador",2016,156383,"Ángel","Boffa",1984,32,cast
+9205,"Olmedo, el rey de la risa",2019,157595,"Alberto","Olmedo",1988,31,cast
+1954,"Las sorpresas del divorcio",1943,158037,"Alexandre","Bisson",1912,31,crew
+208,"Barcos de papel",2020,158784,"Alita","Román",1989,31,cast
+9693,"Un cuerpo estalló en mil pedazos",2021,146531,"Jorge","Bonino",1990,31,cast
+1009,"Invasión",2015,153929,"Hedy","Crilla",1984,31,cast
+3324,"Zama",2017,158189,"Antonio","Di Benedetto",1986,31,crew
+984,"Los inocentes",2016,158400,"Zelmar","Gueñol",1985,31,cast
+889,"La herencia",2008,155882,"Ernesto","Bianco",1977,31,cast
+10215,"No va más",2022,158884,"Fernando","Iglesias",1991,31,cast
+68,"Alejandra",2013,158948,"Juan","Ehlert",1982,31,crew
+7515,"Néstor Kirchner, la película",2012,116632,"Néstor","Kirchner (p)",1981,31,cast
+1854,"Los siete locos",1973,148842,"Roberto","Arlt",1942,31,crew
+83,"Roma",2004,158661,"Rodolfo","Sciammarella",1973,31,crew
+2853,"La sombra",2015,158854,"Tito","Ribero",1984,31,crew
+2567,"El puñal del mazorquero",1923,138534,"Juana","Manuela Gorriti",1892,31,crew
+184859,"El coso",2022,157164,"Federico","Peralta Ramos",1992,30,crew
+6473,"La orilla que se abisma",2008,122152,"Juan","L. Ortiz",1978,30,crew
+7871,"Historias de Cronopios y de Famas",2014,153565,"Julio","Cortázar",1984,30,crew
+1951,"Soñar no cuesta nada",2007,158154,"Luis","César Amadori",1977,30,crew
+1696,"Romance sin palabras",1948,152729,"Claude","Debussy",1918,30,crew
+1603,"La pródiga",1984,158606,"Alejandro Gutiérrez","del Barrio",1954,30,crew
+1905,"Sola",2021,155867,"Adrián","Ghío",1991,30,cast
+1424,"Momentos",2012,158356,"Carmelo","Lobótrico",1982,30,crew
+150,"Arroz con leche",2008,158676,"Esteban","Serrador",1978,30,cast
+1905,"Sola",2021,158884,"Fernando","Iglesias",1991,30,cast
+2504,"Perón, sinfonía del sentimiento",1999,150286,"Héctor","Quesada",1969,30,crew
+1868,"La simuladora",1955,144759,"José","Ingenieros",1925,30,crew
+1203,"Noche de bodas",2009,158919,"Julio","Porter",1979,30,crew
+9069,"Yo, Sandro. La película",2018,156696,"Oscar","Anderle",1988,30,cast
+651,"Después del silencio",2020,158773,"Roberto","Bordoni",1990,30,cast
+10215,"No va más",2022,158259,"Romualdo","Quiroga",1992,30,cast
+191907,"Roberto ""Polaco"" Goyeneche. Las formas de la noche",2023,154403,"Roberto","Goyeneche",1994,29,crew
+191907,"Roberto ""Polaco"" Goyeneche. Las formas de la noche",2023,154403,"Roberto","Goyeneche",1994,29,cast
+150,"Arroz con leche",2008,158770,"Lalo","Hartich",1979,29,cast
+1774,"Todo el año es Navidad",2018,157296,"Juan Carlos","Altavista",1989,29,cast
+208,"Barcos de papel",2020,158949,"Aníbal","González Paz",1991,29,crew
+343,"Carlos Gardel, historia de un ídolo",1964,155245,"Carlos","Gardel",1935,29,cast
+160314,"1982",2021,155712,"Daniel","Mendoza",1992,29,cast
+651,"Después del silencio",2020,157934,"Eduardo","Humberto Nóbili",1991,29,cast
+1096,"Locos de verano",1942,149095,"Gregorio","de Laferrere",1913,29,crew
+318,"El candidato",2017,158849,"Guillermo","Battaglia",1988,29,cast
+8773,"La larga noche de Francisco Sanctis",2016,150263,"Humberto","Costantini",1987,29,crew
+2289,"Acrobacias del corazón",2000,141065,"Igor","Stravinsky",1971,29,crew
+1009,"Invasión",2015,155353,"Jorge","Luis Borges",1986,29,crew
+1009,"Invasión",2015,155353,"Jorge","Luis Borges",1986,29,crew
+1009,"Invasión",2015,155353,"Jorge","Luis Borges",1986,29,crew
+160314,"1982",2021,107714,"José","Gómez Fuentes",1992,29,cast
+2054,"Yo quiero ser bataclana",2005,154376,"Juan","D'Arienzo",1976,29,cast
+150,"Arroz con leche",2008,158919,"Julio","Porter",1979,29,crew
+1774,"Todo el año es Navidad",2018,154277,"Miguel","Ligero",1989,29,cast
+925,"Los hipócritas",2019,158773,"Roberto","Bordoni",1990,29,cast
+2240,"Doña Bárbara",1998,141805,"Rómulo","Gallegos",1969,29,crew
+50,"Adolescencia",2011,158712,"Ángel","Magaña",1982,29,cast
+9964,"Mal del Plata",2020,157164,"Federico","Peralta Ramos",1992,28,cast
+571,"El que recibe las bofetadas",1947,152083,"Leónidas","Andreieff",1919,28,crew
+1323,"Mi fortuna por un nieto",1940,158037,"Alexandre","Bisson",1912,28,crew
+1475,"Muerte civil",1910,146706,"Paolo","Giacometti",1882,28,crew
+3985,"El río",2012,153565,"Julio","Cortázar",1984,28,crew
+334,"El Capitán Pérez",1946,154331,"Carlos","Octavio Bunge",1918,28,crew
+756,"El Fausto criollo",2011,158270,"Pedro","Quartucci",1983,28,cast
+281,"El calavera",1954,154807,"Charles-Maurice","Hennequin",1926,28,crew
+768,"Donde mueren las palabras",1946,152729,"Claude","Debussy",1918,28,crew
+290,"La cama",2018,158395,"Vicente","Rubino",1990,28,cast
+595,"El encuentro",2003,158953,"Alberto","Barcel",1975,28,cast
+160924,"Mi noche triste",1952,147369,"Eduardo","Arolas",1924,28,crew
+2038,"...Y mañana serán hombres",1979,157677,"Enrique","Santos Discépolo",1951,28,cast
+2176,"De los Apeninos a los Andes",1990,156975,"Mario","Baroffio",1962,28,cast
+2356,"Notas de tango",2000,156367,"Miguel","Caló",1972,28,crew
+651,"Después del silencio",2020,158259,"Romualdo","Quiroga",1992,28,cast
+9410,"Iniciales S.G.",2019,108364,"Serge","Gainsbourg",1991,28,crew
+5448,"Les Amants",2005,126010,"Juan","Rodolfo Wilcock",1978,27,crew
+2461,"Vallejos",1972,147376,"Béla","Bartok",1945,27,crew
+201,"El baldío",2021,156266,"Beba","Bidart",1994,27,cast
+1989,"Suegra último modelo",1953,154807,"Charles-Maurice","Hennequin",1926,27,crew
+10295,"Tango nuevo. Ástor Piazzolla",2019,156808,"Ástor","Piazzolla",1992,27,cast
+318,"El candidato",2017,154488,"Alberto","Candeau",1990,27,cast
+835,"La fuga",2013,156987,"Cayetano","Biondo",1986,27,cast
+212,"Barranca abajo",1937,155720,"Florencio","Sánchez",1910,27,crew
+1676,"Río Turbio",2022,157989,"Juan","José Míguez",1995,27,cast
+10215,"No va más",2022,157048,"Mario","Passano",1995,27,cast
+1291,"La mentirosa",1999,154334,"Patricio","Azcárate",1972,27,cast
+1723,"La terraza",1992,158381,"Pedro","Laxalt",1965,27,cast
+1771,"Santos Vega vuelve",1947,145172,"Rafael","Obligado",1920,27,crew
+856,"Gitano",2004,158068,"Roberto","Airaldi",1977,27,cast
+1905,"Sola",2021,148088,"Susy","Kent",1994,27,cast
+2276,"La nube",1998,144612,"Pedro","Laurenz",1972,26,crew
+2504,"Perón, sinfonía del sentimiento",1999,154512,"Angelillo","",1973,26,crew
+930,"Guacho",2007,155474,"Lucas","Demare",1981,26,crew
+930,"Guacho",2007,155474,"Lucas","Demare",1981,26,crew
+926,"El grito sagrado",2003,158154,"Luis","César Amadori",1977,26,crew
+926,"El grito sagrado",2003,158154,"Luis","César Amadori",1977,26,crew
+2853,"La sombra",2015,158707,"Eduardo","Rudy",1989,26,cast
+2276,"La nube",1998,141277,"José María","Contursi",1972,26,crew
+1748,"Tierra del fuego",1983,155192,"Norma","Giménez",1957,26,cast
+9196,"Sintiendo a Piazzolla",2018,156808,"Ástor","Piazzolla",1992,26,cast
+889,"La herencia",2008,158356,"Carmelo","Lobótrico",1982,26,crew
+50,"Adolescencia",2011,158511,"Francisco","Mugica",1985,26,crew
+2853,"La sombra",2015,158384,"Hugo","del Carril",1989,26,crew
+2853,"La sombra",2015,158384,"Hugo","del Carril",1989,26,crew
+2853,"La sombra",2015,158384,"Hugo","del Carril",1989,26,cast
+2208,"Harto The Borges",2000,146759,"Juan","Domingo Perón",1974,26,cast
+349,"Cartas de amor",2005,158919,"Julio","Porter",1979,26,crew
+1905,"Sola",2021,157911,"Lautaro","Murúa",1995,26,cast
+473,"Convivencia",2020,158890,"Oscar","Viale",1994,26,crew
+2504,"Perón, sinfonía del sentimiento",1999,158661,"Rodolfo","Sciammarella",1973,26,crew
+9058,"La película infinita",2018,158259,"Romualdo","Quiroga",1992,26,cast
+2504,"Perón, sinfonía del sentimiento",1999,155667,"Alfredo","Bettanín",1974,25,crew
+2909,"Cuatro piernas",2002,136921,"María","Callas",1977,25,crew
+1050,"El lado oscuro del corazón",1992,149018,"Oliverio","Girondo",1967,25,crew
+413,"Circe",2009,153565,"Julio","Cortázar",1984,25,crew
+413,"Circe",2009,153565,"Julio","Cortázar",1984,25,crew
+4263,"Mentiras piadosas",2009,153565,"Julio","Cortázar",1984,25,crew
+413,"Circe",2009,153565,"Julio","Cortázar",1984,25,cast
+1726,"Sábado a la noche, cine",1960,155243,"Alfredo","Le Pera",1935,25,crew
+10483,"Tango en París, recuerdos de Astor Piazzolla",2017,156824,"Atahualpa","Yupanqui",1992,25,cast
+6657,"Aballay, el hombre sin miedo",2011,158189,"Antonio","Di Benedetto",1986,25,crew
+1497,"La mujer del león",1951,154807,"Charles-Maurice","Hennequin",1926,25,crew
+10215,"No va más",2022,153276,"Nelly","Prono",1997,25,cast
+1203,"Noche de bodas",2009,155610,"Paulina","Singerman",1984,25,cast
+754,"Fascinación",2016,150808,"Profesor","Fassman",1991,25,cast
+10483,"Tango en París, recuerdos de Astor Piazzolla",2017,156808,"Ástor","Piazzolla",1992,25,cast
+833,"Los gauchos judíos",1975,150324,"Alberto","Gerchunoff",1950,25,crew
+651,"Después del silencio",2020,156843,"Arturo","García Buhr",1995,25,cast
+3466,"Cien pesos",2003,155734,"Augusto","Codecá",1978,25,cast
+1726,"Sábado a la noche, cine",1960,155245,"Carlos","Gardel",1935,25,crew
+1038,"El jefe",2011,156987,"Cayetano","Biondo",1986,25,cast
+7790,"Imágenes paganas",2013,146194,"Federico","Moura",1988,25,crew
+7790,"Imágenes paganas",2013,146194,"Federico","Moura",1988,25,cast
+1040,"Jettatore",1938,149095,"Gregorio","de Laferrere",1913,25,crew
+1061,"Las de Barranco",1938,149095,"Gregorio","de Laferrere",1913,25,crew
+2275,"Soriano",1999,146759,"Juan","Domingo Perón",1974,25,cast
+2504,"Perón, sinfonía del sentimiento",1999,146759,"Juan","Domingo Perón",1974,25,cast
+1424,"Momentos",2012,157190,"Mario","Luciani",1987,25,cast
+651,"Después del silencio",2020,157048,"Mario","Passano",1995,25,cast
+473,"Convivencia",2020,152962,"Osvaldo","Pugliese",1995,25,cast
+1774,"Todo el año es Navidad",2018,157294,"Raúl","Rossi",1993,25,cast
+4093,"El alma",1967,148842,"Roberto","Arlt",1942,25,crew
+4898,"El ABC del amor",1967,148842,"Roberto","Arlt",1942,25,crew
+150,"Arroz con leche",2008,158140,"María","Esther Podestá",1983,25,cast
+9812,"Buscando a Tabernero",2020,156979,"Pablo","Tabernero",1996,24,cast
+8726,"Descartables",2015,111196,"Bert","Reisfeld",1991,24,crew
+159226,"El prófugo",2021,108108,"C.","E. Feiling",1997,24,crew
+2462,"La resistencia",2005,155474,"Lucas","Demare",1981,24,crew
+2504,"Perón, sinfonía del sentimiento",1999,157467,"Cátulo","Castillo",1975,24,crew
+8968,"Los que aman, odian",2017,144894,"Silvina","Ocampo",1993,24,crew
+10215,"No va más",2022,157066,"Ariel","Cortazzo",1998,24,crew
+10215,"No va más",2022,157066,"Ariel","Cortazzo",1998,24,crew
+10553,"Furia, las peleas de Carlos Monzón",2019,157298,"Carlos","Monzón",1995,24,cast
+83,"Roma",2004,157698,"Eduardo","Rovira",1980,24,crew
+3447,"Safo",2003,158919,"Julio","Porter",1979,24,crew
+161193,"Viento Norte",1937,151202,"Lucio","V. Mansilla",1913,24,crew
+613,"Derecho viejo",1998,151815,"Paul","Ellis",1974,24,cast
+9964,"Mal del Plata",2020,157450,"Tato","Bores",1996,24,cast
+474,"La copla de la Dolores",1947,152949,"Tomás","Bretón",1923,24,crew
+8726,"Descartables",2015,111197,"Hans","Lang",1992,23,crew
+1360,"Palo y hueso",1968,147376,"Béla","Bartok",1945,23,crew
+10131,"Solanas en filmación",2021,151187,"Envar","El Kadri",1998,23,crew
+3447,"Safo",2003,158727,"César","Tiempo",1980,23,crew
+4625,"Desayuno",2000,125692,"Jacques","Prévert",1977,23,crew
+2814,"El muro",2001,158526,"Leopoldo","Torre Nilsson",1978,23,crew
+1361,"Mi noche triste",1997,156695,"Lucio","Demare",1974,23,crew
+1361,"Mi noche triste",1997,156695,"Lucio","Demare",1974,23,crew
+201,"El baldío",2021,157088,"Luis","Dávila",1998,23,cast
+5203,"Buen día, día",2011,155177,"Miguel","Abuelo",1988,23,cast
+161,"Así o de otra manera",1996,158382,"Raúl","del Valle",1973,23,cast
+253,"La buena vida",2002,158866,"Tito","Alonso",1979,23,cast
+9066,"Alguien más en quien confiar",2018,109762,"Willy","Gardi",1995,23,cast
+756,"El Fausto criollo",2011,150794,"Luisa","Mercedes Levinson",1988,23,crew
+1769,"Tiro de gracia",2014,157164,"Federico","Peralta Ramos",1992,22,cast
+2978,"Cortázar: apuntes para un documental",2002,136520,"Alejo","Carpentier",1980,22,cast
+1191,"María Rosa",1946,148251,"Ángel","Guimerá",1924,22,crew
+1291,"La mentirosa",1999,158154,"Luis","César Amadori",1977,22,crew
+1291,"La mentirosa",1999,158154,"Luis","César Amadori",1977,22,crew
+282,"La calesita",1993,157855,"Fanny","Navarro",1971,22,cast
+8788,"El teorema de Santiago",2017,110838,"Pierre-Max","Dubois",1995,22,crew
+50,"Adolescencia",2011,158741,"Tilda","Thamar",1989,22,cast
+150,"Arroz con leche",2008,158937,"Adolfo","Linvel",1986,22,cast
+1641,"El puente",1985,157784,"Alberto","Bello",1963,22,cast
+1361,"Mi noche triste",1997,155271,"Aníbal","Troilo",1975,22,cast
+253,"La buena vida",2002,156398,"Carlos","Latorre",1980,22,crew
+835,"La fuga",2013,156992,"Enrique","Cahen Salaberry",1991,22,crew
+1905,"Sola",2021,158860,"Héctor","Pellegrini",1999,22,cast
+6900,"Antes del estreno",2011,119804,"John","Cassavetes",1989,22,crew
+1603,"La pródiga",1984,158921,"Manuel","Alcón",1962,22,cast
+7792,"Z.U.G.A.",2013,115580,"Oliver","Messiaen",1992,21,crew
+1778,"Todo sea para bien",1957,145104,"Luigi","Pirandello",1936,21,crew
+375,"Ceniza al viento",1942,158039,"Georges","Feydeau",1921,21,crew
+191,"La bailanta",1995,156821,"Tránsito","Cocomarola",1974,21,crew
+161,"Así o de otra manera",1996,158953,"Alberto","Barcel",1975,21,cast
+613,"Derecho viejo",1998,157993,"Alfredo","Ruanova",1977,21,crew
+2035,"Viento norte",2020,158607,"Antonio","Merayo",1999,21,crew
+253,"La buena vida",2002,157548,"Beto","Gianola",1981,21,cast
+8505,"Guapos",2007,156768,"Edmundo","Rivero",1986,21,crew
+8505,"Guapos",2007,155353,"Jorge","Luis Borges",1986,21,crew
+819,"Fuego",1998,158068,"Roberto","Airaldi",1977,21,cast
+889,"La herencia",2008,157595,"Alberto","Olmedo",1988,20,cast
+7019,"La peli de Batato",2011,119065,"Batato","Barea",1991,20,cast
+208,"Barcos de papel",2020,155761,"Pablo","Calvo",2000,20,cast
+8653,"Merello x Carreras",2015,157476,"Enrique","Carreras",1995,20,cast
+2637,"Los suicidas",2006,158189,"Antonio","Di Benedetto",1986,20,crew
+1612,"Los ratones",1998,158688,"Florén","Delbene",1978,20,cast
+756,"El Fausto criollo",2011,156467,"Luisa","Vehil",1991,20,cast
+1857,"Siete para un secreto",1947,144793,"Mary","Webb",1927,20,crew
+318,"El candidato",2017,158076,"Iris","Marga",1997,20,cast
+930,"Guacho",2007,157996,"Alejandro","Rey",1987,20,cast
+2853,"La sombra",2015,157850,"Alfredo","Almanza",1995,20,cast
+925,"Los hipócritas",2019,158607,"Antonio","Merayo",1999,20,crew
+925,"Los hipócritas",2019,151248,"Carlos","Víctor Andris",1999,20,cast
+2949,"El cazador es un corazón solitario",2000,157698,"Eduardo","Rovira",1980,20,crew
+318,"El candidato",2017,159011,"Fernando","Ayala",1997,20,crew
+318,"El candidato",2017,159011,"Fernando","Ayala",1997,20,crew
+1397,"El misterio del cuarto amarillo",1947,147165,"Gaston","Leroux",1927,20,crew
+149,"¡Arriba juventud!",1971,156694,"Homero","Manzi",1951,20,crew
+5470,"La espera",2006,155353,"Jorge","Luis Borges",1986,20,crew
+10215,"No va más",2022,156840,"José","Cibrián",2002,20,cast
+1009,"Invasión",2015,157911,"Lautaro","Murúa",1995,20,cast
+9977,"El juicio",2023,107713,"Leopoldo","Fortunato Galtieri",2003,20,cast
+160924,"Mi noche triste",1952,152898,"Pascual","Contursi",1932,20,crew
+160924,"Mi noche triste",1952,152898,"Pascual","Contursi",1932,20,crew
+2462,"La resistencia",2005,156340,"Pascual","Pellicciotta",1985,20,cast
+160924,"Mi noche triste",1952,147372,"Samuel","Castriota",1932,20,crew
+160369,"Así es la vida",1939,156443,"Ángel","Villoldo",1919,20,crew
+1676,"Río Turbio",2022,156842,"Zoe","Ducós",2002,20,cast
+10215,"No va más",2022,156842,"Zoe","Ducós",2002,20,cast
+2035,"Viento norte",2020,158182,"Delia","Garcés",2001,19,cast
+811,"La frontera olvidada",1996,158705,"Ubaldo","Martínez",1977,19,cast
+7123,"Cornelia frente al espejo",2012,144894,"Silvina","Ocampo",1993,19,crew
+222,"Bendita seas",1956,155599,"Alberto","Novión",1937,19,crew
+1603,"La pródiga",1984,156983,"Alejandro","Casona",1965,19,crew
+413,"Circe",2009,158387,"Américo","Hoss",1990,19,crew
+1774,"Todo el año es Navidad",2018,158607,"Antonio","Merayo",1999,19,crew
+234,"Blum",1970,157677,"Enrique","Santos Discépolo",1951,19,crew
+1009,"Invasión",2015,157145,"Luis","Giudici",1996,19,crew
+1418,"La patota",2015,157145,"Luis","Giudici",1996,19,crew
+10568,"Denevi x 3",2017,158748,"Marco","Denevi",1998,19,crew
+1459,"Los muchachos de antes no usaban gomina",1969,146809,"Mario","Benard",1950,19,crew
+651,"Después del silencio",2020,158595,"Miguel","Dante",2001,19,cast
+1641,"El puente",1985,152009,"Nicolás","Olivari",1966,19,crew
+102,"Amazonas",2020,158970,"Oscar","Cardozo Ocampo",2001,19,crew
+9529,"El maestro",2020,147640,"Pablo","Danielo",2001,19,crew
+349,"Cartas de amor",2005,156739,"Roberto","Escalada",1986,19,cast
+756,"El Fausto criollo",2011,158259,"Romualdo","Quiroga",1992,19,cast
+926,"El grito sagrado",2003,158854,"Tito","Ribero",1984,19,crew
+754,"Fascinación",2016,153962,"Paul","Misraki",1998,18,crew
+1905,"Sola",2021,154050,"Héctor","Tealdi",2003,18,cast
+282,"La calesita",1993,157467,"Cátulo","Castillo",1975,18,crew
+9360,"El cuento de las comadrejas",2019,157060,"Gius","",2001,18,crew
+349,"Cartas de amor",2005,158962,"Mecha","Ortiz",1987,18,cast
+1579,"¡Qué tiempos aquéllos!",1951,146219,"Roscoe","Arbuckle",1933,18,cast
+8968,"Los que aman, odian",2017,152730,"Adolfo","Bioy Casares",1999,18,crew
+10215,"No va más",2022,155535,"Aldo","Bigatti",2004,18,cast
+889,"La herencia",2008,158387,"Américo","Hoss",1990,18,crew
+1685,"El tango en París",1956,155569,"Enrique","García Velloso",1938,18,crew
+5470,"La espera",2006,158849,"Guillermo","Battaglia",1988,18,cast
+1291,"La mentirosa",1999,158517,"Juan","Sires",1981,18,crew
+160314,"1982",2021,107713,"Leopoldo","Fortunato Galtieri",2003,18,cast
+1949,"La sonrisa de mamá",1972,158629,"Manuel","Romero",1954,18,crew
+369,"La casta Susana",1944,153966,"Maurice","Desvallières",1926,18,crew
+984,"Los inocentes",2016,157819,"Ovidio","Fuentes",1998,18,cast
+926,"El grito sagrado",2003,158149,"Pedro","Aleandro",1985,18,cast
+2504,"Perón, sinfonía del sentimiento",1999,138820,"Samuel","Barber",1981,18,crew
+253,"La buena vida",2002,157507,"Santiago","Gómez Cou",1984,18,cast
+1424,"Momentos",2012,154743,"María","Luisa Bemberg",1995,17,crew
+1424,"Momentos",2012,154743,"María","Luisa Bemberg",1995,17,crew
+10215,"No va más",2022,157465,"Víctor","Ayos",2005,17,crew
+1774,"Todo el año es Navidad",2018,158052,"Carlos","Estrada",2001,17,cast
+819,"Fuego",1998,158658,"Armando","Bó",1981,17,crew
+819,"Fuego",1998,158658,"Armando","Bó",1981,17,crew
+819,"Fuego",1998,158658,"Armando","Bó",1981,17,crew
+819,"Fuego",1998,158658,"Armando","Bó",1981,17,crew
+819,"Fuego",1998,158658,"Armando","Bó",1981,17,cast
+10346,"¿Dónde estás, Negro?",2016,153758,"Chasman","",1999,17,cast
+1767,"Santos Vega",1971,158606,"Alejandro Gutiérrez","del Barrio",1954,17,crew
+691,"El día que me quieras",1999,156139,"Carlos","García Nacson",1982,17,crew
+194119,"El viaje de Alba",2024,149035,"Carlos","Gorriarena",2007,17,cast
+933,"Un guapo del 900",1971,158171,"César","Fiaschi",1954,17,cast
+7499,"Maradona - Médico de la selva",2012,116764,"Esteban","Maradona",1995,17,cast
+889,"La herencia",2008,158884,"Fernando","Iglesias",1991,17,cast
+595,"El encuentro",2003,155353,"Jorge","Luis Borges",1986,17,crew
+1418,"La patota",2015,147090,"Juan","Longobuco",1998,17,cast
+1748,"Tierra del fuego",1983,155984,"Julio","Bianquet",1966,17,cast
+10215,"No va más",2022,158318,"Oscar","Roy",2005,17,cast
+1418,"La patota",2015,157819,"Ovidio","Fuentes",1998,17,cast
+479,"Corrientes... calle de ensueños!",1949,152898,"Pascual","Contursi",1932,17,crew
+1774,"Todo el año es Navidad",2018,158062,"Ricardo","Castro Ríos",2001,17,cast
+691,"El día que me quieras",1999,158689,"Tito","Lusiardo",1982,17,cast
+189661,"Ricardo Vilca. Quebrada, música y silencio",2023,134930,"Ricardo","Vilca",2007,16,crew
+189661,"Ricardo Vilca. Quebrada, música y silencio",2023,134930,"Ricardo","Vilca",2007,16,cast
+1214,"Martín Fierro",1989,148747,"Alfredo","Marino",1973,16,cast
+325,"El canto cuenta su historia",1976,154411,"Andrés","Chazarreta",1960,16,cast
+1361,"Mi noche triste",1997,155474,"Lucas","Demare",1981,16,crew
+1361,"Mi noche triste",1997,155474,"Lucas","Demare",1981,16,crew
+189,"Babilonia",1987,155989,"Armando","Discépolo",1971,16,crew
+201,"El baldío",2021,156082,"Reynaldo","Mompel",2005,16,cast
+691,"El día que me quieras",1999,158270,"Pedro","Quartucci",1983,16,cast
+5086,"4 dientes",2005,150381,"Dámaso","Pérez Prado",1989,16,crew
+754,"Fascinación",2016,158864,"Elisa","Christian Galvé",2000,16,cast
+1291,"La mentirosa",1999,158905,"Warly","Ceriani",1983,16,cast
+1009,"Invasión",2015,152730,"Adolfo","Bioy Casares",1999,16,crew
+1418,"La patota",2015,158607,"Antonio","Merayo",1999,16,crew
+161,"Así o de otra manera",1996,156398,"Carlos","Latorre",1980,16,crew
+1951,"Soñar no cuesta nada",2007,156992,"Enrique","Cahen Salaberry",1991,16,crew
+357,"La casa del recuerdo",1940,154102,"Gabriel","Fauré",1924,16,crew
+756,"El Fausto criollo",2011,157475,"Luis","Medina Castro",1995,16,cast
+756,"El Fausto criollo",2011,158279,"Luis","Saslavsky",1995,16,crew
+756,"El Fausto criollo",2011,158279,"Luis","Saslavsky",1995,16,crew
+856,"Gitano",2004,156696,"Oscar","Anderle",1988,16,crew
+1545,"Pobre mi madre querida",1948,152898,"Pascual","Contursi",1932,16,crew
+651,"Después del silencio",2020,158895,"María","Rosa Gallo",2004,16,cast
+819,"Fuego",1998,153869,"Alba","Mujica",1983,15,cast
+1361,"Mi noche triste",1997,147373,"Raúl","Beron",1982,15,cast
+254,"Buenos Aires a la vista",1950,155243,"Alfredo","Le Pera",1935,15,crew
+1418,"La patota",2015,158756,"Alfonso","De Grazia",2000,15,cast
+1887,"Últimas imágenes del naufragio",1990,157467,"Cátulo","Castillo",1975,15,crew
+282,"La calesita",1993,158688,"Florén","Delbene",1978,15,cast
+8505,"Guapos",2007,156808,"Ástor","Piazzolla",1992,15,crew
+8505,"Guapos",2007,156808,"Ástor","Piazzolla",1992,15,crew
+1905,"Sola",2021,151328,"Abel","Sáenz Buhr",2006,15,cast
+124,"El ángel desnudo",1946,157031,"Arthur","Schnitzler",1931,15,crew
+254,"Buenos Aires a la vista",1950,155245,"Carlos","Gardel",1935,15,crew
+10311,"Bajo la superficie",1995,157698,"Eduardo","Rovira",1980,15,crew
+195450,"La película de Báñez",2024,124658,"Gabriel","Bañez",2009,15,cast
+754,"Fascinación",2016,157681,"Homero","Cárpena",2001,15,cast
+1365,"Pampa salvaje",1966,156694,"Homero","Manzi",1951,15,crew
+1748,"Tierra del fuego",1983,158126,"José","Maurer",1968,15,cast
+1459,"Los muchachos de antes no usaban gomina",1969,158629,"Manuel","Romero",1954,15,crew
+1459,"Los muchachos de antes no usaban gomina",1969,158629,"Manuel","Romero",1954,15,crew
+1459,"Los muchachos de antes no usaban gomina",1969,158629,"Manuel","Romero",1954,15,crew
+1459,"Los muchachos de antes no usaban gomina",1969,158629,"Manuel","Romero",1954,15,crew
+194903,"Diciembre de 1988",2024,130026,"Raúl","Alfonsín",2009,15,cast
+1723,"La terraza",1992,150662,"Ricardo","Luna",1977,15,crew
+691,"El día que me quieras",1999,157507,"Santiago","Gómez Cou",1984,15,cast
+691,"El día que me quieras",1999,158854,"Tito","Ribero",1984,15,crew
+8785,"Viviré con tu recuerdo",2016,149529,"Ada","Falcón",2002,14,cast
+754,"Fascinación",2016,152970,"Alicia","Barrié",2002,14,cast
+2562,"La costurerita que dio aquel mal paso",1926,138546,"Evaristo","Carriego",1912,14,crew
+651,"Después del silencio",2020,153561,"Teresa","Blasco",2006,14,cast
+2198,"Diario para un cuento",1998,153565,"Julio","Cortázar",1984,14,crew
+10346,"¿Dónde estás, Negro?",2016,158627,"Alberto","Castillo",2002,14,crew
+1242,"La novela de un joven pobre",1968,158606,"Alejandro Gutiérrez","del Barrio",1954,14,crew
+1115,"Madreselva",1938,150858,"Giácomo","Puccini",1924,14,crew
+1046,"Joven viuda y estanciera",1970,158251,"Luis José","Bayón Herrera",1956,14,crew
+1046,"Joven viuda y estanciera",1970,158251,"Luis José","Bayón Herrera",1956,14,crew
+1774,"Todo el año es Navidad",2018,153164,"Nelly","Meden",2004,14,cast
+835,"La fuga",2013,156450,"Niní","Gambier",1999,14,cast
+83,"Roma",2004,158395,"Vicente","Rubino",1990,14,cast
+2853,"La sombra",2015,154158,"Lili","Gacel",2001,14,cast
+917,"Gran Valor en la Facultad de Medicina",1981,154357,"André","Mouezy-Eón",1967,14,crew
+68,"Alejandra",2013,158607,"Antonio","Merayo",1999,14,crew
+208,"Barcos de papel",2020,157540,"Ariel","Absalón",2006,14,cast
+835,"La fuga",2013,154402,"Enrique","Cadícamo",1999,14,crew
+1038,"El jefe",2011,159011,"Fernando","Ayala",1997,14,crew
+1038,"El jefe",2011,159011,"Fernando","Ayala",1997,14,crew
+1038,"El jefe",2011,159011,"Fernando","Ayala",1997,14,crew
+1361,"Mi noche triste",1997,153937,"Francisco","García Giménez",1983,14,crew
+1361,"Mi noche triste",1997,153937,"Francisco","García Giménez",1983,14,crew
+2078,"Volver",2002,158849,"Guillermo","Battaglia",1988,14,cast
+6739,"Siete, o cuánto vive la mala suerte",2008,120761,"Henry","Mancini",1994,14,crew
+2297,"Los libros y la noche",2000,155353,"Jorge","Luis Borges",1986,14,crew
+2208,"Harto The Borges",2000,155353,"Jorge","Luis Borges",1986,14,cast
+2297,"Los libros y la noche",2000,155353,"Jorge","Luis Borges",1986,14,cast
+984,"Los inocentes",2016,153268,"Juan","Antonio Bardem",2002,14,crew
+984,"Los inocentes",2016,153268,"Juan","Antonio Bardem",2002,14,crew
+1498,"La mujer del zapatero",1965,153133,"Juan","Miguel Velich",1951,14,cast
+2581,"Dromo",2001,138499,"Julio","Almada",1987,14,crew
+1723,"La terraza",1992,158526,"Leopoldo","Torre Nilsson",1978,14,crew
+1723,"La terraza",1992,158526,"Leopoldo","Torre Nilsson",1978,14,crew
+9066,"Alguien más en quien confiar",2018,109760,"Luis","Valenti",2004,14,cast
+889,"La herencia",2008,149924,"Miguel","Babuini",1994,14,crew
+1557,"Música, alegría y amor",1956,154806,"Pierre","Veber",1942,14,crew
+2761,"Blanco y negro",1993,137812,"Victoria","Ocampo",1979,14,cast
+8907,"Existir sin vos. Una noche con Charly García",2016,138772,"María","Gabriela Epumer",2003,13,cast
+191277,"Radio Oriente",2023,140317,"Raúl","Urtizberea",2010,13,cast
+2954,"Chicas rolingas",2021,143295,"Mario","Paolucci",2008,13,cast
+1038,"El jefe",2011,155340,"Emilio","Alfaro",1998,13,cast
+1046,"Joven viuda y estanciera",1970,158057,"Carlos","Schlieper",1957,13,crew
+1405,"Mi suegra es una fiera",1939,154807,"Charles-Maurice","Hennequin",1926,13,crew
+614,"Enigma de mujer",1956,151802,"Serguei","Rachmaninoff",1943,13,crew
+1726,"Sábado a la noche, cine",1960,145381,"Verminio","Servetto",1947,13,crew
+2462,"La resistencia",2005,156808,"Ástor","Piazzolla",1992,13,crew
+3938,"Piazzola en Buenos Aires",2005,156808,"Ástor","Piazzolla",1992,13,crew
+8653,"Merello x Carreras",2015,157152,"Tita","Merello",2002,13,cast
+1767,"Santos Vega",1971,149062,"Abel","Fleury",1958,13,crew
+3217,"Dormir al sol",2012,152730,"Adolfo","Bioy Casares",1999,13,crew
+1009,"Invasión",2015,158003,"Alfredo","Suárez",2002,13,crew
+2018,"Sur",1988,155271,"Aníbal","Troilo",1975,13,crew
+1793,"Torrente indiano",1954,145071,"Enrique","Saborido",1941,13,crew
+208,"Barcos de papel",2020,158072,"Enzo","Viena",2007,13,cast
+925,"Los hipócritas",2019,158994,"Fernando","Siro",2006,13,cast
+2610,"La muerte y la brújula",1999,155353,"Jorge","Luis Borges",1986,13,crew
+160493,"El aleph",1999,155353,"Jorge","Luis Borges",1986,13,crew
+160529,"El encuentro",1999,155353,"Jorge","Luis Borges",1986,13,crew
+2275,"Soriano",1999,155353,"Jorge","Luis Borges",1986,13,cast
+10483,"Tango en París, recuerdos de Astor Piazzolla",2017,103625,"José","Pons",2004,13,cast
+2850,"Balnearios",2001,137315,"José","Adimanto Zavala",1988,13,crew
+1249,"Matar al abuelito",1993,156462,"Julio","de Caro",1980,13,crew
+984,"Los inocentes",2016,155878,"Luis","E. Corradi",2003,13,cast
+1441,"La muchachada de a bordo",1967,158629,"Manuel","Romero",1954,13,crew
+1441,"La muchachada de a bordo",1967,158629,"Manuel","Romero",1954,13,crew
+889,"La herencia",2008,153795,"Ricardo","Alventosa",1995,13,crew
+889,"La herencia",2008,153795,"Ricardo","Alventosa",1995,13,crew
+1764,"El santo de la espada",1970,145202,"Ricardo","Rojas",1957,13,crew
+8420,"Prisioneras de la oscuridad",2010,112464,"Terry","Nation",1997,13,crew
+68,"Alejandra",2013,158052,"Carlos","Estrada",2001,12,cast
+68,"Alejandra",2013,158182,"Delia","Garcés",2001,12,cast
+1918,"El soltero",1977,158185,"Carlos","Borcosque",1965,12,crew
+756,"El Fausto criollo",2011,154664,"Eva","Franco",1999,12,cast
+1242,"La novela de un joven pobre",1968,158251,"Luis José","Bayón Herrera",1956,12,crew
+5577,"Les lunettes",2003,136923,"Miles","Davis",1991,12,crew
+1748,"Tierra del fuego",1983,158119,"Orestes","Caviglia",1971,12,cast
+1127,"Lucía",1997,158400,"Zelmar","Gueñol",1985,12,cast
+194147,"Cantando las raíces",2024,154415,"Leda","Valladares",2012,12,cast
+1046,"Joven viuda y estanciera",1970,149062,"Abel","Fleury",1958,12,cast
+925,"Los hipócritas",2019,156150,"Aldo","Mayo",2007,12,cast
+10215,"No va más",2022,158520,"Aníbal","Di Salvo",2010,12,crew
+835,"La fuga",2013,158230,"Arturo","Maly",2001,12,cast
+856,"Gitano",2004,156433,"Carlos","Muñoz",1992,12,cast
+3466,"Cien pesos",2003,156992,"Enrique","Cahen Salaberry",1991,12,crew
+2176,"De los Apeninos a los Andes",1990,142698,"Fausto","Tozzi",1978,12,cast
+835,"La fuga",2013,157681,"Homero","Cárpena",2001,12,cast
+390,"Los chicos crecen",1976,158117,"Horacio","Priani",1964,12,cast
+756,"El Fausto criollo",2011,158860,"Héctor","Pellegrini",1999,12,cast
+4421,"El milagro secreto",1998,155353,"Jorge","Luis Borges",1986,12,crew
+930,"Guacho",2007,157475,"Luis","Medina Castro",1995,12,cast
+83,"Roma",2004,158163,"Pablo","Cumo",1992,12,cast
+1361,"Mi noche triste",1997,156340,"Pascual","Pellicciotta",1985,12,cast
+338,"La caraba",1948,154289,"Pedro","Muñoz Seca",1936,12,crew
+281,"El calavera",1954,154806,"Pierre","Veber",1942,12,crew
+413,"Circe",2009,157049,"Raúl","Aubel",1997,12,cast
+856,"Gitano",2004,158259,"Romualdo","Quiroga",1992,12,cast
+811,"La frontera olvidada",1996,158854,"Tito","Ribero",1984,12,crew
+754,"Fascinación",2016,157250,"Susana","Campos",2004,12,cast
+1060,"Juan Moreira",1948,148941,"José","González Castillo",1937,11,crew
+159573,"Hijas de la comedia",2022,149014,"Mario","Clavel",2011,11,crew
+1905,"Sola",2021,153341,"Raúl","de la Torre",2010,11,crew
+1905,"Sola",2021,153341,"Raúl","de la Torre",2010,11,crew
+1905,"Sola",2021,153341,"Raúl","de la Torre",2010,11,crew
+473,"Convivencia",2020,156803,"Mercedes","Sosa",2009,11,crew
+2909,"Cuatro piernas",2002,136923,"Miles","Davis",1991,11,crew
+835,"La fuga",2013,157152,"Tita","Merello",2002,11,cast
+253,"La buena vida",2002,158949,"Aníbal","González Paz",1991,11,crew
+1579,"¡Qué tiempos aquéllos!",1951,146217,"Ben","Turpin",1940,11,cast
+1009,"Invasión",2015,157899,"Cacho","Espíndola",2004,11,cast
+1369,"Mi primera novia",1966,158495,"Carlos","Olivari",1955,11,crew
+1361,"Mi noche triste",1997,156987,"Cayetano","Biondo",1986,11,cast
+253,"La buena vida",2002,157934,"Eduardo","Humberto Nóbili",1991,11,cast
+756,"El Fausto criollo",2011,150793,"Enrique","Anderson Imbert",2000,11,crew
+691,"El día que me quieras",1999,158849,"Guillermo","Battaglia",1988,11,cast
+8405,"Las madres: The Mothers of Plaza de Mayo",1985,146759,"Juan","Domingo Perón",1974,11,cast
+8865,"El limonero real",2016,151914,"Juan","José Saer",2005,11,crew
+1214,"Martín Fierro",1989,158526,"Leopoldo","Torre Nilsson",1978,11,crew
+1214,"Martín Fierro",1989,158526,"Leopoldo","Torre Nilsson",1978,11,crew
+1214,"Martín Fierro",1989,158526,"Leopoldo","Torre Nilsson",1978,11,crew
+1967,"Venus perseguida",1973,158921,"Manuel","Alcón",1962,11,cast
+1827,"Tres argentinos en París",1938,144937,"Manuel","Joves",1927,11,crew
+926,"El grito sagrado",2003,158163,"Pablo","Cumo",1992,11,cast
+184859,"El coso",2022,157771,"Ricardo","Becher",2011,11,crew
+8024,"Cinéfilos a la intemperie",2005,114550,"Rodrigo","Tarruella",1994,11,crew
+8024,"Cinéfilos a la intemperie",2005,114550,"Rodrigo","Tarruella",1994,11,cast
+1572,"¿Por qué mintió la cigüeña?",1949,147797,"Serafín","Alvarez Quintero",1938,11,crew
+2814,"El muro",2001,158467,"Bárbara","Mujica",1990,11,cast
+1418,"La patota",2015,156608,"Carmen","Llambí",2004,11,cast
+481,"Cortázar",1994,153565,"Julio","Cortázar",1984,10,crew
+481,"Cortázar",1994,153565,"Julio","Cortázar",1984,10,crew
+6240,"La noche boca arriba",1994,153565,"Julio","Cortázar",1984,10,crew
+481,"Cortázar",1994,153565,"Julio","Cortázar",1984,10,cast
+65,"Albergue de mujeres",1946,158106,"Máximo","Gorki",1936,10,crew
+2469,"La nariz",1985,157715,"Dimitri","Shostakovich",1975,10,crew
+985,"Insaciable",1984,155072,"Luis Alberto","del Paraná",1974,10,crew
+3986,"Una noche",2002,130972,"Olivier","Messiaen",1992,10,crew
+10295,"Tango nuevo. Ástor Piazzolla",2019,104831,"Diana","Piazzolla",2009,10,cast
+2853,"La sombra",2015,156741,"Laura","Hidalgo",2005,10,cast
+2078,"Volver",2002,156808,"Ástor","Piazzolla",1992,10,crew
+1691,"El romance de un gaucho",1961,154272,"Benito","Lynch",1951,10,crew
+1203,"Noche de bodas",2009,158744,"Carlos","Hugo Christensen",1999,10,crew
+2094,"El acto en cuestión",2015,157185,"Carlos","Roffe",2005,10,cast
+8747,"Sueños acribillados",2015,157185,"Carlos","Roffe",2005,10,cast
+1009,"Invasión",2015,153124,"Horacio","Nicolai",2005,10,cast
+1976,"Los verdes paraísos",1947,149596,"Horacio","Quiroga",1937,10,crew
+2504,"Perón, sinfonía del sentimiento",1999,158384,"Hugo","del Carril",1989,10,crew
+691,"El día que me quieras",1999,158384,"Hugo","del Carril",1989,10,cast
+1569,"¡Qué noche de casamiento!",1969,154629,"Ivo","Pelay",1959,10,crew
+1983,"El viaje",1992,158948,"Juan","Ehlert",1982,10,crew
+194119,"El viaje de Alba",2024,149016,"Juan","Gelman",2014,10,cast
+1767,"Santos Vega",1971,157490,"Juan","Sarcione",1961,10,cast
+918,"Los hijos de Fierro",1984,149769,"Julio","Troxler",1974,10,cast
+1009,"Invasión",2015,155926,"Martín","Adjemián",2005,10,cast
+1291,"La mentirosa",1999,158353,"Pablo","Palitos",1989,10,cast
+5203,"Buen día, día",2011,155167,"Polo","Corbella",2001,10,cast
+1477,"La muerte de Sebastián Arache y su pobre entierro",1983,158382,"Raúl","del Valle",1973,10,cast
+1748,"Tierra del fuego",1983,158382,"Raúl","del Valle",1973,10,cast
+1905,"Sola",2021,156730,"Ricardo","Younis",2011,10,crew
+1009,"Invasión",2015,149245,"Roberto","Villanueva",2005,10,crew
+1009,"Invasión",2015,149245,"Roberto","Villanueva",2005,10,cast
+4928,"Vete de mí (Una de pasiones)",1996,146667,"Homero","Expósito",1987,9,crew
+4928,"Vete de mí (Una de pasiones)",1996,146667,"Homero","Expósito",1987,9,crew
+7104,"100 pájaros",2009,118649,"Julián","Infante",2000,9,cast
+3158,"Sidra",2011,143432,"Federico","Klemm",2002,9,cast
+3229,"Plástico cruel",2005,148975,"José","Sbarra",1996,9,crew
+396,"Chiquilines",1991,155756,"Álvaro","Yunque",1982,9,crew
+2998,"La toma",2013,154346,"Colomba","",2004,9,cast
+208,"Barcos de papel",2020,155758,"Hellen","Ferro",2011,9,crew
+253,"La buena vida",2002,157469,"Nathán","Pinzón",1993,9,cast
+8353,"Jardín de sueños",2014,112741,"Randoll","Coate",2005,9,cast
+1590,"Prisioneros de una noche",1962,156453,"Juan Carlos","Cobián",1953,9,crew
+691,"El día que me quieras",1999,158387,"Américo","Hoss",1990,9,crew
+159,"Así es la vida",1977,157603,"Arnaldo","Malfatti",1968,9,crew
+2176,"De los Apeninos a los Andes",1990,157548,"Beto","Gianola",1981,9,cast
+3010,"La vereda de la sombra",2005,136195,"Fabián","Polosecki",1996,9,cast
+160878,"Los muertos",1919,155720,"Florencio","Sánchez",1910,9,crew
+1260,"El novicio rebelde",1968,154629,"Ivo","Pelay",1959,9,crew
+8024,"Cinéfilos a la intemperie",2005,150214,"Jorge","Acha",1996,9,cast
+1361,"Mi noche triste",1997,157474,"Jorge","Salcedo",1988,9,cast
+3742,"Cachimba",2005,131749,"José","Donoso",1996,9,crew
+1767,"Santos Vega",1971,156975,"Mario","Baroffio",1962,9,cast
+739,"La familia unida esperando la llegada de Hallewyn",1971,150860,"Michel","de Ghelderode",1962,9,crew
+1447,"Peluquería de señoras",1941,152898,"Pascual","Contursi",1932,9,crew
+1889,"Si yo fuera rica",1941,152898,"Pascual","Contursi",1932,9,crew
+1497,"La mujer del león",1951,154806,"Pierre","Veber",1942,9,crew
+5879,"Carpani",2006,138790,"Ricardo","Carpani",1997,9,cast
+282,"La calesita",1993,158854,"Tito","Ribero",1984,9,crew
+1905,"Sola",2021,155484,"Mabel","Manzotti",2012,9,cast
+835,"La fuga",2013,154631,"Rosa","Rosen",2004,9,cast
+8911,"Última carta desde la revolución",2016,110345,"Oscar","Terán",2008,8,cast
+10014,"Crónicas de un exilio",2020,154644,"Octavio","Getino",2012,8,cast
+1404,"Pasión imposible",1943,155243,"Alfredo","Le Pera",1935,8,crew
+10483,"Tango en París, recuerdos de Astor Piazzolla",2017,156803,"Mercedes","Sosa",2009,8,cast
+3014,"Géminis",2020,157683,"Gogó","Andreu",2012,8,cast
+925,"Los hipócritas",2019,157146,"Rosángela","Balbo",2011,8,cast
+2649,"El vestido de terciopelo",2001,144894,"Silvina","Ocampo",1993,8,crew
+2652,"Anillo de humo",2001,144894,"Silvina","Ocampo",1993,8,crew
+2504,"Perón, sinfonía del sentimiento",1999,148947,"José María","Rosa",1991,8,crew
+2978,"Cortázar: apuntes para un documental",2002,149438,"Juan Carlos","Onetti",1994,8,cast
+2356,"Notas de tango",2000,156808,"Ástor","Piazzolla",1992,8,crew
+1769,"Tiro de gracia",2014,151328,"Abel","Sáenz Buhr",2006,8,cast
+1009,"Invasión",2015,156150,"Aldo","Mayo",2007,8,cast
+1357,"Mingo y Aníbal en la mansión embrujada",1986,153049,"Alfonso","Paso",1978,8,crew
+204,"Bárbara",2010,158003,"Alfredo","Suárez",2002,8,crew
+204,"Bárbara",2010,155786,"Cacho","Bustamante",2002,8,cast
+1404,"Pasión imposible",1943,155245,"Carlos","Gardel",1935,8,crew
+6772,"Un fueguito. La historia de César Milstein",2010,120524,"César","Milstein",2002,8,cast
+691,"El día que me quieras",1999,156992,"Enrique","Cahen Salaberry",1991,8,crew
+1291,"La mentirosa",1999,156992,"Enrique","Cahen Salaberry",1991,8,crew
+1603,"La pródiga",1984,157496,"Ernesto","Raquén",1976,8,cast
+102,"Amazonas",2020,158563,"Jacques","Arndt",2012,8,cast
+951,"Guerreros y cautivas",1994,155353,"Jorge","Luis Borges",1986,8,crew
+1203,"Noche de bodas",2009,158337,"José","Herrero",2001,8,crew
+926,"El grito sagrado",2003,157475,"Luis","Medina Castro",1995,8,cast
+3466,"Cien pesos",2003,158279,"Luis","Saslavsky",1995,8,crew
+2874,"Los malditos caminos",2002,137199,"Manuel","Picón",1994,8,crew
+756,"El Fausto criollo",2011,158314,"Miguel","Angel Lumaldo",2003,8,crew
+1902,"Sofía",2005,157402,"Nicolás","Frei",1997,8,cast
+6613,"Paraguay. Nosotros también podemos",2009,158970,"Oscar","Cardozo Ocampo",2001,8,crew
+400,"Chúmbale",2002,158890,"Oscar","Viale",1994,8,crew
+400,"Chúmbale",2002,158890,"Oscar","Viale",1994,8,crew
+1951,"Soñar no cuesta nada",2007,158179,"Oscar","Valicelli",1999,8,cast
+9069,"Yo, Sandro. La película",2018,156697,"Sandro","",2010,8,cast
+194180,"Un hombre que escribe",2024,147062,"Abelardo","Castillo",2017,7,cast
+6944,"Un rey para la Patagonia",2011,147776,"Juan","Fresán",2004,7,cast
+2386,"Marc, la sucia rata",2003,148975,"José","Sbarra",1996,7,crew
+196672,"Una vez, un circo",2025,151331,"Carlos","Garaycochea",2018,7,crew
+196672,"Una vez, un circo",2025,151331,"Carlos","Garaycochea",2018,7,crew
+1120,"El loro de la soledad",1967,154411,"Andrés","Chazarreta",1960,7,crew
+1603,"La pródiga",1984,158786,"Mario","Soffici",1977,7,crew
+2518,"Sangre",2020,159009,"Juan Carlos","Calabró",2013,7,cast
+50,"Adolescencia",2011,158655,"Pola","Alonso",2004,7,cast
+290,"La cama",2018,157146,"Rosángela","Balbo",2011,7,cast
+4999,"Borges en porteño",1999,156808,"Ástor","Piazzolla",1992,7,crew
+1902,"Sofía",2005,156508,"Aldo","Lobótrico",1998,7,crew
+10406,"Recuerdos de un naufragio",2021,124276,"Carlos","Páez Vilaró",2014,7,crew
+835,"La fuga",2013,153977,"Eduardo","Mignogna",2006,7,crew
+835,"La fuga",2013,153977,"Eduardo","Mignogna",2006,7,crew
+9016,"Ata tu arado a una estrella",2018,155194,"Ernesto","Sabato",2011,7,cast
+149,"¡Arriba juventud!",1971,156692,"Francisco","Canaro",1964,7,crew
+1983,"El viaje",1992,158511,"Francisco","Mugica",1985,7,crew
+413,"Circe",2009,153505,"Héctor","Grossi",2002,7,crew
+3466,"Cien pesos",2003,157481,"John","Alton",1996,7,crew
+1603,"La pródiga",1984,158867,"Leo","Fleider",1977,7,crew
+10443,"El corazón es la cuarta pared",2019,157036,"Leonardo","Favio",2012,7,crew
+196835,"Yo filmé a Osvaldo Bayer",2025,157348,"Osvaldo","Bayer",2018,7,cast
+10091,"Reconquista",2025,157348,"Osvaldo","Bayer",2018,7,cast
+2019,"La vida es un tango",1939,152898,"Pascual","Contursi",1932,7,crew
+756,"El Fausto criollo",2011,150801,"Rinaldo","Arsenio Pica",2004,7,crew
+2019,"La vida es un tango",1939,147372,"Samuel","Castriota",1932,7,crew
+7076,"Metegol",2013,138450,"Roberto","Fontanarrosa",2007,6,crew
+8847,"La continuidad de los parques",1990,153565,"Julio","Cortázar",1984,6,crew
+1627,"El regreso",2003,154299,"Horacio","O'Connor",1997,6,cast
+318,"El candidato",2017,154486,"David","Viñas",2011,6,crew
+1748,"Tierra del fuego",1983,158152,"Pedro","López Lagar",1977,6,cast
+1748,"Tierra del fuego",1983,158786,"Mario","Soffici",1977,6,crew
+1748,"Tierra del fuego",1983,158786,"Mario","Soffici",1977,6,cast
+1774,"Todo el año es Navidad",2018,158943,"Olga","Zubarry",2012,6,cast
+1598,"La procesión",1960,158606,"Alejandro Gutiérrez","del Barrio",1954,6,crew
+7468,"3",2012,136254,"Juan Pablo","Rebella",2006,6,crew
+2065,"Una viuda descocada",1980,155072,"Luis Alberto","del Paraná",1974,6,crew
+3728,"Ojos azules",1989,131928,"Miroslav","Homola",1983,6,cast
+309,"Canción de cuna",2005,156450,"Niní","Gambier",1999,6,cast
+1769,"Tiro de gracia",2014,145158,"Pérez","Celis",2008,6,cast
+8500,"Narcisa",2021,134533,"Marie","Louise Alemann",2015,6,cast
+2200,"El astillero",2000,149438,"Juan Carlos","Onetti",1994,6,crew
+1214,"Martín Fierro",1989,158059,"Ulyses Petit","de Murat",1983,6,crew
+2909,"Cuatro piernas",2002,136924,"Ella","Fitzgerald",1996,6,crew
+2850,"Balnearios",2001,137314,"Ernesto","Villavicencio",1995,6,crew
+842,"Funes, un gran amor",1993,150263,"Humberto","Costantini",1987,6,crew
+196911,"El sueño imposible. Familia de artistas",2025,158912,"José","Martínez Suárez",2019,6,cast
+83,"Roma",2004,157940,"Julio","Saraceni",1998,6,crew
+1774,"Todo el año es Navidad",2018,157036,"Leonardo","Favio",2012,6,cast
+282,"La calesita",1993,156044,"Rodolfo","Manuel Taboada",1987,6,crew
+3216,"El borde del tiempo",2014,158029,"Ulises","Dumont",2008,6,cast
+6405,"El grito en la sangre",2014,158029,"Ulises","Dumont",2008,6,cast
+9810,"Che, memorias de un año secreto",2020,119722,"Ulises","Estrada",2014,6,cast
+835,"La fuga",2013,152252,"Jean","Pierre Reguerraz",2007,6,cast
+2054,"Yo quiero ser bataclana",2005,158151,"Sabina","Olmos",1999,6,cast
+9016,"Ata tu arado a una estrella",2018,121614,"León","Ferrari",2013,5,cast
+8030,"Nos habíamos ratoneado tanto...",2013,126398,"Jorge","Guinzburg",2008,5,cast
+835,"La fuga",2013,143295,"Mario","Paolucci",2008,5,cast
+1572,"¿Por qué mintió la cigüeña?",1949,147798,"Joaquín","Alvarez Quintero",1944,5,crew
+2409,"Radiografías (Las invasiones)",1970,152800,"Ezequiel","Martínez Estrada",1965,5,crew
+8846,"Instrucciones para John Howell",1989,153565,"Julio","Cortázar",1984,5,crew
+456,"Confesión",1940,155243,"Alfredo","Le Pera",1935,5,crew
+10215,"No va más",2022,157448,"Estela","Molly",2017,5,cast
+396,"Chiquilines",1991,158189,"Antonio","Di Benedetto",1986,5,crew
+9172,"A oscuras",2019,158539,"Norma","Pons",2014,5,cast
+349,"Cartas de amor",2005,158864,"Elisa","Christian Galvé",2000,5,cast
+2054,"Yo quiero ser bataclana",2005,156365,"Juan Carlos","Thorry",2000,5,cast
+10091,"Reconquista",2025,154646,"Pino","Solanas",2020,5,cast
+3385,"Sarah",2015,133580,"Sarah","Bianchi",2010,5,cast
+4064,"Germinación",1965,130702,"Tirso","de Olazábal",1960,5,crew
+9810,"Che, memorias de un año secreto",2020,106787,"Luis Carlos","García Gutiérrez",2015,5,cast
+9486,"Perón y los judíos",2020,108007,"Itzjak","Navón",2015,5,cast
+5399,"El impacto Kramer",2004,126289,"Ernest","Gold",1999,5,crew
+2135,"Quereme así (Piantao)",1997,156808,"Ástor","Piazzolla",1992,5,crew
+160314,"1982",2021,155652,"Antonio","Carrizo",2016,5,cast
+811,"La frontera olvidada",1996,158949,"Aníbal","González Paz",1991,5,crew
+1100,"La locura de don Juan",1948,155291,"Carlos","Arniches",1943,5,crew
+456,"Confesión",1940,155245,"Carlos","Gardel",1935,5,crew
+554,"Eclipse de sol",1943,155569,"Enrique","García Velloso",1938,5,crew
+1436,"Pecadora",1956,157677,"Enrique","Santos Discépolo",1951,5,crew
+604,"El dependiente",1969,156692,"Francisco","Canaro",1964,5,crew
+1459,"Los muchachos de antes no usaban gomina",1969,156692,"Francisco","Canaro",1964,5,crew
+8866,"Evaristo",2016,141778,"Francisco","Solano López",2011,5,cast
+1967,"Venus perseguida",1973,158853,"José","Serra",1968,5,crew
+8811,"Solar",2017,155713,"Juan","Alberto Badía",2012,5,cast
+604,"El dependiente",1969,156371,"Juan","de Dios Filiberto",1964,5,crew
+6087,"4 de julio: la masacre de San Patricio",2008,124450,"Kevin","O'Neill",2003,5,cast
+1477,"La muerte de Sebastián Arache y su pobre entierro",1983,158526,"Leopoldo","Torre Nilsson",1978,5,crew
+8771,"Caída del cielo",2016,119323,"Martín","Blaszko",2011,5,crew
+4868,"Hamaca paraguaya",2006,158970,"Oscar","Cardozo Ocampo",2001,5,crew
+2356,"Notas de tango",2000,152962,"Osvaldo","Pugliese",1995,5,crew
+9628,"Tengo miedo, torero",2020,105440,"Pedro","Lemebel",2015,5,crew
+6575,"Ningún amor es perfecto",2012,153817,"Alicia","Aller",2008,4,cast
+9527,"Bernarda es la patria",2021,106456,"Mario","Filgueira",2017,4,cast
+7540,"La forma exacta de las islas",2014,125973,"Rodolfo","Fogwill",2010,4,crew
+189678,"¡Oh, por Lenin!",2023,131355,"Antonio","Puigjané",2019,4,cast
+6403,"Cine Negro",2007,133499,"Norberto","Campos",2003,4,cast
+5593,"Café de los maestros",2008,134538,"Pepe","Libertella",2004,4,cast
+7136,"Las fotos de Vera Bolkovic",2011,134930,"Ricardo","Vilca",2007,4,crew
+473,"Convivencia",2020,157206,"Luis","César D'Angiolillo",2016,4,crew
+5820,"Génesis",2018,158539,"Norma","Pons",2014,4,cast
+826,"Gatica, ""el mono""",1993,150381,"Dámaso","Pérez Prado",1989,4,crew
+9536,"Inmortal Kombat",2020,106118,"Lohana","Berkins",2016,4,cast
+707,"Éxtasis tropical",1978,155072,"Luis Alberto","del Paraná",1974,4,crew
+1038,"El jefe",2011,158560,"Marcela","Sola",2007,4,cast
+2850,"Balnearios",2001,137311,"Stéphane","Grappelli",1997,4,crew
+2850,"Balnearios",2001,137311,"Stéphane","Grappelli",1997,4,crew
+2887,"Los rubios",2003,104780,"Olga","Orozco",1999,4,crew
+195028,"El mal absoluto",2024,112280,"Gabo","Ferro",2020,4,crew
+3014,"Géminis",2020,154048,"Lucrecia","Capello",2016,4,cast
+691,"El día que me quieras",1999,158592,"Abel","Santa Cruz",1995,4,crew
+7072,"Desmadre",2018,142401,"Arturo","Goetz",2014,4,cast
+196899,"Entre la tierra y el cielo",2025,196932,"Carmelo","Ullpu",2021,4,cast
+4928,"Vete de mí (Una de pasiones)",1996,155051,"Daniel","Riolobos",1992,4,crew
+3014,"Géminis",2020,142255,"Darío","""Peter"" Triviño",2016,4,crew
+4253,"El patrón: radiografía de un crimen",2015,134524,"Elías","Neuman",2011,4,crew
+659,"Esperando la carroza",1985,151459,"Feliciano","Brunelli",1981,4,crew
+3712,"Pura sangre",2013,132113,"Fernando","Peña",2009,4,cast
+9548,"Me busco lejos",2022,142258,"Guido","Lublinsky",2018,4,crew
+9548,"Me busco lejos",2022,142258,"Guido","Lublinsky",2018,4,crew
+9548,"Me busco lejos",2022,142258,"Guido","Lublinsky",2018,4,crew
+9548,"Me busco lejos",2022,142258,"Guido","Lublinsky",2018,4,crew
+282,"La calesita",1993,158384,"Hugo","del Carril",1989,4,crew
+282,"La calesita",1993,158384,"Hugo","del Carril",1989,4,crew
+282,"La calesita",1993,158384,"Hugo","del Carril",1989,4,cast
+6478,"El fin de la espera",2011,142415,"Héctor","Grillo",2007,4,crew
+6725,"Rita y Li",2011,142415,"Héctor","Grillo",2007,4,crew
+595,"El encuentro",2003,158860,"Héctor","Pellegrini",1999,4,cast
+188866,"Retratos de Eugenia",2023,158912,"José","Martínez Suárez",2019,4,cast
+8814,"Favio: Crónica de un director",2016,157036,"Leonardo","Favio",2012,4,cast
+945,"La guerra gaucha",1942,149581,"Leopoldo","Lugones",1938,4,crew
+767,"Fiebre amarilla",1982,158526,"Leopoldo","Torre Nilsson",1978,4,crew
+343,"Carlos Gardel, historia de un ídolo",1964,154233,"Luis","Angel Firpo",1960,4,cast
+6491,"Carne sobre carne",2007,122048,"Octavio","Fabiano",2003,4,crew
+2978,"Cortázar: apuntes para un documental",2002,143931,"Octavio","Paz",1998,4,cast
+2270,"Tango",2005,158970,"Oscar","Cardozo Ocampo",2001,4,cast
+6074,"Cerca de Bony",2006,123767,"Oscar","Bony",2002,4,cast
+10081,"A los ojos de Dios",2016,154731,"Oscar","Núñez",2012,4,cast
+82,"Al llegar el día",1968,157725,"Raúl","De Lange",1964,4,cast
+933,"Un guapo del 900",1971,156721,"Samuel","Eichelbaum",1967,4,crew
+613,"Derecho viejo",1998,156719,"Sebastián","Piana",1994,4,crew
+1038,"El jefe",2011,156878,"Ana","Casares",2007,4,cast
+1723,"La terraza",1992,155359,"Beatriz","Guido",1988,4,crew
+1723,"La terraza",1992,155359,"Beatriz","Guido",1988,4,crew
+4894,"Bye Bye Life",2008,127942,"Gabriela","Liffschitz",2004,4,cast
+150,"Arroz con leche",2008,157250,"Susana","Campos",2004,4,cast
+8258,"La del Chango",2014,153153,"Chango","Farías Gómez",2011,3,crew
+2054,"Yo quiero ser bataclana",2005,152970,"Alicia","Barrié",2002,3,cast
+10138,"Una casa sin cortinas",2021,130710,"Esteban","Peicovich",2018,3,cast
+8471,"Tierra abrasada",2015,134932,"Héctor","Tizón",2012,3,cast
+2468,"Buenos Aires en camiseta",1966,139133,"Calé","",1963,3,crew
+2886,"Cruzaron el disco",2004,141496,"Diego","Mackenzie",2001,3,cast
+191390,"Hedy Crilla, maestra de actores",2023,143368,"Agustín","Alezzo",2020,3,cast
+1876,"Sinfonía de juventud",1955,144692,"Alberto","Williams",1952,3,crew
+6887,"Una cita, una fiesta y un gato negro",2012,146943,"Axel","Pauls",2009,3,cast
+1746,"La sangre de las guitarras",1937,155912,"Carlos Max","Viale Paz",1934,3,crew
+2278,"El visitante",2002,155968,"Leandro","Regúnaga",1999,3,cast
+9438,"Lectura según Justino",2019,157206,"Luis","César D'Angiolillo",2016,3,crew
+102,"Amazonas",2020,157430,"Francisco","Cocuzza",2017,3,cast
+6990,"El día que cambió la historia",2012,157808,"Jorge","Barreiro",2009,3,crew
+259,"Buenos Aires Rock",1983,158079,"Luis","Sandrini",1980,3,cast
+253,"La buena vida",2002,158264,"Maurice","Jouvet",1999,3,cast
+985,"Insaciable",1984,158658,"Armando","Bó",1981,3,crew
+985,"Insaciable",1984,158658,"Armando","Bó",1981,3,crew
+985,"Insaciable",1984,158658,"Armando","Bó",1981,3,crew
+985,"Insaciable",1984,158658,"Armando","Bó",1981,3,crew
+985,"Insaciable",1984,158658,"Armando","Bó",1981,3,cast
+2414,"Donde cae el sol",2003,158756,"Alfonso","De Grazia",2000,3,cast
+1009,"Invasión",2015,158943,"Olga","Zubarry",2012,3,cast
+2094,"El acto en cuestión",2015,155180,"Luis Alberto","Spinetta",2012,3,crew
+925,"Los hipócritas",2019,157042,"Elcira","Olivera Garcés",2016,3,cast
+4921,"Nadie Inquietó Más - Narciso Ibáñez Menta",2009,155515,"José María","Langlais",2006,3,cast
+1060,"Juan Moreira",1948,154250,"Nelo","Cosimi",1945,3,crew
+1291,"La mentirosa",1999,155234,"Niní","Marshall",1996,3,cast
+768,"Donde mueren las palabras",1946,151802,"Serguei","Rachmaninoff",1943,3,crew
+2634,"La casa de azúcar",1996,144894,"Silvina","Ocampo",1993,3,crew
+189371,"La larga vida de los recuerdos",2023,112280,"Gabo","Ferro",2020,3,crew
+4921,"Nadie Inquietó Más - Narciso Ibáñez Menta",2009,127842,"Eduardo ""Zumbo""","Jorge Bertonasco",2006,3,cast
+5917,"Ensayando la cultura",1995,156808,"Ástor","Piazzolla",1992,3,crew
+10277,"Moacir y yo",2021,118955,"Moacir","Dos Santos",2018,3,cast
+152,"Asalto en la ciudad",1968,156627,"Agustín","Barrios",1965,3,cast
+1902,"Sofía",2005,158891,"Alberto","Busaid",2002,3,cast
+282,"La calesita",1993,158387,"Américo","Hoss",1990,3,crew
+8030,"Nos habíamos ratoneado tanto...",2013,158520,"Aníbal","Di Salvo",2010,3,cast
+9555,"Así cantaba Carlos Gardel",1935,132214,"Arturo","de Nava",1932,3,cast
+10093,"Hijo de Sodoma",2020,105996,"Camilo","Najar",2017,3,cast
+6877,"Gorri",2010,149035,"Carlos","Gorriarena",2007,3,cast
+1431,"La morocha",1958,158495,"Carlos","Olivari",1955,3,crew
+2247,"El desvío",2019,156274,"Carlos","Torlaschi",2016,3,crew
+732,"Facundo, la sombra del tigre",1995,150905,"Daniel","Moyano",1992,3,crew
+4474,"A los cuatro vientos",2007,156776,"Domingo","Cura",2004,3,cast
+194923,"La culpa de nada",2024,132010,"Gabriel","Ruiz Díaz",2021,3,crew
+2078,"Volver",2002,158860,"Héctor","Pellegrini",1999,3,cast
+2038,"...Y mañana serán hombres",1979,158925,"Jorge","Villoldo",1976,3,cast
+160561,"El nexo",2014,135711,"Julio","Arrieta",2011,3,cast
+3912,"Si sos brujo: una historia de tango",2006,153788,"Julián","Plaza",2003,3,cast
+5880,"Cinco miembros",2006,124450,"Kevin","O'Neill",2003,3,cast
+382,"Cerro Guanaco",1959,153847,"Manuel","Acosta Villafañe",1956,3,crew
+546,"Danza del fuego",1949,152298,"Manuel","de Falla",1946,3,crew
+1060,"Juan Moreira",1948,137827,"Mario","Gallo",1945,3,crew
+3139,"La hermana menor",2008,155926,"Martín","Adjemián",2005,3,cast
+3488,"La perrera",2008,155926,"Martín","Adjemián",2005,3,cast
+1524,"¿Los piolas no se casan...?",1981,158856,"Norberto","Aroldi",1978,3,crew
+10183,"Cheto cheto",2021,157348,"Osvaldo","Bayer",2018,3,cast
+10000,"Angelus, variaciones sobre un sueño",2018,106846,"Pablo","Rieznik",2015,3,cast
+6921,"Aphrodite",1928,119648,"Pierre","Louÿs",1925,3,crew
+1769,"Tiro de gracia",2014,157771,"Ricardo","Becher",2011,3,crew
+1769,"Tiro de gracia",2014,157771,"Ricardo","Becher",2011,3,crew
+1769,"Tiro de gracia",2014,157771,"Ricardo","Becher",2011,3,crew
+10567,"Buscando a Panzeri",2019,102982,"Roberto","Perfumo",2016,3,cast
+4059,"Los elegidos",2014,154061,"Rodolfo","Mórtola",2011,3,crew
+1265,"Novios para las muchachas",1941,147797,"Serafín","Alvarez Quintero",1938,3,crew
+1009,"Invasión",2015,149238,"Ubaldo","de Lío",2012,3,crew
+6478,"El fin de la espera",2011,158029,"Ulises","Dumont",2008,3,cast
+856,"Gitano",2004,157571,"Noemí","Laserre",2001,3,cast
+6670,"Andrés no quiere dormir la siesta",2010,153817,"Alicia","Aller",2008,2,cast
+10567,"Buscando a Panzeri",2019,102984,"Dante","Zavatarelli",2017,2,cast
+1949,"La sonrisa de mamá",1972,155238,"Azucena","Maizani",1970,2,crew
+3912,"Si sos brujo: una historia de tango",2006,134538,"Pepe","Libertella",2004,2,cast
+7855,"La huella del doctor Ernesto Guevara",2013,135734,"Alberto","Granado",2011,2,cast
+3663,"Cuestión de principios",2009,138450,"Roberto","Fontanarrosa",2007,2,crew
+3663,"Cuestión de principios",2009,138450,"Roberto","Fontanarrosa",2007,2,crew
+6648,"Boogie, el aceitoso",2009,138450,"Roberto","Fontanarrosa",2007,2,crew
+6524,"Fútbol violencia S.A.",2009,138450,"Roberto","Fontanarrosa",2007,2,cast
+3010,"La vereda de la sombra",2005,139485,"Enrique","Sdrech",2003,2,cast
+2386,"Marc, la sucia rata",2003,141496,"Diego","Mackenzie",2001,2,cast
+6898,"La jactancia de los tontos",2010,143295,"Mario","Paolucci",2008,2,cast
+9527,"Bernarda es la patria",2021,143427,"Gustavo","Liza",2019,2,cast
+7836,"Esos colores que llevás",2013,145783,"Carlos","Trillo",2011,2,cast
+196911,"El sueño imposible. Familia de artistas",2025,150753,"Claudio","Da Passano",2023,2,cast
+1134,"Luisito",1943,154201,"Florencio","Parravicini",1941,2,crew
+2161,"El impostor",1997,154743,"María","Luisa Bemberg",1995,2,crew
+7518,"555",2013,154932,"Adrián","Yospe",2011,2,cast
+1641,"El puente",1985,154945,"Alberto","Ginastera",1983,2,crew
+204,"Bárbara",2010,156341,"Irma","Córdoba",2008,2,cast
+798,"Dos tipos con suerte",1960,157080,"Fernando","de Fuentes",1958,2,crew
+8242,"Anagramas",2014,155180,"Luis Alberto","Spinetta",2012,2,crew
+8131,"Francisco de Buenos Aires",2015,114068,"Clelia","Luro",2013,2,cast
+6907,"La palabra empeñada",2011,119728,"Conchita","Dumois",2009,2,cast
+222,"Bendita seas",1956,158606,"Alejandro Gutiérrez","del Barrio",1954,2,crew
+1482,"La muerte flota en el río",1956,158606,"Alejandro Gutiérrez","del Barrio",1954,2,crew
+7506,"El notificador",2012,158608,"Milita","Brandon",2010,2,cast
+1774,"Todo el año es Navidad",2018,157042,"Elcira","Olivera Garcés",2016,2,cast
+441,"Como tú lo soñaste",1947,153230,"Georg","Kaiser",1945,2,crew
+464,"La conquista del paraíso",1981,153076,"Gloria","Guzmán",1979,2,cast
+10116,"Zombies en el cañaveral. El documental",2021,155074,"Isabel","Sarli",2019,2,cast
+2458,"La dialéctica tiene sus cositas",1972,139155,"Jimi","Hendrix",1970,2,crew
+1874,"Sin fin",2005,158130,"José María","Gutiérrez",2003,2,cast
+10138,"Una casa sin cortinas",2021,131349,"Juan Carlos","Dante Gullo",2019,2,cast
+1769,"Tiro de gracia",2014,150756,"Juan Carlos","Gené",2012,2,cast
+191780,"La mujer hormiga",2024,136682,"Julieta","Vallina",2022,2,cast
+4013,"Nevar en Buenos Aires",2007,158558,"Lito","Espinosa",2005,2,crew
+575,"Embrujada",1976,155072,"Luis Alberto","del Paraná",1974,2,crew
+575,"Embrujada",1976,155072,"Luis Alberto","del Paraná",1974,2,cast
+8958,"Monumento",2016,110127,"Mendel","Zelcer",2014,2,cast
+1371,"Mirad los lirios del campo",1947,154250,"Nelo","Cosimi",1945,2,cast
+9486,"Perón y los judíos",2020,108006,"Uri","Avneri",2018,2,cast
+7855,"La huella del doctor Ernesto Guevara",2013,115373,"Julia","Constenla",2011,2,cast
+191575,"Los delincuentes",2023,117970,"Paola","Suarez",2021,2,crew
+5593,"Café de los maestros",2008,125561,"Lágrima","Ríos",2006,2,cast
+9473,"Hoy se arregla el mundo",2022,153683,"José Luis","Díaz",2020,2,crew
+1926,"Veinticuatro horas en la vida de una mujer",1944,144473,"Stephan","Zweig",1942,2,crew
+1210,"La noche de Venus",1955,156453,"Juan Carlos","Cobián",1953,2,crew
+8088,"Condenados",2014,159001,"Alicia","Zanca",2012,2,cast
+1579,"¡Qué tiempos aquéllos!",1951,146215,"Slim","Summerville",1949,2,cast
+6907,"La palabra empeñada",2011,153587,"Alejandro","Doria",2009,2,cast
+8608,"El lugar del hijo",2015,153521,"Alejandro","Urdapilleta",2013,2,cast
+465,"Operación Comando",1980,153049,"Alfonso","Paso",1978,2,crew
+339,"El caradura y la millonaria",1971,155650,"Antonio","Botta",1969,2,crew
+2434,"Ciudad del sol",2003,158230,"Arturo","Maly",2001,2,cast
+9171,"Por amor al arte",2018,153829,"Bernardo","Arias",2016,2,crew
+390,"Los chicos crecen",1976,155605,"Camilo","Darthés",1974,2,crew
+2164,"Cuerpos perdidos",1994,142880,"César","Pierry",1992,2,cast
+7104,"100 pájaros",2009,118647,"Daniel","Zamora",2007,2,cast
+10033,"Tres cosas básicas",2023,150073,"David","Blaustein",2021,2,crew
+10002,"El nadador",2013,136948,"Diego","Echave",2011,2,crew
+3800,"La filia (Entrevista a Edgardo Chibán)",2005,131458,"Edgardo","Chibán",2003,2,cast
+8024,"Cinéfilos a la intemperie",2005,131458,"Edgardo","Chibán",2003,2,cast
+238,"Bodas de sangre",1938,155441,"Federico","García Lorca",1936,2,crew
+1910,"Vacaciones en la Argentina",1966,158376,"Francisco","Audenino",1964,2,cast
+8863,"No me mates",2016,147978,"Gustavo","Cerati",2014,2,crew
+1588,"Prisioneros de la tierra",1939,149596,"Horacio","Quiroga",1937,2,crew
+7762,"Ramón Ayala",2014,115705,"Hugo","Alcaraz",2012,2,cast
+2069,"Y que patatín... y que patatán",1971,158685,"Héctor","Calcaño",1969,2,cast
+6449,"Cartas a Malvinas",2009,142415,"Héctor","Grillo",2007,2,cast
+643,"El despertar del sexo",1970,158853,"José","Serra",1968,2,crew
+9066,"Alguien más en quien confiar",2018,110578,"Juan","""Locomotora"" Espósito",2016,2,cast
+5628,"Tres de corazones",2007,151914,"Juan","José Saer",2005,2,crew
+6653,"Villa",2013,135711,"Julio","Arrieta",2011,2,cast
+2905,"El viaje hacia el mar",2005,136983,"Julio","César Castro",2003,2,crew
+2905,"El viaje hacia el mar",2005,136983,"Julio","César Castro",2003,2,cast
+1680,"Ritmo, amor y primavera",1981,158919,"Julio","Porter",1979,2,crew
+325,"El canto cuenta su historia",1976,154397,"Julián","Centeya",1974,2,cast
+8564,"Buscamos vida, los crímenes del ejército argentino en Campo de Mayo",2013,111979,"Luis","Benencio",2011,2,cast
+7007,"Martin Blaszko III",2013,119323,"Martín","Blaszko",2011,2,cast
+6491,"Carne sobre carne",2007,155926,"Martín","Adjemián",2005,2,cast
+8585,"Anconetani",2015,111885,"Nazareno","Anconetani",2013,2,cast
+7515,"Néstor Kirchner, la película",2012,147135,"Néstor","Kirchner",2010,2,cast
+9496,"Abuelas",2020,157348,"Osvaldo","Bayer",2018,2,crew
+2504,"Perón, sinfonía del sentimiento",1999,138790,"Ricardo","Carpani",1997,2,crew
+1122,"Los que verán a Dios",1963,152933,"Rodolfo","Blasco",1961,2,crew
+9527,"Bernarda es la patria",2021,119063,"Tino","Tinto",2019,2,cast
+2172,"El fuego del pecado",1986,158854,"Tito","Ribero",1984,2,crew
+6434,"Ni dios, ni patrón, ni marido",2010,158029,"Ulises","Dumont",2008,2,cast
+188571,"Los bastardos",2023,141206,"Agustina","Posse",2021,2,cast
+2727,"Caja negra",2002,137905,"Eugenia","Bassi",2000,2,cast
+6445,"Padres de la plaza - 10 recorridos posibles",2010,122296,"Jaime","Steimberg",2008,2,cast
+6560,"Luisa",2009,152252,"Jean","Pierre Reguerraz",2007,2,cast
+161,"Así o de otra manera",1996,156402,"Zulema","Katz",1994,2,cast
