@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 22ac8a5205395f20f0f6764337ba5ed8c1aabe18
-// Fecha: 2025-10-16T12:07:40.986Z
+// Commit: 8a4b485134b66f6281716b7cb6a9714c5620ef4e
+// Fecha: 2025-10-18T14:18:42.122Z
 // ============================================
 
 
@@ -1356,6 +1356,346 @@ export default function LoginPage() {
       </div>
     </div>
   )
+}
+
+// ==================================================
+// src/app/admin/maintenance/review-names/page.tsx
+// ==================================================
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
+
+interface CaseToReview {
+  id: number;
+  firstName: string;
+  lastName: string;
+  slug: string;
+  totalRoles: number;
+  firstNameWords: number;
+  lastNameWords: number;
+}
+
+export default function ReviewNamesPage() {
+  const router = useRouter();
+  const [cases, setCases] = useState<CaseToReview[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  // Form state
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+
+  // Cargar casos al montar
+  useEffect(() => {
+    loadCases();
+  }, []);
+
+  // Actualizar form cuando cambia el caso actual
+  useEffect(() => {
+    if (cases.length > 0 && cases[currentIndex]) {
+      const currentCase = cases[currentIndex];
+      setFirstName(currentCase.firstName);
+      setLastName(currentCase.lastName);
+    }
+  }, [currentIndex, cases]);
+
+  const loadCases = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/people/review-names');
+      const data = await response.json();
+      
+      if (data.cases) {
+        setCases(data.cases);
+        if (data.cases.length === 0) {
+          toast.success('¡No hay casos para revisar!');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading cases:', error);
+      toast.error('Error al cargar casos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!cases[currentIndex]) return;
+    
+    try {
+      setSaving(true);
+      
+      const response = await fetch('/api/people/review-names', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: cases[currentIndex].id,
+          firstName: firstName.trim(),
+          lastName: lastName.trim()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al guardar');
+      }
+
+      toast.success('Cambios guardados');
+      
+      // Remover caso actual de la lista
+      const newCases = cases.filter((_, index) => index !== currentIndex);
+      setCases(newCases);
+      
+      // Ajustar índice si es necesario
+      if (currentIndex >= newCases.length && newCases.length > 0) {
+        setCurrentIndex(newCases.length - 1);
+      }
+
+      // Si no quedan más casos
+      if (newCases.length === 0) {
+        toast.success('¡Todos los casos revisados!');
+      }
+
+    } catch (error) {
+      console.error('Error saving:', error);
+      toast.error('Error al guardar cambios');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSkip = () => {
+    // Remover caso actual (marcarlo como correcto)
+    const newCases = cases.filter((_, index) => index !== currentIndex);
+    setCases(newCases);
+    
+    // Ajustar índice
+    if (currentIndex >= newCases.length && newCases.length > 0) {
+      setCurrentIndex(newCases.length - 1);
+    }
+
+    toast.success('Caso marcado como correcto');
+
+    if (newCases.length === 0) {
+      toast.success('¡Todos los casos revisados!');
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentIndex < cases.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando casos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (cases.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">✅</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            ¡Todos los casos revisados!
+          </h2>
+          <p className="text-gray-600 mb-6">
+            No hay más nombres para revisar
+          </p>
+          <button
+            onClick={() => router.push('/admin/people')}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          >
+            Volver a Personas
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentCase = cases[currentIndex];
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Revisar Nombres
+              </h1>
+              <p className="mt-2 text-sm text-gray-600">
+                Casos con más de 3 palabras en nombre o apellido
+              </p>
+            </div>
+            <button
+              onClick={() => router.push('/admin/people')}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              ← Volver
+            </button>
+          </div>
+        </div>
+
+        {/* Progress */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">
+              Caso {currentIndex + 1} de {cases.length}
+            </span>
+            <span className="text-sm text-gray-500">
+              {Math.round(((currentIndex + 1) / cases.length) * 100)}% completado
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${((currentIndex + 1) / cases.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Current Case */}
+        <div className="bg-white rounded-lg shadow">
+          {/* Case Info */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-lg font-medium text-gray-900 mb-2">
+                  ID: {currentCase.id}
+                </h2>
+                <div className="space-y-1 text-sm text-gray-600">
+                  <p>Slug: <span className="font-mono">{currentCase.slug}</span></p>
+                  <p>Roles en películas: <span className="font-semibold">{currentCase.totalRoles}</span></p>
+                  <p>
+                    Palabras: {currentCase.firstNameWords} (nombre) / {currentCase.lastNameWords} (apellido)
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Form */}
+          <div className="p-6">
+            <div className="space-y-6">
+              {/* First Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre
+                  <span className="ml-2 text-xs text-gray-500">
+                    ({firstName.trim().split(/\s+/).length} palabra{firstName.trim().split(/\s+/).length !== 1 ? 's' : ''})
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Nombre"
+                />
+              </div>
+
+              {/* Last Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Apellido
+                  <span className="ml-2 text-xs text-gray-500">
+                    ({lastName.trim().split(/\s+/).length} palabra{lastName.trim().split(/\s+/).length !== 1 ? 's' : ''})
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Apellido"
+                />
+              </div>
+
+              {/* Preview */}
+              <div className="bg-gray-50 p-4 rounded-md">
+                <p className="text-sm text-gray-600 mb-1">Vista previa:</p>
+                <p className="text-lg font-medium text-gray-900">
+                  {firstName.trim()} {lastName.trim()}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="p-6 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+            <button
+              onClick={handleSkip}
+              disabled={saving}
+              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+            >
+              Marcar como Correcto
+            </button>
+
+            <button
+              onClick={handleSave}
+              disabled={saving || (!firstName.trim() && !lastName.trim())}
+              className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <div className="mt-6 flex items-center justify-between">
+          <button
+            onClick={handlePrevious}
+            disabled={currentIndex === 0}
+            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            ← Anterior
+          </button>
+
+          <span className="text-sm text-gray-600">
+            Caso {currentIndex + 1} de {cases.length}
+          </span>
+
+          <button
+            onClick={handleNext}
+            disabled={currentIndex === cases.length - 1}
+            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Siguiente →
+          </button>
+        </div>
+
+        {/* Help Text */}
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-blue-900 mb-2">💡 Consejos</h3>
+          <ul className="text-sm text-blue-800 space-y-1">
+            <li>• Si el nombre está correcto, haz clic en "Marcar como Correcto"</li>
+            <li>• Los apellidos compuestos (ej: "de la Cruz") son correctos</li>
+            <li>• Las bandas y grupos pueden tener nombres largos</li>
+            <li>• Los cambios se guardan automáticamente</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ==================================================
@@ -4084,21 +4424,111 @@ export async function POST(request: NextRequest) {
 // ==================================================
 // src/app/api/efemerides/route.ts
 // ==================================================
+// src/app/api/efemerides/route.ts - MEJORADO CON PARÁMETROS Y CACHÉ
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { calcularAniosDesde, formatearEfemeride, EfemerideData } from '@/lib/utils/efemerides';
+import { calcularAniosDesde, formatearEfemeride } from '@/lib/utils/efemerides';
 import { Efemeride } from '@/types/home.types';
+import RedisClient from '@/lib/redis';
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
+// ============================================
+// CACHE CONFIGURATION
+// ============================================
+
+const memoryCache = new Map<string, { data: any; timestamp: number }>();
+const MEMORY_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 horas
+const REDIS_TTL = 86400; // 24 horas
+
+function generateCacheKey(dia: number, mes: number, randomSample?: boolean): string {
+  const suffix = randomSample ? ':random' : ':all';
+  return `efemerides:${mes}-${dia}${suffix}:v2`;
+}
+
+// ============================================
+// GET /api/efemerides
+// ============================================
 export async function GET(request: NextRequest) {
   try {
+    const searchParams = request.nextUrl.searchParams;
+    
+    // Obtener parámetros - si no se especifican, usar fecha actual
     const hoy = new Date();
-    const dia = hoy.getDate();
-    const mes = hoy.getMonth() + 1;
+    const dia = parseInt(searchParams.get('day') || searchParams.get('dia') || hoy.getDate().toString());
+    const mes = parseInt(searchParams.get('month') || searchParams.get('mes') || (hoy.getMonth() + 1).toString());
     
+    // Parámetro para indicar si queremos muestra aleatoria (para la home)
+    const randomSample = searchParams.get('random') === 'true';
     
-    // Obtener películas con fechas de estreno para hoy
+    // Validar parámetros
+    if (mes < 1 || mes > 12) {
+      return NextResponse.json(
+        { error: 'Mes inválido (debe ser entre 1 y 12)' },
+        { status: 400 }
+      );
+    }
+    
+    if (dia < 1 || dia > 31) {
+      return NextResponse.json(
+        { error: 'Día inválido (debe ser entre 1 y 31)' },
+        { status: 400 }
+      );
+    }
+
+    // ============================================
+    // 1. INTENTAR REDIS CACHE
+    // ============================================
+    const cacheKey = generateCacheKey(dia, mes, randomSample);
+    const now = Date.now();
+    
+    try {
+      const redisCached = await RedisClient.get(cacheKey);
+      
+      if (redisCached) {
+        console.log(`✅ Cache HIT desde Redis para efemérides: ${mes}/${dia}`);
+        return NextResponse.json(
+          JSON.parse(redisCached),
+          {
+            headers: {
+              'Cache-Control': `public, s-maxage=${REDIS_TTL}, stale-while-revalidate=${REDIS_TTL * 2}`,
+              'X-Cache': 'HIT',
+              'X-Cache-Source': 'redis'
+            }
+          }
+        );
+      }
+    } catch (redisError) {
+      console.error('Redis error (non-fatal):', redisError);
+    }
+
+    // ============================================
+    // 2. INTENTAR MEMORY CACHE
+    // ============================================
+    const memoryCached = memoryCache.get(cacheKey);
+    
+    if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
+      console.log(`✅ Cache HIT desde memoria para efemérides: ${mes}/${dia}`);
+      
+      RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), REDIS_TTL)
+        .catch(err => console.error('Error guardando en Redis:', err));
+      
+      return NextResponse.json(memoryCached.data, {
+        headers: {
+          'Cache-Control': `public, s-maxage=${REDIS_TTL}, stale-while-revalidate=${REDIS_TTL * 2}`,
+          'X-Cache': 'HIT',
+          'X-Cache-Source': 'memory'
+        }
+      });
+    }
+
+    // ============================================
+    // 3. CONSULTAR BASE DE DATOS
+    // ============================================
+    console.log(`🔄 Cache MISS - Consultando BD para efemérides: ${mes}/${dia}`);
+    
+    // Obtener películas con fechas de estreno para esta fecha
     const peliculasEstreno = await prisma.movie.findMany({
       where: {
         releaseDay: dia,
@@ -4115,7 +4545,7 @@ export async function GET(request: NextRequest) {
         posterUrl: true,
         crew: {
           where: {
-            roleId: 2 // Solo buscar por roleId de Director
+            roleId: 2 // Director
           },
           select: {
             person: {
@@ -4131,7 +4561,7 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    // Obtener películas con inicio de rodaje para hoy
+    // Obtener películas con inicio de rodaje
     const peliculasInicioRodaje = await prisma.movie.findMany({
       where: {
         filmingStartDay: dia,
@@ -4164,7 +4594,7 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    // Obtener películas con fin de rodaje para hoy
+    // Obtener películas con fin de rodaje
     const peliculasFinRodaje = await prisma.movie.findMany({
       where: {
         filmingEndDay: dia,
@@ -4197,7 +4627,7 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    // Obtener personas nacidas hoy
+    // Obtener personas nacidas en esta fecha
     const personasNacimiento = await prisma.person.findMany({
       where: {
         birthDay: dia,
@@ -4216,7 +4646,7 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    // Obtener personas fallecidas hoy
+    // Obtener personas fallecidas en esta fecha
     const personasMuerte = await prisma.person.findMany({
       where: {
         deathDay: dia,
@@ -4235,71 +4665,9 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    // Si no hay efemérides para hoy, buscar algunas de ejemplo para testing
-    let totalEfemerides = peliculasEstreno.length + peliculasInicioRodaje.length + 
-                          peliculasFinRodaje.length + personasNacimiento.length + 
-                          personasMuerte.length;
-    
-    if (totalEfemerides === 0) {
-      
-      // Buscar cualquier película con fecha de estreno completa
-      const peliculasEjemplo = await prisma.movie.findMany({
-        where: {
-          releaseDay: { not: null },
-          releaseMonth: { not: null },
-          releaseYear: { not: null }
-        },
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          releaseYear: true,
-          releaseMonth: true,
-          releaseDay: true,
-          posterUrl: true,
-          crew: {
-            where: {
-              roleId: 2
-            },
-            select: {
-              person: {
-                select: {
-                  firstName: true,
-                  lastName: true
-                }
-              }
-            },
-            take: 1
-          }
-        },
-        take: 5
-      });
-      
-      // Usar las primeras 2 como ejemplo, cambiando el día y mes al de hoy
-      const efemeridesEjemplo = peliculasEjemplo.slice(0, 2).map(pelicula => {
-        const director = pelicula.crew[0]?.person;
-        const directorName = director 
-          ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
-          : null;
-        
-        // Calcular años desde el estreno real
-        const añosDesde = hoy.getFullYear() - pelicula.releaseYear!;
-        
-        return {
-          id: `ejemplo-${pelicula.id}`,
-          tipo: 'pelicula' as const,
-          hace: `Hace ${añosDesde} ${añosDesde === 1 ? 'año' : 'años'}`,
-          evento: `se estrenaba "${pelicula.title}"${directorName ? `, de ${directorName}` : ''}`,
-          fecha: new Date(pelicula.releaseYear!, pelicula.releaseMonth! - 1, pelicula.releaseDay!),
-          slug: pelicula.slug,
-          posterUrl: pelicula.posterUrl || undefined
-        };
-      });
-      
-      return NextResponse.json({ efemerides: efemeridesEjemplo });
-    }
-    
-    // Formatear todas las efemérides
+    // ============================================
+    // 4. FORMATEAR EFEMÉRIDES
+    // ============================================
     const efemerides: (Efemeride | null)[] = [];
     
     // Procesar estrenos
@@ -4416,10 +4784,139 @@ export async function GET(request: NextRequest) {
         return añosA - añosB; // Menos años primero (más reciente)
       });
     
-    return NextResponse.json({ efemerides: efemeridesValidas });
+    // ============================================
+    // 5. APLICAR LÓGICA DE MUESTRA ALEATORIA (PARA HOME)
+    // ============================================
+    let resultado: { efemerides: Efemeride[] };
+    
+    if (randomSample && efemeridesValidas.length === 0) {
+      // Si no hay efemérides para hoy y se pidió muestra aleatoria, buscar ejemplos
+      const peliculasEjemplo = await prisma.movie.findMany({
+        where: {
+          releaseDay: { not: null },
+          releaseMonth: { not: null },
+          releaseYear: { not: null }
+        },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          releaseYear: true,
+          releaseMonth: true,
+          releaseDay: true,
+          posterUrl: true,
+          crew: {
+            where: {
+              roleId: 2
+            },
+            select: {
+              person: {
+                select: {
+                  firstName: true,
+                  lastName: true
+                }
+              }
+            },
+            take: 1
+          }
+        },
+        take: 5
+      });
+      
+      const efemeridesEjemplo = peliculasEjemplo.slice(0, 2).map(pelicula => {
+        const director = pelicula.crew[0]?.person;
+        const directorName = director 
+          ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
+          : null;
+        
+        const añosDesde = new Date().getFullYear() - pelicula.releaseYear!;
+        
+        return {
+          id: `ejemplo-${pelicula.id}`,
+          tipo: 'pelicula' as const,
+          hace: `Hace ${añosDesde} ${añosDesde === 1 ? 'año' : 'años'}`,
+          evento: `se estrenaba "${pelicula.title}"${directorName ? `, de ${directorName}` : ''}`,
+          fecha: new Date(pelicula.releaseYear!, pelicula.releaseMonth! - 1, pelicula.releaseDay!),
+          slug: pelicula.slug,
+          posterUrl: pelicula.posterUrl || undefined
+        };
+      });
+      
+      resultado = { efemerides: efemeridesEjemplo };
+      
+      // No cachear ejemplos aleatorios
+      return NextResponse.json(resultado);
+      
+    } else if (randomSample && efemeridesValidas.length > 2) {
+      // Si hay muchas efemérides y se pidió muestra, tomar 2 aleatorias
+      const shuffled = [...efemeridesValidas].sort(() => Math.random() - 0.5);
+      resultado = { efemerides: shuffled.slice(0, 2) };
+      
+      // No cachear muestras aleatorias
+      return NextResponse.json(resultado);
+      
+    } else {
+      // Devolver todas las efemérides (para página de efemérides)
+      resultado = { efemerides: efemeridesValidas };
+    }
+    
+    // ============================================
+    // 6. GUARDAR EN CACHÉ (solo si no es muestra aleatoria)
+    // ============================================
+    if (!randomSample) {
+      RedisClient.set(cacheKey, JSON.stringify(resultado), REDIS_TTL)
+        .then(saved => {
+          if (saved) {
+            console.log(`✅ Efemérides guardadas en Redis con TTL ${REDIS_TTL}s (24h)`);
+          }
+        })
+        .catch(err => console.error('Error guardando en Redis:', err));
+      
+      memoryCache.set(cacheKey, {
+        data: resultado,
+        timestamp: now
+      });
+      
+      if (memoryCache.size > 365) {
+        const oldestKey = memoryCache.keys().next().value;
+        if (oldestKey) {
+          memoryCache.delete(oldestKey);
+        }
+      }
+    }
+    
+    return NextResponse.json(resultado, {
+      headers: randomSample ? {} : {
+        'Cache-Control': `public, s-maxage=${REDIS_TTL}, stale-while-revalidate=${REDIS_TTL * 2}`,
+        'X-Cache': 'MISS',
+        'X-Cache-Source': 'database'
+      }
+    });
     
   } catch (error) {
-    console.error('❌ Error fetching efemerides:', error);
+    console.error('❌ Error fetching efemérides:', error);
+    
+    // Intentar servir desde caché stale si hay error
+    const searchParams = request.nextUrl.searchParams;
+    const hoy = new Date();
+    const dia = parseInt(searchParams.get('day') || searchParams.get('dia') || hoy.getDate().toString());
+    const mes = parseInt(searchParams.get('month') || searchParams.get('mes') || (hoy.getMonth() + 1).toString());
+    const randomSample = searchParams.get('random') === 'true';
+    
+    const cacheKey = generateCacheKey(dia, mes, randomSample);
+    const staleCache = memoryCache.get(cacheKey);
+    
+    if (staleCache) {
+      console.log('⚠️ Sirviendo caché stale debido a error');
+      return NextResponse.json(staleCache.data, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60',
+          'X-Cache': 'STALE',
+          'X-Cache-Source': 'memory-fallback'
+        }
+      });
+    }
+    
     return NextResponse.json(
       { error: 'Error al obtener efemérides' },
       { status: 500 }
@@ -7742,6 +8239,151 @@ export async function GET() {
     
     return NextResponse.json(
       { error: 'Error al obtener años de defunción' },
+      { status: 500 }
+    );
+  }
+}
+
+// ==================================================
+// src/app/api/people/review-names/route.ts
+// ==================================================
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+// GET: Obtener casos para revisar
+export async function GET() {
+  try {
+    // Función para contar palabras
+    const countWords = (str: string | null) => {
+      if (!str) return 0;
+      return str.trim().split(/\s+/).length;
+    };
+
+    // Obtener todas las personas
+    const allPeople = await prisma.person.findMany({
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        slug: true,
+        _count: {
+          select: {
+            castRoles: true,
+            crewRoles: true,
+          }
+        }
+      },
+      orderBy: {
+        id: 'asc'
+      }
+    });
+
+    // Filtrar casos con más de 3 palabras
+    const casesToReview = allPeople.filter(person => {
+      const firstNameWords = countWords(person.firstName);
+      const lastNameWords = countWords(person.lastName);
+      
+      return firstNameWords > 3 || lastNameWords > 3;
+    });
+
+    // Formatear para la respuesta
+    const formattedCases = casesToReview.map(person => ({
+      id: person.id,
+      firstName: person.firstName || '',
+      lastName: person.lastName || '',
+      slug: person.slug,
+      totalRoles: person._count.castRoles + person._count.crewRoles,
+      firstNameWords: countWords(person.firstName),
+      lastNameWords: countWords(person.lastName)
+    }));
+
+    return NextResponse.json({
+      cases: formattedCases,
+      total: formattedCases.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching cases to review:', error);
+    return NextResponse.json(
+      { error: 'Error al obtener casos para revisar' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT: Actualizar nombre de persona
+export async function PUT(request: Request) {
+  try {
+    const { id, firstName, lastName } = await request.json();
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID es requerido' },
+        { status: 400 }
+      );
+    }
+
+    // Generar nuevo slug basado en los nombres actualizados
+    const generateSlug = (first: string, last: string) => {
+      const parts = [];
+      if (first) parts.push(first);
+      if (last) parts.push(last);
+      
+      return parts
+        .join('-')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+    };
+
+    const newSlug = generateSlug(firstName, lastName);
+
+    // Verificar si el slug ya existe (excluyendo el ID actual)
+    const existingPerson = await prisma.person.findFirst({
+      where: {
+        slug: newSlug,
+        NOT: {
+          id: id
+        }
+      }
+    });
+
+    // Si existe, agregar sufijo numérico
+    let finalSlug = newSlug;
+    if (existingPerson) {
+      const count = await prisma.person.count({
+        where: {
+          slug: {
+            startsWith: newSlug
+          }
+        }
+      });
+      finalSlug = `${newSlug}-${count + 1}`;
+    }
+
+    // Actualizar persona
+    const updatedPerson = await prisma.person.update({
+      where: { id },
+      data: {
+        firstName,
+        lastName,
+        slug: finalSlug,
+        updatedAt: new Date()
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      person: updatedPerson
+    });
+
+  } catch (error) {
+    console.error('Error updating person:', error);
+    return NextResponse.json(
+      { error: 'Error al actualizar persona' },
       { status: 500 }
     );
   }
@@ -11226,6 +11868,321 @@ export default function SearchPage() {
       )}
     </div>
   )
+}
+
+// ==================================================
+// src/app/efemerides/[[...date]]/page.tsx
+// ==================================================
+// src/app/efemerides/[[...date]]/page.tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Calendar, Sparkles } from 'lucide-react';
+import { Efemeride } from '@/types/home.types';
+
+const MONTHS = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+];
+
+export default function EfemeridesPage() {
+  const router = useRouter();
+  const params = useParams();
+  
+  // Parsear fecha desde URL o usar hoy
+  const parseDateFromParams = () => {
+    if (params.date && Array.isArray(params.date) && params.date.length > 0) {
+      const dateStr = params.date[0]; // "10-18"
+      const [month, day] = dateStr.split('-').map(Number);
+      
+      // Validar
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        return { month, day };
+      }
+    }
+    
+    // Default: hoy
+    const today = new Date();
+    return {
+      month: today.getMonth() + 1,
+      day: today.getDate()
+    };
+  };
+
+  const initialDate = parseDateFromParams();
+  
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    new Date(new Date().getFullYear(), initialDate.month - 1, initialDate.day)
+  );
+  const [tempMonth, setTempMonth] = useState<number>(initialDate.month);
+  const [tempDay, setTempDay] = useState<number>(initialDate.day);
+  const [efemerides, setEfemerides] = useState<Efemeride[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const month = selectedDate.getMonth() + 1;
+  const day = selectedDate.getDate();
+
+  // Fetch inicial y cuando cambia la URL
+  useEffect(() => {
+    const dateFromUrl = parseDateFromParams();
+    fetchEfemerides(dateFromUrl.month, dateFromUrl.day);
+  }, [params.date]);
+
+  const fetchEfemerides = async (mes: number, dia: number) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/efemerides?month=${mes}&day=${dia}`);
+      if (!response.ok) throw new Error('Error fetching data');
+      const result = await response.json();
+      setEfemerides(result.efemerides || []);
+    } catch (error) {
+      console.error('Error fetching efemérides:', error);
+      setEfemerides([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newMonth = parseInt(e.target.value);
+    setTempMonth(newMonth);
+    
+    const maxDay = new Date(selectedDate.getFullYear(), newMonth, 0).getDate();
+    if (tempDay > maxDay) {
+      setTempDay(maxDay);
+    }
+  };
+
+  const handleDayChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newDay = parseInt(e.target.value);
+    setTempDay(newDay);
+  };
+
+  const handleSearch = () => {
+    const newDate = new Date(selectedDate.getFullYear(), tempMonth - 1, tempDay);
+    setSelectedDate(newDate);
+    
+    // Formatear fecha para URL: MM-DD (con padding de ceros)
+    const monthStr = String(tempMonth).padStart(2, '0');
+    const dayStr = String(tempDay).padStart(2, '0');
+    
+    // Navegar a la nueva URL
+    router.push(`/efemerides/${monthStr}-${dayStr}`);
+  };
+
+  const handleToday = () => {
+    const today = new Date();
+    const todayMonth = today.getMonth() + 1;
+    const todayDay = today.getDate();
+    
+    setSelectedDate(today);
+    setTempMonth(todayMonth);
+    setTempDay(todayDay);
+    
+    // Navegar a /efemerides (sin parámetros = hoy)
+    router.push('/efemerides');
+  };
+
+  const getDaysInMonth = (month: number, year: number) => {
+    return new Date(year, month, 0).getDate();
+  };
+
+  const daysInCurrentMonth = getDaysInMonth(tempMonth, selectedDate.getFullYear());
+  const dayOptions = Array.from({ length: daysInCurrentMonth }, (_, i) => i + 1);
+
+  // Ordenar efemérides por años (más antiguo primero = más años)
+  const efemeridesOrdenadas = [...efemerides].sort((a, b) => {
+    const añosA = parseInt(a.hace.match(/\d+/)?.[0] || '0');
+    const añosB = parseInt(b.hace.match(/\d+/)?.[0] || '0');
+    return añosB - añosA; // Más años primero (más antiguo)
+  });
+
+  const hasEvents = efemerides.length > 0;
+
+  const renderEfemeridesCard = (efemeride: Efemeride) => {
+    const isPelicula = efemeride.tipo === 'pelicula';
+    const imageUrl = isPelicula ? efemeride.posterUrl : efemeride.photoUrl;
+    const linkHref = isPelicula ? `/pelicula/${efemeride.slug}` : `/persona/${efemeride.slug}`;
+    
+    // Determinar el verbo según el tipo de evento
+    let verbo = '';
+    if (efemeride.tipoEvento === 'estreno') verbo = 'se estrenaba';
+    else if (efemeride.tipoEvento === 'inicio_rodaje') verbo = 'empezaba el rodaje de';
+    else if (efemeride.tipoEvento === 'fin_rodaje') verbo = 'terminaba el rodaje de';
+    else if (efemeride.tipoEvento === 'nacimiento') verbo = 'nacía';
+    else if (efemeride.tipoEvento === 'muerte') verbo = 'moría';
+
+    // Extraer el año del evento
+    const fechaObj = typeof efemeride.fecha === 'string' 
+      ? new Date(efemeride.fecha) 
+      : efemeride.fecha;
+    const añoEvento = fechaObj.getFullYear();
+
+    return (
+      <div
+        key={efemeride.id}
+        className="flex gap-6 p-6 bg-gray-900/50 rounded-lg border border-gray-800 hover:border-gray-700 transition-all"
+      >
+        {/* Imagen */}
+        <Link href={linkHref} className="flex-shrink-0 group">
+          <div className={`relative ${isPelicula ? 'w-32 h-48 rounded-lg' : 'w-32 h-32 rounded-full'} bg-gray-800 overflow-hidden`}>
+            {imageUrl ? (
+              <Image
+                src={imageUrl}
+                alt={efemeride.titulo || 'Imagen'}
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                sizes="128px"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Calendar className="w-12 h-12 text-gray-600" />
+              </div>
+            )}
+          </div>
+        </Link>
+
+        {/* Texto */}
+        <div className="flex-1 min-w-0">
+          {/* ... de YYYY verbo */}
+          <p className="text-gray-400 text-sm mb-2">
+            ... de {añoEvento} {verbo}
+          </p>
+
+          {/* Título/Nombre */}
+          <Link href={linkHref}>
+            <h3 className="text-white text-xl font-semibold hover:text-blue-400 transition-colors mb-1">
+              {efemeride.titulo}
+            </h3>
+          </Link>
+
+          {/* Director (solo para películas) */}
+          {isPelicula && efemeride.director && efemeride.directorSlug && (
+            <Link 
+              href={`/personas/${efemeride.directorSlug}`}
+              className="text-gray-400 text-sm hover:text-gray-300 transition-colors"
+            >
+              de {efemeride.director}
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* Header */}
+      <div className="bg-gray-900/50 backdrop-blur-sm border-b border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col gap-6">
+            {/* Título */}
+            <div>
+              <h1 className="text-3xl font-bold mb-2">
+                Efemérides del {day} de {MONTHS[month - 1]}
+              </h1>
+            </div>
+
+            {/* Selector de fecha */}
+            <div className="flex flex-wrap gap-3 items-end">
+              {/* Día */}
+              <div className="flex-shrink-0 w-20">
+                <label className="block text-xs text-gray-400 mb-1.5">Día</label>
+                <select
+                  value={tempDay}
+                  onChange={handleDayChange}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  {dayOptions.map(d => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Mes */}
+              <div className="flex-grow min-w-[140px] max-w-[200px]">
+                <label className="block text-xs text-gray-400 mb-1.5">Mes</label>
+                <select
+                  value={tempMonth}
+                  onChange={handleMonthChange}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  {MONTHS.map((monthName, idx) => (
+                    <option key={idx + 1} value={idx + 1}>
+                      {monthName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Botones */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSearch}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium flex items-center gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Buscar
+                </button>
+
+                <button
+                  onClick={handleToday}
+                  className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-all flex items-center gap-2"
+                  title="Volver a la fecha de hoy"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Hoy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Lista de efemérides */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Encabezado "Un X de X..." */}
+        {!loading && hasEvents && (
+          <h2 className="text-2xl font-bold text-white mb-8">
+            Un {day} de {MONTHS[month - 1]}...
+          </h2>
+        )}
+
+        {loading ? (
+          <div className="space-y-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="flex gap-6 p-6 bg-gray-900/50 rounded-lg border border-gray-800 animate-pulse">
+                <div className="w-32 h-48 bg-gray-800 rounded-lg flex-shrink-0" />
+                <div className="flex-1 space-y-3">
+                  <div className="h-4 bg-gray-800 rounded w-1/4" />
+                  <div className="h-6 bg-gray-800 rounded w-3/4" />
+                  <div className="h-4 bg-gray-800 rounded w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : !hasEvents ? (
+          <div className="text-center py-16">
+            <div className="text-gray-400 text-lg mb-2">
+              No hay efemérides registradas para esta fecha
+            </div>
+            <p className="text-gray-500 text-sm">
+              Probá con otra fecha o volvé a hoy para ver si hay efemérides
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4 max-w-4xl mx-auto">
+            {efemeridesOrdenadas.map(efemeride => renderEfemeridesCard(efemeride))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 // ==================================================
@@ -23043,7 +24000,6 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
           </div>
         )}
       </div>
-      {/*
       <div className="mt-6 text-center">
         <Link
           href="/efemerides"
@@ -23052,7 +24008,6 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
           Ver más efemérides
         </Link>
       </div>
-      */}
     </section>
   );
 }
@@ -30580,6 +31535,8 @@ export function isEmptyDate(partial: PartialDate): boolean {
 // ==================================================
 // src/lib/utils/efemerides.ts
 // ==================================================
+// src/lib/utils/efemerides.ts - CORREGIDO
+
 import { Efemeride } from '@/types/home.types';
 
 export interface EfemerideData {
@@ -30588,32 +31545,32 @@ export interface EfemerideData {
   año: number;
   mes: number;
   dia: number;
-  titulo?: string; // Para películas
-  nombre?: string; // Para personas
+  titulo?: string;
+  nombre?: string;
   tipoEvento: 'estreno' | 'inicio_rodaje' | 'fin_rodaje' | 'nacimiento' | 'muerte';
   slug?: string;
   posterUrl?: string;
   photoUrl?: string;
-  director?: string; // Para películas
+  director?: string;
   directorSlug?: string;
 }
 
 export function calcularAniosDesde(año: number, mes: number, dia: number): number | null {
   const hoy = new Date();
-  const fechaEvento = new Date(año, mes - 1, dia);
+  const añosTranscurridos = hoy.getFullYear() - año;
   
-  // Verificar si es el mismo día y mes
-  if (hoy.getDate() !== dia || hoy.getMonth() !== mes - 1) {
+  if (añosTranscurridos < 0) {
     return null;
   }
   
-  return hoy.getFullYear() - año;
+  return añosTranscurridos;
 }
 
 export function formatearEfemeride(data: EfemerideData): Efemeride | null {
   const añosDesde = calcularAniosDesde(data.año, data.mes, data.dia);
   
-  if (!añosDesde || añosDesde <= 0) return null;
+  // ✅ CORRECCIÓN: <= 0 para excluir año actual
+  if (añosDesde === null || añosDesde <= 0) return null;
   
   let evento = '';
   
@@ -30649,7 +31606,6 @@ export function formatearEfemeride(data: EfemerideData): Efemeride | null {
     slug: data.slug,
     posterUrl: data.posterUrl,
     photoUrl: data.photoUrl,
-    // Nuevos campos
     titulo: data.tipo === 'pelicula' ? data.titulo : data.nombre,
     director: data.director,
     directorSlug: data.directorSlug,

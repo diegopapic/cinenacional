@@ -1,3 +1,5 @@
+// src/lib/utils/efemerides.ts - CORREGIDO
+
 import { Efemeride } from '@/types/home.types';
 
 export interface EfemerideData {
@@ -6,32 +8,32 @@ export interface EfemerideData {
   año: number;
   mes: number;
   dia: number;
-  titulo?: string; // Para películas
-  nombre?: string; // Para personas
+  titulo?: string;
+  nombre?: string;
   tipoEvento: 'estreno' | 'inicio_rodaje' | 'fin_rodaje' | 'nacimiento' | 'muerte';
   slug?: string;
   posterUrl?: string;
   photoUrl?: string;
-  director?: string; // Para películas
+  director?: string;
   directorSlug?: string;
 }
 
 export function calcularAniosDesde(año: number, mes: number, dia: number): number | null {
   const hoy = new Date();
-  const fechaEvento = new Date(año, mes - 1, dia);
+  const añosTranscurridos = hoy.getFullYear() - año;
   
-  // Verificar si es el mismo día y mes
-  if (hoy.getDate() !== dia || hoy.getMonth() !== mes - 1) {
+  if (añosTranscurridos < 0) {
     return null;
   }
   
-  return hoy.getFullYear() - año;
+  return añosTranscurridos;
 }
 
 export function formatearEfemeride(data: EfemerideData): Efemeride | null {
   const añosDesde = calcularAniosDesde(data.año, data.mes, data.dia);
   
-  if (!añosDesde || añosDesde <= 0) return null;
+  // ✅ CORRECCIÓN: <= 0 para excluir año actual
+  if (añosDesde === null || añosDesde <= 0) return null;
   
   let evento = '';
   
@@ -67,7 +69,6 @@ export function formatearEfemeride(data: EfemerideData): Efemeride | null {
     slug: data.slug,
     posterUrl: data.posterUrl,
     photoUrl: data.photoUrl,
-    // Nuevos campos
     titulo: data.tipo === 'pelicula' ? data.titulo : data.nombre,
     director: data.director,
     directorSlug: data.directorSlug,

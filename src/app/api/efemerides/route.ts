@@ -1,18 +1,108 @@
+// src/app/api/efemerides/route.ts - MEJORADO CON PARÁMETROS Y CACHÉ
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { calcularAniosDesde, formatearEfemeride, EfemerideData } from '@/lib/utils/efemerides';
+import { calcularAniosDesde, formatearEfemeride } from '@/lib/utils/efemerides';
 import { Efemeride } from '@/types/home.types';
+import RedisClient from '@/lib/redis';
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
+// ============================================
+// CACHE CONFIGURATION
+// ============================================
+
+const memoryCache = new Map<string, { data: any; timestamp: number }>();
+const MEMORY_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 horas
+const REDIS_TTL = 86400; // 24 horas
+
+function generateCacheKey(dia: number, mes: number, randomSample?: boolean): string {
+  const suffix = randomSample ? ':random' : ':all';
+  return `efemerides:${mes}-${dia}${suffix}:v2`;
+}
+
+// ============================================
+// GET /api/efemerides
+// ============================================
 export async function GET(request: NextRequest) {
   try {
+    const searchParams = request.nextUrl.searchParams;
+    
+    // Obtener parámetros - si no se especifican, usar fecha actual
     const hoy = new Date();
-    const dia = hoy.getDate();
-    const mes = hoy.getMonth() + 1;
+    const dia = parseInt(searchParams.get('day') || searchParams.get('dia') || hoy.getDate().toString());
+    const mes = parseInt(searchParams.get('month') || searchParams.get('mes') || (hoy.getMonth() + 1).toString());
     
+    // Parámetro para indicar si queremos muestra aleatoria (para la home)
+    const randomSample = searchParams.get('random') === 'true';
     
-    // Obtener películas con fechas de estreno para hoy
+    // Validar parámetros
+    if (mes < 1 || mes > 12) {
+      return NextResponse.json(
+        { error: 'Mes inválido (debe ser entre 1 y 12)' },
+        { status: 400 }
+      );
+    }
+    
+    if (dia < 1 || dia > 31) {
+      return NextResponse.json(
+        { error: 'Día inválido (debe ser entre 1 y 31)' },
+        { status: 400 }
+      );
+    }
+
+    // ============================================
+    // 1. INTENTAR REDIS CACHE
+    // ============================================
+    const cacheKey = generateCacheKey(dia, mes, randomSample);
+    const now = Date.now();
+    
+    try {
+      const redisCached = await RedisClient.get(cacheKey);
+      
+      if (redisCached) {
+        console.log(`✅ Cache HIT desde Redis para efemérides: ${mes}/${dia}`);
+        return NextResponse.json(
+          JSON.parse(redisCached),
+          {
+            headers: {
+              'Cache-Control': `public, s-maxage=${REDIS_TTL}, stale-while-revalidate=${REDIS_TTL * 2}`,
+              'X-Cache': 'HIT',
+              'X-Cache-Source': 'redis'
+            }
+          }
+        );
+      }
+    } catch (redisError) {
+      console.error('Redis error (non-fatal):', redisError);
+    }
+
+    // ============================================
+    // 2. INTENTAR MEMORY CACHE
+    // ============================================
+    const memoryCached = memoryCache.get(cacheKey);
+    
+    if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
+      console.log(`✅ Cache HIT desde memoria para efemérides: ${mes}/${dia}`);
+      
+      RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), REDIS_TTL)
+        .catch(err => console.error('Error guardando en Redis:', err));
+      
+      return NextResponse.json(memoryCached.data, {
+        headers: {
+          'Cache-Control': `public, s-maxage=${REDIS_TTL}, stale-while-revalidate=${REDIS_TTL * 2}`,
+          'X-Cache': 'HIT',
+          'X-Cache-Source': 'memory'
+        }
+      });
+    }
+
+    // ============================================
+    // 3. CONSULTAR BASE DE DATOS
+    // ============================================
+    console.log(`🔄 Cache MISS - Consultando BD para efemérides: ${mes}/${dia}`);
+    
+    // Obtener películas con fechas de estreno para esta fecha
     const peliculasEstreno = await prisma.movie.findMany({
       where: {
         releaseDay: dia,
@@ -29,7 +119,7 @@ export async function GET(request: NextRequest) {
         posterUrl: true,
         crew: {
           where: {
-            roleId: 2 // Solo buscar por roleId de Director
+            roleId: 2 // Director
           },
           select: {
             person: {
@@ -45,7 +135,7 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    // Obtener películas con inicio de rodaje para hoy
+    // Obtener películas con inicio de rodaje
     const peliculasInicioRodaje = await prisma.movie.findMany({
       where: {
         filmingStartDay: dia,
@@ -78,7 +168,7 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    // Obtener películas con fin de rodaje para hoy
+    // Obtener películas con fin de rodaje
     const peliculasFinRodaje = await prisma.movie.findMany({
       where: {
         filmingEndDay: dia,
@@ -111,7 +201,7 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    // Obtener personas nacidas hoy
+    // Obtener personas nacidas en esta fecha
     const personasNacimiento = await prisma.person.findMany({
       where: {
         birthDay: dia,
@@ -130,7 +220,7 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    // Obtener personas fallecidas hoy
+    // Obtener personas fallecidas en esta fecha
     const personasMuerte = await prisma.person.findMany({
       where: {
         deathDay: dia,
@@ -149,71 +239,9 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    // Si no hay efemérides para hoy, buscar algunas de ejemplo para testing
-    let totalEfemerides = peliculasEstreno.length + peliculasInicioRodaje.length + 
-                          peliculasFinRodaje.length + personasNacimiento.length + 
-                          personasMuerte.length;
-    
-    if (totalEfemerides === 0) {
-      
-      // Buscar cualquier película con fecha de estreno completa
-      const peliculasEjemplo = await prisma.movie.findMany({
-        where: {
-          releaseDay: { not: null },
-          releaseMonth: { not: null },
-          releaseYear: { not: null }
-        },
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          releaseYear: true,
-          releaseMonth: true,
-          releaseDay: true,
-          posterUrl: true,
-          crew: {
-            where: {
-              roleId: 2
-            },
-            select: {
-              person: {
-                select: {
-                  firstName: true,
-                  lastName: true
-                }
-              }
-            },
-            take: 1
-          }
-        },
-        take: 5
-      });
-      
-      // Usar las primeras 2 como ejemplo, cambiando el día y mes al de hoy
-      const efemeridesEjemplo = peliculasEjemplo.slice(0, 2).map(pelicula => {
-        const director = pelicula.crew[0]?.person;
-        const directorName = director 
-          ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
-          : null;
-        
-        // Calcular años desde el estreno real
-        const añosDesde = hoy.getFullYear() - pelicula.releaseYear!;
-        
-        return {
-          id: `ejemplo-${pelicula.id}`,
-          tipo: 'pelicula' as const,
-          hace: `Hace ${añosDesde} ${añosDesde === 1 ? 'año' : 'años'}`,
-          evento: `se estrenaba "${pelicula.title}"${directorName ? `, de ${directorName}` : ''}`,
-          fecha: new Date(pelicula.releaseYear!, pelicula.releaseMonth! - 1, pelicula.releaseDay!),
-          slug: pelicula.slug,
-          posterUrl: pelicula.posterUrl || undefined
-        };
-      });
-      
-      return NextResponse.json({ efemerides: efemeridesEjemplo });
-    }
-    
-    // Formatear todas las efemérides
+    // ============================================
+    // 4. FORMATEAR EFEMÉRIDES
+    // ============================================
     const efemerides: (Efemeride | null)[] = [];
     
     // Procesar estrenos
@@ -330,10 +358,139 @@ export async function GET(request: NextRequest) {
         return añosA - añosB; // Menos años primero (más reciente)
       });
     
-    return NextResponse.json({ efemerides: efemeridesValidas });
+    // ============================================
+    // 5. APLICAR LÓGICA DE MUESTRA ALEATORIA (PARA HOME)
+    // ============================================
+    let resultado: { efemerides: Efemeride[] };
+    
+    if (randomSample && efemeridesValidas.length === 0) {
+      // Si no hay efemérides para hoy y se pidió muestra aleatoria, buscar ejemplos
+      const peliculasEjemplo = await prisma.movie.findMany({
+        where: {
+          releaseDay: { not: null },
+          releaseMonth: { not: null },
+          releaseYear: { not: null }
+        },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          releaseYear: true,
+          releaseMonth: true,
+          releaseDay: true,
+          posterUrl: true,
+          crew: {
+            where: {
+              roleId: 2
+            },
+            select: {
+              person: {
+                select: {
+                  firstName: true,
+                  lastName: true
+                }
+              }
+            },
+            take: 1
+          }
+        },
+        take: 5
+      });
+      
+      const efemeridesEjemplo = peliculasEjemplo.slice(0, 2).map(pelicula => {
+        const director = pelicula.crew[0]?.person;
+        const directorName = director 
+          ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
+          : null;
+        
+        const añosDesde = new Date().getFullYear() - pelicula.releaseYear!;
+        
+        return {
+          id: `ejemplo-${pelicula.id}`,
+          tipo: 'pelicula' as const,
+          hace: `Hace ${añosDesde} ${añosDesde === 1 ? 'año' : 'años'}`,
+          evento: `se estrenaba "${pelicula.title}"${directorName ? `, de ${directorName}` : ''}`,
+          fecha: new Date(pelicula.releaseYear!, pelicula.releaseMonth! - 1, pelicula.releaseDay!),
+          slug: pelicula.slug,
+          posterUrl: pelicula.posterUrl || undefined
+        };
+      });
+      
+      resultado = { efemerides: efemeridesEjemplo };
+      
+      // No cachear ejemplos aleatorios
+      return NextResponse.json(resultado);
+      
+    } else if (randomSample && efemeridesValidas.length > 2) {
+      // Si hay muchas efemérides y se pidió muestra, tomar 2 aleatorias
+      const shuffled = [...efemeridesValidas].sort(() => Math.random() - 0.5);
+      resultado = { efemerides: shuffled.slice(0, 2) };
+      
+      // No cachear muestras aleatorias
+      return NextResponse.json(resultado);
+      
+    } else {
+      // Devolver todas las efemérides (para página de efemérides)
+      resultado = { efemerides: efemeridesValidas };
+    }
+    
+    // ============================================
+    // 6. GUARDAR EN CACHÉ (solo si no es muestra aleatoria)
+    // ============================================
+    if (!randomSample) {
+      RedisClient.set(cacheKey, JSON.stringify(resultado), REDIS_TTL)
+        .then(saved => {
+          if (saved) {
+            console.log(`✅ Efemérides guardadas en Redis con TTL ${REDIS_TTL}s (24h)`);
+          }
+        })
+        .catch(err => console.error('Error guardando en Redis:', err));
+      
+      memoryCache.set(cacheKey, {
+        data: resultado,
+        timestamp: now
+      });
+      
+      if (memoryCache.size > 365) {
+        const oldestKey = memoryCache.keys().next().value;
+        if (oldestKey) {
+          memoryCache.delete(oldestKey);
+        }
+      }
+    }
+    
+    return NextResponse.json(resultado, {
+      headers: randomSample ? {} : {
+        'Cache-Control': `public, s-maxage=${REDIS_TTL}, stale-while-revalidate=${REDIS_TTL * 2}`,
+        'X-Cache': 'MISS',
+        'X-Cache-Source': 'database'
+      }
+    });
     
   } catch (error) {
-    console.error('❌ Error fetching efemerides:', error);
+    console.error('❌ Error fetching efemérides:', error);
+    
+    // Intentar servir desde caché stale si hay error
+    const searchParams = request.nextUrl.searchParams;
+    const hoy = new Date();
+    const dia = parseInt(searchParams.get('day') || searchParams.get('dia') || hoy.getDate().toString());
+    const mes = parseInt(searchParams.get('month') || searchParams.get('mes') || (hoy.getMonth() + 1).toString());
+    const randomSample = searchParams.get('random') === 'true';
+    
+    const cacheKey = generateCacheKey(dia, mes, randomSample);
+    const staleCache = memoryCache.get(cacheKey);
+    
+    if (staleCache) {
+      console.log('⚠️ Sirviendo caché stale debido a error');
+      return NextResponse.json(staleCache.data, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60',
+          'X-Cache': 'STALE',
+          'X-Cache-Source': 'memory-fallback'
+        }
+      });
+    }
+    
     return NextResponse.json(
       { error: 'Error al obtener efemérides' },
       { status: 500 }
