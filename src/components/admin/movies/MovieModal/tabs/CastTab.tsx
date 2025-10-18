@@ -14,7 +14,6 @@ export default function CastTab() {
 
   return (
     <MovieFormEnhanced
-      key={editingMovieId || 'new'}
       onGenresChange={() => {}}
       onCastChange={handleCastChange}
       onCrewChange={() => {}}
