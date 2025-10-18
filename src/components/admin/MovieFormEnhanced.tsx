@@ -14,6 +14,7 @@ import {
   Tag
 } from 'lucide-react'
 import ScreeningVenueSelector from './ScreeningVenueSelector'
+import CastList from './movies/CastList'
 
 
 interface MovieFormEnhancedProps {
@@ -121,7 +122,17 @@ export default function MovieFormEnhanced({
       }
 
       if (initialData.cast) {
-        setCast(initialData.cast)
+        // ✅ SOLUCIÓN: normalizar antes de guardar
+        const normalizedCast = initialData.cast.map((member: any) => ({
+          personId: member.personId || member.person?.id,
+          person: member.person,
+          characterName: member.characterName,
+          billingOrder: member.billingOrder,
+          isPrincipal: member.isPrincipal,
+          notes: member.notes
+        }))
+
+        setCast(normalizedCast)
       }
 
       if (initialData.crew) {
@@ -180,10 +191,10 @@ export default function MovieFormEnhanced({
   }, [screeningVenues, onScreeningVenuesChange, isInitialized])
 
   useEffect(() => {
-    if (isInitialized) {
+    if (isInitialized && initialData) {
       onCastChange(cast)
     }
-  }, [cast, onCastChange, isInitialized])
+  }, [cast, onCastChange, isInitialized, initialData])
 
   useEffect(() => {
     if (isInitialized) {
@@ -283,28 +294,40 @@ export default function MovieFormEnhanced({
 
   // Agregar persona al cast o crew
   const addPerson = () => {
+    console.log('🔵 addPerson - INICIO')
+    console.log('🔵 personId:', newPerson.personId)
+    console.log('🔵 cast actual:', cast)
+
     if (!newPerson.personId) return
 
     const selectedPerson = availablePeople.find((p: any) => p.id === newPerson.personId)
+    console.log('🔵 selectedPerson encontrado:', selectedPerson)
+
     if (!selectedPerson) return
 
     if (addingType === 'cast') {
-      setCast([...cast, {
+      const newMember = {
         personId: newPerson.personId,
         person: selectedPerson,
         characterName: newPerson.characterName,
         billingOrder: cast.length + 1,
         isPrincipal: cast.length < 5
-      }])
+      }
+      console.log('🔵 newMember a agregar:', newMember)
+
+      const newCast = [...cast, newMember]
+      console.log('🔵 newCast completo:', newCast)
+
+      setCast(newCast)
+      console.log('🔵 setCast ejecutado')
     } else if (addingType === 'crew') {
-      // Solo buscar el rol cuando es crew
       const selectedRole = availableRoles.find(r => r.id === newPerson.roleId)
 
       setCrew([...crew, {
         personId: newPerson.personId,
         person: selectedPerson,
         roleId: newPerson.roleId,
-        role: selectedRole,  // Incluir el objeto role para mostrar el nombre
+        role: selectedRole,
         billingOrder: crew.filter(c => c.roleId === newPerson.roleId).length + 1
       }])
     }
@@ -566,29 +589,10 @@ export default function MovieFormEnhanced({
             Reparto
           </h3>
 
-          {cast.length > 0 && (
-            <div className="mb-4 space-y-2">
-              {cast.map((member, index) => (
-                <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <span className="font-medium">
-                      {member.person ? `${member.person.firstName || ''} ${member.person.lastName || ''}`.trim() : 'Sin nombre'}
-                    </span>
-                    {member.characterName && (
-                      <span className="text-gray-500"> como {member.characterName}</span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setCast(cast.filter((_, i) => i !== index))}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* ✅ NUEVO COMPONENTE CON DRAG & DROP */}
+          <div className="mb-4">
+            <CastList cast={cast} onCastChange={setCast} />
+          </div>
 
           <button
             type="button"
@@ -603,131 +607,134 @@ export default function MovieFormEnhanced({
           </button>
         </div>
 
-        {/* Modal de búsqueda de personas */}
+        {/* Modal de búsqueda de personas - MANTENER IGUAL */}
         {showPersonSearch && (
           <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-md w-full p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {addingType === 'cast' ? 'Agregar Actor/Actriz' : 'Agregar Miembro del Equipo'}
-              </h3>
+            {/* Modal de búsqueda de personas */}
+            {showPersonSearch && (
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+                <div className="bg-white rounded-lg max-w-md w-full p-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    {addingType === 'cast' ? 'Agregar Actor/Actriz' : 'Agregar Miembro del Equipo'}
+                  </h3>
 
-              <div className="space-y-4">
-                {/* Búsqueda de persona */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Buscar Persona
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={personSearch}
-                      onChange={(e) => {
-                        setPersonSearch(e.target.value)
-                        searchPeople(e.target.value)
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Escriba el nombre..."
-                    />
-                    <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
-                  </div>
-
-                  {availablePeople.length > 0 && (
-                    <div className="mt-2 border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
-                      {availablePeople.map((person: any) => (
-                        <button
-                          key={person.id}
-                          type="button"
-                          onClick={() => setNewPerson({ ...newPerson, personId: person.id })}
-                          className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${newPerson.personId === person.id ? 'bg-blue-50' : ''
-                            }`}
-                        >
-                          {person.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {personSearch && availablePeople.length === 0 && (
-                    <button
-                      type="button"
-                      onClick={createNewPerson}
-                      className="mt-2 text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      Crear nueva persona: "{personSearch}"
-                    </button>
-                  )}
-                </div>
-
-                {/* Campos específicos según el tipo */}
-                {addingType === 'cast' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Personaje
-                    </label>
-                    <input
-                      type="text"
-                      value={newPerson.characterName}
-                      onChange={(e) => setNewPerson({ ...newPerson, characterName: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Nombre del personaje"
-                    />
-                  </div>
-                )}
-
-                {addingType === 'crew' && (
-                  <>
+                  <div className="space-y-4">
+                    {/* Búsqueda de persona */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Rol
+                        Buscar Persona
                       </label>
-                      <select
-                        value={newPerson.roleId}
-                        onChange={(e) => setNewPerson({ ...newPerson, roleId: parseInt(e.target.value) })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="">Seleccionar...</option>
-                        {availableRoles
-                          .sort((a, b) => a.department.localeCompare(b.department))
-                          .map((role: any) => (
-                            <option key={role.id} value={role.id}>
-                              {role.name} ({role.department})
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                  </>
-                )}
-              </div>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={personSearch}
+                          onChange={(e) => {
+                            setPersonSearch(e.target.value)
+                            searchPeople(e.target.value)
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Escriba el nombre..."
+                        />
+                        <Search className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
+                      </div>
 
-              {/* Botones de acción */}
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPersonSearch(false)
-                    setAddingType(null)
-                    setPersonSearch('')
-                    setNewPerson({
-                      personId: 0,
-                      characterName: '',
-                      roleId: 0,
-                      billingOrder: 0
-                    })
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={addPerson}
-                  disabled={!newPerson.personId || (addingType === 'crew' && !newPerson.roleId)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Agregar
-                </button>
+                      {availablePeople.length > 0 && (
+                        <div className="mt-2 border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
+                          {availablePeople.map((person: any) => (
+                            <button
+                              key={person.id}
+                              type="button"
+                              onClick={() => setNewPerson({ ...newPerson, personId: person.id })}
+                              className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${newPerson.personId === person.id ? 'bg-blue-50' : ''
+                                }`}
+                            >
+                              {person.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {personSearch && availablePeople.length === 0 && (
+                        <button
+                          type="button"
+                          onClick={createNewPerson}
+                          className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+                        >
+                          Crear nueva persona: "{personSearch}"
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Campos específicos según el tipo */}
+                    {addingType === 'cast' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Personaje
+                        </label>
+                        <input
+                          type="text"
+                          value={newPerson.characterName}
+                          onChange={(e) => setNewPerson({ ...newPerson, characterName: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Nombre del personaje"
+                        />
+                      </div>
+                    )}
+
+                    {addingType === 'crew' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Rol
+                        </label>
+                        <select
+                          value={newPerson.roleId}
+                          onChange={(e) => setNewPerson({ ...newPerson, roleId: parseInt(e.target.value) })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">Seleccionar...</option>
+                          {availableRoles
+                            .sort((a, b) => a.department.localeCompare(b.department))
+                            .map((role: any) => (
+                              <option key={role.id} value={role.id}>
+                                {role.name} ({role.department})
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Botones de acción */}
+                  <div className="mt-6 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPersonSearch(false)
+                        setAddingType(null)
+                        setPersonSearch('')
+                        setNewPerson({
+                          personId: 0,
+                          characterName: '',
+                          roleId: 0,
+                          billingOrder: 0
+                        })
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addPerson}
+                      disabled={!newPerson.personId || (addingType === 'crew' && !newPerson.roleId)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Agregar
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>

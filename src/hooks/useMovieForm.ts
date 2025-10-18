@@ -425,7 +425,8 @@ export function useMovieForm({
                         person: c.person, // Mantener el objeto person completo
                         characterName: c.characterName,
                         billingOrder: c.billingOrder,
-                        isPrincipal: c.isPrincipal
+                        isPrincipal: c.isPrincipal,
+                        notes: c.notes
                     }
                     console.log('🎬 Cast item mapeado:', mapped)
                     return mapped

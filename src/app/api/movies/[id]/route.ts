@@ -126,6 +126,7 @@ export async function GET(
             characterName: true,
             billingOrder: true,
             isPrincipal: true,
+            notes: true,
             person: {
               select: {
                 id: true,
@@ -444,7 +445,8 @@ export async function PUT(
               personId: item.personId,
               characterName: item.characterName || null,
               billingOrder: item.billingOrder || index + 1,
-              isPrincipal: item.isPrincipal || false
+              isPrincipal: item.isPrincipal || false,
+              notes: item.notes || null
             }))
           })
         }
