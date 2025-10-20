@@ -44,10 +44,17 @@ interface SortableCastItemProps {
     member: CastMember
     index: number
     onRemove: () => void
-    onNotesChange: (notes: string) => void
+    onCharacterNameChange: (characterName: string) => void
+    onPrincipalChange: (isPrincipal: boolean) => void  // ✅ NUEVO
 }
 
-function SortableCastItem({ member, index, onRemove, onNotesChange }: SortableCastItemProps) {
+function SortableCastItem({ 
+    member, 
+    index, 
+    onRemove, 
+    onCharacterNameChange,
+    onPrincipalChange  // ✅ NUEVO
+}: SortableCastItemProps) {
     const {
         attributes,
         listeners,
@@ -86,28 +93,46 @@ function SortableCastItem({ member, index, onRemove, onNotesChange }: SortableCa
             {/* Content */}
             <div className="flex-1 space-y-2">
                 {/* Nombre y personaje */}
-                <div>
+                <div className="flex items-center gap-2">
                     <span className="font-medium text-gray-900">{personName}</span>
                     {member.characterName && (
                         <span className="text-gray-500"> como {member.characterName}</span>
                     )}
+                    {/* ✅ Badge visual (opcional) */}
                     {member.isPrincipal && (
-                        <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                        <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">
                             Principal
                         </span>
                     )}
                 </div>
 
-                {/* Campo de comentarios */}
+                {/* Campo de personaje */}
                 <div>
                     <label className="block text-xs text-gray-600 mb-1">Personaje:</label>
                     <input
                         type="text"
-                        value={member.characterName || ''}  // ✅ Cambiar de notes a characterName
-                        onChange={(e) => onNotesChange(e.target.value)}
+                        value={member.characterName || ''}
+                        onChange={(e) => onCharacterNameChange(e.target.value)}
                         placeholder="Nombre del personaje..."
                         className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
+                </div>
+
+                {/* ✅ NUEVO: Checkbox de Actor Principal */}
+                <div className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        id={`principal-${member.personId}`}
+                        checked={member.isPrincipal || false}
+                        onChange={(e) => onPrincipalChange(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />
+                    <label 
+                        htmlFor={`principal-${member.personId}`}
+                        className="text-sm text-gray-700 cursor-pointer select-none"
+                    >
+                        Actor/Actriz Principal
+                    </label>
                 </div>
 
                 {/* Orden */}
@@ -135,9 +160,11 @@ export default function CastList({ cast, onCastChange }: CastListProps) {
         console.log(`🎬 Item ${i}:`, {
             personId: item.personId,
             hasPersonId: !!item.personId,
-            personFromObject: item.person?.id
+            personFromObject: item.person?.id,
+            isPrincipal: item.isPrincipal  // ✅ Log para debugging
         })
     })
+    
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, {
@@ -155,11 +182,11 @@ export default function CastList({ cast, onCastChange }: CastListProps) {
             // Reordenar array
             const newCast = arrayMove(cast, oldIndex, newIndex)
 
-            // Actualizar billingOrder y isPrincipal
+            // ✅ MODIFICADO: Solo actualizar billingOrder, NO tocar isPrincipal
             const updatedCast = newCast.map((member, index) => ({
                 ...member,
                 billingOrder: index + 1,
-                isPrincipal: index < 5, // Los primeros 5 son principales
+                // isPrincipal se mantiene como está, no se modifica automáticamente
             }))
 
             onCastChange(updatedCast)
@@ -168,11 +195,11 @@ export default function CastList({ cast, onCastChange }: CastListProps) {
 
     const handleRemove = (index: number) => {
         const newCast = cast.filter((_, i) => i !== index)
-        // Actualizar billingOrder después de eliminar
+        // ✅ MODIFICADO: Solo actualizar billingOrder
         const updatedCast = newCast.map((member, idx) => ({
             ...member,
             billingOrder: idx + 1,
-            isPrincipal: idx < 5,
+            // isPrincipal se mantiene como está
         }))
         onCastChange(updatedCast)
     }
@@ -181,7 +208,17 @@ export default function CastList({ cast, onCastChange }: CastListProps) {
         const newCast = [...cast]
         newCast[index] = {
             ...newCast[index],
-            characterName,  // ✅ Actualizar characterName
+            characterName,
+        }
+        onCastChange(newCast)
+    }
+
+    // ✅ NUEVO: Handler para cambiar isPrincipal
+    const handlePrincipalChange = (index: number, isPrincipal: boolean) => {
+        const newCast = [...cast]
+        newCast[index] = {
+            ...newCast[index],
+            isPrincipal,
         }
         onCastChange(newCast)
     }
@@ -211,7 +248,8 @@ export default function CastList({ cast, onCastChange }: CastListProps) {
                             member={member}
                             index={index}
                             onRemove={() => handleRemove(index)}
-                            onNotesChange={(notes) => handleCharacterNameChange(index, notes)}
+                            onCharacterNameChange={(characterName) => handleCharacterNameChange(index, characterName)}
+                            onPrincipalChange={(isPrincipal) => handlePrincipalChange(index, isPrincipal)}  // ✅ NUEVO
                         />
                     ))}
                 </div>
