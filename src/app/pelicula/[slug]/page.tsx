@@ -1,9 +1,7 @@
-// src/app/pelicula/[slug]/page.tsx
+// src/app/pelicula/[slug]/page.tsx - CON REDIS PURO (sin unstable_cache)
 import { notFound } from 'next/navigation';
 import { MoviePageClient } from './MoviePageClient';
 import type { Metadata } from 'next';
-import { prisma } from '@/lib/prisma';
-import { unstable_cache } from 'next/cache';
 
 interface PageProps {
   params: {
@@ -11,220 +9,71 @@ interface PageProps {
   };
 }
 
-// Configuración de página dinámica - CORREGIDO
+// Configuración de página dinámica
 export const dynamic = 'force-dynamic';
-export const revalidate = 3600; // 1 hora
-export const dynamicParams = true; // Permitir slugs no pre-generados
+export const revalidate = false; // Desactivar revalidación automática de Next.js
+export const dynamicParams = true;
 
-// Generar parámetros estáticos - SIMPLIFICADO
+// Generar parámetros estáticos - vacío para generación bajo demanda
 export async function generateStaticParams() {
-  // Retornar array vacío - las páginas se generarán bajo demanda
   return [];
 }
 
-// OPTIMIZACIÓN: Cachear la query de película con unstable_cache
-const getCachedMovieData = unstable_cache(
-  async (slug: string) => {
-    console.log(`Buscando película: ${slug}`);
-    
-    const movie = await prisma.movie.findFirst({
-      where: {
-        slug: slug
-      },
-      select: {
-        // Campos básicos - optimizado con select
-        id: true,
-        slug: true,
-        title: true,
-        year: true,
-        releaseYear: true,
-        releaseMonth: true,
-        releaseDay: true,
-        duration: true,
-        durationSeconds: true,
-        synopsis: true,
-        posterUrl: true,
-        trailerUrl: true,
-        soundType: true,
-        stage: true,
-        dataCompleteness: true,
-        notes: true,
-        tagline: true,
-        imdbId: true,
-        metaDescription: true,
-        metaKeywords: true,
-        
-        // Relaciones optimizadas
-        genres: {
-          select: {
-            genre: {
-              select: {
-                id: true,
-                name: true,
-                slug: true
-              }
-            }
-          }
-        },
-        
-        cast: {
-          select: {
-            characterName: true,
-            isPrincipal: true,
-            billingOrder: true,
-            person: {
-              select: {
-                id: true,
-                slug: true,
-                firstName: true,
-                lastName: true,
-                realName: true,
-                photoUrl: true
-              }
-            }
-          },
-          orderBy: [
-            { isPrincipal: 'desc' },
-            { billingOrder: 'asc' }
-          ],
-          take: 100 // Limitar a 100 actores máximo
-        },
-        
-        crew: {
-          select: {
-            roleId: true,
-            billingOrder: true,
-            person: {
-              select: {
-                id: true,
-                slug: true,
-                firstName: true,
-                lastName: true,
-                realName: true
-              }
-            },
-            role: {
-              select: {
-                id: true,
-                name: true,
-                department: true
-              }
-            }
-          },
-          orderBy: {
-            billingOrder: 'asc'
-          },
-          take: 50 // Limitar a 50 miembros del crew
-        },
-        
-        movieCountries: {
-          select: {
-            location: {
-              select: {
-                id: true,
-                name: true,
-                slug: true
-              }
-            }
-          }
-        },
-        
-        themes: {
-          select: {
-            theme: {
-              select: {
-                id: true,
-                name: true,
-                slug: true
-              }
-            }
-          },
-          take: 20 // Limitar a 20 temas
-        },
-        
-        rating: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            abbreviation: true
-          }
-        },
-        
-        colorType: {
-          select: {
-            id: true,
-            name: true,
-            category: true
-          }
-        },
-        
-        productionCompanies: {
-          select: {
-            isPrimary: true,
-            company: {
-              select: {
-                id: true,
-                name: true,
-                slug: true
-              }
-            }
-          },
-          take: 10
-        },
-        
-        distributionCompanies: {
-          select: {
-            territory: true,
-            company: {
-              select: {
-                id: true,
-                name: true,
-                slug: true
-              }
-            }
-          },
-          take: 10
-        },
-        
-        // Solo traer counts para estas relaciones pesadas
-        _count: {
-          select: {
-            images: true,
-            videos: true,
-            alternativeTitles: true,
-            links: true,
-            awards: true,
-            screenings: true
-          }
-        }
-      }
-    });
-    
-    if (movie) {
-      console.log(`Película encontrada: ${movie.title}`);
-    }
-    
-    return movie;
-  },
-  ['movie-detail'], // Tag para el cache
-  {
-    revalidate: 3600, // Cache por 1 hora
-    tags: ['movies'] // Tag genérico para todas las películas
+// Función para obtener la URL base según el entorno
+function getApiBaseUrl(): string {
+  // En servidor (tanto desarrollo como producción), usar localhost interno
+  if (typeof window === 'undefined') {
+    return 'http://localhost:3000';
   }
-);
+  // En cliente (browser), usar URL relativa
+  return '';
+}
 
-// Función wrapper para manejar errores
+// Obtener datos de película desde API endpoint (con caché Redis)
 async function getMovieData(slug: string) {
   try {
-    return await getCachedMovieData(slug);
+    const baseUrl = getApiBaseUrl();
+    const url = `${baseUrl}/api/movies/${slug}`;
+    
+    console.log(`📡 Fetching movie from API: ${slug}`);
+    
+    const response = await fetch(url, {
+      // NO usar cache de Next.js - dejar que Redis maneje todo
+      cache: 'no-store',
+      // Headers opcionales para debugging
+      headers: {
+        'X-Requested-By': 'movie-page'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log(`❌ Movie not found: ${slug}`);
+        return null;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const movie = await response.json();
+    
+    // Log de información de caché
+    const cacheStatus = response.headers.get('X-Cache');
+    const cacheSource = response.headers.get('X-Cache-Source');
+    
+    if (cacheStatus && cacheSource) {
+      console.log(`📦 Movie "${movie.title}": Cache ${cacheStatus} from ${cacheSource}`);
+    } else {
+      console.log(`📦 Movie "${movie.title}": Loaded successfully`);
+    }
+
+    return movie;
   } catch (error) {
-    console.error('Error fetching movie:', error);
+    console.error(`Error fetching movie ${slug}:`, error);
     return null;
   }
 }
 
-// Metadata dinámica - también optimizada con cache
+// Metadata dinámica
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const movie = await getMovieData(params.slug);
 
@@ -235,9 +84,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  // Generar descripción optimizada para SEO
   const year = movie.releaseYear || movie.year;
-  const genres = movie.genres?.map(g => g.genre.name).slice(0, 3).join(', ');
+  const genres = movie.genres?.map((g: any) => g.genre.name).slice(0, 3).join(', ');
   const defaultDescription = `${movie.title}${year ? ` (${year})` : ''}${genres ? ` - ${genres}` : ''}. Película argentina.`;
 
   return {
@@ -268,6 +116,7 @@ function formatPersonName(person: any): string {
 }
 
 export default async function MoviePage({ params }: PageProps) {
+  // Obtener película desde API (con caché Redis)
   const movie = await getMovieData(params.slug);
 
   if (!movie) {
@@ -300,7 +149,7 @@ export default async function MoviePage({ params }: PageProps) {
     id: movie.rating.id,
     name: movie.rating.name,
     description: movie.rating.description || undefined
-  } : null; 
+  } : null;
 
   const colorType = movie.colorType ? {
     id: movie.colorType.id,
@@ -310,8 +159,7 @@ export default async function MoviePage({ params }: PageProps) {
   // Formatear año - usar releaseYear si existe, sino year
   const displayYear = movie.releaseYear || movie.year;
 
-  // PROCESAR CAST - LÓGICA CORREGIDA
-  // Formatear todo el cast con estructura correcta
+  // PROCESAR CAST
   const allCast = movie.cast?.map((c: any) => ({
     name: formatPersonName(c.person),
     character: c.characterName,
@@ -333,28 +181,21 @@ export default async function MoviePage({ params }: PageProps) {
   let mainCast: any[] = [];
   let fullCast: any[] = [];
 
-  // Primero buscar los que tienen isPrincipal = true
   const principalActors = allCast.filter((c: any) => c.isPrincipal === true);
 
   if (principalActors.length > 0) {
-    // Si hay actores marcados como principales, usarlos
     mainCast = principalActors;
-    // El resto va a fullCast
     fullCast = allCast.filter((c: any) => !c.isPrincipal);
   } else if (allCast.length > 0) {
-    // Si no hay ninguno marcado como principal, tomar los primeros 3
     mainCast = allCast.slice(0, Math.min(3, allCast.length));
-    // El resto (desde el 4to en adelante) va a fullCast
     if (allCast.length > 3) {
       fullCast = allCast.slice(3);
     }
   }
 
-  // PROCESAR CREW - NUEVA LÓGICA PARA LEER DE LA BASE DE DATOS
-  // IDs de los roles principales según lo especificado
+  // PROCESAR CREW
   const mainCrewRoleIds = [2, 3, 703, 526, 836, 636, 402, 641];
 
-  // Mapeo de roleId a nombre de departamento para el equipo principal
   const mainRoleDepartmentMap: { [key: number]: string } = {
     2: 'Dirección',
     3: 'Guión',
@@ -366,7 +207,6 @@ export default async function MoviePage({ params }: PageProps) {
     641: 'Música'
   };
 
-  // Procesar todo el crew
   const allCrew = movie.crew?.map((c: any) => ({
     name: formatPersonName(c.person),
     role: c.role?.name || 'Sin rol especificado',
@@ -377,13 +217,10 @@ export default async function MoviePage({ params }: PageProps) {
     personSlug: c.person.slug
   })) || [];
 
-  // Separar crew principal del crew completo
   const basicCrewMembers = allCrew.filter((c: any) => mainCrewRoleIds.includes(c.roleId));
 
-  // Organizar el crew principal por departamento (orden específico)
   const basicCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string }> } = {};
 
-  // Orden específico de los departamentos principales
   const mainDepartmentOrder = [
     'Dirección',
     'Guión',
@@ -395,12 +232,10 @@ export default async function MoviePage({ params }: PageProps) {
     'Música'
   ];
 
-  // Inicializar departamentos vacíos en el orden correcto
   mainDepartmentOrder.forEach(dept => {
     basicCrewByDepartment[dept] = [];
   });
 
-  // Llenar con los miembros del crew principal
   basicCrewMembers.forEach((member: any) => {
     const dept = mainRoleDepartmentMap[member.roleId] || member.department || 'Otros';
     if (!basicCrewByDepartment[dept]) {
@@ -413,24 +248,19 @@ export default async function MoviePage({ params }: PageProps) {
     });
   });
 
-  // Eliminar departamentos vacíos del crew principal
   Object.keys(basicCrewByDepartment).forEach(dept => {
     if (basicCrewByDepartment[dept].length === 0) {
       delete basicCrewByDepartment[dept];
     }
   });
 
-  // Organizar el crew completo por departamento
   const fullCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string }> } = {};
 
-  // Incluir TODO el crew (principal + adicional) en el crew completo
   allCrew
     .sort((a: any, b: any) => {
-      // Primero ordenar por departamento
       if (a.department !== b.department) {
         return (a.department || 'Otros').localeCompare(b.department || 'Otros');
       }
-      // Luego por billingOrder
       return a.billingOrder - b.billingOrder;
     })
     .forEach((member: any) => {
@@ -452,19 +282,17 @@ export default async function MoviePage({ params }: PageProps) {
     console.log('Departamentos en crew completo:', Object.keys(fullCrewByDepartment));
   }
 
-  // Pasar los datos procesados al componente cliente
   return (
     <MoviePageClient
       movie={{
         ...movie,
-        // Agregar contadores para que el cliente sepa si hay contenido adicional
-        hasImages: movie._count.images > 0,
-        hasVideos: movie._count.videos > 0,
-        hasAlternativeTitles: movie._count.alternativeTitles > 0,
-        hasLinks: movie._count.links > 0,
-        hasAwards: movie._count.awards > 0,
-        imageCount: movie._count.images,
-        videoCount: movie._count.videos
+        hasImages: movie.images?.length > 0,
+        hasVideos: movie.videos?.length > 0,
+        hasAlternativeTitles: movie.alternativeTitles?.length > 0,
+        hasLinks: movie.links?.length > 0,
+        hasAwards: movie.awards?.length > 0,
+        imageCount: movie.images?.length || 0,
+        videoCount: movie.videos?.length || 0
       }}
       displayYear={displayYear}
       totalDuration={totalDuration}
