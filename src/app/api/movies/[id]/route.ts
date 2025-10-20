@@ -1,11 +1,12 @@
 // ==================================================
-// src/app/api/movies/[id]/route.ts - CON REDIS CACHE
+// src/app/api/movies/[id]/route.ts - CON REDIS CACHE + REVALIDACIÓN
 // ==================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { movieSchema } from '@/lib/schemas'
 import RedisClient from '@/lib/redis'
+import { revalidatePath, revalidateTag } from 'next/cache'
 
 // Cache en memoria como fallback
 const memoryCache = new Map<string, { data: any; timestamp: number }>();
@@ -68,7 +69,7 @@ export async function GET(
     }
 
     // 3. No hay caché, consultar base de datos
-    console.log(`🔄 Cache MISS - Consultando BD para película: ${idOrSlug}`);
+    console.log(`📄 Cache MISS - Consultando BD para película: ${idOrSlug}`);
 
     const movie = await prisma.movie.findUnique({
       where: isId ? { id: parseInt(idOrSlug) } : { slug: idOrSlug },
@@ -347,7 +348,7 @@ export async function PUT(
     // Verificar que la película existe y obtener slug para invalidar caché
     const existingMovie = await prisma.movie.findUnique({
       where: { id },
-      select: { slug: true } // Solo necesitamos el slug para invalidar caché
+      select: { slug: true }
     })
 
     if (!existingMovie) {
@@ -357,7 +358,7 @@ export async function PUT(
       )
     }
 
-    // Extraer relaciones - EXACTAMENTE COMO EN EL POST
+    // Extraer relaciones
     const {
       genres,
       cast,
@@ -374,7 +375,7 @@ export async function PUT(
 
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
-      // Separar los campos de fecha y otros campos especiales
+      // Separar los campos especiales
       const {
         colorTypeId,
         ratingId,
@@ -391,7 +392,7 @@ export async function PUT(
         ...movieDataClean
       } = movieData
 
-      // 1. Actualizar datos básicos de la película - EXACTAMENTE COMO EN EL POST
+      // 1. Actualizar datos básicos de la película
       const updatedMovie = await tx.movie.update({
         where: { id },
         data: {
@@ -411,7 +412,7 @@ export async function PUT(
           filmingEndMonth: filmingEndMonth !== undefined ? filmingEndMonth : null,
           filmingEndDay: filmingEndDay !== undefined ? filmingEndDay : null,
           ...(ratingId !== undefined && {
-            rating: (ratingId === null || ratingId === 0)  // Tratar 0 como null
+            rating: (ratingId === null || ratingId === 0)
               ? { disconnect: true }
               : { connect: { id: ratingId } }
           }),
@@ -481,7 +482,7 @@ export async function PUT(
         }
       }
 
-      // 7. Actualizar productoras
+      // 6. Actualizar productoras
       if (productionCompanies) {
         await tx.movieProductionCompany.deleteMany({ where: { movieId: id } })
         if (productionCompanies.length > 0) {
@@ -495,7 +496,7 @@ export async function PUT(
         }
       }
 
-      // 8. Actualizar distribuidoras
+      // 7. Actualizar distribuidoras
       if (distributionCompanies) {
         await tx.movieDistributionCompany.deleteMany({ where: { movieId: id } })
         if (distributionCompanies.length > 0) {
@@ -509,7 +510,7 @@ export async function PUT(
         }
       }
 
-      // 9. Actualizar temas
+      // 8. Actualizar temas
       if (themes) {
         await tx.movieTheme.deleteMany({ where: { movieId: id } })
         if (themes.length > 0) {
@@ -522,7 +523,7 @@ export async function PUT(
         }
       }
 
-      // 10. Actualizar títulos alternativos
+      // 9. Actualizar títulos alternativos
       if (alternativeTitles !== undefined) {
         await tx.movieAlternativeTitle.deleteMany({ where: { movieId: id } })
         if (alternativeTitles && alternativeTitles.length > 0) {
@@ -536,7 +537,7 @@ export async function PUT(
         }
       }
 
-      // 11. Actualizar links oficiales
+      // 10. Actualizar links oficiales
       if (links !== undefined) {
         await tx.movieLink.deleteMany({ where: { movieId: id } })
         if (links && links.length > 0) {
@@ -552,7 +553,7 @@ export async function PUT(
         }
       }
 
-      // 12. Actualizar screening venues
+      // 11. Actualizar screening venues
       if (screeningVenues !== undefined) {
         await tx.movieScreening.deleteMany({ where: { movieId: id } })
         if (screeningVenues && screeningVenues.length > 0) {
@@ -568,7 +569,7 @@ export async function PUT(
         }
       }
 
-      // 13. Retornar la película actualizada con todas las relaciones
+      // 12. Retornar la película actualizada con todas las relaciones
       return await tx.movie.findUnique({
         where: { id },
         include: {
@@ -617,20 +618,20 @@ export async function PUT(
         }
       })
     }, {
-      maxWait: 10000, // Esperar máximo 10 segundos para iniciar
-      timeout: 30000, // Timeout de 30 segundos para la transacción
+      maxWait: 10000,
+      timeout: 30000,
     })
 
-    // INVALIDAR CACHÉS después de actualizar exitosamente
+    // ⭐⭐⭐ INVALIDACIÓN COMPLETA DE CACHÉS ⭐⭐⭐
     console.log('🗑️ Invalidando cachés para película actualizada');
 
+    // 1. Invalidar Redis
     const cacheKeysToInvalidate = [
       `movie:id:${id}:v1`,
       `movie:slug:${existingMovie.slug}:v1`,
-      'home-feed:movies:v1' // También invalidar home feed
+      'home-feed:movies:v1'
     ];
 
-    // Invalidar en Redis
     await Promise.all(
       cacheKeysToInvalidate.map(key =>
         RedisClient.del(key).catch(err =>
@@ -639,10 +640,23 @@ export async function PUT(
       )
     );
 
-    // Invalidar en memoria
+    // 2. Invalidar caché en memoria
     cacheKeysToInvalidate.forEach(key => memoryCache.delete(key));
 
-    console.log(`✅ Cachés invalidados: ${cacheKeysToInvalidate.join(', ')}`);
+    // 3. Invalidar caché de Next.js (por si acaso, aunque ya no lo usamos principalmente)
+    try {
+      revalidateTag('movies');
+      revalidateTag(`movie-${existingMovie.slug}`);
+      revalidatePath(`/pelicula/${existingMovie.slug}`);
+      revalidatePath('/');
+      revalidatePath('/listados/peliculas');
+      
+      console.log(`✅ Next.js cache invalidado para: /pelicula/${existingMovie.slug}`);
+    } catch (revalidateError) {
+      console.log('ℹ️ Next.js revalidation skipped (using Redis cache primarily)');
+    }
+
+    console.log(`✅ Todos los cachés invalidados para película: ${existingMovie.slug}`);
 
     return NextResponse.json(movie)
   } catch (error) {
@@ -690,16 +704,16 @@ export async function DELETE(
       where: { id }
     })
 
-    // INVALIDAR CACHÉS después de eliminar
+    // ⭐ INVALIDAR CACHÉS después de eliminar ⭐
     console.log('🗑️ Invalidando cachés para película eliminada');
 
+    // 1. Invalidar Redis
     const cacheKeysToInvalidate = [
       `movie:id:${id}:v1`,
       `movie:slug:${movie.slug}:v1`,
       'home-feed:movies:v1'
     ];
 
-    // Invalidar en Redis
     await Promise.all(
       cacheKeysToInvalidate.map(key =>
         RedisClient.del(key).catch(err =>
@@ -708,10 +722,23 @@ export async function DELETE(
       )
     );
 
-    // Invalidar en memoria
+    // 2. Invalidar en memoria
     cacheKeysToInvalidate.forEach(key => memoryCache.delete(key));
 
-    console.log(`✅ Cachés invalidados tras eliminar: ${cacheKeysToInvalidate.join(', ')}`);
+    // 3. Invalidar caché de Next.js
+    try {
+      revalidateTag('movies');
+      revalidateTag(`movie-${movie.slug}`);
+      revalidatePath(`/pelicula/${movie.slug}`);
+      revalidatePath('/');
+      revalidatePath('/listados/peliculas');
+      
+      console.log(`✅ Next.js cache invalidado para película eliminada: ${movie.slug}`);
+    } catch (revalidateError) {
+      console.log('ℹ️ Next.js revalidation skipped (using Redis cache primarily)');
+    }
+
+    console.log(`✅ Todos los cachés invalidados tras eliminar: ${movie.slug}`);
 
     return NextResponse.json(
       { message: 'Película eliminada exitosamente' },
