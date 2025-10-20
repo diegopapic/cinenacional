@@ -1,7 +1,8 @@
-// src/app/pelicula/[slug]/page.tsx - CON REDIS PURO (sin unstable_cache)
+// src/app/pelicula/[slug]/page.tsx - USAR PRISMA DIRECTO (mejor para SSR)
 import { notFound } from 'next/navigation';
 import { MoviePageClient } from './MoviePageClient';
 import type { Metadata } from 'next';
+import { prisma } from '@/lib/prisma';
 
 interface PageProps {
   params: {
@@ -11,64 +12,198 @@ interface PageProps {
 
 // Configuración de página dinámica
 export const dynamic = 'force-dynamic';
-export const revalidate = false; // Desactivar revalidación automática de Next.js
+export const revalidate = 3600; // 1 hora
 export const dynamicParams = true;
 
-// Generar parámetros estáticos - vacío para generación bajo demanda
 export async function generateStaticParams() {
   return [];
 }
 
-// Función para obtener la URL base según el entorno
-function getApiBaseUrl(): string {
-  // En servidor (tanto desarrollo como producción), usar localhost interno
-  if (typeof window === 'undefined') {
-    return 'http://localhost:3000';
-  }
-  // En cliente (browser), usar URL relativa
-  return '';
-}
-
-// Obtener datos de película desde API endpoint (con caché Redis)
+// Función para obtener película directamente de Prisma (para SSR)
 async function getMovieData(slug: string) {
   try {
-    const baseUrl = getApiBaseUrl();
-    const url = `${baseUrl}/api/movies/${slug}`;
+    console.log(`📡 Fetching movie from database: ${slug}`);
     
-    console.log(`📡 Fetching movie from API: ${slug}`);
-    
-    const response = await fetch(url, {
-      // NO usar cache de Next.js - dejar que Redis maneje todo
-      cache: 'no-store',
-      // Headers opcionales para debugging
-      headers: {
-        'X-Requested-By': 'movie-page'
+    const movie = await prisma.movie.findFirst({
+      where: { slug: slug },
+      select: {
+        // Campos básicos - optimizado con select
+        id: true,
+        slug: true,
+        title: true,
+        year: true,
+        releaseYear: true,
+        releaseMonth: true,
+        releaseDay: true,
+        duration: true,
+        durationSeconds: true,
+        synopsis: true,
+        posterUrl: true,
+        trailerUrl: true,
+        soundType: true,
+        stage: true,
+        dataCompleteness: true,
+        notes: true,
+        tagline: true,
+        imdbId: true,
+        metaDescription: true,
+        metaKeywords: true,
+        
+        // Relaciones optimizadas
+        genres: {
+          select: {
+            genre: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
+          }
+        },
+        
+        cast: {
+          select: {
+            characterName: true,
+            isPrincipal: true,
+            billingOrder: true,
+            person: {
+              select: {
+                id: true,
+                slug: true,
+                firstName: true,
+                lastName: true,
+                realName: true,
+                photoUrl: true
+              }
+            }
+          },
+          orderBy: [
+            { isPrincipal: 'desc' },
+            { billingOrder: 'asc' }
+          ],
+          take: 100
+        },
+        
+        crew: {
+          select: {
+            roleId: true,
+            billingOrder: true,
+            person: {
+              select: {
+                id: true,
+                slug: true,
+                firstName: true,
+                lastName: true,
+                realName: true
+              }
+            },
+            role: {
+              select: {
+                id: true,
+                name: true,
+                department: true
+              }
+            }
+          },
+          orderBy: {
+            billingOrder: 'asc'
+          },
+          take: 50
+        },
+        
+        movieCountries: {
+          select: {
+            location: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
+          }
+        },
+        
+        themes: {
+          select: {
+            theme: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
+          },
+          take: 20
+        },
+        
+        rating: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            abbreviation: true
+          }
+        },
+        
+        colorType: {
+          select: {
+            id: true,
+            name: true,
+            category: true
+          }
+        },
+        
+        productionCompanies: {
+          select: {
+            isPrimary: true,
+            company: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
+          },
+          take: 10
+        },
+        
+        distributionCompanies: {
+          select: {
+            territory: true,
+            company: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
+          },
+          take: 10
+        },
+        
+        _count: {
+          select: {
+            images: true,
+            videos: true,
+            alternativeTitles: true,
+            links: true,
+            awards: true,
+            screenings: true
+          }
+        }
       }
     });
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        console.log(`❌ Movie not found: ${slug}`);
-        return null;
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const movie = await response.json();
     
-    // Log de información de caché
-    const cacheStatus = response.headers.get('X-Cache');
-    const cacheSource = response.headers.get('X-Cache-Source');
-    
-    if (cacheStatus && cacheSource) {
-      console.log(`📦 Movie "${movie.title}": Cache ${cacheStatus} from ${cacheSource}`);
+    if (movie) {
+      console.log(`✅ Movie found: ${movie.title}`);
     } else {
-      console.log(`📦 Movie "${movie.title}": Loaded successfully`);
+      console.log(`❌ Movie not found: ${slug}`);
     }
-
+    
     return movie;
   } catch (error) {
-    console.error(`Error fetching movie ${slug}:`, error);
+    console.error('Error fetching movie:', error);
     return null;
   }
 }
@@ -85,7 +220,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const year = movie.releaseYear || movie.year;
-  const genres = movie.genres?.map((g: any) => g.genre.name).slice(0, 3).join(', ');
+  const genres = movie.genres?.map(g => g.genre.name).slice(0, 3).join(', ');
   const defaultDescription = `${movie.title}${year ? ` (${year})` : ''}${genres ? ` - ${genres}` : ''}. Película argentina.`;
 
   return {
@@ -116,7 +251,6 @@ function formatPersonName(person: any): string {
 }
 
 export default async function MoviePage({ params }: PageProps) {
-  // Obtener película desde API (con caché Redis)
   const movie = await getMovieData(params.slug);
 
   if (!movie) {
@@ -149,7 +283,7 @@ export default async function MoviePage({ params }: PageProps) {
     id: movie.rating.id,
     name: movie.rating.name,
     description: movie.rating.description || undefined
-  } : null;
+  } : null; 
 
   const colorType = movie.colorType ? {
     id: movie.colorType.id,
@@ -286,13 +420,13 @@ export default async function MoviePage({ params }: PageProps) {
     <MoviePageClient
       movie={{
         ...movie,
-        hasImages: movie.images?.length > 0,
-        hasVideos: movie.videos?.length > 0,
-        hasAlternativeTitles: movie.alternativeTitles?.length > 0,
-        hasLinks: movie.links?.length > 0,
-        hasAwards: movie.awards?.length > 0,
-        imageCount: movie.images?.length || 0,
-        videoCount: movie.videos?.length || 0
+        hasImages: movie._count.images > 0,
+        hasVideos: movie._count.videos > 0,
+        hasAlternativeTitles: movie._count.alternativeTitles > 0,
+        hasLinks: movie._count.links > 0,
+        hasAwards: movie._count.awards > 0,
+        imageCount: movie._count.images,
+        videoCount: movie._count.videos
       }}
       displayYear={displayYear}
       totalDuration={totalDuration}
