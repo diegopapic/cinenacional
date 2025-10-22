@@ -65,6 +65,10 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  // ✅ Añadir AdSense aquí usando la API de Metadata
+  other: {
+    'google-adsense-account': 'ca-pub-9695271411409237',
+  },
 }
 
 export default function RootLayout({
@@ -75,20 +79,17 @@ export default function RootLayout({
   // Google Analytics Measurement ID
   const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-5SGTLPHYYX'
   
-  // AdSense Publisher ID
-  const ADSENSE_PUBLISHER_ID = 'ca-pub-9695271411409237'
-  
   return (
     <html lang="es" className={`h-full ${inter.variable} ${crimsonText.variable}`}>
       <head>
-        {/* Google AdSense */}
-        <Script
+        {/* ✅ AdSense script usando tag HTML nativo */}
+        <script
           async
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUBLISHER_ID}`}
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9695271411409237"
           crossOrigin="anonymous"
-          strategy="lazyOnload"
         />
-        
+      </head>
+      <body className={`${inter.className} min-h-full flex flex-col bg-zinc-950 text-white`}>
         {/* Google Analytics */}
         {GA_MEASUREMENT_ID && (
           <>
@@ -108,8 +109,7 @@ export default function RootLayout({
             </Script>
           </>
         )}
-      </head>
-      <body className={`${inter.className} min-h-full flex flex-col bg-zinc-950 text-white`}>
+        
         <Header />
         <main className="flex-grow">
           {children}
