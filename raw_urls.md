@@ -81,6 +81,7 @@
 - [scripts/migrate-titles-simple.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-titles-simple.js)
 - [scripts/migrate-titles.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-titles.js)
 - [scripts/migrate-wp-countries-correct.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-countries-correct.js)
+- [scripts/migrate-wp-crew-complete.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-crew-complete.js)
 - [scripts/migrate-wp-locations-improved.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-locations-improved.js)
 - [scripts/migrate-wp-locations-supabase.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-locations-supabase.js)
 - [scripts/migrate-wp-titles-supabase.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/migrate-wp-titles-supabase.js)
