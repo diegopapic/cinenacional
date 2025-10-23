@@ -1,7 +1,6 @@
 /**
- * Script interactivo para limpiar películas duplicadas
- * Detecta crew duplicado entre películas con mismo título + director
- * Maneja casos de 2, 3 o más películas mezcladas
+ * Script interactivo para limpiar películas duplicadas - VERSION 2
+ * Completamente reescrito con manejo robusto de errores
  */
 
 const { PrismaClient } = require('@prisma/client');
@@ -9,22 +8,15 @@ const readline = require('readline');
 
 const prisma = new PrismaClient();
 
-// Configurar readline para input del usuario
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-/**
- * Pregunta al usuario y espera respuesta
- */
 function question(query) {
   return new Promise(resolve => rl.question(query, resolve));
 }
 
-/**
- * Obtiene el nombre completo de una persona
- */
 function getPersonName(person) {
   if (!person) return 'Desconocido';
   const parts = [];
@@ -33,70 +25,48 @@ function getPersonName(person) {
   return parts.join(' ') || 'Desconocido';
 }
 
-/**
- * Obtiene los IDs de directores de una película
- */
 function getDirectorIds(crew) {
-  if (!crew || crew.length === 0) return [];
-  
+  if (!Array.isArray(crew)) return [];
   return crew
     .filter(member => member.roleId === 2)
     .map(member => member.person?.id)
     .filter(id => id !== undefined && id !== null);
 }
 
-/**
- * Verifica si dos películas comparten al menos un director
- */
 function shareDirectors(movie1Directors, movie2Directors) {
-  if (movie1Directors.length === 0 || movie2Directors.length === 0) {
-    return false;
-  }
-  
+  if (!Array.isArray(movie1Directors) || !Array.isArray(movie2Directors)) return false;
+  if (movie1Directors.length === 0 || movie2Directors.length === 0) return false;
   return movie1Directors.some(id => movie2Directors.includes(id));
 }
 
-/**
- * Normaliza un título para comparación
- */
 function normalizeTitle(title) {
   return title.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-/**
- * Identifica la película mezclada (la que tiene MÁS directores)
- * y las películas originales en un grupo
- */
 function identifyMixedAndOriginals(movies) {
-  // Ordenar por cantidad de directores (descendente)
   const moviesWithDirectorCount = movies.map(movie => ({
     movie,
     directorCount: getDirectorIds(movie.crew).length
   })).sort((a, b) => b.directorCount - a.directorCount);
   
-  // La que tiene más directores es la mezclada
   const mixed = moviesWithDirectorCount[0].movie;
-  
-  // El resto son originales
   const originals = moviesWithDirectorCount.slice(1).map(item => item.movie);
   
   return { mixed, originals };
 }
 
-/**
- * Encuentra crew members que están duplicados entre la película mezclada
- * y cualquiera de las películas originales
- */
 function findDuplicateCrewMembers(mixedCrew, originalsCrews) {
+  if (!Array.isArray(mixedCrew)) return [];
+  if (!Array.isArray(originalsCrews)) return [];
+  
   const duplicates = [];
   
   mixedCrew.forEach(mixedMember => {
     const personId = mixedMember.person?.id;
     if (!personId) return;
     
-    // Buscar si esta persona/rol está en alguna de las películas originales
     const existsInAnyOriginal = originalsCrews.some(originalCrew =>
-      originalCrew.some(
+      Array.isArray(originalCrew) && originalCrew.some(
         origMember => origMember.person?.id === personId && origMember.roleId === mixedMember.roleId
       )
     );
@@ -109,9 +79,31 @@ function findDuplicateCrewMembers(mixedCrew, originalsCrews) {
   return duplicates;
 }
 
-/**
- * Muestra información de una película de forma bonita
- */
+function findDuplicateCastMembers(mixedCast, originalsCasts) {
+  if (!Array.isArray(mixedCast)) return [];
+  if (!Array.isArray(originalsCasts)) return [];
+  
+  const duplicates = [];
+  
+  mixedCast.forEach(mixedMember => {
+    const personId = mixedMember.person?.id;
+    if (!personId) return;
+    
+    const existsInAnyOriginal = originalsCasts.some(originalCast =>
+      Array.isArray(originalCast) && originalCast.some(
+        origMember => origMember.person?.id === personId && 
+                     origMember.characterName === mixedMember.characterName
+      )
+    );
+    
+    if (existsInAnyOriginal) {
+      duplicates.push(mixedMember);
+    }
+  });
+  
+  return duplicates;
+}
+
 function displayMovie(movie, label, highlight = false) {
   const year = movie.year && movie.year !== 0 ? movie.year : (movie.releaseYear || 'Sin año');
   const directorCount = getDirectorIds(movie.crew).length;
@@ -125,14 +117,16 @@ function displayMovie(movie, label, highlight = false) {
   console.log(`  Año: ${year}`);
   console.log(`  Slug: ${movie.slug}`);
   console.log(`  Directores: ${directorCount} ${highlight ? '← MÁS DIRECTORES (MEZCLADA)' : ''}`);
-  console.log(`\n  CREW (${movie.crew.length} personas):`);
   
-  if (movie.crew.length === 0) {
+  // Mostrar CREW
+  const crew = Array.isArray(movie.crew) ? movie.crew : [];
+  console.log(`\n  CREW (${crew.length} personas):`);
+  
+  if (crew.length === 0) {
     console.log(`    (sin crew)`);
   } else {
-    // Agrupar por rol
     const crewByRole = {};
-    movie.crew.forEach(member => {
+    crew.forEach(member => {
       const roleName = member.role?.name || 'Sin rol';
       if (!crewByRole[roleName]) {
         crewByRole[roleName] = [];
@@ -147,50 +141,80 @@ function displayMovie(movie, label, highlight = false) {
       });
     });
   }
+  
+  // Mostrar CAST
+  const cast = Array.isArray(movie.cast) ? movie.cast : [];
+  console.log(`\n  CAST (${cast.length} personas):`);
+  
+  if (cast.length === 0) {
+    console.log(`    (sin cast)`);
+  } else {
+    cast.slice(0, 5).forEach(member => {
+      const personName = getPersonName(member.person);
+      const character = member.characterName ? ` como "${member.characterName}"` : '';
+      console.log(`    - ${personName}${character}`);
+    });
+    if (cast.length > 5) {
+      console.log(`    ... y ${cast.length - 5} más`);
+    }
+  }
 }
 
-/**
- * Muestra los crew members que serán eliminados
- */
-function displayDuplicateCrewMembers(duplicateMembers) {
+function displayDuplicates(crewDuplicates, castDuplicates) {
+  // Validación robusta
+  const crew = Array.isArray(crewDuplicates) ? crewDuplicates : [];
+  const cast = Array.isArray(castDuplicates) ? castDuplicates : [];
+  const total = crew.length + cast.length;
+  
   console.log(`\n${'─'.repeat(70)}`);
-  console.log(`  ⚠️  CREW DUPLICADO A ELIMINAR (${duplicateMembers.length} personas):`);
+  console.log(`  ⚠️  DUPLICADOS A ELIMINAR (${total} personas):`);
   console.log(`${'─'.repeat(70)}`);
   
-  if (duplicateMembers.length === 0) {
+  if (total === 0) {
     console.log(`  (ninguno)`);
     return;
   }
   
-  // Agrupar por rol para mejor visualización
-  const byRole = {};
-  duplicateMembers.forEach(member => {
-    const roleName = member.role?.name || 'Sin rol';
-    if (!byRole[roleName]) {
-      byRole[roleName] = [];
-    }
-    byRole[roleName].push({
-      name: getPersonName(member.person),
-      id: member.id
+  // CREW
+  if (crew.length > 0) {
+    console.log(`\n  🎬 CREW DUPLICADO (${crew.length}):`);
+    
+    const byRole = {};
+    crew.forEach(member => {
+      const roleName = member.role?.name || 'Sin rol';
+      if (!byRole[roleName]) {
+        byRole[roleName] = [];
+      }
+      byRole[roleName].push({
+        name: getPersonName(member.person),
+        id: member.id
+      });
     });
-  });
+    
+    Object.entries(byRole).forEach(([role, people]) => {
+      console.log(`    ${role}:`);
+      people.forEach(person => {
+        console.log(`      ❌ ${person.name} (ID: ${person.id})`);
+      });
+    });
+  }
   
-  Object.entries(byRole).forEach(([role, people]) => {
-    console.log(`  ${role}:`);
-    people.forEach(person => {
-      console.log(`    ❌ ${person.name} (ID del registro: ${person.id})`);
+  // CAST
+  if (cast.length > 0) {
+    console.log(`\n  🎭 CAST DUPLICADO (${cast.length}):`);
+    
+    cast.forEach(member => {
+      const personName = getPersonName(member.person);
+      const character = member.characterName ? ` como "${member.characterName}"` : '';
+      console.log(`    ❌ ${personName}${character} (ID: ${member.id})`);
     });
-  });
+  }
 }
 
-/**
- * Detecta grupos de películas duplicadas (pueden ser 2, 3 o más)
- */
 async function detectDuplicateGroups() {
   console.log('🔍 Buscando películas duplicadas...\n');
 
   try {
-    // Obtener todas las películas con crew completo
     const movies = await prisma.movie.findMany({
       select: {
         id: true,
@@ -217,6 +241,19 @@ async function detectDuplicateGroups() {
               }
             }
           }
+        },
+        cast: {
+          select: {
+            id: true,
+            characterName: true,
+            person: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true
+              }
+            }
+          }
         }
       },
       orderBy: {
@@ -226,7 +263,6 @@ async function detectDuplicateGroups() {
 
     console.log(`📊 Total de películas: ${movies.length}\n`);
 
-    // Agrupar por título normalizado
     const titleGroups = new Map();
     
     movies.forEach(movie => {
@@ -237,12 +273,10 @@ async function detectDuplicateGroups() {
       titleGroups.get(normalizedTitle).push(movie);
     });
 
-    // Encontrar grupos con películas que comparten directores
     const duplicateGroups = [];
 
     titleGroups.forEach((movies) => {
       if (movies.length > 1) {
-        // Verificar si hay películas que comparten directores
         const moviesWithSharedDirectors = [];
         
         for (let i = 0; i < movies.length; i++) {
@@ -252,7 +286,6 @@ async function detectDuplicateGroups() {
             const movie2Directors = getDirectorIds(movies[j].crew);
             
             if (shareDirectors(movie1Directors, movie2Directors)) {
-              // Agregar ambas películas al grupo si no están ya
               if (!moviesWithSharedDirectors.find(m => m.id === movies[i].id)) {
                 moviesWithSharedDirectors.push(movies[i]);
               }
@@ -263,18 +296,19 @@ async function detectDuplicateGroups() {
           }
         }
         
-        // Si hay 2 o más películas que comparten directores, es un grupo duplicado
         if (moviesWithSharedDirectors.length >= 2) {
           const { mixed, originals } = identifyMixedAndOriginals(moviesWithSharedDirectors);
           const originalsCrews = originals.map(m => m.crew);
+          const originalsCasts = originals.map(m => m.cast);
           const duplicateCrewMembers = findDuplicateCrewMembers(mixed.crew, originalsCrews);
+          const duplicateCastMembers = findDuplicateCastMembers(mixed.cast, originalsCasts);
           
-          // Solo agregar si hay crew duplicado para limpiar
-          if (duplicateCrewMembers.length > 0) {
+          if (duplicateCrewMembers.length > 0 || duplicateCastMembers.length > 0) {
             duplicateGroups.push({
               mixed,
               originals,
               duplicateCrewMembers,
+              duplicateCastMembers,
               totalMovies: moviesWithSharedDirectors.length
             });
           }
@@ -284,7 +318,6 @@ async function detectDuplicateGroups() {
 
     console.log(`✅ Se encontraron ${duplicateGroups.length} grupos de películas con crew duplicado\n`);
     
-    // Estadísticas
     const groupsBySize = {};
     duplicateGroups.forEach(group => {
       const size = group.totalMovies;
@@ -305,35 +338,33 @@ async function detectDuplicateGroups() {
   }
 }
 
-/**
- * Procesa un grupo de películas duplicadas
- */
-async function processDuplicateGroup(group, index, total) {
+async function processGroup(group, index, total) {
   console.log('\n\n');
   console.log('╔═════════════════════════════════════════════════════════════════════╗');
   console.log(`║  GRUPO ${index + 1} DE ${total} (${group.totalMovies} películas mezcladas)${' '.repeat(Math.max(0, 30 - group.totalMovies.toString().length))}║`);
   console.log('╚═════════════════════════════════════════════════════════════════════╝');
   
-  // Mostrar película mezclada (la que se limpiará)
-  displayMovie(group.mixed, '⚠️  PELÍCULA MEZCLADA (se limpiará el crew duplicado)', true);
+  displayMovie(group.mixed, '⚠️  PELÍCULA MEZCLADA (se limpiará el crew y cast duplicado)', true);
   
-  // Mostrar películas originales
   group.originals.forEach((original, idx) => {
     displayMovie(original, `✅ PELÍCULA ORIGINAL #${idx + 1} (se mantendrá intacta)`);
   });
   
-  // Mostrar crew duplicado a eliminar
-  displayDuplicateCrewMembers(group.duplicateCrewMembers);
+  displayDuplicates(group.duplicateCrewMembers, group.duplicateCastMembers);
+  
+  const crewCount = Array.isArray(group.duplicateCrewMembers) ? group.duplicateCrewMembers.length : 0;
+  const castCount = Array.isArray(group.duplicateCastMembers) ? group.duplicateCastMembers.length : 0;
   
   console.log('\n');
   console.log(`${'═'.repeat(70)}`);
   console.log(`\nResumen:`);
   console.log(`  - Películas originales: ${group.originals.length}`);
   console.log(`  - Película mezclada: 1 (ID: ${group.mixed.id})`);
-  console.log(`  - Crew duplicado a eliminar: ${group.duplicateCrewMembers.length} personas`);
+  console.log(`  - Crew duplicado a eliminar: ${crewCount} personas`);
+  console.log(`  - Cast duplicado a eliminar: ${castCount} personas`);
+  console.log(`  - TOTAL a eliminar: ${crewCount + castCount} registros`);
   
-  // Pedir confirmación
-  const answer = await question('\n¿Deseas ELIMINAR el crew duplicado de la película mezclada? (s/n/q para salir): ');
+  const answer = await question('\n¿Deseas ELIMINAR los duplicados de esta película? (s/n/q para salir): ');
   
   if (answer.toLowerCase() === 'q') {
     console.log('\n❌ Proceso cancelado por el usuario.\n');
@@ -342,32 +373,37 @@ async function processDuplicateGroup(group, index, total) {
   
   if (answer.toLowerCase() === 's' || answer.toLowerCase() === 'y') {
     try {
-      // Eliminar los crew members duplicados
-      const idsToDelete = group.duplicateCrewMembers.map(m => m.id);
+      let crewDeleted = 0;
+      let castDeleted = 0;
       
-      const result = await prisma.movieCrew.deleteMany({
-        where: {
-          id: {
-            in: idsToDelete
-          }
-        }
-      });
+      if (crewCount > 0) {
+        const crewIds = group.duplicateCrewMembers.map(m => m.id);
+        const crewResult = await prisma.movieCrew.deleteMany({
+          where: { id: { in: crewIds } }
+        });
+        crewDeleted = crewResult.count;
+      }
       
-      console.log(`\n✅ Eliminados ${result.count} registros de crew duplicado.\n`);
-      return 'cleaned';
+      if (castCount > 0) {
+        const castIds = group.duplicateCastMembers.map(m => m.id);
+        const castResult = await prisma.movieCast.deleteMany({
+          where: { id: { in: castIds } }
+        });
+        castDeleted = castResult.count;
+      }
+      
+      console.log(`\n✅ Eliminados ${crewDeleted} crew + ${castDeleted} cast = ${crewDeleted + castDeleted} registros totales.\n`);
+      return { status: 'cleaned', crewDeleted, castDeleted };
     } catch (error) {
-      console.error(`\n❌ Error al eliminar crew duplicado:`, error.message);
-      return 'error';
+      console.error(`\n❌ Error al eliminar:`, error.message);
+      return { status: 'error', crewDeleted: 0, castDeleted: 0 };
     }
   } else {
     console.log('\n⏭️  Saltando este grupo...\n');
-    return 'skipped';
+    return { status: 'skipped', crewDeleted: 0, castDeleted: 0 };
   }
 }
 
-/**
- * Función principal
- */
 async function main() {
   console.log('\n');
   console.log('╔═══════════════════════════════════════════════════════════════════╗');
@@ -378,20 +414,18 @@ async function main() {
   console.log('╚═══════════════════════════════════════════════════════════════════╝');
   console.log('\n');
   console.log('Este script detecta películas mezcladas (con directores de múltiples');
-  console.log('películas) y limpia automáticamente el crew duplicado.\n');
+  console.log('películas) y limpia automáticamente el crew y cast duplicado.\n');
   console.log('La película con MÁS directores se considera la mezclada y se limpia.\n');
 
   try {
-    // Detectar grupos duplicados
     const duplicateGroups = await detectDuplicateGroups();
     
     if (duplicateGroups.length === 0) {
-      console.log('🎉 No se encontraron películas con crew duplicado para limpiar.\n');
+      console.log('🎉 No se encontraron películas con crew o cast duplicado para limpiar.\n');
       rl.close();
       return;
     }
     
-    // Pedir confirmación general antes de comenzar
     console.log(`⚠️  Se encontraron ${duplicateGroups.length} grupos de películas para limpiar.\n`);
     const answer = await question('¿Deseas proceder con la limpieza automática de TODOS los grupos? (s/n): ');
     
@@ -403,50 +437,63 @@ async function main() {
     
     console.log('\n🚀 Iniciando limpieza automática...\n');
     
-    // Procesar todos los grupos automáticamente
     let cleaned = 0;
     let errors = 0;
     let totalCrewDeleted = 0;
+    let totalCastDeleted = 0;
     
     for (let i = 0; i < duplicateGroups.length; i++) {
       const group = duplicateGroups[i];
+      const crewCount = Array.isArray(group.duplicateCrewMembers) ? group.duplicateCrewMembers.length : 0;
+      const castCount = Array.isArray(group.duplicateCastMembers) ? group.duplicateCastMembers.length : 0;
       
-      console.log(`\n[${i + 1}/${duplicateGroups.length}] Procesando grupo: "${group.mixed.title}"`);
+      console.log(`[${i + 1}/${duplicateGroups.length}] Procesando: "${group.mixed.title}"`);
       console.log(`   - Película mezclada: ID ${group.mixed.id} (${group.mixed.slug})`);
       console.log(`   - Películas originales: ${group.originals.length}`);
-      console.log(`   - Crew duplicado a eliminar: ${group.duplicateCrewMembers.length}`);
+      console.log(`   - Crew duplicado: ${crewCount} | Cast duplicado: ${castCount}`);
       
       try {
-        // Eliminar los crew members duplicados
-        const idsToDelete = group.duplicateCrewMembers.map(m => m.id);
+        let crewDeleted = 0;
+        let castDeleted = 0;
         
-        const result = await prisma.movieCrew.deleteMany({
-          where: {
-            id: {
-              in: idsToDelete
-            }
-          }
-        });
+        if (crewCount > 0) {
+          const crewIds = group.duplicateCrewMembers.map(m => m.id);
+          const crewResult = await prisma.movieCrew.deleteMany({
+            where: { id: { in: crewIds } }
+          });
+          crewDeleted = crewResult.count;
+        }
         
-        console.log(`   ✅ Eliminados ${result.count} registros de crew duplicado`);
+        if (castCount > 0) {
+          const castIds = group.duplicateCastMembers.map(m => m.id);
+          const castResult = await prisma.movieCast.deleteMany({
+            where: { id: { in: castIds } }
+          });
+          castDeleted = castResult.count;
+        }
+        
+        console.log(`   ✅ Eliminados: ${crewDeleted} crew + ${castDeleted} cast = ${crewDeleted + castDeleted} registros\n`);
         cleaned++;
-        totalCrewDeleted += result.count;
+        totalCrewDeleted += crewDeleted;
+        totalCastDeleted += castDeleted;
         
       } catch (error) {
-        console.error(`   ❌ Error: ${error.message}`);
+        console.error(`   ❌ Error: ${error.message}\n`);
         errors++;
       }
     }
     
-    // Resumen final
     console.log('\n');
     console.log('╔═══════════════════════════════════════════════════════════════════╗');
     console.log('║                      RESUMEN FINAL                                ║');
     console.log('╚═══════════════════════════════════════════════════════════════════╝');
-    console.log(`\n  Total de grupos procesados: ${duplicateGroups.length}`);
+    console.log(`\n  Total de grupos encontrados: ${duplicateGroups.length}`);
     console.log(`  ✅ Grupos limpiados: ${cleaned}`);
     console.log(`  ❌ Errores: ${errors}`);
-    console.log(`  🗑️  Total de crew duplicado eliminado: ${totalCrewDeleted} registros`);
+    console.log(`  🗑️  Total eliminado:`);
+    console.log(`      - Crew duplicado: ${totalCrewDeleted} registros`);
+    console.log(`      - Cast duplicado: ${totalCastDeleted} registros`);
+    console.log(`      - TOTAL: ${totalCrewDeleted + totalCastDeleted} registros`);
     console.log('\n✨ Proceso completado.\n');
 
   } catch (error) {
@@ -458,5 +505,4 @@ async function main() {
   }
 }
 
-// Ejecutar el script
 main();

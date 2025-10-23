@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { movieSchema } from '@/lib/schemas'
-import { createSlug } from '@/lib/utils'
+import { generateUniqueSlug } from '@/lib/utils/slugs'
 import RedisClient from '@/lib/redis'
 
 // ============================================
@@ -480,16 +480,8 @@ export async function POST(request: NextRequest) {
     // Validar datos
     const validatedData = movieSchema.parse(cleanedData)
 
-    // Generar slug único
-    let slug = createSlug(validatedData.title)
-    let slugCounter = 0
-    let uniqueSlug = slug
-
-    while (await prisma.movie.findUnique({ where: { slug: uniqueSlug } })) {
-      slugCounter++
-      uniqueSlug = `${slug}-${slugCounter}`
-    }
-    slug = uniqueSlug
+    // Generar slug único con la función actualizada
+const slug = await generateUniqueSlug(validatedData.title, 'movie', prisma)
 
     // Extraer relaciones y campos especiales
     const {
