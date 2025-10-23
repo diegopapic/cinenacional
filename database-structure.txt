@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-10-22T02:30:55.569Z
+# Generado automáticamente el: 2025-10-23T19:36:39.630Z
 # ================================================
 
 ## Schema Prisma
@@ -790,6 +790,7 @@ enum MovieStage {
   EN_DESARROLLO
   EN_POSTPRODUCCION
   EN_PREPRODUCCION
+  EN_PRODUCCION
   EN_RODAJE
   INCONCLUSA
   INEDITA
@@ -835,7 +836,7 @@ CREATE TYPE "link_type" AS ENUM ('INSTAGRAM', 'TWITTER', 'FACEBOOK', 'TIKTOK', '
 CREATE TYPE "color_category" AS ENUM ('COLOR', 'BLACK_AND_WHITE', 'MIXED', 'UNKNOWN');
 
 -- CreateEnum
-CREATE TYPE "movie_stage" AS ENUM ('COMPLETA', 'EN_DESARROLLO', 'EN_POSTPRODUCCION', 'EN_PREPRODUCCION', 'EN_RODAJE', 'INCONCLUSA', 'INEDITA');
+CREATE TYPE "movie_stage" AS ENUM ('COMPLETA', 'EN_DESARROLLO', 'EN_POSTPRODUCCION', 'EN_PREPRODUCCION', 'EN_PRODUCCION', 'EN_RODAJE', 'INCONCLUSA', 'INEDITA');
 
 -- CreateTable
 CREATE TABLE "movies" (

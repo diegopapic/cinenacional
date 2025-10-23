@@ -221,6 +221,34 @@ export default function AdvancedTab() {
         </div>
       </div>
 
+      {/* Estado de Producción */}
+      <div className="mt-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Estado de Producción
+        </h3>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Estado de la película
+          </label>
+          <select
+            {...register('stage')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            defaultValue="COMPLETA"
+          >
+            <option value="COMPLETA">Completa</option>
+            <option value="EN_DESARROLLO">En desarrollo</option>
+            <option value="EN_POSTPRODUCCION">En postproducción</option>
+            <option value="EN_PREPRODUCCION">En preproducción</option>
+            <option value="EN_RODAJE">En rodaje</option>
+            <option value="INCONCLUSA">Inconclusa</option>
+            <option value="INEDITA">Inédita</option>
+          </select>
+          <p className="mt-1 text-sm text-gray-500">
+            Indica el estado actual de producción de la película
+          </p>
+        </div>
+      </div>
+
       {/* Links Oficiales */}
       <div className="mt-6">
         <MovieLinksManager

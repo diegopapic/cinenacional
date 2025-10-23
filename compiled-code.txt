@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 2d3d1e726d41d7fb3b1014d6fb1bcdfde216e225
-// Fecha: 2025-10-22T02:30:55.079Z
+// Commit: 1f4a6f998dc1c216ee04a6ffa02514b1135ad747
+// Fecha: 2025-10-23T19:36:39.023Z
 // ============================================
 
 
@@ -6458,7 +6458,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { movieSchema } from '@/lib/schemas'
-import { createSlug } from '@/lib/utils'
+import { generateUniqueSlug } from '@/lib/utils/slugs'
 import RedisClient from '@/lib/redis'
 
 // ============================================
@@ -6935,16 +6935,8 @@ export async function POST(request: NextRequest) {
     // Validar datos
     const validatedData = movieSchema.parse(cleanedData)
 
-    // Generar slug único
-    let slug = createSlug(validatedData.title)
-    let slugCounter = 0
-    let uniqueSlug = slug
-
-    while (await prisma.movie.findUnique({ where: { slug: uniqueSlug } })) {
-      slugCounter++
-      uniqueSlug = `${slug}-${slugCounter}`
-    }
-    slug = uniqueSlug
+    // Generar slug único con la función actualizada
+const slug = await generateUniqueSlug(validatedData.title, 'movie', prisma)
 
     // Extraer relaciones y campos especiales
     const {
@@ -19398,6 +19390,34 @@ export default function AdvancedTab() {
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Estado de Producción */}
+      <div className="mt-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Estado de Producción
+        </h3>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Estado de la película
+          </label>
+          <select
+            {...register('stage')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            defaultValue="COMPLETA"
+          >
+            <option value="COMPLETA">Completa</option>
+            <option value="EN_DESARROLLO">En desarrollo</option>
+            <option value="EN_POSTPRODUCCION">En postproducción</option>
+            <option value="EN_PREPRODUCCION">En preproducción</option>
+            <option value="EN_RODAJE">En rodaje</option>
+            <option value="INCONCLUSA">Inconclusa</option>
+            <option value="INEDITA">Inédita</option>
+          </select>
+          <p className="mt-1 text-sm text-gray-500">
+            Indica el estado actual de producción de la película
+          </p>
         </div>
       </div>
 
@@ -31878,21 +31898,54 @@ export function formatearEfemeride(data: EfemerideData): Efemeride | null {
 // ==================================================
 // src/lib/utils/slugs.ts
 // ==================================================
-// src/lib/utils/schemas.ts
+// src/lib/utils/slugs.ts
 
 import { PrismaClient } from '@prisma/client'
 
 /**
+ * Genera un hash simple a partir de un string
+ * Usado como fallback cuando el título no tiene caracteres alfanuméricos
+ */
+function generateHash(text: string): string {
+  let hash = 0
+  for (let i = 0; i < text.length; i++) {
+    const char = text.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32bit integer
+  }
+  return Math.abs(hash).toString(36)
+}
+
+/**
  * Genera un slug a partir de un texto
+ * Si el texto no contiene caracteres alfanuméricos, genera un slug basado en hash
  */
 export function generateSlug(text: string): string {
-  return text
+  
+
+  // Intentar generar slug normal
+  const normalSlug = text
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '') // Elimina acentos
     .replace(/[^a-z0-9]+/g, '-') // Reemplaza caracteres especiales por guiones
     .replace(/^-+|-+$/g, '') // Elimina guiones al inicio y final
     .replace(/-+/g, '-') // Reemplaza múltiples guiones por uno solo
+
+  
+
+  // Si el slug resultante está vacío o tiene menos de 2 caracteres
+  // (caso de títulos como ")(", "!!", etc.)
+  if (!normalSlug || normalSlug.length < 2) {
+    // Generar un hash único basado en el título original
+    const hash = generateHash(text)
+    const result = `title-${hash}`
+
+    return result
+  }
+
+
+  return normalSlug
 }
 
 /**
@@ -31904,7 +31957,22 @@ export async function generateUniqueSlug(
   prisma: any,
   excludeId?: number
 ): Promise<string> {
+  
+
   const baseSlug = generateSlug(text)
+
+  
+
+  // Si generateSlug() retornó un slug vacío o muy corto,
+  // significa que ya aplicó el hash. No intentar agregar contadores
+  // a un string vacío (eso causaría "-1" como slug)
+  if (!baseSlug || baseSlug.length === 0) {
+    console.warn(`generateSlug retornó string vacío para: "${text}". Esto no debería ocurrir.`)
+    // Generar hash directamente como fallback de seguridad
+    const hash = generateHash(text)
+    return `title-${hash}`
+  }
+
   let slug = baseSlug
   let counter = 1
 
@@ -31944,7 +32012,10 @@ export async function generateUniqueSlug(
         break
     }
 
+    
+
     if (!exists) {
+    
       return slug
     }
 
