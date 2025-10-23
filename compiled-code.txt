@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 1f4a6f998dc1c216ee04a6ffa02514b1135ad747
-// Fecha: 2025-10-23T19:36:39.023Z
+// Commit: 31d1dbf6ff69f912283e20886df65f1e23adada2
+// Fecha: 2025-10-23T20:36:39.931Z
 // ============================================
 
 
@@ -14897,6 +14897,7 @@ interface PersonPageProps {
   };
 }
 
+
 interface Movie {
   id: number;
   slug: string;
@@ -14906,8 +14907,8 @@ interface Movie {
   releaseMonth?: number;
   releaseDay?: number;
   tipoDuracion?: 'largometraje' | 'mediometraje' | 'cortometraje';
+  stage?: string; // ✅ Agregado para manejar stages
 }
-
 interface Role {
   id: number;
   name: string;
@@ -14974,15 +14975,46 @@ export default function PersonPage({ params }: PersonPageProps) {
     return new Date(1900, 0, 1);
   };
 
-  // Función para ordenar películas cronológicamente
+
+  // ✅ ACTUALIZADO: Función para ordenar películas cronológicamente con prioridad de stages
   const sortMoviesChronologically = (movies: any[], descending: boolean = true): any[] => {
+    // Definir orden de prioridad para stages en desarrollo
+    const stageOrder: Record<string, number> = {
+      'EN_DESARROLLO': 1,
+      'EN_PRODUCCION': 2,
+      'EN_PREPRODUCCION': 3,
+      'EN_RODAJE': 4,
+      'EN_POSTPRODUCCION': 5
+    };
+
     return [...movies].sort((a, b) => {
-      const dateA = getEffectiveDate(a.movie || a);
-      const dateB = getEffectiveDate(b.movie || b);
+      const movieA = a.movie || a;
+      const movieB = b.movie || b;
+      const stageA = movieA.stage;
+      const stageB = movieB.stage;
+      
+      // Verificar si son stages que van primero (no INÉDITA ni INCONCLUSA ni COMPLETA)
+      const isStageAPriority = stageA && stageOrder[stageA] !== undefined;
+      const isStageBPriority = stageB && stageOrder[stageB] !== undefined;
+      
+      // Si ambas son priority stages, ordenar por el orden definido
+      if (isStageAPriority && isStageBPriority) {
+        return stageOrder[stageA] - stageOrder[stageB];
+      }
+      
+      // Si solo A es priority, va primero
+      if (isStageAPriority) return -1;
+      
+      // Si solo B es priority, va primero
+      if (isStageBPriority) return 1;
+      
+      // Si ninguna es priority (incluyendo COMPLETA, INÉDITA, INCONCLUSA), ordenar por fecha
+      const dateA = getEffectiveDate(movieA);
+      const dateB = getEffectiveDate(movieB);
 
       if (dateA.getTime() === dateB.getTime()) {
-        const titleA = (a.movie || a).title.toLowerCase();
-        const titleB = (b.movie || b).title.toLowerCase();
+        const titleA = movieA.title.toLowerCase();
+        const titleB = movieB.title.toLowerCase();
         return titleA.localeCompare(titleB);
       }
 
@@ -14991,7 +15023,6 @@ export default function PersonPage({ params }: PersonPageProps) {
         : dateA.getTime() - dateB.getTime();
     });
   };
-
   // Agrupar filmografía por rol, combinando múltiples roles por película
   const groupFilmographyByRole = useCallback((crewRoles: CrewRole[]): { [key: string]: GroupedCrewRole[] } => {
     const movieRolesMap: { [movieId: number]: { movie: Movie; roles: Set<string> } } = {};
@@ -15156,9 +15187,54 @@ export default function PersonPage({ params }: PersonPageProps) {
     return showAllFilmography ? items : items.slice(0, 10);
   };
 
-  // ✅ NUEVA FUNCIÓN: Determinar el badge a mostrar
+
+  // ✅ ACTUALIZADO: Determinar el badge a mostrar (incluyendo stages en desarrollo)
   const getMovieBadge = (movie: Movie): { text: string; color: string } | null => {
     const isUnreleased = !movie.releaseYear;
+    
+    // ✅ NUEVO: Badges para stages en desarrollo (excepto INÉDITA e INCONCLUSA)
+    if (movie.stage === 'EN_DESARROLLO') {
+      return {
+        text: 'En desarrollo',
+        color: 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+      };
+    }
+    
+    if (movie.stage === 'EN_PRODUCCION') {
+      return {
+        text: 'En producción',
+        color: 'bg-green-500/20 text-green-300 border border-green-500/30'
+      };
+    }
+    
+    if (movie.stage === 'EN_PREPRODUCCION') {
+      return {
+        text: 'En preproducción',
+        color: 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+      };
+    }
+    
+    if (movie.stage === 'EN_RODAJE') {
+      return {
+        text: 'En rodaje',
+        color: 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+      };
+    }
+    
+    if (movie.stage === 'EN_POSTPRODUCCION') {
+      return {
+        text: 'En postproducción',
+        color: 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+      };
+    }
+    
+    // ✅ NUEVO: Badge para INCONCLUSA (tiene prioridad sobre "no estrenada")
+    if (movie.stage === 'INCONCLUSA') {
+      return {
+        text: 'Inconclusa',
+        color: 'bg-red-500/20 text-red-300 border border-red-500/30'
+      };
+    }
     
     // Cortometraje
     if (movie.tipoDuracion === 'cortometraje') {
@@ -15176,8 +15252,8 @@ export default function PersonPage({ params }: PersonPageProps) {
       };
     }
     
-    // Largometraje no estrenado
-    if (movie.tipoDuracion === 'largometraje' && isUnreleased) {
+    // Largometraje no estrenado (solo si NO es INCONCLUSA ni INÉDITA)
+    if (movie.tipoDuracion === 'largometraje' && isUnreleased && movie.stage !== 'INCONCLUSA' && movie.stage !== 'INEDITA') {
       return {
         text: 'No estrenada',
         color: 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
