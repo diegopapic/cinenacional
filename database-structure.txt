@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-10-23T20:36:40.566Z
+# Generado automáticamente el: 2025-10-31T15:58:09.761Z
 # ================================================
 
 ## Schema Prisma
@@ -210,7 +210,8 @@ model Person {
   deathLocation   Location?           @relation("DeathLocation", fields: [deathLocationId], references: [id])
   links           PersonLink[]
   nationalities   PersonNationality[]
-
+  alternativeNames PersonAlternativeName[]
+  
   @@index([slug])
   @@index([firstName])
   @@index([lastName])
@@ -224,6 +225,23 @@ model Person {
   @@index([createdAt])
   @@map("people")
 }
+
+model PersonAlternativeName {
+  id        Int      @id @default(autoincrement())
+  personId  Int      @map("person_id")
+  firstName String?  @map("first_name") @db.VarChar(255)
+  lastName  String?  @map("last_name") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  
+  @@index([personId])
+  @@index([firstName])
+  @@index([lastName])
+  @@map("person_alternative_names")
+}
+
 
 model PersonNationality {
   personId   Int      @map("person_id")
@@ -985,6 +1003,18 @@ CREATE TABLE "people" (
 );
 
 -- CreateTable
+CREATE TABLE "person_alternative_names" (
+    "id" SERIAL NOT NULL,
+    "person_id" INTEGER NOT NULL,
+    "first_name" VARCHAR(255),
+    "last_name" VARCHAR(255),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "person_alternative_names_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "person_nationalities" (
     "person_id" INTEGER NOT NULL,
     "location_id" INTEGER NOT NULL,
@@ -1478,6 +1508,15 @@ CREATE INDEX "people_death_year_death_month_idx" ON "people"("death_year", "deat
 CREATE INDEX "people_created_at_idx" ON "people"("created_at");
 
 -- CreateIndex
+CREATE INDEX "person_alternative_names_person_id_idx" ON "person_alternative_names"("person_id");
+
+-- CreateIndex
+CREATE INDEX "person_alternative_names_first_name_idx" ON "person_alternative_names"("first_name");
+
+-- CreateIndex
+CREATE INDEX "person_alternative_names_last_name_idx" ON "person_alternative_names"("last_name");
+
+-- CreateIndex
 CREATE INDEX "person_links_person_id_idx" ON "person_links"("person_id");
 
 -- CreateIndex
@@ -1623,6 +1662,9 @@ ALTER TABLE "people" ADD CONSTRAINT "people_birth_location_id_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "people" ADD CONSTRAINT "people_death_location_id_fkey" FOREIGN KEY ("death_location_id") REFERENCES "locations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "person_alternative_names" ADD CONSTRAINT "person_alternative_names_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "person_nationalities" ADD CONSTRAINT "person_nationalities_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "locations"("id") ON DELETE CASCADE ON UPDATE CASCADE;

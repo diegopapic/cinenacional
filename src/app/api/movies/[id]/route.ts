@@ -86,6 +86,7 @@ export async function GET(
         durationSeconds: true,
         synopsis: true,
         tagline: true,
+        notes: true,
         posterUrl: true,
         trailerUrl: true,
         imdbId: true,

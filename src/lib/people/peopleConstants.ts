@@ -23,7 +23,7 @@ export const GENDER_OPTIONS = [
 export const PERSON_LINK_TYPES: Record<PersonLinkType, string> = {
   IMDB: 'IMDb',
   TMDB: 'TMDb',
-  CINENACIONAL: 'CineNacional',
+  CINENACIONAL: 'cinenacional.com',
   WIKIPEDIA: 'Wikipedia',
   OFFICIAL_WEBSITE: 'Sitio Web Oficial',
   PORTFOLIO: 'Portfolio',

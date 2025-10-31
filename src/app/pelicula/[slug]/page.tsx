@@ -214,8 +214,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!movie) {
     return {
-      title: 'Película no encontrada - CineNacional',
-      description: 'La película que buscas no existe o fue eliminada.'
+      title: 'Película no encontrada - cinenacional.com',
+      description: 'La película que buscás no existe o fue eliminada.'
     };
   }
 
@@ -224,7 +224,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const defaultDescription = `${movie.title}${year ? ` (${year})` : ''}${genres ? ` - ${genres}` : ''}. Película argentina.`;
 
   return {
-    title: `${movie.title}${year ? ` (${year})` : ''} - CineNacional`,
+    title: `${movie.title}${year ? ` (${year})` : ''} - cinenacional.com`,
     description: movie.metaDescription || movie.synopsis?.substring(0, 160) || defaultDescription,
     keywords: movie.metaKeywords?.join(', ') || `${movie.title}, cine argentino, película argentina${genres ? `, ${genres}` : ''}`,
     openGraph: {

@@ -100,7 +100,7 @@ export default function LoginPage() {
             Acceso Administrativo
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            CineNacional Admin Panel
+            cinenacional.com admin panel
           </p>
         </div>
         
