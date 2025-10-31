@@ -203,7 +203,8 @@ model Person {
   deathLocation   Location?           @relation("DeathLocation", fields: [deathLocationId], references: [id])
   links           PersonLink[]
   nationalities   PersonNationality[]
-
+  alternativeNames PersonAlternativeName[]
+  
   @@index([slug])
   @@index([firstName])
   @@index([lastName])
@@ -217,6 +218,23 @@ model Person {
   @@index([createdAt])
   @@map("people")
 }
+
+model PersonAlternativeName {
+  id        Int      @id @default(autoincrement())
+  personId  Int      @map("person_id")
+  firstName String?  @map("first_name") @db.VarChar(255)
+  lastName  String?  @map("last_name") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  
+  @@index([personId])
+  @@index([firstName])
+  @@index([lastName])
+  @@map("person_alternative_names")
+}
+
 
 model PersonNationality {
   personId   Int      @map("person_id")

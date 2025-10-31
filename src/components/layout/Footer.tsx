@@ -15,7 +15,7 @@ export default function Footer() {
   //     { href: '/anos', label: 'Películas por Año' },
   //   ],
   //   about: [
-  //     { href: '/sobre-nosotros', label: 'Sobre CineNacional' },
+  //     { href: '/sobre-nosotros', label: 'Sobre cinenacional.com' },
   //     { href: '/contacto', label: 'Contacto' },
   //     { href: '/api', label: 'API para Desarrolladores' },
   //     { href: '/colaborar', label: 'Cómo Colaborar' },
