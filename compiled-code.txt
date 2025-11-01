@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: bda94127adeffad8768eff4126a5b7c6721e68ee
-// Fecha: 2025-11-01T02:41:10.058Z
+// Commit: b085f056e17173b09c05c387900e6a9e168d0311
+// Fecha: 2025-11-01T03:01:59.035Z
 // ============================================
 
 
@@ -20263,7 +20263,7 @@ export default function CrewTab() {
       })
 
       // Ordenar por billingOrder
-      formattedCrew.sort((a, b) => (a.billingOrder || 0) - (b.billingOrder || 0))
+      formattedCrew.sort((a: any, b: any) => (a.billingOrder || 0) - (b.billingOrder || 0))
       setCrew(formattedCrew)
     } else {
       setCrew([])

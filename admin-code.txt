@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-11-01T02:41:10.081Z
+// Archivos del admin - 2025-11-01T03:01:59.060Z
 // ==================
 
 
@@ -12206,7 +12206,7 @@ export default function CrewTab() {
       })
 
       // Ordenar por billingOrder
-      formattedCrew.sort((a, b) => (a.billingOrder || 0) - (b.billingOrder || 0))
+      formattedCrew.sort((a: any, b: any) => (a.billingOrder || 0) - (b.billingOrder || 0))
       setCrew(formattedCrew)
     } else {
       setCrew([])
