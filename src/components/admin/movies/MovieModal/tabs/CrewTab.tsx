@@ -240,7 +240,7 @@ export default function CrewTab() {
       })
 
       // Ordenar por billingOrder
-      formattedCrew.sort((a, b) => (a.billingOrder || 0) - (b.billingOrder || 0))
+      formattedCrew.sort((a: any, b: any) => (a.billingOrder || 0) - (b.billingOrder || 0))
       setCrew(formattedCrew)
     } else {
       setCrew([])
