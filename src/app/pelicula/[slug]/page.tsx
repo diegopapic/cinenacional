@@ -82,7 +82,7 @@ async function getMovieData(slug: string) {
             { isPrincipal: 'desc' },
             { billingOrder: 'asc' }
           ],
-          take: 100
+          
         },
         
         crew: {
@@ -109,7 +109,7 @@ async function getMovieData(slug: string) {
           orderBy: {
             billingOrder: 'asc'
           },
-          take: 50
+          
         },
         
         movieCountries: {
