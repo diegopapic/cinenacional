@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 5acf68f1166025541a992912c874e3324ef69af0
-// Fecha: 2025-10-31T15:58:09.048Z
+// Commit: b2dd62ecc373f8f8a715b7c05037b8433633c4f9
+// Fecha: 2025-11-01T02:21:21.601Z
 // ============================================
 
 
@@ -14505,7 +14505,7 @@ async function getMovieData(slug: string) {
             { isPrincipal: 'desc' },
             { billingOrder: 'asc' }
           ],
-          take: 100
+          
         },
         
         crew: {
@@ -14532,7 +14532,7 @@ async function getMovieData(slug: string) {
           orderBy: {
             billingOrder: 'asc'
           },
-          take: 50
+          
         },
         
         movieCountries: {
