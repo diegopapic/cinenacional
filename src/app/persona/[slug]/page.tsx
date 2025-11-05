@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { formatPartialDate } from '@/lib/shared/dateUtils';
+import { formatPartialDate, MONTHS } from '@/lib/shared/dateUtils';
 import DOMPurify from 'isomorphic-dompurify';
 
 export const dynamic = 'force-dynamic'
@@ -66,6 +66,19 @@ export default function PersonPage({ params }: PersonPageProps) {
   const [activeTab, setActiveTab] = useState<string>('');
   const [showAllFilmography, setShowAllFilmography] = useState(false);
 
+  // Función helper para generar URL de efemérides (formato: /efemerides/MM-DD)
+  const getEfemeridesUrl = (month: number, day: number): string => {
+    const monthStr = month.toString().padStart(2, '0');
+    const dayStr = day.toString().padStart(2, '0');
+    return `/efemerides/${monthStr}-${dayStr}`;
+  };
+
+  // Función helper para generar URL de obituarios (formato: /obituarios?year=YYYY)
+  const getObituariosUrl = (year: number): string => {
+    const yearStr = year.toString().padStart(4, '0');
+    return `/listados/obituarios?year=${yearStr}`;
+  };
+
   // Función helper para obtener el año efectivo para ordenamiento
   const getEffectiveYear = (movie: Movie): number => {
     if (movie.releaseYear) {
@@ -111,22 +124,22 @@ export default function PersonPage({ params }: PersonPageProps) {
       const movieB = b.movie || b;
       const stageA = movieA.stage;
       const stageB = movieB.stage;
-      
+
       // Verificar si son stages que van primero (no INÉDITA ni INCONCLUSA ni COMPLETA)
       const isStageAPriority = stageA && stageOrder[stageA] !== undefined;
       const isStageBPriority = stageB && stageOrder[stageB] !== undefined;
-      
+
       // Si ambas son priority stages, ordenar por el orden definido
       if (isStageAPriority && isStageBPriority) {
         return stageOrder[stageA] - stageOrder[stageB];
       }
-      
+
       // Si solo A es priority, va primero
       if (isStageAPriority) return -1;
-      
+
       // Si solo B es priority, va primero
       if (isStageBPriority) return 1;
-      
+
       // Si ninguna es priority (incluyendo COMPLETA, INÉDITA, INCONCLUSA), ordenar por fecha
       const dateA = getEffectiveDate(movieA);
       const dateB = getEffectiveDate(movieB);
@@ -310,7 +323,7 @@ export default function PersonPage({ params }: PersonPageProps) {
   // ✅ ACTUALIZADO: Determinar el badge a mostrar (incluyendo stages en desarrollo)
   const getMovieBadge = (movie: Movie): { text: string; color: string } | null => {
     const isUnreleased = !movie.releaseYear;
-    
+
     // ✅ NUEVO: Badges para stages en desarrollo (excepto INÉDITA e INCONCLUSA)
     if (movie.stage === 'EN_DESARROLLO') {
       return {
@@ -318,35 +331,35 @@ export default function PersonPage({ params }: PersonPageProps) {
         color: 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
       };
     }
-    
+
     if (movie.stage === 'EN_PRODUCCION') {
       return {
         text: 'En producción',
         color: 'bg-green-500/20 text-green-300 border border-green-500/30'
       };
     }
-    
+
     if (movie.stage === 'EN_PREPRODUCCION') {
       return {
         text: 'En preproducción',
         color: 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
       };
     }
-    
+
     if (movie.stage === 'EN_RODAJE') {
       return {
         text: 'En rodaje',
         color: 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
       };
     }
-    
+
     if (movie.stage === 'EN_POSTPRODUCCION') {
       return {
         text: 'En postproducción',
         color: 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
       };
     }
-    
+
     // ✅ NUEVO: Badge para INCONCLUSA (tiene prioridad sobre "no estrenada")
     if (movie.stage === 'INCONCLUSA') {
       return {
@@ -354,7 +367,7 @@ export default function PersonPage({ params }: PersonPageProps) {
         color: 'bg-red-500/20 text-red-300 border border-red-500/30'
       };
     }
-    
+
     // Cortometraje
     if (movie.tipoDuracion === 'cortometraje') {
       return {
@@ -362,7 +375,7 @@ export default function PersonPage({ params }: PersonPageProps) {
         color: 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
       };
     }
-    
+
     // Mediometraje
     if (movie.tipoDuracion === 'mediometraje') {
       return {
@@ -370,7 +383,7 @@ export default function PersonPage({ params }: PersonPageProps) {
         color: 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
       };
     }
-    
+
     // Largometraje no estrenado (solo si NO es INCONCLUSA ni INÉDITA)
     if (movie.tipoDuracion === 'largometraje' && isUnreleased && movie.stage !== 'INCONCLUSA' && movie.stage !== 'INEDITA') {
       return {
@@ -378,7 +391,7 @@ export default function PersonPage({ params }: PersonPageProps) {
         color: 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
       };
     }
-    
+
     return null;
   };
 
@@ -427,7 +440,19 @@ export default function PersonPage({ params }: PersonPageProps) {
                     <span className="text-gray-500">
                       {person.birthDay ? 'Nació el ' : 'Nació en '}
                     </span>
-                    <span>{birthDateFormatted}</span>
+                    {person.birthDay && person.birthMonth ? (
+                      <>
+                        <Link
+                          href={getEfemeridesUrl(person.birthMonth, person.birthDay)}
+                          className="text-gray-300 hover:text-blue-400 transition-colors decoration-gray-600 hover:decoration-blue-400"
+                        >
+                          {person.birthDay} de {MONTHS[person.birthMonth - 1].label.toLowerCase()}
+                        </Link>
+                        <span className="text-gray-500"> de </span><span className="text-gray-300">{person.birthYear}</span>
+                      </>
+                    ) : (
+                      <span>{birthDateFormatted}</span>
+                    )}
                     {person.birthLocation && (
                       <>
                         <span className="text-gray-500"> en </span>
@@ -445,7 +470,25 @@ export default function PersonPage({ params }: PersonPageProps) {
                     <span className="text-gray-500">
                       {person.deathDay ? 'Murió el ' : 'Murió en '}
                     </span>
-                    <span>{deathDateFormatted}</span>
+                    {person.deathDay && person.deathMonth ? (
+                      <>
+                        <Link
+                          href={getEfemeridesUrl(person.deathMonth, person.deathDay)}
+                          className="text-gray-300 hover:text-blue-400 transition-colors decoration-gray-600 hover:decoration-blue-400"
+                        >
+                          {person.deathDay} de {MONTHS[person.deathMonth - 1].label.toLowerCase()}
+                        </Link>
+                        <span className="text-gray-500"> de </span>
+                        <Link
+                          href={getObituariosUrl(person.deathYear)}
+                          className="text-gray-300 hover:text-blue-400 transition-colors decoration-gray-600 hover:decoration-blue-400"
+                          >
+                          {person.deathYear}
+                          </Link>
+                      </>
+                    ) : (
+                      <span>{deathDateFormatted}</span>
+                    )}
                     {person.deathLocation && (
                       <>
                         <span className="text-gray-500"> en </span>
@@ -530,8 +573,8 @@ export default function PersonPage({ params }: PersonPageProps) {
                     key={key}
                     onClick={() => setActiveTab(key)}
                     className={`pb-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === key
-                        ? 'border-blue-400 text-white'
-                        : 'border-transparent text-gray-400 hover:text-white'
+                      ? 'border-blue-400 text-white'
+                      : 'border-transparent text-gray-400 hover:text-white'
                       }`}
                   >
                     {key} ({items.length})
@@ -569,20 +612,20 @@ export default function PersonPage({ params }: PersonPageProps) {
                             >
                               {movie.title}
                             </Link>
-                            
+
                             {/* ✅ BADGE */}
                             {badge && (
                               <span className={`text-xs px-2 py-0.5 rounded-full ${badge.color}`}>
                                 {badge.text}
                               </span>
                             )}
-                            
+
                             {isActing && item.characterName && (
                               <span className="text-sm text-gray-500">
                                 como {item.characterName}
                               </span>
                             )}
-                            
+
                             {!isActing && item.roles && item.roles.length > 1 && (
                               <span className="text-sm text-gray-500">
                                 (también: {item.roles.filter((r: string) => r !== activeTab).join(', ')})
