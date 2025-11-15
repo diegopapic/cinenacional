@@ -703,6 +703,7 @@ enum Department {
   MAQUILLAJE
   EFECTOS
   ANIMACION
+  POSTPRODUCCION
   OTROS
 }
 
