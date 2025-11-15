@@ -16,6 +16,7 @@ export enum Department {
   MAQUILLAJE = 'MAQUILLAJE',
   EFECTOS = 'EFECTOS',
   ANIMACION = 'ANIMACION',
+  POSTPRODUCCION = 'POSTPRODUCCION',
   OTROS = 'OTROS'
 }
 
@@ -37,6 +38,7 @@ export const DEPARTMENT_LABELS = {
   [Department.MAQUILLAJE]: 'Maquillaje',
   [Department.EFECTOS]: 'Efectos',
   [Department.ANIMACION]: 'Animación',
+  [Department.POSTPRODUCCION]: 'Postproducción',
   [Department.OTROS]: 'Otros'
 } as const;
 
@@ -58,6 +60,7 @@ export const DEPARTMENT_COLORS = {
   [Department.MAQUILLAJE]: '#c2410c',
   [Department.EFECTOS]: '#0369a1',
   [Department.ANIMACION]: '#ca8a04',
+  [Department.POSTPRODUCCION]: '#4f46e5',
   [Department.OTROS]: '#6b7280'
 } as const;
 

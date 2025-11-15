@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 0d9f4b52676ce4083908f27dcbb17a9333132a56
-// Fecha: 2025-11-05T18:56:40.858Z
+// Commit: 286cd97dee415871858e8402edb20dd931c6c1d5
+// Fecha: 2025-11-15T03:11:17.083Z
 // ============================================
 
 
@@ -31391,6 +31391,7 @@ export enum Department {
   MAQUILLAJE = 'MAQUILLAJE',
   EFECTOS = 'EFECTOS',
   ANIMACION = 'ANIMACION',
+  POSTPRODUCCION = 'POSTPRODUCCION',
   OTROS = 'OTROS'
 }
 
@@ -31412,6 +31413,7 @@ export const DEPARTMENT_LABELS = {
   [Department.MAQUILLAJE]: 'Maquillaje',
   [Department.EFECTOS]: 'Efectos',
   [Department.ANIMACION]: 'Animación',
+  [Department.POSTPRODUCCION]: 'Postproducción',
   [Department.OTROS]: 'Otros'
 } as const;
 
@@ -31433,6 +31435,7 @@ export const DEPARTMENT_COLORS = {
   [Department.MAQUILLAJE]: '#c2410c',
   [Department.EFECTOS]: '#0369a1',
   [Department.ANIMACION]: '#ca8a04',
+  [Department.POSTPRODUCCION]: '#4f46e5',
   [Department.OTROS]: '#6b7280'
 } as const;
 
