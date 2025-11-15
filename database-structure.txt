@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-11-05T18:56:41.698Z
+# Generado automáticamente el: 2025-11-15T03:11:17.728Z
 # ================================================
 
 ## Schema Prisma
@@ -710,6 +710,7 @@ enum Department {
   MAQUILLAJE
   EFECTOS
   ANIMACION
+  POSTPRODUCCION
   OTROS
 }
 
@@ -827,7 +828,7 @@ CREATE TYPE "image_type" AS ENUM ('POSTER', 'BACKDROP', 'STILL', 'BEHIND_SCENES'
 CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'EDITOR', 'VIEWER');
 
 -- CreateEnum
-CREATE TYPE "Department" AS ENUM ('DIRECCION', 'PRODUCCION', 'GUION', 'FOTOGRAFIA', 'ARTE', 'MONTAJE', 'SONIDO', 'MUSICA', 'VESTUARIO', 'MAQUILLAJE', 'EFECTOS', 'ANIMACION', 'OTROS');
+CREATE TYPE "Department" AS ENUM ('DIRECCION', 'PRODUCCION', 'GUION', 'FOTOGRAFIA', 'ARTE', 'MONTAJE', 'SONIDO', 'MUSICA', 'VESTUARIO', 'MAQUILLAJE', 'EFECTOS', 'ANIMACION', 'POSTPRODUCCION', 'OTROS');
 
 -- CreateEnum
 CREATE TYPE "gender" AS ENUM ('MALE', 'FEMALE', 'OTHER');
