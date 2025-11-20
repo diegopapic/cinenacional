@@ -4,6 +4,7 @@ import { Inter, Crimson_Text } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 import Header from '@/components/layout/Header'
+import HeaderStats from '@/components/layout/HeaderStats'
 import Footer from '@/components/layout/Footer'
 import { Toaster } from 'react-hot-toast'
 
@@ -111,6 +112,7 @@ export default function RootLayout({
         )}
         
         <Header />
+        <HeaderStats />
         <main className="flex-grow">
           {children}
         </main>
