@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 32207f2f5e6a99315209e812d1be75731f9e62c9
-// Fecha: 2025-11-20T06:26:50.226Z
+// Commit: db8830282eb285700110fc51270016efd604fabf
+// Fecha: 2025-11-20T06:40:44.601Z
 // ============================================
 
 
@@ -13904,8 +13904,8 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-// export const dynamic = 'force-dynamic'
-// export const revalidate = 0
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 // Datos estáticos (mover a constants/homeData.ts)
 const PELICULAS_HERO: HeroMovie[] = [
