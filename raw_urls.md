@@ -252,6 +252,7 @@
 - [src/components/home/SkeletonLoader.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/SkeletonLoader.tsx)
 - [src/components/layout/Footer.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Footer.tsx)
 - [src/components/layout/Header.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/Header.tsx)
+- [src/components/layout/HeaderStats.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/HeaderStats.tsx)
 - [src/components/layout/SearchBar.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/layout/SearchBar.tsx)
 - [src/components/listados/estrenos/EstrenosDecadeSelector.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/listados/estrenos/EstrenosDecadeSelector.tsx)
 - [src/components/listados/estrenos/EstrenosGrid.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/listados/estrenos/EstrenosGrid.tsx)
