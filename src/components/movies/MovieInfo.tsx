@@ -79,10 +79,15 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
     <div className="space-y-6">
       {/* Sinopsis - Solo renderizar si existe */}
       {sanitizedSynopsis && (
-        <div
-          className="serif-body text-lg text-gray-300 leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: sanitizedSynopsis }}
-        />
+        <div className="grid grid-cols-1 gap-6">
+          <div>
+            <h3 className="text-lg font-medium mb-3 text-cine-accent">Sinopsis</h3>
+            <div
+              className="serif-body text-lg text-gray-300 leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: sanitizedSynopsis }}
+            />
+          </div>
+        </div>
       )}
 
       {/* Directores */}
