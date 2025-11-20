@@ -201,7 +201,7 @@ export default function HomePage() {
 
           {/* Sección de Últimos Estrenos - con badge negro para fechas pasadas */}
           <MoviesGrid
-            title="Últimos Estrenos"
+            title="Últimos estrenos"
             movies={ultimosEstrenos}
             loading={loadingEstrenos}
             emptyMessage="No hay estrenos disponibles en este momento"
@@ -214,7 +214,7 @@ export default function HomePage() {
 
           {/* Sección de Próximos Estrenos - con badge azul para fechas futuras */}
           <MoviesGrid
-            title="Próximos Estrenos"
+            title="Próximos estrenos"
             movies={proximosEstrenos}
             loading={loadingProximos}
             emptyMessage="No hay próximos estrenos confirmados"

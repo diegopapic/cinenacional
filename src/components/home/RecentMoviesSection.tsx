@@ -11,7 +11,7 @@ interface RecentMoviesSectionProps {
 export default function RecentMoviesSection({ movies, loading }: RecentMoviesSectionProps) {
   return (
     <section className="mb-12">
-      <h2 className="serif-heading text-3xl mb-6 text-white">Últimas Películas Ingresadas</h2>
+      <h2 className="serif-heading text-3xl mb-6 text-white">Últimas películas ingresadas</h2>
 
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
