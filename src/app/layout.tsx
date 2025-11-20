@@ -6,6 +6,7 @@ import './globals.css'
 import Header from '@/components/layout/Header'
 import HeaderStats from '@/components/layout/HeaderStats'
 import Footer from '@/components/layout/Footer'
+import AdBanner from '@/components/ads/AdBanner'
 import { Toaster } from 'react-hot-toast'
 
 // Configurar las fuentes
@@ -113,6 +114,7 @@ export default function RootLayout({
         
         <Header />
         <HeaderStats />
+        <AdBanner />
         <main className="flex-grow">
           {children}
         </main>

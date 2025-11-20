@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: c47339a1a09605d0ebbda4d7cceee62c88595442
-// Fecha: 2025-11-20T05:55:18.731Z
+// Commit: 32207f2f5e6a99315209e812d1be75731f9e62c9
+// Fecha: 2025-11-20T06:26:50.226Z
 // ============================================
 
 
@@ -12218,6 +12218,7 @@ import './globals.css'
 import Header from '@/components/layout/Header'
 import HeaderStats from '@/components/layout/HeaderStats'
 import Footer from '@/components/layout/Footer'
+import AdBanner from '@/components/ads/AdBanner'
 import { Toaster } from 'react-hot-toast'
 
 // Configurar las fuentes
@@ -12325,6 +12326,7 @@ export default function RootLayout({
         
         <Header />
         <HeaderStats />
+        <AdBanner />
         <main className="flex-grow">
           {children}
         </main>
@@ -24215,6 +24217,42 @@ export function ThemeSelector({
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+// ==================================================
+// src/components/ads/AdBanner.tsx
+// ==================================================
+// src/components/ads/AdBanner.tsx
+'use client'
+
+import { useEffect } from 'react'
+
+export default function AdBanner() {
+  useEffect(() => {
+    try {
+      // @ts-ignore
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (err) {
+      console.error('AdSense error:', err)
+    }
+  }, [])
+
+  return (
+    <div className="bg-zinc-900/50 border-y border-zinc-800 py-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-center">
+          <ins
+            className="adsbygoogle"
+            style={{ display: 'block' }}
+            data-ad-client="ca-pub-9695271411409237"
+            data-ad-slot="1634150481"
+            data-ad-format="auto"
+            data-full-width-responsive="true"
+          />
+        </div>
+      </div>
     </div>
   )
 }
