@@ -241,7 +241,7 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
 
   return (
     <section>
-      <h2 className="serif-heading text-3xl mb-6 text-white">Efemérides del Día</h2>
+      <h2 className="serif-heading text-3xl mb-6 text-white">Efemérides</h2>
       <div className="glass-effect rounded-lg p-6">
         {efemerides.length > 0 ? (
           <div className="space-y-4">
