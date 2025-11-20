@@ -183,6 +183,7 @@
 - [src/app/api/search/full/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/search/full/route.ts)
 - [src/app/api/search/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/search/route.ts)
 - [src/app/api/search/test/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/search/test/route.ts)
+- [src/app/api/stats/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/stats/route.ts)
 - [src/app/api/themes/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/themes/route.ts)
 - [src/app/api/themes/[id]/route.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/api/themes/[id]/route.ts)
 - [src/app/buscar/loading.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/app/buscar/loading.tsx)
