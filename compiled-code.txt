@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: dad252939b6f58e9ca4510d2b0e1e2acb71870ba
-// Fecha: 2025-11-20T07:07:14.400Z
+// Commit: e76ab0b73a6d19cdf765a006b87368d5d7b7ade8
+// Fecha: 2025-11-26T18:38:37.709Z
 // ============================================
 
 
@@ -24322,10 +24322,15 @@ export default function AdBanner() {
   return (
     <div className="bg-zinc-900/50 border-y border-zinc-800 py-4">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-center">
+        {/* Cambiado: quité flex, ahora es block directo */}
+        <div className="w-full">
           <ins
             className="adsbygoogle"
-            style={{ display: 'block' }}
+            style={{ 
+              display: 'block',
+              minWidth: '300px',  // 👈 Ancho mínimo para móviles
+              minHeight: '50px'   // 👈 Altura mínima
+            }}
             data-ad-client="ca-pub-9695271411409237"
             data-ad-slot="1634150481"
             data-ad-format="auto"
