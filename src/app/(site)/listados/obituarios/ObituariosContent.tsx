@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ObituariosYearSelector from '@/components/listados/obituarios/ObituariosYearSelector';
-import ObituariosGrid from '@/app/listados/obituarios/ObituariosGrid';
+import ObituariosGrid from '@/app/(site)/listados/obituarios/ObituariosGrid';
 import { PersonWithDeath, ObituariosPagination } from '@/lib/obituarios/obituariosTypes';
 import { getCurrentYear, filtersToApiParams } from '@/lib/obituarios/obituariosUtils';
 
