@@ -243,6 +243,7 @@
 - [src/components/admin/shared/PersonSearchInput.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/shared/PersonSearchInput.tsx)
 - [src/components/admin/ThemeSelector.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/ThemeSelector.tsx)
 - [src/components/ads/AdBanner.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/ads/AdBanner.tsx)
+- [src/components/ads/HomeBottomBanner.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/ads/HomeBottomBanner.tsx)
 - [src/components/ads/HomeMiddleBanner.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/ads/HomeMiddleBanner.tsx)
 - [src/components/home/EfemeridesSection.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/EfemeridesSection.tsx)
 - [src/components/home/ErrorMessage.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/home/ErrorMessage.tsx)
