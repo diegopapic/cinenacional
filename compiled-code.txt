@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 0f340a334f10b9c18f85e06b9a78639852680b77
-// Fecha: 2025-11-26T20:27:27.153Z
+// Commit: 3c8246888ea1524f816da281972622962a241896
+// Fecha: 2025-11-26T23:42:12.577Z
 // ============================================
 
 
@@ -2450,6 +2450,7 @@ import EfemeridesSection from '@/components/home/EfemeridesSection';
 import ErrorMessage from '@/components/home/ErrorMessage';
 import { HeroMovie, Efemeride } from '@/types/home.types';
 import { formatPartialDate } from '@/lib/shared/dateUtils';
+import HomeMiddleBanner from '@/components/ads/HomeMiddleBanner'
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -2672,6 +2673,9 @@ export default function HomePage() {
             />
             <EfemeridesSection efemerides={efemerides} />
           </div>
+
+          <HomeMiddleBanner />
+
           <div className="w-full flex justify-center py-4 bg-cine-dark">
             <Link
               href="https://www.ucine.edu.ar"
@@ -24357,6 +24361,42 @@ export default function AdBanner() {
             }}
             data-ad-client="ca-pub-4540700730503978"
             data-ad-slot="1634150481"
+            data-ad-format="auto"
+            data-full-width-responsive="true"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ==================================================
+// src/components/ads/HomeMiddleBanner.tsx
+// ==================================================
+// src/components/ads/HomeMiddleBanner.tsx
+'use client'
+
+import { useEffect } from 'react'
+
+export default function HomeMiddleBanner() {
+  useEffect(() => {
+    try {
+      // @ts-ignore
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (err) {
+      console.error('AdSense error:', err)
+    }
+  }, [])
+
+  return (
+    <div className="bg-zinc-900/50 border-y border-zinc-800 py-4 my-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full">
+          <ins
+            className="adsbygoogle"
+            style={{ display: 'block' }}
+            data-ad-client="ca-pub-4540700730503978"
+            data-ad-slot="7063278975"
             data-ad-format="auto"
             data-full-width-responsive="true"
           />
