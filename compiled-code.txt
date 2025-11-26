@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: e76ab0b73a6d19cdf765a006b87368d5d7b7ade8
-// Fecha: 2025-11-26T18:38:37.709Z
+// Commit: 93b0d8cabed1bd7c8cc044544ef1576ebdee2170
+// Fecha: 2025-11-26T18:47:28.787Z
 // ============================================
 
 
@@ -12361,7 +12361,7 @@ export const metadata: Metadata = {
   },
   // ✅ Añadir AdSense aquí usando la API de Metadata
   other: {
-    'google-adsense-account': 'ca-pub-9695271411409237',
+    'google-adsense-account': 'ca-pub-4540700730503978',
   },
 }
 
@@ -12379,7 +12379,7 @@ export default function RootLayout({
         {/* ✅ AdSense script usando tag HTML nativo */}
         <script
           async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9695271411409237"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4540700730503978"
           crossOrigin="anonymous"
         />
       </head>
@@ -24331,7 +24331,7 @@ export default function AdBanner() {
               minWidth: '300px',  // 👈 Ancho mínimo para móviles
               minHeight: '50px'   // 👈 Altura mínima
             }}
-            data-ad-client="ca-pub-9695271411409237"
+            data-ad-client="ca-pub-4540700730503978"
             data-ad-slot="1634150481"
             data-ad-format="auto"
             data-full-width-responsive="true"

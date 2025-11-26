@@ -69,7 +69,7 @@ export const metadata: Metadata = {
   },
   // ✅ Añadir AdSense aquí usando la API de Metadata
   other: {
-    'google-adsense-account': 'ca-pub-9695271411409237',
+    'google-adsense-account': 'ca-pub-4540700730503978',
   },
 }
 
@@ -87,7 +87,7 @@ export default function RootLayout({
         {/* ✅ AdSense script usando tag HTML nativo */}
         <script
           async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9695271411409237"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4540700730503978"
           crossOrigin="anonymous"
         />
       </head>

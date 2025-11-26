@@ -25,7 +25,7 @@ export default function AdBanner() {
               minWidth: '300px',  // 👈 Ancho mínimo para móviles
               minHeight: '50px'   // 👈 Altura mínima
             }}
-            data-ad-client="ca-pub-9695271411409237"
+            data-ad-client="ca-pub-4540700730503978"
             data-ad-slot="1634150481"
             data-ad-format="auto"
             data-full-width-responsive="true"
