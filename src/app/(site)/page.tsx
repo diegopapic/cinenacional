@@ -11,6 +11,7 @@ import EfemeridesSection from '@/components/home/EfemeridesSection';
 import ErrorMessage from '@/components/home/ErrorMessage';
 import { HeroMovie, Efemeride } from '@/types/home.types';
 import { formatPartialDate } from '@/lib/shared/dateUtils';
+import HomeMiddleBanner from '@/components/ads/HomeMiddleBanner'
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -233,6 +234,9 @@ export default function HomePage() {
             />
             <EfemeridesSection efemerides={efemerides} />
           </div>
+
+          <HomeMiddleBanner />
+
           <div className="w-full flex justify-center py-4 bg-cine-dark">
             <Link
               href="https://www.ucine.edu.ar"
