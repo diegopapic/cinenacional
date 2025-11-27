@@ -482,9 +482,9 @@ export default function PersonPage({ params }: PersonPageProps) {
                         <Link
                           href={getObituariosUrl(person.deathYear)}
                           className="text-gray-300 hover:text-blue-400 transition-colors decoration-gray-600 hover:decoration-blue-400"
-                          >
+                        >
                           {person.deathYear}
-                          </Link>
+                        </Link>
                       </>
                     ) : (
                       <span>{deathDateFormatted}</span>
@@ -498,6 +498,22 @@ export default function PersonPage({ params }: PersonPageProps) {
                         </span>
                       </>
                     )}
+                  </div>
+                )}
+
+                {person.nationalities && person.nationalities.length > 0 && (
+                  <div className="text-sm mb-4">
+                    <span className="text-gray-500">Nacionalidad: </span>
+                    <span className="text-white">
+                      {person.nationalities
+                        .map((nat: any) => {
+                          // Usar gentilicio si existe, sino usar el nombre del país
+                          const display = nat.location?.gentilicio || nat.location?.name;
+                          return display;
+                        })
+                        .filter(Boolean)
+                        .join(', ')}
+                    </span>
                   </div>
                 )}
 

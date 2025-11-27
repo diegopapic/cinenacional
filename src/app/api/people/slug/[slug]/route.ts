@@ -31,7 +31,11 @@ export async function GET(
             displayOrder: 'asc'
           }
         },
-        nationalities: true
+        nationalities: {
+          include: {
+            location: true
+          }
+        }
       }
     });
 
