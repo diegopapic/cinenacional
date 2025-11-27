@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: b5d1f4790c26aeb58e1cb74f6ae161b5a4f8e1b5
-// Fecha: 2025-11-26T23:54:37.886Z
+// Commit: cbdc2ea030eecf963bc8c72eb426e6a8a1da7dd1
+// Fecha: 2025-11-27T16:29:02.792Z
 // ============================================
 
 
@@ -3923,9 +3923,9 @@ export default function PersonPage({ params }: PersonPageProps) {
                         <Link
                           href={getObituariosUrl(person.deathYear)}
                           className="text-gray-300 hover:text-blue-400 transition-colors decoration-gray-600 hover:decoration-blue-400"
-                          >
+                        >
                           {person.deathYear}
-                          </Link>
+                        </Link>
                       </>
                     ) : (
                       <span>{deathDateFormatted}</span>
@@ -3939,6 +3939,22 @@ export default function PersonPage({ params }: PersonPageProps) {
                         </span>
                       </>
                     )}
+                  </div>
+                )}
+
+                {person.nationalities && person.nationalities.length > 0 && (
+                  <div className="text-sm mb-4">
+                    <span className="text-gray-500">Nacionalidad: </span>
+                    <span className="text-white">
+                      {person.nationalities
+                        .map((nat: any) => {
+                          // Usar gentilicio si existe, sino usar el nombre del país
+                          const display = nat.location?.gentilicio || nat.location?.name;
+                          return display;
+                        })
+                        .filter(Boolean)
+                        .join(', ')}
+                    </span>
                   </div>
                 )}
 
@@ -13063,7 +13079,11 @@ export async function GET(
             displayOrder: 'asc'
           }
         },
-        nationalities: true
+        nationalities: {
+          include: {
+            location: true
+          }
+        }
       }
     });
 
