@@ -9,6 +9,7 @@ interface MovieHeroProps {
   duration: number;
   genres: string[];
   posterUrl?: string | null;
+  premiereVenues: string;
   releaseDate?: {
     day: number | null;
     month: number | null;
@@ -16,7 +17,7 @@ interface MovieHeroProps {
   } | null;
 }
 
-export function MovieHero({ title, year, duration, genres, posterUrl, releaseDate }: MovieHeroProps) {
+export function MovieHero({ title, year, duration, genres, posterUrl, premiereVenues, releaseDate }: MovieHeroProps) {
   const [imageError, setImageError] = useState(false);
 
   // Determinar si tenemos un poster válido
@@ -76,6 +77,7 @@ export function MovieHero({ title, year, duration, genres, posterUrl, releaseDat
             <p className="text-gray-100 mb-3 font-light">
               Estreno comercial en Argentina:
               <span className="font-medium ml-2">{formattedReleaseDate}</span>
+              {premiereVenues && <span className="font-medium"> en {premiereVenues}</span>}
             </p>
           )}
 

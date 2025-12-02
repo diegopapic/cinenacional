@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: cbdc2ea030eecf963bc8c72eb426e6a8a1da7dd1
-// Fecha: 2025-11-27T16:29:02.792Z
+// Commit: d701201fcbdd695c3900026ce8ead26ed3cbb9e4
+// Fecha: 2025-12-02T01:55:16.346Z
 // ============================================
 
 
@@ -2764,6 +2764,7 @@ interface MoviePageClientProps {
     fullCast: CastMember[];
     basicCrew: CrewDepartment;
     fullCrew: CrewDepartment;
+    premiereVenues: string;
     releaseDate?: {
         day: number | null;
         month: number | null;
@@ -2786,6 +2787,7 @@ export function MoviePageClient({
     fullCast,
     basicCrew,
     fullCrew,
+    premiereVenues,
     releaseDate
 }: MoviePageClientProps) {
     const [movieGallery, setMovieGallery] = useState<string[]>([]);
@@ -2849,6 +2851,7 @@ export function MoviePageClient({
                 genres={genres.map(g => g.name)}
                 posterUrl={movie.posterUrl}
                 releaseDate={releaseDate}
+                premiereVenues={premiereVenues}
             />
 
             {/* Movie Content */}
@@ -3164,6 +3167,20 @@ async function getMovieData(slug: string) {
           take: 10
         },
         
+        screenings: {
+          where: {
+            isPremiere: true
+          },
+          select: {
+            venue: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        },
+        
         _count: {
           select: {
             images: true,
@@ -3232,6 +3249,24 @@ function formatPersonName(person: any): string {
   return parts.join(' ') || person.realName || 'Sin nombre';
 }
 
+// Función helper para formatear las pantallas de estreno
+function formatPremiereVenues(venues: any[]): string {
+  if (!venues || venues.length === 0) return '';
+  
+  const venueNames = venues.map(v => v.venue.name);
+  
+  if (venueNames.length === 1) {
+    return venueNames[0];
+  } else if (venueNames.length === 2) {
+    return `${venueNames[0]} y ${venueNames[1]}`;
+  } else {
+    // 3 o más: "A, B y C"
+    const lastVenue = venueNames[venueNames.length - 1];
+    const otherVenues = venueNames.slice(0, -1).join(', ');
+    return `${otherVenues} y ${lastVenue}`;
+  }
+}
+
 export default async function MoviePage({ params }: PageProps) {
   const movie = await getMovieData(params.slug);
 
@@ -3260,6 +3295,9 @@ export default async function MoviePage({ params }: PageProps) {
     name: c.location.name
   }))
     .filter((c: any) => c.name !== 'Argentina' || movie.movieCountries.length > 1) || [];
+
+  // Procesar pantallas de estreno
+  const premiereVenues = formatPremiereVenues(movie.screenings || []);
 
   const rating = movie.rating ? {
     id: movie.rating.id,
@@ -3423,6 +3461,7 @@ export default async function MoviePage({ params }: PageProps) {
       fullCast={fullCast}
       basicCrew={basicCrewByDepartment}
       fullCrew={fullCrewByDepartment}
+      premiereVenues={premiereVenues}
       releaseDate={
         movie.releaseDay && movie.releaseMonth && movie.releaseYear
           ? {
@@ -27034,6 +27073,7 @@ interface MovieHeroProps {
   duration: number;
   genres: string[];
   posterUrl?: string | null;
+  premiereVenues: string;
   releaseDate?: {
     day: number | null;
     month: number | null;
@@ -27041,7 +27081,7 @@ interface MovieHeroProps {
   } | null;
 }
 
-export function MovieHero({ title, year, duration, genres, posterUrl, releaseDate }: MovieHeroProps) {
+export function MovieHero({ title, year, duration, genres, posterUrl, premiereVenues, releaseDate }: MovieHeroProps) {
   const [imageError, setImageError] = useState(false);
 
   // Determinar si tenemos un poster válido
@@ -27101,6 +27141,7 @@ export function MovieHero({ title, year, duration, genres, posterUrl, releaseDat
             <p className="text-gray-100 mb-3 font-light">
               Estreno comercial en Argentina:
               <span className="font-medium ml-2">{formattedReleaseDate}</span>
+              {premiereVenues && <span className="font-medium"> en {premiereVenues}</span>}
             </p>
           )}
 
