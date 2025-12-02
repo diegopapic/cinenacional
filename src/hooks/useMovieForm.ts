@@ -679,7 +679,7 @@ export function useMovieForm({
                 screeningVenues: movieRelations.screeningVenues.map((venueId, index) => ({
                     venueId,
                     screeningDate: data.releaseDate || new Date().toISOString().split('T')[0],
-                    isPremiere: index === 0,
+                    isPremiere: true,
                     isExclusive: movieRelations.screeningVenues.length === 1
                 })),
 
