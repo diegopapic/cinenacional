@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     // Obtener total
     const total = await prisma.screeningVenue.count({ where })
 
-    // Obtener venues sin la relación screenings por ahora
+    // Obtener venues CON el conteo real de películas asociadas
     const venues = await prisma.screeningVenue.findMany({
       where,
       skip,
@@ -61,19 +61,18 @@ export async function GET(request: NextRequest) {
       orderBy: [
         { type: 'asc' },
         { name: 'asc' }
-      ]
+      ],
+      include: {
+        _count: {
+          select: {
+            screenings: true  // Conteo real de películas asociadas
+          }
+        }
+      }
     })
 
-    // Agregar un contador falso de screenings por ahora
-    const venuesWithCount = venues.map(venue => ({
-      ...venue,
-      _count: {
-        screenings: 0
-      }
-    }))
-
     return NextResponse.json({
-      venues: venuesWithCount,
+      venues,
       pagination: {
         page,
         limit,
@@ -113,6 +112,13 @@ export async function POST(request: NextRequest) {
       data: {
         ...validatedData,
         slug
+      },
+      include: {
+        _count: {
+          select: {
+            screenings: true
+          }
+        }
       }
     })
 
