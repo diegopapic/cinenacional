@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: a225dba8f93401216c9095d9823eb965e6bd6094
-// Fecha: 2025-12-02T02:10:38.637Z
+// Commit: 15fc020fc20b6c91e18ab85dba959823c1bb2e10
+// Fecha: 2025-12-02T20:12:37.499Z
 // ============================================
 
 
@@ -28853,7 +28853,7 @@ export function useMovieForm({
                 screeningVenues: movieRelations.screeningVenues.map((venueId, index) => ({
                     venueId,
                     screeningDate: data.releaseDate || new Date().toISOString().split('T')[0],
-                    isPremiere: index === 0,
+                    isPremiere: true,
                     isExclusive: movieRelations.screeningVenues.length === 1
                 })),
 
