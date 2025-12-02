@@ -28,7 +28,14 @@ export async function GET(
     const id = parseInt(params.id)
     
     const venue = await prisma.screeningVenue.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            screenings: true  // Conteo real de películas asociadas
+          }
+        }
+      }
     })
 
     if (!venue) {
@@ -38,16 +45,7 @@ export async function GET(
       )
     }
 
-    // Agregar contador falso por ahora
-    const venueWithCount = {
-      ...venue,
-      screenings: [],
-      _count: {
-        screenings: 0
-      }
-    }
-
-    return NextResponse.json(venueWithCount)
+    return NextResponse.json(venue)
   } catch (error) {
     console.error('Error fetching screening venue:', error)
     return NextResponse.json(
@@ -83,7 +81,14 @@ export async function PUT(
 
     const venue = await prisma.screeningVenue.update({
       where: { id },
-      data: validatedData
+      data: validatedData,
+      include: {
+        _count: {
+          select: {
+            screenings: true
+          }
+        }
+      }
     })
 
     return NextResponse.json(venue)
@@ -111,9 +116,16 @@ export async function DELETE(
   try {
     const id = parseInt(params.id)
     
-    // Verificar que existe
+    // Verificar que existe y obtener conteo de películas asociadas
     const venue = await prisma.screeningVenue.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            screenings: true
+          }
+        }
+      }
     })
     
     if (!venue) {
@@ -123,7 +135,18 @@ export async function DELETE(
       )
     }
 
-    // Por ahora no verificamos películas asociadas ya que no existe la tabla movie_screenings
+    // ✅ VERIFICAR SI HAY PELÍCULAS ASOCIADAS
+    if (venue._count.screenings > 0) {
+      return NextResponse.json(
+        { 
+          error: `No se puede eliminar la pantalla de estreno "${venue.name}" porque tiene ${venue._count.screenings} película${venue._count.screenings > 1 ? 's' : ''} asociada${venue._count.screenings > 1 ? 's' : ''}`,
+          moviesCount: venue._count.screenings
+        },
+        { status: 409 }  // 409 Conflict
+      )
+    }
+
+    // Si no hay películas asociadas, proceder con la eliminación
     await prisma.screeningVenue.delete({
       where: { id }
     })
