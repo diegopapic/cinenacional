@@ -182,6 +182,20 @@ async function getMovieData(slug: string) {
           take: 10
         },
         
+        screenings: {
+          where: {
+            isPremiere: true
+          },
+          select: {
+            venue: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        },
+        
         _count: {
           select: {
             images: true,
@@ -250,6 +264,24 @@ function formatPersonName(person: any): string {
   return parts.join(' ') || person.realName || 'Sin nombre';
 }
 
+// Función helper para formatear las pantallas de estreno
+function formatPremiereVenues(venues: any[]): string {
+  if (!venues || venues.length === 0) return '';
+  
+  const venueNames = venues.map(v => v.venue.name);
+  
+  if (venueNames.length === 1) {
+    return venueNames[0];
+  } else if (venueNames.length === 2) {
+    return `${venueNames[0]} y ${venueNames[1]}`;
+  } else {
+    // 3 o más: "A, B y C"
+    const lastVenue = venueNames[venueNames.length - 1];
+    const otherVenues = venueNames.slice(0, -1).join(', ');
+    return `${otherVenues} y ${lastVenue}`;
+  }
+}
+
 export default async function MoviePage({ params }: PageProps) {
   const movie = await getMovieData(params.slug);
 
@@ -278,6 +310,9 @@ export default async function MoviePage({ params }: PageProps) {
     name: c.location.name
   }))
     .filter((c: any) => c.name !== 'Argentina' || movie.movieCountries.length > 1) || [];
+
+  // Procesar pantallas de estreno
+  const premiereVenues = formatPremiereVenues(movie.screenings || []);
 
   const rating = movie.rating ? {
     id: movie.rating.id,
@@ -441,6 +476,7 @@ export default async function MoviePage({ params }: PageProps) {
       fullCast={fullCast}
       basicCrew={basicCrewByDepartment}
       fullCrew={fullCrewByDepartment}
+      premiereVenues={premiereVenues}
       releaseDate={
         movie.releaseDay && movie.releaseMonth && movie.releaseYear
           ? {
