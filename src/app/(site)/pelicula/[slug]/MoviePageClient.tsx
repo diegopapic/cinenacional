@@ -48,6 +48,7 @@ interface MoviePageClientProps {
     fullCast: CastMember[];
     basicCrew: CrewDepartment;
     fullCrew: CrewDepartment;
+    premiereVenues: string;
     releaseDate?: {
         day: number | null;
         month: number | null;
@@ -70,6 +71,7 @@ export function MoviePageClient({
     fullCast,
     basicCrew,
     fullCrew,
+    premiereVenues,
     releaseDate
 }: MoviePageClientProps) {
     const [movieGallery, setMovieGallery] = useState<string[]>([]);
@@ -133,6 +135,7 @@ export function MoviePageClient({
                 genres={genres.map(g => g.name)}
                 posterUrl={movie.posterUrl}
                 releaseDate={releaseDate}
+                premiereVenues={premiereVenues}
             />
 
             {/* Movie Content */}
