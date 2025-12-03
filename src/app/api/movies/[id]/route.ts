@@ -1,5 +1,5 @@
 // ==================================================
-// src/app/api/movies/[id]/route.ts - CON REDIS CACHE + REVALIDACIÓN
+// src/app/api/movies/[id]/route.ts - CON SYNOPSIS_LOCKED CORREGIDO ✅
 // ==================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -85,6 +85,7 @@ export async function GET(
         duration: true,
         durationSeconds: true,
         synopsis: true,
+        synopsisLocked: true, // ✅ Campo synopsisLocked
         tagline: true,
         notes: true,
         posterUrl: true,
@@ -376,7 +377,7 @@ export async function PUT(
 
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
-      // Separar los campos especiales
+      // 🔧 CORRECCIÓN CRÍTICA: Extraer synopsisLocked ANTES de crear movieDataClean
       const {
         colorTypeId,
         ratingId,
@@ -390,6 +391,7 @@ export async function PUT(
         filmingEndMonth,
         filmingEndDay,
         metaKeywords,
+        synopsisLocked,  // ✅ Extraer synopsisLocked explícitamente
         ...movieDataClean
       } = movieData
 
@@ -398,6 +400,7 @@ export async function PUT(
         where: { id },
         data: {
           ...movieDataClean,
+          synopsisLocked: synopsisLocked ?? false, // ✅ Usar variable directa (CORREGIDO)
           metaKeywords: Array.isArray(metaKeywords)
             ? metaKeywords
             : typeof metaKeywords === 'string'
@@ -462,6 +465,7 @@ export async function PUT(
             data: crew.map((item, index) => ({
               movieId: id,
               personId: item.personId,
+              role: item.role,
               roleId: item.roleId,
               billingOrder: item.billingOrder || index + 1
             }))

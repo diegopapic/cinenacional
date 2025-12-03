@@ -25,11 +25,12 @@ export const movieSchema = z.object({
 
   // Duración
   duration: z.number().optional().transform(val => val === 0 ? null : val),
-durationSeconds: z.number().optional().transform(val => val === 0 ? null : val),
+  durationSeconds: z.number().optional().transform(val => val === 0 ? null : val),
   tipoDuracion: z.string().optional(),
 
   // Contenido
   synopsis: z.string().optional(),
+  synopsisLocked: z.boolean().optional(),
   notes: z.string().optional(),
   tagline: z.string().optional(),
 
@@ -89,7 +90,7 @@ durationSeconds: z.number().optional().transform(val => val === 0 ? null : val),
   production_type: z.string().optional(),
 
   // Relaciones (arrays de IDs)
-   genres: z.array(z.number().positive())
+  genres: z.array(z.number().positive())
     .optional()
     .default([])
     .transform(val => val.filter(v => v > 0 && !isNaN(v))),
