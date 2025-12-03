@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 15fc020fc20b6c91e18ab85dba959823c1bb2e10
-// Fecha: 2025-12-02T20:12:37.499Z
+// Commit: 05b363445bfa8746ad88578a86aecaf3a00afa93
+// Fecha: 2025-12-03T20:36:38.688Z
 // ============================================
 
 
@@ -11445,7 +11445,7 @@ export async function GET(
 // src/app/api/movies/[id]/route.ts
 // ==================================================
 // ==================================================
-// src/app/api/movies/[id]/route.ts - CON REDIS CACHE + REVALIDACIÓN
+// src/app/api/movies/[id]/route.ts - CON SYNOPSIS_LOCKED CORREGIDO ✅
 // ==================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -11531,6 +11531,7 @@ export async function GET(
         duration: true,
         durationSeconds: true,
         synopsis: true,
+        synopsisLocked: true, // ✅ Campo synopsisLocked
         tagline: true,
         notes: true,
         posterUrl: true,
@@ -11822,7 +11823,7 @@ export async function PUT(
 
     // Usar transacción para actualizar todo
     const movie = await prisma.$transaction(async (tx) => {
-      // Separar los campos especiales
+      // 🔧 CORRECCIÓN CRÍTICA: Extraer synopsisLocked ANTES de crear movieDataClean
       const {
         colorTypeId,
         ratingId,
@@ -11836,6 +11837,7 @@ export async function PUT(
         filmingEndMonth,
         filmingEndDay,
         metaKeywords,
+        synopsisLocked,  // ✅ Extraer synopsisLocked explícitamente
         ...movieDataClean
       } = movieData
 
@@ -11844,6 +11846,7 @@ export async function PUT(
         where: { id },
         data: {
           ...movieDataClean,
+          synopsisLocked: synopsisLocked ?? false, // ✅ Usar variable directa (CORREGIDO)
           metaKeywords: Array.isArray(metaKeywords)
             ? metaKeywords
             : typeof metaKeywords === 'string'
@@ -11908,6 +11911,7 @@ export async function PUT(
             data: crew.map((item, index) => ({
               movieId: id,
               personId: item.personId,
+              role: item.role,
               roleId: item.roleId,
               billingOrder: item.billingOrder || index + 1
             }))
@@ -19817,7 +19821,7 @@ export default function BasicInfoTab() {
       setReleaseDateDisplay('')
       return
     }
-    
+
     // Si es formato YYYY-MM-DD, convertir a DD/MM/YYYY
     if (releaseDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
       const [year, month, day] = releaseDate.split('-')
@@ -19896,14 +19900,14 @@ export default function BasicInfoTab() {
                   value={releaseDateDisplay}
                   onChange={(e) => {
                     const input = e.target.value
-                    
+
                     // Permitir solo números y barras
                     let cleaned = input.replace(/[^\d/]/g, '')
-                    
+
                     // Auto-formatear: agregar barras automáticamente
                     const numbers = cleaned.replace(/\//g, '')
                     let formatted = ''
-                    
+
                     if (numbers.length > 0) {
                       formatted = numbers.slice(0, 2)
                       if (numbers.length >= 2) {
@@ -19913,22 +19917,22 @@ export default function BasicInfoTab() {
                         formatted += '/' + numbers.slice(4, 8)
                       }
                     }
-                    
+
                     // Actualizar estado local
                     setReleaseDateDisplay(formatted)
-                    
+
                     // Si la fecha está completa (DD/MM/YYYY), convertir a YYYY-MM-DD y guardar en el form
                     if (formatted.length === 10) {
                       const [day, month, year] = formatted.split('/')
-                      
+
                       // Validación básica
                       const dayNum = parseInt(day)
                       const monthNum = parseInt(month)
                       const yearNum = parseInt(year)
-                      
-                      if (dayNum >= 1 && dayNum <= 31 && 
-                          monthNum >= 1 && monthNum <= 12 && 
-                          yearNum >= 1800 && yearNum <= 2100) {
+
+                      if (dayNum >= 1 && dayNum <= 31 &&
+                        monthNum >= 1 && monthNum <= 12 &&
+                        yearNum >= 1800 && yearNum <= 2100) {
                         setValue('releaseDate', `${year}-${month}-${day}`, { shouldValidate: true })
                       }
                     } else {
@@ -20123,12 +20127,35 @@ export default function BasicInfoTab() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Sinopsis
+              {watch('synopsisLocked') && (
+                <span className="ml-2 text-xs text-green-600 font-semibold">
+                  🔒 BLOQUEADA
+                </span>
+              )}
             </label>
             <textarea
-              {...register('synopsis')}
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            />
+    {...register('synopsis')}
+    rows={4}
+    readOnly={watch('synopsisLocked')}  // ✅ CAMBIO PRINCIPAL
+    className={`w-full px-3 py-2 border rounded-lg transition-all duration-200 ${
+      watch('synopsisLocked')
+        ? 'bg-gray-200 text-gray-700 border-gray-400 cursor-not-allowed shadow-inner'
+        : 'bg-white text-gray-900 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+    }`}
+  />
+          </div>
+          {/* Checkbox para bloquear sinopsis */}
+          <div className="mt-2">
+            <label className="inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                {...register('synopsisLocked')}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-600">
+                🔒 Bloquear sinopsis (sinopsis correcta y verificada)
+              </span>
+            </label>
           </div>
 
           <div>
@@ -28458,6 +28485,7 @@ export function useMovieForm({
                 trailerUrl: fullMovie.trailerUrl || '',
                 originalTitle: fullMovie.originalTitle || '',
                 synopsis: fullMovie.synopsis || '',
+                synopsisLocked: fullMovie.synopsisLocked ?? false, 
                 notes: fullMovie.notes || '',
                 aspectRatio: fullMovie.aspectRatio || '',
                 soundType: fullMovie.soundType || '',
@@ -28913,6 +28941,7 @@ export function useMovieForm({
         reset({
             stage: 'COMPLETA',
             dataCompleteness: 'BASIC_PRESS_KIT',
+            synopsisLocked: false,
             metaDescription: '',
             metaKeywords: []
         })
@@ -30073,6 +30102,7 @@ export const movieFormFieldsSchema = z.object({
   // Información básica
   originalTitle: z.string().optional(),
   synopsis: z.string().optional(),
+  synopsisLocked: z.boolean().optional().default(false),
   notes: z.string().optional(),
   tagline: z.string().optional(),
   imdbId: z.string().optional(),
@@ -31932,11 +31962,12 @@ export const movieSchema = z.object({
 
   // Duración
   duration: z.number().optional().transform(val => val === 0 ? null : val),
-durationSeconds: z.number().optional().transform(val => val === 0 ? null : val),
+  durationSeconds: z.number().optional().transform(val => val === 0 ? null : val),
   tipoDuracion: z.string().optional(),
 
   // Contenido
   synopsis: z.string().optional(),
+  synopsisLocked: z.boolean().optional(),
   notes: z.string().optional(),
   tagline: z.string().optional(),
 
@@ -31996,7 +32027,7 @@ durationSeconds: z.number().optional().transform(val => val === 0 ? null : val),
   production_type: z.string().optional(),
 
   // Relaciones (arrays de IDs)
-   genres: z.array(z.number().positive())
+  genres: z.array(z.number().positive())
     .optional()
     .default([])
     .transform(val => val.filter(v => v > 0 && !isNaN(v))),
@@ -33163,6 +33194,7 @@ function formatMovieDataForAPI(data: MovieCompleteData): any {
     durationSeconds: data.durationSeconds,
     tipoDuracion: data.tipoDuracion,
     synopsis: data.synopsis,
+    synopsisLocked: data.synopsisLocked ?? false,
     notes: data.notes,
     tagline: data.tagline,
     posterUrl: data.posterUrl,
@@ -33261,6 +33293,7 @@ function formatMovieFromAPI(movie: any): MovieCompleteData {
     durationSeconds: movie.durationSeconds || null,
     tipoDuracion: movie.tipoDuracion || '',
     synopsis: movie.synopsis || '',
+    synopsisLocked: movie.synopsisLocked ?? false,
     notes: movie.notes || '',
     tagline: movie.tagline || '',
     posterUrl: movie.posterUrl || '',
@@ -33454,7 +33487,9 @@ export const moviesService = {
       tieneLinks: 'links' in data,
       links: data.links,
       tieneMetaDescription: 'metaDescription' in data,
-      metaDescription: data.metaDescription
+      metaDescription: data.metaDescription,
+      tieneSynopsisLocked: 'synopsisLocked' in data,
+      synopsisLocked: data.synopsisLocked
     })
 
     // NO volver a formatear si los datos ya vienen con campos de fecha separados

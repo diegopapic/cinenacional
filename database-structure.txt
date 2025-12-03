@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-12-02T20:12:38.028Z
+# Generado automáticamente el: 2025-12-03T20:36:39.525Z
 # ================================================
 
 ## Schema Prisma
@@ -51,6 +51,7 @@ model Movie {
   dataCompleteness      DataCompleteness           @default(BASIC_PRESS_KIT) @map("data_completeness")
   metaDescription       String?                    @map("meta_description")
   metaKeywords          String[]                   @map("meta_keywords")
+  synopsisLocked        Boolean                    @default(false) @map("synopsis_locked")
   alternativeTitles     MovieAlternativeTitle[]
   awards                MovieAward[]
   cast                  MovieCast[]
@@ -85,6 +86,7 @@ model Movie {
   @@index([releaseYear, releaseMonth])
   @@index([releaseYear, releaseMonth, releaseDay])
   @@index([createdAt])
+  @@index([synopsisLocked], map: "idx_movies_synopsis_locked")
   @@map("movies")
 }
 
@@ -123,9 +125,8 @@ model AuditLog {
   ip        String?
   userAgent String?
   createdAt DateTime @default(now())
-  
   user      User     @relation(fields: [userId], references: [id])
-  
+
   @@index([userId])
   @@index([createdAt])
   @@map("audit_logs")
@@ -181,37 +182,37 @@ model MovieLink {
 }
 
 model Person {
-  id              Int                 @id @default(autoincrement())
-  slug            String              @unique @db.VarChar(255)
-  firstName       String?             @map("first_name") @db.VarChar(255)
-  lastName        String?             @map("last_name") @db.VarChar(255)
-  realName        String?             @map("real_name") @db.VarChar(255)
-  birthYear       Int?                @map("birth_year")
-  birthMonth      Int?                @map("birth_month") @db.SmallInt
-  birthDay        Int?                @map("birth_day") @db.SmallInt
-  deathYear       Int?                @map("death_year")
-  deathMonth      Int?                @map("death_month") @db.SmallInt
-  deathDay        Int?                @map("death_day") @db.SmallInt
-  birthLocationId Int?                @map("birth_location_id")
-  deathLocationId Int?                @map("death_location_id")
-  biography       String?
-  photoUrl        String?             @map("photo_url") @db.VarChar(500)
-  gender          Gender?
-  hideAge         Boolean             @default(false) @map("hide_age")
-  hasLinks        Boolean             @default(false) @map("has_links")
-  isActive        Boolean             @default(true) @map("is_active")
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
-  photoPublicId   String?             @map("photo_public_id") @db.VarChar(255)
-  awards          MovieAward[]
-  castRoles       MovieCast[]
-  crewRoles       MovieCrew[]
-  birthLocation   Location?           @relation("BirthLocation", fields: [birthLocationId], references: [id])
-  deathLocation   Location?           @relation("DeathLocation", fields: [deathLocationId], references: [id])
-  links           PersonLink[]
-  nationalities   PersonNationality[]
+  id               Int                     @id @default(autoincrement())
+  slug             String                  @unique @db.VarChar(255)
+  firstName        String?                 @map("first_name") @db.VarChar(255)
+  lastName         String?                 @map("last_name") @db.VarChar(255)
+  realName         String?                 @map("real_name") @db.VarChar(255)
+  birthYear        Int?                    @map("birth_year")
+  birthMonth       Int?                    @map("birth_month") @db.SmallInt
+  birthDay         Int?                    @map("birth_day") @db.SmallInt
+  deathYear        Int?                    @map("death_year")
+  deathMonth       Int?                    @map("death_month") @db.SmallInt
+  deathDay         Int?                    @map("death_day") @db.SmallInt
+  birthLocationId  Int?                    @map("birth_location_id")
+  deathLocationId  Int?                    @map("death_location_id")
+  biography        String?
+  photoUrl         String?                 @map("photo_url") @db.VarChar(500)
+  gender           Gender?
+  hideAge          Boolean                 @default(false) @map("hide_age")
+  hasLinks         Boolean                 @default(false) @map("has_links")
+  isActive         Boolean                 @default(true) @map("is_active")
+  createdAt        DateTime                @default(now()) @map("created_at")
+  updatedAt        DateTime                @updatedAt @map("updated_at")
+  photoPublicId    String?                 @map("photo_public_id") @db.VarChar(255)
+  awards           MovieAward[]
+  castRoles        MovieCast[]
+  crewRoles        MovieCrew[]
+  birthLocation    Location?               @relation("BirthLocation", fields: [birthLocationId], references: [id])
+  deathLocation    Location?               @relation("DeathLocation", fields: [deathLocationId], references: [id])
   alternativeNames PersonAlternativeName[]
-  
+  links            PersonLink[]
+  nationalities    PersonNationality[]
+
   @@index([slug])
   @@index([firstName])
   @@index([lastName])
@@ -231,17 +232,13 @@ model PersonAlternativeName {
   personId  Int      @map("person_id")
   firstName String?  @map("first_name") @db.VarChar(255)
   lastName  String?  @map("last_name") @db.VarChar(255)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  
-  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
-  
-  @@index([personId])
-  @@index([firstName])
-  @@index([lastName])
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([lastName], map: "idx_person_alternative_names_last_name")
   @@map("person_alternative_names")
 }
-
 
 model PersonNationality {
   personId   Int      @map("person_id")
@@ -416,10 +413,10 @@ model Location {
   gentilicio          String?             @db.VarChar(255)
   parent              Location?           @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
   children            Location[]          @relation("LocationHierarchy")
+  movieCountries      MovieCountry[]      @relation("MovieCountries")
   peopleBornHere      Person[]            @relation("BirthLocation")
   peopleDiedHere      Person[]            @relation("DeathLocation")
   personNationalities PersonNationality[]
-  movieCountries      MovieCountry[]      @relation("MovieCountries")
 
   @@index([parentId])
   @@index([name])
@@ -551,41 +548,30 @@ model MovieTheme {
   @@map("movie_themes")
 }
 
-// model Country {
-//  id        Int            @id @default(autoincrement())
-//  code      String         @unique @db.VarChar(2)
-//  name      String         @db.VarChar(100)
-//  createdAt DateTime       @default(now()) @map("created_at")
-//  movies    MovieCountry[]
-
-//  @@map("countries")
-// }
-
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@map("sessions")
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -602,12 +588,11 @@ model VerificationToken {
 
 model MovieCountry {
   movieId   Int      @map("movie_id")
-  countryId Int      @map("country_id")  // Ahora apuntará a Location.id
+  countryId Int      @map("country_id")
   isPrimary Boolean  @default(false) @map("is_primary")
-  
+  location  Location @relation("MovieCountries", fields: [countryId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  location  Location @relation("MovieCountries", fields: [countryId], references: [id])
-  
+
   @@id([movieId, countryId])
   @@map("movie_countries")
 }
@@ -622,26 +607,25 @@ model Language {
 }
 
 model User {
-  id            String          @id @default(cuid())
-  email         String          @unique @db.VarChar(255)
-  username      String?         @unique @db.VarChar(100)
-  password      String
-  displayName   String?         @map("display_name") @db.VarChar(255)
-  avatarUrl     String?         @map("avatar_url") @db.VarChar(500)
-  bio           String?
-  role          UserRole        @default(VIEWER)
-  isActive      Boolean         @default(true) @map("is_active")
-  isAdmin       Boolean         @default(false) @map("is_admin")
-  createdAt     DateTime        @default(now()) @map("created_at")
-  updatedAt     DateTime        @updatedAt @map("updated_at")
-  lastLogin     DateTime?       @map("last_login")
-  
-  accounts      Account[]
-  sessions      Session[]
-  ratings       UserRating[]
-  watched       UserWatched[]
-  watchlist     UserWatchlist[]
-  auditLogs     AuditLog[]
+  id          String          @id @default(cuid())
+  email       String          @unique @db.VarChar(255)
+  username    String?         @unique @db.VarChar(100)
+  displayName String?         @map("display_name") @db.VarChar(255)
+  avatarUrl   String?         @map("avatar_url") @db.VarChar(500)
+  bio         String?
+  isActive    Boolean         @default(true) @map("is_active")
+  isAdmin     Boolean         @default(false) @map("is_admin")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  password    String
+  lastLogin   DateTime?       @map("last_login")
+  role        UserRole        @default(VIEWER)
+  accounts    Account[]
+  auditLogs   AuditLog[]
+  sessions    Session[]
+  ratings     UserRating[]
+  watched     UserWatched[]
+  watchlist   UserWatchlist[]
 
   @@map("users")
 }
@@ -680,6 +664,13 @@ model UserWatched {
 
   @@id([userId, movieId])
   @@map("user_watched")
+}
+
+model countries {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique @db.VarChar(2)
+  name       String   @db.VarChar(100)
+  created_at DateTime @default(now())
 }
 
 enum ImageType {
@@ -816,6 +807,7 @@ enum MovieStage {
 
   @@map("movie_stage")
 }
+
 ```
 
 ## SQL Generado
@@ -894,6 +886,7 @@ CREATE TABLE "movies" (
     "data_completeness" "data_completeness" NOT NULL DEFAULT 'BASIC_PRESS_KIT',
     "meta_description" TEXT,
     "meta_keywords" TEXT[],
+    "synopsis_locked" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "movies_pkey" PRIMARY KEY ("id")
 );
@@ -1009,8 +1002,8 @@ CREATE TABLE "person_alternative_names" (
     "person_id" INTEGER NOT NULL,
     "first_name" VARCHAR(255),
     "last_name" VARCHAR(255),
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "person_alternative_names_pkey" PRIMARY KEY ("id")
 );
@@ -1338,16 +1331,16 @@ CREATE TABLE "users" (
     "id" TEXT NOT NULL,
     "email" VARCHAR(255) NOT NULL,
     "username" VARCHAR(100),
-    "password" TEXT NOT NULL,
     "display_name" VARCHAR(255),
     "avatar_url" VARCHAR(500),
     "bio" TEXT,
-    "role" "UserRole" NOT NULL DEFAULT 'VIEWER',
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "is_admin" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "password" TEXT NOT NULL,
     "last_login" TIMESTAMP(3),
+    "role" "UserRole" NOT NULL DEFAULT 'VIEWER',
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
@@ -1380,6 +1373,16 @@ CREATE TABLE "user_watched" (
     "watched_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "user_watched_pkey" PRIMARY KEY ("user_id","movie_id")
+);
+
+-- CreateTable
+CREATE TABLE "countries" (
+    "id" SERIAL NOT NULL,
+    "code" VARCHAR(2) NOT NULL,
+    "name" VARCHAR(100) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "countries_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -1429,6 +1432,9 @@ CREATE INDEX "movies_release_year_release_month_release_day_idx" ON "movies"("re
 
 -- CreateIndex
 CREATE INDEX "movies_created_at_idx" ON "movies"("created_at");
+
+-- CreateIndex
+CREATE INDEX "idx_movies_synopsis_locked" ON "movies"("synopsis_locked");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "screening_venues_slug_key" ON "screening_venues"("slug");
@@ -1509,13 +1515,7 @@ CREATE INDEX "people_death_year_death_month_idx" ON "people"("death_year", "deat
 CREATE INDEX "people_created_at_idx" ON "people"("created_at");
 
 -- CreateIndex
-CREATE INDEX "person_alternative_names_person_id_idx" ON "person_alternative_names"("person_id");
-
--- CreateIndex
-CREATE INDEX "person_alternative_names_first_name_idx" ON "person_alternative_names"("first_name");
-
--- CreateIndex
-CREATE INDEX "person_alternative_names_last_name_idx" ON "person_alternative_names"("last_name");
+CREATE INDEX "idx_person_alternative_names_last_name" ON "person_alternative_names"("last_name");
 
 -- CreateIndex
 CREATE INDEX "person_links_person_id_idx" ON "person_links"("person_id");
@@ -1637,6 +1637,9 @@ CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 -- CreateIndex
 CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "countries_code_key" ON "countries"("code");
+
 -- AddForeignKey
 ALTER TABLE "movies" ADD CONSTRAINT "movies_color_type_id_fkey" FOREIGN KEY ("color_type_id") REFERENCES "color_types"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -1665,7 +1668,7 @@ ALTER TABLE "people" ADD CONSTRAINT "people_birth_location_id_fkey" FOREIGN KEY 
 ALTER TABLE "people" ADD CONSTRAINT "people_death_location_id_fkey" FOREIGN KEY ("death_location_id") REFERENCES "locations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "person_alternative_names" ADD CONSTRAINT "person_alternative_names_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "person_alternative_names" ADD CONSTRAINT "person_alternative_names_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "person_nationalities" ADD CONSTRAINT "person_nationalities_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "locations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1740,10 +1743,10 @@ ALTER TABLE "sessions" ADD CONSTRAINT "sessions_userId_fkey" FOREIGN KEY ("userI
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "movie_countries" ADD CONSTRAINT "movie_countries_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_countries" ADD CONSTRAINT "movie_countries_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "locations"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "movie_countries" ADD CONSTRAINT "movie_countries_country_id_fkey" FOREIGN KEY ("country_id") REFERENCES "locations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "movie_countries" ADD CONSTRAINT "movie_countries_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "user_ratings" ADD CONSTRAINT "user_ratings_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
