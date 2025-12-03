@@ -284,6 +284,7 @@ export function useMovieForm({
                 trailerUrl: fullMovie.trailerUrl || '',
                 originalTitle: fullMovie.originalTitle || '',
                 synopsis: fullMovie.synopsis || '',
+                synopsisLocked: fullMovie.synopsisLocked ?? false, 
                 notes: fullMovie.notes || '',
                 aspectRatio: fullMovie.aspectRatio || '',
                 soundType: fullMovie.soundType || '',
@@ -739,6 +740,7 @@ export function useMovieForm({
         reset({
             stage: 'COMPLETA',
             dataCompleteness: 'BASIC_PRESS_KIT',
+            synopsisLocked: false,
             metaDescription: '',
             metaKeywords: []
         })

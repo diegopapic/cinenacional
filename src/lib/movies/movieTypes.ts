@@ -23,6 +23,7 @@ export const movieFormFieldsSchema = z.object({
   // Información básica
   originalTitle: z.string().optional(),
   synopsis: z.string().optional(),
+  synopsisLocked: z.boolean().optional().default(false),
   notes: z.string().optional(),
   tagline: z.string().optional(),
   imdbId: z.string().optional(),

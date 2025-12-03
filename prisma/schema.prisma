@@ -44,6 +44,7 @@ model Movie {
   dataCompleteness      DataCompleteness           @default(BASIC_PRESS_KIT) @map("data_completeness")
   metaDescription       String?                    @map("meta_description")
   metaKeywords          String[]                   @map("meta_keywords")
+  synopsisLocked        Boolean                    @default(false) @map("synopsis_locked")
   alternativeTitles     MovieAlternativeTitle[]
   awards                MovieAward[]
   cast                  MovieCast[]
@@ -78,6 +79,7 @@ model Movie {
   @@index([releaseYear, releaseMonth])
   @@index([releaseYear, releaseMonth, releaseDay])
   @@index([createdAt])
+  @@index([synopsisLocked], map: "idx_movies_synopsis_locked")
   @@map("movies")
 }
 
@@ -116,9 +118,8 @@ model AuditLog {
   ip        String?
   userAgent String?
   createdAt DateTime @default(now())
-  
   user      User     @relation(fields: [userId], references: [id])
-  
+
   @@index([userId])
   @@index([createdAt])
   @@map("audit_logs")
@@ -174,37 +175,37 @@ model MovieLink {
 }
 
 model Person {
-  id              Int                 @id @default(autoincrement())
-  slug            String              @unique @db.VarChar(255)
-  firstName       String?             @map("first_name") @db.VarChar(255)
-  lastName        String?             @map("last_name") @db.VarChar(255)
-  realName        String?             @map("real_name") @db.VarChar(255)
-  birthYear       Int?                @map("birth_year")
-  birthMonth      Int?                @map("birth_month") @db.SmallInt
-  birthDay        Int?                @map("birth_day") @db.SmallInt
-  deathYear       Int?                @map("death_year")
-  deathMonth      Int?                @map("death_month") @db.SmallInt
-  deathDay        Int?                @map("death_day") @db.SmallInt
-  birthLocationId Int?                @map("birth_location_id")
-  deathLocationId Int?                @map("death_location_id")
-  biography       String?
-  photoUrl        String?             @map("photo_url") @db.VarChar(500)
-  gender          Gender?
-  hideAge         Boolean             @default(false) @map("hide_age")
-  hasLinks        Boolean             @default(false) @map("has_links")
-  isActive        Boolean             @default(true) @map("is_active")
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
-  photoPublicId   String?             @map("photo_public_id") @db.VarChar(255)
-  awards          MovieAward[]
-  castRoles       MovieCast[]
-  crewRoles       MovieCrew[]
-  birthLocation   Location?           @relation("BirthLocation", fields: [birthLocationId], references: [id])
-  deathLocation   Location?           @relation("DeathLocation", fields: [deathLocationId], references: [id])
-  links           PersonLink[]
-  nationalities   PersonNationality[]
+  id               Int                     @id @default(autoincrement())
+  slug             String                  @unique @db.VarChar(255)
+  firstName        String?                 @map("first_name") @db.VarChar(255)
+  lastName         String?                 @map("last_name") @db.VarChar(255)
+  realName         String?                 @map("real_name") @db.VarChar(255)
+  birthYear        Int?                    @map("birth_year")
+  birthMonth       Int?                    @map("birth_month") @db.SmallInt
+  birthDay         Int?                    @map("birth_day") @db.SmallInt
+  deathYear        Int?                    @map("death_year")
+  deathMonth       Int?                    @map("death_month") @db.SmallInt
+  deathDay         Int?                    @map("death_day") @db.SmallInt
+  birthLocationId  Int?                    @map("birth_location_id")
+  deathLocationId  Int?                    @map("death_location_id")
+  biography        String?
+  photoUrl         String?                 @map("photo_url") @db.VarChar(500)
+  gender           Gender?
+  hideAge          Boolean                 @default(false) @map("hide_age")
+  hasLinks         Boolean                 @default(false) @map("has_links")
+  isActive         Boolean                 @default(true) @map("is_active")
+  createdAt        DateTime                @default(now()) @map("created_at")
+  updatedAt        DateTime                @updatedAt @map("updated_at")
+  photoPublicId    String?                 @map("photo_public_id") @db.VarChar(255)
+  awards           MovieAward[]
+  castRoles        MovieCast[]
+  crewRoles        MovieCrew[]
+  birthLocation    Location?               @relation("BirthLocation", fields: [birthLocationId], references: [id])
+  deathLocation    Location?               @relation("DeathLocation", fields: [deathLocationId], references: [id])
   alternativeNames PersonAlternativeName[]
-  
+  links            PersonLink[]
+  nationalities    PersonNationality[]
+
   @@index([slug])
   @@index([firstName])
   @@index([lastName])
@@ -224,17 +225,13 @@ model PersonAlternativeName {
   personId  Int      @map("person_id")
   firstName String?  @map("first_name") @db.VarChar(255)
   lastName  String?  @map("last_name") @db.VarChar(255)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  
-  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
-  
-  @@index([personId])
-  @@index([firstName])
-  @@index([lastName])
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([lastName], map: "idx_person_alternative_names_last_name")
   @@map("person_alternative_names")
 }
-
 
 model PersonNationality {
   personId   Int      @map("person_id")
@@ -409,10 +406,10 @@ model Location {
   gentilicio          String?             @db.VarChar(255)
   parent              Location?           @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
   children            Location[]          @relation("LocationHierarchy")
+  movieCountries      MovieCountry[]      @relation("MovieCountries")
   peopleBornHere      Person[]            @relation("BirthLocation")
   peopleDiedHere      Person[]            @relation("DeathLocation")
   personNationalities PersonNationality[]
-  movieCountries      MovieCountry[]      @relation("MovieCountries")
 
   @@index([parentId])
   @@index([name])
@@ -544,41 +541,30 @@ model MovieTheme {
   @@map("movie_themes")
 }
 
-// model Country {
-//  id        Int            @id @default(autoincrement())
-//  code      String         @unique @db.VarChar(2)
-//  name      String         @db.VarChar(100)
-//  createdAt DateTime       @default(now()) @map("created_at")
-//  movies    MovieCountry[]
-
-//  @@map("countries")
-// }
-
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@map("sessions")
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -595,12 +581,11 @@ model VerificationToken {
 
 model MovieCountry {
   movieId   Int      @map("movie_id")
-  countryId Int      @map("country_id")  // Ahora apuntará a Location.id
+  countryId Int      @map("country_id")
   isPrimary Boolean  @default(false) @map("is_primary")
-  
+  location  Location @relation("MovieCountries", fields: [countryId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  location  Location @relation("MovieCountries", fields: [countryId], references: [id])
-  
+
   @@id([movieId, countryId])
   @@map("movie_countries")
 }
@@ -615,26 +600,25 @@ model Language {
 }
 
 model User {
-  id            String          @id @default(cuid())
-  email         String          @unique @db.VarChar(255)
-  username      String?         @unique @db.VarChar(100)
-  password      String
-  displayName   String?         @map("display_name") @db.VarChar(255)
-  avatarUrl     String?         @map("avatar_url") @db.VarChar(500)
-  bio           String?
-  role          UserRole        @default(VIEWER)
-  isActive      Boolean         @default(true) @map("is_active")
-  isAdmin       Boolean         @default(false) @map("is_admin")
-  createdAt     DateTime        @default(now()) @map("created_at")
-  updatedAt     DateTime        @updatedAt @map("updated_at")
-  lastLogin     DateTime?       @map("last_login")
-  
-  accounts      Account[]
-  sessions      Session[]
-  ratings       UserRating[]
-  watched       UserWatched[]
-  watchlist     UserWatchlist[]
-  auditLogs     AuditLog[]
+  id          String          @id @default(cuid())
+  email       String          @unique @db.VarChar(255)
+  username    String?         @unique @db.VarChar(100)
+  displayName String?         @map("display_name") @db.VarChar(255)
+  avatarUrl   String?         @map("avatar_url") @db.VarChar(500)
+  bio         String?
+  isActive    Boolean         @default(true) @map("is_active")
+  isAdmin     Boolean         @default(false) @map("is_admin")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  password    String
+  lastLogin   DateTime?       @map("last_login")
+  role        UserRole        @default(VIEWER)
+  accounts    Account[]
+  auditLogs   AuditLog[]
+  sessions    Session[]
+  ratings     UserRating[]
+  watched     UserWatched[]
+  watchlist   UserWatchlist[]
 
   @@map("users")
 }
@@ -673,6 +657,13 @@ model UserWatched {
 
   @@id([userId, movieId])
   @@map("user_watched")
+}
+
+model countries {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique @db.VarChar(2)
+  name       String   @db.VarChar(100)
+  created_at DateTime @default(now())
 }
 
 enum ImageType {

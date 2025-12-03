@@ -24,6 +24,7 @@ function formatMovieDataForAPI(data: MovieCompleteData): any {
     durationSeconds: data.durationSeconds,
     tipoDuracion: data.tipoDuracion,
     synopsis: data.synopsis,
+    synopsisLocked: data.synopsisLocked ?? false,
     notes: data.notes,
     tagline: data.tagline,
     posterUrl: data.posterUrl,
@@ -122,6 +123,7 @@ function formatMovieFromAPI(movie: any): MovieCompleteData {
     durationSeconds: movie.durationSeconds || null,
     tipoDuracion: movie.tipoDuracion || '',
     synopsis: movie.synopsis || '',
+    synopsisLocked: movie.synopsisLocked ?? false,
     notes: movie.notes || '',
     tagline: movie.tagline || '',
     posterUrl: movie.posterUrl || '',
@@ -315,7 +317,9 @@ export const moviesService = {
       tieneLinks: 'links' in data,
       links: data.links,
       tieneMetaDescription: 'metaDescription' in data,
-      metaDescription: data.metaDescription
+      metaDescription: data.metaDescription,
+      tieneSynopsisLocked: 'synopsisLocked' in data,
+      synopsisLocked: data.synopsisLocked
     })
 
     // NO volver a formatear si los datos ya vienen con campos de fecha separados
