@@ -221,19 +221,15 @@ export function MoviePageClient({
                 />
             </div>
             */ }
-            {/* Trailer 
-            {movie.trailerUrl ? (
+
+            {/* Trailer - Solo se muestra si hay URL */}
+            {movie.trailerUrl && (
                 <TrailerSection
                     trailerUrl={movie.trailerUrl}
                     movieTitle={movie.title}
                 />
-            ) : (
-                <TrailerSection
-                    trailerUrl="https://youtu.be/3BxE9osMt5U?si=mLEH7dp-ll7ZJsXG"
-                    movieTitle={movie.title}
-                />
             )}
-            */}
+
             {/* Similar Movies - TODO: Implementar con datos reales
             <SimilarMovies
                 movies={[
