@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 05b363445bfa8746ad88578a86aecaf3a00afa93
-// Fecha: 2025-12-03T20:36:38.688Z
+// Commit: 105a19d09e88b253b6872e7cac73d67f0e7ff237
+// Fecha: 2025-12-04T02:34:59.033Z
 // ============================================
 
 
@@ -2937,19 +2937,15 @@ export function MoviePageClient({
                 />
             </div>
             */ }
-            {/* Trailer 
-            {movie.trailerUrl ? (
+
+            {/* Trailer - Solo se muestra si hay URL */}
+            {movie.trailerUrl && (
                 <TrailerSection
                     trailerUrl={movie.trailerUrl}
                     movieTitle={movie.title}
                 />
-            ) : (
-                <TrailerSection
-                    trailerUrl="https://youtu.be/3BxE9osMt5U?si=mLEH7dp-ll7ZJsXG"
-                    movieTitle={movie.title}
-                />
             )}
-            */}
+
             {/* Similar Movies - TODO: Implementar con datos reales
             <SimilarMovies
                 movies={[
@@ -32734,16 +32730,16 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('X-XSS-Protection', '1; mode=block')
   
-  // CSP actualizado con Google Analytics, Cloudinary y AdSense
+  // CSP actualizado con Google Analytics, Cloudinary, AdSense y YouTube
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://res.cloudinary.com https://upload-widget.cloudinary.com https://pagead2.googlesyndication.com https://adservice.google.com https://*.googlesyndication.com https://*.google; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "img-src 'self' blob: data: https://res.cloudinary.com https://*.cloudinary.com https://images.unsplash.com https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.google.com https://*.google; " +
+    "img-src 'self' blob: data: https://res.cloudinary.com https://*.cloudinary.com https://images.unsplash.com https://img.youtube.com https://i.ytimg.com https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.google.com https://*.google; " +
     "font-src 'self' data: https://fonts.gstatic.com; " +
     "connect-src 'self' https://res.cloudinary.com https://api.cloudinary.com https://*.cloudinary.com https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://region1.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.google https://*.doubleclick.net; " +
-    "frame-src 'self' https://upload-widget.cloudinary.com https://*.cloudinary.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.google; " +
+    "frame-src 'self' https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://upload-widget.cloudinary.com https://*.cloudinary.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.google; " +
     "media-src 'self' https://res.cloudinary.com; " +
     "object-src 'none'; " +
     "base-uri 'self'; " +
