@@ -91,16 +91,16 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('X-XSS-Protection', '1; mode=block')
   
-  // CSP actualizado con Google Analytics, Cloudinary y AdSense
+  // CSP actualizado con Google Analytics, Cloudinary, AdSense y YouTube
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; " +
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://res.cloudinary.com https://upload-widget.cloudinary.com https://pagead2.googlesyndication.com https://adservice.google.com https://*.googlesyndication.com https://*.google; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "img-src 'self' blob: data: https://res.cloudinary.com https://*.cloudinary.com https://images.unsplash.com https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.google.com https://*.google; " +
+    "img-src 'self' blob: data: https://res.cloudinary.com https://*.cloudinary.com https://images.unsplash.com https://img.youtube.com https://i.ytimg.com https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.google.com https://*.google; " +
     "font-src 'self' data: https://fonts.gstatic.com; " +
     "connect-src 'self' https://res.cloudinary.com https://api.cloudinary.com https://*.cloudinary.com https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://region1.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.google https://*.doubleclick.net; " +
-    "frame-src 'self' https://upload-widget.cloudinary.com https://*.cloudinary.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.google; " +
+    "frame-src 'self' https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://upload-widget.cloudinary.com https://*.cloudinary.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.google; " +
     "media-src 'self' https://res.cloudinary.com; " +
     "object-src 'none'; " +
     "base-uri 'self'; " +
