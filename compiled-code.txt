@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 942c50d54e5e4c81e75fd3f134197a5a965f616a
-// Fecha: 2025-12-06T20:12:19.433Z
+// Commit: ddfc47ee22142859b1669ae34dd27e5e68540b55
+// Fecha: 2025-12-06T20:39:59.534Z
 // ============================================
 
 
@@ -26185,7 +26185,7 @@ export default function HeroSection({ images }: HeroSectionProps) {
             <div className="text-right">
               {currentImage.movie ? (
                 <Link 
-                  href={`/peliculas/${currentImage.movie.slug}`}
+                  href={`/pelicula/${currentImage.movie.slug}`}
                   className="text-xs text-gray-400 hover:text-white transition-colors"
                 >
                   {generateCaption(currentImage)}

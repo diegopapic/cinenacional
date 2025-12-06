@@ -185,7 +185,7 @@ export default function HeroSection({ images }: HeroSectionProps) {
             <div className="text-right">
               {currentImage.movie ? (
                 <Link 
-                  href={`/peliculas/${currentImage.movie.slug}`}
+                  href={`/pelicula/${currentImage.movie.slug}`}
                   className="text-xs text-gray-400 hover:text-white transition-colors"
                 >
                   {generateCaption(currentImage)}
