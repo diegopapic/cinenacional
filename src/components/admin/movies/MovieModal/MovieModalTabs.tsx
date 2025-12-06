@@ -1,6 +1,6 @@
 // src/components/admin/movies/MovieModal/MovieModalTabs.tsx
 import * as Tabs from '@radix-ui/react-tabs'
-import { Info, Image, Users, Briefcase, Settings } from 'lucide-react'
+import { Info, Image, Users, Briefcase, Settings, Images } from 'lucide-react'
 
 interface MovieModalTabsProps {
   activeTab: string
@@ -12,6 +12,7 @@ const TABS = [
   { value: 'media', label: 'Multimedia', icon: Image },
   { value: 'cast', label: 'Reparto', icon: Users },
   { value: 'crew', label: 'Equipo Técnico', icon: Briefcase },
+  { value: 'images', label: 'Imágenes', icon: Images },
   { value: 'advanced', label: 'Avanzado', icon: Settings }
 ]
 

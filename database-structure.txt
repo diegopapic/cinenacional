@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-12-04T02:34:59.847Z
+# Generado automáticamente el: 2025-12-06T18:26:40.910Z
 # ================================================
 
 ## Schema Prisma
@@ -59,7 +59,7 @@ model Movie {
   crew                  MovieCrew[]
   distributionCompanies MovieDistributionCompany[]
   genres                MovieGenre[]
-  images                MovieImage[]
+  images                Image[]
   links                 MovieLink[]
   productionCompanies   MovieProductionCompany[]
   screenings            MovieScreening[]
@@ -212,6 +212,7 @@ model Person {
   alternativeNames PersonAlternativeName[]
   links            PersonLink[]
   nationalities    PersonNationality[]
+  imageAppearances ImagePerson[]
 
   @@index([slug])
   @@index([firstName])
@@ -422,23 +423,6 @@ model Location {
   @@index([name])
   @@index([slug])
   @@map("locations")
-}
-
-model MovieImage {
-  id           Int       @id @default(autoincrement())
-  movieId      Int       @map("movie_id")
-  url          String    @db.VarChar(500)
-  type         ImageType
-  width        Int?
-  height       Int?
-  caption      String?
-  photographer String?   @db.VarChar(255)
-  displayOrder Int       @default(0) @map("display_order")
-  isPrimary    Boolean   @default(false) @map("is_primary")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  movie        Movie     @relation(fields: [movieId], references: [id], onDelete: Cascade)
-
-  @@map("movie_images")
 }
 
 model MovieVideo {
@@ -673,13 +657,51 @@ model countries {
   created_at DateTime @default(now())
 }
 
-enum ImageType {
-  POSTER
-  BACKDROP
-  STILL
-  BEHIND_SCENES
+// Tabla principal de imágenes
+model Image {
+  id                  Int           @id @default(autoincrement())
+  cloudinaryPublicId  String        @unique @map("cloudinary_public_id")
+  type                ImageType
+  photoDate           DateTime?     @map("photo_date")
+  photographerCredit  String?       @map("photographer_credit")
+  eventName           String?       @map("event_name")
+  
+  movieId             Int?          @map("movie_id")
+  movie               Movie?        @relation(fields: [movieId], references: [id], onDelete: SetNull)
+  
+  people              ImagePerson[]
+  
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+  
+  @@index([movieId])
+  @@index([type])
+  @@index([photoDate])
+  @@map("images")
+}
 
-  @@map("image_type")
+// Tabla intermedia imagen-persona
+model ImagePerson {
+  id        Int     @id @default(autoincrement())
+  imageId   Int     @map("image_id")
+  personId  Int     @map("person_id")
+  position  Int     @default(0)
+  
+  image     Image   @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  person    Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
+  
+  @@unique([imageId, personId])
+  @@index([imageId])
+  @@index([personId])
+  @@map("image_people")
+}
+
+enum ImageType {
+  STILL
+  BEHIND_THE_SCENES
+  PUBLICITY
+  EVENT
+  PREMIERE
 }
 
 enum UserRole {
@@ -814,7 +836,7 @@ enum MovieStage {
 
 ```sql
 -- CreateEnum
-CREATE TYPE "image_type" AS ENUM ('POSTER', 'BACKDROP', 'STILL', 'BEHIND_SCENES');
+CREATE TYPE "ImageType" AS ENUM ('STILL', 'BEHIND_THE_SCENES', 'PUBLICITY', 'EVENT', 'PREMIERE');
 
 -- CreateEnum
 CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'EDITOR', 'VIEWER');
@@ -1161,23 +1183,6 @@ CREATE TABLE "locations" (
 );
 
 -- CreateTable
-CREATE TABLE "movie_images" (
-    "id" SERIAL NOT NULL,
-    "movie_id" INTEGER NOT NULL,
-    "url" VARCHAR(500) NOT NULL,
-    "type" "image_type" NOT NULL,
-    "width" INTEGER,
-    "height" INTEGER,
-    "caption" TEXT,
-    "photographer" VARCHAR(255),
-    "display_order" INTEGER NOT NULL DEFAULT 0,
-    "is_primary" BOOLEAN NOT NULL DEFAULT false,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "movie_images_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "movie_videos" (
     "id" SERIAL NOT NULL,
     "movie_id" INTEGER NOT NULL,
@@ -1383,6 +1388,31 @@ CREATE TABLE "countries" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "countries_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "images" (
+    "id" SERIAL NOT NULL,
+    "cloudinary_public_id" TEXT NOT NULL,
+    "type" "ImageType" NOT NULL,
+    "photo_date" TIMESTAMP(3),
+    "photographer_credit" TEXT,
+    "event_name" TEXT,
+    "movie_id" INTEGER,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "images_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "image_people" (
+    "id" SERIAL NOT NULL,
+    "image_id" INTEGER NOT NULL,
+    "person_id" INTEGER NOT NULL,
+    "position" INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT "image_people_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -1640,6 +1670,27 @@ CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 -- CreateIndex
 CREATE UNIQUE INDEX "countries_code_key" ON "countries"("code");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "images_cloudinary_public_id_key" ON "images"("cloudinary_public_id");
+
+-- CreateIndex
+CREATE INDEX "images_movie_id_idx" ON "images"("movie_id");
+
+-- CreateIndex
+CREATE INDEX "images_type_idx" ON "images"("type");
+
+-- CreateIndex
+CREATE INDEX "images_photo_date_idx" ON "images"("photo_date");
+
+-- CreateIndex
+CREATE INDEX "image_people_image_id_idx" ON "image_people"("image_id");
+
+-- CreateIndex
+CREATE INDEX "image_people_person_id_idx" ON "image_people"("person_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "image_people_image_id_person_id_key" ON "image_people"("image_id", "person_id");
+
 -- AddForeignKey
 ALTER TABLE "movies" ADD CONSTRAINT "movies_color_type_id_fkey" FOREIGN KEY ("color_type_id") REFERENCES "color_types"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -1716,9 +1767,6 @@ ALTER TABLE "movie_distribution_companies" ADD CONSTRAINT "movie_distribution_co
 ALTER TABLE "locations" ADD CONSTRAINT "locations_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "locations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "movie_images" ADD CONSTRAINT "movie_images_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "movie_videos" ADD CONSTRAINT "movie_videos_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -1765,6 +1813,15 @@ ALTER TABLE "user_watched" ADD CONSTRAINT "user_watched_movie_id_fkey" FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE "user_watched" ADD CONSTRAINT "user_watched_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "images" ADD CONSTRAINT "images_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "image_people" ADD CONSTRAINT "image_people_image_id_fkey" FOREIGN KEY ("image_id") REFERENCES "images"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "image_people" ADD CONSTRAINT "image_people_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 
 ```

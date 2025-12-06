@@ -209,8 +209,24 @@ export async function GET(
         },
 
         images: {
-          orderBy: { displayOrder: 'asc' }
-        },
+  orderBy: { createdAt: 'desc' },
+  include: {
+    people: {
+      include: {
+        person: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      },
+      orderBy: {
+        position: 'asc'
+      }
+    }
+  }
+},
 
         videos: {
           orderBy: { isPrimary: 'desc' }
