@@ -5,13 +5,33 @@ import { prisma } from '@/lib/prisma'
 // GET /api/images/hero - Obtener imágenes para el hero (una por película)
 export async function GET(request: NextRequest) {
   try {
-    // Obtener las últimas 50 imágenes ordenadas por fecha de creación
-    const recentImages = await prisma.image.findMany({
+    // Primero: obtener las últimas 5 películas que tienen imágenes
+    const moviesWithImages = await prisma.movie.findMany({
       where: {
-        movieId: { not: null }  // Solo imágenes asociadas a películas
+        images: {
+          some: {} // Películas que tienen al menos una imagen
+        }
       },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
+      orderBy: {
+        updatedAt: 'desc'
+      },
+      take: 5,
+      select: {
+        id: true
+      }
+    })
+
+    if (moviesWithImages.length === 0) {
+      return NextResponse.json({ images: [] })
+    }
+
+    const movieIds = moviesWithImages.map(m => m.id)
+
+    // Segundo: obtener todas las imágenes de esas películas
+    const images = await prisma.image.findMany({
+      where: {
+        movieId: { in: movieIds }
+      },
       include: {
         movie: {
           select: {
@@ -38,26 +58,26 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Agrupar por película y seleccionar una imagen al azar de cada una
-    const movieImagesMap = new Map<number, typeof recentImages>()
+    // Tercero: agrupar por película y elegir una al azar de cada una
+    const imagesByMovie = new Map<number, typeof images>()
     
-    for (const image of recentImages) {
+    for (const image of images) {
       if (image.movieId) {
-        const existing = movieImagesMap.get(image.movieId) || []
+        const existing = imagesByMovie.get(image.movieId) || []
         existing.push(image)
-        movieImagesMap.set(image.movieId, existing)
+        imagesByMovie.set(image.movieId, existing)
       }
     }
 
-    // Obtener las primeras 5 películas (las más recientes) y elegir una imagen al azar de cada una
-    const heroImages: typeof recentImages = []
-    const movieIds = Array.from(movieImagesMap.keys()).slice(0, 5)
-
+    // Seleccionar una imagen al azar de cada película
+    const heroImages: typeof images = []
+    
     for (const movieId of movieIds) {
-      const images = movieImagesMap.get(movieId)!
-      // Seleccionar una imagen al azar de esta película
-      const randomIndex = Math.floor(Math.random() * images.length)
-      heroImages.push(images[randomIndex])
+      const movieImages = imagesByMovie.get(movieId)
+      if (movieImages && movieImages.length > 0) {
+        const randomIndex = Math.floor(Math.random() * movieImages.length)
+        heroImages.push(movieImages[randomIndex])
+      }
     }
 
     return NextResponse.json({
