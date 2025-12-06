@@ -12,6 +12,7 @@ import BasicInfoTab from './tabs/BasicInfoTab'
 import MediaTab from './tabs/MediaTab'
 import CastTab from './tabs/CastTab'
 import CrewTab from './tabs/CrewTab'
+import ImagesTab from './tabs/ImagesTab'
 import AdvancedTab from './tabs/AdvancedTab'
 
 interface MovieModalProps {
@@ -63,6 +64,10 @@ export default function MovieModal({ isOpen, onClose }: MovieModalProps) {
 
               <Tabs.Content value="crew">
                 <CrewTab />
+              </Tabs.Content>
+
+              <Tabs.Content value="images">
+                <ImagesTab />
               </Tabs.Content>
 
               <Tabs.Content value="advanced">
