@@ -3,7 +3,7 @@
 
 import { CldUploadWidget } from 'next-cloudinary'
 import { useState, useRef, useCallback } from 'react'
-import { Upload, ImagePlus } from 'lucide-react'
+import { ImagePlus } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
 interface MultiImageUploadProps {
@@ -18,40 +18,46 @@ export function MultiImageUpload({
   disabled = false 
 }: MultiImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
-  const [uploadedIds, setUploadedIds] = useState<string[]>([])
+  const [uploadCount, setUploadCount] = useState(0)
   const widgetRef = useRef<(() => void) | null>(null)
+  
+  // Usar ref para los IDs (evita problemas de closure)
+  const uploadedIdsRef = useRef<string[]>([])
 
   const handleUploadSuccess = useCallback((result: any) => {
     if (result.info) {
       const { public_id } = result.info
       console.log('✅ Imagen subida:', public_id)
-      setUploadedIds(prev => [...prev, public_id])
+      uploadedIdsRef.current.push(public_id)
+      setUploadCount(prev => prev + 1)
     }
   }, [])
 
   const handleClose = useCallback(() => {
-    console.log('🚪 Widget cerrado, imágenes subidas:', uploadedIds.length)
+    const uploadedIds = uploadedIdsRef.current
+    console.log('🚪 Widget cerrado, imágenes subidas:', uploadedIds.length, uploadedIds)
+    
     setIsUploading(false)
     
     if (uploadedIds.length > 0) {
-      onUploadComplete(uploadedIds)
-      setUploadedIds([])
+      onUploadComplete([...uploadedIds]) // Pasar copia del array
       toast.success(`${uploadedIds.length} imagen(es) subida(s)`)
     }
     
+    // Resetear para próxima subida
+    uploadedIdsRef.current = []
+    setUploadCount(0)
+    
     // Restaurar scroll
     document.body.style.overflow = ''
-  }, [uploadedIds, onUploadComplete])
-
-  const handleQueuesEnd = useCallback((result: any, { widget }: any) => {
-    console.log('📦 Todas las imágenes procesadas')
-    // No cerrar automáticamente, dejar que el usuario cierre
-  }, [])
+  }, [onUploadComplete])
 
   const openWidget = useCallback(() => {
     if (widgetRef.current && !isUploading) {
+      // Resetear antes de abrir
+      uploadedIdsRef.current = []
+      setUploadCount(0)
       setIsUploading(true)
-      setUploadedIds([])
       widgetRef.current()
     }
   }, [isUploading])
@@ -93,7 +99,6 @@ export function MultiImageUpload({
       }}
       onSuccess={handleUploadSuccess}
       onClose={handleClose}
-      onQueuesEnd={handleQueuesEnd}
     >
       {({ open }) => {
         widgetRef.current = open
@@ -109,7 +114,7 @@ export function MultiImageUpload({
               <>
                 <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
                 <p className="text-sm font-medium text-gray-700">
-                  Subiendo imágenes... ({uploadedIds.length} completadas)
+                  Subiendo imágenes... ({uploadCount} completadas)
                 </p>
               </>
             ) : (
