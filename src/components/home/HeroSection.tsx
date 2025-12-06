@@ -28,13 +28,11 @@ interface HeroSectionProps {
   images: HeroImage[];
 }
 
-// Generar URL de Cloudinary optimizada para hero (sin crop forzado)
 function getHeroImageUrl(publicId: string): string {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   return `https://res.cloudinary.com/${cloudName}/image/upload/w_1280,q_auto,f_auto/${publicId}`;
 }
 
-// Generar caption para la imagen
 function generateCaption(image: HeroImage): string {
   const parts: string[] = [];
 
@@ -72,20 +70,75 @@ function generateCaption(image: HeroImage): string {
   return parts.join(' ') || '';
 }
 
+function HeroImageWithGradients({ 
+  image, 
+  isVisible 
+}: { 
+  image: HeroImage; 
+  isVisible: boolean;
+}) {
+  return (
+    <div 
+      className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${
+        isVisible ? 'opacity-100' : 'opacity-0'
+      }`}
+    >
+      {/* Wrapper relativo a la imagen */}
+      <div className="relative inline-block max-h-[500px]">
+        <img
+          src={getHeroImageUrl(image.cloudinaryPublicId)}
+          alt={generateCaption(image)}
+          className="max-w-full max-h-[500px] block"
+        />
+        
+        {/* Gradientes relativos a la imagen */}
+        <div 
+          className="absolute left-0 top-0 bottom-0 w-1/4 pointer-events-none"
+          style={{
+            background: 'linear-gradient(90deg, #0f1419 0%, rgba(15,20,25,0.7) 40%, transparent 100%)'
+          }}
+        />
+        
+        <div 
+          className="absolute right-0 top-0 bottom-0 w-1/4 pointer-events-none"
+          style={{
+            background: 'linear-gradient(270deg, #0f1419 0%, rgba(15,20,25,0.7) 40%, transparent 100%)'
+          }}
+        />
+        
+        <div 
+          className="absolute top-0 left-0 right-0 h-1/4 pointer-events-none"
+          style={{
+            background: 'linear-gradient(180deg, #0f1419 0%, rgba(15,20,25,0.6) 50%, transparent 100%)'
+          }}
+        />
+        
+        <div 
+          className="absolute bottom-0 left-0 right-0 h-1/3 pointer-events-none"
+          style={{
+            background: 'linear-gradient(0deg, #0f1419 0%, rgba(15,20,25,0.7) 50%, transparent 100%)'
+          }}
+        />
+
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse at center, transparent 40%, rgba(15,20,25,0.3) 100%)'
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function HeroSection({ images }: HeroSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     if (images.length <= 1) return;
 
     const interval = setInterval(() => {
-      setIsTransitioning(true);
-      
-      setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % images.length);
-        setIsTransitioning(false);
-      }, 500);
+      setCurrentIndex((prev) => (prev + 1) % images.length);
     }, 15000);
 
     return () => clearInterval(interval);
@@ -94,96 +147,30 @@ export default function HeroSection({ images }: HeroSectionProps) {
   if (!images || images.length === 0) return null;
 
   const currentImage = images[currentIndex];
-  const nextIndex = (currentIndex + 1) % images.length;
-  const nextImage = images[nextIndex];
 
   return (
     <div className="relative bg-cine-dark -mt-16 pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative">
-          {/* Contenedor de imagen */}
-          <div className="relative flex items-center justify-center max-h-[500px] overflow-hidden rounded-lg">
-            {/* Imagen actual */}
-            <img
-              key={`current-${currentIndex}`}
-              src={getHeroImageUrl(currentImage.cloudinaryPublicId)}
-              alt={generateCaption(currentImage)}
-              className={`max-w-full max-h-[500px] object-contain transition-opacity duration-500 ${
-                isTransitioning ? 'opacity-0' : 'opacity-100'
-              }`}
-            />
-            
-            {/* Imagen siguiente */}
-            {images.length > 1 && (
-              <img
-                key={`next-${nextIndex}`}
-                src={getHeroImageUrl(nextImage.cloudinaryPublicId)}
-                alt={generateCaption(nextImage)}
-                className={`absolute max-w-full max-h-[500px] object-contain transition-opacity duration-500 ${
-                  isTransitioning ? 'opacity-100' : 'opacity-0'
-                }`}
+          {/* Contenedor con fondo negro */}
+          <div className="relative h-[500px] overflow-hidden rounded-lg bg-[#0f1419]">
+            {images.map((image, idx) => (
+              <HeroImageWithGradients
+                key={image.id}
+                image={image}
+                isVisible={idx === currentIndex}
               />
-            )}
-
-            {/* Gradientes en los 4 bordes */}
-            {/* Izquierda */}
-            <div 
-              className="absolute left-0 top-0 bottom-0 w-1/4 pointer-events-none"
-              style={{
-                background: 'linear-gradient(90deg, #0f1419 0%, rgba(15,20,25,0.8) 30%, rgba(15,20,25,0.4) 60%, transparent 100%)'
-              }}
-            />
-            
-            {/* Derecha */}
-            <div 
-              className="absolute right-0 top-0 bottom-0 w-1/4 pointer-events-none"
-              style={{
-                background: 'linear-gradient(270deg, #0f1419 0%, rgba(15,20,25,0.8) 30%, rgba(15,20,25,0.4) 60%, transparent 100%)'
-              }}
-            />
-            
-            {/* Arriba */}
-            <div 
-              className="absolute top-0 left-0 right-0 h-1/4 pointer-events-none"
-              style={{
-                background: 'linear-gradient(180deg, #0f1419 0%, rgba(15,20,25,0.7) 40%, transparent 100%)'
-              }}
-            />
-            
-            {/* Abajo */}
-            <div 
-              className="absolute bottom-0 left-0 right-0 h-1/3 pointer-events-none"
-              style={{
-                background: 'linear-gradient(0deg, #0f1419 0%, rgba(15,20,25,0.8) 40%, rgba(15,20,25,0.4) 70%, transparent 100%)'
-              }}
-            />
-
-            {/* Viñeta sutil */}
-            <div 
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: 'radial-gradient(ellipse at center, transparent 50%, rgba(15,20,25,0.3) 100%)'
-              }}
-            />
+            ))}
           </div>
 
           {/* Caption y controles */}
           <div className="flex items-center justify-between mt-2">
-            {/* Indicadores de posición */}
             {images.length > 1 && (
               <div className="flex gap-2">
                 {images.map((_, idx) => (
                   <button
                     key={idx}
-                    onClick={() => {
-                      if (idx !== currentIndex) {
-                        setIsTransitioning(true);
-                        setTimeout(() => {
-                          setCurrentIndex(idx);
-                          setIsTransitioning(false);
-                        }, 300);
-                      }
-                    }}
+                    onClick={() => setCurrentIndex(idx)}
                     className={`h-1.5 rounded-full transition-all ${
                       idx === currentIndex 
                         ? 'bg-white w-6' 
@@ -195,11 +182,10 @@ export default function HeroSection({ images }: HeroSectionProps) {
               </div>
             )}
 
-            {/* Caption */}
             <div className="text-right">
               {currentImage.movie ? (
                 <Link 
-                  href={`/pelicula/${currentImage.movie.slug}`}
+                  href={`/peliculas/${currentImage.movie.slug}`}
                   className="text-xs text-gray-400 hover:text-white transition-colors"
                 >
                   {generateCaption(currentImage)}
