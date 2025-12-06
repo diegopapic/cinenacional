@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: e65d5374ff0b8aa0dc240219ae7b017efaaaefa1
-// Fecha: 2025-12-06T18:47:49.652Z
+// Commit: 90b48486e7e6863a188b0b5449cc3e07cf754251
+// Fecha: 2025-12-06T19:30:49.892Z
 // ============================================
 
 
@@ -2456,18 +2456,6 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-// export const dynamic = 'force-dynamic'
-// export const revalidate = 0
-
-// Datos estáticos (mover a constants/homeData.ts)
-const PELICULAS_HERO: HeroMovie[] = [
-  { id: 1, titulo: "El Secreto de Sus Ojos", año: "2009", genero: "Drama, Thriller", director: "Juan José Campanella", imagen: "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=1024&fit=crop&auto=format" },
-  { id: 2, titulo: "Relatos Salvajes", año: "2014", genero: "Comedia negra", director: "Damián Szifron", imagen: "https://images.unsplash.com/photo-1507003211169-0a1dd7506d40?w=1024&fit=crop&auto=format" },
-  { id: 3, titulo: "Argentina, 1985", año: "2022", genero: "Drama histórico", director: "Santiago Mitre", imagen: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1024&fit=crop&auto=format" },
-  { id: 4, titulo: "La Ciénaga", año: "2001", genero: "Drama", director: "Lucrecia Martel", imagen: "https://images.unsplash.com/photo-1489599328131-cdd7553e2ad1?w=1024&fit=crop&auto=format" },
-  { id: 5, titulo: "Nueve Reinas", año: "2000", genero: "Thriller", director: "Fabián Bielinsky", imagen: "https://images.unsplash.com/photo-1556388158-158ea5ccacbd?w=1024&fit=crop&auto=format" },
-];
-
 export default function HomePage() {
   const {
     ultimosEstrenos,
@@ -2485,16 +2473,44 @@ export default function HomePage() {
   const [loadingObituarios, setLoadingObituarios] = useState(true);
   const [efemerides, setEfemerides] = useState<Efemeride[]>([]);
   const [loadingEfemerides, setLoadingEfemerides] = useState(true);
+  
+  // Estado para imágenes del hero
+  const [heroImages, setHeroImages] = useState<any[]>([]);
+  const [loadingHero, setLoadingHero] = useState(true);
 
   // Función para calcular fecha efectiva de personas
   const calcularFechaEfectivaPersona = (person: any, type: 'birth' | 'death') => {
     const prefix = type === 'birth' ? 'birth' : 'death';
     const year = person[`${prefix}Year`];
     const month = person[`${prefix}Month`] || 12;
-    const day = person[`${prefix}Day`] || new Date(year, month, 0).getDate(); // Último día del mes
+    const day = person[`${prefix}Day`] || new Date(year, month, 0).getDate();
 
     return new Date(year, month - 1, day);
   };
+
+  // Fetch imágenes del hero
+  useEffect(() => {
+    const fetchHeroImages = async () => {
+      try {
+        setLoadingHero(true);
+        const response = await fetch('/api/images/hero');
+        
+        if (!response.ok) {
+          throw new Error('Error al cargar imágenes del hero');
+        }
+        
+        const data = await response.json();
+        setHeroImages(data.images || []);
+      } catch (error) {
+        console.error('Error fetching hero images:', error);
+        setHeroImages([]);
+      } finally {
+        setLoadingHero(false);
+      }
+    };
+
+    fetchHeroImages();
+  }, []);
 
   // Fetch obituarios
   useEffect(() => {
@@ -2502,7 +2518,6 @@ export default function HomePage() {
       try {
         setLoadingObituarios(true);
 
-        // Obtener personas con fecha de muerte más reciente
         const params = {
           limit: '50',
           hasDeathDate: 'true',
@@ -2518,17 +2533,14 @@ export default function HomePage() {
 
         const data = await response.json();
 
-        // Filtrar personas con fecha de muerte y ordenar por fecha más reciente
         const personasConFecha = data.data.filter((person: any) => person.deathYear);
 
-        // Ordenar por fecha de muerte más reciente considerando fechas parciales
         const personasOrdenadas = personasConFecha.sort((a: any, b: any) => {
           const dateA = calcularFechaEfectivaPersona(a, 'death');
           const dateB = calcularFechaEfectivaPersona(b, 'death');
           return dateB.getTime() - dateA.getTime();
         });
 
-        // Tomar solo las 2 más recientes
         setObituarios(personasOrdenadas.slice(0, 2));
       } catch (error) {
         console.error('Error fetching obituarios:', error);
@@ -2542,7 +2554,6 @@ export default function HomePage() {
   }, []);
 
   // Fetch efemérides
-  // Reemplazar el useEffect de efemérides completo
   useEffect(() => {
     const fetchEfemerides = async () => {
       try {
@@ -2558,25 +2569,19 @@ export default function HomePage() {
 
         const data = await response.json();
 
-        // Seleccionar 2 efemérides al azar del día
         if (data.efemerides && data.efemerides.length > 0) {
-          // Si hay 2 o menos, mostrar todas
           if (data.efemerides.length <= 2) {
             setEfemerides(data.efemerides);
           } else {
-            // Algoritmo Fisher-Yates para mezclar aleatoriamente
             const shuffled = [...data.efemerides];
             for (let i = shuffled.length - 1; i > 0; i--) {
               const j = Math.floor(Math.random() * (i + 1));
               [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
             }
 
-            // Tomar las primeras 2 del array mezclado
             const dosAleatorias = shuffled.slice(0, 2);
             setEfemerides(dosAleatorias);
           }
-
-          console.log(`📅 Total efemérides del día: ${data.efemerides.length}, mostrando: ${efemerides.length}`);
         } else {
           setEfemerides([]);
         }
@@ -2612,7 +2617,6 @@ export default function HomePage() {
   const formatearFechaProxima = (movie: any): string => {
     if (!movie.releaseYear) return 'Fecha por confirmar';
 
-    // Si solo tiene año
     if (!movie.releaseMonth) {
       return movie.releaseYear.toString();
     }
@@ -2622,25 +2626,26 @@ export default function HomePage() {
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
 
-    // Si tiene mes pero no día
     if (!movie.releaseDay) {
       return `${meses[movie.releaseMonth - 1]} ${movie.releaseYear}`;
     }
 
-    // Si tiene fecha completa
     return `${movie.releaseDay} de ${meses[movie.releaseMonth - 1].toLowerCase()} de ${movie.releaseYear}`;
   };
 
   return (
     <div className="bg-cine-dark text-white min-h-screen">
-      {/* Comentada la parte de imágenes de la home */}
-      {/*<HeroSection peliculas={PELICULAS_HERO} />*/}
+      {/* Hero Section con imágenes dinámicas */}
+      {!loadingHero && heroImages.length > 0 && (
+        <HeroSection images={heroImages} />
+      )}
+      
       <div className="bg-cine-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
           {error && <ErrorMessage message={error} onRetry={retry} />}
 
-          {/* Sección de Últimos Estrenos - con badge negro para fechas pasadas */}
+          {/* Sección de Últimos Estrenos */}
           <MoviesGrid
             title="Últimos estrenos"
             movies={ultimosEstrenos}
@@ -2653,7 +2658,7 @@ export default function HomePage() {
             ctaHref="/listados/estrenos"
           />
 
-          {/* Sección de Próximos Estrenos - con badge azul para fechas futuras */}
+          {/* Sección de Próximos Estrenos */}
           <MoviesGrid
             title="Próximos estrenos"
             movies={proximosEstrenos}
@@ -2694,12 +2699,15 @@ export default function HomePage() {
               />
             </Link>
           </div>
+          
           {/* Últimas Películas Ingresadas */}
           <RecentMoviesSection
             movies={ultimasPeliculas}
             loading={loadingRecientes}
           />
+          
           <HomeBottomBanner />
+          
           {/* Últimas Personas Ingresadas */}
           <RecentPeopleSection
             people={ultimasPersonas}
@@ -9356,6 +9364,83 @@ export async function GET() {
         database: 'disconnected'
       },
       { status: 503 }
+    )
+  }
+}
+
+// ==================================================
+// src/app/api/images/hero/route.ts
+// ==================================================
+// src/app/api/images/hero/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+
+// GET /api/images/hero - Obtener imágenes para el hero (una por película)
+export async function GET(request: NextRequest) {
+  try {
+    // Obtener las últimas 50 imágenes ordenadas por fecha de creación
+    const recentImages = await prisma.image.findMany({
+      where: {
+        movieId: { not: null }  // Solo imágenes asociadas a películas
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        movie: {
+          select: {
+            id: true,
+            title: true,
+            releaseYear: true,
+            slug: true
+          }
+        },
+        people: {
+          include: {
+            person: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true
+              }
+            }
+          },
+          orderBy: {
+            position: 'asc'
+          }
+        }
+      }
+    })
+
+    // Agrupar por película y seleccionar una imagen al azar de cada una
+    const movieImagesMap = new Map<number, typeof recentImages>()
+    
+    for (const image of recentImages) {
+      if (image.movieId) {
+        const existing = movieImagesMap.get(image.movieId) || []
+        existing.push(image)
+        movieImagesMap.set(image.movieId, existing)
+      }
+    }
+
+    // Obtener las primeras 5 películas (las más recientes) y elegir una imagen al azar de cada una
+    const heroImages: typeof recentImages = []
+    const movieIds = Array.from(movieImagesMap.keys()).slice(0, 5)
+
+    for (const movieId of movieIds) {
+      const images = movieImagesMap.get(movieId)!
+      // Seleccionar una imagen al azar de esta película
+      const randomIndex = Math.floor(Math.random() * images.length)
+      heroImages.push(images[randomIndex])
+    }
+
+    return NextResponse.json({
+      images: heroImages
+    })
+  } catch (error) {
+    console.error('Error fetching hero images:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener imágenes del hero', images: [] },
+      { status: 500 }
     )
   }
 }
@@ -25897,96 +25982,218 @@ export default function ErrorMessage({ message, onRetry }: ErrorMessageProps) {
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HeroMovie } from '@/types/home.types';
+import Link from 'next/link';
 
-interface HeroSectionProps {
-  peliculas: HeroMovie[];
+interface HeroImage {
+  id: number;
+  cloudinaryPublicId: string;
+  type: string;
+  movie: {
+    id: number;
+    title: string;
+    releaseYear: number | null;
+    slug: string;
+  } | null;
+  people: Array<{
+    position: number;
+    person: {
+      id: number;
+      firstName: string | null;
+      lastName: string | null;
+    };
+  }>;
 }
 
-export default function HeroSection({ peliculas }: HeroSectionProps) {
+interface HeroSectionProps {
+  images: HeroImage[];
+}
+
+// Generar URL de Cloudinary optimizada para hero (sin crop forzado)
+function getHeroImageUrl(publicId: string): string {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  return `https://res.cloudinary.com/${cloudName}/image/upload/w_1280,q_auto,f_auto/${publicId}`;
+}
+
+// Generar caption para la imagen
+function generateCaption(image: HeroImage): string {
+  const parts: string[] = [];
+
+  if (image.people && image.people.length > 0) {
+    const sortedPeople = [...image.people].sort((a, b) => a.position - b.position);
+    const names = sortedPeople
+      .map(ip => {
+        const { firstName, lastName } = ip.person;
+        return [firstName, lastName].filter(Boolean).join(' ');
+      })
+      .filter(Boolean);
+
+    if (names.length === 1) {
+      parts.push(names[0]);
+    } else if (names.length === 2) {
+      parts.push(`${names[0]} y ${names[1]}`);
+    } else if (names.length > 2) {
+      const lastPerson = names.pop();
+      parts.push(`${names.join(', ')} y ${lastPerson}`);
+    }
+  }
+
+  if (image.movie) {
+    const movieRef = image.movie.releaseYear 
+      ? `${image.movie.title} (${image.movie.releaseYear})`
+      : image.movie.title;
+    
+    if (parts.length > 0) {
+      parts.push(`en ${movieRef}`);
+    } else {
+      parts.push(movieRef);
+    }
+  }
+
+  return parts.join(' ') || '';
+}
+
+export default function HeroSection({ images }: HeroSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
-    const adjustGradients = () => {
-      const img = document.querySelector('.hero-image') as HTMLImageElement;
-      const container = document.querySelector('.hero-image-wrapper') as HTMLElement;
-      const gradientsContainer = document.querySelector('.hero-gradients-container') as HTMLElement;
+    if (images.length <= 1) return;
 
-      if (img && container && gradientsContainer && img.complete) {
-        const containerWidth = container.offsetWidth;
-        const containerHeight = container.offsetHeight;
-        const imgAspectRatio = img.naturalWidth / img.naturalHeight;
-        const containerAspectRatio = containerWidth / containerHeight;
+    const interval = setInterval(() => {
+      setIsTransitioning(true);
+      
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % images.length);
+        setIsTransitioning(false);
+      }, 500);
+    }, 15000);
 
-        let displayWidth, displayHeight;
+    return () => clearInterval(interval);
+  }, [images.length]);
 
-        if (imgAspectRatio > containerAspectRatio) {
-          displayWidth = containerWidth;
-          displayHeight = containerWidth / imgAspectRatio;
-        } else {
-          displayHeight = containerHeight;
-          displayWidth = containerHeight * imgAspectRatio;
-        }
+  if (!images || images.length === 0) return null;
 
-        gradientsContainer.style.width = `${displayWidth}px`;
-        gradientsContainer.style.height = `${displayHeight}px`;
-        gradientsContainer.style.left = `${(containerWidth - displayWidth) / 2}px`;
-        gradientsContainer.style.top = `${(containerHeight - displayHeight) / 2}px`;
-      }
-    };
-
-    const img = document.querySelector('.hero-image') as HTMLImageElement;
-    if (img) {
-      img.addEventListener('load', adjustGradients);
-      window.addEventListener('resize', adjustGradients);
-      if (img.complete) adjustGradients();
-    }
-
-    return () => {
-      if (img) img.removeEventListener('load', adjustGradients);
-      window.removeEventListener('resize', adjustGradients);
-    };
-  }, [currentIndex]);
-
-  useEffect(() => {
-    if (peliculas.length > 0) {
-      const interval = setInterval(() => {
-        setCurrentIndex((prev) => (prev + 1) % peliculas.length);
-      }, 8000);
-      return () => clearInterval(interval);
-    }
-  }, [peliculas.length]);
-
-  const peliculaActual = peliculas[currentIndex];
-
-  if (!peliculaActual) return null;
+  const currentImage = images[currentIndex];
+  const nextIndex = (currentIndex + 1) % images.length;
+  const nextImage = images[nextIndex];
 
   return (
+    <div className="relative bg-cine-dark -mt-16 pt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative">
+          {/* Contenedor de imagen */}
+          <div className="relative flex items-center justify-center max-h-[500px] overflow-hidden rounded-lg">
+            {/* Imagen actual */}
+            <img
+              key={`current-${currentIndex}`}
+              src={getHeroImageUrl(currentImage.cloudinaryPublicId)}
+              alt={generateCaption(currentImage)}
+              className={`max-w-full max-h-[500px] object-contain transition-opacity duration-500 ${
+                isTransitioning ? 'opacity-0' : 'opacity-100'
+              }`}
+            />
+            
+            {/* Imagen siguiente */}
+            {images.length > 1 && (
+              <img
+                key={`next-${nextIndex}`}
+                src={getHeroImageUrl(nextImage.cloudinaryPublicId)}
+                alt={generateCaption(nextImage)}
+                className={`absolute max-w-full max-h-[500px] object-contain transition-opacity duration-500 ${
+                  isTransitioning ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            )}
 
-    <div className="relative hero-background-container -mt-16 pt-16">
-      <div className="hero-image-wrapper">
-        <img
-          src={peliculaActual.imagen}
-          alt="Imagen destacada del cine argentino"
-          className="hero-image"
-        />
-        <div className="hero-gradients-container">
-          <div className="hero-gradient-left"></div>
-          <div className="hero-gradient-right"></div>
-          <div className="hero-gradient-top"></div>
-          <div className="hero-gradient-bottom-inner"></div>
-          
-          <div className="absolute bottom-4 right-4 z-20">
-            <p className="text-xs text-gray-400 drop-shadow-lg">
-              {peliculaActual.titulo} ({peliculaActual.año})
-            </p>
+            {/* Gradientes en los 4 bordes */}
+            {/* Izquierda */}
+            <div 
+              className="absolute left-0 top-0 bottom-0 w-1/4 pointer-events-none"
+              style={{
+                background: 'linear-gradient(90deg, #0f1419 0%, rgba(15,20,25,0.8) 30%, rgba(15,20,25,0.4) 60%, transparent 100%)'
+              }}
+            />
+            
+            {/* Derecha */}
+            <div 
+              className="absolute right-0 top-0 bottom-0 w-1/4 pointer-events-none"
+              style={{
+                background: 'linear-gradient(270deg, #0f1419 0%, rgba(15,20,25,0.8) 30%, rgba(15,20,25,0.4) 60%, transparent 100%)'
+              }}
+            />
+            
+            {/* Arriba */}
+            <div 
+              className="absolute top-0 left-0 right-0 h-1/4 pointer-events-none"
+              style={{
+                background: 'linear-gradient(180deg, #0f1419 0%, rgba(15,20,25,0.7) 40%, transparent 100%)'
+              }}
+            />
+            
+            {/* Abajo */}
+            <div 
+              className="absolute bottom-0 left-0 right-0 h-1/3 pointer-events-none"
+              style={{
+                background: 'linear-gradient(0deg, #0f1419 0%, rgba(15,20,25,0.8) 40%, rgba(15,20,25,0.4) 70%, transparent 100%)'
+              }}
+            />
+
+            {/* Viñeta sutil */}
+            <div 
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: 'radial-gradient(ellipse at center, transparent 50%, rgba(15,20,25,0.3) 100%)'
+              }}
+            />
+          </div>
+
+          {/* Caption y controles */}
+          <div className="flex items-center justify-between mt-2">
+            {/* Indicadores de posición */}
+            {images.length > 1 && (
+              <div className="flex gap-2">
+                {images.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      if (idx !== currentIndex) {
+                        setIsTransitioning(true);
+                        setTimeout(() => {
+                          setCurrentIndex(idx);
+                          setIsTransitioning(false);
+                        }, 300);
+                      }
+                    }}
+                    className={`h-1.5 rounded-full transition-all ${
+                      idx === currentIndex 
+                        ? 'bg-white w-6' 
+                        : 'bg-white/40 hover:bg-white/60 w-1.5'
+                    }`}
+                    aria-label={`Ir a imagen ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Caption */}
+            <div className="text-right">
+              {currentImage.movie ? (
+                <Link 
+                  href={`/pelicula/${currentImage.movie.slug}`}
+                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                >
+                  {generateCaption(currentImage)}
+                </Link>
+              ) : (
+                <p className="text-xs text-gray-400">
+                  {generateCaption(currentImage)}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
-      <div className="hero-gradient-bottom"></div>
-      <div className="hero-vignette"></div>
     </div>
-    
   );
 }
 
