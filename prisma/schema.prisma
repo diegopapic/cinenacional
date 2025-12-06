@@ -52,7 +52,7 @@ model Movie {
   crew                  MovieCrew[]
   distributionCompanies MovieDistributionCompany[]
   genres                MovieGenre[]
-  images                MovieImage[]
+  images                Image[]
   links                 MovieLink[]
   productionCompanies   MovieProductionCompany[]
   screenings            MovieScreening[]
@@ -205,6 +205,7 @@ model Person {
   alternativeNames PersonAlternativeName[]
   links            PersonLink[]
   nationalities    PersonNationality[]
+  imageAppearances ImagePerson[]
 
   @@index([slug])
   @@index([firstName])
@@ -415,23 +416,6 @@ model Location {
   @@index([name])
   @@index([slug])
   @@map("locations")
-}
-
-model MovieImage {
-  id           Int       @id @default(autoincrement())
-  movieId      Int       @map("movie_id")
-  url          String    @db.VarChar(500)
-  type         ImageType
-  width        Int?
-  height       Int?
-  caption      String?
-  photographer String?   @db.VarChar(255)
-  displayOrder Int       @default(0) @map("display_order")
-  isPrimary    Boolean   @default(false) @map("is_primary")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  movie        Movie     @relation(fields: [movieId], references: [id], onDelete: Cascade)
-
-  @@map("movie_images")
 }
 
 model MovieVideo {
@@ -666,13 +650,51 @@ model countries {
   created_at DateTime @default(now())
 }
 
-enum ImageType {
-  POSTER
-  BACKDROP
-  STILL
-  BEHIND_SCENES
+// Tabla principal de imágenes
+model Image {
+  id                  Int           @id @default(autoincrement())
+  cloudinaryPublicId  String        @unique @map("cloudinary_public_id")
+  type                ImageType
+  photoDate           DateTime?     @map("photo_date")
+  photographerCredit  String?       @map("photographer_credit")
+  eventName           String?       @map("event_name")
+  
+  movieId             Int?          @map("movie_id")
+  movie               Movie?        @relation(fields: [movieId], references: [id], onDelete: SetNull)
+  
+  people              ImagePerson[]
+  
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+  
+  @@index([movieId])
+  @@index([type])
+  @@index([photoDate])
+  @@map("images")
+}
 
-  @@map("image_type")
+// Tabla intermedia imagen-persona
+model ImagePerson {
+  id        Int     @id @default(autoincrement())
+  imageId   Int     @map("image_id")
+  personId  Int     @map("person_id")
+  position  Int     @default(0)
+  
+  image     Image   @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  person    Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
+  
+  @@unique([imageId, personId])
+  @@index([imageId])
+  @@index([personId])
+  @@map("image_people")
+}
+
+enum ImageType {
+  STILL
+  BEHIND_THE_SCENES
+  PUBLICITY
+  EVENT
+  PREMIERE
 }
 
 enum UserRole {

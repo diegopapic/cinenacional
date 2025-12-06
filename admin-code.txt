@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-12-04T02:34:59.253Z
+// Archivos del admin - 2025-12-06T18:26:40.066Z
 // ==================
 
 
@@ -5380,8 +5380,24 @@ export async function GET(
         },
 
         images: {
-          orderBy: { displayOrder: 'asc' }
-        },
+  orderBy: { createdAt: 'desc' },
+  include: {
+    people: {
+      include: {
+        person: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      },
+      orderBy: {
+        position: 'asc'
+      }
+    }
+  }
+},
 
         videos: {
           orderBy: { isPrimary: 'desc' }
@@ -10947,6 +10963,7 @@ import BasicInfoTab from './tabs/BasicInfoTab'
 import MediaTab from './tabs/MediaTab'
 import CastTab from './tabs/CastTab'
 import CrewTab from './tabs/CrewTab'
+import ImagesTab from './tabs/ImagesTab'
 import AdvancedTab from './tabs/AdvancedTab'
 
 interface MovieModalProps {
@@ -10998,6 +11015,10 @@ export default function MovieModal({ isOpen, onClose }: MovieModalProps) {
 
               <Tabs.Content value="crew">
                 <CrewTab />
+              </Tabs.Content>
+
+              <Tabs.Content value="images">
+                <ImagesTab />
               </Tabs.Content>
 
               <Tabs.Content value="advanced">
@@ -11118,7 +11139,7 @@ export default function MovieModalHeader({ onClose }: MovieModalHeaderProps) {
 // ==================================================
 // src/components/admin/movies/MovieModal/MovieModalTabs.tsx
 import * as Tabs from '@radix-ui/react-tabs'
-import { Info, Image, Users, Briefcase, Settings } from 'lucide-react'
+import { Info, Image, Users, Briefcase, Settings, Images } from 'lucide-react'
 
 interface MovieModalTabsProps {
   activeTab: string
@@ -11130,6 +11151,7 @@ const TABS = [
   { value: 'media', label: 'Multimedia', icon: Image },
   { value: 'cast', label: 'Reparto', icon: Users },
   { value: 'crew', label: 'Equipo Técnico', icon: Briefcase },
+  { value: 'images', label: 'Imágenes', icon: Images },
   { value: 'advanced', label: 'Avanzado', icon: Settings }
 ]
 
@@ -12335,6 +12357,732 @@ export default function CrewTab() {
         </div>
       )}
     </div>
+  )
+}
+
+// ==================================================
+// src/components/admin/movies/MovieModal/tabs/ImagesTab/ImageEditModal.tsx
+// ==================================================
+// src/components/admin/movies/MovieModal/tabs/ImagesTab/ImageEditModal.tsx
+'use client'
+
+import { useState, useEffect } from 'react'
+import { X, Save, Trash2, GripVertical } from 'lucide-react'
+import { 
+  ImageWithRelations, 
+  ImageType,
+  MOVIE_IMAGE_TYPES,
+  IMAGE_TYPE_LABELS 
+} from '@/lib/images/imageTypes'
+import { imagePresets, generateImageCaption } from '@/lib/images/imageUtils'
+import { imagesService } from '@/services/images.service'
+import { toast } from 'react-hot-toast'
+
+interface MoviePerson {
+  personId: number
+  person: {
+    id: number
+    firstName?: string | null
+    lastName?: string | null
+  }
+}
+
+interface ImageEditModalProps {
+  image: ImageWithRelations
+  moviePeople: MoviePerson[]  // Cast + Crew de la película
+  onClose: () => void
+  onSave: (image: ImageWithRelations) => void
+  onDelete: (imageId: number) => void
+}
+
+interface SelectedPerson {
+  personId: number
+  position: number
+  name: string
+}
+
+export function ImageEditModal({ 
+  image, 
+  moviePeople,
+  onClose, 
+  onSave,
+  onDelete 
+}: ImageEditModalProps) {
+  const [type, setType] = useState<ImageType>(image.type)
+  const [photoDate, setPhotoDate] = useState(image.photoDate?.split('T')[0] || '')
+  const [photographerCredit, setPhotographerCredit] = useState(image.photographerCredit || '')
+  const [eventName, setEventName] = useState(image.eventName || '')
+  const [selectedPeople, setSelectedPeople] = useState<SelectedPerson[]>([])
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  // Inicializar personas seleccionadas
+  useEffect(() => {
+    if (image.people) {
+      const people = image.people.map(ip => ({
+        personId: ip.personId,
+        position: ip.position,
+        name: ip.person 
+          ? `${ip.person.firstName || ''} ${ip.person.lastName || ''}`.trim()
+          : `Persona ${ip.personId}`
+      }))
+      setSelectedPeople(people.sort((a, b) => a.position - b.position))
+    }
+  }, [image])
+
+  // Generar preview del caption
+  const previewCaption = generateImageCaption({
+    ...image,
+    type,
+    eventName: eventName || null,
+    people: selectedPeople.map((sp, idx) => ({
+      personId: sp.personId,
+      position: idx,
+      person: moviePeople.find(mp => mp.personId === sp.personId)?.person || {
+        id: sp.personId,
+        firstName: sp.name.split(' ')[0],
+        lastName: sp.name.split(' ').slice(1).join(' ')
+      }
+    }))
+  })
+
+  const handleAddPerson = (personId: number) => {
+    const moviePerson = moviePeople.find(mp => mp.personId === personId)
+    if (!moviePerson || selectedPeople.some(sp => sp.personId === personId)) return
+
+    const name = `${moviePerson.person.firstName || ''} ${moviePerson.person.lastName || ''}`.trim()
+    setSelectedPeople(prev => [
+      ...prev,
+      { personId, position: prev.length, name }
+    ])
+  }
+
+  const handleRemovePerson = (personId: number) => {
+    setSelectedPeople(prev => 
+      prev.filter(p => p.personId !== personId)
+        .map((p, idx) => ({ ...p, position: idx }))
+    )
+  }
+
+  const handleMovePerson = (index: number, direction: 'up' | 'down') => {
+    if (
+      (direction === 'up' && index === 0) ||
+      (direction === 'down' && index === selectedPeople.length - 1)
+    ) return
+
+    const newPeople = [...selectedPeople]
+    const swapIndex = direction === 'up' ? index - 1 : index + 1
+    ;[newPeople[index], newPeople[swapIndex]] = [newPeople[swapIndex], newPeople[index]]
+    
+    setSelectedPeople(newPeople.map((p, idx) => ({ ...p, position: idx })))
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const updated = await imagesService.update(image.id, {
+        cloudinaryPublicId: image.cloudinaryPublicId,
+        type,
+        photoDate: photoDate || null,
+        photographerCredit: photographerCredit || null,
+        eventName: eventName || null,
+        movieId: image.movieId,
+        people: selectedPeople.map((p, idx) => ({
+          personId: p.personId,
+          position: idx
+        }))
+      })
+      toast.success('Imagen actualizada')
+      onSave(updated)
+    } catch (error) {
+      console.error('Error guardando imagen:', error)
+      toast.error('Error al guardar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!confirm('¿Eliminar esta imagen?')) return
+    
+    setDeleting(true)
+    try {
+      await imagesService.delete(image.id)
+      toast.success('Imagen eliminada')
+      onDelete(image.id)
+    } catch (error) {
+      console.error('Error eliminando imagen:', error)
+      toast.error('Error al eliminar')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  // Personas disponibles (que no están seleccionadas)
+  const availablePeople = moviePeople.filter(
+    mp => !selectedPeople.some(sp => sp.personId === mp.personId)
+  )
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
+      <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="text-lg font-semibold">Editar imagen</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto p-4 max-h-[calc(90vh-8rem)]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Preview de imagen */}
+            <div>
+              <img
+                src={imagePresets.gallery(image.cloudinaryPublicId)}
+                alt="Preview"
+                className="w-full rounded-lg shadow-md"
+              />
+              {/* Preview del caption */}
+              <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 mb-1">Caption generado:</p>
+                <p className="text-sm text-gray-700 italic">{previewCaption}</p>
+              </div>
+            </div>
+
+            {/* Formulario */}
+            <div className="space-y-4">
+              {/* Tipo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo de imagen
+                </label>
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value as ImageType)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                >
+                  {MOVIE_IMAGE_TYPES.map(t => (
+                    <option key={t} value={t}>{IMAGE_TYPE_LABELS[t]}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Evento (solo para PREMIERE) */}
+              {type === 'PREMIERE' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre del evento
+                  </label>
+                  <input
+                    type="text"
+                    value={eventName}
+                    onChange={(e) => setEventName(e.target.value)}
+                    placeholder="Ej: Festival de Cannes"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+
+              {/* Fecha */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Fecha de la foto
+                </label>
+                <input
+                  type="date"
+                  value={photoDate}
+                  onChange={(e) => setPhotoDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Fotógrafo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Crédito del fotógrafo
+                </label>
+                <input
+                  type="text"
+                  value={photographerCredit}
+                  onChange={(e) => setPhotographerCredit(e.target.value)}
+                  placeholder="Nombre del fotógrafo"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Personas */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Personas en la imagen
+                </label>
+                <p className="text-xs text-gray-500 mb-2">
+                  El orden determina cómo aparecen en el caption
+                </p>
+
+                {/* Lista de personas seleccionadas */}
+                {selectedPeople.length > 0 && (
+                  <div className="space-y-1 mb-3">
+                    {selectedPeople.map((person, idx) => (
+                      <div 
+                        key={person.personId}
+                        className="flex items-center gap-2 bg-blue-50 rounded px-2 py-1"
+                      >
+                        <span className="text-xs text-gray-400 w-4">{idx + 1}</span>
+                        <span className="flex-1 text-sm">{person.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleMovePerson(idx, 'up')}
+                          disabled={idx === 0}
+                          className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMovePerson(idx, 'down')}
+                          disabled={idx === selectedPeople.length - 1}
+                          className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                        >
+                          ↓
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePerson(person.personId)}
+                          className="p-1 text-red-400 hover:text-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Selector de personas disponibles */}
+                {availablePeople.length > 0 && (
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        handleAddPerson(parseInt(e.target.value))
+                        e.target.value = ''
+                      }
+                    }}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                    defaultValue=""
+                  >
+                    <option value="">+ Agregar persona del cast/crew...</option>
+                    {availablePeople.map(mp => (
+                      <option key={mp.personId} value={mp.personId}>
+                        {`${mp.person.firstName || ''} ${mp.person.lastName || ''}`.trim()}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {moviePeople.length === 0 && (
+                  <p className="text-sm text-gray-500 italic">
+                    Agrega personas al cast o crew para poder seleccionarlas aquí
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting || saving}
+            className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            {deleting ? 'Eliminando...' : 'Eliminar'}
+          </button>
+          
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || deleting}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" />
+              {saving ? 'Guardando...' : 'Guardar'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ==================================================
+// src/components/admin/movies/MovieModal/tabs/ImagesTab/index.tsx
+// ==================================================
+// src/components/admin/movies/MovieModal/tabs/ImagesTab/index.tsx
+'use client'
+
+import { useState, useEffect } from 'react'
+import { ImageIcon, Loader2 } from 'lucide-react'
+import { useMovieModalContext } from '@/contexts/MovieModalContext'
+import { ImageWithRelations } from '@/lib/images/imageTypes'
+import { imagePresets, generateImageCaption } from '@/lib/images/imageUtils'
+import { imagesService } from '@/services/images.service'
+import { MultiImageUpload } from './MultiImageUpload'
+import { ImageEditModal } from './ImageEditModal'
+import { toast } from 'react-hot-toast'
+
+interface MoviePerson {
+  personId: number
+  person: {
+    id: number
+    firstName?: string | null
+    lastName?: string | null
+  }
+}
+
+export default function ImagesTab() {
+  const { editingMovie, watch } = useMovieModalContext()
+  
+  const [images, setImages] = useState<ImageWithRelations[]>([])
+  const [loading, setLoading] = useState(false)
+  const [editingImage, setEditingImage] = useState<ImageWithRelations | null>(null)
+  const [moviePeople, setMoviePeople] = useState<MoviePerson[]>([])
+
+  const movieId = editingMovie?.id
+
+  // Cargar imágenes de la película
+  useEffect(() => {
+    if (movieId) {
+      loadImages()
+      loadMoviePeople()
+    }
+  }, [movieId])
+
+  const loadImages = async () => {
+    if (!movieId) return
+    setLoading(true)
+    try {
+      const data = await imagesService.getByMovieId(movieId)
+      setImages(data)
+    } catch (error) {
+      console.error('Error cargando imágenes:', error)
+      toast.error('Error al cargar imágenes')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Obtener personas del cast y crew de la película
+  const loadMoviePeople = async () => {
+    if (!movieId) return
+    
+    try {
+      // Obtener la película completa con cast y crew
+      const response = await fetch(`/api/movies/${movieId}`)
+      const movie = await response.json()
+      
+      const people: MoviePerson[] = []
+      const seenIds = new Set<number>()
+
+      // Agregar cast
+      if (movie.cast) {
+        movie.cast.forEach((c: any) => {
+          if (!seenIds.has(c.personId)) {
+            seenIds.add(c.personId)
+            people.push({
+              personId: c.personId,
+              person: c.person
+            })
+          }
+        })
+      }
+
+      // Agregar crew
+      if (movie.crew) {
+        movie.crew.forEach((c: any) => {
+          if (!seenIds.has(c.personId)) {
+            seenIds.add(c.personId)
+            people.push({
+              personId: c.personId,
+              person: c.person
+            })
+          }
+        })
+      }
+
+      // Ordenar alfabéticamente
+      people.sort((a, b) => {
+        const nameA = `${a.person.firstName || ''} ${a.person.lastName || ''}`.trim()
+        const nameB = `${b.person.firstName || ''} ${b.person.lastName || ''}`.trim()
+        return nameA.localeCompare(nameB)
+      })
+
+      setMoviePeople(people)
+    } catch (error) {
+      console.error('Error cargando personas:', error)
+    }
+  }
+
+  // Manejar subida masiva
+  const handleUploadComplete = async (publicIds: string[]) => {
+    if (!movieId || publicIds.length === 0) return
+
+    try {
+      const newImages = await imagesService.createBulk(movieId, publicIds, 'STILL')
+      setImages(prev => [...newImages, ...prev])
+    } catch (error) {
+      console.error('Error guardando imágenes:', error)
+      toast.error('Error al guardar algunas imágenes')
+    }
+  }
+
+  // Manejar actualización de imagen
+  const handleImageSave = (updatedImage: ImageWithRelations) => {
+    setImages(prev => prev.map(img => 
+      img.id === updatedImage.id ? updatedImage : img
+    ))
+    setEditingImage(null)
+  }
+
+  // Manejar eliminación de imagen
+  const handleImageDelete = (imageId: number) => {
+    setImages(prev => prev.filter(img => img.id !== imageId))
+    setEditingImage(null)
+  }
+
+  // Si no hay película, mostrar mensaje
+  if (!movieId) {
+    return (
+      <div className="text-center py-12">
+        <ImageIcon className="mx-auto h-12 w-12 text-gray-300" />
+        <p className="mt-4 text-gray-500">
+          Guardá la película primero para poder agregar imágenes
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Subida múltiple */}
+      <MultiImageUpload
+        movieId={movieId}
+        onUploadComplete={handleUploadComplete}
+      />
+
+      {/* Galería de imágenes */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        </div>
+      ) : images.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          No hay imágenes cargadas
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium text-gray-700">
+              {images.length} imagen{images.length !== 1 ? 'es' : ''}
+            </h4>
+            <p className="text-xs text-gray-500">
+              Click en una imagen para editarla
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {images.map(image => (
+              <div
+                key={image.id}
+                onClick={() => setEditingImage(image)}
+                className="group relative aspect-[3/2] rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              >
+                <img
+                  src={imagePresets.card(image.cloudinaryPublicId)}
+                  alt={generateImageCaption(image)}
+                  className="w-full h-full object-cover"
+                />
+                
+                {/* Overlay con info */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute bottom-0 left-0 right-0 p-2">
+                    <p className="text-white text-xs line-clamp-2">
+                      {generateImageCaption(image)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Badge de personas */}
+                {image.people && image.people.length > 0 && (
+                  <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded">
+                    {image.people.length}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Modal de edición */}
+      {editingImage && (
+        <ImageEditModal
+          image={editingImage}
+          moviePeople={moviePeople}
+          onClose={() => setEditingImage(null)}
+          onSave={handleImageSave}
+          onDelete={handleImageDelete}
+        />
+      )}
+    </div>
+  )
+}
+
+// ==================================================
+// src/components/admin/movies/MovieModal/tabs/ImagesTab/MultiImageUpload.tsx
+// ==================================================
+// src/components/admin/movies/MovieModal/tabs/ImagesTab/MultiImageUpload.tsx
+'use client'
+
+import { CldUploadWidget } from 'next-cloudinary'
+import { useState, useRef, useCallback } from 'react'
+import { Upload, ImagePlus } from 'lucide-react'
+import { toast } from 'react-hot-toast'
+
+interface MultiImageUploadProps {
+  movieId: number
+  onUploadComplete: (publicIds: string[]) => void
+  disabled?: boolean
+}
+
+export function MultiImageUpload({ 
+  movieId, 
+  onUploadComplete,
+  disabled = false 
+}: MultiImageUploadProps) {
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadedIds, setUploadedIds] = useState<string[]>([])
+  const widgetRef = useRef<(() => void) | null>(null)
+
+  const handleUploadSuccess = useCallback((result: any) => {
+    if (result.info) {
+      const { public_id } = result.info
+      console.log('✅ Imagen subida:', public_id)
+      setUploadedIds(prev => [...prev, public_id])
+    }
+  }, [])
+
+  const handleClose = useCallback(() => {
+    console.log('🚪 Widget cerrado, imágenes subidas:', uploadedIds.length)
+    setIsUploading(false)
+    
+    if (uploadedIds.length > 0) {
+      onUploadComplete(uploadedIds)
+      setUploadedIds([])
+      toast.success(`${uploadedIds.length} imagen(es) subida(s)`)
+    }
+    
+    // Restaurar scroll
+    document.body.style.overflow = ''
+  }, [uploadedIds, onUploadComplete])
+
+  const handleQueuesEnd = useCallback((result: any, { widget }: any) => {
+    console.log('📦 Todas las imágenes procesadas')
+    // No cerrar automáticamente, dejar que el usuario cierre
+  }, [])
+
+  const openWidget = useCallback(() => {
+    if (widgetRef.current && !isUploading) {
+      setIsUploading(true)
+      setUploadedIds([])
+      widgetRef.current()
+    }
+  }, [isUploading])
+
+  return (
+    <CldUploadWidget
+      uploadPreset="cinenacional-unsigned"
+      options={{
+        folder: `cinenacional/gallery/${movieId}`,
+        sources: ['local', 'url', 'google_drive', 'dropbox'],
+        multiple: true,
+        maxFiles: 20,
+        clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
+        maxFileSize: 10000000,
+        resourceType: 'image',
+        showCompletedButton: true,
+        showUploadMoreButton: true,
+        singleUploadAutoClose: false,
+        showPoweredBy: false,
+        language: 'es',
+        text: {
+          es: {
+            or: 'O',
+            menu: {
+              files: 'Mis archivos',
+              web: 'Dirección web',
+            },
+            actions: {
+              upload: 'Subir',
+              done: 'Listo'
+            },
+            local: {
+              browse: 'Buscar',
+              dd_title_multi: 'Arrastra y suelta tus imágenes aquí',
+              drop_title_multi: 'Suelta los archivos para subirlos',
+            }
+          }
+        }
+      }}
+      onSuccess={handleUploadSuccess}
+      onClose={handleClose}
+      onQueuesEnd={handleQueuesEnd}
+    >
+      {({ open }) => {
+        widgetRef.current = open
+
+        return (
+          <button
+            type="button"
+            onClick={openWidget}
+            disabled={disabled || isUploading}
+            className="w-full border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isUploading ? (
+              <>
+                <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
+                <p className="text-sm font-medium text-gray-700">
+                  Subiendo imágenes... ({uploadedIds.length} completadas)
+                </p>
+              </>
+            ) : (
+              <>
+                <ImagePlus className="mx-auto h-10 w-10 text-gray-400 mb-3" />
+                <p className="text-sm font-medium text-gray-900">
+                  Click para subir imágenes
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Puedes seleccionar múltiples archivos (hasta 20)
+                </p>
+                <p className="mt-1 text-xs text-gray-400">
+                  JPG, PNG o WEBP • Máx 10MB cada una
+                </p>
+              </>
+            )}
+          </button>
+        )
+      }}
+    </CldUploadWidget>
   )
 }
 
