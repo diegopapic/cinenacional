@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-12-08T01:27:37.683Z
+// Archivos del admin - 2025-12-08T02:24:03.877Z
 // ==================
 
 
@@ -6847,12 +6847,28 @@ export async function GET(
       include: {
         birthLocation: {
           include: {
-            parent: true
+            parent: {
+              include: {
+                parent: {
+                  include: {
+                    parent: true
+                  }
+                }
+              }
+            }
           }
         },
         deathLocation: {
           include: {
-            parent: true
+            parent: {
+              include: {
+                parent: {
+                  include: {
+                    parent: true
+                  }
+                }
+              }
+            }
           }
         },
         links: {
@@ -7160,8 +7176,32 @@ export async function GET(
                         location: true
                     }
                 },
-                birthLocation: true,
-                deathLocation: true,
+                birthLocation: {
+                    include: {
+                        parent: {
+                            include: {
+                                parent: {
+                                    include: {
+                                        parent: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                deathLocation: {
+                    include: {
+                        parent: {
+                            include: {
+                                parent: {
+                                    include: {
+                                        parent: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 _count: {
                     select: {
                         castRoles: true,
@@ -7369,8 +7409,32 @@ export async function PUT(
                             location: true
                         }
                     },
-                    birthLocation: true,
-                    deathLocation: true,
+                    birthLocation: {
+                        include: {
+                            parent: {
+                                include: {
+                                    parent: {
+                                        include: {
+                                            parent: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    deathLocation: {
+                        include: {
+                            parent: {
+                                include: {
+                                    parent: {
+                                        include: {
+                                            parent: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     _count: {
                         select: {
                             links: true,
