@@ -72,19 +72,20 @@ export function formatPersonFormDataForAPI(data: PersonFormData) {
    };
 }
 
-// Función auxiliar para formatear el path de la ubicación
+// Función auxiliar para formatear el path de la ubicación (recursiva para cualquier profundidad)
 function formatLocationPath(location: any): string {
    // Si la ubicación ya tiene un path, usarlo
    if (location.path) return location.path;
 
-   // Si no, construir el path con la información disponible
-   const parts = [location.name];
-   if (location.parent) {
-       parts.push(location.parent.name);
-       if (location.parent.parent) {
-           parts.push(location.parent.parent.name);
-       }
+   // Construir el path de forma recursiva
+   const parts: string[] = [];
+   let current = location;
+   
+   while (current) {
+       parts.push(current.name);
+       current = current.parent;
    }
+   
    return parts.join(', ');
 }
 

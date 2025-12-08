@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: a32412ec37b6bdebee5f1bcc5bd6639841b9c3bf
-// Fecha: 2025-12-08T01:27:37.659Z
+// Commit: cee1ae90b663837779678fe3c8301ca16a6f92b9
+// Fecha: 2025-12-08T02:24:03.820Z
 // ============================================
 
 
@@ -3494,6 +3494,21 @@ import DOMPurify from 'isomorphic-dompurify';
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
+// Función helper para formatear ubicación recursivamente (cualquier profundidad)
+function formatLocationPath(location: any): string {
+  if (!location) return '';
+  
+  const parts: string[] = [];
+  let current = location;
+  
+  while (current) {
+    parts.push(current.name);
+    current = current.parent;
+  }
+  
+  return parts.join(', ');
+}
+
 interface PersonPageProps {
   params: {
     slug: string;
@@ -3940,10 +3955,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                     {person.birthLocation && (
                       <>
                         <span className="text-gray-500"> en </span>
-                        <span>
-                          {person.birthLocation.name}
-                          {person.birthLocation.parent && `, ${person.birthLocation.parent.name}`}
-                        </span>
+                        <span>{formatLocationPath(person.birthLocation)}</span>
                       </>
                     )}
                   </div>
@@ -3976,10 +3988,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                     {person.deathLocation && (
                       <>
                         <span className="text-gray-500"> en </span>
-                        <span>
-                          {person.deathLocation.name}
-                          {person.deathLocation.parent && `, ${person.deathLocation.parent.name}`}
-                        </span>
+                        <span>{formatLocationPath(person.deathLocation)}</span>
                       </>
                     )}
                   </div>
@@ -13481,12 +13490,28 @@ export async function GET(
       include: {
         birthLocation: {
           include: {
-            parent: true
+            parent: {
+              include: {
+                parent: {
+                  include: {
+                    parent: true
+                  }
+                }
+              }
+            }
           }
         },
         deathLocation: {
           include: {
-            parent: true
+            parent: {
+              include: {
+                parent: {
+                  include: {
+                    parent: true
+                  }
+                }
+              }
+            }
           }
         },
         links: {
@@ -13794,8 +13819,32 @@ export async function GET(
                         location: true
                     }
                 },
-                birthLocation: true,
-                deathLocation: true,
+                birthLocation: {
+                    include: {
+                        parent: {
+                            include: {
+                                parent: {
+                                    include: {
+                                        parent: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                deathLocation: {
+                    include: {
+                        parent: {
+                            include: {
+                                parent: {
+                                    include: {
+                                        parent: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 _count: {
                     select: {
                         castRoles: true,
@@ -14003,8 +14052,32 @@ export async function PUT(
                             location: true
                         }
                     },
-                    birthLocation: true,
-                    deathLocation: true,
+                    birthLocation: {
+                        include: {
+                            parent: {
+                                include: {
+                                    parent: {
+                                        include: {
+                                            parent: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    deathLocation: {
+                        include: {
+                            parent: {
+                                include: {
+                                    parent: {
+                                        include: {
+                                            parent: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     _count: {
                         select: {
                             links: true,
@@ -32573,19 +32646,20 @@ export function formatPersonFormDataForAPI(data: PersonFormData) {
    };
 }
 
-// Función auxiliar para formatear el path de la ubicación
+// Función auxiliar para formatear el path de la ubicación (recursiva para cualquier profundidad)
 function formatLocationPath(location: any): string {
    // Si la ubicación ya tiene un path, usarlo
    if (location.path) return location.path;
 
-   // Si no, construir el path con la información disponible
-   const parts = [location.name];
-   if (location.parent) {
-       parts.push(location.parent.name);
-       if (location.parent.parent) {
-           parts.push(location.parent.parent.name);
-       }
+   // Construir el path de forma recursiva
+   const parts: string[] = [];
+   let current = location;
+   
+   while (current) {
+       parts.push(current.name);
+       current = current.parent;
    }
+   
    return parts.join(', ');
 }
 

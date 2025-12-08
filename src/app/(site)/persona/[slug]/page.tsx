@@ -10,6 +10,21 @@ import DOMPurify from 'isomorphic-dompurify';
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
+// Función helper para formatear ubicación recursivamente (cualquier profundidad)
+function formatLocationPath(location: any): string {
+  if (!location) return '';
+  
+  const parts: string[] = [];
+  let current = location;
+  
+  while (current) {
+    parts.push(current.name);
+    current = current.parent;
+  }
+  
+  return parts.join(', ');
+}
+
 interface PersonPageProps {
   params: {
     slug: string;
@@ -456,10 +471,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                     {person.birthLocation && (
                       <>
                         <span className="text-gray-500"> en </span>
-                        <span>
-                          {person.birthLocation.name}
-                          {person.birthLocation.parent && `, ${person.birthLocation.parent.name}`}
-                        </span>
+                        <span>{formatLocationPath(person.birthLocation)}</span>
                       </>
                     )}
                   </div>
@@ -492,10 +504,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                     {person.deathLocation && (
                       <>
                         <span className="text-gray-500"> en </span>
-                        <span>
-                          {person.deathLocation.name}
-                          {person.deathLocation.parent && `, ${person.deathLocation.parent.name}`}
-                        </span>
+                        <span>{formatLocationPath(person.deathLocation)}</span>
                       </>
                     )}
                   </div>

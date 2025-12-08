@@ -77,8 +77,32 @@ export async function GET(
                         location: true
                     }
                 },
-                birthLocation: true,
-                deathLocation: true,
+                birthLocation: {
+                    include: {
+                        parent: {
+                            include: {
+                                parent: {
+                                    include: {
+                                        parent: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                deathLocation: {
+                    include: {
+                        parent: {
+                            include: {
+                                parent: {
+                                    include: {
+                                        parent: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 _count: {
                     select: {
                         castRoles: true,
@@ -286,8 +310,32 @@ export async function PUT(
                             location: true
                         }
                     },
-                    birthLocation: true,
-                    deathLocation: true,
+                    birthLocation: {
+                        include: {
+                            parent: {
+                                include: {
+                                    parent: {
+                                        include: {
+                                            parent: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    deathLocation: {
+                        include: {
+                            parent: {
+                                include: {
+                                    parent: {
+                                        include: {
+                                            parent: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     _count: {
                         select: {
                             links: true,

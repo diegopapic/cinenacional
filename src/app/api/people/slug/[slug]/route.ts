@@ -15,12 +15,28 @@ export async function GET(
       include: {
         birthLocation: {
           include: {
-            parent: true
+            parent: {
+              include: {
+                parent: {
+                  include: {
+                    parent: true
+                  }
+                }
+              }
+            }
           }
         },
         deathLocation: {
           include: {
-            parent: true
+            parent: {
+              include: {
+                parent: {
+                  include: {
+                    parent: true
+                  }
+                }
+              }
+            }
           }
         },
         links: {
