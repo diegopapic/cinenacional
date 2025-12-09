@@ -105,7 +105,6 @@ services:
     environment:
       - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dzndglyjr
       - DATABASE_URL=postgresql://cinenacional:Paganitzu@postgres:5432/cinenacional?schema=public&connection_limit=50&pool_timeout=10
-      - NEXT_PUBLIC_ADS_ENABLED=${NEXT_PUBLIC_ADS_ENABLED}
       - REDIS_URL=redis://redis:6379
       - NODE_ENV=production
     ports:
