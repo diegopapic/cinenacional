@@ -18,6 +18,13 @@ ENV BUILDING=true
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
 ENV DIRECT_URL="postgresql://dummy:dummy@dummy:5432/dummy"
 
+# Variables NEXT_PUBLIC pasadas desde docker-compose
+ARG NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+ENV NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=$NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+
+ARG NEXT_PUBLIC_ADS_ENABLED
+ENV NEXT_PUBLIC_ADS_ENABLED=$NEXT_PUBLIC_ADS_ENABLED
+
 # Generar Prisma Client y build
 RUN npx prisma generate
 RUN npm run build
