@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: c499c8753ea7fb0298f586ea53be266ae32579f7
-// Fecha: 2025-12-09T16:46:50.408Z
+// Commit: 9e2806cdbd6b1f8de477d59467fbedc8a57e2ba5
+// Fecha: 2025-12-09T22:15:52.624Z
 // ============================================
 
 
@@ -3299,7 +3299,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const year = movie.releaseYear || movie.year;
+  const year = movie.year || movie.releaseYear;
   const genres = movie.genres?.map(g => g.genre.name).slice(0, 3).join(', ');
   const defaultDescription = `${movie.title}${year ? ` (${year})` : ''}${genres ? ` - ${genres}` : ''}. Película argentina.`;
 
@@ -3407,7 +3407,7 @@ export default async function MoviePage({ params }: PageProps) {
   } : null;
 
   // Formatear año - usar releaseYear si existe, sino year
-  const displayYear = movie.releaseYear || movie.year;
+  const displayYear = movie.year || movie.releaseYear;
 
   // Obtener imagen aleatoria para el hero
   const heroBackgroundImage = getRandomHeroImage(movie.images || []);
@@ -29364,7 +29364,7 @@ export function MovieSidebar({
           {/* Mostrar año solo si existe */}
           {displayYear && (
             <div className="flex items-start">
-              <span className="text-gray-400 w-32 flex-shrink-0">Año:</span>
+              <span className="text-gray-400 w-32 flex-shrink-0">Año de producción:</span>
               <span className="ml-2 text-white">{displayYear}</span>
             </div>
           )}
