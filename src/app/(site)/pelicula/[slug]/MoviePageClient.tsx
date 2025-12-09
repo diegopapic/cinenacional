@@ -63,10 +63,10 @@ interface MoviePageClientProps {
 // Slots de AdSense - Reemplazar con tus IDs reales
 const AD_SLOTS = {
     // HERO: '1634150481',         // Ya está en el header global
-    POST_INFO: 'CREAR_SLOT_2',    // Después de MovieInfo (in-article)
-    SIDEBAR: 'CREAR_SLOT_3',      // Sidebar sticky
-    CAST_CREW: 'CREAR_SLOT_4',    // Entre Cast y Crew (in-article)
-    PRE_TRAILER: 'CREAR_SLOT_5',  // Antes del trailer (in-article)
+    POST_INFO: '8509488902',    // Después de MovieInfo (in-article)
+    SIDEBAR: '8621169545',      // Sidebar sticky
+    CAST_CREW: '7432210959',    // Entre Cast y Crew (in-article)
+    PRE_TRAILER: '7308087870',  // Antes del trailer (in-article)
     MULTIPLEX: '6191938018',    // Final de página (multiplex)
 };
 
