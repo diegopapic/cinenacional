@@ -92,6 +92,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: dzndglyjr
+        NEXT_PUBLIC_ADS_ENABLED: "false"
     container_name: cinenacional-app
     restart: unless-stopped
     depends_on:
