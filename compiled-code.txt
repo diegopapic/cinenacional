@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: bc947f5f99dfeec5280352466a741bdbc1c690b0
-// Fecha: 2025-12-09T15:25:06.370Z
+// Commit: 47636c6a9aa428db5583fbefd556a89e19ddce1b
+// Fecha: 2025-12-09T15:36:32.436Z
 // ============================================
 
 
@@ -2949,9 +2949,9 @@ export function MoviePageClient({
                         />
 
                         {/* 📢 AD #3: Entre Cast y Crew (condicional) */}
-                        {showCastCrewAd && (
+                        {/*showCastCrewAd && (
                             <AdBanner slot={AD_SLOTS.CAST_CREW} format="in-article" />
-                        )}
+                        )*/}
 
                         {/* Crew - AHORA CON DATOS REALES DE LA BD */}
                         <CrewSection
@@ -2976,9 +2976,9 @@ export function MoviePageClient({
                         />
 
                         {/* 📢 AD #4: Sidebar sticky - solo desktop */}
-                        <div className="mt-8 hidden lg:block">
+                      {/*  <div className="mt-8 hidden lg:block">
                             <AdBanner slot={AD_SLOTS.SIDEBAR} format="sidebar" />
-                        </div>
+                        </div>*/}
                     </div>
                 </div>
             </div>

@@ -210,9 +210,9 @@ export function MoviePageClient({
                         />
 
                         {/* 📢 AD #3: Entre Cast y Crew (condicional) */}
-                        {showCastCrewAd && (
+                        {/*showCastCrewAd && (
                             <AdBanner slot={AD_SLOTS.CAST_CREW} format="in-article" />
-                        )}
+                        )*/}
 
                         {/* Crew - AHORA CON DATOS REALES DE LA BD */}
                         <CrewSection
@@ -237,9 +237,9 @@ export function MoviePageClient({
                         />
 
                         {/* 📢 AD #4: Sidebar sticky - solo desktop */}
-                        <div className="mt-8 hidden lg:block">
+                      {/*  <div className="mt-8 hidden lg:block">
                             <AdBanner slot={AD_SLOTS.SIDEBAR} format="sidebar" />
-                        </div>
+                        </div>*/}
                     </div>
                 </div>
             </div>
