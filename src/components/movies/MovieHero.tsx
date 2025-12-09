@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { POSTER_PLACEHOLDER, BACKGROUND_PLACEHOLDER } from '@/lib/movies/movieConstants';
+import { BACKGROUND_PLACEHOLDER } from '@/lib/movies/movieConstants';
 
 interface MovieHeroProps {
   title: string;
@@ -21,16 +21,24 @@ interface MovieHeroProps {
     name: string;
     abbreviation?: string | null;
   } | null;
+  heroBackgroundImage?: string | null;
 }
 
-export function MovieHero({ title, year, duration, genres, posterUrl, premiereVenues, releaseDate, rating }: MovieHeroProps) {
-  const [imageError, setImageError] = useState(false);
+export function MovieHero({ 
+  title, 
+  year, 
+  duration, 
+  genres, 
+  posterUrl, 
+  premiereVenues, 
+  releaseDate, 
+  rating,
+  heroBackgroundImage 
+}: MovieHeroProps) {
+  const [heroImageError, setHeroImageError] = useState(false);
 
-  // Determinar si tenemos un poster válido
-  const hasValidPoster = posterUrl && posterUrl.trim() !== '' && !imageError;
-
-  // Usar poster o placeholder
-  const backgroundImage = BACKGROUND_PLACEHOLDER.url;
+  // Determinar si tenemos una imagen de hero válida
+  const hasValidHeroImage = heroBackgroundImage && heroBackgroundImage.trim() !== '' && !heroImageError;
 
   // Nombres de meses para formatear
   const months = [
@@ -73,38 +81,77 @@ export function MovieHero({ title, year, duration, genres, posterUrl, premiereVe
   const ratingAbbreviation = rating?.abbreviation || rating?.name;
 
   return (
-    <div className="relative h-[50vh] overflow-hidden bg-gray-900">
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
-        style={{
-          backgroundImage: `url(${backgroundImage})`,
-          filter: hasValidPoster ? 'brightness(0.7)' : 'brightness(0.3)'
-        }}
-      />
+    <div className="relative h-[50vh] min-h-[400px] overflow-hidden bg-[#0f1419]">
+      {/* Contenedor de imagen con gradientes - mismo estilo que HeroSection */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        {hasValidHeroImage ? (
+          <div className="relative w-full h-full">
+            {/* Imagen de fondo centrada */}
+            <img
+              src={heroBackgroundImage}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={() => setHeroImageError(true)}
+            />
+            
+            {/* Gradientes en los 4 costados - mismo estilo que HeroSection */}
+            <div 
+              className="absolute left-0 top-0 bottom-0 w-1/4 pointer-events-none"
+              style={{
+                background: 'linear-gradient(90deg, #0f1419 0%, rgba(15,20,25,0.7) 40%, transparent 100%)'
+              }}
+            />
+            
+            <div 
+              className="absolute right-0 top-0 bottom-0 w-1/4 pointer-events-none"
+              style={{
+                background: 'linear-gradient(270deg, #0f1419 0%, rgba(15,20,25,0.7) 40%, transparent 100%)'
+              }}
+            />
+            
+            <div 
+              className="absolute top-0 left-0 right-0 h-1/4 pointer-events-none"
+              style={{
+                background: 'linear-gradient(180deg, #0f1419 0%, rgba(15,20,25,0.6) 50%, transparent 100%)'
+              }}
+            />
+            
+            <div 
+              className="absolute bottom-0 left-0 right-0 h-1/3 pointer-events-none"
+              style={{
+                background: 'linear-gradient(0deg, #0f1419 0%, rgba(15,20,25,0.7) 50%, transparent 100%)'
+              }}
+            />
 
-      {/* Detectar errores solo si hay posterUrl válido */}
-      {posterUrl && posterUrl.trim() !== '' && (
-        <img
-          src={posterUrl}
-          alt=""
-          className="hidden"
-          onError={() => setImageError(true)}
-        />
-      )}
+            {/* Viñeta radial */}
+            <div 
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: 'radial-gradient(ellipse at center, transparent 40%, rgba(15,20,25,0.3) 100%)'
+              }}
+            />
+          </div>
+        ) : (
+          /* Placeholder cuando no hay imagen */
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: `url(${BACKGROUND_PLACEHOLDER.url})`,
+              filter: 'brightness(0.3)'
+            }}
+          />
+        )}
+      </div>
 
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-cine-dark" />
-
-      {/* Content */}
-      <div className="relative h-full flex items-end">
+      {/* Content - siempre visible sobre la imagen */}
+      <div className="relative h-full flex items-end z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 w-full">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 drop-shadow-lg">
             {title}{displayYear && ` (${displayYear})`}
           </h1>
 
           {hasCompleteReleaseDate && dayMonthText && efemeridesUrl && estrenosYearUrl && (
-            <p className="text-gray-300 mb-3">
+            <p className="text-gray-300 mb-3 drop-shadow-md">
               Estreno comercial en Argentina:
               <Link 
                 href={efemeridesUrl} 
@@ -123,7 +170,7 @@ export function MovieHero({ title, year, duration, genres, posterUrl, premiereVe
             </p>
           )}
 
-          <div className="flex flex-wrap items-center gap-4 text-gray-300">
+          <div className="flex flex-wrap items-center gap-4 text-gray-300 drop-shadow-md">
             {duration > 0 && (
               <span>{duration} min</span>
             )}

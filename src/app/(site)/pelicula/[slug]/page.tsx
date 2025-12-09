@@ -19,6 +19,12 @@ export async function generateStaticParams() {
   return [];
 }
 
+// Función para construir URL de Cloudinary - mismo formato que HeroSection
+function buildCloudinaryUrl(publicId: string): string {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  return `https://res.cloudinary.com/${cloudName}/image/upload/w_1280,q_auto,f_auto/${publicId}`;
+}
+
 // Función para obtener película directamente de Prisma (para SSR)
 async function getMovieData(slug: string) {
   try {
@@ -196,6 +202,15 @@ async function getMovieData(slug: string) {
           }
         },
         
+        // Imágenes de la película para el hero
+        images: {
+          select: {
+            id: true,
+            cloudinaryPublicId: true,
+            type: true
+          }
+        },
+        
         _count: {
           select: {
             images: true,
@@ -211,6 +226,7 @@ async function getMovieData(slug: string) {
     
     if (movie) {
       console.log(`✅ Movie found: ${movie.title}`);
+      console.log(`🖼️ Images found: ${movie.images?.length || 0}`);
     } else {
       console.log(`❌ Movie not found: ${slug}`);
     }
@@ -282,6 +298,20 @@ function formatPremiereVenues(venues: any[]): string {
   }
 }
 
+// Función para seleccionar una imagen al azar para el hero
+function getRandomHeroImage(images: Array<{ id: number; cloudinaryPublicId: string; type: string }>): string | null {
+  if (!images || images.length === 0) {
+    return null;
+  }
+  
+  // Seleccionar una imagen al azar
+  const randomIndex = Math.floor(Math.random() * images.length);
+  const selectedImage = images[randomIndex];
+  
+  // Construir URL de Cloudinary optimizada para hero
+  return buildCloudinaryUrl(selectedImage.cloudinaryPublicId);
+}
+
 export default async function MoviePage({ params }: PageProps) {
   const movie = await getMovieData(params.slug);
 
@@ -329,6 +359,9 @@ export default async function MoviePage({ params }: PageProps) {
   // Formatear año - usar releaseYear si existe, sino year
   const displayYear = movie.releaseYear || movie.year;
 
+  // Obtener imagen aleatoria para el hero
+  const heroBackgroundImage = getRandomHeroImage(movie.images || []);
+
   // PROCESAR CAST
   const allCast = movie.cast?.map((c: any) => ({
     name: formatPersonName(c.person),
@@ -345,6 +378,7 @@ export default async function MoviePage({ params }: PageProps) {
     console.log('Película:', movie.title);
     console.log('Total de actores:', allCast.length);
     console.log('Actores con isPrincipal:', allCast.filter((c: any) => c.isPrincipal).length);
+    console.log('Hero background image:', heroBackgroundImage ? 'Sí' : 'No (usando placeholder)');
   }
 
   // Separar cast principal del cast completo
@@ -487,6 +521,7 @@ export default async function MoviePage({ params }: PageProps) {
             }
           : null
       }
+      heroBackgroundImage={heroBackgroundImage}
     />
   );
 }
