@@ -13,6 +13,9 @@ import { MovieSidebar } from "@/components/movies/MovieSidebar";
 import { ImageGallery } from "@/components/movies/ImageGallery";
 import { SimilarMovies } from "@/components/movies/SimilarMovies";
 
+// Componente de anuncios
+import AdBanner from "@/components/ads/AdBanner";
+
 interface CastMember {
     name: string;
     character: string;
@@ -56,6 +59,16 @@ interface MoviePageClientProps {
     } | null;
     heroBackgroundImage?: string | null;
 }
+
+// Slots de AdSense - Reemplazar con tus IDs reales
+const AD_SLOTS = {
+    HERO: '1634150481',           // Tu slot existente - después del hero
+    POST_INFO: 'CREAR_SLOT_2',    // Después de MovieInfo (in-article)
+    SIDEBAR: 'CREAR_SLOT_3',      // Sidebar sticky
+    CAST_CREW: 'CREAR_SLOT_4',    // Entre Cast y Crew (in-article)
+    PRE_TRAILER: 'CREAR_SLOT_5',  // Antes del trailer (in-article)
+    MULTIPLEX: '6191938018',    // Final de página (multiplex)
+};
 
 export function MoviePageClient({
     movie,
@@ -127,6 +140,9 @@ export function MoviePageClient({
         loadMovieImages(movie.slug);
     }, [movie.slug]);
 
+    // Mostrar anuncio entre cast y crew solo si hay contenido suficiente
+    const showCastCrewAd = mainCast.length > 3 || fullCast.length > 5;
+
     return (
         <div className="bg-cine-dark text-white min-h-screen">
             {/* Movie Hero Background - ACTUALIZADO CON DATOS REALES */}
@@ -141,6 +157,9 @@ export function MoviePageClient({
                 rating={rating}
                 heroBackgroundImage={heroBackgroundImage}
             />
+
+            {/* 📢 AD #1: Después del Hero - Alta visibilidad */}
+            <AdBanner slot={AD_SLOTS.HERO} format="horizontal" />
 
             {/* Movie Content */}
             <div className="bg-cine-dark">
@@ -177,6 +196,9 @@ export function MoviePageClient({
                 </div>
             </div>
 
+            {/* 📢 AD #2: Después de MovieInfo - Transición natural */}
+            <AdBanner slot={AD_SLOTS.POST_INFO} format="in-article" />
+
             {/* Technical Info */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -189,6 +211,11 @@ export function MoviePageClient({
                             mainCast={mainCast}
                             fullCast={fullCast}
                         />
+
+                        {/* 📢 AD #3: Entre Cast y Crew (condicional) */}
+                        {showCastCrewAd && (
+                            <AdBanner slot={AD_SLOTS.CAST_CREW} format="in-article" />
+                        )}
 
                         {/* Crew - AHORA CON DATOS REALES DE LA BD */}
                         <CrewSection
@@ -211,6 +238,11 @@ export function MoviePageClient({
                             genres={genres}
                             themes={themes}
                         />
+
+                        {/* 📢 AD #4: Sidebar sticky - solo desktop */}
+                        <div className="mt-8 hidden lg:block">
+                            <AdBanner slot={AD_SLOTS.SIDEBAR} format="sidebar" />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -224,15 +256,28 @@ export function MoviePageClient({
                     movieTitle={movie.title}
                 />
             </div>
-            */ }
+            */}
 
             {/* Trailer - Solo se muestra si hay URL */}
             {movie.trailerUrl && (
-                <TrailerSection
-                    trailerUrl={movie.trailerUrl}
-                    movieTitle={movie.title}
-                />
+                <>
+                    {/* 📢 AD #5: Antes del trailer - Alto engagement */}
+                    <AdBanner slot={AD_SLOTS.PRE_TRAILER} format="in-article" />
+
+                    <TrailerSection
+                        trailerUrl={movie.trailerUrl}
+                        movieTitle={movie.title}
+                    />
+                </>
             )}
+
+            {/* 📢 AD #6: Multiplex al final - Recomendaciones */}
+            <div className="border-t border-gray-800">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <p className="text-sm text-gray-500 mb-4">También te puede interesar</p>
+                    <AdBanner slot={AD_SLOTS.MULTIPLEX} format="multiplex" />
+                </div>
+            </div>
 
             {/* Similar Movies - TODO: Implementar con datos reales
             <SimilarMovies
