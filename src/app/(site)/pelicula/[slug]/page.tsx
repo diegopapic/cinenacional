@@ -317,7 +317,8 @@ export default async function MoviePage({ params }: PageProps) {
   const rating = movie.rating ? {
     id: movie.rating.id,
     name: movie.rating.name,
-    description: movie.rating.description || undefined
+    description: movie.rating.description || undefined,
+    abbreviation: movie.rating.abbreviation || undefined
   } : null; 
 
   const colorType = movie.colorType ? {

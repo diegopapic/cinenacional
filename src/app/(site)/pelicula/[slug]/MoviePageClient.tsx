@@ -41,7 +41,7 @@ interface MoviePageClientProps {
     genres: Array<{ id: number; name: string }>;
     themes: Array<{ id: number; name: string }>;
     countries: Array<{ id: number; name: string }>;
-    rating?: { id: number; name: string; description?: string } | null;
+    rating?: { id: number; name: string; description?: string; abbreviation?: string | null } | null;
     colorType?: { id: number; name: string } | null;
     soundType?: string | null;
     mainCast: CastMember[];
@@ -136,6 +136,7 @@ export function MoviePageClient({
                 posterUrl={movie.posterUrl}
                 releaseDate={releaseDate}
                 premiereVenues={premiereVenues}
+                rating={rating}
             />
 
             {/* Movie Content */}
