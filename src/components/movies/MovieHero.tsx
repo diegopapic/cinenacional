@@ -81,20 +81,20 @@ export function MovieHero({
   const ratingAbbreviation = rating?.abbreviation || rating?.name;
 
   return (
-    <div className="relative h-[50vh] min-h-[400px] overflow-hidden bg-[#0f1419]">
+    <div className="relative min-h-[400px] overflow-hidden bg-[#0f1419]">
       {/* Contenedor de imagen con gradientes - mismo estilo que HeroSection */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="relative flex items-center justify-center">
         {hasValidHeroImage ? (
-          <div className="relative w-full h-full">
-            {/* Imagen de fondo centrada */}
+          <div className="relative inline-block max-h-[500px]">
+            {/* Imagen completa centrada */}
             <img
               src={heroBackgroundImage}
               alt=""
-              className="absolute inset-0 w-full h-full object-cover"
+              className="max-w-full max-h-[500px] block"
               onError={() => setHeroImageError(true)}
             />
             
-            {/* Gradientes en los 4 costados - mismo estilo que HeroSection */}
+            {/* Gradientes relativos a la imagen - mismo estilo que HeroSection */}
             <div 
               className="absolute left-0 top-0 bottom-0 w-1/4 pointer-events-none"
               style={{
@@ -134,7 +134,7 @@ export function MovieHero({
         ) : (
           /* Placeholder cuando no hay imagen */
           <div
-            className="absolute inset-0 bg-cover bg-center"
+            className="w-full h-[400px] bg-cover bg-center"
             style={{
               backgroundImage: `url(${BACKGROUND_PLACEHOLDER.url})`,
               filter: 'brightness(0.3)'
@@ -143,9 +143,9 @@ export function MovieHero({
         )}
       </div>
 
-      {/* Content - siempre visible sobre la imagen */}
-      <div className="relative h-full flex items-end z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 w-full">
+      {/* Content - posicionado en la parte inferior */}
+      <div className="absolute bottom-0 left-0 right-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 w-full">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 drop-shadow-lg">
             {title}{displayYear && ` (${displayYear})`}
           </h1>
