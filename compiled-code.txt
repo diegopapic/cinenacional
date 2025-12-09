@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: ef7af26e7f500ab6808f9df8efc30ded84e210a7
-// Fecha: 2025-12-09T14:24:20.123Z
+// Commit: f8b35a00997113d632b586abf2f2ba250c8c047e
+// Fecha: 2025-12-09T14:38:41.389Z
 // ============================================
 
 
@@ -2714,6 +2714,21 @@ export default function HomePage() {
             loading={loadingRecientes}
           />
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================================================
+// src/app/(site)/pelicula/[slug]/loading.tsx
+// ==================================================
+// src/app/pelicula/[slug]/loading.tsx
+export default function Loading() {
+  return (
+    <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto"></div>
+        <p className="mt-4 text-gray-400">Cargando...</p>
       </div>
     </div>
   );
