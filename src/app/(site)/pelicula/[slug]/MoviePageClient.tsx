@@ -62,7 +62,7 @@ interface MoviePageClientProps {
 
 // Slots de AdSense - Reemplazar con tus IDs reales
 const AD_SLOTS = {
-    HERO: '1634150481',           // Tu slot existente - después del hero
+    // HERO: '1634150481',         // Ya está en el header global
     POST_INFO: 'CREAR_SLOT_2',    // Después de MovieInfo (in-article)
     SIDEBAR: 'CREAR_SLOT_3',      // Sidebar sticky
     CAST_CREW: 'CREAR_SLOT_4',    // Entre Cast y Crew (in-article)
@@ -157,9 +157,6 @@ export function MoviePageClient({
                 rating={rating}
                 heroBackgroundImage={heroBackgroundImage}
             />
-
-            {/* 📢 AD #1: Después del Hero - Alta visibilidad */}
-            <AdBanner slot={AD_SLOTS.HERO} format="horizontal" />
 
             {/* Movie Content */}
             <div className="bg-cine-dark">
