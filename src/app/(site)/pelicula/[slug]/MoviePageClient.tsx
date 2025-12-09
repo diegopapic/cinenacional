@@ -54,6 +54,7 @@ interface MoviePageClientProps {
         month: number | null;
         year: number | null;
     } | null;
+    heroBackgroundImage?: string | null;
 }
 
 export function MoviePageClient({
@@ -72,7 +73,8 @@ export function MoviePageClient({
     basicCrew,
     fullCrew,
     premiereVenues,
-    releaseDate
+    releaseDate,
+    heroBackgroundImage
 }: MoviePageClientProps) {
     const [movieGallery, setMovieGallery] = useState<string[]>([]);
 
@@ -137,6 +139,7 @@ export function MoviePageClient({
                 releaseDate={releaseDate}
                 premiereVenues={premiereVenues}
                 rating={rating}
+                heroBackgroundImage={heroBackgroundImage}
             />
 
             {/* Movie Content */}
