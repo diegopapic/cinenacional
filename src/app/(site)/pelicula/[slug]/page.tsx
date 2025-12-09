@@ -249,7 +249,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const year = movie.releaseYear || movie.year;
+  const year = movie.year || movie.releaseYear;
   const genres = movie.genres?.map(g => g.genre.name).slice(0, 3).join(', ');
   const defaultDescription = `${movie.title}${year ? ` (${year})` : ''}${genres ? ` - ${genres}` : ''}. Película argentina.`;
 
@@ -357,7 +357,7 @@ export default async function MoviePage({ params }: PageProps) {
   } : null;
 
   // Formatear año - usar releaseYear si existe, sino year
-  const displayYear = movie.releaseYear || movie.year;
+  const displayYear = movie.year || movie.releaseYear;
 
   // Obtener imagen aleatoria para el hero
   const heroBackgroundImage = getRandomHeroImage(movie.images || []);

@@ -67,7 +67,7 @@ export function MovieSidebar({
           {/* Mostrar año solo si existe */}
           {displayYear && (
             <div className="flex items-start">
-              <span className="text-gray-400 w-32 flex-shrink-0">Año:</span>
+              <span className="text-gray-400 w-32 flex-shrink-0">Año de producción:</span>
               <span className="ml-2 text-white">{displayYear}</span>
             </div>
           )}
