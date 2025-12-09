@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 138af8c6df93b58bb41cf489cd1ef9c26587138f
-// Fecha: 2025-12-09T16:33:14.388Z
+// Commit: c499c8753ea7fb0298f586ea53be266ae32579f7
+// Fecha: 2025-12-09T16:46:50.408Z
 // ============================================
 
 
@@ -26196,34 +26196,10 @@ export function MultiplexAd({ slot }: { slot: string }) {
 // src/components/ads/HomeBottomBanner.tsx
 'use client'
 
-import { useEffect } from 'react'
+import AdBanner from './AdBanner'
 
 export default function HomeBottomBanner() {
-    useEffect(() => {
-        try {
-            // @ts-ignore
-            (window.adsbygoogle = window.adsbygoogle || []).push({});
-        } catch (err) {
-            console.error('AdSense error:', err)
-        }
-    }, [])
-
-    return (
-    <div className="bg-zinc-900/50 border-y border-zinc-800 py-4 my-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="w-full">
-          <ins
-            className="adsbygoogle"
-            style={{ display: 'block' }}
-            data-ad-client="ca-pub-4540700730503978"
-            data-ad-slot="1192731540"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          />
-        </div>
-      </div>
-    </div>
-  )
+  return <AdBanner slot="1192731540" format="horizontal" className="my-12" />
 }
 
 // ==================================================
@@ -26232,34 +26208,10 @@ export default function HomeBottomBanner() {
 // src/components/ads/HomeMiddleBanner.tsx
 'use client'
 
-import { useEffect } from 'react'
+import AdBanner from './AdBanner'
 
 export default function HomeMiddleBanner() {
-  useEffect(() => {
-    try {
-      // @ts-ignore
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (err) {
-      console.error('AdSense error:', err)
-    }
-  }, [])
-
-  return (
-    <div className="bg-zinc-900/50 border-y border-zinc-800 py-4 my-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="w-full">
-          <ins
-            className="adsbygoogle"
-            style={{ display: 'block' }}
-            data-ad-client="ca-pub-4540700730503978"
-            data-ad-slot="7063278975"
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          />
-        </div>
-      </div>
-    </div>
-  )
+  return <AdBanner slot="7063278975" format="horizontal" className="my-12" />
 }
 
 // ==================================================
