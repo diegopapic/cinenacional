@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 47636c6a9aa428db5583fbefd556a89e19ddce1b
-// Fecha: 2025-12-09T15:36:32.436Z
+// Commit: e1f74e7b05540d86248210fd89072eb472d222ad
+// Fecha: 2025-12-09T15:47:40.417Z
 // ============================================
 
 
@@ -26059,6 +26059,9 @@ export function ThemeSelector({
 
 import { useEffect, useRef } from 'react'
 
+// Variable de entorno para deshabilitar todos los ads
+const ADS_ENABLED = process.env.NEXT_PUBLIC_ADS_ENABLED !== 'false'
+
 type AdFormat = 'horizontal' | 'in-article' | 'sidebar' | 'multiplex'
 
 interface AdBannerProps {
@@ -26104,6 +26107,11 @@ export default function AdBanner({
   format = 'horizontal',
   className = ''
 }: AdBannerProps) {
+  // Si los ads están deshabilitados globalmente, no renderizar
+  if (!ADS_ENABLED) {
+    return null
+  }
+
   const adRef = useRef<HTMLModElement>(null)
   const isLoaded = useRef(false)
 

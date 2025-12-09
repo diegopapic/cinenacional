@@ -3,6 +3,9 @@
 
 import { useEffect, useRef } from 'react'
 
+// Variable de entorno para deshabilitar todos los ads
+const ADS_ENABLED = process.env.NEXT_PUBLIC_ADS_ENABLED !== 'false'
+
 type AdFormat = 'horizontal' | 'in-article' | 'sidebar' | 'multiplex'
 
 interface AdBannerProps {
@@ -48,6 +51,11 @@ export default function AdBanner({
   format = 'horizontal',
   className = ''
 }: AdBannerProps) {
+  // Si los ads están deshabilitados globalmente, no renderizar
+  if (!ADS_ENABLED) {
+    return null
+  }
+
   const adRef = useRef<HTMLModElement>(null)
   const isLoaded = useRef(false)
 
