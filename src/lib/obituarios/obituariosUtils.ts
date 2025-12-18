@@ -3,6 +3,14 @@
 import { PersonWithDeath } from './obituariosTypes';
 
 /**
+ * Nombres de los meses en español
+ */
+const MONTH_NAMES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+];
+
+/**
  * Obtiene el año actual
  */
 export function getCurrentYear(): number {
@@ -64,6 +72,25 @@ export function formatPersonName(person: PersonWithDeath): string {
   if (person.firstName) parts.push(person.firstName);
   if (person.lastName) parts.push(person.lastName);
   return parts.join(' ') || 'Sin nombre';
+}
+
+/**
+ * Formatea la fecha de muerte sin el año
+ * Ejemplo: "2 de octubre" o "febrero" si solo hay mes
+ */
+export function formatDeathDate(
+  deathMonth: number | null,
+  deathDay: number | null
+): string | null {
+  if (!deathMonth) return null;
+  
+  const monthName = MONTH_NAMES[deathMonth - 1];
+  
+  if (deathDay) {
+    return `${deathDay} de ${monthName}`;
+  }
+  
+  return monthName;
 }
 
 /**
