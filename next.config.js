@@ -1,4 +1,32 @@
 /** @type {import('next').NextConfig} */
+
+// Función helper para calcular la década
+function getDecade(year) {
+  const decadeStart = Math.floor(year / 10) * 10;
+  return `${decadeStart}s`;
+}
+
+// Generar redirecciones para URLs antiguas de estrenos (1933-2025)
+function generateEsterenosRedirects() {
+  const redirects = [];
+  for (let year = 1933; year <= 2025; year++) {
+    const period = getDecade(year);
+    // Con trailing slash
+    redirects.push({
+      source: `/estrenos/${year}/`,
+      destination: `/listados/estrenos?period=${period}&year=${year}`,
+      permanent: true,
+    });
+    // Sin trailing slash
+    redirects.push({
+      source: `/estrenos/${year}`,
+      destination: `/listados/estrenos?period=${period}&year=${year}`,
+      permanent: true,
+    });
+  }
+  return redirects;
+}
+
 const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
@@ -55,6 +83,13 @@ const nextConfig = {
   },
   
   productionBrowserSourceMaps: false,
+  
+  // Redirecciones 301 para URLs antiguas
+  async redirects() {
+    return [
+      ...generateEsterenosRedirects(),
+    ];
+  },
   
   // CSP actualizada para incluir Google Analytics, AdSense y YouTube
   async headers() {
