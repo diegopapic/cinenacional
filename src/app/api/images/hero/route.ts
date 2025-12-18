@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             title: true,
-            releaseYear: true,
+            year: true,        // Año de producción (prioridad)
+            releaseYear: true, // Año de estreno (fallback)
             slug: true
           }
         },
