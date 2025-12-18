@@ -11,7 +11,8 @@ interface HeroImage {
   movie: {
     id: number;
     title: string;
-    releaseYear: number | null;
+    year: number | null;        // Año de producción (prioridad)
+    releaseYear: number | null; // Año de estreno (fallback)
     slug: string;
   } | null;
   people: Array<{
@@ -31,6 +32,28 @@ interface HeroSectionProps {
 function getHeroImageUrl(publicId: string): string {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   return `https://res.cloudinary.com/${cloudName}/image/upload/w_1280,q_auto,f_auto/${publicId}`;
+}
+
+/**
+ * Obtiene el año a mostrar para una película.
+ * Prioridad: año de producción (year) > año de estreno (releaseYear)
+ * Retorna null si ambos están vacíos o son 0
+ */
+function getDisplayYear(movie: HeroImage['movie']): number | null {
+  if (!movie) return null;
+  
+  // Prioridad 1: año de producción
+  if (movie.year && movie.year > 0) {
+    return movie.year;
+  }
+  
+  // Prioridad 2: año de estreno
+  if (movie.releaseYear && movie.releaseYear > 0) {
+    return movie.releaseYear;
+  }
+  
+  // Ninguno disponible
+  return null;
 }
 
 function generateCaption(image: HeroImage): string {
@@ -56,8 +79,9 @@ function generateCaption(image: HeroImage): string {
   }
 
   if (image.movie) {
-    const movieRef = image.movie.releaseYear 
-      ? `${image.movie.title} (${image.movie.releaseYear})`
+    const displayYear = getDisplayYear(image.movie);
+    const movieRef = displayYear 
+      ? `${image.movie.title} (${displayYear})`
       : image.movie.title;
     
     if (parts.length > 0) {
