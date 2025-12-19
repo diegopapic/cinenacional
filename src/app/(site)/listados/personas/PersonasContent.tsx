@@ -11,7 +11,8 @@ import {
   DEFAULT_PERSON_FILTERS,
   FiltersDataResponse,
   PersonWithMovie,
-  ViewMode
+  ViewMode,
+  SORT_OPTIONS
 } from '@/lib/people/personListTypes';
 import { 
   searchParamsToFilters, 
@@ -129,24 +130,22 @@ export default function PersonasContent() {
     }));
   }, []);
 
-  const handleMultipleFiltersChange = useCallback((newFilters: Partial<PersonListFilters>) => {
-    setFilters(prev => ({
-      ...prev,
-      ...newFilters,
-      page: 1
-    }));
-  }, []);
-
   const handleClearFilters = useCallback(() => {
     setFilters(clearFilters(filters));
   }, [filters]);
 
-  const handleSortChange = useCallback((sortValue: string) => {
-    const [sortBy, sortOrder] = sortValue.split('-') as [PersonListFilters['sortBy'], PersonListFilters['sortOrder']];
+  const handleSortByChange = useCallback((sortBy: string) => {
     setFilters(prev => ({
       ...prev,
-      sortBy,
-      sortOrder,
+      sortBy: sortBy as PersonListFilters['sortBy'],
+      page: 1
+    }));
+  }, []);
+
+  const handleToggleSortOrder = useCallback(() => {
+    setFilters(prev => ({
+      ...prev,
+      sortOrder: prev.sortOrder === 'desc' ? 'asc' : 'desc',
       page: 1
     }));
   }, []);
@@ -168,7 +167,7 @@ export default function PersonasContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col gap-4">
             {/* Título y contador */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold">Personas</h1>
                 {pagination.totalCount > 0 && (
@@ -179,8 +178,41 @@ export default function PersonasContent() {
                 )}
               </div>
 
-              {/* Controles de vista y filtros */}
+              {/* Controles: Ordenar, Vista, Filtros */}
               <div className="flex items-center gap-3">
+                {/* Ordenamiento */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-400 hidden sm:block">Ordenar por:</label>
+                  <select
+                    value={filters.sortBy || 'id'}
+                    onChange={(e) => handleSortByChange(e.target.value)}
+                    className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  >
+                    {SORT_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  {/* Botón para invertir orden */}
+                  <button
+                    onClick={handleToggleSortOrder}
+                    className="p-2 bg-gray-800 border border-gray-700 rounded-lg text-white hover:bg-gray-700 transition-colors"
+                    title={filters.sortOrder === 'desc' ? 'Mayor a menor' : 'Menor a mayor'}
+                  >
+                    {filters.sortOrder === 'desc' ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+
                 <ViewToggle 
                   viewMode={viewMode} 
                   onChange={setViewMode} 
@@ -216,9 +248,7 @@ export default function PersonasContent() {
                 filtersData={filtersData}
                 isLoading={isLoadingFilters}
                 onFilterChange={handleFilterChange}
-                onMultipleFiltersChange={handleMultipleFiltersChange}
                 onClearFilters={handleClearFilters}
-                onSortChange={handleSortChange}
               />
             )}
           </div>
