@@ -120,12 +120,12 @@ const nextConfig = {
       // /persona/[slug]/[cualquier-cosa] → /persona/[slug]
       // =============================================
       {
-        source: '/persona/:slug/:rest*/',
+        source: '/persona/:slug/:rest+/',
         destination: '/persona/:slug',
         permanent: true,
       },
       {
-        source: '/persona/:slug/:rest*',
+        source: '/persona/:slug/:rest+',
         destination: '/persona/:slug',
         permanent: true,
       },
@@ -135,12 +135,12 @@ const nextConfig = {
       // /pelicula/[slug]/[cualquier-cosa] → /pelicula/[slug]
       // =============================================
       {
-        source: '/pelicula/:slug/:rest*/',
+        source: '/pelicula/:slug/:rest+/',
         destination: '/pelicula/:slug',
         permanent: true,
       },
       {
-        source: '/pelicula/:slug/:rest*',
+        source: '/pelicula/:slug/:rest+',
         destination: '/pelicula/:slug',
         permanent: true,
       },
