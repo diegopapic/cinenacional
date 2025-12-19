@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: bc0e127b576e21cf5109255a232b4582b75bf2b2
-// Fecha: 2025-12-18T04:23:50.379Z
+// Commit: 57945c913cda06b648c18f1be27ed8ca0cc5adb6
+// Fecha: 2025-12-19T13:29:15.333Z
 // ============================================
 
 
@@ -1877,562 +1877,981 @@ export default function MovieListPage() {
 // ==================================================
 // src/app/(site)/listados/personas/page.tsx
 // ==================================================
+// src/app/(site)/listados/personas/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { Suspense } from 'react';
+import PersonasContent from './PersonasContent';
 
-export default function PeopleListPage() {
-  const [viewMode, setViewMode] = useState('compact');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filterRole, setFilterRole] = useState('all');
-  const itemsPerPage = 12;
-  const totalPeople = 1243;
-  const totalPages = Math.ceil(totalPeople / itemsPerPage);
+export default function PersonasPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-gray-400">Cargando personas...</p>
+        </div>
+      </div>
+    }>
+      <PersonasContent />
+    </Suspense>
+  );
+}
 
-  // Sample people data
-  const people = [
-    { 
-      id: 1, 
-      name: 'Ricardo Darín', 
-      primaryRole: 'Actor',
-      birthYear: 1957,
-      birthPlace: 'Buenos Aires, Argentina',
-      filmCount: 87,
-      awards: 42,
-      notableFilms: ['El Secreto de sus Ojos', 'Nueve Reinas', 'Un Cuento Chino', 'Relatos Salvajes'],
-      bio: 'Uno de los actores más reconocidos del cine argentino, con una carrera que abarca más de cuatro décadas. Ganador de múltiples premios internacionales.',
-      roles: ['Actor', 'Productor']
-    },
-    { 
-      id: 2, 
-      name: 'Juan José Campanella', 
-      primaryRole: 'Director',
-      birthYear: 1959,
-      birthPlace: 'Buenos Aires, Argentina',
-      filmCount: 15,
-      awards: 28,
-      notableFilms: ['El Secreto de sus Ojos', 'El Hijo de la Novia', 'Luna de Avellaneda', 'El Mismo Amor'],
-      bio: 'Director y guionista argentino ganador del Oscar. Reconocido por su trabajo tanto en cine como en televisión internacional.',
-      roles: ['Director', 'Guionista', 'Productor']
-    },
-    { 
-      id: 3, 
-      name: 'Norma Aleandro', 
-      primaryRole: 'Actriz',
-      birthYear: 1936,
-      birthPlace: 'Buenos Aires, Argentina',
-      filmCount: 62,
-      awards: 35,
-      notableFilms: ['La Historia Oficial', 'El Hijo de la Novia', 'Gaby: A True Story', 'Cama Adentro'],
-      bio: 'Primera actriz argentina, ícono del cine y teatro nacional. Ganadora de múltiples premios internacionales incluyendo el premio a mejor actriz en Cannes.',
-      roles: ['Actriz', 'Directora teatral']
-    },
-    { 
-      id: 4, 
-      name: 'Damián Szifron', 
-      primaryRole: 'Director',
-      birthYear: 1975,
-      birthPlace: 'Ramos Mejía, Argentina',
-      filmCount: 8,
-      awards: 22,
-      notableFilms: ['Relatos Salvajes', 'El Fondo del Mar', 'Tiempo de Valientes'],
-      bio: 'Director, guionista y productor argentino. Creador de series exitosas y director del film más taquillero del cine argentino.',
-      roles: ['Director', 'Guionista', 'Productor']
-    },
-    { 
-      id: 5, 
-      name: 'Érica Rivas', 
-      primaryRole: 'Actriz',
-      birthYear: 1974,
-      birthPlace: 'Buenos Aires, Argentina',
-      filmCount: 34,
-      awards: 18,
-      notableFilms: ['Relatos Salvajes', 'La Señal', 'Elena Sabe', 'Los Marziano'],
-      bio: 'Actriz argentina de cine, teatro y televisión. Reconocida por su versatilidad y compromiso con cada personaje.',
-      roles: ['Actriz', 'Cantante']
-    },
-    { 
-      id: 6, 
-      name: 'Fabián Bielinsky', 
-      primaryRole: 'Director',
-      birthYear: 1959,
-      birthPlace: 'Buenos Aires, Argentina',
-      deathYear: 2006,
-      filmCount: 3,
-      awards: 15,
-      notableFilms: ['Nueve Reinas', 'El Aura'],
-      bio: 'Director y guionista argentino cuya breve pero brillante carrera dejó una marca indeleble en el cine nacional.',
-      roles: ['Director', 'Guionista']
-    },
-    { 
-      id: 7, 
-      name: 'Cecilia Roth', 
-      primaryRole: 'Actriz',
-      birthYear: 1956,
-      birthPlace: 'Buenos Aires, Argentina',
-      filmCount: 73,
-      awards: 31,
-      notableFilms: ['Todo sobre mi madre', 'Martín (Hache)', 'El Lado Oscuro del Corazón', 'Kamchatka'],
-      bio: 'Actriz argentina-española con una destacada carrera internacional. Musa de Pedro Almodóvar y figura clave del cine argentino.',
-      roles: ['Actriz']
-    },
-    { 
-      id: 8, 
-      name: 'Gustavo Santaolalla', 
-      primaryRole: 'Compositor',
-      birthYear: 1951,
-      birthPlace: 'El Palomar, Argentina',
-      filmCount: 45,
-      awards: 38,
-      notableFilms: ['Relatos Salvajes', 'Diarios de Motocicleta', 'Brokeback Mountain', 'Babel'],
-      bio: 'Músico, compositor y productor argentino. Doble ganador del Oscar por mejor banda sonora original.',
-      roles: ['Compositor', 'Músico', 'Productor']
-    },
-    { 
-      id: 9, 
-      name: 'Mercedes Morán', 
-      primaryRole: 'Actriz',
-      birthYear: 1955,
-      birthPlace: 'Concarán, San Luis, Argentina',
-      filmCount: 48,
-      awards: 25,
-      notableFilms: ['La Ciénaga', 'Diarios de Motocicleta', 'Neruda', 'El Reino'],
-      bio: 'Actriz argentina reconocida por su trabajo con directores como Lucrecia Martel y Pablo Trapero. Una de las actrices más respetadas del cine latinoamericano.',
-      roles: ['Actriz', 'Productora']
-    },
-    { 
-      id: 10, 
-      name: 'Leonardo Sbaraglia', 
-      primaryRole: 'Actor',
-      birthYear: 1970,
-      birthPlace: 'Buenos Aires, Argentina',
-      filmCount: 56,
-      awards: 29,
-      notableFilms: ['Relatos Salvajes', 'Plata Quemada', 'Intacto', 'El Secreto de sus Ojos'],
-      bio: 'Actor argentino con una sólida carrera internacional. Reconocido por su carisma y versatilidad en géneros diversos.',
-      roles: ['Actor']
-    },
-    { 
-      id: 11, 
-      name: 'Lucrecia Martel', 
-      primaryRole: 'Directora',
-      birthYear: 1966,
-      birthPlace: 'Salta, Argentina',
-      filmCount: 6,
-      awards: 42,
-      notableFilms: ['La Ciénaga', 'La Niña Santa', 'La Mujer sin Cabeza', 'Zama'],
-      bio: 'Directora y guionista argentina, una de las voces más importantes del nuevo cine argentino. Su obra es estudiada en universidades de todo el mundo.',
-      roles: ['Directora', 'Guionista']
-    },
-    { 
-      id: 12, 
-      name: 'Diego Peretti', 
-      primaryRole: 'Actor',
-      birthYear: 1963,
-      birthPlace: 'Buenos Aires, Argentina',
-      filmCount: 41,
-      awards: 19,
-      notableFilms: ['Tiempo de Valientes', 'No Sos Vos, Soy Yo', 'Los Simuladores', 'El Robo del Siglo'],
-      bio: 'Actor y psiquiatra argentino. Conocido por su trabajo en comedia y su capacidad para crear personajes memorables.',
-      roles: ['Actor', 'Guionista']
-    }
-  ];
 
-  const getDisplayedPeople = () => {
-    let filteredPeople = people;
+// ==================================================
+// src/app/(site)/listados/personas/PersonasContent.tsx
+// ==================================================
+// src/app/(site)/listados/personas/PersonasContent.tsx
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import PersonasFilters from './PersonasFilters';
+import PersonasGrid from './PersonasGrid';
+import ViewToggle from './ViewToggle';
+import { 
+  PersonListFilters, 
+  DEFAULT_PERSON_FILTERS,
+  FiltersDataResponse,
+  PersonWithMovie,
+  ViewMode
+} from '@/lib/people/personListTypes';
+import { 
+  searchParamsToFilters, 
+  filtersToSearchParams,
+  filtersToApiParams,
+  countActiveFilters,
+  clearFilters
+} from '@/lib/people/personListUtils';
+
+interface PaginationState {
+  page: number;
+  totalPages: number;
+  totalCount: number;
+}
+
+export default function PersonasContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Estado de filtros
+  const [filters, setFilters] = useState<PersonListFilters>(DEFAULT_PERSON_FILTERS);
+  const [filtersData, setFiltersData] = useState<FiltersDataResponse | null>(null);
+  
+  // Estado de datos
+  const [people, setPeople] = useState<PersonWithMovie[]>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    totalPages: 1,
+    totalCount: 0
+  });
+  
+  // Estado de UI
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingFilters, setIsLoadingFilters] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('compact');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Cargar opciones de filtros al montar
+  useEffect(() => {
+    loadFiltersData();
+  }, []);
+
+  // Inicializar filtros desde URL
+  useEffect(() => {
+    const urlFilters = searchParamsToFilters(searchParams);
+    setFilters(urlFilters);
+    setIsInitialized(true);
+  }, []);
+
+  // Cargar personas cuando cambian los filtros
+  useEffect(() => {
+    if (!isInitialized) return;
+    loadPeople();
+  }, [filters, isInitialized]);
+
+  // Actualizar URL cuando cambian los filtros
+  useEffect(() => {
+    if (!isInitialized) return;
     
-    if (filterRole !== 'all') {
-      filteredPeople = people.filter(person => 
-        person.roles.some(role => role.toLowerCase() === filterRole.toLowerCase())
-      );
-    }
+    const params = filtersToSearchParams(filters);
+    const queryString = params.toString();
+    const newUrl = queryString ? `/listados/personas?${queryString}` : '/listados/personas';
     
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return filteredPeople.slice(start, end);
+    router.replace(newUrl, { scroll: false });
+  }, [filters, router, isInitialized]);
+
+  const loadFiltersData = async () => {
+    setIsLoadingFilters(true);
+    try {
+      const response = await fetch('/api/people/filters');
+      if (!response.ok) throw new Error('Error al cargar filtros');
+      const data = await response.json();
+      setFiltersData(data);
+    } catch (error) {
+      console.error('Error loading filters:', error);
+    } finally {
+      setIsLoadingFilters(false);
+    }
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo(0, 0);
+  const loadPeople = async () => {
+    setIsLoading(true);
+    try {
+      const apiParams = filtersToApiParams(filters);
+      const params = new URLSearchParams(apiParams);
+      
+      const response = await fetch(`/api/people/list?${params}`);
+      if (!response.ok) throw new Error('Error al cargar personas');
+      
+      const data = await response.json();
+      
+      setPeople(data.data || []);
+      setPagination({
+        page: data.page || 1,
+        totalPages: data.totalPages || 1,
+        totalCount: data.totalCount || 0
+      });
+    } catch (error) {
+      console.error('Error loading people:', error);
+      setPeople([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const renderPagination = () => {
-    const pages = [];
-    const maxVisible = 5;
-    
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      if (currentPage <= 3) {
-        pages.push(1, 2, 3, '...', totalPages - 1, totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1, 2, '...', totalPages - 2, totalPages - 1, totalPages);
-      } else {
-        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
-      }
-    }
-    
-    return pages;
-  };
+  const handleFilterChange = useCallback(<K extends keyof PersonListFilters>(
+    key: K, 
+    value: PersonListFilters[K]
+  ) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value,
+      page: 1 // Reset a página 1 cuando cambia un filtro
+    }));
+  }, []);
 
-  // Add styles
-  const styles = `
-    @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
-    
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      font-weight: 300;
-      letter-spacing: -0.01em;
-      background-color: #0f1419;
-      color: white;
-    }
-    
-    .serif-heading {
-      font-family: 'Crimson Text', Georgia, serif;
-      font-weight: 600;
-      letter-spacing: -0.02em;
-    }
-    
-    .serif-body {
-      font-family: 'Crimson Text', Georgia, serif;
-      font-weight: 400;
-      line-height: 1.7;
-    }
-    
-    .poster-shadow {
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-    }
-    
-    .glass-effect {
-      backdrop-filter: blur(10px);
-      background: rgba(42, 42, 42, 0.8);
-    }
-    
-    .gradient-text {
-      background: linear-gradient(135deg, #3b82f6, #60a5fa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    
-    .person-placeholder {
-      background: linear-gradient(135deg, #1a2332, #0f1419);
-      border: 1px solid #374151;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .person-placeholder::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(45deg, transparent 30%, rgba(59, 130, 246, 0.1) 50%, transparent 70%);
-      animation: shimmer 2s infinite;
-    }
-    
-    .animate-fade-in {
-      animation: fadeIn 0.5s ease-in-out;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    @keyframes shimmer {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
-    }
-    
-    .bg-cine-dark { background-color: #0f1419; }
-    .bg-cine-gray { background-color: #1a2332; }
-    .text-cine-accent { color: #3b82f6; }
-    .bg-cine-accent { background-color: #3b82f6; }
-    .border-cine-accent { border-color: #3b82f6; }
-    .hover\\:bg-cine-accent:hover { background-color: #3b82f6; }
-    .hover\\:text-cine-accent:hover { color: #3b82f6; }
-    .hover\\:border-cine-accent:hover { border-color: #3b82f6; }
-    
-    .role-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.125rem 0.5rem;
-      font-size: 0.75rem;
-      font-weight: 500;
-      border-radius: 9999px;
-      background-color: rgba(59, 130, 246, 0.1);
-      color: #60a5fa;
-      border: 1px solid rgba(59, 130, 246, 0.2);
-    }
-  `;
+  const handleMultipleFiltersChange = useCallback((newFilters: Partial<PersonListFilters>) => {
+    setFilters(prev => ({
+      ...prev,
+      ...newFilters,
+      page: 1
+    }));
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setFilters(clearFilters(filters));
+  }, [filters]);
+
+  const handleSortChange = useCallback((sortValue: string) => {
+    const [sortBy, sortOrder] = sortValue.split('-') as [PersonListFilters['sortBy'], PersonListFilters['sortOrder']];
+    setFilters(prev => ({
+      ...prev,
+      sortBy,
+      sortOrder,
+      page: 1
+    }));
+  }, []);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setFilters(prev => ({
+      ...prev,
+      page: newPage
+    }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const activeFiltersCount = countActiveFilters(filters);
 
   return (
-    <>
-      <style>{styles}</style>
-      <div className="bg-cine-dark text-white min-h-screen">
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Page Header */}
-          <div className="mb-8">
-            <h2 className="serif-heading text-4xl text-white mb-2">Personas del Cine Argentino</h2>
-            <p className="text-gray-400">Directores, actores, guionistas y técnicos que construyen nuestra industria</p>
-          </div>
-
-          {/* Filters and View Toggle */}
-          <div className="glass-effect rounded-lg p-6 mb-8">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-              {/* Filters */}
-              <div className="flex flex-wrap gap-3">
-                <select 
-                  value={filterRole}
-                  onChange={(e) => setFilterRole(e.target.value)}
-                  className="bg-cine-dark border border-gray-600 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-cine-accent transition-colors text-white"
-                >
-                  <option value="all">Todos los roles</option>
-                  <option value="actor">Actores</option>
-                  <option value="actriz">Actrices</option>
-                  <option value="director">Directores</option>
-                  <option value="guionista">Guionistas</option>
-                  <option value="productor">Productores</option>
-                  <option value="compositor">Compositores</option>
-                </select>
-                <select className="bg-cine-dark border border-gray-600 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-cine-accent transition-colors text-white">
-                  <option>Ordenar por: Nombre (A-Z)</option>
-                  <option>Nombre (Z-A)</option>
-                  <option>Más películas</option>
-                  <option>Más premios</option>
-                  <option>Más reciente</option>
-                </select>
-                <select className="bg-cine-dark border border-gray-600 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-cine-accent transition-colors text-white">
-                  <option>Todas las décadas</option>
-                  <option>Activos en 2020s</option>
-                  <option>Activos en 2010s</option>
-                  <option>Activos en 2000s</option>
-                  <option>Activos en 1990s</option>
-                </select>
+    <div className="min-h-screen bg-black text-white">
+      {/* Header */}
+      <div className="bg-gray-900/50 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col gap-4">
+            {/* Título y contador */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold">Personas</h1>
+                {pagination.totalCount > 0 && (
+                  <p className="text-gray-400 text-sm mt-1">
+                    {pagination.totalCount.toLocaleString('es-AR')} persona{pagination.totalCount !== 1 ? 's' : ''}
+                    {activeFiltersCount > 0 && ` (${activeFiltersCount} filtro${activeFiltersCount !== 1 ? 's' : ''} activo${activeFiltersCount !== 1 ? 's' : ''})`}
+                  </p>
+                )}
               </div>
 
-              {/* View Toggle */}
-              <div className="flex items-center bg-cine-dark rounded-lg p-1 border border-gray-600">
-                <button 
-                  onClick={() => setViewMode('compact')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                    viewMode === 'compact' 
-                      ? 'bg-cine-accent text-white' 
-                      : 'text-gray-400 hover:text-white'
-                  }`}
+              {/* Controles de vista y filtros */}
+              <div className="flex items-center gap-3">
+                <ViewToggle 
+                  viewMode={viewMode} 
+                  onChange={setViewMode} 
+                />
+                
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all
+                    ${showFilters 
+                      ? 'bg-orange-500 text-white' 
+                      : 'bg-gray-800 text-white hover:bg-gray-700'
+                    }
+                  `}
                 >
-                  Vista Compacta
-                </button>
-                <button 
-                  onClick={() => setViewMode('detail')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                    viewMode === 'detail' 
-                      ? 'bg-cine-accent text-white' 
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Vista Detallada
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  <span className="hidden sm:inline">Filtros</span>
+                  {activeFiltersCount > 0 && (
+                    <span className="bg-white text-orange-500 text-xs font-bold px-1.5 py-0.5 rounded-full">
+                      {activeFiltersCount}
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
-          </div>
 
-          {/* People Display */}
-          {viewMode === 'compact' ? (
-            // Compact Grid View
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-12">
-              {getDisplayedPeople().map((person, index) => (
-                <div 
-                  key={person.id} 
-                  className="group cursor-pointer animate-fade-in text-center"
-                  style={{animationDelay: `${index * 0.05}s`}}
-                >
-                  <div className="relative mb-3">
-                    <div className="w-32 h-32 mx-auto rounded-full overflow-hidden transform group-hover:scale-105 transition-transform duration-300">
-                      <div className="person-placeholder w-full h-full">
-                        <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                      </div>
-                    </div>
-                    {person.deathYear && (
-                      <div className="absolute top-0 right-0 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
-                        {person.birthYear}-{person.deathYear}
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-white line-clamp-1 group-hover:text-cine-accent transition-colors">{person.name}</h3>
-                    <p className="text-sm text-gray-400">{person.primaryRole}</p>
-                    <div className="flex items-center justify-center gap-2 mt-2 text-xs text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4"></path>
-                        </svg>
-                        {person.filmCount}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-                        </svg>
-                        {person.awards}
-                      </span>
-                    </div>
-                  </div>
+            {/* Panel de filtros */}
+            {showFilters && (
+              <PersonasFilters
+                filters={filters}
+                filtersData={filtersData}
+                isLoading={isLoadingFilters}
+                onFilterChange={handleFilterChange}
+                onMultipleFiltersChange={handleMultipleFiltersChange}
+                onClearFilters={handleClearFilters}
+                onSortChange={handleSortChange}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Grid de personas */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PersonasGrid
+          people={people}
+          isLoading={isLoading}
+          viewMode={viewMode}
+        />
+
+        {/* Paginación */}
+        {!isLoading && pagination.totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <button
+              onClick={() => handlePageChange(pagination.page - 1)}
+              disabled={pagination.page === 1}
+              className={`
+                px-4 py-2 rounded-lg font-medium transition-all
+                ${pagination.page === 1
+                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                  : 'bg-gray-800 text-white hover:bg-gray-700'
+                }
+              `}
+            >
+              ← Anterior
+            </button>
+
+            <span className="text-gray-400">
+              Página {pagination.page} de {pagination.totalPages}
+            </span>
+
+            <button
+              onClick={() => handlePageChange(pagination.page + 1)}
+              disabled={pagination.page === pagination.totalPages}
+              className={`
+                px-4 py-2 rounded-lg font-medium transition-all
+                ${pagination.page === pagination.totalPages
+                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                  : 'bg-gray-800 text-white hover:bg-gray-700'
+                }
+              `}
+            >
+              Siguiente →
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+// ==================================================
+// src/app/(site)/listados/personas/PersonasFilters.tsx
+// ==================================================
+// src/app/(site)/listados/personas/PersonasFilters.tsx
+'use client';
+
+import { useState, useMemo } from 'react';
+import { 
+  PersonListFilters, 
+  FiltersDataResponse,
+  SORT_OPTIONS,
+  GENDER_OPTIONS
+} from '@/lib/people/personListTypes';
+import { generateYearOptions } from '@/lib/people/personListUtils';
+
+interface PersonasFiltersProps {
+  filters: PersonListFilters;
+  filtersData: FiltersDataResponse | null;
+  isLoading: boolean;
+  onFilterChange: <K extends keyof PersonListFilters>(key: K, value: PersonListFilters[K]) => void;
+  onMultipleFiltersChange: (filters: Partial<PersonListFilters>) => void;
+  onClearFilters: () => void;
+  onSortChange: (sortValue: string) => void;
+}
+
+export default function PersonasFilters({
+  filters,
+  filtersData,
+  isLoading,
+  onFilterChange,
+  onMultipleFiltersChange,
+  onClearFilters,
+  onSortChange
+}: PersonasFiltersProps) {
+  const [searchInput, setSearchInput] = useState(filters.search || '');
+
+  // Generar arrays de años para los selectores
+  const birthYears = useMemo(() => {
+    if (!filtersData?.years.birthYearMin || !filtersData?.years.birthYearMax) return [];
+    return generateYearOptions(filtersData.years.birthYearMin, filtersData.years.birthYearMax);
+  }, [filtersData?.years]);
+
+  const deathYears = useMemo(() => {
+    if (!filtersData?.years.deathYearMin || !filtersData?.years.deathYearMax) return [];
+    return generateYearOptions(filtersData.years.deathYearMin, filtersData.years.deathYearMax);
+  }, [filtersData?.years]);
+
+  // Valor actual del ordenamiento
+  const currentSortValue = `${filters.sortBy || 'id'}-${filters.sortOrder || 'desc'}`;
+
+  // Manejar búsqueda con debounce
+  const handleSearchChange = (value: string) => {
+    setSearchInput(value);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onFilterChange('search', searchInput);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      onFilterChange('search', searchInput);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="h-10 bg-gray-800 rounded-lg" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 py-4 border-t border-gray-800">
+      {/* Fila 1: Búsqueda y Ordenamiento */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Búsqueda */}
+        <form onSubmit={handleSearchSubmit} className="relative">
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="Buscar por nombre..."
+            className="w-full px-4 py-2 pl-10 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+          />
+          <svg 
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          {searchInput && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchInput('');
+                onFilterChange('search', '');
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </form>
+
+        {/* Ordenamiento */}
+        <select
+          value={currentSortValue}
+          onChange={(e) => onSortChange(e.target.value)}
+          className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          {SORT_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Fila 2: Filtros principales */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        {/* Sexo */}
+        <select
+          value={filters.gender || ''}
+          onChange={(e) => onFilterChange('gender', e.target.value as PersonListFilters['gender'])}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          {GENDER_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+        {/* Nacionalidad */}
+        <select
+          value={filters.nationalityId || ''}
+          onChange={(e) => onFilterChange('nationalityId', e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Todas las nacionalidades</option>
+          {filtersData?.nationalities.map(nat => (
+            <option key={nat.id} value={nat.id}>
+              {nat.name} ({nat.count})
+            </option>
+          ))}
+        </select>
+
+        {/* Lugar de nacimiento */}
+        <select
+          value={filters.birthLocationId || ''}
+          onChange={(e) => onFilterChange('birthLocationId', e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Lugar de nacimiento</option>
+          {filtersData?.birthLocations.map(loc => (
+            <option key={loc.id} value={loc.id}>
+              {loc.fullPath} ({loc.count})
+            </option>
+          ))}
+        </select>
+
+        {/* Lugar de muerte */}
+        <select
+          value={filters.deathLocationId || ''}
+          onChange={(e) => onFilterChange('deathLocationId', e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Lugar de fallecimiento</option>
+          {filtersData?.deathLocations.map(loc => (
+            <option key={loc.id} value={loc.id}>
+              {loc.fullPath} ({loc.count})
+            </option>
+          ))}
+        </select>
+
+        {/* Rol */}
+        <select
+          value={filters.roleId || ''}
+          onChange={(e) => onFilterChange('roleId', e.target.value === 'ACTOR' ? 'ACTOR' : e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Todos los roles</option>
+          {filtersData?.roles.map(role => (
+            <option key={role.id} value={role.id}>
+              {role.name} ({role.count})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Fila 3: Rangos de años */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Año de nacimiento desde */}
+        <select
+          value={filters.birthYearFrom || ''}
+          onChange={(e) => onFilterChange('birthYearFrom', e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Nacimiento desde</option>
+          {birthYears.map(year => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+
+        {/* Año de nacimiento hasta */}
+        <select
+          value={filters.birthYearTo || ''}
+          onChange={(e) => onFilterChange('birthYearTo', e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Nacimiento hasta</option>
+          {birthYears.map(year => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+
+        {/* Año de muerte desde */}
+        <select
+          value={filters.deathYearFrom || ''}
+          onChange={(e) => onFilterChange('deathYearFrom', e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Fallecimiento desde</option>
+          {deathYears.map(year => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+
+        {/* Año de muerte hasta */}
+        <select
+          value={filters.deathYearTo || ''}
+          onChange={(e) => onFilterChange('deathYearTo', e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Fallecimiento hasta</option>
+          {deathYears.map(year => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Botón limpiar filtros */}
+      <div className="flex justify-end">
+        <button
+          onClick={onClearFilters}
+          className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+        >
+          Limpiar filtros
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+// ==================================================
+// src/app/(site)/listados/personas/PersonasGrid.tsx
+// ==================================================
+// src/app/(site)/listados/personas/PersonasGrid.tsx
+'use client';
+
+import PersonCardCompact from './PersonCardCompact';
+import PersonCardDetailed from './PersonCardDetailed';
+import { PersonWithMovie, ViewMode } from '@/lib/people/personListTypes';
+
+interface PersonasGridProps {
+  people: PersonWithMovie[];
+  isLoading: boolean;
+  viewMode: ViewMode;
+}
+
+export default function PersonasGrid({ people, isLoading, viewMode }: PersonasGridProps) {
+  
+  if (isLoading) {
+    return (
+      <div className={
+        viewMode === 'compact'
+          ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6"
+          : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+      }>
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div key={i} className="animate-pulse">
+            {viewMode === 'compact' ? (
+              <>
+                <div className="aspect-[3/4] bg-gray-800 rounded-lg mb-2" />
+                <div className="h-4 bg-gray-800 rounded mb-1" />
+                <div className="h-3 bg-gray-800 rounded w-2/3" />
+              </>
+            ) : (
+              <div className="flex gap-4 p-4 bg-gray-900 rounded-lg">
+                <div className="w-24 h-32 bg-gray-800 rounded-lg flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-5 bg-gray-800 rounded w-3/4" />
+                  <div className="h-4 bg-gray-800 rounded w-1/2" />
+                  <div className="h-4 bg-gray-800 rounded w-2/3" />
+                  <div className="h-4 bg-gray-800 rounded w-1/3" />
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  
+  if (people.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <div className="text-gray-400 text-lg mb-2">
+          No se encontraron personas con los filtros seleccionados
+        </div>
+        <p className="text-gray-500 text-sm">
+          Intenta ajustar los filtros o limpiarlos para ver más resultados
+        </p>
+      </div>
+    );
+  }
+  
+  if (viewMode === 'compact') {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+        {people.map((person) => (
+          <PersonCardCompact key={person.id} person={person} />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {people.map((person) => (
+        <PersonCardDetailed key={person.id} person={person} />
+      ))}
+    </div>
+  );
+}
+
+
+// ==================================================
+// src/app/(site)/listados/personas/PersonCardCompact.tsx
+// ==================================================
+// src/app/(site)/listados/personas/PersonCardCompact.tsx
+'use client';
+
+import Link from 'next/link';
+import { PersonWithMovie } from '@/lib/people/personListTypes';
+import { formatPersonName, calculateAge } from '@/lib/people/personListUtils';
+
+interface PersonCardCompactProps {
+  person: PersonWithMovie;
+}
+
+export default function PersonCardCompact({ person }: PersonCardCompactProps) {
+  const personName = formatPersonName(person);
+  const photoUrl = person.photoUrl;
+  
+  // Calcular edad
+  const age = calculateAge(
+    person.birthYear,
+    person.birthMonth,
+    person.birthDay,
+    person.deathYear,
+    person.deathMonth,
+    person.deathDay
+  );
+
+  // Determinar si está fallecida
+  const isDeceased = !!person.deathYear;
+
+  return (
+    <Link 
+      href={`/persona/${person.slug}`}
+      className="group block"
+    >
+      {/* Imagen rectangular con aspect ratio 3:4 */}
+      <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-gray-800 mb-3 transition-transform duration-300 group-hover:scale-[1.02] shadow-lg">
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt={personName}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          // Placeholder SVG
+          <div className="w-full h-full flex flex-col items-center justify-center">
+            <svg 
+              className="w-16 h-16 text-gray-600 mb-2" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth="1.5" 
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
+              />
+            </svg>
+            <span className="text-xs text-gray-500">Sin foto</span>
+          </div>
+        )}
+        
+        {/* Overlay en hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Badge de fallecida */}
+        {isDeceased && (
+          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-1 rounded">
+            †
+          </div>
+        )}
+      </div>
+
+      {/* Información */}
+      <div className="space-y-1">
+        <h3 className="font-medium text-white group-hover:text-orange-400 transition-colors line-clamp-2">
+          {personName}
+        </h3>
+        
+        {/* Fechas: 1950 - 2024 (74 años) o solo 1950 si vive */}
+        {person.birthYear && (
+          <p className="text-sm text-gray-400">
+            {person.birthYear}
+            {isDeceased && ` - ${person.deathYear}`}
+            {age !== null && !person.hideAge && ` (${age} años)`}
+          </p>
+        )}
+
+        {/* Cantidad de películas si tiene */}
+        {person.movieCount !== undefined && person.movieCount > 0 && (
+          <p className="text-xs text-gray-500">
+            {person.movieCount} película{person.movieCount !== 1 ? 's' : ''}
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+
+// ==================================================
+// src/app/(site)/listados/personas/PersonCardDetailed.tsx
+// ==================================================
+// src/app/(site)/listados/personas/PersonCardDetailed.tsx
+'use client';
+
+import Link from 'next/link';
+import { PersonWithMovie } from '@/lib/people/personListTypes';
+import { formatPersonName, formatPartialDate, calculateAge } from '@/lib/people/personListUtils';
+
+interface PersonCardDetailedProps {
+  person: PersonWithMovie;
+}
+
+export default function PersonCardDetailed({ person }: PersonCardDetailedProps) {
+  const personName = formatPersonName(person);
+  const photoUrl = person.photoUrl;
+  
+  // Calcular edad
+  const age = calculateAge(
+    person.birthYear,
+    person.birthMonth,
+    person.birthDay,
+    person.deathYear,
+    person.deathMonth,
+    person.deathDay
+  );
+
+  // Formatear fecha de nacimiento
+  const birthDateFormatted = formatPartialDate(
+    person.birthYear,
+    person.birthMonth,
+    person.birthDay
+  );
+
+  // Formatear lugar de nacimiento
+  const birthLocationFormatted = person.birthLocation
+    ? person.birthLocation.parent
+      ? `${person.birthLocation.name}, ${person.birthLocation.parent.name}`
+      : person.birthLocation.name
+    : null;
+
+  // Obtener nacionalidad principal
+  const primaryNationality = person.nationalities?.find(n => n.isPrimary)?.location?.name
+    || person.nationalities?.[0]?.location?.name;
+
+  // Determinar si está fallecida
+  const isDeceased = !!person.deathYear;
+
+  return (
+    <Link 
+      href={`/persona/${person.slug}`}
+      className="group block"
+    >
+      <div className="flex gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 hover:border-gray-700 transition-all hover:bg-gray-900">
+        {/* Imagen */}
+        <div className="relative w-24 h-32 flex-shrink-0 rounded-lg overflow-hidden bg-gray-800">
+          {photoUrl ? (
+            <img
+              src={photoUrl}
+              alt={personName}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
           ) : (
-            // Detail List View
-            <div className="space-y-4 mb-12">
-              {getDisplayedPeople().map((person, index) => (
-                <div 
-                  key={person.id} 
-                  className="glass-effect rounded-lg p-6 hover:border-cine-accent border border-transparent transition-all duration-300 cursor-pointer animate-fade-in"
-                  style={{animationDelay: `${index * 0.05}s`}}
-                >
-                  <div className="flex flex-col md:flex-row gap-6">
-                    <div className="w-full md:w-32 flex-shrink-0">
-                      <div className="w-32 h-32 mx-auto md:mx-0 rounded-full overflow-hidden">
-                        <div className="person-placeholder w-full h-full">
-                          <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex-1 space-y-3">
-                      <div>
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h3 className="text-xl font-medium text-white hover:text-cine-accent transition-colors inline-block">{person.name}</h3>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              {person.roles.map((role, idx) => (
-                                <span key={idx} className="role-badge">{role}</span>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-400">
-                            <span className="flex items-center gap-1">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4"></path>
-                              </svg>
-                              {person.filmCount} películas
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-                              </svg>
-                              {person.awards} premios
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-4 text-sm text-gray-400">
-                          <span className="flex items-center gap-1">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                            </svg>
-                            {person.birthYear}{person.deathYear && ` - ${person.deathYear}`}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                            {person.birthPlace}
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-gray-300 serif-body">{person.bio}</p>
-                      <div>
-                        <h4 className="text-sm font-medium text-cine-accent mb-2">Películas destacadas:</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {person.notableFilms.slice(0, 4).map((film, idx) => (
-                            <span key={idx} className="text-sm bg-cine-dark px-3 py-1 rounded-full text-gray-300 hover:text-white hover:bg-cine-gray transition-colors cursor-pointer">
-                              {film}
-                            </span>
-                          ))}
-                          {person.notableFilms.length > 4 && (
-                            <span className="text-sm text-gray-500">
-                              +{person.notableFilms.length - 4} más
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="w-full h-full flex items-center justify-center">
+              <svg 
+                className="w-10 h-10 text-gray-600" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth="1.5" 
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
+                />
+              </svg>
             </div>
           )}
 
-          {/* Pagination */}
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
-            <p className="text-sm text-gray-400">
-              Mostrando <span className="font-medium text-white">{(currentPage - 1) * itemsPerPage + 1}</span> a{' '}
-              <span className="font-medium text-white">
-                {Math.min(currentPage * itemsPerPage, totalPeople)}
-              </span>{' '}
-              de <span className="font-medium text-white">{totalPeople}</span> personas
+          {/* Badge de fallecida */}
+          {isDeceased && (
+            <div className="absolute top-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+              †
+            </div>
+          )}
+        </div>
+
+        {/* Información */}
+        <div className="flex-1 min-w-0">
+          {/* Nombre */}
+          <h3 className="font-semibold text-white group-hover:text-orange-400 transition-colors truncate text-lg">
+            {personName}
+          </h3>
+
+          {/* Fecha y lugar de nacimiento */}
+          {(birthDateFormatted || birthLocationFormatted) && (
+            <p className="text-sm text-gray-400 mt-1">
+              {birthDateFormatted && (
+                <span>
+                  n. {birthDateFormatted}
+                  {age !== null && !person.hideAge && !isDeceased && ` (${age} años)`}
+                </span>
+              )}
+              {birthDateFormatted && birthLocationFormatted && ' · '}
+              {birthLocationFormatted && <span>{birthLocationFormatted}</span>}
             </p>
-            <nav className="flex items-center space-x-2">
-              <button 
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="px-3 py-2 text-sm font-medium text-gray-400 bg-cine-gray border border-gray-700 rounded-lg hover:bg-cine-dark hover:border-cine-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+          )}
+
+          {/* Fecha de muerte si aplica */}
+          {isDeceased && (
+            <p className="text-sm text-gray-500 mt-0.5">
+              † {formatPartialDate(person.deathYear, person.deathMonth, person.deathDay)}
+              {age !== null && !person.hideAge && ` (${age} años)`}
+            </p>
+          )}
+
+          {/* Nacionalidad */}
+          {primaryNationality && (
+            <p className="text-sm text-gray-500 mt-1">
+              <span className="inline-flex items-center gap-1">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
                 </svg>
-              </button>
-              
-              {renderPagination().map((page, index) => (
-                <React.Fragment key={index}>
-                  {page === '...' ? (
-                    <span className="px-2 text-gray-500">...</span>
-                  ) : (
-                    <button
-                      onClick={() => handlePageChange(page as number)}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        currentPage === page
-                          ? 'text-white bg-cine-accent'
-                          : 'text-gray-300 bg-cine-gray border border-gray-700 hover:bg-cine-dark hover:border-cine-accent'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  )}
-                </React.Fragment>
-              ))}
-              
-              <button 
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="px-3 py-2 text-sm font-medium text-gray-400 bg-cine-gray border border-gray-700 rounded-lg hover:bg-cine-dark hover:border-cine-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                </svg>
-              </button>
-            </nav>
-          </div>
-        </main>
+                {primaryNationality}
+              </span>
+            </p>
+          )}
+
+          {/* Película destacada */}
+          {person.featuredMovie && (
+            <p className="text-sm text-gray-500 mt-2 truncate">
+              <span className="text-orange-400/80">{person.featuredMovie.role}</span>
+              {' en '}
+              <span className="text-gray-300 italic">
+                {person.featuredMovie.title}
+              </span>
+              {person.featuredMovie.year && (
+                <span className="text-gray-500"> ({person.featuredMovie.year})</span>
+              )}
+            </p>
+          )}
+
+          {/* Cantidad de películas */}
+          {person.movieCount !== undefined && person.movieCount > 0 && (
+            <p className="text-xs text-gray-600 mt-2">
+              {person.movieCount} película{person.movieCount !== 1 ? 's' : ''} en el sitio
+            </p>
+          )}
+        </div>
+
+        {/* Flecha de navegación */}
+        <div className="flex items-center text-gray-600 group-hover:text-orange-400 transition-colors">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
       </div>
-    </>
+    </Link>
   );
 }
+
+
+// ==================================================
+// src/app/(site)/listados/personas/ViewToggle.tsx
+// ==================================================
+// src/app/(site)/listados/personas/ViewToggle.tsx
+'use client';
+
+import { ViewMode } from '@/lib/people/personListTypes';
+
+interface ViewToggleProps {
+  viewMode: ViewMode;
+  onChange: (mode: ViewMode) => void;
+}
+
+export default function ViewToggle({ viewMode, onChange }: ViewToggleProps) {
+  return (
+    <div className="flex bg-gray-800 rounded-lg p-1">
+      {/* Vista compacta (grid) */}
+      <button
+        onClick={() => onChange('compact')}
+        className={`
+          p-2 rounded-md transition-all
+          ${viewMode === 'compact' 
+            ? 'bg-gray-700 text-white' 
+            : 'text-gray-400 hover:text-white'
+          }
+        `}
+        title="Vista compacta"
+        aria-label="Vista compacta"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+        </svg>
+      </button>
+
+      {/* Vista detallada (lista) */}
+      <button
+        onClick={() => onChange('detailed')}
+        className={`
+          p-2 rounded-md transition-all
+          ${viewMode === 'detailed' 
+            ? 'bg-gray-700 text-white' 
+            : 'text-gray-400 hover:text-white'
+          }
+        `}
+        title="Vista detallada"
+        aria-label="Vista detallada"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 
 // ==================================================
 // src/app/(site)/page.tsx
@@ -12827,6 +13246,568 @@ export async function GET() {
 }
 
 // ==================================================
+// src/app/api/people/filters/route.ts
+// ==================================================
+// src/app/api/people/filters/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+export async function GET(request: NextRequest) {
+  try {
+    // Ejecutar todas las consultas en paralelo
+    const [
+      birthLocations,
+      deathLocations,
+      nationalities,
+      roles,
+      yearRanges
+    ] = await Promise.all([
+      // Ubicaciones de nacimiento (solo las que tienen personas)
+      prisma.$queryRaw<Array<{ id: number; name: string; parent_name: string | null; count: number }>>`
+        SELECT 
+          l.id,
+          l.name,
+          p.name as parent_name,
+          COUNT(DISTINCT pe.id)::int as count
+        FROM locations l
+        INNER JOIN people pe ON pe.birth_location_id = l.id
+        LEFT JOIN locations p ON l.parent_id = p.id
+        GROUP BY l.id, l.name, p.name
+        ORDER BY l.name ASC
+      `,
+      
+      // Ubicaciones de muerte (solo las que tienen personas)
+      prisma.$queryRaw<Array<{ id: number; name: string; parent_name: string | null; count: number }>>`
+        SELECT 
+          l.id,
+          l.name,
+          p.name as parent_name,
+          COUNT(DISTINCT pe.id)::int as count
+        FROM locations l
+        INNER JOIN people pe ON pe.death_location_id = l.id
+        LEFT JOIN locations p ON l.parent_id = p.id
+        GROUP BY l.id, l.name, p.name
+        ORDER BY l.name ASC
+      `,
+      
+      // Nacionalidades (países con personas)
+      prisma.$queryRaw<Array<{ id: number; name: string; count: number }>>`
+        SELECT 
+          l.id,
+          l.name,
+          COUNT(DISTINCT pn.person_id)::int as count
+        FROM locations l
+        INNER JOIN person_nationalities pn ON pn.location_id = l.id
+        GROUP BY l.id, l.name
+        ORDER BY l.name ASC
+      `,
+      
+      // Roles técnicos (de la tabla roles)
+      prisma.$queryRaw<Array<{ id: number; name: string; department: string; count: number }>>`
+        SELECT 
+          r.id,
+          r.name,
+          r.department,
+          COUNT(DISTINCT mc.person_id)::int as count
+        FROM roles r
+        INNER JOIN movie_crew mc ON mc.role_id = r.id
+        WHERE r.is_active = true
+        GROUP BY r.id, r.name, r.department
+        HAVING COUNT(DISTINCT mc.person_id) > 0
+        ORDER BY r.name ASC
+      `,
+      
+      // Rangos de años
+      prisma.$queryRaw<Array<{
+        birth_year_min: number | null;
+        birth_year_max: number | null;
+        death_year_min: number | null;
+        death_year_max: number | null;
+      }>>`
+        SELECT 
+          MIN(birth_year) as birth_year_min,
+          MAX(birth_year) as birth_year_max,
+          MIN(death_year) as death_year_min,
+          MAX(death_year) as death_year_max
+        FROM people
+        WHERE is_active = true
+      `
+    ]);
+
+    // Contar actores (personas en movie_cast)
+    const actorCount = await prisma.$queryRaw<Array<{ count: number }>>`
+      SELECT COUNT(DISTINCT person_id)::int as count
+      FROM movie_cast
+    `;
+
+    // Formatear respuesta
+    const response = {
+      birthLocations: birthLocations.map(loc => ({
+        id: loc.id,
+        name: loc.name,
+        parentName: loc.parent_name,
+        fullPath: loc.parent_name ? `${loc.name}, ${loc.parent_name}` : loc.name,
+        count: loc.count
+      })),
+      
+      deathLocations: deathLocations.map(loc => ({
+        id: loc.id,
+        name: loc.name,
+        parentName: loc.parent_name,
+        fullPath: loc.parent_name ? `${loc.name}, ${loc.parent_name}` : loc.name,
+        count: loc.count
+      })),
+      
+      nationalities: nationalities.map(nat => ({
+        id: nat.id,
+        name: nat.name,
+        count: nat.count
+      })),
+      
+      roles: [
+        // Actor/Actriz como primera opción especial
+        {
+          id: 'ACTOR',
+          name: 'Actor / Actriz',
+          department: 'ACTUACION',
+          isActor: true,
+          count: actorCount[0]?.count || 0
+        },
+        // Luego los roles técnicos
+        ...roles.map(role => ({
+          id: role.id,
+          name: role.name,
+          department: role.department,
+          isActor: false,
+          count: role.count
+        }))
+      ],
+      
+      years: {
+        birthYearMin: yearRanges[0]?.birth_year_min || null,
+        birthYearMax: yearRanges[0]?.birth_year_max || null,
+        deathYearMin: yearRanges[0]?.death_year_min || null,
+        deathYearMax: yearRanges[0]?.death_year_max || null
+      }
+    };
+
+    return NextResponse.json(response, {
+      headers: {
+        // Cachear por 1 hora ya que estos datos no cambian frecuentemente
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200'
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error fetching filter options:', error);
+    return NextResponse.json(
+      { message: 'Error al obtener opciones de filtros' },
+      { status: 500 }
+    );
+  }
+}
+
+
+// ==================================================
+// src/app/api/people/list/route.ts
+// ==================================================
+// src/app/api/people/list/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    
+    // Parámetros de filtrado
+    const search = searchParams.get('search');
+    const gender = searchParams.get('gender');
+    const birthLocationId = searchParams.get('birthLocationId');
+    const deathLocationId = searchParams.get('deathLocationId');
+    const nationalityId = searchParams.get('nationalityId');
+    const roleId = searchParams.get('roleId');
+    const birthYearFrom = searchParams.get('birthYearFrom');
+    const birthYearTo = searchParams.get('birthYearTo');
+    const deathYearFrom = searchParams.get('deathYearFrom');
+    const deathYearTo = searchParams.get('deathYearTo');
+    
+    // Parámetros de ordenamiento y paginación
+    const sortBy = searchParams.get('sortBy') || 'id';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '60');
+    const skip = (page - 1) * limit;
+
+    // Construir WHERE clause
+    const where: Prisma.PersonWhereInput = {
+      isActive: true
+    };
+
+    // Filtro de búsqueda por nombre
+    if (search && search.trim().length >= 2) {
+      const searchTerms = search.trim().split(/\s+/);
+      
+      if (searchTerms.length === 1) {
+        where.OR = [
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { realName: { contains: search, mode: 'insensitive' } },
+        ];
+      } else {
+        where.OR = [
+          { realName: { contains: search, mode: 'insensitive' } },
+          {
+            AND: searchTerms.map(term => ({
+              OR: [
+                { firstName: { contains: term, mode: 'insensitive' } },
+                { lastName: { contains: term, mode: 'insensitive' } },
+              ]
+            }))
+          }
+        ];
+      }
+    }
+
+    // Filtro de género
+    if (gender === 'MALE' || gender === 'FEMALE' || gender === 'OTHER') {
+      where.gender = gender;
+    }
+
+    // Filtro de ubicación de nacimiento
+    if (birthLocationId) {
+      where.birthLocationId = parseInt(birthLocationId);
+    }
+
+    // Filtro de ubicación de muerte
+    if (deathLocationId) {
+      where.deathLocationId = parseInt(deathLocationId);
+    }
+
+    // Filtro de nacionalidad
+    if (nationalityId) {
+      where.nationalities = {
+        some: {
+          locationId: parseInt(nationalityId)
+        }
+      };
+    }
+
+    // Filtro de rol (Actor o rol técnico)
+    if (roleId) {
+      if (roleId === 'ACTOR') {
+        // Buscar personas que tienen al menos un rol de cast
+        where.castRoles = {
+          some: {}
+        };
+      } else {
+        // Buscar personas con rol técnico específico
+        where.crewRoles = {
+          some: {
+            roleId: parseInt(roleId)
+          }
+        };
+      }
+    }
+
+    // Filtro de rango de año de nacimiento
+    if (birthYearFrom || birthYearTo) {
+      where.birthYear = {};
+      if (birthYearFrom) {
+        where.birthYear.gte = parseInt(birthYearFrom);
+      }
+      if (birthYearTo) {
+        where.birthYear.lte = parseInt(birthYearTo);
+      }
+    }
+
+    // Filtro de rango de año de muerte
+    if (deathYearFrom || deathYearTo) {
+      where.deathYear = {};
+      if (deathYearFrom) {
+        where.deathYear.gte = parseInt(deathYearFrom);
+      }
+      if (deathYearTo) {
+        where.deathYear.lte = parseInt(deathYearTo);
+      }
+    }
+
+    // Determinar ordenamiento
+    let orderBy: Prisma.PersonOrderByWithRelationInput | Prisma.PersonOrderByWithRelationInput[];
+    
+    switch (sortBy) {
+      case 'lastName':
+        orderBy = [
+          { lastName: sortOrder as Prisma.SortOrder },
+          { firstName: sortOrder as Prisma.SortOrder }
+        ];
+        break;
+      case 'birthDate':
+        orderBy = [
+          { birthYear: sortOrder as Prisma.SortOrder },
+          { birthMonth: sortOrder as Prisma.SortOrder },
+          { birthDay: sortOrder as Prisma.SortOrder }
+        ];
+        break;
+      case 'deathDate':
+        orderBy = [
+          { deathYear: sortOrder as Prisma.SortOrder },
+          { deathMonth: sortOrder as Prisma.SortOrder },
+          { deathDay: sortOrder as Prisma.SortOrder }
+        ];
+        break;
+      case 'id':
+      default:
+        orderBy = { id: sortOrder as Prisma.SortOrder };
+        break;
+    }
+
+    // Si el ordenamiento es por cantidad de películas, necesitamos un enfoque diferente
+    if (sortBy === 'movieCount') {
+      // Usar query raw para ordenar por conteo
+      const peopleWithMovieCount = await prisma.$queryRaw<Array<{ id: number; movie_count: number }>>`
+        SELECT 
+          p.id,
+          (
+            COALESCE((SELECT COUNT(*) FROM movie_cast mc WHERE mc.person_id = p.id), 0) +
+            COALESCE((SELECT COUNT(*) FROM movie_crew mcr WHERE mcr.person_id = p.id), 0)
+          )::int as movie_count
+        FROM people p
+        WHERE p.is_active = true
+        ${birthLocationId ? Prisma.sql`AND p.birth_location_id = ${parseInt(birthLocationId)}` : Prisma.empty}
+        ${deathLocationId ? Prisma.sql`AND p.death_location_id = ${parseInt(deathLocationId)}` : Prisma.empty}
+        ${gender ? Prisma.sql`AND p.gender = ${gender}::"gender"` : Prisma.empty}
+        ${birthYearFrom ? Prisma.sql`AND p.birth_year >= ${parseInt(birthYearFrom)}` : Prisma.empty}
+        ${birthYearTo ? Prisma.sql`AND p.birth_year <= ${parseInt(birthYearTo)}` : Prisma.empty}
+        ${deathYearFrom ? Prisma.sql`AND p.death_year >= ${parseInt(deathYearFrom)}` : Prisma.empty}
+        ${deathYearTo ? Prisma.sql`AND p.death_year <= ${parseInt(deathYearTo)}` : Prisma.empty}
+        ${nationalityId ? Prisma.sql`AND EXISTS (SELECT 1 FROM person_nationalities pn WHERE pn.person_id = p.id AND pn.location_id = ${parseInt(nationalityId)})` : Prisma.empty}
+        ${roleId === 'ACTOR' ? Prisma.sql`AND EXISTS (SELECT 1 FROM movie_cast mc WHERE mc.person_id = p.id)` : Prisma.empty}
+        ${roleId && roleId !== 'ACTOR' ? Prisma.sql`AND EXISTS (SELECT 1 FROM movie_crew mcr WHERE mcr.person_id = p.id AND mcr.role_id = ${parseInt(roleId)})` : Prisma.empty}
+        ORDER BY movie_count ${sortOrder === 'desc' ? Prisma.sql`DESC` : Prisma.sql`ASC`}
+        LIMIT ${limit}
+        OFFSET ${skip}
+      `;
+
+      const personIds = peopleWithMovieCount.map(p => p.id);
+      
+      if (personIds.length === 0) {
+        return NextResponse.json({
+          data: [],
+          totalCount: 0,
+          page,
+          totalPages: 0,
+          hasMore: false
+        });
+      }
+
+      // Obtener datos completos
+      const people = await prisma.person.findMany({
+        where: { id: { in: personIds } },
+        include: {
+          nationalities: {
+            include: { location: true }
+          },
+          birthLocation: {
+            include: { parent: true }
+          },
+          deathLocation: {
+            include: { parent: true }
+          },
+          _count: {
+            select: {
+              castRoles: true,
+              crewRoles: true,
+            }
+          }
+        }
+      });
+
+      // Mantener el orden del query
+      const orderedPeople = personIds.map(id => people.find(p => p.id === id)!).filter(Boolean);
+
+      // Obtener película destacada para cada persona
+      const peopleWithMovies = await addFeaturedMovies(orderedPeople);
+
+      // Contar total
+      const totalCount = await prisma.person.count({ where });
+      const totalPages = Math.ceil(totalCount / limit);
+
+      return NextResponse.json({
+        data: peopleWithMovies,
+        totalCount,
+        page,
+        totalPages,
+        hasMore: page < totalPages
+      });
+    }
+
+    // Query normal (sin ordenamiento por movieCount)
+    const [people, totalCount] = await Promise.all([
+      prisma.person.findMany({
+        where,
+        include: {
+          nationalities: {
+            include: { location: true }
+          },
+          birthLocation: {
+            include: { parent: true }
+          },
+          deathLocation: {
+            include: { parent: true }
+          },
+          _count: {
+            select: {
+              castRoles: true,
+              crewRoles: true,
+            }
+          }
+        },
+        orderBy,
+        skip,
+        take: limit
+      }),
+      prisma.person.count({ where })
+    ]);
+
+    // Obtener película destacada para cada persona
+    const peopleWithMovies = await addFeaturedMovies(people);
+
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return NextResponse.json({
+      data: peopleWithMovies,
+      totalCount,
+      page,
+      totalPages,
+      hasMore: page < totalPages
+    });
+
+  } catch (error) {
+    console.error('Error fetching people list:', error);
+    return NextResponse.json(
+      { message: 'Error al obtener listado de personas' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Agrega la película destacada (más reciente) a cada persona
+ */
+async function addFeaturedMovies(people: any[]): Promise<any[]> {
+  if (people.length === 0) return [];
+
+  const personIds = people.map(p => p.id);
+
+  // Obtener la película más reciente de cast para cada persona
+  const castMovies = await prisma.$queryRaw<Array<{
+    person_id: number;
+    movie_id: number;
+    movie_slug: string;
+    movie_title: string;
+    movie_year: number | null;
+  }>>`
+    SELECT DISTINCT ON (mc.person_id)
+      mc.person_id,
+      m.id as movie_id,
+      m.slug as movie_slug,
+      m.title as movie_title,
+      m.year as movie_year
+    FROM movie_cast mc
+    INNER JOIN movies m ON m.id = mc.movie_id
+    WHERE mc.person_id = ANY(${personIds})
+    ORDER BY mc.person_id, m.year DESC NULLS LAST, m.id DESC
+  `;
+
+  // Obtener la película más reciente de crew para cada persona
+  const crewMovies = await prisma.$queryRaw<Array<{
+    person_id: number;
+    movie_id: number;
+    movie_slug: string;
+    movie_title: string;
+    movie_year: number | null;
+    role_name: string;
+  }>>`
+    SELECT DISTINCT ON (mcr.person_id)
+      mcr.person_id,
+      m.id as movie_id,
+      m.slug as movie_slug,
+      m.title as movie_title,
+      m.year as movie_year,
+      r.name as role_name
+    FROM movie_crew mcr
+    INNER JOIN movies m ON m.id = mcr.movie_id
+    INNER JOIN roles r ON r.id = mcr.role_id
+    WHERE mcr.person_id = ANY(${personIds})
+    ORDER BY mcr.person_id, m.year DESC NULLS LAST, m.id DESC
+  `;
+
+  // Crear mapas para acceso rápido
+  const castMap = new Map(castMovies.map(c => [c.person_id, c]));
+  const crewMap = new Map(crewMovies.map(c => [c.person_id, c]));
+
+  // Agregar película destacada a cada persona
+  return people.map(person => {
+    const castMovie = castMap.get(person.id);
+    const crewMovie = crewMap.get(person.id);
+
+    let featuredMovie = null;
+
+    // Elegir la película más reciente entre cast y crew
+    if (castMovie && crewMovie) {
+      // Comparar años, preferir la más reciente
+      const castYear = castMovie.movie_year || 0;
+      const crewYear = crewMovie.movie_year || 0;
+      
+      if (castYear >= crewYear) {
+        featuredMovie = {
+          id: castMovie.movie_id,
+          slug: castMovie.movie_slug,
+          title: castMovie.movie_title,
+          year: castMovie.movie_year,
+          role: 'Actor'
+        };
+      } else {
+        featuredMovie = {
+          id: crewMovie.movie_id,
+          slug: crewMovie.movie_slug,
+          title: crewMovie.movie_title,
+          year: crewMovie.movie_year,
+          role: crewMovie.role_name
+        };
+      }
+    } else if (castMovie) {
+      featuredMovie = {
+        id: castMovie.movie_id,
+        slug: castMovie.movie_slug,
+        title: castMovie.movie_title,
+        year: castMovie.movie_year,
+        role: 'Actor'
+      };
+    } else if (crewMovie) {
+      featuredMovie = {
+        id: crewMovie.movie_id,
+        slug: crewMovie.movie_slug,
+        title: crewMovie.movie_title,
+        year: crewMovie.movie_year,
+        role: crewMovie.role_name
+      };
+    }
+
+    return {
+      ...person,
+      name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre',
+      featuredMovie,
+      movieCount: (person._count?.castRoles || 0) + (person._count?.crewRoles || 0)
+    };
+  });
+}
+
+
+// ==================================================
 // src/app/api/people/review-names/route.ts
 // ==================================================
 import { NextResponse } from 'next/server';
@@ -16271,6 +17252,1547 @@ export async function DELETE(
     )
   }
 }
+
+// ==================================================
+// src/app/app/(site)/listados/personas/page.tsx
+// ==================================================
+// src/app/(site)/listados/personas/page.tsx
+'use client';
+
+import { Suspense } from 'react';
+import PersonasContent from './PersonasContent';
+
+export default function PersonasPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-gray-400">Cargando personas...</p>
+        </div>
+      </div>
+    }>
+      <PersonasContent />
+    </Suspense>
+  );
+}
+
+
+// ==================================================
+// src/app/app/(site)/listados/personas/PersonasContent.tsx
+// ==================================================
+// src/app/(site)/listados/personas/PersonasContent.tsx
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import PersonasFilters from './PersonasFilters';
+import PersonasGrid from './PersonasGrid';
+import ViewToggle from './ViewToggle';
+import { 
+  PersonListFilters, 
+  DEFAULT_PERSON_FILTERS,
+  FiltersDataResponse,
+  PersonWithMovie,
+  ViewMode
+} from '@/lib/people/personListTypes';
+import { 
+  searchParamsToFilters, 
+  filtersToSearchParams,
+  filtersToApiParams,
+  countActiveFilters,
+  clearFilters
+} from '@/lib/people/personListUtils';
+
+interface PaginationState {
+  page: number;
+  totalPages: number;
+  totalCount: number;
+}
+
+export default function PersonasContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Estado de filtros
+  const [filters, setFilters] = useState<PersonListFilters>(DEFAULT_PERSON_FILTERS);
+  const [filtersData, setFiltersData] = useState<FiltersDataResponse | null>(null);
+  
+  // Estado de datos
+  const [people, setPeople] = useState<PersonWithMovie[]>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    totalPages: 1,
+    totalCount: 0
+  });
+  
+  // Estado de UI
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingFilters, setIsLoadingFilters] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('compact');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Cargar opciones de filtros al montar
+  useEffect(() => {
+    loadFiltersData();
+  }, []);
+
+  // Inicializar filtros desde URL
+  useEffect(() => {
+    const urlFilters = searchParamsToFilters(searchParams);
+    setFilters(urlFilters);
+    setIsInitialized(true);
+  }, []);
+
+  // Cargar personas cuando cambian los filtros
+  useEffect(() => {
+    if (!isInitialized) return;
+    loadPeople();
+  }, [filters, isInitialized]);
+
+  // Actualizar URL cuando cambian los filtros
+  useEffect(() => {
+    if (!isInitialized) return;
+    
+    const params = filtersToSearchParams(filters);
+    const queryString = params.toString();
+    const newUrl = queryString ? `/listados/personas?${queryString}` : '/listados/personas';
+    
+    router.replace(newUrl, { scroll: false });
+  }, [filters, router, isInitialized]);
+
+  const loadFiltersData = async () => {
+    setIsLoadingFilters(true);
+    try {
+      const response = await fetch('/api/people/filters');
+      if (!response.ok) throw new Error('Error al cargar filtros');
+      const data = await response.json();
+      setFiltersData(data);
+    } catch (error) {
+      console.error('Error loading filters:', error);
+    } finally {
+      setIsLoadingFilters(false);
+    }
+  };
+
+  const loadPeople = async () => {
+    setIsLoading(true);
+    try {
+      const apiParams = filtersToApiParams(filters);
+      const params = new URLSearchParams(apiParams);
+      
+      const response = await fetch(`/api/people/list?${params}`);
+      if (!response.ok) throw new Error('Error al cargar personas');
+      
+      const data = await response.json();
+      
+      setPeople(data.data || []);
+      setPagination({
+        page: data.page || 1,
+        totalPages: data.totalPages || 1,
+        totalCount: data.totalCount || 0
+      });
+    } catch (error) {
+      console.error('Error loading people:', error);
+      setPeople([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFilterChange = useCallback(<K extends keyof PersonListFilters>(
+    key: K, 
+    value: PersonListFilters[K]
+  ) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value,
+      page: 1 // Reset a página 1 cuando cambia un filtro
+    }));
+  }, []);
+
+  const handleMultipleFiltersChange = useCallback((newFilters: Partial<PersonListFilters>) => {
+    setFilters(prev => ({
+      ...prev,
+      ...newFilters,
+      page: 1
+    }));
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setFilters(clearFilters(filters));
+  }, [filters]);
+
+  const handleSortChange = useCallback((sortValue: string) => {
+    const [sortBy, sortOrder] = sortValue.split('-') as [PersonListFilters['sortBy'], PersonListFilters['sortOrder']];
+    setFilters(prev => ({
+      ...prev,
+      sortBy,
+      sortOrder,
+      page: 1
+    }));
+  }, []);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setFilters(prev => ({
+      ...prev,
+      page: newPage
+    }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const activeFiltersCount = countActiveFilters(filters);
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* Header */}
+      <div className="bg-gray-900/50 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col gap-4">
+            {/* Título y contador */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold">Personas</h1>
+                {pagination.totalCount > 0 && (
+                  <p className="text-gray-400 text-sm mt-1">
+                    {pagination.totalCount.toLocaleString('es-AR')} persona{pagination.totalCount !== 1 ? 's' : ''}
+                    {activeFiltersCount > 0 && ` (${activeFiltersCount} filtro${activeFiltersCount !== 1 ? 's' : ''} activo${activeFiltersCount !== 1 ? 's' : ''})`}
+                  </p>
+                )}
+              </div>
+
+              {/* Controles de vista y filtros */}
+              <div className="flex items-center gap-3">
+                <ViewToggle 
+                  viewMode={viewMode} 
+                  onChange={setViewMode} 
+                />
+                
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all
+                    ${showFilters 
+                      ? 'bg-orange-500 text-white' 
+                      : 'bg-gray-800 text-white hover:bg-gray-700'
+                    }
+                  `}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  <span className="hidden sm:inline">Filtros</span>
+                  {activeFiltersCount > 0 && (
+                    <span className="bg-white text-orange-500 text-xs font-bold px-1.5 py-0.5 rounded-full">
+                      {activeFiltersCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Panel de filtros */}
+            {showFilters && (
+              <PersonasFilters
+                filters={filters}
+                filtersData={filtersData}
+                isLoading={isLoadingFilters}
+                onFilterChange={handleFilterChange}
+                onMultipleFiltersChange={handleMultipleFiltersChange}
+                onClearFilters={handleClearFilters}
+                onSortChange={handleSortChange}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Grid de personas */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <PersonasGrid
+          people={people}
+          isLoading={isLoading}
+          viewMode={viewMode}
+        />
+
+        {/* Paginación */}
+        {!isLoading && pagination.totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <button
+              onClick={() => handlePageChange(pagination.page - 1)}
+              disabled={pagination.page === 1}
+              className={`
+                px-4 py-2 rounded-lg font-medium transition-all
+                ${pagination.page === 1
+                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                  : 'bg-gray-800 text-white hover:bg-gray-700'
+                }
+              `}
+            >
+              ← Anterior
+            </button>
+
+            <span className="text-gray-400">
+              Página {pagination.page} de {pagination.totalPages}
+            </span>
+
+            <button
+              onClick={() => handlePageChange(pagination.page + 1)}
+              disabled={pagination.page === pagination.totalPages}
+              className={`
+                px-4 py-2 rounded-lg font-medium transition-all
+                ${pagination.page === pagination.totalPages
+                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                  : 'bg-gray-800 text-white hover:bg-gray-700'
+                }
+              `}
+            >
+              Siguiente →
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+// ==================================================
+// src/app/app/(site)/listados/personas/PersonasFilters.tsx
+// ==================================================
+// src/app/(site)/listados/personas/PersonasFilters.tsx
+'use client';
+
+import { useState, useMemo } from 'react';
+import { 
+  PersonListFilters, 
+  FiltersDataResponse,
+  SORT_OPTIONS,
+  GENDER_OPTIONS
+} from '@/lib/people/personListTypes';
+import { generateYearOptions } from '@/lib/people/personListUtils';
+
+interface PersonasFiltersProps {
+  filters: PersonListFilters;
+  filtersData: FiltersDataResponse | null;
+  isLoading: boolean;
+  onFilterChange: <K extends keyof PersonListFilters>(key: K, value: PersonListFilters[K]) => void;
+  onMultipleFiltersChange: (filters: Partial<PersonListFilters>) => void;
+  onClearFilters: () => void;
+  onSortChange: (sortValue: string) => void;
+}
+
+export default function PersonasFilters({
+  filters,
+  filtersData,
+  isLoading,
+  onFilterChange,
+  onMultipleFiltersChange,
+  onClearFilters,
+  onSortChange
+}: PersonasFiltersProps) {
+  const [searchInput, setSearchInput] = useState(filters.search || '');
+
+  // Generar arrays de años para los selectores
+  const birthYears = useMemo(() => {
+    if (!filtersData?.years.birthYearMin || !filtersData?.years.birthYearMax) return [];
+    return generateYearOptions(filtersData.years.birthYearMin, filtersData.years.birthYearMax);
+  }, [filtersData?.years]);
+
+  const deathYears = useMemo(() => {
+    if (!filtersData?.years.deathYearMin || !filtersData?.years.deathYearMax) return [];
+    return generateYearOptions(filtersData.years.deathYearMin, filtersData.years.deathYearMax);
+  }, [filtersData?.years]);
+
+  // Valor actual del ordenamiento
+  const currentSortValue = `${filters.sortBy || 'id'}-${filters.sortOrder || 'desc'}`;
+
+  // Manejar búsqueda con debounce
+  const handleSearchChange = (value: string) => {
+    setSearchInput(value);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onFilterChange('search', searchInput);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      onFilterChange('search', searchInput);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="h-10 bg-gray-800 rounded-lg" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 py-4 border-t border-gray-800">
+      {/* Fila 1: Búsqueda y Ordenamiento */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Búsqueda */}
+        <form onSubmit={handleSearchSubmit} className="relative">
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="Buscar por nombre..."
+            className="w-full px-4 py-2 pl-10 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+          />
+          <svg 
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          {searchInput && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchInput('');
+                onFilterChange('search', '');
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </form>
+
+        {/* Ordenamiento */}
+        <select
+          value={currentSortValue}
+          onChange={(e) => onSortChange(e.target.value)}
+          className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          {SORT_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Fila 2: Filtros principales */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        {/* Sexo */}
+        <select
+          value={filters.gender || ''}
+          onChange={(e) => onFilterChange('gender', e.target.value as PersonListFilters['gender'])}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          {GENDER_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+        {/* Nacionalidad */}
+        <select
+          value={filters.nationalityId || ''}
+          onChange={(e) => onFilterChange('nationalityId', e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Todas las nacionalidades</option>
+          {filtersData?.nationalities.map(nat => (
+            <option key={nat.id} value={nat.id}>
+              {nat.name} ({nat.count})
+            </option>
+          ))}
+        </select>
+
+        {/* Lugar de nacimiento */}
+        <select
+          value={filters.birthLocationId || ''}
+          onChange={(e) => onFilterChange('birthLocationId', e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Lugar de nacimiento</option>
+          {filtersData?.birthLocations.map(loc => (
+            <option key={loc.id} value={loc.id}>
+              {loc.fullPath} ({loc.count})
+            </option>
+          ))}
+        </select>
+
+        {/* Lugar de muerte */}
+        <select
+          value={filters.deathLocationId || ''}
+          onChange={(e) => onFilterChange('deathLocationId', e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Lugar de fallecimiento</option>
+          {filtersData?.deathLocations.map(loc => (
+            <option key={loc.id} value={loc.id}>
+              {loc.fullPath} ({loc.count})
+            </option>
+          ))}
+        </select>
+
+        {/* Rol */}
+        <select
+          value={filters.roleId || ''}
+          onChange={(e) => onFilterChange('roleId', e.target.value === 'ACTOR' ? 'ACTOR' : e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Todos los roles</option>
+          {filtersData?.roles.map(role => (
+            <option key={role.id} value={role.id}>
+              {role.name} ({role.count})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Fila 3: Rangos de años */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Año de nacimiento desde */}
+        <select
+          value={filters.birthYearFrom || ''}
+          onChange={(e) => onFilterChange('birthYearFrom', e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Nacimiento desde</option>
+          {birthYears.map(year => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+
+        {/* Año de nacimiento hasta */}
+        <select
+          value={filters.birthYearTo || ''}
+          onChange={(e) => onFilterChange('birthYearTo', e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Nacimiento hasta</option>
+          {birthYears.map(year => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+
+        {/* Año de muerte desde */}
+        <select
+          value={filters.deathYearFrom || ''}
+          onChange={(e) => onFilterChange('deathYearFrom', e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Fallecimiento desde</option>
+          {deathYears.map(year => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+
+        {/* Año de muerte hasta */}
+        <select
+          value={filters.deathYearTo || ''}
+          onChange={(e) => onFilterChange('deathYearTo', e.target.value ? parseInt(e.target.value) : '')}
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">Fallecimiento hasta</option>
+          {deathYears.map(year => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Botón limpiar filtros */}
+      <div className="flex justify-end">
+        <button
+          onClick={onClearFilters}
+          className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+        >
+          Limpiar filtros
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+// ==================================================
+// src/app/app/(site)/listados/personas/PersonasGrid.tsx
+// ==================================================
+// src/app/(site)/listados/personas/PersonasGrid.tsx
+'use client';
+
+import PersonCardCompact from './PersonCardCompact';
+import PersonCardDetailed from './PersonCardDetailed';
+import { PersonWithMovie, ViewMode } from '@/lib/people/personListTypes';
+
+interface PersonasGridProps {
+  people: PersonWithMovie[];
+  isLoading: boolean;
+  viewMode: ViewMode;
+}
+
+export default function PersonasGrid({ people, isLoading, viewMode }: PersonasGridProps) {
+  
+  if (isLoading) {
+    return (
+      <div className={
+        viewMode === 'compact'
+          ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6"
+          : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+      }>
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div key={i} className="animate-pulse">
+            {viewMode === 'compact' ? (
+              <>
+                <div className="aspect-[3/4] bg-gray-800 rounded-lg mb-2" />
+                <div className="h-4 bg-gray-800 rounded mb-1" />
+                <div className="h-3 bg-gray-800 rounded w-2/3" />
+              </>
+            ) : (
+              <div className="flex gap-4 p-4 bg-gray-900 rounded-lg">
+                <div className="w-24 h-32 bg-gray-800 rounded-lg flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-5 bg-gray-800 rounded w-3/4" />
+                  <div className="h-4 bg-gray-800 rounded w-1/2" />
+                  <div className="h-4 bg-gray-800 rounded w-2/3" />
+                  <div className="h-4 bg-gray-800 rounded w-1/3" />
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  
+  if (people.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <div className="text-gray-400 text-lg mb-2">
+          No se encontraron personas con los filtros seleccionados
+        </div>
+        <p className="text-gray-500 text-sm">
+          Intenta ajustar los filtros o limpiarlos para ver más resultados
+        </p>
+      </div>
+    );
+  }
+  
+  if (viewMode === 'compact') {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+        {people.map((person) => (
+          <PersonCardCompact key={person.id} person={person} />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {people.map((person) => (
+        <PersonCardDetailed key={person.id} person={person} />
+      ))}
+    </div>
+  );
+}
+
+
+// ==================================================
+// src/app/app/(site)/listados/personas/PersonCardCompact.tsx
+// ==================================================
+// src/app/(site)/listados/personas/PersonCardCompact.tsx
+'use client';
+
+import Link from 'next/link';
+import { PersonWithMovie } from '@/lib/people/personListTypes';
+import { formatPersonName, calculateAge } from '@/lib/people/personListUtils';
+
+interface PersonCardCompactProps {
+  person: PersonWithMovie;
+}
+
+export default function PersonCardCompact({ person }: PersonCardCompactProps) {
+  const personName = formatPersonName(person);
+  const photoUrl = person.photoUrl;
+  
+  // Calcular edad
+  const age = calculateAge(
+    person.birthYear,
+    person.birthMonth,
+    person.birthDay,
+    person.deathYear,
+    person.deathMonth,
+    person.deathDay
+  );
+
+  // Determinar si está fallecida
+  const isDeceased = !!person.deathYear;
+
+  return (
+    <Link 
+      href={`/persona/${person.slug}`}
+      className="group block"
+    >
+      {/* Imagen rectangular con aspect ratio 3:4 */}
+      <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-gray-800 mb-3 transition-transform duration-300 group-hover:scale-[1.02] shadow-lg">
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt={personName}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          // Placeholder SVG
+          <div className="w-full h-full flex flex-col items-center justify-center">
+            <svg 
+              className="w-16 h-16 text-gray-600 mb-2" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth="1.5" 
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
+              />
+            </svg>
+            <span className="text-xs text-gray-500">Sin foto</span>
+          </div>
+        )}
+        
+        {/* Overlay en hover */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Badge de fallecida */}
+        {isDeceased && (
+          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-1 rounded">
+            †
+          </div>
+        )}
+      </div>
+
+      {/* Información */}
+      <div className="space-y-1">
+        <h3 className="font-medium text-white group-hover:text-orange-400 transition-colors line-clamp-2">
+          {personName}
+        </h3>
+        
+        {/* Fechas: 1950 - 2024 (74 años) o solo 1950 si vive */}
+        {person.birthYear && (
+          <p className="text-sm text-gray-400">
+            {person.birthYear}
+            {isDeceased && ` - ${person.deathYear}`}
+            {age !== null && !person.hideAge && ` (${age} años)`}
+          </p>
+        )}
+
+        {/* Cantidad de películas si tiene */}
+        {person.movieCount !== undefined && person.movieCount > 0 && (
+          <p className="text-xs text-gray-500">
+            {person.movieCount} película{person.movieCount !== 1 ? 's' : ''}
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+
+// ==================================================
+// src/app/app/(site)/listados/personas/PersonCardDetailed.tsx
+// ==================================================
+// src/app/(site)/listados/personas/PersonCardDetailed.tsx
+'use client';
+
+import Link from 'next/link';
+import { PersonWithMovie } from '@/lib/people/personListTypes';
+import { formatPersonName, formatPartialDate, calculateAge } from '@/lib/people/personListUtils';
+
+interface PersonCardDetailedProps {
+  person: PersonWithMovie;
+}
+
+export default function PersonCardDetailed({ person }: PersonCardDetailedProps) {
+  const personName = formatPersonName(person);
+  const photoUrl = person.photoUrl;
+  
+  // Calcular edad
+  const age = calculateAge(
+    person.birthYear,
+    person.birthMonth,
+    person.birthDay,
+    person.deathYear,
+    person.deathMonth,
+    person.deathDay
+  );
+
+  // Formatear fecha de nacimiento
+  const birthDateFormatted = formatPartialDate(
+    person.birthYear,
+    person.birthMonth,
+    person.birthDay
+  );
+
+  // Formatear lugar de nacimiento
+  const birthLocationFormatted = person.birthLocation
+    ? person.birthLocation.parent
+      ? `${person.birthLocation.name}, ${person.birthLocation.parent.name}`
+      : person.birthLocation.name
+    : null;
+
+  // Obtener nacionalidad principal
+  const primaryNationality = person.nationalities?.find(n => n.isPrimary)?.location?.name
+    || person.nationalities?.[0]?.location?.name;
+
+  // Determinar si está fallecida
+  const isDeceased = !!person.deathYear;
+
+  return (
+    <Link 
+      href={`/persona/${person.slug}`}
+      className="group block"
+    >
+      <div className="flex gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 hover:border-gray-700 transition-all hover:bg-gray-900">
+        {/* Imagen */}
+        <div className="relative w-24 h-32 flex-shrink-0 rounded-lg overflow-hidden bg-gray-800">
+          {photoUrl ? (
+            <img
+              src={photoUrl}
+              alt={personName}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <svg 
+                className="w-10 h-10 text-gray-600" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth="1.5" 
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
+                />
+              </svg>
+            </div>
+          )}
+
+          {/* Badge de fallecida */}
+          {isDeceased && (
+            <div className="absolute top-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+              †
+            </div>
+          )}
+        </div>
+
+        {/* Información */}
+        <div className="flex-1 min-w-0">
+          {/* Nombre */}
+          <h3 className="font-semibold text-white group-hover:text-orange-400 transition-colors truncate text-lg">
+            {personName}
+          </h3>
+
+          {/* Fecha y lugar de nacimiento */}
+          {(birthDateFormatted || birthLocationFormatted) && (
+            <p className="text-sm text-gray-400 mt-1">
+              {birthDateFormatted && (
+                <span>
+                  n. {birthDateFormatted}
+                  {age !== null && !person.hideAge && !isDeceased && ` (${age} años)`}
+                </span>
+              )}
+              {birthDateFormatted && birthLocationFormatted && ' · '}
+              {birthLocationFormatted && <span>{birthLocationFormatted}</span>}
+            </p>
+          )}
+
+          {/* Fecha de muerte si aplica */}
+          {isDeceased && (
+            <p className="text-sm text-gray-500 mt-0.5">
+              † {formatPartialDate(person.deathYear, person.deathMonth, person.deathDay)}
+              {age !== null && !person.hideAge && ` (${age} años)`}
+            </p>
+          )}
+
+          {/* Nacionalidad */}
+          {primaryNationality && (
+            <p className="text-sm text-gray-500 mt-1">
+              <span className="inline-flex items-center gap-1">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                </svg>
+                {primaryNationality}
+              </span>
+            </p>
+          )}
+
+          {/* Película destacada */}
+          {person.featuredMovie && (
+            <p className="text-sm text-gray-500 mt-2 truncate">
+              <span className="text-orange-400/80">{person.featuredMovie.role}</span>
+              {' en '}
+              <span className="text-gray-300 italic">
+                {person.featuredMovie.title}
+              </span>
+              {person.featuredMovie.year && (
+                <span className="text-gray-500"> ({person.featuredMovie.year})</span>
+              )}
+            </p>
+          )}
+
+          {/* Cantidad de películas */}
+          {person.movieCount !== undefined && person.movieCount > 0 && (
+            <p className="text-xs text-gray-600 mt-2">
+              {person.movieCount} película{person.movieCount !== 1 ? 's' : ''} en el sitio
+            </p>
+          )}
+        </div>
+
+        {/* Flecha de navegación */}
+        <div className="flex items-center text-gray-600 group-hover:text-orange-400 transition-colors">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+
+// ==================================================
+// src/app/app/(site)/listados/personas/ViewToggle.tsx
+// ==================================================
+// src/app/(site)/listados/personas/ViewToggle.tsx
+'use client';
+
+import { ViewMode } from '@/lib/people/personListTypes';
+
+interface ViewToggleProps {
+  viewMode: ViewMode;
+  onChange: (mode: ViewMode) => void;
+}
+
+export default function ViewToggle({ viewMode, onChange }: ViewToggleProps) {
+  return (
+    <div className="flex bg-gray-800 rounded-lg p-1">
+      {/* Vista compacta (grid) */}
+      <button
+        onClick={() => onChange('compact')}
+        className={`
+          p-2 rounded-md transition-all
+          ${viewMode === 'compact' 
+            ? 'bg-gray-700 text-white' 
+            : 'text-gray-400 hover:text-white'
+          }
+        `}
+        title="Vista compacta"
+        aria-label="Vista compacta"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+        </svg>
+      </button>
+
+      {/* Vista detallada (lista) */}
+      <button
+        onClick={() => onChange('detailed')}
+        className={`
+          p-2 rounded-md transition-all
+          ${viewMode === 'detailed' 
+            ? 'bg-gray-700 text-white' 
+            : 'text-gray-400 hover:text-white'
+          }
+        `}
+        title="Vista detallada"
+        aria-label="Vista detallada"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+
+// ==================================================
+// src/app/app/api/people/filters/route.ts
+// ==================================================
+// src/app/api/people/filters/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+export async function GET(request: NextRequest) {
+  try {
+    // Ejecutar todas las consultas en paralelo
+    const [
+      birthLocations,
+      deathLocations,
+      nationalities,
+      roles,
+      yearRanges
+    ] = await Promise.all([
+      // Ubicaciones de nacimiento (solo las que tienen personas)
+      prisma.$queryRaw<Array<{ id: number; name: string; parent_name: string | null; count: number }>>`
+        SELECT 
+          l.id,
+          l.name,
+          p.name as parent_name,
+          COUNT(DISTINCT pe.id)::int as count
+        FROM locations l
+        INNER JOIN people pe ON pe.birth_location_id = l.id
+        LEFT JOIN locations p ON l.parent_id = p.id
+        GROUP BY l.id, l.name, p.name
+        ORDER BY l.name ASC
+      `,
+      
+      // Ubicaciones de muerte (solo las que tienen personas)
+      prisma.$queryRaw<Array<{ id: number; name: string; parent_name: string | null; count: number }>>`
+        SELECT 
+          l.id,
+          l.name,
+          p.name as parent_name,
+          COUNT(DISTINCT pe.id)::int as count
+        FROM locations l
+        INNER JOIN people pe ON pe.death_location_id = l.id
+        LEFT JOIN locations p ON l.parent_id = p.id
+        GROUP BY l.id, l.name, p.name
+        ORDER BY l.name ASC
+      `,
+      
+      // Nacionalidades (países con personas)
+      prisma.$queryRaw<Array<{ id: number; name: string; count: number }>>`
+        SELECT 
+          l.id,
+          l.name,
+          COUNT(DISTINCT pn.person_id)::int as count
+        FROM locations l
+        INNER JOIN person_nationalities pn ON pn.location_id = l.id
+        GROUP BY l.id, l.name
+        ORDER BY l.name ASC
+      `,
+      
+      // Roles técnicos (de la tabla roles)
+      prisma.$queryRaw<Array<{ id: number; name: string; department: string; count: number }>>`
+        SELECT 
+          r.id,
+          r.name,
+          r.department,
+          COUNT(DISTINCT mc.person_id)::int as count
+        FROM roles r
+        INNER JOIN movie_crew mc ON mc.role_id = r.id
+        WHERE r.is_active = true
+        GROUP BY r.id, r.name, r.department
+        HAVING COUNT(DISTINCT mc.person_id) > 0
+        ORDER BY r.name ASC
+      `,
+      
+      // Rangos de años
+      prisma.$queryRaw<Array<{
+        birth_year_min: number | null;
+        birth_year_max: number | null;
+        death_year_min: number | null;
+        death_year_max: number | null;
+      }>>`
+        SELECT 
+          MIN(birth_year) as birth_year_min,
+          MAX(birth_year) as birth_year_max,
+          MIN(death_year) as death_year_min,
+          MAX(death_year) as death_year_max
+        FROM people
+        WHERE is_active = true
+      `
+    ]);
+
+    // Contar actores (personas en movie_cast)
+    const actorCount = await prisma.$queryRaw<Array<{ count: number }>>`
+      SELECT COUNT(DISTINCT person_id)::int as count
+      FROM movie_cast
+    `;
+
+    // Formatear respuesta
+    const response = {
+      birthLocations: birthLocations.map(loc => ({
+        id: loc.id,
+        name: loc.name,
+        parentName: loc.parent_name,
+        fullPath: loc.parent_name ? `${loc.name}, ${loc.parent_name}` : loc.name,
+        count: loc.count
+      })),
+      
+      deathLocations: deathLocations.map(loc => ({
+        id: loc.id,
+        name: loc.name,
+        parentName: loc.parent_name,
+        fullPath: loc.parent_name ? `${loc.name}, ${loc.parent_name}` : loc.name,
+        count: loc.count
+      })),
+      
+      nationalities: nationalities.map(nat => ({
+        id: nat.id,
+        name: nat.name,
+        count: nat.count
+      })),
+      
+      roles: [
+        // Actor/Actriz como primera opción especial
+        {
+          id: 'ACTOR',
+          name: 'Actor / Actriz',
+          department: 'ACTUACION',
+          isActor: true,
+          count: actorCount[0]?.count || 0
+        },
+        // Luego los roles técnicos
+        ...roles.map(role => ({
+          id: role.id,
+          name: role.name,
+          department: role.department,
+          isActor: false,
+          count: role.count
+        }))
+      ],
+      
+      years: {
+        birthYearMin: yearRanges[0]?.birth_year_min || null,
+        birthYearMax: yearRanges[0]?.birth_year_max || null,
+        deathYearMin: yearRanges[0]?.death_year_min || null,
+        deathYearMax: yearRanges[0]?.death_year_max || null
+      }
+    };
+
+    return NextResponse.json(response, {
+      headers: {
+        // Cachear por 1 hora ya que estos datos no cambian frecuentemente
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200'
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error fetching filter options:', error);
+    return NextResponse.json(
+      { message: 'Error al obtener opciones de filtros' },
+      { status: 500 }
+    );
+  }
+}
+
+
+// ==================================================
+// src/app/app/api/people/list/route.ts
+// ==================================================
+// src/app/api/people/list/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    
+    // Parámetros de filtrado
+    const search = searchParams.get('search');
+    const gender = searchParams.get('gender');
+    const birthLocationId = searchParams.get('birthLocationId');
+    const deathLocationId = searchParams.get('deathLocationId');
+    const nationalityId = searchParams.get('nationalityId');
+    const roleId = searchParams.get('roleId');
+    const birthYearFrom = searchParams.get('birthYearFrom');
+    const birthYearTo = searchParams.get('birthYearTo');
+    const deathYearFrom = searchParams.get('deathYearFrom');
+    const deathYearTo = searchParams.get('deathYearTo');
+    
+    // Parámetros de ordenamiento y paginación
+    const sortBy = searchParams.get('sortBy') || 'id';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '60');
+    const skip = (page - 1) * limit;
+
+    // Construir WHERE clause
+    const where: Prisma.PersonWhereInput = {
+      isActive: true
+    };
+
+    // Filtro de búsqueda por nombre
+    if (search && search.trim().length >= 2) {
+      const searchTerms = search.trim().split(/\s+/);
+      
+      if (searchTerms.length === 1) {
+        where.OR = [
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { realName: { contains: search, mode: 'insensitive' } },
+        ];
+      } else {
+        where.OR = [
+          { realName: { contains: search, mode: 'insensitive' } },
+          {
+            AND: searchTerms.map(term => ({
+              OR: [
+                { firstName: { contains: term, mode: 'insensitive' } },
+                { lastName: { contains: term, mode: 'insensitive' } },
+              ]
+            }))
+          }
+        ];
+      }
+    }
+
+    // Filtro de género
+    if (gender === 'MALE' || gender === 'FEMALE' || gender === 'OTHER') {
+      where.gender = gender;
+    }
+
+    // Filtro de ubicación de nacimiento
+    if (birthLocationId) {
+      where.birthLocationId = parseInt(birthLocationId);
+    }
+
+    // Filtro de ubicación de muerte
+    if (deathLocationId) {
+      where.deathLocationId = parseInt(deathLocationId);
+    }
+
+    // Filtro de nacionalidad
+    if (nationalityId) {
+      where.nationalities = {
+        some: {
+          locationId: parseInt(nationalityId)
+        }
+      };
+    }
+
+    // Filtro de rol (Actor o rol técnico)
+    if (roleId) {
+      if (roleId === 'ACTOR') {
+        // Buscar personas que tienen al menos un rol de cast
+        where.castRoles = {
+          some: {}
+        };
+      } else {
+        // Buscar personas con rol técnico específico
+        where.crewRoles = {
+          some: {
+            roleId: parseInt(roleId)
+          }
+        };
+      }
+    }
+
+    // Filtro de rango de año de nacimiento
+    if (birthYearFrom || birthYearTo) {
+      where.birthYear = {};
+      if (birthYearFrom) {
+        where.birthYear.gte = parseInt(birthYearFrom);
+      }
+      if (birthYearTo) {
+        where.birthYear.lte = parseInt(birthYearTo);
+      }
+    }
+
+    // Filtro de rango de año de muerte
+    if (deathYearFrom || deathYearTo) {
+      where.deathYear = {};
+      if (deathYearFrom) {
+        where.deathYear.gte = parseInt(deathYearFrom);
+      }
+      if (deathYearTo) {
+        where.deathYear.lte = parseInt(deathYearTo);
+      }
+    }
+
+    // Determinar ordenamiento
+    let orderBy: Prisma.PersonOrderByWithRelationInput | Prisma.PersonOrderByWithRelationInput[];
+    
+    switch (sortBy) {
+      case 'lastName':
+        orderBy = [
+          { lastName: sortOrder as Prisma.SortOrder },
+          { firstName: sortOrder as Prisma.SortOrder }
+        ];
+        break;
+      case 'birthDate':
+        orderBy = [
+          { birthYear: sortOrder as Prisma.SortOrder },
+          { birthMonth: sortOrder as Prisma.SortOrder },
+          { birthDay: sortOrder as Prisma.SortOrder }
+        ];
+        break;
+      case 'deathDate':
+        orderBy = [
+          { deathYear: sortOrder as Prisma.SortOrder },
+          { deathMonth: sortOrder as Prisma.SortOrder },
+          { deathDay: sortOrder as Prisma.SortOrder }
+        ];
+        break;
+      case 'id':
+      default:
+        orderBy = { id: sortOrder as Prisma.SortOrder };
+        break;
+    }
+
+    // Si el ordenamiento es por cantidad de películas, necesitamos un enfoque diferente
+    if (sortBy === 'movieCount') {
+      // Usar query raw para ordenar por conteo
+      const peopleWithMovieCount = await prisma.$queryRaw<Array<{ id: number; movie_count: number }>>`
+        SELECT 
+          p.id,
+          (
+            COALESCE((SELECT COUNT(*) FROM movie_cast mc WHERE mc.person_id = p.id), 0) +
+            COALESCE((SELECT COUNT(*) FROM movie_crew mcr WHERE mcr.person_id = p.id), 0)
+          )::int as movie_count
+        FROM people p
+        WHERE p.is_active = true
+        ${birthLocationId ? Prisma.sql`AND p.birth_location_id = ${parseInt(birthLocationId)}` : Prisma.empty}
+        ${deathLocationId ? Prisma.sql`AND p.death_location_id = ${parseInt(deathLocationId)}` : Prisma.empty}
+        ${gender ? Prisma.sql`AND p.gender = ${gender}::"gender"` : Prisma.empty}
+        ${birthYearFrom ? Prisma.sql`AND p.birth_year >= ${parseInt(birthYearFrom)}` : Prisma.empty}
+        ${birthYearTo ? Prisma.sql`AND p.birth_year <= ${parseInt(birthYearTo)}` : Prisma.empty}
+        ${deathYearFrom ? Prisma.sql`AND p.death_year >= ${parseInt(deathYearFrom)}` : Prisma.empty}
+        ${deathYearTo ? Prisma.sql`AND p.death_year <= ${parseInt(deathYearTo)}` : Prisma.empty}
+        ${nationalityId ? Prisma.sql`AND EXISTS (SELECT 1 FROM person_nationalities pn WHERE pn.person_id = p.id AND pn.location_id = ${parseInt(nationalityId)})` : Prisma.empty}
+        ${roleId === 'ACTOR' ? Prisma.sql`AND EXISTS (SELECT 1 FROM movie_cast mc WHERE mc.person_id = p.id)` : Prisma.empty}
+        ${roleId && roleId !== 'ACTOR' ? Prisma.sql`AND EXISTS (SELECT 1 FROM movie_crew mcr WHERE mcr.person_id = p.id AND mcr.role_id = ${parseInt(roleId)})` : Prisma.empty}
+        ORDER BY movie_count ${sortOrder === 'desc' ? Prisma.sql`DESC` : Prisma.sql`ASC`}
+        LIMIT ${limit}
+        OFFSET ${skip}
+      `;
+
+      const personIds = peopleWithMovieCount.map(p => p.id);
+      
+      if (personIds.length === 0) {
+        return NextResponse.json({
+          data: [],
+          totalCount: 0,
+          page,
+          totalPages: 0,
+          hasMore: false
+        });
+      }
+
+      // Obtener datos completos
+      const people = await prisma.person.findMany({
+        where: { id: { in: personIds } },
+        include: {
+          nationalities: {
+            include: { location: true }
+          },
+          birthLocation: {
+            include: { parent: true }
+          },
+          deathLocation: {
+            include: { parent: true }
+          },
+          _count: {
+            select: {
+              castRoles: true,
+              crewRoles: true,
+            }
+          }
+        }
+      });
+
+      // Mantener el orden del query
+      const orderedPeople = personIds.map(id => people.find(p => p.id === id)!).filter(Boolean);
+
+      // Obtener película destacada para cada persona
+      const peopleWithMovies = await addFeaturedMovies(orderedPeople);
+
+      // Contar total
+      const totalCount = await prisma.person.count({ where });
+      const totalPages = Math.ceil(totalCount / limit);
+
+      return NextResponse.json({
+        data: peopleWithMovies,
+        totalCount,
+        page,
+        totalPages,
+        hasMore: page < totalPages
+      });
+    }
+
+    // Query normal (sin ordenamiento por movieCount)
+    const [people, totalCount] = await Promise.all([
+      prisma.person.findMany({
+        where,
+        include: {
+          nationalities: {
+            include: { location: true }
+          },
+          birthLocation: {
+            include: { parent: true }
+          },
+          deathLocation: {
+            include: { parent: true }
+          },
+          _count: {
+            select: {
+              castRoles: true,
+              crewRoles: true,
+            }
+          }
+        },
+        orderBy,
+        skip,
+        take: limit
+      }),
+      prisma.person.count({ where })
+    ]);
+
+    // Obtener película destacada para cada persona
+    const peopleWithMovies = await addFeaturedMovies(people);
+
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return NextResponse.json({
+      data: peopleWithMovies,
+      totalCount,
+      page,
+      totalPages,
+      hasMore: page < totalPages
+    });
+
+  } catch (error) {
+    console.error('Error fetching people list:', error);
+    return NextResponse.json(
+      { message: 'Error al obtener listado de personas' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Agrega la película destacada (más reciente) a cada persona
+ */
+async function addFeaturedMovies(people: any[]): Promise<any[]> {
+  if (people.length === 0) return [];
+
+  const personIds = people.map(p => p.id);
+
+  // Obtener la película más reciente de cast para cada persona
+  const castMovies = await prisma.$queryRaw<Array<{
+    person_id: number;
+    movie_id: number;
+    movie_slug: string;
+    movie_title: string;
+    movie_year: number | null;
+  }>>`
+    SELECT DISTINCT ON (mc.person_id)
+      mc.person_id,
+      m.id as movie_id,
+      m.slug as movie_slug,
+      m.title as movie_title,
+      m.year as movie_year
+    FROM movie_cast mc
+    INNER JOIN movies m ON m.id = mc.movie_id
+    WHERE mc.person_id = ANY(${personIds})
+    ORDER BY mc.person_id, m.year DESC NULLS LAST, m.id DESC
+  `;
+
+  // Obtener la película más reciente de crew para cada persona
+  const crewMovies = await prisma.$queryRaw<Array<{
+    person_id: number;
+    movie_id: number;
+    movie_slug: string;
+    movie_title: string;
+    movie_year: number | null;
+    role_name: string;
+  }>>`
+    SELECT DISTINCT ON (mcr.person_id)
+      mcr.person_id,
+      m.id as movie_id,
+      m.slug as movie_slug,
+      m.title as movie_title,
+      m.year as movie_year,
+      r.name as role_name
+    FROM movie_crew mcr
+    INNER JOIN movies m ON m.id = mcr.movie_id
+    INNER JOIN roles r ON r.id = mcr.role_id
+    WHERE mcr.person_id = ANY(${personIds})
+    ORDER BY mcr.person_id, m.year DESC NULLS LAST, m.id DESC
+  `;
+
+  // Crear mapas para acceso rápido
+  const castMap = new Map(castMovies.map(c => [c.person_id, c]));
+  const crewMap = new Map(crewMovies.map(c => [c.person_id, c]));
+
+  // Agregar película destacada a cada persona
+  return people.map(person => {
+    const castMovie = castMap.get(person.id);
+    const crewMovie = crewMap.get(person.id);
+
+    let featuredMovie = null;
+
+    // Elegir la película más reciente entre cast y crew
+    if (castMovie && crewMovie) {
+      // Comparar años, preferir la más reciente
+      const castYear = castMovie.movie_year || 0;
+      const crewYear = crewMovie.movie_year || 0;
+      
+      if (castYear >= crewYear) {
+        featuredMovie = {
+          id: castMovie.movie_id,
+          slug: castMovie.movie_slug,
+          title: castMovie.movie_title,
+          year: castMovie.movie_year,
+          role: 'Actor'
+        };
+      } else {
+        featuredMovie = {
+          id: crewMovie.movie_id,
+          slug: crewMovie.movie_slug,
+          title: crewMovie.movie_title,
+          year: crewMovie.movie_year,
+          role: crewMovie.role_name
+        };
+      }
+    } else if (castMovie) {
+      featuredMovie = {
+        id: castMovie.movie_id,
+        slug: castMovie.movie_slug,
+        title: castMovie.movie_title,
+        year: castMovie.movie_year,
+        role: 'Actor'
+      };
+    } else if (crewMovie) {
+      featuredMovie = {
+        id: crewMovie.movie_id,
+        slug: crewMovie.movie_slug,
+        title: crewMovie.movie_title,
+        year: crewMovie.movie_year,
+        role: crewMovie.role_name
+      };
+    }
+
+    return {
+      ...person,
+      name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre',
+      featuredMovie,
+      movieCount: (person._count?.castRoles || 0) + (person._count?.crewRoles || 0)
+    };
+  });
+}
+
 
 // ==================================================
 // src/app/layout.tsx
@@ -32128,6 +34650,374 @@ export function getImageTypeLabel(type: string): string {
 }
 
 // ==================================================
+// src/lib/lib/people/personListTypes.ts
+// ==================================================
+// src/lib/people/personListTypes.ts
+
+import { PersonWithRelations } from './peopleTypes';
+
+// Filtros disponibles para el listado
+export interface PersonListFilters {
+  search?: string;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER' | '';
+  birthLocationId?: number | '';
+  deathLocationId?: number | '';
+  nationalityId?: number | '';
+  roleId?: number | 'ACTOR' | '';  // 'ACTOR' es especial para buscar en cast
+  birthYearFrom?: number | '';
+  birthYearTo?: number | '';
+  deathYearFrom?: number | '';
+  deathYearTo?: number | '';
+  sortBy?: 'id' | 'lastName' | 'birthDate' | 'deathDate' | 'movieCount';
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+// Valores por defecto de los filtros
+export const DEFAULT_PERSON_FILTERS: PersonListFilters = {
+  search: '',
+  gender: '',
+  birthLocationId: '',
+  deathLocationId: '',
+  nationalityId: '',
+  roleId: '',
+  birthYearFrom: '',
+  birthYearTo: '',
+  deathYearFrom: '',
+  deathYearTo: '',
+  sortBy: 'id',
+  sortOrder: 'desc',
+  page: 1,
+  limit: 60
+};
+
+// Persona extendida con película destacada
+export interface PersonWithMovie extends PersonWithRelations {
+  featuredMovie?: {
+    id: number;
+    slug: string;
+    title: string;
+    year: number | null;
+    role?: string;  // "Actor" o el nombre del rol técnico
+  } | null;
+  movieCount?: number;
+}
+
+// Opciones para los dropdowns de filtros
+export interface FilterOption {
+  id: number;
+  name: string;
+  count?: number;  // Cantidad de personas con este valor
+}
+
+// Opciones de ubicación (con jerarquía)
+export interface LocationFilterOption extends FilterOption {
+  parentName?: string;  // Ej: "Argentina" para "Buenos Aires"
+  fullPath?: string;    // Ej: "Buenos Aires, Argentina"
+}
+
+// Opciones de rol
+export interface RoleFilterOption extends FilterOption {
+  department?: string;
+  isActor?: boolean;  // true para el rol especial "Actor/Actriz"
+}
+
+// Respuesta de la API de filtros
+export interface FiltersDataResponse {
+  birthLocations: LocationFilterOption[];
+  deathLocations: LocationFilterOption[];
+  nationalities: LocationFilterOption[];
+  roles: RoleFilterOption[];
+  years: {
+    birthYearMin: number | null;
+    birthYearMax: number | null;
+    deathYearMin: number | null;
+    deathYearMax: number | null;
+  };
+}
+
+// Respuesta paginada del listado
+export interface PaginatedPersonListResponse {
+  data: PersonWithMovie[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+// Tipo de vista
+export type ViewMode = 'compact' | 'detailed';
+
+// Opciones de ordenamiento para el UI
+export const SORT_OPTIONS = [
+  { value: 'id-desc', label: 'Últimas ingresadas', sortBy: 'id', sortOrder: 'desc' },
+  { value: 'id-asc', label: 'Primeras ingresadas', sortBy: 'id', sortOrder: 'asc' },
+  { value: 'lastName-asc', label: 'Apellido (A-Z)', sortBy: 'lastName', sortOrder: 'asc' },
+  { value: 'lastName-desc', label: 'Apellido (Z-A)', sortBy: 'lastName', sortOrder: 'desc' },
+  { value: 'birthDate-desc', label: 'Más jóvenes primero', sortBy: 'birthDate', sortOrder: 'desc' },
+  { value: 'birthDate-asc', label: 'Más veteranos primero', sortBy: 'birthDate', sortOrder: 'asc' },
+  { value: 'deathDate-desc', label: 'Fallecimiento reciente', sortBy: 'deathDate', sortOrder: 'desc' },
+  { value: 'deathDate-asc', label: 'Fallecimiento antiguo', sortBy: 'deathDate', sortOrder: 'asc' },
+  { value: 'movieCount-desc', label: 'Más películas', sortBy: 'movieCount', sortOrder: 'desc' },
+  { value: 'movieCount-asc', label: 'Menos películas', sortBy: 'movieCount', sortOrder: 'asc' },
+] as const;
+
+// Opciones de género para el UI
+export const GENDER_OPTIONS = [
+  { value: '', label: 'Todos los sexos' },
+  { value: 'FEMALE', label: 'Femenino' },
+  { value: 'MALE', label: 'Masculino' },
+  { value: 'OTHER', label: 'Otro' },
+] as const;
+
+
+// ==================================================
+// src/lib/lib/people/personListUtils.ts
+// ==================================================
+// src/lib/people/personListUtils.ts
+
+import { PersonListFilters, DEFAULT_PERSON_FILTERS, PersonWithMovie, LocationFilterOption } from './personListTypes';
+
+/**
+ * Convierte los filtros del estado a parámetros de URL
+ */
+export function filtersToSearchParams(filters: PersonListFilters): URLSearchParams {
+  const params = new URLSearchParams();
+  
+  // Solo agregar parámetros que no sean el valor por defecto
+  if (filters.search) params.set('search', filters.search);
+  if (filters.gender) params.set('gender', filters.gender);
+  if (filters.birthLocationId) params.set('birthLocationId', String(filters.birthLocationId));
+  if (filters.deathLocationId) params.set('deathLocationId', String(filters.deathLocationId));
+  if (filters.nationalityId) params.set('nationalityId', String(filters.nationalityId));
+  if (filters.roleId) params.set('roleId', String(filters.roleId));
+  if (filters.birthYearFrom) params.set('birthYearFrom', String(filters.birthYearFrom));
+  if (filters.birthYearTo) params.set('birthYearTo', String(filters.birthYearTo));
+  if (filters.deathYearFrom) params.set('deathYearFrom', String(filters.deathYearFrom));
+  if (filters.deathYearTo) params.set('deathYearTo', String(filters.deathYearTo));
+  if (filters.sortBy && filters.sortBy !== DEFAULT_PERSON_FILTERS.sortBy) {
+    params.set('sortBy', filters.sortBy);
+  }
+  if (filters.sortOrder && filters.sortOrder !== DEFAULT_PERSON_FILTERS.sortOrder) {
+    params.set('sortOrder', filters.sortOrder);
+  }
+  if (filters.page && filters.page !== 1) params.set('page', String(filters.page));
+  
+  return params;
+}
+
+/**
+ * Convierte parámetros de URL a filtros
+ */
+export function searchParamsToFilters(searchParams: URLSearchParams): PersonListFilters {
+  const filters: PersonListFilters = { ...DEFAULT_PERSON_FILTERS };
+  
+  const search = searchParams.get('search');
+  if (search) filters.search = search;
+  
+  const gender = searchParams.get('gender');
+  if (gender === 'MALE' || gender === 'FEMALE' || gender === 'OTHER') {
+    filters.gender = gender;
+  }
+  
+  const birthLocationId = searchParams.get('birthLocationId');
+  if (birthLocationId) filters.birthLocationId = parseInt(birthLocationId);
+  
+  const deathLocationId = searchParams.get('deathLocationId');
+  if (deathLocationId) filters.deathLocationId = parseInt(deathLocationId);
+  
+  const nationalityId = searchParams.get('nationalityId');
+  if (nationalityId) filters.nationalityId = parseInt(nationalityId);
+  
+  const roleId = searchParams.get('roleId');
+  if (roleId) {
+    filters.roleId = roleId === 'ACTOR' ? 'ACTOR' : parseInt(roleId);
+  }
+  
+  const birthYearFrom = searchParams.get('birthYearFrom');
+  if (birthYearFrom) filters.birthYearFrom = parseInt(birthYearFrom);
+  
+  const birthYearTo = searchParams.get('birthYearTo');
+  if (birthYearTo) filters.birthYearTo = parseInt(birthYearTo);
+  
+  const deathYearFrom = searchParams.get('deathYearFrom');
+  if (deathYearFrom) filters.deathYearFrom = parseInt(deathYearFrom);
+  
+  const deathYearTo = searchParams.get('deathYearTo');
+  if (deathYearTo) filters.deathYearTo = parseInt(deathYearTo);
+  
+  const sortBy = searchParams.get('sortBy');
+  if (sortBy === 'id' || sortBy === 'lastName' || sortBy === 'birthDate' || sortBy === 'deathDate' || sortBy === 'movieCount') {
+    filters.sortBy = sortBy;
+  }
+  
+  const sortOrder = searchParams.get('sortOrder');
+  if (sortOrder === 'asc' || sortOrder === 'desc') {
+    filters.sortOrder = sortOrder;
+  }
+  
+  const page = searchParams.get('page');
+  if (page) filters.page = parseInt(page);
+  
+  return filters;
+}
+
+/**
+ * Convierte filtros a parámetros de API
+ */
+export function filtersToApiParams(filters: PersonListFilters): Record<string, string> {
+  const params: Record<string, string> = {};
+  
+  if (filters.search) params.search = filters.search;
+  if (filters.gender) params.gender = filters.gender;
+  if (filters.birthLocationId) params.birthLocationId = String(filters.birthLocationId);
+  if (filters.deathLocationId) params.deathLocationId = String(filters.deathLocationId);
+  if (filters.nationalityId) params.nationalityId = String(filters.nationalityId);
+  if (filters.roleId) params.roleId = String(filters.roleId);
+  if (filters.birthYearFrom) params.birthYearFrom = String(filters.birthYearFrom);
+  if (filters.birthYearTo) params.birthYearTo = String(filters.birthYearTo);
+  if (filters.deathYearFrom) params.deathYearFrom = String(filters.deathYearFrom);
+  if (filters.deathYearTo) params.deathYearTo = String(filters.deathYearTo);
+  if (filters.sortBy) params.sortBy = filters.sortBy;
+  if (filters.sortOrder) params.sortOrder = filters.sortOrder;
+  if (filters.page) params.page = String(filters.page);
+  if (filters.limit) params.limit = String(filters.limit);
+  
+  return params;
+}
+
+/**
+ * Formatea el nombre completo de una persona
+ */
+export function formatPersonName(person: { firstName?: string | null; lastName?: string | null; realName?: string | null }): string {
+  const name = [person.firstName, person.lastName].filter(Boolean).join(' ');
+  return name || person.realName || 'Sin nombre';
+}
+
+/**
+ * Formatea la fecha de nacimiento/muerte para mostrar
+ */
+export function formatPartialDate(
+  year?: number | null,
+  month?: number | null,
+  day?: number | null,
+  options?: { includeAge?: boolean; currentYear?: number }
+): string {
+  if (!year) return '';
+  
+  const months = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+  ];
+  
+  let dateStr = '';
+  
+  if (day && month) {
+    dateStr = `${day} de ${months[month - 1]} de ${year}`;
+  } else if (month) {
+    dateStr = `${months[month - 1]} de ${year}`;
+  } else {
+    dateStr = String(year);
+  }
+  
+  return dateStr;
+}
+
+/**
+ * Calcula la edad entre dos fechas parciales
+ */
+export function calculateAge(
+  birthYear?: number | null,
+  birthMonth?: number | null,
+  birthDay?: number | null,
+  deathYear?: number | null,
+  deathMonth?: number | null,
+  deathDay?: number | null
+): number | null {
+  if (!birthYear) return null;
+  
+  const endYear = deathYear || new Date().getFullYear();
+  const endMonth = deathMonth || new Date().getMonth() + 1;
+  const endDay = deathDay || new Date().getDate();
+  
+  let age = endYear - birthYear;
+  
+  // Ajustar si aún no llegó el cumpleaños
+  if (birthMonth && endMonth) {
+    if (endMonth < birthMonth) {
+      age--;
+    } else if (endMonth === birthMonth && birthDay && endDay < birthDay) {
+      age--;
+    }
+  }
+  
+  return age >= 0 ? age : null;
+}
+
+/**
+ * Formatea la ubicación con su padre
+ */
+export function formatLocation(location: LocationFilterOption | null | undefined): string {
+  if (!location) return '';
+  
+  if (location.fullPath) return location.fullPath;
+  if (location.parentName) return `${location.name}, ${location.parentName}`;
+  return location.name;
+}
+
+/**
+ * Genera un array de años para los selectores
+ */
+export function generateYearOptions(min: number, max: number): number[] {
+  const years: number[] = [];
+  for (let year = max; year >= min; year--) {
+    years.push(year);
+  }
+  return years;
+}
+
+/**
+ * Cuenta cuántos filtros activos hay
+ */
+export function countActiveFilters(filters: PersonListFilters): number {
+  let count = 0;
+  
+  if (filters.search) count++;
+  if (filters.gender) count++;
+  if (filters.birthLocationId) count++;
+  if (filters.deathLocationId) count++;
+  if (filters.nationalityId) count++;
+  if (filters.roleId) count++;
+  if (filters.birthYearFrom) count++;
+  if (filters.birthYearTo) count++;
+  if (filters.deathYearFrom) count++;
+  if (filters.deathYearTo) count++;
+  
+  return count;
+}
+
+/**
+ * Verifica si hay filtros activos (excluyendo ordenamiento y paginación)
+ */
+export function hasActiveFilters(filters: PersonListFilters): boolean {
+  return countActiveFilters(filters) > 0;
+}
+
+/**
+ * Limpia todos los filtros manteniendo ordenamiento
+ */
+export function clearFilters(filters: PersonListFilters): PersonListFilters {
+  return {
+    ...DEFAULT_PERSON_FILTERS,
+    sortBy: filters.sortBy,
+    sortOrder: filters.sortOrder,
+    limit: filters.limit
+  };
+}
+
+
+// ==================================================
 // src/lib/movies/movieConstants.ts
 // ==================================================
 // src/lib/movies/movieConstants.ts
@@ -33597,6 +36487,374 @@ export function getPersonSummary(person: any): string {
 
    return parts.join(' - ');
 }
+
+// ==================================================
+// src/lib/people/personListTypes.ts
+// ==================================================
+// src/lib/people/personListTypes.ts
+
+import { PersonWithRelations } from './peopleTypes';
+
+// Filtros disponibles para el listado
+export interface PersonListFilters {
+  search?: string;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER' | '';
+  birthLocationId?: number | '';
+  deathLocationId?: number | '';
+  nationalityId?: number | '';
+  roleId?: number | 'ACTOR' | '';  // 'ACTOR' es especial para buscar en cast
+  birthYearFrom?: number | '';
+  birthYearTo?: number | '';
+  deathYearFrom?: number | '';
+  deathYearTo?: number | '';
+  sortBy?: 'id' | 'lastName' | 'birthDate' | 'deathDate' | 'movieCount';
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+// Valores por defecto de los filtros
+export const DEFAULT_PERSON_FILTERS: PersonListFilters = {
+  search: '',
+  gender: '',
+  birthLocationId: '',
+  deathLocationId: '',
+  nationalityId: '',
+  roleId: '',
+  birthYearFrom: '',
+  birthYearTo: '',
+  deathYearFrom: '',
+  deathYearTo: '',
+  sortBy: 'id',
+  sortOrder: 'desc',
+  page: 1,
+  limit: 60
+};
+
+// Persona extendida con película destacada
+export interface PersonWithMovie extends PersonWithRelations {
+  featuredMovie?: {
+    id: number;
+    slug: string;
+    title: string;
+    year: number | null;
+    role?: string;  // "Actor" o el nombre del rol técnico
+  } | null;
+  movieCount?: number;
+}
+
+// Opciones para los dropdowns de filtros
+export interface FilterOption {
+  id: number;
+  name: string;
+  count?: number;  // Cantidad de personas con este valor
+}
+
+// Opciones de ubicación (con jerarquía)
+export interface LocationFilterOption extends FilterOption {
+  parentName?: string;  // Ej: "Argentina" para "Buenos Aires"
+  fullPath?: string;    // Ej: "Buenos Aires, Argentina"
+}
+
+// Opciones de rol
+export interface RoleFilterOption extends FilterOption {
+  department?: string;
+  isActor?: boolean;  // true para el rol especial "Actor/Actriz"
+}
+
+// Respuesta de la API de filtros
+export interface FiltersDataResponse {
+  birthLocations: LocationFilterOption[];
+  deathLocations: LocationFilterOption[];
+  nationalities: LocationFilterOption[];
+  roles: RoleFilterOption[];
+  years: {
+    birthYearMin: number | null;
+    birthYearMax: number | null;
+    deathYearMin: number | null;
+    deathYearMax: number | null;
+  };
+}
+
+// Respuesta paginada del listado
+export interface PaginatedPersonListResponse {
+  data: PersonWithMovie[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+// Tipo de vista
+export type ViewMode = 'compact' | 'detailed';
+
+// Opciones de ordenamiento para el UI
+export const SORT_OPTIONS = [
+  { value: 'id-desc', label: 'Últimas ingresadas', sortBy: 'id', sortOrder: 'desc' },
+  { value: 'id-asc', label: 'Primeras ingresadas', sortBy: 'id', sortOrder: 'asc' },
+  { value: 'lastName-asc', label: 'Apellido (A-Z)', sortBy: 'lastName', sortOrder: 'asc' },
+  { value: 'lastName-desc', label: 'Apellido (Z-A)', sortBy: 'lastName', sortOrder: 'desc' },
+  { value: 'birthDate-desc', label: 'Más jóvenes primero', sortBy: 'birthDate', sortOrder: 'desc' },
+  { value: 'birthDate-asc', label: 'Más veteranos primero', sortBy: 'birthDate', sortOrder: 'asc' },
+  { value: 'deathDate-desc', label: 'Fallecimiento reciente', sortBy: 'deathDate', sortOrder: 'desc' },
+  { value: 'deathDate-asc', label: 'Fallecimiento antiguo', sortBy: 'deathDate', sortOrder: 'asc' },
+  { value: 'movieCount-desc', label: 'Más películas', sortBy: 'movieCount', sortOrder: 'desc' },
+  { value: 'movieCount-asc', label: 'Menos películas', sortBy: 'movieCount', sortOrder: 'asc' },
+] as const;
+
+// Opciones de género para el UI
+export const GENDER_OPTIONS = [
+  { value: '', label: 'Todos los sexos' },
+  { value: 'FEMALE', label: 'Femenino' },
+  { value: 'MALE', label: 'Masculino' },
+  { value: 'OTHER', label: 'Otro' },
+] as const;
+
+
+// ==================================================
+// src/lib/people/personListUtils.ts
+// ==================================================
+// src/lib/people/personListUtils.ts
+
+import { PersonListFilters, DEFAULT_PERSON_FILTERS, PersonWithMovie, LocationFilterOption } from './personListTypes';
+
+/**
+ * Convierte los filtros del estado a parámetros de URL
+ */
+export function filtersToSearchParams(filters: PersonListFilters): URLSearchParams {
+  const params = new URLSearchParams();
+  
+  // Solo agregar parámetros que no sean el valor por defecto
+  if (filters.search) params.set('search', filters.search);
+  if (filters.gender) params.set('gender', filters.gender);
+  if (filters.birthLocationId) params.set('birthLocationId', String(filters.birthLocationId));
+  if (filters.deathLocationId) params.set('deathLocationId', String(filters.deathLocationId));
+  if (filters.nationalityId) params.set('nationalityId', String(filters.nationalityId));
+  if (filters.roleId) params.set('roleId', String(filters.roleId));
+  if (filters.birthYearFrom) params.set('birthYearFrom', String(filters.birthYearFrom));
+  if (filters.birthYearTo) params.set('birthYearTo', String(filters.birthYearTo));
+  if (filters.deathYearFrom) params.set('deathYearFrom', String(filters.deathYearFrom));
+  if (filters.deathYearTo) params.set('deathYearTo', String(filters.deathYearTo));
+  if (filters.sortBy && filters.sortBy !== DEFAULT_PERSON_FILTERS.sortBy) {
+    params.set('sortBy', filters.sortBy);
+  }
+  if (filters.sortOrder && filters.sortOrder !== DEFAULT_PERSON_FILTERS.sortOrder) {
+    params.set('sortOrder', filters.sortOrder);
+  }
+  if (filters.page && filters.page !== 1) params.set('page', String(filters.page));
+  
+  return params;
+}
+
+/**
+ * Convierte parámetros de URL a filtros
+ */
+export function searchParamsToFilters(searchParams: URLSearchParams): PersonListFilters {
+  const filters: PersonListFilters = { ...DEFAULT_PERSON_FILTERS };
+  
+  const search = searchParams.get('search');
+  if (search) filters.search = search;
+  
+  const gender = searchParams.get('gender');
+  if (gender === 'MALE' || gender === 'FEMALE' || gender === 'OTHER') {
+    filters.gender = gender;
+  }
+  
+  const birthLocationId = searchParams.get('birthLocationId');
+  if (birthLocationId) filters.birthLocationId = parseInt(birthLocationId);
+  
+  const deathLocationId = searchParams.get('deathLocationId');
+  if (deathLocationId) filters.deathLocationId = parseInt(deathLocationId);
+  
+  const nationalityId = searchParams.get('nationalityId');
+  if (nationalityId) filters.nationalityId = parseInt(nationalityId);
+  
+  const roleId = searchParams.get('roleId');
+  if (roleId) {
+    filters.roleId = roleId === 'ACTOR' ? 'ACTOR' : parseInt(roleId);
+  }
+  
+  const birthYearFrom = searchParams.get('birthYearFrom');
+  if (birthYearFrom) filters.birthYearFrom = parseInt(birthYearFrom);
+  
+  const birthYearTo = searchParams.get('birthYearTo');
+  if (birthYearTo) filters.birthYearTo = parseInt(birthYearTo);
+  
+  const deathYearFrom = searchParams.get('deathYearFrom');
+  if (deathYearFrom) filters.deathYearFrom = parseInt(deathYearFrom);
+  
+  const deathYearTo = searchParams.get('deathYearTo');
+  if (deathYearTo) filters.deathYearTo = parseInt(deathYearTo);
+  
+  const sortBy = searchParams.get('sortBy');
+  if (sortBy === 'id' || sortBy === 'lastName' || sortBy === 'birthDate' || sortBy === 'deathDate' || sortBy === 'movieCount') {
+    filters.sortBy = sortBy;
+  }
+  
+  const sortOrder = searchParams.get('sortOrder');
+  if (sortOrder === 'asc' || sortOrder === 'desc') {
+    filters.sortOrder = sortOrder;
+  }
+  
+  const page = searchParams.get('page');
+  if (page) filters.page = parseInt(page);
+  
+  return filters;
+}
+
+/**
+ * Convierte filtros a parámetros de API
+ */
+export function filtersToApiParams(filters: PersonListFilters): Record<string, string> {
+  const params: Record<string, string> = {};
+  
+  if (filters.search) params.search = filters.search;
+  if (filters.gender) params.gender = filters.gender;
+  if (filters.birthLocationId) params.birthLocationId = String(filters.birthLocationId);
+  if (filters.deathLocationId) params.deathLocationId = String(filters.deathLocationId);
+  if (filters.nationalityId) params.nationalityId = String(filters.nationalityId);
+  if (filters.roleId) params.roleId = String(filters.roleId);
+  if (filters.birthYearFrom) params.birthYearFrom = String(filters.birthYearFrom);
+  if (filters.birthYearTo) params.birthYearTo = String(filters.birthYearTo);
+  if (filters.deathYearFrom) params.deathYearFrom = String(filters.deathYearFrom);
+  if (filters.deathYearTo) params.deathYearTo = String(filters.deathYearTo);
+  if (filters.sortBy) params.sortBy = filters.sortBy;
+  if (filters.sortOrder) params.sortOrder = filters.sortOrder;
+  if (filters.page) params.page = String(filters.page);
+  if (filters.limit) params.limit = String(filters.limit);
+  
+  return params;
+}
+
+/**
+ * Formatea el nombre completo de una persona
+ */
+export function formatPersonName(person: { firstName?: string | null; lastName?: string | null; realName?: string | null }): string {
+  const name = [person.firstName, person.lastName].filter(Boolean).join(' ');
+  return name || person.realName || 'Sin nombre';
+}
+
+/**
+ * Formatea la fecha de nacimiento/muerte para mostrar
+ */
+export function formatPartialDate(
+  year?: number | null,
+  month?: number | null,
+  day?: number | null,
+  options?: { includeAge?: boolean; currentYear?: number }
+): string {
+  if (!year) return '';
+  
+  const months = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+  ];
+  
+  let dateStr = '';
+  
+  if (day && month) {
+    dateStr = `${day} de ${months[month - 1]} de ${year}`;
+  } else if (month) {
+    dateStr = `${months[month - 1]} de ${year}`;
+  } else {
+    dateStr = String(year);
+  }
+  
+  return dateStr;
+}
+
+/**
+ * Calcula la edad entre dos fechas parciales
+ */
+export function calculateAge(
+  birthYear?: number | null,
+  birthMonth?: number | null,
+  birthDay?: number | null,
+  deathYear?: number | null,
+  deathMonth?: number | null,
+  deathDay?: number | null
+): number | null {
+  if (!birthYear) return null;
+  
+  const endYear = deathYear || new Date().getFullYear();
+  const endMonth = deathMonth || new Date().getMonth() + 1;
+  const endDay = deathDay || new Date().getDate();
+  
+  let age = endYear - birthYear;
+  
+  // Ajustar si aún no llegó el cumpleaños
+  if (birthMonth && endMonth) {
+    if (endMonth < birthMonth) {
+      age--;
+    } else if (endMonth === birthMonth && birthDay && endDay < birthDay) {
+      age--;
+    }
+  }
+  
+  return age >= 0 ? age : null;
+}
+
+/**
+ * Formatea la ubicación con su padre
+ */
+export function formatLocation(location: LocationFilterOption | null | undefined): string {
+  if (!location) return '';
+  
+  if (location.fullPath) return location.fullPath;
+  if (location.parentName) return `${location.name}, ${location.parentName}`;
+  return location.name;
+}
+
+/**
+ * Genera un array de años para los selectores
+ */
+export function generateYearOptions(min: number, max: number): number[] {
+  const years: number[] = [];
+  for (let year = max; year >= min; year--) {
+    years.push(year);
+  }
+  return years;
+}
+
+/**
+ * Cuenta cuántos filtros activos hay
+ */
+export function countActiveFilters(filters: PersonListFilters): number {
+  let count = 0;
+  
+  if (filters.search) count++;
+  if (filters.gender) count++;
+  if (filters.birthLocationId) count++;
+  if (filters.deathLocationId) count++;
+  if (filters.nationalityId) count++;
+  if (filters.roleId) count++;
+  if (filters.birthYearFrom) count++;
+  if (filters.birthYearTo) count++;
+  if (filters.deathYearFrom) count++;
+  if (filters.deathYearTo) count++;
+  
+  return count;
+}
+
+/**
+ * Verifica si hay filtros activos (excluyendo ordenamiento y paginación)
+ */
+export function hasActiveFilters(filters: PersonListFilters): boolean {
+  return countActiveFilters(filters) > 0;
+}
+
+/**
+ * Limpia todos los filtros manteniendo ordenamiento
+ */
+export function clearFilters(filters: PersonListFilters): PersonListFilters {
+  return {
+    ...DEFAULT_PERSON_FILTERS,
+    sortBy: filters.sortBy,
+    sortOrder: filters.sortOrder,
+    limit: filters.limit
+  };
+}
+
 
 // ==================================================
 // src/lib/prisma.ts
