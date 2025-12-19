@@ -95,23 +95,18 @@ export interface PaginatedPersonListResponse {
 // Tipo de vista
 export type ViewMode = 'compact' | 'detailed';
 
-// Opciones de ordenamiento para el UI
+// Opciones de ordenamiento para el UI (simplificadas)
 export const SORT_OPTIONS = [
-  { value: 'id-desc', label: 'Últimas ingresadas', sortBy: 'id', sortOrder: 'desc' },
-  { value: 'id-asc', label: 'Primeras ingresadas', sortBy: 'id', sortOrder: 'asc' },
-  { value: 'lastName-asc', label: 'Apellido (A-Z)', sortBy: 'lastName', sortOrder: 'asc' },
-  { value: 'lastName-desc', label: 'Apellido (Z-A)', sortBy: 'lastName', sortOrder: 'desc' },
-  { value: 'birthDate-desc', label: 'Más jóvenes primero', sortBy: 'birthDate', sortOrder: 'desc' },
-  { value: 'birthDate-asc', label: 'Más veteranos primero', sortBy: 'birthDate', sortOrder: 'asc' },
-  { value: 'deathDate-desc', label: 'Fallecimiento reciente', sortBy: 'deathDate', sortOrder: 'desc' },
-  { value: 'deathDate-asc', label: 'Fallecimiento antiguo', sortBy: 'deathDate', sortOrder: 'asc' },
-  { value: 'movieCount-desc', label: 'Más películas', sortBy: 'movieCount', sortOrder: 'desc' },
-  { value: 'movieCount-asc', label: 'Menos películas', sortBy: 'movieCount', sortOrder: 'asc' },
+  { value: 'id', label: 'Ingreso a la base de datos' },
+  { value: 'lastName', label: 'Alfabéticamente' },
+  { value: 'birthDate', label: 'Fecha de nacimiento' },
+  { value: 'deathDate', label: 'Fecha de muerte' },
+  { value: 'movieCount', label: 'Cantidad de películas' },
 ] as const;
 
 // Opciones de género para el UI
 export const GENDER_OPTIONS = [
-  { value: '', label: 'Todos los sexos' },
+  { value: '', label: 'Todos los géneros' },
   { value: 'FEMALE', label: 'Femenino' },
   { value: 'MALE', label: 'Masculino' },
   { value: 'OTHER', label: 'Otro' },
