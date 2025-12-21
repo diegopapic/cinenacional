@@ -4,6 +4,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
+/**
+ * Obtiene todos los IDs de ubicaciones descendientes (hijos, nietos, etc.) de una ubicación dada,
+ * incluyendo la ubicación original.
+ */
+async function getLocationDescendantIds(locationId: number): Promise<number[]> {
+  const descendants = await prisma.$queryRaw<Array<{ id: number }>>`
+    WITH RECURSIVE location_descendants AS (
+      -- Caso base: la ubicación seleccionada
+      SELECT id
+      FROM locations
+      WHERE id = ${locationId}
+      
+      UNION ALL
+      
+      -- Caso recursivo: todos los hijos
+      SELECT l.id
+      FROM locations l
+      INNER JOIN location_descendants ld ON l.parent_id = ld.id
+    )
+    SELECT id FROM location_descendants
+  `;
+  
+  return descendants.map(d => d.id);
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -26,6 +51,17 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '60');
     const skip = (page - 1) * limit;
+
+    // Obtener IDs de ubicaciones descendientes si hay filtros de ubicación
+    let birthLocationIds: number[] = [];
+    let deathLocationIds: number[] = [];
+    
+    if (birthLocationId) {
+      birthLocationIds = await getLocationDescendantIds(parseInt(birthLocationId));
+    }
+    if (deathLocationId) {
+      deathLocationIds = await getLocationDescendantIds(parseInt(deathLocationId));
+    }
 
     // Construir WHERE clause
     const where: Prisma.PersonWhereInput = {
@@ -62,14 +98,14 @@ export async function GET(request: NextRequest) {
       where.gender = gender;
     }
 
-    // Filtro de ubicación de nacimiento
-    if (birthLocationId) {
-      where.birthLocationId = parseInt(birthLocationId);
+    // Filtro de ubicación de nacimiento (ahora incluye descendientes)
+    if (birthLocationIds.length > 0) {
+      where.birthLocationId = { in: birthLocationIds };
     }
 
-    // Filtro de ubicación de muerte
-    if (deathLocationId) {
-      where.deathLocationId = parseInt(deathLocationId);
+    // Filtro de ubicación de muerte (ahora incluye descendientes)
+    if (deathLocationIds.length > 0) {
+      where.deathLocationId = { in: deathLocationIds };
     }
 
     // Filtro de nacionalidad
@@ -134,11 +170,13 @@ export async function GET(request: NextRequest) {
     const buildWhereClause = () => {
       const conditions: Prisma.Sql[] = [Prisma.sql`p.is_active = true`];
       
-      if (birthLocationId) {
-        conditions.push(Prisma.sql`p.birth_location_id = ${parseInt(birthLocationId)}`);
+      // Filtro de ubicación de nacimiento (con descendientes)
+      if (birthLocationIds.length > 0) {
+        conditions.push(Prisma.sql`p.birth_location_id = ANY(${birthLocationIds})`);
       }
-      if (deathLocationId) {
-        conditions.push(Prisma.sql`p.death_location_id = ${parseInt(deathLocationId)}`);
+      // Filtro de ubicación de muerte (con descendientes)
+      if (deathLocationIds.length > 0) {
+        conditions.push(Prisma.sql`p.death_location_id = ANY(${deathLocationIds})`);
       }
       if (gender) {
         conditions.push(Prisma.sql`p.gender = ${gender}::"Gender"`);

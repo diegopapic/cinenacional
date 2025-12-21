@@ -13,21 +13,20 @@ export async function GET(request: NextRequest) {
       roles,
       yearRanges
     ] = await Promise.all([
-      // Ubicaciones de nacimiento con path completo (recursivo)
+      // Ubicaciones de nacimiento con path completo y conteo incluyendo descendientes
       prisma.$queryRaw<Array<{ id: number; name: string; full_path: string; count: number }>>`
-        WITH RECURSIVE location_path AS (
-          -- Caso base: ubicaciones que tienen personas nacidas
+        WITH RECURSIVE 
+        -- Primero: construir el path completo de cada ubicación
+        location_path AS (
           SELECT 
             l.id,
             l.name,
             l.parent_id,
             l.name::text as path
           FROM locations l
-          WHERE EXISTS (SELECT 1 FROM people p WHERE p.birth_location_id = l.id)
           
           UNION ALL
           
-          -- Caso recursivo: agregar padres
           SELECT 
             lp.id,
             lp.name,
@@ -35,34 +34,65 @@ export async function GET(request: NextRequest) {
             lp.path || ', ' || l.name
           FROM location_path lp
           INNER JOIN locations l ON lp.parent_id = l.id
+        ),
+        -- Segundo: obtener todos los descendientes de cada ubicación
+        location_descendants AS (
+          SELECT 
+            id as ancestor_id,
+            id as descendant_id
+          FROM locations
+          
+          UNION ALL
+          
+          SELECT 
+            ld.ancestor_id,
+            l.id as descendant_id
+          FROM location_descendants ld
+          INNER JOIN locations l ON l.parent_id = ld.descendant_id
+        ),
+        -- Tercero: contar personas nacidas en cada ubicación + sus descendientes
+        location_counts AS (
+          SELECT 
+            ld.ancestor_id as location_id,
+            COUNT(DISTINCT p.id) as person_count
+          FROM location_descendants ld
+          INNER JOIN people p ON p.birth_location_id = ld.descendant_id AND p.is_active = true
+          GROUP BY ld.ancestor_id
+        ),
+        -- Cuarto: obtener el path más largo para cada ubicación
+        full_paths AS (
+          SELECT DISTINCT ON (id)
+            id,
+            path as full_path
+          FROM location_path
+          ORDER BY id, LENGTH(path) DESC
         )
         SELECT 
-          lp.id,
-          lp.name,
-          -- Obtener el path más largo (el que tiene todos los ancestros)
-          (SELECT path FROM location_path WHERE id = lp.id ORDER BY LENGTH(path) DESC LIMIT 1) as full_path,
-          COUNT(DISTINCT p.id)::int as count
-        FROM location_path lp
-        INNER JOIN people p ON p.birth_location_id = lp.id
-        GROUP BY lp.id, lp.name
-        ORDER BY lp.name ASC
+          l.id,
+          l.name,
+          fp.full_path,
+          COALESCE(lc.person_count, 0)::int as count
+        FROM locations l
+        INNER JOIN full_paths fp ON fp.id = l.id
+        LEFT JOIN location_counts lc ON lc.location_id = l.id
+        WHERE COALESCE(lc.person_count, 0) > 0
+        ORDER BY LOWER(unaccent(l.name)) ASC
       `,
       
-      // Ubicaciones de muerte con path completo (recursivo)
+      // Ubicaciones de muerte con path completo y conteo incluyendo descendientes
       prisma.$queryRaw<Array<{ id: number; name: string; full_path: string; count: number }>>`
-        WITH RECURSIVE location_path AS (
-          -- Caso base: ubicaciones que tienen personas fallecidas
+        WITH RECURSIVE 
+        -- Primero: construir el path completo de cada ubicación
+        location_path AS (
           SELECT 
             l.id,
             l.name,
             l.parent_id,
             l.name::text as path
           FROM locations l
-          WHERE EXISTS (SELECT 1 FROM people p WHERE p.death_location_id = l.id)
           
           UNION ALL
           
-          -- Caso recursivo: agregar padres
           SELECT 
             lp.id,
             lp.name,
@@ -70,19 +100,52 @@ export async function GET(request: NextRequest) {
             lp.path || ', ' || l.name
           FROM location_path lp
           INNER JOIN locations l ON lp.parent_id = l.id
+        ),
+        -- Segundo: obtener todos los descendientes de cada ubicación
+        location_descendants AS (
+          SELECT 
+            id as ancestor_id,
+            id as descendant_id
+          FROM locations
+          
+          UNION ALL
+          
+          SELECT 
+            ld.ancestor_id,
+            l.id as descendant_id
+          FROM location_descendants ld
+          INNER JOIN locations l ON l.parent_id = ld.descendant_id
+        ),
+        -- Tercero: contar personas fallecidas en cada ubicación + sus descendientes
+        location_counts AS (
+          SELECT 
+            ld.ancestor_id as location_id,
+            COUNT(DISTINCT p.id) as person_count
+          FROM location_descendants ld
+          INNER JOIN people p ON p.death_location_id = ld.descendant_id AND p.is_active = true
+          GROUP BY ld.ancestor_id
+        ),
+        -- Cuarto: obtener el path más largo para cada ubicación
+        full_paths AS (
+          SELECT DISTINCT ON (id)
+            id,
+            path as full_path
+          FROM location_path
+          ORDER BY id, LENGTH(path) DESC
         )
         SELECT 
-          lp.id,
-          lp.name,
-          (SELECT path FROM location_path WHERE id = lp.id ORDER BY LENGTH(path) DESC LIMIT 1) as full_path,
-          COUNT(DISTINCT p.id)::int as count
-        FROM location_path lp
-        INNER JOIN people p ON p.death_location_id = lp.id
-        GROUP BY lp.id, lp.name
-        ORDER BY lp.name ASC
+          l.id,
+          l.name,
+          fp.full_path,
+          COALESCE(lc.person_count, 0)::int as count
+        FROM locations l
+        INNER JOIN full_paths fp ON fp.id = l.id
+        LEFT JOIN location_counts lc ON lc.location_id = l.id
+        WHERE COALESCE(lc.person_count, 0) > 0
+        ORDER BY LOWER(unaccent(l.name)) ASC
       `,
       
-      // Nacionalidades (países con personas)
+      // Nacionalidades (países con personas) - sin cambios
       prisma.$queryRaw<Array<{ id: number; name: string; count: number }>>`
         SELECT 
           l.id,
@@ -91,10 +154,10 @@ export async function GET(request: NextRequest) {
         FROM locations l
         INNER JOIN person_nationalities pn ON pn.location_id = l.id
         GROUP BY l.id, l.name
-        ORDER BY l.name ASC
+        ORDER BY LOWER(unaccent(l.name)) ASC
       `,
       
-      // Roles técnicos (de la tabla roles)
+      // Roles técnicos (de la tabla roles) - sin cambios
       prisma.$queryRaw<Array<{ id: number; name: string; department: string; count: number }>>`
         SELECT 
           r.id,
@@ -109,7 +172,7 @@ export async function GET(request: NextRequest) {
         ORDER BY count DESC
       `,
       
-      // Rangos de años
+      // Rangos de años - sin cambios
       prisma.$queryRaw<Array<{
         birth_year_min: number | null;
         birth_year_max: number | null;
@@ -126,7 +189,7 @@ export async function GET(request: NextRequest) {
       `
     ]);
 
-    // Contar actores (personas en movie_cast)
+    // Contar actores (personas en movie_cast) - sin cambios
     const actorCount = await prisma.$queryRaw<Array<{ count: number }>>`
       SELECT COUNT(DISTINCT person_id)::int as count
       FROM movie_cast
