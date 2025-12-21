@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-12-19T19:24:09.633Z
+# Generado automáticamente el: 2025-12-21T00:23:19.143Z
 # ================================================
 
 ## Schema Prisma
@@ -590,6 +590,18 @@ model Language {
   @@map("languages")
 }
 
+model FirstNameGender {
+  id        Int                 @id @default(autoincrement())
+  name      String              @unique @db.VarChar(100)
+  gender    FirstNameGenderType
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  @@index([name])
+  @@index([gender])
+  @@map("first_name_genders")
+}
+
 model User {
   id          String          @id @default(cuid())
   email       String          @unique @db.VarChar(255)
@@ -735,6 +747,14 @@ enum Gender {
   @@map("gender")
 }
 
+enum FirstNameGenderType {
+  MALE
+  FEMALE
+  UNISEX
+
+  @@map("first_name_gender_type")
+}
+
 enum PersonLinkType {
   IMDB
   TMDB
@@ -846,6 +866,9 @@ CREATE TYPE "Department" AS ENUM ('DIRECCION', 'PRODUCCION', 'GUION', 'FOTOGRAFI
 
 -- CreateEnum
 CREATE TYPE "gender" AS ENUM ('MALE', 'FEMALE', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "first_name_gender_type" AS ENUM ('MALE', 'FEMALE', 'UNISEX');
 
 -- CreateEnum
 CREATE TYPE "person_link_type" AS ENUM ('IMDB', 'TMDB', 'CINENACIONAL', 'WIKIPEDIA', 'OFFICIAL_WEBSITE', 'PORTFOLIO', 'BLOG', 'INSTAGRAM', 'TWITTER', 'FACEBOOK', 'YOUTUBE', 'TIKTOK', 'LINKEDIN', 'VIMEO', 'LETTERBOXD', 'SPOTIFY', 'PODCAST', 'INTERVIEW', 'ARTICLE', 'OTHER');
@@ -1332,6 +1355,17 @@ CREATE TABLE "languages" (
 );
 
 -- CreateTable
+CREATE TABLE "first_name_genders" (
+    "id" SERIAL NOT NULL,
+    "name" VARCHAR(100) NOT NULL,
+    "gender" "first_name_gender_type" NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "first_name_genders_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
     "email" VARCHAR(255) NOT NULL,
@@ -1660,6 +1694,15 @@ CREATE UNIQUE INDEX "verification_tokens_identifier_token_key" ON "verification_
 
 -- CreateIndex
 CREATE UNIQUE INDEX "languages_code_key" ON "languages"("code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "first_name_genders_name_key" ON "first_name_genders"("name");
+
+-- CreateIndex
+CREATE INDEX "first_name_genders_name_idx" ON "first_name_genders"("name");
+
+-- CreateIndex
+CREATE INDEX "first_name_genders_gender_idx" ON "first_name_genders"("gender");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");

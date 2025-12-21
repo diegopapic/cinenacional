@@ -1,191 +1,280 @@
-// scripts/assign-genders.js
-import { PrismaClient } from '@prisma/client'
-import readline from 'readline'
+const { Client } = require('pg');
+const readline = require('readline');
 
-const prisma = new PrismaClient()
+// Configuración PostgreSQL - VPS
+const pgConfig = {
+  host: 'localhost',
+  port: 5433,
+  database: 'cinenacional',
+  user: 'cinenacional',
+  password: 'Paganitzu'
+};
 
-// Configurar readline en modo raw para capturar teclas sin Enter
-readline.emitKeypressEvents(process.stdin)
-if (process.stdin.isTTY) {
-  process.stdin.setRawMode(true)
-}
+// Crear interfaz para preguntas
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
-const waitForKeypress = () => {
+function ask(question) {
   return new Promise((resolve) => {
-    const handler = (str, key) => {
-      // Ctrl+C
-      if (key.ctrl && key.name === 'c') {
-        process.exit(0)
-      }
-      
-      process.stdin.removeListener('keypress', handler)
-      resolve(key.name)
-    }
-    
-    process.stdin.once('keypress', handler)
-  })
+    rl.question(question, (answer) => {
+      resolve(answer.trim().toUpperCase());
+    });
+  });
 }
-
-// Stack para deshacer cambios
-const undoStack = []
 
 async function assignGenders() {
+  const client = new Client(pgConfig);
+  
   try {
-    console.log('\n🎬 Sistema de Asignación de Géneros - Cine Nacional\n')
+    await client.connect();
+    console.log('✅ Conectado a PostgreSQL\n');
 
-    // Obtener personas sin género asignado
-    const peopleWithoutGender = await prisma.person.findMany({
-      where: {
-        gender: null
-      },
-      orderBy: [
-        { lastName: 'asc' },
-        { firstName: 'asc' }
-      ],
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        realName: true
-      }
-    })
-
-    const total = peopleWithoutGender.length
-    console.log(`📋 Total de personas sin género asignado: ${total}\n`)
-
-    if (total === 0) {
-      console.log('✅ ¡Todas las personas tienen género asignado!')
-      process.exit(0)
+    // 1. Obtener personas sin género asignado
+    console.log('📊 Buscando personas sin género asignado...\n');
+    
+    const peopleQuery = `
+      SELECT 
+        p.id,
+        p.first_name,
+        p.last_name,
+        p.slug,
+        LOWER(TRIM(SPLIT_PART(p.first_name, ' ', 1))) as normalized_name
+      FROM people p
+      WHERE p.gender IS NULL
+        AND p.first_name IS NOT NULL
+        AND p.first_name != ''
+      ORDER BY p.id
+    `;
+    
+    const peopleResult = await client.query(peopleQuery);
+    const people = peopleResult.rows;
+    
+    console.log(`📋 Personas sin género: ${people.length}\n`);
+    
+    if (people.length === 0) {
+      console.log('✅ Todas las personas ya tienen género asignado.');
+      return;
     }
 
-    console.log('Opciones:')
-    console.log('  m = Masculino (MALE)')
-    console.log('  f = Femenino (FEMALE)')
-    console.log('  s = Saltar esta persona')
-    console.log('  u = Deshacer último cambio')
-    console.log('  q = Salir')
-    console.log('─'.repeat(50))
+    // 2. Cargar tabla de géneros en memoria
+    const genderQuery = `SELECT name, gender FROM first_name_genders`;
+    const genderResult = await client.query(genderQuery);
+    const genderMap = new Map();
+    genderResult.rows.forEach(row => {
+      genderMap.set(row.name, row.gender);
+    });
+    
+    console.log(`📚 Nombres en tabla de géneros: ${genderMap.size}\n`);
+    console.log('─'.repeat(80));
+    console.log('Instrucciones:');
+    console.log('  M = Masculino (MALE)');
+    console.log('  F = Femenino (FEMALE)');
+    console.log('  U = Unisex (UNISEX) - agrega a la tabla');
+    console.log('  O = Otro género (OTHER) - NO agrega a la tabla');
+    console.log('  S = Saltar esta persona');
+    console.log('  Q = Salir del script');
+    console.log('─'.repeat(80));
+    console.log('');
 
-    let processed = 0
-    let assigned = 0
+    // Contadores
+    let autoAssigned = 0;
+    let manualAssigned = 0;
+    let skipped = 0;
+    let newNames = 0;
+    let current = 0;
+    const total = people.length;
+    let wasAutoAssigning = false;
 
-    for (let i = 0; i < peopleWithoutGender.length; i++) {
-      const person = peopleWithoutGender[i]
-      const fullName = [person.firstName, person.lastName].filter(Boolean).join(' ')
-      const remaining = total - processed
-
-      console.log('\n' + '─'.repeat(50))
-      console.log(`📍 Progreso: ${processed + 1}/${total} (Quedan: ${remaining - 1})`)
-      console.log(`👤 ${fullName}`)
-      if (person.realName && person.realName !== fullName) {
-        console.log(`   💡 Nombre real: ${person.realName}`)
-      }
-
-      process.stdout.write('\n¿Género? (m/f/s/u/q): ')
-      const option = await waitForKeypress()
-
-      // Mostrar la tecla presionada
-      console.log(option)
-
-      // Opción: Salir
-      if (option === 'q') {
-        console.log('\n👋 Saliendo del sistema...')
-        console.log(`📊 Resumen: ${assigned} personas procesadas de ${processed} revisadas`)
-        break
-      }
-
-      // Opción: Deshacer
-      if (option === 'u') {
-        if (undoStack.length === 0) {
-          console.log('⚠️  No hay cambios para deshacer')
-          i-- // No avanzar en el índice
-          continue
-        }
-
-        const lastChange = undoStack.pop()
-        await prisma.person.update({
-          where: { id: lastChange.personId },
-          data: { gender: null }
-        })
-
-        console.log(`↩️  Deshecho: ${lastChange.personName} ya no tiene género asignado`)
-        assigned--
-        
-        // Volver al índice anterior para reprocesar
-        i -= 2 // -1 por el pop, -1 porque el for++ lo incrementará
-        if (i < -1) i = -1 // Protección de límite
-        processed--
-        continue
-      }
-
-      // Opción: Saltar
-      if (option === 's') {
-        console.log('⏭️  Saltando...')
-        processed++
-        continue
-      }
-
-      // Opción: Asignar género
-      let gender = null
-      if (option === 'm') {
-        gender = 'MALE'
-      } else if (option === 'f') {
-        gender = 'FEMALE'
-      } else {
-        console.log('❌ Opción inválida. Por favor presione m, f, s, u o q')
-        i-- // Volver a preguntar por esta persona
-        continue
-      }
-
-      // Actualizar en base de datos
-      await prisma.person.update({
-        where: { id: person.id },
-        data: { gender }
-      })
-
-      // Guardar en stack para deshacer
-      undoStack.push({
-        personId: person.id,
-        personName: fullName,
-        gender: gender
-      })
-
-      const genderLabel = gender === 'MALE' ? 'Masculino' : 'Femenino'
-      console.log(`✅ Género asignado: ${genderLabel}`)
+    // 3. Procesar cada persona
+    for (const person of people) {
+      current++;
+      const normalizedName = person.normalized_name;
+      const fullName = [person.first_name, person.last_name].filter(Boolean).join(' ');
+      const remaining = total - current;
+      const progress = `[${current}/${total}] (${remaining} restantes)`;
       
-      assigned++
-      processed++
+      // Verificar si el nombre está en la tabla
+      if (genderMap.has(normalizedName)) {
+        const gender = genderMap.get(normalizedName);
+        
+        // Si es UNISEX, preguntar
+        if (gender === 'UNISEX') {
+          // Limpiar línea de progreso si venimos de auto-asignación
+          if (wasAutoAssigning) {
+            console.log('');
+            wasAutoAssigning = false;
+          }
+          
+          console.log(`\n${progress} 👤 ${fullName} (ID: ${person.id})`);
+          console.log(`   Nombre "${normalizedName}" es UNISEX`);
+          
+          const answer = await ask('   ¿Qué género asignar? (M/F/O/S/Q): ');
+          
+          if (answer === 'Q') {
+            console.log('\n👋 Saliendo...');
+            break;
+          }
+          
+          if (answer === 'S') {
+            skipped++;
+            continue;
+          }
+          
+          let genderToAssign = null;
+          if (answer === 'M') genderToAssign = 'MALE';
+          else if (answer === 'F') genderToAssign = 'FEMALE';
+          else if (answer === 'O') genderToAssign = 'OTHER';
+          
+          if (genderToAssign) {
+            await client.query(
+              'UPDATE people SET gender = $1, updated_at = NOW() WHERE id = $2',
+              [genderToAssign, person.id]
+            );
+            manualAssigned++;
+            console.log(`   ✅ Asignado: ${genderToAssign}`);
+          } else {
+            skipped++;
+          }
+        } else {
+          // Asignar automáticamente
+          await client.query(
+            'UPDATE people SET gender = $1, updated_at = NOW() WHERE id = $2',
+            [gender, person.id]
+          );
+          autoAssigned++;
+          wasAutoAssigning = true;
+          
+          // Mostrar progreso
+          const percent = Math.round((current / total) * 100);
+          const remaining = total - current;
+          process.stdout.write(`\r   🔄 Auto-asignando... [${current}/${total}] (${percent}%) - ${autoAssigned} asignados, ${remaining} restantes   `);
+        }
+      } else {
+        // Limpiar línea de progreso si venimos de auto-asignación
+        if (wasAutoAssigning) {
+          console.log('');
+          wasAutoAssigning = false;
+        }
+        
+        // Nombre no está en la tabla - preguntar
+        console.log(`\n${progress} 👤 ${fullName} (ID: ${person.id})`);
+        console.log(`   ⚠️  Nombre "${normalizedName}" NO está en la tabla`);
+        
+        const answer = await ask('   ¿Qué género? (M/F/U/O/S/Q): ');
+        
+        if (answer === 'Q') {
+          console.log('\n👋 Saliendo...');
+          break;
+        }
+        
+        if (answer === 'S') {
+          skipped++;
+          continue;
+        }
+        
+        let genderToAssign = null;
+        let genderForTable = null;
+        
+        if (answer === 'M') {
+          genderToAssign = 'MALE';
+          genderForTable = 'MALE';
+        } else if (answer === 'F') {
+          genderToAssign = 'FEMALE';
+          genderForTable = 'FEMALE';
+        } else if (answer === 'U') {
+          genderForTable = 'UNISEX';
+          // Para unisex, preguntar qué asignar a esta persona específica
+          const specificAnswer = await ask('   ¿Y para esta persona específica? (M/F/O/S): ');
+          if (specificAnswer === 'M') {
+            genderToAssign = 'MALE';
+          } else if (specificAnswer === 'F') {
+            genderToAssign = 'FEMALE';
+          } else if (specificAnswer === 'O') {
+            genderToAssign = 'OTHER';
+          }
+        } else if (answer === 'O') {
+          // Otro género - asignar a la persona pero NO agregar a la tabla
+          genderToAssign = 'OTHER';
+          genderForTable = null; // No agregar a la tabla
+        }
+        
+        // Agregar a la tabla de géneros (solo si hay genderForTable)
+        if (genderForTable) {
+          try {
+            await client.query(
+              'INSERT INTO first_name_genders (name, gender) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING',
+              [normalizedName, genderForTable]
+            );
+            genderMap.set(normalizedName, genderForTable);
+            newNames++;
+            console.log(`   📝 Agregado "${normalizedName}" como ${genderForTable}`);
+          } catch (err) {
+            console.log(`   ⚠️  Error agregando nombre: ${err.message}`);
+          }
+        }
+        
+        // Asignar género a la persona
+        if (genderToAssign) {
+          await client.query(
+            'UPDATE people SET gender = $1, updated_at = NOW() WHERE id = $2',
+            [genderToAssign, person.id]
+          );
+          manualAssigned++;
+          console.log(`   ✅ Persona actualizada: ${genderToAssign}`);
+        } else {
+          skipped++;
+        }
+      }
     }
 
-    console.log('\n' + '═'.repeat(50))
-    console.log('✨ Proceso completado!')
-    console.log(`📊 Estadísticas finales:`)
-    console.log(`   • Total revisadas: ${processed}`)
-    console.log(`   • Géneros asignados: ${assigned}`)
-    console.log(`   • Saltadas: ${processed - assigned}`)
-    console.log(`   • Pendientes: ${total - processed}`)
-    console.log('═'.repeat(50))
+    // Limpiar línea de progreso si terminamos en auto-asignación
+    if (wasAutoAssigning) {
+      console.log('');
+    }
 
+    // 4. Resumen final
+    console.log('\n');
+    console.log('═'.repeat(80));
+    console.log('📊 RESUMEN:');
+    console.log('─'.repeat(80));
+    console.log(`   🤖 Auto-asignados: ${autoAssigned}`);
+    console.log(`   👤 Manual-asignados: ${manualAssigned}`);
+    console.log(`   📝 Nombres nuevos agregados: ${newNames}`);
+    console.log(`   ⏭️  Saltados: ${skipped}`);
+    console.log(`   📋 Total procesados: ${autoAssigned + manualAssigned + skipped}`);
+    console.log('═'.repeat(80));
+
+    // Estadísticas finales
+    const statsQuery = `
+      SELECT 
+        COUNT(*) as total,
+        COUNT(CASE WHEN gender IS NOT NULL THEN 1 END) as con_genero,
+        COUNT(CASE WHEN gender IS NULL THEN 1 END) as sin_genero
+      FROM people
+    `;
+    const statsResult = await client.query(statsQuery);
+    const stats = statsResult.rows[0];
+    
+    console.log('\n📊 Estado actual de la tabla people:');
+    console.log(`   Total: ${stats.total}`);
+    console.log(`   Con género: ${stats.con_genero}`);
+    console.log(`   Sin género: ${stats.sin_genero}`);
+    
   } catch (error) {
-    console.error('\n❌ Error:', error.message)
-    console.error('Stack:', error.stack)
+    console.error('❌ Error:', error.message);
+    console.error(error);
   } finally {
-    await prisma.$disconnect()
-    if (process.stdin.isTTY) {
-      process.stdin.setRawMode(false)
-    }
-    process.exit(0)
+    rl.close();
+    await client.end();
+    console.log('\n✅ Conexión cerrada');
   }
 }
 
-// Manejo de señales para cerrar correctamente
-process.on('SIGINT', async () => {
-  console.log('\n\n⚠️  Proceso interrumpido. Cerrando conexiones...')
-  await prisma.$disconnect()
-  if (process.stdin.isTTY) {
-    process.stdin.setRawMode(false)
-  }
-  process.exit(0)
-})
-
-assignGenders()
+// Ejecutar
+console.log('🔧 Script para asignar género a personas');
+console.log('   Usa la tabla first_name_genders como referencia');
+console.log('   Pregunta por nombres desconocidos\n');
+console.log('═'.repeat(80));
+assignGenders();
