@@ -63,12 +63,6 @@ export default function PersonCardCompact({ person }: PersonCardCompactProps) {
         {/* Overlay en hover */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        {/* Badge de fallecida */}
-        {isDeceased && (
-          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-1 rounded">
-            †
-          </div>
-        )}
       </div>
 
       {/* Información */}
