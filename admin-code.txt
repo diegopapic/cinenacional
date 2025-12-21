@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-12-21T00:23:18.558Z
+// Archivos del admin - 2025-12-21T00:43:51.409Z
 // ==================
 
 
@@ -6446,8 +6446,8 @@ export async function GET(request: NextRequest) {
         SELECT p.id
         FROM people p
         ${whereClause}
-        ORDER BY unaccent(COALESCE(p.last_name, '')) ${orderDirection}, 
-                 unaccent(COALESCE(p.first_name, '')) ${orderDirection},
+        ORDER BY LOWER(unaccent(COALESCE(p.last_name, ''))) ${orderDirection}, 
+                 LOWER(unaccent(COALESCE(p.first_name, ''))) ${orderDirection},
                  p.id DESC
         LIMIT ${limit}
         OFFSET ${skip}

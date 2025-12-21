@@ -192,8 +192,8 @@ export async function GET(request: NextRequest) {
         SELECT p.id
         FROM people p
         ${whereClause}
-        ORDER BY unaccent(COALESCE(p.last_name, '')) ${orderDirection}, 
-                 unaccent(COALESCE(p.first_name, '')) ${orderDirection},
+        ORDER BY LOWER(unaccent(COALESCE(p.last_name, ''))) ${orderDirection}, 
+                 LOWER(unaccent(COALESCE(p.first_name, ''))) ${orderDirection},
                  p.id DESC
         LIMIT ${limit}
         OFFSET ${skip}
