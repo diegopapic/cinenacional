@@ -583,6 +583,18 @@ model Language {
   @@map("languages")
 }
 
+model FirstNameGender {
+  id        Int                 @id @default(autoincrement())
+  name      String              @unique @db.VarChar(100)
+  gender    FirstNameGenderType
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+
+  @@index([name])
+  @@index([gender])
+  @@map("first_name_genders")
+}
+
 model User {
   id          String          @id @default(cuid())
   email       String          @unique @db.VarChar(255)
@@ -726,6 +738,14 @@ enum Gender {
   OTHER
 
   @@map("gender")
+}
+
+enum FirstNameGenderType {
+  MALE
+  FEMALE
+  UNISEX
+
+  @@map("first_name_gender_type")
 }
 
 enum PersonLinkType {
