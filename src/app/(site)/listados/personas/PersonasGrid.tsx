@@ -18,7 +18,7 @@ export default function PersonasGrid({ people, isLoading, viewMode }: PersonasGr
       <div className={
         viewMode === 'compact'
           ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6"
-          : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          : "grid grid-cols-1 lg:grid-cols-2 gap-4"
       }>
         {Array.from({ length: 12 }).map((_, i) => (
           <div key={i} className="animate-pulse">
@@ -30,7 +30,7 @@ export default function PersonasGrid({ people, isLoading, viewMode }: PersonasGr
               </>
             ) : (
               <div className="flex gap-4 p-4 bg-gray-900 rounded-lg">
-                <div className="w-24 h-32 bg-gray-800 rounded-lg flex-shrink-0" />
+                <div className="w-28 h-36 bg-gray-800 rounded-lg flex-shrink-0" />
                 <div className="flex-1 space-y-2">
                   <div className="h-5 bg-gray-800 rounded w-3/4" />
                   <div className="h-4 bg-gray-800 rounded w-1/2" />
@@ -69,7 +69,7 @@ export default function PersonasGrid({ people, isLoading, viewMode }: PersonasGr
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {people.map((person) => (
         <PersonCardDetailed key={person.id} person={person} />
       ))}

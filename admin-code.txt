@@ -1,4 +1,4 @@
-// Archivos del admin - 2025-12-21T00:43:51.409Z
+// Archivos del admin - 2025-12-21T03:22:13.384Z
 // ==================
 
 
@@ -6103,32 +6103,73 @@ export async function GET(request: NextRequest) {
       roles,
       yearRanges
     ] = await Promise.all([
-      // Ubicaciones de nacimiento (solo las que tienen personas)
-      prisma.$queryRaw<Array<{ id: number; name: string; parent_name: string | null; count: number }>>`
+      // Ubicaciones de nacimiento con path completo (recursivo)
+      prisma.$queryRaw<Array<{ id: number; name: string; full_path: string; count: number }>>`
+        WITH RECURSIVE location_path AS (
+          -- Caso base: ubicaciones que tienen personas nacidas
+          SELECT 
+            l.id,
+            l.name,
+            l.parent_id,
+            l.name::text as path
+          FROM locations l
+          WHERE EXISTS (SELECT 1 FROM people p WHERE p.birth_location_id = l.id)
+          
+          UNION ALL
+          
+          -- Caso recursivo: agregar padres
+          SELECT 
+            lp.id,
+            lp.name,
+            l.parent_id,
+            lp.path || ', ' || l.name
+          FROM location_path lp
+          INNER JOIN locations l ON lp.parent_id = l.id
+        )
         SELECT 
-          l.id,
-          l.name,
-          p.name as parent_name,
-          COUNT(DISTINCT pe.id)::int as count
-        FROM locations l
-        INNER JOIN people pe ON pe.birth_location_id = l.id
-        LEFT JOIN locations p ON l.parent_id = p.id
-        GROUP BY l.id, l.name, p.name
-        ORDER BY l.name ASC
+          lp.id,
+          lp.name,
+          -- Obtener el path más largo (el que tiene todos los ancestros)
+          (SELECT path FROM location_path WHERE id = lp.id ORDER BY LENGTH(path) DESC LIMIT 1) as full_path,
+          COUNT(DISTINCT p.id)::int as count
+        FROM location_path lp
+        INNER JOIN people p ON p.birth_location_id = lp.id
+        GROUP BY lp.id, lp.name
+        ORDER BY lp.name ASC
       `,
       
-      // Ubicaciones de muerte (solo las que tienen personas)
-      prisma.$queryRaw<Array<{ id: number; name: string; parent_name: string | null; count: number }>>`
+      // Ubicaciones de muerte con path completo (recursivo)
+      prisma.$queryRaw<Array<{ id: number; name: string; full_path: string; count: number }>>`
+        WITH RECURSIVE location_path AS (
+          -- Caso base: ubicaciones que tienen personas fallecidas
+          SELECT 
+            l.id,
+            l.name,
+            l.parent_id,
+            l.name::text as path
+          FROM locations l
+          WHERE EXISTS (SELECT 1 FROM people p WHERE p.death_location_id = l.id)
+          
+          UNION ALL
+          
+          -- Caso recursivo: agregar padres
+          SELECT 
+            lp.id,
+            lp.name,
+            l.parent_id,
+            lp.path || ', ' || l.name
+          FROM location_path lp
+          INNER JOIN locations l ON lp.parent_id = l.id
+        )
         SELECT 
-          l.id,
-          l.name,
-          p.name as parent_name,
-          COUNT(DISTINCT pe.id)::int as count
-        FROM locations l
-        INNER JOIN people pe ON pe.death_location_id = l.id
-        LEFT JOIN locations p ON l.parent_id = p.id
-        GROUP BY l.id, l.name, p.name
-        ORDER BY l.name ASC
+          lp.id,
+          lp.name,
+          (SELECT path FROM location_path WHERE id = lp.id ORDER BY LENGTH(path) DESC LIMIT 1) as full_path,
+          COUNT(DISTINCT p.id)::int as count
+        FROM location_path lp
+        INNER JOIN people p ON p.death_location_id = lp.id
+        GROUP BY lp.id, lp.name
+        ORDER BY lp.name ASC
       `,
       
       // Nacionalidades (países con personas)
@@ -6155,7 +6196,7 @@ export async function GET(request: NextRequest) {
         WHERE r.is_active = true
         GROUP BY r.id, r.name, r.department
         HAVING COUNT(DISTINCT mc.person_id) > 0
-        ORDER BY r.name ASC
+        ORDER BY count DESC
       `,
       
       // Rangos de años
@@ -6186,16 +6227,14 @@ export async function GET(request: NextRequest) {
       birthLocations: birthLocations.map(loc => ({
         id: loc.id,
         name: loc.name,
-        parentName: loc.parent_name,
-        fullPath: loc.parent_name ? `${loc.name}, ${loc.parent_name}` : loc.name,
+        fullPath: loc.full_path,
         count: loc.count
       })),
       
       deathLocations: deathLocations.map(loc => ({
         id: loc.id,
         name: loc.name,
-        parentName: loc.parent_name,
-        fullPath: loc.parent_name ? `${loc.name}, ${loc.parent_name}` : loc.name,
+        fullPath: loc.full_path,
         count: loc.count
       })),
       
@@ -6247,7 +6286,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
 
 // ==================================================
 // src/app/api/people/list/route.ts
@@ -6631,6 +6669,52 @@ async function addFeaturedMovies(people: any[]): Promise<any[]> {
 
   const personIds = people.map(p => p.id);
 
+  // Obtener paths completos de ubicaciones de nacimiento y muerte
+  const locationPaths = await prisma.$queryRaw<Array<{
+    person_id: number;
+    birth_location_path: string | null;
+    death_location_path: string | null;
+  }>>`
+    WITH RECURSIVE location_tree AS (
+      SELECT 
+        id,
+        name,
+        parent_id,
+        name::text as path
+      FROM locations
+      
+      UNION ALL
+      
+      SELECT 
+        lt.id,
+        lt.name,
+        l.parent_id,
+        lt.path || ', ' || l.name
+      FROM location_tree lt
+      INNER JOIN locations l ON lt.parent_id = l.id
+    ),
+    full_paths AS (
+      SELECT 
+        id,
+        (SELECT path FROM location_tree WHERE id = lt.id ORDER BY LENGTH(path) DESC LIMIT 1) as full_path
+      FROM location_tree lt
+      GROUP BY id
+    )
+    SELECT 
+      p.id as person_id,
+      bp.full_path as birth_location_path,
+      dp.full_path as death_location_path
+    FROM people p
+    LEFT JOIN full_paths bp ON p.birth_location_id = bp.id
+    LEFT JOIN full_paths dp ON p.death_location_id = dp.id
+    WHERE p.id = ANY(${personIds})
+  `;
+
+  const locationPathMap = new Map(locationPaths.map(lp => [
+    lp.person_id, 
+    { birthPath: lp.birth_location_path, deathPath: lp.death_location_path }
+  ]));
+
   const castMovies = await prisma.$queryRaw<Array<{
     person_id: number;
     movie_id: number;
@@ -6691,6 +6775,7 @@ async function addFeaturedMovies(people: any[]): Promise<any[]> {
   return people.map(person => {
     const castMovie = castMap.get(person.id);
     const crewMovie = crewMap.get(person.id);
+    const paths = locationPathMap.get(person.id);
 
     let featuredMovie = null;
 
@@ -6737,7 +6822,9 @@ async function addFeaturedMovies(people: any[]): Promise<any[]> {
       ...person,
       name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre',
       featuredMovie,
-      movieCount: movieCountMap.get(person.id) || 0
+      movieCount: movieCountMap.get(person.id) || 0,
+      birthLocationPath: paths?.birthPath || null,
+      deathLocationPath: paths?.deathPath || null
     };
   });
 }

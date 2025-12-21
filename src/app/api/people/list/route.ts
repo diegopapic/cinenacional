@@ -377,6 +377,52 @@ async function addFeaturedMovies(people: any[]): Promise<any[]> {
 
   const personIds = people.map(p => p.id);
 
+  // Obtener paths completos de ubicaciones de nacimiento y muerte
+  const locationPaths = await prisma.$queryRaw<Array<{
+    person_id: number;
+    birth_location_path: string | null;
+    death_location_path: string | null;
+  }>>`
+    WITH RECURSIVE location_tree AS (
+      SELECT 
+        id,
+        name,
+        parent_id,
+        name::text as path
+      FROM locations
+      
+      UNION ALL
+      
+      SELECT 
+        lt.id,
+        lt.name,
+        l.parent_id,
+        lt.path || ', ' || l.name
+      FROM location_tree lt
+      INNER JOIN locations l ON lt.parent_id = l.id
+    ),
+    full_paths AS (
+      SELECT 
+        id,
+        (SELECT path FROM location_tree WHERE id = lt.id ORDER BY LENGTH(path) DESC LIMIT 1) as full_path
+      FROM location_tree lt
+      GROUP BY id
+    )
+    SELECT 
+      p.id as person_id,
+      bp.full_path as birth_location_path,
+      dp.full_path as death_location_path
+    FROM people p
+    LEFT JOIN full_paths bp ON p.birth_location_id = bp.id
+    LEFT JOIN full_paths dp ON p.death_location_id = dp.id
+    WHERE p.id = ANY(${personIds})
+  `;
+
+  const locationPathMap = new Map(locationPaths.map(lp => [
+    lp.person_id, 
+    { birthPath: lp.birth_location_path, deathPath: lp.death_location_path }
+  ]));
+
   const castMovies = await prisma.$queryRaw<Array<{
     person_id: number;
     movie_id: number;
@@ -437,6 +483,7 @@ async function addFeaturedMovies(people: any[]): Promise<any[]> {
   return people.map(person => {
     const castMovie = castMap.get(person.id);
     const crewMovie = crewMap.get(person.id);
+    const paths = locationPathMap.get(person.id);
 
     let featuredMovie = null;
 
@@ -483,7 +530,9 @@ async function addFeaturedMovies(people: any[]): Promise<any[]> {
       ...person,
       name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre',
       featuredMovie,
-      movieCount: movieCountMap.get(person.id) || 0
+      movieCount: movieCountMap.get(person.id) || 0,
+      birthLocationPath: paths?.birthPath || null,
+      deathLocationPath: paths?.deathPath || null
     };
   });
 }

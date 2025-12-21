@@ -13,32 +13,73 @@ export async function GET(request: NextRequest) {
       roles,
       yearRanges
     ] = await Promise.all([
-      // Ubicaciones de nacimiento (solo las que tienen personas)
-      prisma.$queryRaw<Array<{ id: number; name: string; parent_name: string | null; count: number }>>`
+      // Ubicaciones de nacimiento con path completo (recursivo)
+      prisma.$queryRaw<Array<{ id: number; name: string; full_path: string; count: number }>>`
+        WITH RECURSIVE location_path AS (
+          -- Caso base: ubicaciones que tienen personas nacidas
+          SELECT 
+            l.id,
+            l.name,
+            l.parent_id,
+            l.name::text as path
+          FROM locations l
+          WHERE EXISTS (SELECT 1 FROM people p WHERE p.birth_location_id = l.id)
+          
+          UNION ALL
+          
+          -- Caso recursivo: agregar padres
+          SELECT 
+            lp.id,
+            lp.name,
+            l.parent_id,
+            lp.path || ', ' || l.name
+          FROM location_path lp
+          INNER JOIN locations l ON lp.parent_id = l.id
+        )
         SELECT 
-          l.id,
-          l.name,
-          p.name as parent_name,
-          COUNT(DISTINCT pe.id)::int as count
-        FROM locations l
-        INNER JOIN people pe ON pe.birth_location_id = l.id
-        LEFT JOIN locations p ON l.parent_id = p.id
-        GROUP BY l.id, l.name, p.name
-        ORDER BY l.name ASC
+          lp.id,
+          lp.name,
+          -- Obtener el path más largo (el que tiene todos los ancestros)
+          (SELECT path FROM location_path WHERE id = lp.id ORDER BY LENGTH(path) DESC LIMIT 1) as full_path,
+          COUNT(DISTINCT p.id)::int as count
+        FROM location_path lp
+        INNER JOIN people p ON p.birth_location_id = lp.id
+        GROUP BY lp.id, lp.name
+        ORDER BY lp.name ASC
       `,
       
-      // Ubicaciones de muerte (solo las que tienen personas)
-      prisma.$queryRaw<Array<{ id: number; name: string; parent_name: string | null; count: number }>>`
+      // Ubicaciones de muerte con path completo (recursivo)
+      prisma.$queryRaw<Array<{ id: number; name: string; full_path: string; count: number }>>`
+        WITH RECURSIVE location_path AS (
+          -- Caso base: ubicaciones que tienen personas fallecidas
+          SELECT 
+            l.id,
+            l.name,
+            l.parent_id,
+            l.name::text as path
+          FROM locations l
+          WHERE EXISTS (SELECT 1 FROM people p WHERE p.death_location_id = l.id)
+          
+          UNION ALL
+          
+          -- Caso recursivo: agregar padres
+          SELECT 
+            lp.id,
+            lp.name,
+            l.parent_id,
+            lp.path || ', ' || l.name
+          FROM location_path lp
+          INNER JOIN locations l ON lp.parent_id = l.id
+        )
         SELECT 
-          l.id,
-          l.name,
-          p.name as parent_name,
-          COUNT(DISTINCT pe.id)::int as count
-        FROM locations l
-        INNER JOIN people pe ON pe.death_location_id = l.id
-        LEFT JOIN locations p ON l.parent_id = p.id
-        GROUP BY l.id, l.name, p.name
-        ORDER BY l.name ASC
+          lp.id,
+          lp.name,
+          (SELECT path FROM location_path WHERE id = lp.id ORDER BY LENGTH(path) DESC LIMIT 1) as full_path,
+          COUNT(DISTINCT p.id)::int as count
+        FROM location_path lp
+        INNER JOIN people p ON p.death_location_id = lp.id
+        GROUP BY lp.id, lp.name
+        ORDER BY lp.name ASC
       `,
       
       // Nacionalidades (países con personas)
@@ -65,7 +106,7 @@ export async function GET(request: NextRequest) {
         WHERE r.is_active = true
         GROUP BY r.id, r.name, r.department
         HAVING COUNT(DISTINCT mc.person_id) > 0
-        ORDER BY r.name ASC
+        ORDER BY count DESC
       `,
       
       // Rangos de años
@@ -96,16 +137,14 @@ export async function GET(request: NextRequest) {
       birthLocations: birthLocations.map(loc => ({
         id: loc.id,
         name: loc.name,
-        parentName: loc.parent_name,
-        fullPath: loc.parent_name ? `${loc.name}, ${loc.parent_name}` : loc.name,
+        fullPath: loc.full_path,
         count: loc.count
       })),
       
       deathLocations: deathLocations.map(loc => ({
         id: loc.id,
         name: loc.name,
-        parentName: loc.parent_name,
-        fullPath: loc.parent_name ? `${loc.name}, ${loc.parent_name}` : loc.name,
+        fullPath: loc.full_path,
         count: loc.count
       })),
       
