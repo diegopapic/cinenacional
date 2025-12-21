@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: ae474a45f2d10868279767a555595a31f7b5acfb
-// Fecha: 2025-12-19T19:24:09.137Z
+// Commit: 1a539efb87854a1abee5e54a4653dd48d4b5bce3
+// Fecha: 2025-12-21T00:23:18.501Z
 // ============================================
 
 
@@ -13478,12 +13478,10 @@ export async function GET(request: NextRequest) {
     // Filtro de rol (Actor o rol técnico)
     if (roleId) {
       if (roleId === 'ACTOR') {
-        // Buscar personas que tienen al menos un rol de cast
         where.castRoles = {
           some: {}
         };
       } else {
-        // Buscar personas con rol técnico específico
         where.crewRoles = {
           some: {
             roleId: parseInt(roleId)
@@ -13526,16 +13524,184 @@ export async function GET(request: NextRequest) {
       where.deathYear.not = null;
     }
 
-    // Determinar ordenamiento
+    // Construir filtros SQL para queries raw
+    const buildWhereClause = () => {
+      const conditions: Prisma.Sql[] = [Prisma.sql`p.is_active = true`];
+      
+      if (birthLocationId) {
+        conditions.push(Prisma.sql`p.birth_location_id = ${parseInt(birthLocationId)}`);
+      }
+      if (deathLocationId) {
+        conditions.push(Prisma.sql`p.death_location_id = ${parseInt(deathLocationId)}`);
+      }
+      if (gender) {
+        conditions.push(Prisma.sql`p.gender = ${gender}::"Gender"`);
+      }
+      if (birthYearFrom) {
+        conditions.push(Prisma.sql`p.birth_year >= ${parseInt(birthYearFrom)}`);
+      }
+      if (birthYearTo) {
+        conditions.push(Prisma.sql`p.birth_year <= ${parseInt(birthYearTo)}`);
+      }
+      if (deathYearFrom) {
+        conditions.push(Prisma.sql`p.death_year >= ${parseInt(deathYearFrom)}`);
+      }
+      if (deathYearTo) {
+        conditions.push(Prisma.sql`p.death_year <= ${parseInt(deathYearTo)}`);
+      }
+      if (nationalityId) {
+        conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM person_nationalities pn WHERE pn.person_id = p.id AND pn.location_id = ${parseInt(nationalityId)})`);
+      }
+      if (roleId === 'ACTOR') {
+        conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM movie_cast mc WHERE mc.person_id = p.id)`);
+      }
+      if (roleId && roleId !== 'ACTOR') {
+        conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM movie_crew mcr WHERE mcr.person_id = p.id AND mcr.role_id = ${parseInt(roleId)})`);
+      }
+      if (sortBy === 'birthDate') {
+        conditions.push(Prisma.sql`p.birth_year IS NOT NULL`);
+      }
+      if (sortBy === 'deathDate') {
+        conditions.push(Prisma.sql`p.death_year IS NOT NULL`);
+      }
+      // Búsqueda por nombre
+      if (search && search.trim().length >= 2) {
+        const searchTerm = `%${search.trim()}%`;
+        conditions.push(Prisma.sql`(
+          unaccent(p.first_name) ILIKE unaccent(${searchTerm}) OR
+          unaccent(p.last_name) ILIKE unaccent(${searchTerm}) OR
+          unaccent(p.real_name) ILIKE unaccent(${searchTerm})
+        )`);
+      }
+      
+      return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
+    };
+
+    // Si el ordenamiento es alfabético, usar query raw con unaccent
+    if (sortBy === 'lastName') {
+      const whereClause = buildWhereClause();
+      const orderDirection = sortOrder === 'desc' ? Prisma.sql`DESC` : Prisma.sql`ASC`;
+      
+      const peopleIds = await prisma.$queryRaw<Array<{ id: number }>>`
+        SELECT p.id
+        FROM people p
+        ${whereClause}
+        ORDER BY unaccent(COALESCE(p.last_name, '')) ${orderDirection}, 
+                 unaccent(COALESCE(p.first_name, '')) ${orderDirection},
+                 p.id DESC
+        LIMIT ${limit}
+        OFFSET ${skip}
+      `;
+
+      const personIds = peopleIds.map(p => p.id);
+      
+      if (personIds.length === 0) {
+        return NextResponse.json({
+          data: [],
+          totalCount: 0,
+          page,
+          totalPages: 0,
+          hasMore: false
+        });
+      }
+
+      const people = await prisma.person.findMany({
+        where: { id: { in: personIds } },
+        include: {
+          nationalities: {
+            include: { location: true }
+          },
+          birthLocation: {
+            include: { parent: true }
+          },
+          deathLocation: {
+            include: { parent: true }
+          }
+        }
+      });
+
+      // Mantener el orden del query
+      const orderedPeople = personIds.map(id => people.find(p => p.id === id)!).filter(Boolean);
+      const peopleWithMovies = await addFeaturedMovies(orderedPeople);
+      const totalCount = await prisma.person.count({ where });
+      const totalPages = Math.ceil(totalCount / limit);
+
+      return NextResponse.json({
+        data: peopleWithMovies,
+        totalCount,
+        page,
+        totalPages,
+        hasMore: page < totalPages
+      });
+    }
+
+    // Si el ordenamiento es por cantidad de películas
+    if (sortBy === 'movieCount') {
+      const whereClause = buildWhereClause();
+      const orderDirection = sortOrder === 'desc' ? Prisma.sql`DESC` : Prisma.sql`ASC`;
+      
+      const peopleWithMovieCount = await prisma.$queryRaw<Array<{ id: number; movie_count: number }>>`
+        SELECT 
+          p.id,
+          (
+            SELECT COUNT(DISTINCT movie_id) FROM (
+              SELECT movie_id FROM movie_cast WHERE person_id = p.id
+              UNION
+              SELECT movie_id FROM movie_crew WHERE person_id = p.id
+            ) all_movies
+          )::int as movie_count
+        FROM people p
+        ${whereClause}
+        ORDER BY movie_count ${orderDirection}, p.id DESC
+        LIMIT ${limit}
+        OFFSET ${skip}
+      `;
+
+      const personIds = peopleWithMovieCount.map(p => p.id);
+      
+      if (personIds.length === 0) {
+        return NextResponse.json({
+          data: [],
+          totalCount: 0,
+          page,
+          totalPages: 0,
+          hasMore: false
+        });
+      }
+
+      const people = await prisma.person.findMany({
+        where: { id: { in: personIds } },
+        include: {
+          nationalities: {
+            include: { location: true }
+          },
+          birthLocation: {
+            include: { parent: true }
+          },
+          deathLocation: {
+            include: { parent: true }
+          }
+        }
+      });
+
+      const orderedPeople = personIds.map(id => people.find(p => p.id === id)!).filter(Boolean);
+      const peopleWithMovies = await addFeaturedMovies(orderedPeople);
+      const totalCount = await prisma.person.count({ where });
+      const totalPages = Math.ceil(totalCount / limit);
+
+      return NextResponse.json({
+        data: peopleWithMovies,
+        totalCount,
+        page,
+        totalPages,
+        hasMore: page < totalPages
+      });
+    }
+
+    // Query normal para id, birthDate, deathDate
     let orderBy: Prisma.PersonOrderByWithRelationInput | Prisma.PersonOrderByWithRelationInput[];
     
     switch (sortBy) {
-      case 'lastName':
-        orderBy = [
-          { lastName: sortOrder as Prisma.SortOrder },
-          { firstName: sortOrder as Prisma.SortOrder }
-        ];
-        break;
       case 'birthDate':
         orderBy = [
           { birthYear: sortOrder as Prisma.SortOrder },
@@ -13556,84 +13722,6 @@ export async function GET(request: NextRequest) {
         break;
     }
 
-    // Si el ordenamiento es por cantidad de películas, necesitamos un enfoque diferente
-    if (sortBy === 'movieCount') {
-      // Usar query raw para ordenar por conteo de películas ÚNICAS
-      const peopleWithMovieCount = await prisma.$queryRaw<Array<{ id: number; movie_count: number }>>`
-        SELECT 
-          p.id,
-          (
-            SELECT COUNT(DISTINCT movie_id) FROM (
-              SELECT movie_id FROM movie_cast WHERE person_id = p.id
-              UNION
-              SELECT movie_id FROM movie_crew WHERE person_id = p.id
-            ) all_movies
-          )::int as movie_count
-        FROM people p
-        WHERE p.is_active = true
-        ${birthLocationId ? Prisma.sql`AND p.birth_location_id = ${parseInt(birthLocationId)}` : Prisma.empty}
-        ${deathLocationId ? Prisma.sql`AND p.death_location_id = ${parseInt(deathLocationId)}` : Prisma.empty}
-        ${gender ? Prisma.sql`AND p.gender = ${gender}::"Gender"` : Prisma.empty}
-        ${birthYearFrom ? Prisma.sql`AND p.birth_year >= ${parseInt(birthYearFrom)}` : Prisma.empty}
-        ${birthYearTo ? Prisma.sql`AND p.birth_year <= ${parseInt(birthYearTo)}` : Prisma.empty}
-        ${deathYearFrom ? Prisma.sql`AND p.death_year >= ${parseInt(deathYearFrom)}` : Prisma.empty}
-        ${deathYearTo ? Prisma.sql`AND p.death_year <= ${parseInt(deathYearTo)}` : Prisma.empty}
-        ${nationalityId ? Prisma.sql`AND EXISTS (SELECT 1 FROM person_nationalities pn WHERE pn.person_id = p.id AND pn.location_id = ${parseInt(nationalityId)})` : Prisma.empty}
-        ${roleId === 'ACTOR' ? Prisma.sql`AND EXISTS (SELECT 1 FROM movie_cast mc WHERE mc.person_id = p.id)` : Prisma.empty}
-        ${roleId && roleId !== 'ACTOR' ? Prisma.sql`AND EXISTS (SELECT 1 FROM movie_crew mcr WHERE mcr.person_id = p.id AND mcr.role_id = ${parseInt(roleId)})` : Prisma.empty}
-        ORDER BY movie_count ${sortOrder === 'desc' ? Prisma.sql`DESC` : Prisma.sql`ASC`}, p.id DESC
-        LIMIT ${limit}
-        OFFSET ${skip}
-      `;
-
-      const personIds = peopleWithMovieCount.map(p => p.id);
-      
-      if (personIds.length === 0) {
-        return NextResponse.json({
-          data: [],
-          totalCount: 0,
-          page,
-          totalPages: 0,
-          hasMore: false
-        });
-      }
-
-      // Obtener datos completos
-      const people = await prisma.person.findMany({
-        where: { id: { in: personIds } },
-        include: {
-          nationalities: {
-            include: { location: true }
-          },
-          birthLocation: {
-            include: { parent: true }
-          },
-          deathLocation: {
-            include: { parent: true }
-          }
-        }
-      });
-
-      // Mantener el orden del query
-      const orderedPeople = personIds.map(id => people.find(p => p.id === id)!).filter(Boolean);
-
-      // Obtener película destacada para cada persona
-      const peopleWithMovies = await addFeaturedMovies(orderedPeople);
-
-      // Contar total
-      const totalCount = await prisma.person.count({ where });
-      const totalPages = Math.ceil(totalCount / limit);
-
-      return NextResponse.json({
-        data: peopleWithMovies,
-        totalCount,
-        page,
-        totalPages,
-        hasMore: page < totalPages
-      });
-    }
-
-    // Query normal (sin ordenamiento por movieCount)
     const [people, totalCount] = await Promise.all([
       prisma.person.findMany({
         where,
@@ -13655,9 +13743,7 @@ export async function GET(request: NextRequest) {
       prisma.person.count({ where })
     ]);
 
-    // Obtener película destacada para cada persona
     const peopleWithMovies = await addFeaturedMovies(people);
-
     const totalPages = Math.ceil(totalCount / limit);
 
     return NextResponse.json({
@@ -13685,7 +13771,6 @@ async function addFeaturedMovies(people: any[]): Promise<any[]> {
 
   const personIds = people.map(p => p.id);
 
-  // Obtener la película más reciente de cast para cada persona
   const castMovies = await prisma.$queryRaw<Array<{
     person_id: number;
     movie_id: number;
@@ -13705,7 +13790,6 @@ async function addFeaturedMovies(people: any[]): Promise<any[]> {
     ORDER BY mc.person_id, m.year DESC NULLS LAST, m.id DESC
   `;
 
-  // Obtener la película más reciente de crew para cada persona
   const crewMovies = await prisma.$queryRaw<Array<{
     person_id: number;
     movie_id: number;
@@ -13728,7 +13812,6 @@ async function addFeaturedMovies(people: any[]): Promise<any[]> {
     ORDER BY mcr.person_id, m.year DESC NULLS LAST, m.id DESC
   `;
 
-  // Calcular conteo correcto de películas ÚNICAS para cada persona
   const movieCounts = await prisma.$queryRaw<Array<{ person_id: number; movie_count: number }>>`
     SELECT 
       person_id,
@@ -13741,21 +13824,17 @@ async function addFeaturedMovies(people: any[]): Promise<any[]> {
     GROUP BY person_id
   `;
 
-  // Crear mapas para acceso rápido
   const castMap = new Map(castMovies.map(c => [c.person_id, c]));
   const crewMap = new Map(crewMovies.map(c => [c.person_id, c]));
   const movieCountMap = new Map(movieCounts.map(c => [c.person_id, c.movie_count]));
 
-  // Agregar película destacada a cada persona
   return people.map(person => {
     const castMovie = castMap.get(person.id);
     const crewMovie = crewMap.get(person.id);
 
     let featuredMovie = null;
 
-    // Elegir la película más reciente entre cast y crew
     if (castMovie && crewMovie) {
-      // Comparar años, preferir la más reciente
       const castYear = castMovie.movie_year || 0;
       const crewYear = crewMovie.movie_year || 0;
       
