@@ -69,16 +69,14 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
           ))}
         </div>
       )}
-      {/*
       <div className="mt-6 text-center">
         <Link
-          href="/listados/personas?sort=createdAt"
+          href="/listados/personas"
           className="inline-block border border-cine-accent text-cine-accent hover:bg-cine-accent hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
         >
-          Ver más personas recientes
+          Ver más personas
         </Link>
       </div>
-      */}
     </section>
   );
 }

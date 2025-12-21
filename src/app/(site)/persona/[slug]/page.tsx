@@ -88,7 +88,63 @@ export default function PersonPage({ params }: PersonPageProps) {
     return `/efemerides/${monthStr}-${dayStr}`;
   };
 
-  // Función helper para generar URL de obituarios (formato: /obituarios?year=YYYY)
+  // Función helper para generar URL de personas por año de nacimiento
+  const getBirthYearUrl = (year: number): string => {
+    return `/listados/personas?birthYearFrom=${year}&birthYearTo=${year}&sortBy=lastName&sortOrder=asc`;
+  };
+
+  // Función helper para generar URL de personas por año de muerte
+  const getDeathYearUrl = (year: number): string => {
+    return `/listados/personas?deathYearFrom=${year}&deathYearTo=${year}&sortBy=deathDate&sortOrder=asc`;
+  };
+
+  // Función helper para generar URL de personas por ubicación de nacimiento
+  const getBirthLocationUrl = (locationId: number): string => {
+    return `/listados/personas?birthLocationId=${locationId}&sortBy=lastName&sortOrder=asc`;
+  };
+
+  // Función helper para generar URL de personas por ubicación de muerte
+  const getDeathLocationUrl = (locationId: number): string => {
+    return `/listados/personas?deathLocationId=${locationId}&sortBy=lastName&sortOrder=asc`;
+  };
+
+  // Función helper para generar URL de personas por nacionalidad
+  const getNationalityUrl = (locationId: number): string => {
+    return `/listados/personas?nationalityId=${locationId}&sortBy=lastName&sortOrder=asc`;
+  };
+
+  // Función para renderizar ubicación con links (para nacimiento o muerte)
+  const renderLocationWithLinks = (location: any, type: 'birth' | 'death') => {
+    if (!location) return null;
+    
+    const parts: { id: number; name: string }[] = [];
+    let current = location;
+    
+    while (current) {
+      parts.push({ id: current.id, name: current.name });
+      current = current.parent;
+    }
+    
+    const getUrl = type === 'birth' ? getBirthLocationUrl : getDeathLocationUrl;
+    
+    return (
+      <>
+        {parts.map((part, index) => (
+          <span key={part.id}>
+            {index > 0 && ', '}
+            <Link
+              href={getUrl(part.id)}
+              className="text-gray-300 hover:text-blue-400 transition-colors"
+            >
+              {part.name}
+            </Link>
+          </span>
+        ))}
+      </>
+    );
+  };
+
+  // Función helper para generar URL de obituarios (formato: /obituarios?year=YYYY) - DEPRECADA
   const getObituariosUrl = (year: number): string => {
     const yearStr = year.toString().padStart(4, '0');
     return `/listados/obituarios?year=${yearStr}`;
@@ -463,7 +519,13 @@ export default function PersonPage({ params }: PersonPageProps) {
                         >
                           {person.birthDay} de {MONTHS[person.birthMonth - 1].label.toLowerCase()}
                         </Link>
-                        <span className="text-gray-500"> de </span><span className="text-gray-300">{person.birthYear}</span>
+                        <span className="text-gray-500"> de </span>
+                        <Link
+                          href={getBirthYearUrl(person.birthYear)}
+                          className="text-gray-300 hover:text-blue-400 transition-colors"
+                        >
+                          {person.birthYear}
+                        </Link>
                       </>
                     ) : (
                       <span>{birthDateFormatted}</span>
@@ -471,7 +533,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                     {person.birthLocation && (
                       <>
                         <span className="text-gray-500"> en </span>
-                        <span>{formatLocationPath(person.birthLocation)}</span>
+                        {renderLocationWithLinks(person.birthLocation, 'birth')}
                       </>
                     )}
                   </div>
@@ -492,8 +554,8 @@ export default function PersonPage({ params }: PersonPageProps) {
                         </Link>
                         <span className="text-gray-500"> de </span>
                         <Link
-                          href={getObituariosUrl(person.deathYear)}
-                          className="text-gray-300 hover:text-blue-400 transition-colors decoration-gray-600 hover:decoration-blue-400"
+                          href={getDeathYearUrl(person.deathYear)}
+                          className="text-gray-300 hover:text-blue-400 transition-colors"
                         >
                           {person.deathYear}
                         </Link>
@@ -504,7 +566,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                     {person.deathLocation && (
                       <>
                         <span className="text-gray-500"> en </span>
-                        <span>{formatLocationPath(person.deathLocation)}</span>
+                        {renderLocationWithLinks(person.deathLocation, 'death')}
                       </>
                     )}
                   </div>
@@ -513,16 +575,25 @@ export default function PersonPage({ params }: PersonPageProps) {
                 {person.nationalities && person.nationalities.length > 0 && (
                   <div className="text-sm mb-4">
                     <span className="text-gray-500">Nacionalidad: </span>
-                    <span className="text-white">
-                      {person.nationalities
-                        .map((nat: any) => {
-                          // Usar gentilicio si existe, sino usar el nombre del país
-                          const display = nat.location?.gentilicio || nat.location?.name;
-                          return display;
-                        })
-                        .filter(Boolean)
-                        .join(', ')}
-                    </span>
+                    {person.nationalities
+                      .map((nat: any, index: number) => {
+                        const display = nat.location?.gentilicio || nat.location?.name;
+                        const locationId = nat.location?.id || nat.locationId;
+                        if (!display) return null;
+                        
+                        return (
+                          <span key={locationId || index}>
+                            {index > 0 && ', '}
+                            <Link
+                              href={getNationalityUrl(locationId)}
+                              className="text-white hover:text-blue-400 transition-colors"
+                            >
+                              {display}
+                            </Link>
+                          </span>
+                        );
+                      })
+                      .filter(Boolean)}
                   </div>
                 )}
 
