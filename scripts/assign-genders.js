@@ -67,180 +67,221 @@ async function assignGenders() {
     });
     
     console.log(`📚 Nombres en tabla de géneros: ${genderMap.size}\n`);
-    console.log('─'.repeat(80));
-    console.log('Instrucciones:');
-    console.log('  M = Masculino (MALE)');
-    console.log('  F = Femenino (FEMALE)');
-    console.log('  U = Unisex (UNISEX) - agrega a la tabla');
-    console.log('  O = Otro género (OTHER) - NO agrega a la tabla');
-    console.log('  S = Saltar esta persona');
-    console.log('  Q = Salir del script');
-    console.log('─'.repeat(80));
-    console.log('');
 
     // Contadores
     let autoAssigned = 0;
     let manualAssigned = 0;
     let skipped = 0;
     let newNames = 0;
-    let current = 0;
-    const total = people.length;
-    let wasAutoAssigning = false;
 
-    // 3. Procesar cada persona
-    for (const person of people) {
-      current++;
+    // ══════════════════════════════════════════════════════════════════════════
+    // FASE 1: AUTO-ASIGNACIÓN (nombres con género definido, NO unisex)
+    // ══════════════════════════════════════════════════════════════════════════
+    
+    console.log('═'.repeat(80));
+    console.log('🤖 FASE 1: AUTO-ASIGNACIÓN DE GÉNEROS CONOCIDOS');
+    console.log('═'.repeat(80));
+    console.log('');
+
+    const pendingForManual = []; // Guardar los que necesitan atención manual
+
+    for (let i = 0; i < people.length; i++) {
+      const person = people[i];
       const normalizedName = person.normalized_name;
-      const fullName = [person.first_name, person.last_name].filter(Boolean).join(' ');
-      const remaining = total - current;
-      const progress = `[${current}/${total}] (${remaining} restantes)`;
       
-      // Verificar si el nombre está en la tabla
       if (genderMap.has(normalizedName)) {
         const gender = genderMap.get(normalizedName);
         
-        // Si es UNISEX, preguntar
         if (gender === 'UNISEX') {
-          // Limpiar línea de progreso si venimos de auto-asignación
-          if (wasAutoAssigning) {
-            console.log('');
-            wasAutoAssigning = false;
-          }
-          
-          console.log(`\n${progress} 👤 ${fullName} (ID: ${person.id})`);
-          console.log(`   Nombre "${normalizedName}" es UNISEX`);
-          
-          const answer = await ask('   ¿Qué género asignar? (M/F/O/S/Q): ');
-          
-          if (answer === 'Q') {
-            console.log('\n👋 Saliendo...');
-            break;
-          }
-          
-          if (answer === 'S') {
-            skipped++;
-            continue;
-          }
-          
-          let genderToAssign = null;
-          if (answer === 'M') genderToAssign = 'MALE';
-          else if (answer === 'F') genderToAssign = 'FEMALE';
-          else if (answer === 'O') genderToAssign = 'OTHER';
-          
-          if (genderToAssign) {
-            await client.query(
-              'UPDATE people SET gender = $1, updated_at = NOW() WHERE id = $2',
-              [genderToAssign, person.id]
-            );
-            manualAssigned++;
-            console.log(`   ✅ Asignado: ${genderToAssign}`);
-          } else {
-            skipped++;
-          }
+          // Guardar para la fase 2
+          pendingForManual.push({ ...person, reason: 'UNISEX' });
         } else {
-          // Asignar automáticamente
+          // Asignar automáticamente (MALE o FEMALE)
           await client.query(
             'UPDATE people SET gender = $1, updated_at = NOW() WHERE id = $2',
             [gender, person.id]
           );
           autoAssigned++;
-          wasAutoAssigning = true;
           
           // Mostrar progreso
-          const percent = Math.round((current / total) * 100);
-          const remaining = total - current;
-          process.stdout.write(`\r   🔄 Auto-asignando... [${current}/${total}] (${percent}%) - ${autoAssigned} asignados, ${remaining} restantes   `);
+          const percent = Math.round(((i + 1) / people.length) * 100);
+          process.stdout.write(`\r   🔄 Procesando... [${i + 1}/${people.length}] (${percent}%) - ${autoAssigned} auto-asignados`);
         }
       } else {
-        // Limpiar línea de progreso si venimos de auto-asignación
-        if (wasAutoAssigning) {
-          console.log('');
-          wasAutoAssigning = false;
-        }
+        // Nombre no está en la tabla - guardar para fase 2
+        pendingForManual.push({ ...person, reason: 'UNKNOWN' });
+      }
+    }
+
+    console.log('\n');
+    console.log(`   ✅ Auto-asignados: ${autoAssigned}`);
+    console.log(`   📋 Pendientes para revisión manual: ${pendingForManual.length}`);
+    
+    // Separar por tipo
+    const unisexPending = pendingForManual.filter(p => p.reason === 'UNISEX');
+    const unknownPending = pendingForManual.filter(p => p.reason === 'UNKNOWN');
+    
+    console.log(`      - Nombres UNISEX: ${unisexPending.length}`);
+    console.log(`      - Nombres desconocidos: ${unknownPending.length}`);
+    console.log('');
+
+    if (pendingForManual.length === 0) {
+      console.log('✅ ¡Todos los géneros fueron asignados automáticamente!');
+    } else {
+      // ══════════════════════════════════════════════════════════════════════════
+      // FASE 2: ASIGNACIÓN MANUAL
+      // ══════════════════════════════════════════════════════════════════════════
+      
+      console.log('═'.repeat(80));
+      console.log('👤 FASE 2: ASIGNACIÓN MANUAL');
+      console.log('═'.repeat(80));
+      console.log('');
+      console.log('Instrucciones:');
+      console.log('  M = Masculino (MALE)');
+      console.log('  F = Femenino (FEMALE)');
+      console.log('  U = Unisex (UNISEX) - agrega a la tabla');
+      console.log('  O = Otro género (OTHER) - NO agrega a la tabla');
+      console.log('  S = Saltar esta persona');
+      console.log('  Q = Salir del script');
+      console.log('─'.repeat(80));
+      console.log('');
+
+      const continueAnswer = await ask('¿Continuar con la asignación manual? (S/N): ');
+      
+      if (continueAnswer === 'N' || continueAnswer === 'Q') {
+        console.log('\n👋 Saltando fase manual...');
+        skipped = pendingForManual.length;
+      } else {
+        // Procesar primero los UNISEX, luego los desconocidos
+        const sortedPending = [...unisexPending, ...unknownPending];
         
-        // Nombre no está en la tabla - preguntar
-        console.log(`\n${progress} 👤 ${fullName} (ID: ${person.id})`);
-        console.log(`   ⚠️  Nombre "${normalizedName}" NO está en la tabla`);
-        
-        const answer = await ask('   ¿Qué género? (M/F/U/O/S/Q): ');
-        
-        if (answer === 'Q') {
-          console.log('\n👋 Saliendo...');
-          break;
-        }
-        
-        if (answer === 'S') {
-          skipped++;
-          continue;
-        }
-        
-        let genderToAssign = null;
-        let genderForTable = null;
-        
-        if (answer === 'M') {
-          genderToAssign = 'MALE';
-          genderForTable = 'MALE';
-        } else if (answer === 'F') {
-          genderToAssign = 'FEMALE';
-          genderForTable = 'FEMALE';
-        } else if (answer === 'U') {
-          genderForTable = 'UNISEX';
-          // Para unisex, preguntar qué asignar a esta persona específica
-          const specificAnswer = await ask('   ¿Y para esta persona específica? (M/F/O/S): ');
-          if (specificAnswer === 'M') {
-            genderToAssign = 'MALE';
-          } else if (specificAnswer === 'F') {
-            genderToAssign = 'FEMALE';
-          } else if (specificAnswer === 'O') {
-            genderToAssign = 'OTHER';
+        let current = 0;
+        const total = sortedPending.length;
+
+        for (const person of sortedPending) {
+          current++;
+          const normalizedName = person.normalized_name;
+          const fullName = [person.first_name, person.last_name].filter(Boolean).join(' ');
+          const remaining = total - current;
+          const progress = `[${current}/${total}] (${remaining} restantes)`;
+          
+          if (person.reason === 'UNISEX') {
+            console.log(`\n${progress} 👤 ${fullName} (ID: ${person.id})`);
+            console.log(`   🔄 Nombre "${normalizedName}" es UNISEX`);
+            
+            const answer = await ask('   ¿Qué género asignar? (M/F/O/S/Q): ');
+            
+            if (answer === 'Q') {
+              console.log('\n👋 Saliendo...');
+              skipped += (total - current + 1);
+              break;
+            }
+            
+            if (answer === 'S') {
+              skipped++;
+              continue;
+            }
+            
+            let genderToAssign = null;
+            if (answer === 'M') genderToAssign = 'MALE';
+            else if (answer === 'F') genderToAssign = 'FEMALE';
+            else if (answer === 'O') genderToAssign = 'OTHER';
+            
+            if (genderToAssign) {
+              await client.query(
+                'UPDATE people SET gender = $1, updated_at = NOW() WHERE id = $2',
+                [genderToAssign, person.id]
+              );
+              manualAssigned++;
+              console.log(`   ✅ Asignado: ${genderToAssign}`);
+            } else {
+              skipped++;
+            }
+          } else {
+            // Nombre desconocido
+            console.log(`\n${progress} 👤 ${fullName} (ID: ${person.id})`);
+            console.log(`   ⚠️  Nombre "${normalizedName}" NO está en la tabla`);
+            
+            const answer = await ask('   ¿Qué género? (M/F/U/O/S/Q): ');
+            
+            if (answer === 'Q') {
+              console.log('\n👋 Saliendo...');
+              skipped += (total - current + 1);
+              break;
+            }
+            
+            if (answer === 'S') {
+              skipped++;
+              continue;
+            }
+            
+            let genderToAssign = null;
+            let genderForTable = null;
+            
+            if (answer === 'M') {
+              genderToAssign = 'MALE';
+              genderForTable = 'MALE';
+            } else if (answer === 'F') {
+              genderToAssign = 'FEMALE';
+              genderForTable = 'FEMALE';
+            } else if (answer === 'U') {
+              genderForTable = 'UNISEX';
+              // Para unisex, preguntar qué asignar a esta persona específica
+              const specificAnswer = await ask('   ¿Y para esta persona específica? (M/F/O/S): ');
+              if (specificAnswer === 'M') {
+                genderToAssign = 'MALE';
+              } else if (specificAnswer === 'F') {
+                genderToAssign = 'FEMALE';
+              } else if (specificAnswer === 'O') {
+                genderToAssign = 'OTHER';
+              }
+            } else if (answer === 'O') {
+              // Otro género - asignar a la persona pero NO agregar a la tabla
+              genderToAssign = 'OTHER';
+              genderForTable = null; // No agregar a la tabla
+            }
+            
+            // Agregar a la tabla de géneros (solo si hay genderForTable)
+            if (genderForTable) {
+              try {
+                await client.query(
+                  'INSERT INTO first_name_genders (name, gender) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING',
+                  [normalizedName, genderForTable]
+                );
+                genderMap.set(normalizedName, genderForTable);
+                newNames++;
+                console.log(`   📝 Agregado "${normalizedName}" como ${genderForTable}`);
+              } catch (err) {
+                console.log(`   ⚠️  Error agregando nombre: ${err.message}`);
+              }
+            }
+            
+            // Asignar género a la persona
+            if (genderToAssign) {
+              await client.query(
+                'UPDATE people SET gender = $1, updated_at = NOW() WHERE id = $2',
+                [genderToAssign, person.id]
+              );
+              manualAssigned++;
+              console.log(`   ✅ Persona actualizada: ${genderToAssign}`);
+            } else {
+              skipped++;
+            }
           }
-        } else if (answer === 'O') {
-          // Otro género - asignar a la persona pero NO agregar a la tabla
-          genderToAssign = 'OTHER';
-          genderForTable = null; // No agregar a la tabla
-        }
-        
-        // Agregar a la tabla de géneros (solo si hay genderForTable)
-        if (genderForTable) {
-          try {
-            await client.query(
-              'INSERT INTO first_name_genders (name, gender) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING',
-              [normalizedName, genderForTable]
-            );
-            genderMap.set(normalizedName, genderForTable);
-            newNames++;
-            console.log(`   📝 Agregado "${normalizedName}" como ${genderForTable}`);
-          } catch (err) {
-            console.log(`   ⚠️  Error agregando nombre: ${err.message}`);
-          }
-        }
-        
-        // Asignar género a la persona
-        if (genderToAssign) {
-          await client.query(
-            'UPDATE people SET gender = $1, updated_at = NOW() WHERE id = $2',
-            [genderToAssign, person.id]
-          );
-          manualAssigned++;
-          console.log(`   ✅ Persona actualizada: ${genderToAssign}`);
-        } else {
-          skipped++;
         }
       }
     }
 
-    // Limpiar línea de progreso si terminamos en auto-asignación
-    if (wasAutoAssigning) {
-      console.log('');
-    }
-
-    // 4. Resumen final
+    // ══════════════════════════════════════════════════════════════════════════
+    // RESUMEN FINAL
+    // ══════════════════════════════════════════════════════════════════════════
+    
     console.log('\n');
     console.log('═'.repeat(80));
-    console.log('📊 RESUMEN:');
+    console.log('📊 RESUMEN FINAL:');
     console.log('─'.repeat(80));
-    console.log(`   🤖 Auto-asignados: ${autoAssigned}`);
-    console.log(`   👤 Manual-asignados: ${manualAssigned}`);
+    console.log(`   🤖 Auto-asignados (Fase 1): ${autoAssigned}`);
+    console.log(`   👤 Manual-asignados (Fase 2): ${manualAssigned}`);
     console.log(`   📝 Nombres nuevos agregados: ${newNames}`);
     console.log(`   ⏭️  Saltados: ${skipped}`);
     console.log(`   📋 Total procesados: ${autoAssigned + manualAssigned + skipped}`);
@@ -251,7 +292,10 @@ async function assignGenders() {
       SELECT 
         COUNT(*) as total,
         COUNT(CASE WHEN gender IS NOT NULL THEN 1 END) as con_genero,
-        COUNT(CASE WHEN gender IS NULL THEN 1 END) as sin_genero
+        COUNT(CASE WHEN gender IS NULL THEN 1 END) as sin_genero,
+        COUNT(CASE WHEN gender = 'MALE' THEN 1 END) as male,
+        COUNT(CASE WHEN gender = 'FEMALE' THEN 1 END) as female,
+        COUNT(CASE WHEN gender = 'OTHER' THEN 1 END) as other
       FROM people
     `;
     const statsResult = await client.query(statsQuery);
@@ -259,7 +303,10 @@ async function assignGenders() {
     
     console.log('\n📊 Estado actual de la tabla people:');
     console.log(`   Total: ${stats.total}`);
-    console.log(`   Con género: ${stats.con_genero}`);
+    console.log(`   Con género: ${stats.con_genero} (${Math.round(stats.con_genero / stats.total * 100)}%)`);
+    console.log(`     - MALE: ${stats.male}`);
+    console.log(`     - FEMALE: ${stats.female}`);
+    console.log(`     - OTHER: ${stats.other}`);
     console.log(`   Sin género: ${stats.sin_genero}`);
     
   } catch (error) {
@@ -273,8 +320,8 @@ async function assignGenders() {
 }
 
 // Ejecutar
-console.log('🔧 Script para asignar género a personas');
-console.log('   Usa la tabla first_name_genders como referencia');
-console.log('   Pregunta por nombres desconocidos\n');
+console.log('🔧 Script para asignar género a personas (v2)');
+console.log('   FASE 1: Auto-asigna todos los géneros conocidos');
+console.log('   FASE 2: Pregunta por UNISEX y desconocidos\n');
 console.log('═'.repeat(80));
 assignGenders();
