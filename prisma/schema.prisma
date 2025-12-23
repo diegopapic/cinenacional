@@ -63,6 +63,7 @@ model Movie {
   userRatings           UserRating[]
   watchedBy             UserWatched[]
   watchlists            UserWatchlist[]
+  pageViews             PageView[]
 
   @@index([slug])
   @@index([title])
@@ -206,6 +207,7 @@ model Person {
   links            PersonLink[]
   nationalities    PersonNationality[]
   imageAppearances ImagePerson[]
+  pageViews        PageView[]
 
   @@index([slug])
   @@index([firstName])
@@ -701,6 +703,32 @@ model ImagePerson {
   @@map("image_people")
 }
 
+model PageView {
+  id        Int       @id @default(autoincrement())
+  pageType  PageType  @map("page_type")
+  movieId   Int?      @map("movie_id")
+  personId  Int?      @map("person_id")
+  extraData Json?     @map("extra_data") @db.JsonB
+  sessionId String?   @map("session_id") @db.Uuid
+  ipHash    String?   @map("ip_hash") @db.VarChar(64)
+  userAgent String?   @map("user_agent") @db.VarChar(500)
+  referrer  String?   @db.VarChar(500)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // Relaciones opcionales (ON DELETE SET NULL para no perder stats si se borra película/persona)
+  movie     Movie?    @relation(fields: [movieId], references: [id], onDelete: SetNull)
+  person    Person?   @relation(fields: [personId], references: [id], onDelete: SetNull)
+
+  // Índices optimizados para consultas frecuentes
+  @@index([movieId], map: "idx_page_views_movie_id")
+  @@index([personId], map: "idx_page_views_person_id")
+  @@index([pageType], map: "idx_page_views_page_type")
+  @@index([createdAt], map: "idx_page_views_created_at")
+  @@index([sessionId], map: "idx_page_views_session_id")
+  @@index([pageType, createdAt], map: "idx_page_views_type_date")
+  @@map("page_views")
+}
+
 enum ImageType {
   STILL
   BEHIND_THE_SCENES
@@ -841,4 +869,15 @@ enum MovieStage {
   INEDITA
 
   @@map("movie_stage")
+}
+
+enum PageType {
+  HOME
+  MOVIE
+  PERSON
+  EPHEMERIS
+  PERSON_LIST
+  RELEASES
+  OBITUARIES
+  @@map("page_type")
 }

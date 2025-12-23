@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 2655a0a56715d07e5765765da25a3662d8063c4f
-// Fecha: 2025-12-21T04:24:30.141Z
+// Commit: 6c92e362019438cad5b6b627971ef4f46114a7a8
+// Fecha: 2025-12-23T03:31:36.795Z
 // ============================================
 
 
@@ -3116,6 +3116,7 @@ import { MovieInfo } from "@/components/movies/MovieInfo";
 import { MovieSidebar } from "@/components/movies/MovieSidebar";
 import { ImageGallery } from "@/components/movies/ImageGallery";
 import { SimilarMovies } from "@/components/movies/SimilarMovies";
+import { usePageView } from '@/hooks/usePageView';
 
 // Componente de anuncios
 import AdBanner from "@/components/ads/AdBanner";
@@ -3193,6 +3194,7 @@ export function MoviePageClient({
     releaseDate,
     heroBackgroundImage
 }: MoviePageClientProps) {
+    usePageView({ pageType: 'MOVIE', movieId: movie.id });
     const [movieGallery, setMovieGallery] = useState<string[]>([]);
 
     // Función para cargar imágenes desde la API
@@ -3952,6 +3954,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { formatPartialDate, MONTHS } from '@/lib/shared/dateUtils';
 import DOMPurify from 'isomorphic-dompurify';
+import { trackPageView } from '@/hooks/usePageView';
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -3959,15 +3962,15 @@ export const runtime = 'nodejs'
 // Función helper para formatear ubicación recursivamente (cualquier profundidad)
 function formatLocationPath(location: any): string {
   if (!location) return '';
-  
+
   const parts: string[] = [];
   let current = location;
-  
+
   while (current) {
     parts.push(current.name);
     current = current.parent;
   }
-  
+
   return parts.join(', ');
 }
 
@@ -4027,6 +4030,13 @@ export default function PersonPage({ params }: PersonPageProps) {
   const [activeTab, setActiveTab] = useState<string>('');
   const [showAllFilmography, setShowAllFilmography] = useState(false);
 
+  // ✅ Agregar tracking cuando la persona esté cargada
+  useEffect(() => {
+    if (person?.id) {
+      trackPageView({ pageType: 'PERSON', personId: person.id });
+    }
+  }, [person?.id]);
+
   // Función helper para generar URL de efemérides (formato: /efemerides/MM-DD)
   const getEfemeridesUrl = (month: number, day: number): string => {
     const monthStr = month.toString().padStart(2, '0');
@@ -4062,17 +4072,17 @@ export default function PersonPage({ params }: PersonPageProps) {
   // Función para renderizar ubicación con links (para nacimiento o muerte)
   const renderLocationWithLinks = (location: any, type: 'birth' | 'death') => {
     if (!location) return null;
-    
+
     const parts: { id: number; name: string }[] = [];
     let current = location;
-    
+
     while (current) {
       parts.push({ id: current.id, name: current.name });
       current = current.parent;
     }
-    
+
     const getUrl = type === 'birth' ? getBirthLocationUrl : getDeathLocationUrl;
-    
+
     return (
       <>
         {parts.map((part, index) => (
@@ -4526,7 +4536,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                         const display = nat.location?.gentilicio || nat.location?.name;
                         const locationId = nat.location?.id || nat.locationId;
                         if (!display) return null;
-                        
+
                         return (
                           <span key={locationId || index}>
                             {index > 0 && ', '}
@@ -8545,6 +8555,234 @@ export default function AdminThemesPage() {
       )}
     </div>
   )
+}
+
+// ==================================================
+// src/app/api/analytics/pageview/route.ts
+// ==================================================
+// src/app/api/analytics/pageview/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
+
+// Tipos válidos de página
+const VALID_PAGE_TYPES = [
+  'HOME',
+  'MOVIE',
+  'PERSON',
+  'EPHEMERIS',
+  'PERSON_LIST',
+  'RELEASES',
+  'OBITUARIES'
+] as const;
+
+type PageType = typeof VALID_PAGE_TYPES[number];
+
+interface PageViewRequest {
+  pageType: PageType;
+  movieId?: number;
+  personId?: number;
+  extraData?: Record<string, any>;
+  sessionId?: string;
+}
+
+// Función para hashear IP (privacidad)
+function hashIP(ip: string): string {
+  // Agregar salt para mayor seguridad
+  const salt = process.env.IP_HASH_SALT || 'cinenacional-analytics-2024';
+  return crypto.createHash('sha256').update(ip + salt).digest('hex');
+}
+
+// Función para extraer IP del request
+function getClientIP(request: NextRequest): string {
+  // Orden de prioridad para obtener IP real
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    // x-forwarded-for puede tener múltiples IPs, tomar la primera
+    return forwardedFor.split(',')[0].trim();
+  }
+  
+  const realIP = request.headers.get('x-real-ip');
+  if (realIP) {
+    return realIP;
+  }
+  
+  // Fallback
+  return '0.0.0.0';
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body: PageViewRequest = await request.json();
+    
+    // Validar pageType
+    if (!body.pageType || !VALID_PAGE_TYPES.includes(body.pageType)) {
+      return NextResponse.json(
+        { error: 'pageType inválido' },
+        { status: 400 }
+      );
+    }
+    
+    // Validar que MOVIE tenga movieId
+    if (body.pageType === 'MOVIE' && !body.movieId) {
+      return NextResponse.json(
+        { error: 'movieId requerido para pageType MOVIE' },
+        { status: 400 }
+      );
+    }
+    
+    // Validar que PERSON tenga personId
+    if (body.pageType === 'PERSON' && !body.personId) {
+      return NextResponse.json(
+        { error: 'personId requerido para pageType PERSON' },
+        { status: 400 }
+      );
+    }
+    
+    // Obtener datos del request
+    const clientIP = getClientIP(request);
+    const userAgent = request.headers.get('user-agent') || null;
+    const referrer = request.headers.get('referer') || null;
+    
+    // Crear registro de pageview
+    const pageView = await prisma.pageView.create({
+      data: {
+        pageType: body.pageType,
+        movieId: body.movieId || null,
+        personId: body.personId || null,
+        extraData: body.extraData || null,
+        sessionId: body.sessionId || null,
+        ipHash: hashIP(clientIP),
+        userAgent: userAgent?.substring(0, 500), // Truncar si es muy largo
+        referrer: referrer?.substring(0, 500),
+      },
+    });
+    
+    // Responder inmediatamente (no bloquear al cliente)
+    return NextResponse.json({ success: true, id: pageView.id });
+    
+  } catch (error) {
+    console.error('Error registrando pageview:', error);
+    
+    // No exponer errores internos al cliente
+    return NextResponse.json(
+      { error: 'Error interno' },
+      { status: 500 }
+    );
+  }
+}
+
+// Endpoint para obtener estadísticas básicas (opcional, para admin)
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const pageType = searchParams.get('pageType');
+    const days = parseInt(searchParams.get('days') || '30');
+    
+    const dateFrom = new Date();
+    dateFrom.setDate(dateFrom.getDate() - days);
+    
+    // Construir where clause
+    const where: any = {
+      createdAt: { gte: dateFrom }
+    };
+    
+    if (pageType && VALID_PAGE_TYPES.includes(pageType as PageType)) {
+      where.pageType = pageType;
+    }
+    
+    // Obtener conteo total
+    const totalViews = await prisma.pageView.count({ where });
+    
+    // Obtener conteo por tipo de página
+    const viewsByType = await prisma.pageView.groupBy({
+      by: ['pageType'],
+      where: { createdAt: { gte: dateFrom } },
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } }
+    });
+    
+    // Obtener películas más vistas
+    const topMovies = await prisma.pageView.groupBy({
+      by: ['movieId'],
+      where: {
+        pageType: 'MOVIE',
+        movieId: { not: null },
+        createdAt: { gte: dateFrom }
+      },
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 10
+    });
+    
+    // Obtener nombres de películas
+    const movieIds = topMovies.map(m => m.movieId).filter(Boolean) as number[];
+    const movies = await prisma.movie.findMany({
+      where: { id: { in: movieIds } },
+      select: { id: true, title: true, slug: true }
+    });
+    
+    const topMoviesWithNames = topMovies.map(m => {
+      const movie = movies.find(mov => mov.id === m.movieId);
+      return {
+        movieId: m.movieId,
+        title: movie?.title || 'Desconocida',
+        slug: movie?.slug,
+        views: m._count.id
+      };
+    });
+    
+    // Obtener personas más vistas
+    const topPeople = await prisma.pageView.groupBy({
+      by: ['personId'],
+      where: {
+        pageType: 'PERSON',
+        personId: { not: null },
+        createdAt: { gte: dateFrom }
+      },
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 10
+    });
+    
+    // Obtener nombres de personas
+    const personIds = topPeople.map(p => p.personId).filter(Boolean) as number[];
+    const people = await prisma.person.findMany({
+      where: { id: { in: personIds } },
+      select: { id: true, firstName: true, lastName: true, slug: true }
+    });
+    
+    const topPeopleWithNames = topPeople.map(p => {
+      const person = people.find(per => per.id === p.personId);
+      const name = person 
+        ? [person.firstName, person.lastName].filter(Boolean).join(' ')
+        : 'Desconocido';
+      return {
+        personId: p.personId,
+        name,
+        slug: person?.slug,
+        views: p._count.id
+      };
+    });
+    
+    return NextResponse.json({
+      period: `${days} días`,
+      totalViews,
+      viewsByType: viewsByType.map(v => ({
+        pageType: v.pageType,
+        views: v._count.id
+      })),
+      topMovies: topMoviesWithNames,
+      topPeople: topPeopleWithNames
+    });
+    
+  } catch (error) {
+    console.error('Error obteniendo estadísticas:', error);
+    return NextResponse.json(
+      { error: 'Error interno' },
+      { status: 500 }
+    );
+  }
 }
 
 // ==================================================
@@ -33773,6 +34011,133 @@ export function useMovieForm({
         unregister: form.unregister
     } as const
 }
+
+// ==================================================
+// src/hooks/usePageView.ts
+// ==================================================
+// src/hooks/usePageView.ts
+'use client';
+
+import { useEffect, useRef } from 'react';
+
+// Tipos de página disponibles
+export type PageType = 
+  | 'HOME'
+  | 'MOVIE'
+  | 'PERSON'
+  | 'EPHEMERIS'
+  | 'PERSON_LIST'
+  | 'RELEASES'
+  | 'OBITUARIES';
+
+interface PageViewOptions {
+  pageType: PageType;
+  movieId?: number;
+  personId?: number;
+  extraData?: Record<string, any>;
+}
+
+// Generar o recuperar sessionId
+function getSessionId(): string {
+  if (typeof window === 'undefined') return '';
+  
+  const SESSION_KEY = 'cn_session_id';
+  let sessionId = sessionStorage.getItem(SESSION_KEY);
+  
+  if (!sessionId) {
+    // Generar UUID v4
+    sessionId = crypto.randomUUID();
+    sessionStorage.setItem(SESSION_KEY, sessionId);
+  }
+  
+  return sessionId;
+}
+
+// Función para enviar el pageview
+async function trackPageView(options: PageViewOptions): Promise<void> {
+  try {
+    const sessionId = getSessionId();
+    
+    const payload = {
+      ...options,
+      sessionId,
+    };
+    
+    // Usar sendBeacon si está disponible (no bloquea navegación)
+    if (navigator.sendBeacon) {
+      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+      navigator.sendBeacon('/api/analytics/pageview', blob);
+    } else {
+      // Fallback a fetch
+      await fetch('/api/analytics/pageview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true, // Permite que la request continúe incluso si el usuario navega
+      });
+    }
+  } catch (error) {
+    // Silenciar errores de analytics - no afectar UX
+    console.warn('Error tracking pageview:', error);
+  }
+}
+
+/**
+ * Hook para trackear vistas de página
+ * 
+ * @example
+ * // En página de película
+ * usePageView({ pageType: 'MOVIE', movieId: movie.id });
+ * 
+ * // En página de persona
+ * usePageView({ pageType: 'PERSON', personId: person.id });
+ * 
+ * // En home
+ * usePageView({ pageType: 'HOME' });
+ * 
+ * // En listado con filtros
+ * usePageView({ 
+ *   pageType: 'PERSON_LIST', 
+ *   extraData: { filters: { gender: 'FEMALE', decade: '1990' } } 
+ * });
+ * 
+ * // En efemérides
+ * usePageView({ 
+ *   pageType: 'EPHEMERIS', 
+ *   extraData: { date: '12-25' } 
+ * });
+ * 
+ * // En estrenos
+ * usePageView({ 
+ *   pageType: 'RELEASES', 
+ *   extraData: { year: 2024 } 
+ * });
+ */
+export function usePageView(options: PageViewOptions): void {
+  const hasTracked = useRef(false);
+  
+  useEffect(() => {
+    // Evitar doble tracking en StrictMode o re-renders
+    if (hasTracked.current) return;
+    
+    // No trackear en desarrollo si se prefiere
+    // if (process.env.NODE_ENV === 'development') return;
+    
+    hasTracked.current = true;
+    trackPageView(options);
+    
+    // Cleanup: si el componente se desmonta antes de trackear, permitir re-track
+    return () => {
+      // No reseteamos hasTracked para evitar double-tracking
+    };
+  }, [options.pageType, options.movieId, options.personId]);
+}
+
+/**
+ * Función utilitaria para trackear manualmente (sin hook)
+ * Útil para eventos específicos o tracking condicional
+ */
+export { trackPageView };
 
 // ==================================================
 // src/hooks/usePeople.ts

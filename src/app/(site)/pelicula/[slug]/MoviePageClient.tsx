@@ -12,6 +12,7 @@ import { MovieInfo } from "@/components/movies/MovieInfo";
 import { MovieSidebar } from "@/components/movies/MovieSidebar";
 import { ImageGallery } from "@/components/movies/ImageGallery";
 import { SimilarMovies } from "@/components/movies/SimilarMovies";
+import { usePageView } from '@/hooks/usePageView';
 
 // Componente de anuncios
 import AdBanner from "@/components/ads/AdBanner";
@@ -89,6 +90,7 @@ export function MoviePageClient({
     releaseDate,
     heroBackgroundImage
 }: MoviePageClientProps) {
+    usePageView({ pageType: 'MOVIE', movieId: movie.id });
     const [movieGallery, setMovieGallery] = useState<string[]>([]);
 
     // Función para cargar imágenes desde la API

@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-12-21T04:24:30.733Z
+# Generado automáticamente el: 2025-12-23T03:31:40.044Z
 # ================================================
 
 ## Schema Prisma
@@ -70,6 +70,7 @@ model Movie {
   userRatings           UserRating[]
   watchedBy             UserWatched[]
   watchlists            UserWatchlist[]
+  pageViews             PageView[]
 
   @@index([slug])
   @@index([title])
@@ -213,6 +214,7 @@ model Person {
   links            PersonLink[]
   nationalities    PersonNationality[]
   imageAppearances ImagePerson[]
+  pageViews        PageView[]
 
   @@index([slug])
   @@index([firstName])
@@ -708,6 +710,32 @@ model ImagePerson {
   @@map("image_people")
 }
 
+model PageView {
+  id        Int       @id @default(autoincrement())
+  pageType  PageType  @map("page_type")
+  movieId   Int?      @map("movie_id")
+  personId  Int?      @map("person_id")
+  extraData Json?     @map("extra_data") @db.JsonB
+  sessionId String?   @map("session_id") @db.Uuid
+  ipHash    String?   @map("ip_hash") @db.VarChar(64)
+  userAgent String?   @map("user_agent") @db.VarChar(500)
+  referrer  String?   @db.VarChar(500)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // Relaciones opcionales (ON DELETE SET NULL para no perder stats si se borra película/persona)
+  movie     Movie?    @relation(fields: [movieId], references: [id], onDelete: SetNull)
+  person    Person?   @relation(fields: [personId], references: [id], onDelete: SetNull)
+
+  // Índices optimizados para consultas frecuentes
+  @@index([movieId], map: "idx_page_views_movie_id")
+  @@index([personId], map: "idx_page_views_person_id")
+  @@index([pageType], map: "idx_page_views_page_type")
+  @@index([createdAt], map: "idx_page_views_created_at")
+  @@index([sessionId], map: "idx_page_views_session_id")
+  @@index([pageType, createdAt], map: "idx_page_views_type_date")
+  @@map("page_views")
+}
+
 enum ImageType {
   STILL
   BEHIND_THE_SCENES
@@ -850,6 +878,16 @@ enum MovieStage {
   @@map("movie_stage")
 }
 
+enum PageType {
+  HOME
+  MOVIE
+  PERSON
+  EPHEMERIS
+  PERSON_LIST
+  RELEASES
+  OBITUARIES
+  @@map("page_type")
+}
 ```
 
 ## SQL Generado
@@ -893,6 +931,9 @@ CREATE TYPE "color_category" AS ENUM ('COLOR', 'BLACK_AND_WHITE', 'MIXED', 'UNKN
 
 -- CreateEnum
 CREATE TYPE "movie_stage" AS ENUM ('COMPLETA', 'EN_DESARROLLO', 'EN_POSTPRODUCCION', 'EN_PREPRODUCCION', 'EN_PRODUCCION', 'EN_RODAJE', 'INCONCLUSA', 'INEDITA');
+
+-- CreateEnum
+CREATE TYPE "page_type" AS ENUM ('HOME', 'MOVIE', 'PERSON', 'EPHEMERIS', 'PERSON_LIST', 'RELEASES', 'OBITUARIES');
 
 -- CreateTable
 CREATE TABLE "movies" (
@@ -1449,6 +1490,22 @@ CREATE TABLE "image_people" (
     CONSTRAINT "image_people_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "page_views" (
+    "id" SERIAL NOT NULL,
+    "page_type" "page_type" NOT NULL,
+    "movie_id" INTEGER,
+    "person_id" INTEGER,
+    "extra_data" JSONB,
+    "session_id" UUID,
+    "ip_hash" VARCHAR(64),
+    "user_agent" VARCHAR(500),
+    "referrer" VARCHAR(500),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "page_views_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "movies_slug_key" ON "movies"("slug");
 
@@ -1734,6 +1791,24 @@ CREATE INDEX "image_people_person_id_idx" ON "image_people"("person_id");
 -- CreateIndex
 CREATE UNIQUE INDEX "image_people_image_id_person_id_key" ON "image_people"("image_id", "person_id");
 
+-- CreateIndex
+CREATE INDEX "idx_page_views_movie_id" ON "page_views"("movie_id");
+
+-- CreateIndex
+CREATE INDEX "idx_page_views_person_id" ON "page_views"("person_id");
+
+-- CreateIndex
+CREATE INDEX "idx_page_views_page_type" ON "page_views"("page_type");
+
+-- CreateIndex
+CREATE INDEX "idx_page_views_created_at" ON "page_views"("created_at");
+
+-- CreateIndex
+CREATE INDEX "idx_page_views_session_id" ON "page_views"("session_id");
+
+-- CreateIndex
+CREATE INDEX "idx_page_views_type_date" ON "page_views"("page_type", "created_at");
+
 -- AddForeignKey
 ALTER TABLE "movies" ADD CONSTRAINT "movies_color_type_id_fkey" FOREIGN KEY ("color_type_id") REFERENCES "color_types"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -1865,6 +1940,12 @@ ALTER TABLE "image_people" ADD CONSTRAINT "image_people_image_id_fkey" FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE "image_people" ADD CONSTRAINT "image_people_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "page_views" ADD CONSTRAINT "page_views_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "page_views" ADD CONSTRAINT "page_views_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 
 ```
