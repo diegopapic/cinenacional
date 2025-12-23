@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { formatPartialDate, MONTHS } from '@/lib/shared/dateUtils';
 import DOMPurify from 'isomorphic-dompurify';
+import { trackPageView } from '@/hooks/usePageView';
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -13,15 +14,15 @@ export const runtime = 'nodejs'
 // Función helper para formatear ubicación recursivamente (cualquier profundidad)
 function formatLocationPath(location: any): string {
   if (!location) return '';
-  
+
   const parts: string[] = [];
   let current = location;
-  
+
   while (current) {
     parts.push(current.name);
     current = current.parent;
   }
-  
+
   return parts.join(', ');
 }
 
@@ -81,6 +82,13 @@ export default function PersonPage({ params }: PersonPageProps) {
   const [activeTab, setActiveTab] = useState<string>('');
   const [showAllFilmography, setShowAllFilmography] = useState(false);
 
+  // ✅ Agregar tracking cuando la persona esté cargada
+  useEffect(() => {
+    if (person?.id) {
+      trackPageView({ pageType: 'PERSON', personId: person.id });
+    }
+  }, [person?.id]);
+
   // Función helper para generar URL de efemérides (formato: /efemerides/MM-DD)
   const getEfemeridesUrl = (month: number, day: number): string => {
     const monthStr = month.toString().padStart(2, '0');
@@ -116,17 +124,17 @@ export default function PersonPage({ params }: PersonPageProps) {
   // Función para renderizar ubicación con links (para nacimiento o muerte)
   const renderLocationWithLinks = (location: any, type: 'birth' | 'death') => {
     if (!location) return null;
-    
+
     const parts: { id: number; name: string }[] = [];
     let current = location;
-    
+
     while (current) {
       parts.push({ id: current.id, name: current.name });
       current = current.parent;
     }
-    
+
     const getUrl = type === 'birth' ? getBirthLocationUrl : getDeathLocationUrl;
-    
+
     return (
       <>
         {parts.map((part, index) => (
@@ -580,7 +588,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                         const display = nat.location?.gentilicio || nat.location?.name;
                         const locationId = nat.location?.id || nat.locationId;
                         if (!display) return null;
-                        
+
                         return (
                           <span key={locationId || index}>
                             {index > 0 && ', '}
