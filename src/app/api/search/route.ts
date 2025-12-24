@@ -5,6 +5,26 @@ import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * Obtiene el año a mostrar para una película.
+ * Prioridad: año de producción (year) > año de estreno (releaseYear)
+ * Retorna null si ambos están vacíos o son 0
+ */
+function getDisplayYear(year: number | null, releaseYear: number | null): number | null {
+  // Prioridad 1: año de producción
+  if (year && year > 0) {
+    return year
+  }
+  
+  // Prioridad 2: año de estreno
+  if (releaseYear && releaseYear > 0) {
+    return releaseYear
+  }
+  
+  // Ninguno disponible
+  return null
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
@@ -30,6 +50,7 @@ export async function GET(request: NextRequest) {
           id,
           slug,
           title,
+          year,
           release_year as "releaseYear",
           poster_url as "posterUrl"
         FROM movies
@@ -55,16 +76,14 @@ export async function GET(request: NextRequest) {
           id: true,
           slug: true,
           title: true,
+          year: true,
           releaseYear: true,
           posterUrl: true
         },
         take: limit,
         orderBy: { title: 'asc' }
       })
-      movies = movieResults.map(m => ({
-        ...m,
-        releaseYear: m.releaseYear
-      }))
+      movies = movieResults
     }
 
     // Búsqueda de personas con normalización de acentos
@@ -182,7 +201,8 @@ export async function GET(request: NextRequest) {
       id: movie.id,
       slug: movie.slug,
       title: movie.title,
-      year: movie.releaseYear,
+      // Usar lógica de prioridad: año de producción > año de estreno
+      year: getDisplayYear(movie.year, movie.releaseYear),
       posterUrl: movie.posterUrl,
       type: 'movie' as const
     }))

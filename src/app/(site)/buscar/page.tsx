@@ -14,6 +14,7 @@ interface SearchPageResult {
     id: number
     slug: string
     title: string
+    year?: number
     releaseYear?: number
     releaseMonth?: number
     releaseDay?: number
@@ -43,6 +44,26 @@ interface SearchPageResult {
   }>
   totalMovies: number
   totalPeople: number
+}
+
+/**
+ * Obtiene el año a mostrar para una película.
+ * Prioridad: año de producción (year) > año de estreno (releaseYear)
+ * Retorna null si ambos están vacíos o son 0
+ */
+function getDisplayYear(movie: { year?: number; releaseYear?: number }): number | null {
+  // Prioridad 1: año de producción
+  if (movie.year && movie.year > 0) {
+    return movie.year
+  }
+  
+  // Prioridad 2: año de estreno
+  if (movie.releaseYear && movie.releaseYear > 0) {
+    return movie.releaseYear
+  }
+  
+  // Ninguno disponible
+  return null
 }
 
 export default function SearchPage() {
@@ -88,15 +109,6 @@ export default function SearchPage() {
 
   const getPersonName = (person: any) => {
     return `${person.firstName || ''} ${person.lastName || ''}`.trim()
-  }
-
-  const getReleaseDate = (movie: any) => {
-    if (!movie.releaseYear) return null
-    return formatPartialDate({
-      year: movie.releaseYear,
-      month: movie.releaseMonth,
-      day: movie.releaseDay
-    })
   }
 
   const getBirthDate = (person: any) => {
@@ -215,50 +227,54 @@ export default function SearchPage() {
                 </h2>
               )}
               <div className="grid gap-4">
-                {filteredMovies.map((movie) => (
-                  <Link
-                    key={movie.id}
-                    href={`/pelicula/${movie.slug}`}
-                    className="bg-zinc-900 rounded-lg hover:bg-zinc-800 transition-colors p-4 flex gap-4 group"
-                  >
-                    <div className="flex-shrink-0 w-20 h-28 bg-zinc-800 rounded overflow-hidden">
-                      {movie.posterUrl ? (
-                        <Image
-                          src={movie.posterUrl}
-                          alt={movie.title}
-                          width={80}
-                          height={112}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Film className="w-8 h-8 text-zinc-600" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-zinc-300 transition-colors">
-                        {movie.title}
-                      </h3>
-                      <div className="flex items-center gap-4 text-sm text-zinc-400 mb-2">
-                        {getReleaseDate(movie) && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {getReleaseDate(movie)}
-                          </span>
-                        )}
-                        {getDirectorName(movie) && (
-                          <span>Dir: {getDirectorName(movie)}</span>
+                {filteredMovies.map((movie) => {
+                  const displayYear = getDisplayYear(movie)
+                  
+                  return (
+                    <Link
+                      key={movie.id}
+                      href={`/pelicula/${movie.slug}`}
+                      className="bg-zinc-900 rounded-lg hover:bg-zinc-800 transition-colors p-4 flex gap-4 group"
+                    >
+                      <div className="flex-shrink-0 w-20 h-28 bg-zinc-800 rounded overflow-hidden">
+                        {movie.posterUrl ? (
+                          <Image
+                            src={movie.posterUrl}
+                            alt={movie.title}
+                            width={80}
+                            height={112}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Film className="w-8 h-8 text-zinc-600" />
+                          </div>
                         )}
                       </div>
-                      {movie.synopsis && (
-                        <p className="text-sm text-zinc-400 line-clamp-2">
-                          {movie.synopsis}
-                        </p>
-                      )}
-                    </div>
-                  </Link>
-                ))}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-zinc-300 transition-colors">
+                          {movie.title}
+                        </h3>
+                        <div className="flex items-center gap-4 text-sm text-zinc-400 mb-2">
+                          {displayYear && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {displayYear}
+                            </span>
+                          )}
+                          {getDirectorName(movie) && (
+                            <span>Dir: {getDirectorName(movie)}</span>
+                          )}
+                        </div>
+                        {movie.synopsis && (
+                          <p className="text-sm text-zinc-400 line-clamp-2">
+                            {movie.synopsis}
+                          </p>
+                        )}
+                      </div>
+                    </Link>
+                  )
+                })}
               </div>
             </div>
           )}
