@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 509d19af4110d37c79b381aa27f10c2c9a7fc264
-// Fecha: 2025-12-24T05:07:45.385Z
+// Commit: 701ebc30b821ad2e4d9467edfcd813bdd0a57055
+// Fecha: 2025-12-24T05:31:57.234Z
 // ============================================
 
 
@@ -33416,7 +33416,8 @@ export function MovieSidebar({
   // Formatear tipo de película (color/sonido)
   const formatFilmType = () => {
     const parts = [];
-    if (colorType) {
+    // Solo mostrar colorType si existe y NO es "No disponible" (id: 12)
+    if (colorType && colorType.id !== 12) {
       // Traducir nombres comunes
       const colorName = colorType.name === 'COLOR' ? 'Color' : 
                        colorType.name === 'BLACK_AND_WHITE' ? 'Blanco y Negro' :

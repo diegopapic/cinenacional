@@ -39,7 +39,8 @@ export function MovieSidebar({
   // Formatear tipo de película (color/sonido)
   const formatFilmType = () => {
     const parts = [];
-    if (colorType) {
+    // Solo mostrar colorType si existe y NO es "No disponible" (id: 12)
+    if (colorType && colorType.id !== 12) {
       // Traducir nombres comunes
       const colorName = colorType.name === 'COLOR' ? 'Color' : 
                        colorType.name === 'BLACK_AND_WHITE' ? 'Blanco y Negro' :
