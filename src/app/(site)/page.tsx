@@ -157,25 +157,9 @@ export default function HomePage() {
     fetchEfemerides();
   }, []);
 
-  // Formateador para fechas pasadas (últimos estrenos)
-  const formatearFechaEstreno = (movie: any): string => {
-    if (!movie.releaseYear) return 'Sin fecha';
-
-    const partialDate = {
-      year: movie.releaseYear,
-      month: movie.releaseMonth,
-      day: movie.releaseDay
-    };
-
-    return formatPartialDate(partialDate, {
-      monthFormat: 'short',
-      includeDay: true,
-      fallback: movie.releaseYear.toString()
-    });
-  };
 
   // Formateador para fechas futuras (próximos estrenos)
-  const formatearFechaProxima = (movie: any): string => {
+  const formatearFechaEstreno = (movie: any): string => {
     if (!movie.releaseYear) return 'Fecha por confirmar';
 
     if (!movie.releaseMonth) {
@@ -227,7 +211,7 @@ export default function HomePage() {
             emptyMessage="No hay próximos estrenos confirmados"
             showDate={true}
             dateType="future"
-            dateFormatter={formatearFechaProxima}
+            dateFormatter={formatearFechaEstreno}
             ctaText="Ver más próximos estrenos"
             ctaHref="/listados/estrenos?period=upcoming"
           />
