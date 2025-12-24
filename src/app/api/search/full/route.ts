@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
           id,
           slug,
           title,
+          year,
           release_year as "releaseYear",
           release_month as "releaseMonth",
           release_day as "releaseDay",
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
         WHERE 
           unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
         ORDER BY 
-          release_year DESC NULLS LAST,
+          COALESCE(year, release_year) DESC NULLS LAST,
           title ASC
         LIMIT 50
       `
@@ -107,6 +108,7 @@ export async function GET(request: NextRequest) {
             id: true,
             slug: true,
             title: true,
+            year: true,
             releaseYear: true,
             releaseMonth: true,
             releaseDay: true,
@@ -114,6 +116,7 @@ export async function GET(request: NextRequest) {
             synopsis: true
           },
           orderBy: [
+            { year: 'desc' },
             { releaseYear: 'desc' },
             { title: 'asc' }
           ],
