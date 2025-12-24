@@ -137,10 +137,10 @@ export function MoviePageClient({
         '/images/placeholder.jpg'
     ];
 
-    // Cargar imágenes al montar el componente
-    useEffect(() => {
-        loadMovieImages(movie.slug);
-    }, [movie.slug]);
+    // Cargar imágenes al montar el componente - COMENTADO TEMPORALMENTE
+    // useEffect(() => {
+    //     loadMovieImages(movie.slug);
+    // }, [movie.slug]);
 
     // Mostrar anuncio entre cast y crew solo si hay contenido suficiente
     const showCastCrewAd = mainCast.length > 3 || fullCast.length > 5;
