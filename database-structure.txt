@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-12-24T02:14:51.775Z
+# Generado automáticamente el: 2025-12-24T03:47:22.171Z
 # ================================================
 
 ## Schema Prisma
@@ -71,6 +71,7 @@ model Movie {
   watchedBy             UserWatched[]
   watchlists            UserWatchlist[]
   pageViews             PageView[]
+  stats                 MovieStats?
 
   @@index([slug])
   @@index([title])
@@ -252,6 +253,23 @@ model PersonNationality {
 
   @@id([personId, locationId])
   @@map("person_nationalities")
+}
+
+model MovieStats {
+  movieId     Int      @id @map("movie_id")
+  viewsWeek   Int      @default(0) @map("views_week")
+  viewsMonth  Int      @default(0) @map("views_month")
+  viewsYear   Int      @default(0) @map("views_year")
+  viewsTotal  Int      @default(0) @map("views_total")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  movie       Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@index([viewsWeek(sort: Desc)], map: "idx_movie_stats_week")
+  @@index([viewsMonth(sort: Desc)], map: "idx_movie_stats_month")
+  @@index([viewsYear(sort: Desc)], map: "idx_movie_stats_year")
+  @@index([viewsTotal(sort: Desc)], map: "idx_movie_stats_total")
+  @@map("movie_stats")
 }
 
 model PersonLink {
@@ -1104,6 +1122,18 @@ CREATE TABLE "person_nationalities" (
 );
 
 -- CreateTable
+CREATE TABLE "movie_stats" (
+    "movie_id" INTEGER NOT NULL,
+    "views_week" INTEGER NOT NULL DEFAULT 0,
+    "views_month" INTEGER NOT NULL DEFAULT 0,
+    "views_year" INTEGER NOT NULL DEFAULT 0,
+    "views_total" INTEGER NOT NULL DEFAULT 0,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "movie_stats_pkey" PRIMARY KEY ("movie_id")
+);
+
+-- CreateTable
 CREATE TABLE "person_links" (
     "id" SERIAL NOT NULL,
     "person_id" INTEGER NOT NULL,
@@ -1639,6 +1669,18 @@ CREATE INDEX "people_created_at_idx" ON "people"("created_at");
 CREATE INDEX "idx_person_alternative_names_last_name" ON "person_alternative_names"("last_name");
 
 -- CreateIndex
+CREATE INDEX "idx_movie_stats_week" ON "movie_stats"("views_week" DESC);
+
+-- CreateIndex
+CREATE INDEX "idx_movie_stats_month" ON "movie_stats"("views_month" DESC);
+
+-- CreateIndex
+CREATE INDEX "idx_movie_stats_year" ON "movie_stats"("views_year" DESC);
+
+-- CreateIndex
+CREATE INDEX "idx_movie_stats_total" ON "movie_stats"("views_total" DESC);
+
+-- CreateIndex
 CREATE INDEX "person_links_person_id_idx" ON "person_links"("person_id");
 
 -- CreateIndex
@@ -1844,6 +1886,9 @@ ALTER TABLE "person_nationalities" ADD CONSTRAINT "person_nationalities_location
 
 -- AddForeignKey
 ALTER TABLE "person_nationalities" ADD CONSTRAINT "person_nationalities_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "movie_stats" ADD CONSTRAINT "movie_stats_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "person_links" ADD CONSTRAINT "person_links_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;

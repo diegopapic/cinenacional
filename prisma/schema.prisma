@@ -64,6 +64,7 @@ model Movie {
   watchedBy             UserWatched[]
   watchlists            UserWatchlist[]
   pageViews             PageView[]
+  stats                 MovieStats?
 
   @@index([slug])
   @@index([title])
@@ -245,6 +246,23 @@ model PersonNationality {
 
   @@id([personId, locationId])
   @@map("person_nationalities")
+}
+
+model MovieStats {
+  movieId     Int      @id @map("movie_id")
+  viewsWeek   Int      @default(0) @map("views_week")
+  viewsMonth  Int      @default(0) @map("views_month")
+  viewsYear   Int      @default(0) @map("views_year")
+  viewsTotal  Int      @default(0) @map("views_total")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  movie       Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@index([viewsWeek(sort: Desc)], map: "idx_movie_stats_week")
+  @@index([viewsMonth(sort: Desc)], map: "idx_movie_stats_month")
+  @@index([viewsYear(sort: Desc)], map: "idx_movie_stats_year")
+  @@index([viewsTotal(sort: Desc)], map: "idx_movie_stats_total")
+  @@map("movie_stats")
 }
 
 model PersonLink {

@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   Tag,
-  Hash
+  Hash,
+  BarChart3
 } from 'lucide-react'
 import { ReactNode, useState } from 'react'
 
@@ -29,6 +30,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: Home },
+    { name: 'Estadísticas', href: '/admin/stats', icon: BarChart3 },
     { name: 'Películas', href: '/admin/movies', icon: Film },
     { name: 'Personas', href: '/admin/people', icon: Users },
     { name: 'Géneros', href: '/admin/genres', icon: Hash },

@@ -6,6 +6,11 @@ export default function AdminDashboard() {
       <h1 className="text-3xl font-bold mb-6">Panel de Administración</h1>
       
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <a href="/admin/stats" className="p-6 bg-white rounded-lg shadow hover:shadow-lg">
+          <h2 className="text-xl font-semibold">Estadísticas</h2>
+          <p className="text-gray-600">Ver visitas y popularidad</p>
+        </a>
+        
         <a href="/admin/movies" className="p-6 bg-white rounded-lg shadow hover:shadow-lg">
           <h2 className="text-xl font-semibold">Películas</h2>
           <p className="text-gray-600">Gestionar películas</p>
