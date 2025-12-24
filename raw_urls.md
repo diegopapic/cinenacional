@@ -47,6 +47,7 @@
 - [scripts/check-taxonomy-confusion.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-taxonomy-confusion.js)
 - [scripts/check-wp-movie-crew.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/check-wp-movie-crew.js)
 - [scripts/clean-duplicate-movies.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/clean-duplicate-movies.js)
+- [scripts/clean-html-tags.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/clean-html-tags.js)
 - [scripts/compare-performance.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/compare-performance.js)
 - [scripts/compile-project-code.js](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/compile-project-code.js)
 - [scripts/create-admin.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/create-admin.ts)

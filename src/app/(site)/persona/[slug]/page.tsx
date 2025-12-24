@@ -607,7 +607,7 @@ export default function PersonPage({ params }: PersonPageProps) {
 
                 {person.biography && (
                   <div
-                    className="mt-6 text-gray-300 leading-relaxed max-w-3xl"
+                    className="mt-6 text-gray-300 leading-relaxed max-w-3xl serif-body"
                     dangerouslySetInnerHTML={{
                       __html: DOMPurify.sanitize(person.biography, {
                         ALLOWED_TAGS: ['p', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'b', 'i', 'span'],
