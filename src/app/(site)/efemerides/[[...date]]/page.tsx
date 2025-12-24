@@ -6,7 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Calendar, Sparkles } from 'lucide-react';
-import { Efemeride } from '@/types/home.types';
+import { Efemeride, DirectorInfo } from '@/types/home.types';
 
 const MONTHS = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -127,6 +127,91 @@ export default function EfemeridesPage() {
 
   const hasEvents = efemerides.length > 0;
 
+  /**
+   * Renderiza los links de directores
+   * Si hay múltiples directores, los separa con comas y "y"
+   */
+  const renderDirectorLinks = (efemeride: Efemeride) => {
+    // Usar el array de directors si está disponible
+    const directors = efemeride.directors;
+    
+    if (!directors || directors.length === 0) {
+      // Fallback al campo director/directorSlug único (compatibilidad)
+      if (efemeride.director && efemeride.directorSlug) {
+        return (
+          <Link 
+            href={`/persona/${efemeride.directorSlug}`}
+            className="text-gray-400 text-sm hover:text-gray-300 transition-colors"
+          >
+            de {efemeride.director}
+          </Link>
+        );
+      }
+      return null;
+    }
+
+    // Renderizar múltiples directores
+    if (directors.length === 1) {
+      return (
+        <span className="text-gray-400 text-sm">
+          de{' '}
+          <Link 
+            href={`/persona/${directors[0].slug}`}
+            className="hover:text-gray-300 transition-colors"
+          >
+            {directors[0].name}
+          </Link>
+        </span>
+      );
+    }
+
+    if (directors.length === 2) {
+      return (
+        <span className="text-gray-400 text-sm">
+          de{' '}
+          <Link 
+            href={`/persona/${directors[0].slug}`}
+            className="hover:text-gray-300 transition-colors"
+          >
+            {directors[0].name}
+          </Link>
+          {' y '}
+          <Link 
+            href={`/persona/${directors[1].slug}`}
+            className="hover:text-gray-300 transition-colors"
+          >
+            {directors[1].name}
+          </Link>
+        </span>
+      );
+    }
+
+    // 3 o más directores: "A, B y C"
+    return (
+      <span className="text-gray-400 text-sm">
+        de{' '}
+        {directors.slice(0, -1).map((director, index) => (
+          <span key={director.slug}>
+            <Link 
+              href={`/persona/${director.slug}`}
+              className="hover:text-gray-300 transition-colors"
+            >
+              {director.name}
+            </Link>
+            {index < directors.length - 2 ? ', ' : ' '}
+          </span>
+        ))}
+        {'y '}
+        <Link 
+          href={`/persona/${directors[directors.length - 1].slug}`}
+          className="hover:text-gray-300 transition-colors"
+        >
+          {directors[directors.length - 1].name}
+        </Link>
+      </span>
+    );
+  };
+
   const renderEfemeridesCard = (efemeride: Efemeride) => {
     const isPelicula = efemeride.tipo === 'pelicula';
     const imageUrl = isPelicula ? efemeride.posterUrl : efemeride.photoUrl;
@@ -184,15 +269,8 @@ export default function EfemeridesPage() {
             </h3>
           </Link>
 
-          {/* Director (solo para películas) */}
-          {isPelicula && efemeride.director && efemeride.directorSlug && (
-            <Link 
-              href={`/personas/${efemeride.directorSlug}`}
-              className="text-gray-400 text-sm hover:text-gray-300 transition-colors"
-            >
-              de {efemeride.director}
-            </Link>
-          )}
+          {/* Director(es) - solo para películas */}
+          {isPelicula && renderDirectorLinks(efemeride)}
         </div>
       </div>
     );

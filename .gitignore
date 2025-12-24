@@ -45,4 +45,11 @@ pgsql/
 
 # Directorio uploads de Wordpress
 
-/uploads
+/uploads"admin-code.txt" 
+"compiled-code.txt" 
+"database-structure.txt" 
+"project-structure.json" 
+admin-code.txt
+compiled-code.txt
+database-structure.txt
+project-structure.json

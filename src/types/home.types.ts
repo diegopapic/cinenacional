@@ -52,6 +52,12 @@ export interface Obituario {
   };
 }
 
+// Interfaz para un director individual
+export interface DirectorInfo {
+  name: string;
+  slug: string;
+}
+
 export interface Efemeride {
   id: string; // Único para cada efeméride
   tipo: 'pelicula' | 'persona';
@@ -62,8 +68,9 @@ export interface Efemeride {
   posterUrl?: string; // Para películas
   photoUrl?: string; // Para personas
   titulo?: string; // Título de película o nombre de persona
-  director?: string; // Nombre del director para películas
-  directorSlug?: string;
+  director?: string; // Nombre del director (o directores concatenados) - mantiene compatibilidad
+  directorSlug?: string; // Slug del primer director - mantiene compatibilidad
+  directors?: DirectorInfo[]; // Array de todos los directores con nombre y slug
   tipoEvento?: 'estreno' | 'inicio_rodaje' | 'fin_rodaje' | 'nacimiento' | 'muerte';
 }
 

@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: c91d725f8d82ea9d994768106f7727c93f25cc32
-// Fecha: 2025-12-24T04:07:58.880Z
+// Commit: 509d19af4110d37c79b381aa27f10c2c9a7fc264
+// Fecha: 2025-12-24T05:07:45.385Z
 // ============================================
 
 
@@ -472,7 +472,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Calendar, Sparkles } from 'lucide-react';
-import { Efemeride } from '@/types/home.types';
+import { Efemeride, DirectorInfo } from '@/types/home.types';
 
 const MONTHS = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -593,6 +593,91 @@ export default function EfemeridesPage() {
 
   const hasEvents = efemerides.length > 0;
 
+  /**
+   * Renderiza los links de directores
+   * Si hay múltiples directores, los separa con comas y "y"
+   */
+  const renderDirectorLinks = (efemeride: Efemeride) => {
+    // Usar el array de directors si está disponible
+    const directors = efemeride.directors;
+    
+    if (!directors || directors.length === 0) {
+      // Fallback al campo director/directorSlug único (compatibilidad)
+      if (efemeride.director && efemeride.directorSlug) {
+        return (
+          <Link 
+            href={`/persona/${efemeride.directorSlug}`}
+            className="text-gray-400 text-sm hover:text-gray-300 transition-colors"
+          >
+            de {efemeride.director}
+          </Link>
+        );
+      }
+      return null;
+    }
+
+    // Renderizar múltiples directores
+    if (directors.length === 1) {
+      return (
+        <span className="text-gray-400 text-sm">
+          de{' '}
+          <Link 
+            href={`/persona/${directors[0].slug}`}
+            className="hover:text-gray-300 transition-colors"
+          >
+            {directors[0].name}
+          </Link>
+        </span>
+      );
+    }
+
+    if (directors.length === 2) {
+      return (
+        <span className="text-gray-400 text-sm">
+          de{' '}
+          <Link 
+            href={`/persona/${directors[0].slug}`}
+            className="hover:text-gray-300 transition-colors"
+          >
+            {directors[0].name}
+          </Link>
+          {' y '}
+          <Link 
+            href={`/persona/${directors[1].slug}`}
+            className="hover:text-gray-300 transition-colors"
+          >
+            {directors[1].name}
+          </Link>
+        </span>
+      );
+    }
+
+    // 3 o más directores: "A, B y C"
+    return (
+      <span className="text-gray-400 text-sm">
+        de{' '}
+        {directors.slice(0, -1).map((director, index) => (
+          <span key={director.slug}>
+            <Link 
+              href={`/persona/${director.slug}`}
+              className="hover:text-gray-300 transition-colors"
+            >
+              {director.name}
+            </Link>
+            {index < directors.length - 2 ? ', ' : ' '}
+          </span>
+        ))}
+        {'y '}
+        <Link 
+          href={`/persona/${directors[directors.length - 1].slug}`}
+          className="hover:text-gray-300 transition-colors"
+        >
+          {directors[directors.length - 1].name}
+        </Link>
+      </span>
+    );
+  };
+
   const renderEfemeridesCard = (efemeride: Efemeride) => {
     const isPelicula = efemeride.tipo === 'pelicula';
     const imageUrl = isPelicula ? efemeride.posterUrl : efemeride.photoUrl;
@@ -650,15 +735,8 @@ export default function EfemeridesPage() {
             </h3>
           </Link>
 
-          {/* Director (solo para películas) */}
-          {isPelicula && efemeride.director && efemeride.directorSlug && (
-            <Link 
-              href={`/personas/${efemeride.directorSlug}`}
-              className="text-gray-400 text-sm hover:text-gray-300 transition-colors"
-            >
-              de {efemeride.director}
-            </Link>
-          )}
+          {/* Director(es) - solo para películas */}
+          {isPelicula && renderDirectorLinks(efemeride)}
         </div>
       </div>
     );
@@ -3257,10 +3335,10 @@ export function MoviePageClient({
         '/images/placeholder.jpg'
     ];
 
-    // Cargar imágenes al montar el componente
-    useEffect(() => {
-        loadMovieImages(movie.slug);
-    }, [movie.slug]);
+    // Cargar imágenes al montar el componente - COMENTADO TEMPORALMENTE
+    // useEffect(() => {
+    //     loadMovieImages(movie.slug);
+    // }, [movie.slug]);
 
     // Mostrar anuncio entre cast y crew solo si hay contenido suficiente
     const showCastCrewAd = mainCast.length > 3 || fullCast.length > 5;
@@ -9730,12 +9808,12 @@ export async function POST(request: NextRequest) {
 // ==================================================
 // src/app/api/efemerides/route.ts
 // ==================================================
-// src/app/api/efemerides/route.ts - MEJORADO CON PARÁMETROS Y CACHÉ
+// src/app/api/efemerides/route.ts - ACTUALIZADO CON SOPORTE PARA MÚLTIPLES DIRECTORES
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { calcularAniosDesde, formatearEfemeride } from '@/lib/utils/efemerides';
-import { Efemeride } from '@/types/home.types';
+import { Efemeride, DirectorInfo } from '@/types/home.types';
 import RedisClient from '@/lib/redis';
 
 export const dynamic = 'force-dynamic';
@@ -9750,7 +9828,17 @@ const REDIS_TTL = 86400; // 24 horas
 
 function generateCacheKey(dia: number, mes: number, randomSample?: boolean): string {
   const suffix = randomSample ? ':random' : ':all';
-  return `efemerides:${mes}-${dia}${suffix}:v2`;
+  return `efemerides:${mes}-${dia}${suffix}:v3`; // v3 por el cambio de directores
+}
+
+/**
+ * Procesa el array de crew y extrae los directores como DirectorInfo[]
+ */
+function extractDirectors(crew: Array<{ person: { slug: string; firstName: string | null; lastName: string | null } }>): DirectorInfo[] {
+  return crew.map(c => ({
+    name: `${c.person.firstName || ''} ${c.person.lastName || ''}`.trim(),
+    slug: c.person.slug
+  })).filter(d => d.name); // Filtrar directores sin nombre
 }
 
 // ============================================
@@ -9861,8 +9949,8 @@ export async function GET(request: NextRequest) {
                 lastName: true
               }
             }
-          },
-          take: 1
+          }
+          // SIN take: 1 - obtener TODOS los directores
         }
       }
     });
@@ -9894,8 +9982,8 @@ export async function GET(request: NextRequest) {
                 lastName: true
               }
             }
-          },
-          take: 1
+          }
+          // SIN take: 1 - obtener TODOS los directores
         }
       }
     });
@@ -9927,8 +10015,8 @@ export async function GET(request: NextRequest) {
                 lastName: true
               }
             }
-          },
-          take: 1
+          }
+          // SIN take: 1 - obtener TODOS los directores
         }
       }
     });
@@ -9978,11 +10066,7 @@ export async function GET(request: NextRequest) {
     
     // Procesar estrenos
     peliculasEstreno.forEach(pelicula => {
-      const director = pelicula.crew[0]?.person;
-      const directorName = director 
-        ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
-        : null;
-      const directorSlug = director?.slug;
+      const directors = extractDirectors(pelicula.crew);
       const efemeride = formatearEfemeride({
         tipo: 'pelicula',
         tipoEvento: 'estreno',
@@ -9991,8 +10075,8 @@ export async function GET(request: NextRequest) {
         dia: pelicula.releaseDay!,
         fecha: new Date(pelicula.releaseYear!, pelicula.releaseMonth! - 1, pelicula.releaseDay!),
         titulo: pelicula.title,
-        director: directorName || undefined,
-        directorSlug: directorSlug || undefined,
+        directors: directors,
+        directorSlug: directors[0]?.slug,
         slug: pelicula.slug,
         posterUrl: pelicula.posterUrl || undefined
       });
@@ -10001,11 +10085,7 @@ export async function GET(request: NextRequest) {
     
     // Procesar inicio de rodajes
     peliculasInicioRodaje.forEach(pelicula => {
-      const director = pelicula.crew[0]?.person;
-      const directorName = director 
-        ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
-        : null;
-      const directorSlug = director?.slug;
+      const directors = extractDirectors(pelicula.crew);
       const efemeride = formatearEfemeride({
         tipo: 'pelicula',
         tipoEvento: 'inicio_rodaje',
@@ -10014,8 +10094,8 @@ export async function GET(request: NextRequest) {
         dia: pelicula.filmingStartDay!,
         fecha: new Date(pelicula.filmingStartYear!, pelicula.filmingStartMonth! - 1, pelicula.filmingStartDay!),
         titulo: pelicula.title,
-        director: directorName || undefined,
-        directorSlug: directorSlug || undefined, 
+        directors: directors,
+        directorSlug: directors[0]?.slug,
         slug: pelicula.slug,
         posterUrl: pelicula.posterUrl || undefined
       });
@@ -10024,11 +10104,7 @@ export async function GET(request: NextRequest) {
     
     // Procesar fin de rodajes
     peliculasFinRodaje.forEach(pelicula => {
-      const director = pelicula.crew[0]?.person;
-      const directorName = director 
-        ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
-        : null;
-      const directorSlug = director?.slug;
+      const directors = extractDirectors(pelicula.crew);
       const efemeride = formatearEfemeride({
         tipo: 'pelicula',
         tipoEvento: 'fin_rodaje',
@@ -10037,8 +10113,8 @@ export async function GET(request: NextRequest) {
         dia: pelicula.filmingEndDay!,
         fecha: new Date(pelicula.filmingEndYear!, pelicula.filmingEndMonth! - 1, pelicula.filmingEndDay!),
         titulo: pelicula.title,
-        director: directorName || undefined,
-        directorSlug: directorSlug || undefined,
+        directors: directors,
+        directorSlug: directors[0]?.slug,
         slug: pelicula.slug,
         posterUrl: pelicula.posterUrl || undefined
       });
@@ -10118,21 +10194,26 @@ export async function GET(request: NextRequest) {
             select: {
               person: {
                 select: {
+                  slug: true,
                   firstName: true,
                   lastName: true
                 }
               }
-            },
-            take: 1
+            }
+            // SIN take: 1
           }
         },
         take: 5
       });
       
       const efemeridesEjemplo = peliculasEjemplo.slice(0, 2).map(pelicula => {
-        const director = pelicula.crew[0]?.person;
-        const directorName = director 
-          ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
+        const directors = extractDirectors(pelicula.crew);
+        const directorText = directors.length > 0
+          ? directors.length === 1
+            ? directors[0].name
+            : directors.length === 2
+              ? `${directors[0].name} y ${directors[1].name}`
+              : `${directors.slice(0, -1).map(d => d.name).join(', ')} y ${directors[directors.length - 1].name}`
           : null;
         
         const añosDesde = new Date().getFullYear() - pelicula.releaseYear!;
@@ -10141,10 +10222,13 @@ export async function GET(request: NextRequest) {
           id: `ejemplo-${pelicula.id}`,
           tipo: 'pelicula' as const,
           hace: `Hace ${añosDesde} ${añosDesde === 1 ? 'año' : 'años'}`,
-          evento: `se estrenaba "${pelicula.title}"${directorName ? `, de ${directorName}` : ''}`,
+          evento: `se estrenaba "${pelicula.title}"${directorText ? `, de ${directorText}` : ''}`,
           fecha: new Date(pelicula.releaseYear!, pelicula.releaseMonth! - 1, pelicula.releaseDay!),
           slug: pelicula.slug,
-          posterUrl: pelicula.posterUrl || undefined
+          posterUrl: pelicula.posterUrl || undefined,
+          directors: directors,
+          director: directorText || undefined,
+          directorSlug: directors[0]?.slug
         };
       });
       
@@ -30129,14 +30213,102 @@ export default function HomeMiddleBanner() {
 // ==================================================
 import Link from 'next/link';
 import Image from 'next/image';
-import { Efemeride } from '@/types/home.types';
+import { Efemeride, DirectorInfo } from '@/types/home.types';
 
 interface EfemeridesSectionProps {
   efemerides: Efemeride[];
 }
 
+/**
+ * Renderiza los links de directores
+ * Si hay múltiples directores, los separa con comas y "y"
+ */
+function renderDirectorLinks(item: Efemeride) {
+  const directors = item.directors;
+  
+  // Si hay array de directores, usarlo
+  if (directors && directors.length > 0) {
+    if (directors.length === 1) {
+      return (
+        <Link 
+          href={`/persona/${directors[0].slug}`}
+          className="text-white hover:text-cine-accent transition-colors"
+        >
+          {directors[0].name}
+        </Link>
+      );
+    }
+
+    if (directors.length === 2) {
+      return (
+        <>
+          <Link 
+            href={`/persona/${directors[0].slug}`}
+            className="text-white hover:text-cine-accent transition-colors"
+          >
+            {directors[0].name}
+          </Link>
+          {' y '}
+          <Link 
+            href={`/persona/${directors[1].slug}`}
+            className="text-white hover:text-cine-accent transition-colors"
+          >
+            {directors[1].name}
+          </Link>
+        </>
+      );
+    }
+
+    // 3 o más directores: "A, B y C"
+    return (
+      <>
+        {directors.slice(0, -1).map((director, index) => (
+          <span key={director.slug}>
+            <Link 
+              href={`/persona/${director.slug}`}
+              className="text-white hover:text-cine-accent transition-colors"
+            >
+              {director.name}
+            </Link>
+            {index < directors.length - 2 ? ', ' : ' '}
+          </span>
+        ))}
+        {'y '}
+        <Link 
+          href={`/persona/${directors[directors.length - 1].slug}`}
+          className="text-white hover:text-cine-accent transition-colors"
+        >
+          {directors[directors.length - 1].name}
+        </Link>
+      </>
+    );
+  }
+  
+  // Fallback al campo director/directorSlug único (compatibilidad)
+  if (item.director && item.directorSlug) {
+    return (
+      <Link 
+        href={`/persona/${item.directorSlug}`}
+        className="text-white hover:text-cine-accent transition-colors"
+      >
+        {item.director}
+      </Link>
+    );
+  }
+  
+  // Si solo hay nombre pero no slug
+  if (item.director) {
+    return <span>{item.director}</span>;
+  }
+  
+  return null;
+}
+
 export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps) {
   const renderEvento = (item: Efemeride) => {
+    const directorLinks = renderDirectorLinks(item);
+    const hasDirector = item.directors?.length || item.director;
+    
     if (item.tipo === 'pelicula') {
       switch (item.tipoEvento) {
         case 'estreno':
@@ -30153,19 +30325,9 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               ) : (
                 <span>{item.titulo}</span>
               )}
-              {item.director && (
+              {hasDirector && (
                 <>
-                  , de{' '}
-                  {item.directorSlug ? (
-                    <Link 
-                      href={`/persona/${item.directorSlug}`}
-                      className="text-white hover:text-cine-accent transition-colors"
-                    >
-                      {item.director}
-                    </Link>
-                  ) : (
-                    <span>{item.director}</span>
-                  )}
+                  , de {directorLinks}
                 </>
               )}
             </>
@@ -30184,19 +30346,9 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               ) : (
                 <span>{item.titulo}</span>
               )}
-              {item.director && (
+              {hasDirector && (
                 <>
-                  , de{' '}
-                  {item.directorSlug ? (
-                    <Link 
-                      href={`/persona/${item.directorSlug}`}
-                      className="text-white hover:text-cine-accent transition-colors"
-                    >
-                      {item.director}
-                    </Link>
-                  ) : (
-                    <span>{item.director}</span>
-                  )}
+                  , de {directorLinks}
                 </>
               )}
             </>
@@ -30215,19 +30367,9 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               ) : (
                 <span>{item.titulo}</span>
               )}
-              {item.director && (
+              {hasDirector && (
                 <>
-                  , de{' '}
-                  {item.directorSlug ? (
-                    <Link 
-                      href={`/persona/${item.directorSlug}`}
-                      className="text-white hover:text-cine-accent transition-colors"
-                    >
-                      {item.director}
-                    </Link>
-                  ) : (
-                    <span>{item.director}</span>
-                  )}
+                  , de {directorLinks}
                 </>
               )}
             </>
@@ -33205,25 +33347,27 @@ export function MoviePoster({ imageUrl, title }: MoviePosterProps) {
   const showPlaceholder = !imageUrl || imageError;
   
   return (
-    <div className="aspect-[2/3] rounded-lg overflow-hidden poster-shadow relative">
-      <img 
-        src={imageUrl || POSTER_PLACEHOLDER.cloudinaryUrl} 
-        alt={`Poster de ${title}`}
-        className="w-full h-full object-cover"
-        style={{
-          filter: showPlaceholder ? 'brightness(0.4)' : 'none'
-        }}
-        onError={() => setImageError(true)}
-      />
-      
-      {/* Texto elegante sobre el placeholder */}
-      {showPlaceholder && (
-        <div className="absolute bottom-4 right-4">
-          <p className="text-gray-400/60 text-xs font-light tracking-wide">
-            Afiche no disponible
-          </p>
-        </div>
-      )}
+    <div className="flex justify-center">
+      <div className="relative inline-block">
+        <img 
+          src={imageUrl || POSTER_PLACEHOLDER.cloudinaryUrl} 
+          alt={`Poster de ${title}`}
+          className="h-[500px] w-auto rounded-lg poster-shadow"
+          style={{
+            filter: showPlaceholder ? 'brightness(0.4)' : 'none'
+          }}
+          onError={() => setImageError(true)}
+        />
+        
+        {/* Texto elegante sobre el placeholder */}
+        {showPlaceholder && (
+          <div className="absolute bottom-4 right-4">
+            <p className="text-gray-400/60 text-xs font-light tracking-wide">
+              Afiche no disponible
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -39331,9 +39475,9 @@ export function isEmptyDate(partial: PartialDate): boolean {
 // ==================================================
 // src/lib/utils/efemerides.ts
 // ==================================================
-// src/lib/utils/efemerides.ts - CORREGIDO
+// src/lib/utils/efemerides.ts - ACTUALIZADO CON SOPORTE PARA MÚLTIPLES DIRECTORES
 
-import { Efemeride } from '@/types/home.types';
+import { Efemeride, DirectorInfo } from '@/types/home.types';
 
 export interface EfemerideData {
   tipo: 'pelicula' | 'persona';
@@ -39347,8 +39491,9 @@ export interface EfemerideData {
   slug?: string;
   posterUrl?: string;
   photoUrl?: string;
-  director?: string;
-  directorSlug?: string;
+  director?: string; // Mantiene compatibilidad - nombre concatenado
+  directorSlug?: string; // Mantiene compatibilidad - slug del primero
+  directors?: DirectorInfo[]; // Nuevo: array de directores
 }
 
 export function calcularAniosDesde(año: number, mes: number, dia: number): number | null {
@@ -39362,24 +39507,50 @@ export function calcularAniosDesde(año: number, mes: number, dia: number): numb
   return añosTranscurridos;
 }
 
+/**
+ * Formatea los nombres de directores para mostrar en texto
+ * Ej: "Fabián Bielinsky" o "Juan Pérez y María García" o "A, B y C"
+ */
+function formatDirectorNames(directors: DirectorInfo[]): string {
+  if (!directors || directors.length === 0) return '';
+  
+  if (directors.length === 1) {
+    return directors[0].name;
+  }
+  
+  if (directors.length === 2) {
+    return `${directors[0].name} y ${directors[1].name}`;
+  }
+  
+  // 3 o más: "A, B y C"
+  const allButLast = directors.slice(0, -1).map(d => d.name).join(', ');
+  const last = directors[directors.length - 1].name;
+  return `${allButLast} y ${last}`;
+}
+
 export function formatearEfemeride(data: EfemerideData): Efemeride | null {
   const añosDesde = calcularAniosDesde(data.año, data.mes, data.dia);
   
   // ✅ CORRECCIÓN: <= 0 para excluir año actual
   if (añosDesde === null || añosDesde <= 0) return null;
   
+  // Determinar el texto de directores
+  const directorText = data.directors && data.directors.length > 0
+    ? formatDirectorNames(data.directors)
+    : data.director || '';
+  
   let evento = '';
   
   if (data.tipo === 'pelicula') {
     switch (data.tipoEvento) {
       case 'estreno':
-        evento = `se estrenaba "${data.titulo}"${data.director ? `, de ${data.director}` : ''}`;
+        evento = `se estrenaba "${data.titulo}"${directorText ? `, de ${directorText}` : ''}`;
         break;
       case 'inicio_rodaje':
-        evento = `empezaba el rodaje de "${data.titulo}"${data.director ? `, de ${data.director}` : ''}`;
+        evento = `empezaba el rodaje de "${data.titulo}"${directorText ? `, de ${directorText}` : ''}`;
         break;
       case 'fin_rodaje':
-        evento = `terminaba el rodaje de "${data.titulo}"${data.director ? `, de ${data.director}` : ''}`;
+        evento = `terminaba el rodaje de "${data.titulo}"${directorText ? `, de ${directorText}` : ''}`;
         break;
     }
   } else if (data.tipo === 'persona') {
@@ -39403,8 +39574,9 @@ export function formatearEfemeride(data: EfemerideData): Efemeride | null {
     posterUrl: data.posterUrl,
     photoUrl: data.photoUrl,
     titulo: data.tipo === 'pelicula' ? data.titulo : data.nombre,
-    director: data.director,
-    directorSlug: data.directorSlug,
+    director: directorText, // Texto concatenado para compatibilidad
+    directorSlug: data.directorSlug || (data.directors?.[0]?.slug), // Slug del primero
+    directors: data.directors, // Array completo
     tipoEvento: data.tipoEvento
   };
 }
@@ -41268,6 +41440,12 @@ export interface Obituario {
   };
 }
 
+// Interfaz para un director individual
+export interface DirectorInfo {
+  name: string;
+  slug: string;
+}
+
 export interface Efemeride {
   id: string; // Único para cada efeméride
   tipo: 'pelicula' | 'persona';
@@ -41278,8 +41456,9 @@ export interface Efemeride {
   posterUrl?: string; // Para películas
   photoUrl?: string; // Para personas
   titulo?: string; // Título de película o nombre de persona
-  director?: string; // Nombre del director para películas
-  directorSlug?: string;
+  director?: string; // Nombre del director (o directores concatenados) - mantiene compatibilidad
+  directorSlug?: string; // Slug del primer director - mantiene compatibilidad
+  directors?: DirectorInfo[]; // Array de todos los directores con nombre y slug
   tipoEvento?: 'estreno' | 'inicio_rodaje' | 'fin_rodaje' | 'nacimiento' | 'muerte';
 }
 

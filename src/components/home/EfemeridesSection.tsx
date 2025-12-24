@@ -1,13 +1,101 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Efemeride } from '@/types/home.types';
+import { Efemeride, DirectorInfo } from '@/types/home.types';
 
 interface EfemeridesSectionProps {
   efemerides: Efemeride[];
 }
 
+/**
+ * Renderiza los links de directores
+ * Si hay múltiples directores, los separa con comas y "y"
+ */
+function renderDirectorLinks(item: Efemeride) {
+  const directors = item.directors;
+  
+  // Si hay array de directores, usarlo
+  if (directors && directors.length > 0) {
+    if (directors.length === 1) {
+      return (
+        <Link 
+          href={`/persona/${directors[0].slug}`}
+          className="text-white hover:text-cine-accent transition-colors"
+        >
+          {directors[0].name}
+        </Link>
+      );
+    }
+
+    if (directors.length === 2) {
+      return (
+        <>
+          <Link 
+            href={`/persona/${directors[0].slug}`}
+            className="text-white hover:text-cine-accent transition-colors"
+          >
+            {directors[0].name}
+          </Link>
+          {' y '}
+          <Link 
+            href={`/persona/${directors[1].slug}`}
+            className="text-white hover:text-cine-accent transition-colors"
+          >
+            {directors[1].name}
+          </Link>
+        </>
+      );
+    }
+
+    // 3 o más directores: "A, B y C"
+    return (
+      <>
+        {directors.slice(0, -1).map((director, index) => (
+          <span key={director.slug}>
+            <Link 
+              href={`/persona/${director.slug}`}
+              className="text-white hover:text-cine-accent transition-colors"
+            >
+              {director.name}
+            </Link>
+            {index < directors.length - 2 ? ', ' : ' '}
+          </span>
+        ))}
+        {'y '}
+        <Link 
+          href={`/persona/${directors[directors.length - 1].slug}`}
+          className="text-white hover:text-cine-accent transition-colors"
+        >
+          {directors[directors.length - 1].name}
+        </Link>
+      </>
+    );
+  }
+  
+  // Fallback al campo director/directorSlug único (compatibilidad)
+  if (item.director && item.directorSlug) {
+    return (
+      <Link 
+        href={`/persona/${item.directorSlug}`}
+        className="text-white hover:text-cine-accent transition-colors"
+      >
+        {item.director}
+      </Link>
+    );
+  }
+  
+  // Si solo hay nombre pero no slug
+  if (item.director) {
+    return <span>{item.director}</span>;
+  }
+  
+  return null;
+}
+
 export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps) {
   const renderEvento = (item: Efemeride) => {
+    const directorLinks = renderDirectorLinks(item);
+    const hasDirector = item.directors?.length || item.director;
+    
     if (item.tipo === 'pelicula') {
       switch (item.tipoEvento) {
         case 'estreno':
@@ -24,19 +112,9 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               ) : (
                 <span>{item.titulo}</span>
               )}
-              {item.director && (
+              {hasDirector && (
                 <>
-                  , de{' '}
-                  {item.directorSlug ? (
-                    <Link 
-                      href={`/persona/${item.directorSlug}`}
-                      className="text-white hover:text-cine-accent transition-colors"
-                    >
-                      {item.director}
-                    </Link>
-                  ) : (
-                    <span>{item.director}</span>
-                  )}
+                  , de {directorLinks}
                 </>
               )}
             </>
@@ -55,19 +133,9 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               ) : (
                 <span>{item.titulo}</span>
               )}
-              {item.director && (
+              {hasDirector && (
                 <>
-                  , de{' '}
-                  {item.directorSlug ? (
-                    <Link 
-                      href={`/persona/${item.directorSlug}`}
-                      className="text-white hover:text-cine-accent transition-colors"
-                    >
-                      {item.director}
-                    </Link>
-                  ) : (
-                    <span>{item.director}</span>
-                  )}
+                  , de {directorLinks}
                 </>
               )}
             </>
@@ -86,19 +154,9 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
               ) : (
                 <span>{item.titulo}</span>
               )}
-              {item.director && (
+              {hasDirector && (
                 <>
-                  , de{' '}
-                  {item.directorSlug ? (
-                    <Link 
-                      href={`/persona/${item.directorSlug}`}
-                      className="text-white hover:text-cine-accent transition-colors"
-                    >
-                      {item.director}
-                    </Link>
-                  ) : (
-                    <span>{item.director}</span>
-                  )}
+                  , de {directorLinks}
                 </>
               )}
             </>
