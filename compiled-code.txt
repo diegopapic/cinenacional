@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: a932f1b62fbf3e8d9c9f63d5ba75909eb5d9abfa
-// Fecha: 2025-12-23T05:27:37.162Z
+// Commit: 5b9ad288783ed8ebe6f973a3da3b6d2004dda3fc
+// Fecha: 2025-12-24T02:11:11.927Z
 // ============================================
 
 
@@ -8593,6 +8593,12 @@ function hashIP(ip: string): string {
   return crypto.createHash('sha256').update(ip + salt).digest('hex');
 }
 
+// IPs excluidas del tracking
+function isExcludedIP(ip: string): boolean {
+  const excludedIPs = process.env.ANALYTICS_EXCLUDED_IPS?.split(',') || [];
+  return excludedIPs.some(excluded => excluded.trim() === ip);
+}
+
 // Función para extraer IP del request
 function getClientIP(request: NextRequest): string {
   // Orden de prioridad para obtener IP real
@@ -8643,6 +8649,11 @@ export async function POST(request: NextRequest) {
     const clientIP = getClientIP(request);
     const userAgent = request.headers.get('user-agent') || null;
     const referrer = request.headers.get('referer') || null;
+
+    // Ignorar IPs excluidas
+    if (isExcludedIP(clientIP)) {
+      return NextResponse.json({ success: true, skipped: true });
+    }
     
     // Crear registro de pageview
     const pageView = await prisma.pageView.create({
