@@ -341,3 +341,13 @@ body {
   background-color: #ECEEF1 !important; /* gray-700 */
   color: #1F2937 !important;
 }
+
+/* Links dentro de sinopsis y biografías */
+.serif-body a {
+  color: #9ca3af; /* gray-400 - ligeramente más claro que el texto */
+  transition: color 0.2s ease;
+}
+
+.serif-body a:hover {
+  color: #60a5fa; /* blue-400 - igual que los títulos de películas */
+}

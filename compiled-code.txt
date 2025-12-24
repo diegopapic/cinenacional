@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 896f8b42c22e97d12bb2d2de4f8d3d6c50434c6d
-// Fecha: 2025-12-24T05:44:12.901Z
+// Commit: 6b8a238b0b261ce2ddbac16617d0080c6ba81448
+// Fecha: 2025-12-24T06:29:59.788Z
 // ============================================
 
 
@@ -4633,7 +4633,7 @@ export default function PersonPage({ params }: PersonPageProps) {
 
                 {person.biography && (
                   <div
-                    className="mt-6 text-gray-300 leading-relaxed max-w-3xl"
+                    className="mt-6 text-gray-300 leading-relaxed max-w-3xl serif-body"
                     dangerouslySetInnerHTML={{
                       __html: DOMPurify.sanitize(person.biography, {
                         ALLOWED_TAGS: ['p', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'b', 'i', 'span'],
