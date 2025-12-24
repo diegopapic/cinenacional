@@ -31,6 +31,12 @@ function hashIP(ip: string): string {
   return crypto.createHash('sha256').update(ip + salt).digest('hex');
 }
 
+// IPs excluidas del tracking
+function isExcludedIP(ip: string): boolean {
+  const excludedIPs = process.env.ANALYTICS_EXCLUDED_IPS?.split(',') || [];
+  return excludedIPs.some(excluded => excluded.trim() === ip);
+}
+
 // Función para extraer IP del request
 function getClientIP(request: NextRequest): string {
   // Orden de prioridad para obtener IP real
@@ -81,6 +87,11 @@ export async function POST(request: NextRequest) {
     const clientIP = getClientIP(request);
     const userAgent = request.headers.get('user-agent') || null;
     const referrer = request.headers.get('referer') || null;
+
+    // Ignorar IPs excluidas
+    if (isExcludedIP(clientIP)) {
+      return NextResponse.json({ success: true, skipped: true });
+    }
     
     // Crear registro de pageview
     const pageView = await prisma.pageView.create({
