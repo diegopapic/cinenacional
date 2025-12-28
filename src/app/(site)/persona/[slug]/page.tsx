@@ -726,7 +726,7 @@ export default function PersonPage({ params }: PersonPageProps) {
 
                             {isActing && item.characterName && (
                               <span className="text-sm text-gray-500">
-                                como {item.characterName}
+                                — {item.characterName}
                               </span>
                             )}
 
