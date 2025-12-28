@@ -129,6 +129,7 @@ export async function GET(
             characterName: true,
             billingOrder: true,
             isPrincipal: true,
+            isActor: true,
             notes: true,
             person: {
               select: {
@@ -209,24 +210,24 @@ export async function GET(
         },
 
         images: {
-  orderBy: { createdAt: 'desc' },
-  include: {
-    people: {
-      include: {
-        person: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true
+          orderBy: { createdAt: 'desc' },
+          include: {
+            people: {
+              include: {
+                person: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true
+                  }
+                }
+              },
+              orderBy: {
+                position: 'asc'
+              }
+            }
           }
-        }
-      },
-      orderBy: {
-        position: 'asc'
-      }
-    }
-  }
-},
+        },
 
         videos: {
           orderBy: { isPrimary: 'desc' }
@@ -467,6 +468,7 @@ export async function PUT(
               characterName: item.characterName || null,
               billingOrder: item.billingOrder || index + 1,
               isPrincipal: item.isPrincipal || false,
+              isActor: item.isActor !== undefined ? item.isActor : true,
               notes: item.notes || null
             }))
           })
@@ -671,7 +673,7 @@ export async function PUT(
       revalidatePath(`/pelicula/${existingMovie.slug}`);
       revalidatePath('/');
       revalidatePath('/listados/peliculas');
-      
+
       console.log(`✅ Next.js cache invalidado para: /pelicula/${existingMovie.slug}`);
     } catch (revalidateError) {
       console.log('ℹ️ Next.js revalidation skipped (using Redis cache primarily)');
@@ -753,7 +755,7 @@ export async function DELETE(
       revalidatePath(`/pelicula/${movie.slug}`);
       revalidatePath('/');
       revalidatePath('/listados/peliculas');
-      
+
       console.log(`✅ Next.js cache invalidado para película eliminada: ${movie.slug}`);
     } catch (revalidateError) {
       console.log('ℹ️ Next.js revalidation skipped (using Redis cache primarily)');
