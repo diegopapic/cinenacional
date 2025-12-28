@@ -69,7 +69,12 @@ export async function GET(
       where: {
         personId: personId
       },
-      include: {
+      select: {
+        id: true,
+        characterName: true,
+        billingOrder: true,
+        isPrincipal: true,
+        isActor: true, // Para diferenciar actuaciones de apariciones como si mismo
         movie: {
           select: {
             id: true,
@@ -81,7 +86,7 @@ export async function GET(
             releaseDay: true,
             posterUrl: true,
             stage: true,
-            tipoDuracion: true // ✅ AGREGADO
+            tipoDuracion: true
           }
         }
       },

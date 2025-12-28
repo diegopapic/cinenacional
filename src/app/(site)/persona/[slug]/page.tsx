@@ -56,6 +56,7 @@ interface CastRole {
   characterName?: string;
   billingOrder?: number;
   isPrincipal?: boolean;
+  isActor?: boolean; // true = actor, false = aparición como sí mismo
 }
 
 interface CrewRole {
@@ -283,11 +284,21 @@ export default function PersonPage({ params }: PersonPageProps) {
     return groupedByRole;
   }, []);
 
-  const getFirstAvailableTab = useCallback((filmographyData: any): string => {
+  const getFirstAvailableTab = useCallback((filmographyData: any, personGender?: string): string => {
     const allTabs: { [key: string]: number } = {};
 
     if (filmographyData?.castRoles?.length > 0) {
-      allTabs['Actuación'] = filmographyData.castRoles.length;
+      // Separar actores de apariciones como sí mismo
+      const actingRoles = filmographyData.castRoles.filter((r: CastRole) => r.isActor !== false);
+      const selfRoles = filmographyData.castRoles.filter((r: CastRole) => r.isActor === false);
+      
+      if (actingRoles.length > 0) {
+        allTabs['Actuación'] = actingRoles.length;
+      }
+      if (selfRoles.length > 0) {
+        const selfLabel = personGender === 'FEMALE' ? 'Como sí misma' : 'Como sí mismo';
+        allTabs[selfLabel] = selfRoles.length;
+      }
     }
 
     if (filmographyData?.crewRoles?.length > 0) {
@@ -321,7 +332,7 @@ export default function PersonPage({ params }: PersonPageProps) {
 
         setFilmography(filmographyData);
 
-        const firstTab = getFirstAvailableTab(filmographyData);
+        const firstTab = getFirstAvailableTab(filmographyData, personData.gender);
         if (firstTab) {
           setActiveTab(firstTab);
         }
@@ -369,7 +380,19 @@ export default function PersonPage({ params }: PersonPageProps) {
   const tabs: { [key: string]: TabItem[] } = {};
 
   if (filmography?.castRoles?.length > 0) {
-    tabs['Actuación'] = filmography.castRoles;
+    // Separar actores de apariciones como sí mismo
+    const actingRoles = filmography.castRoles.filter((r: CastRole) => r.isActor !== false);
+    const selfRoles = filmography.castRoles.filter((r: CastRole) => r.isActor === false);
+    
+    if (actingRoles.length > 0) {
+      tabs['Actuación'] = actingRoles;
+    }
+    
+    if (selfRoles.length > 0) {
+      // Determinar etiqueta según género de la persona
+      const selfLabel = person.gender === 'FEMALE' ? 'Como sí misma' : 'Como sí mismo';
+      tabs[selfLabel] = selfRoles;
+    }
   }
 
   if (filmography?.crewRoles?.length > 0) {
@@ -383,13 +406,19 @@ export default function PersonPage({ params }: PersonPageProps) {
     return b[1].length - a[1].length;
   });
 
-  const uniqueMoviesAsActor = new Set(filmography?.castRoles?.map((r: CastRole) => r.movie.id) || []);
+  // Calcular stats separando actuaciones de apariciones como sí mismo
+  const actingRolesForStats = filmography?.castRoles?.filter((r: CastRole) => r.isActor !== false) || [];
+  const selfRolesForStats = filmography?.castRoles?.filter((r: CastRole) => r.isActor === false) || [];
+  
+  const uniqueMoviesAsActor = new Set(actingRolesForStats.map((r: CastRole) => r.movie.id));
+  const uniqueMoviesAsSelf = new Set(selfRolesForStats.map((r: CastRole) => r.movie.id));
   const uniqueMoviesAsCrew = new Set(filmography?.crewRoles?.map((r: CrewRole) => r.movie.id) || []);
-  const allUniqueMovies = new Set([...uniqueMoviesAsActor, ...uniqueMoviesAsCrew]);
+  const allUniqueMovies = new Set([...uniqueMoviesAsActor, ...uniqueMoviesAsSelf, ...uniqueMoviesAsCrew]);
 
   const stats = {
     totalMovies: allUniqueMovies.size,
     asActor: uniqueMoviesAsActor.size,
+    asSelf: uniqueMoviesAsSelf.size,
     asCrew: uniqueMoviesAsCrew.size
   };
 
@@ -627,7 +656,17 @@ export default function PersonPage({ params }: PersonPageProps) {
                   {stats.asActor > 0 && (
                     <div className="text-center">
                       <div className="text-3xl font-light text-blue-400">{stats.asActor}</div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">Como Actor</div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">
+                        {person.gender === 'FEMALE' ? 'Como Actriz' : 'Como Actor'}
+                      </div>
+                    </div>
+                  )}
+                  {stats.asSelf > 0 && (
+                    <div className="text-center">
+                      <div className="text-3xl font-light text-blue-400">{stats.asSelf}</div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">
+                        {person.gender === 'FEMALE' ? 'Como sí misma' : 'Como sí mismo'}
+                      </div>
                     </div>
                   )}
                   {stats.asCrew > 0 && (
