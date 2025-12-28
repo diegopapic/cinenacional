@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2025-12-28T05:07:06.271Z
+# Generado automáticamente el: 2025-12-28T05:30:53.975Z
 # ================================================
 
 ## Schema Prisma
@@ -341,6 +341,7 @@ model MovieCast {
   characterName String?  @map("character_name") @db.VarChar(255)
   billingOrder  Int?     @map("billing_order")
   isPrincipal   Boolean  @default(false) @map("is_principal")
+  isActor       Boolean  @default(true) @map("is_actor")
   notes         String?
   createdAt     DateTime @default(now()) @map("created_at")
   movie         Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
@@ -349,6 +350,7 @@ model MovieCast {
   @@unique([movieId, personId, characterName])
   @@index([movieId])
   @@index([personId])
+  @@index([isActor])
   @@map("movie_cast")
 }
 
@@ -1200,6 +1202,7 @@ CREATE TABLE "movie_cast" (
     "character_name" VARCHAR(255),
     "billing_order" INTEGER,
     "is_principal" BOOLEAN NOT NULL DEFAULT false,
+    "is_actor" BOOLEAN NOT NULL DEFAULT true,
     "notes" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -1703,6 +1706,9 @@ CREATE INDEX "movie_cast_movie_id_idx" ON "movie_cast"("movie_id");
 
 -- CreateIndex
 CREATE INDEX "movie_cast_person_id_idx" ON "movie_cast"("person_id");
+
+-- CreateIndex
+CREATE INDEX "movie_cast_is_actor_idx" ON "movie_cast"("is_actor");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "movie_cast_movie_id_person_id_character_name_key" ON "movie_cast"("movie_id", "person_id", "character_name");
