@@ -9,6 +9,25 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 
+/**
+ * Formatea los años de nacimiento y muerte de una persona.
+ * - Ambos años: "1936-2017"
+ * - Solo nacimiento: "n. 1936"
+ * - Solo muerte: "m. 2017"
+ */
+function formatPersonYears(birthYear?: number, deathYear?: number): string | null {
+  if (birthYear && deathYear) {
+    return `${birthYear}-${deathYear}`
+  }
+  if (birthYear) {
+    return `n. ${birthYear}`
+  }
+  if (deathYear) {
+    return `m. ${deathYear}`
+  }
+  return null
+}
+
 export default function SearchBar() {
     const [showResults, setShowResults] = useState(false)
     const searchRef = useRef<HTMLDivElement>(null)
@@ -178,8 +197,10 @@ export default function SearchBar() {
                                                     <p className="text-sm font-medium text-white truncate group-hover:text-zinc-300 transition-colors">
                                                         {person.name}
                                                     </p>
-                                                    {person.birthYear && (
-                                                        <p className="text-xs text-zinc-400">n. {person.birthYear}</p>
+                                                    {formatPersonYears(person.birthYear, person.deathYear) && (
+                                                        <p className="text-xs text-zinc-400">
+                                                            {formatPersonYears(person.birthYear, person.deathYear)}
+                                                        </p>
                                                     )}
                                                 </div>
                                             </Link>

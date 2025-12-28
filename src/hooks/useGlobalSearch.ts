@@ -24,6 +24,7 @@ export interface PersonSearchResult {
   name: string
   photoUrl?: string
   birthYear?: number
+  deathYear?: number
   type: 'person'
 }
 
