@@ -8,6 +8,26 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Film, User, Calendar, Search, Loader2 } from 'lucide-react'
 import { formatPartialDate } from '@/lib/shared/dateUtils'
+import DOMPurify from 'dompurify'
+
+/**
+ * Sanitiza HTML permitiendo solo tags de formato básico.
+ * Útil para mostrar previews con itálicas, negritas, etc.
+ */
+function sanitizeHtml(html: string): string {
+  if (!html) return ''
+  if (typeof window === 'undefined') {
+    // Fallback para SSR: remover tags peligrosos pero mantener formato
+    return html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+      .replace(/on\w+="[^"]*"/gi, '')
+  }
+  return DOMPurify.sanitize(html, { 
+    ALLOWED_TAGS: ['i', 'em', 'b', 'strong', 'br'],
+    ALLOWED_ATTR: []
+  })
+}
 
 interface SearchPageResult {
   movies: Array<{
@@ -36,6 +56,9 @@ interface SearchPageResult {
     birthYear?: number
     birthMonth?: number
     birthDay?: number
+    deathYear?: number
+    deathMonth?: number
+    deathDay?: number
     biography?: string
     _count?: {
       castRoles: number
@@ -111,13 +134,39 @@ export default function SearchPage() {
     return `${person.firstName || ''} ${person.lastName || ''}`.trim()
   }
 
-  const getBirthDate = (person: any) => {
-    if (!person.birthYear) return null
-    return formatPartialDate({
-      year: person.birthYear,
-      month: person.birthMonth,
-      day: person.birthDay
-    }, { monthFormat: 'short' })
+  /**
+   * Formatea las fechas de vida de una persona.
+   * - Solo nacimiento: "n. 16 de enero de 1957"
+   * - Nacimiento y muerte: "(19 de abril de 1922-12 de diciembre de 2012)"
+   * - Solo muerte: "m. 26 de septiembre de 1943"
+   */
+  const getLifeDates = (person: any): string | null => {
+    const hasBirth = !!person.birthYear
+    const hasDeath = !!person.deathYear
+    
+    if (!hasBirth && !hasDeath) return null
+    
+    const formatDate = (year?: number, month?: number, day?: number): string => {
+      return formatPartialDate(
+        { year: year ?? null, month: month ?? null, day: day ?? null },
+        { monthFormat: 'long' }
+      )
+    }
+    
+    if (hasBirth && hasDeath) {
+      // Caso: nacimiento y muerte
+      const birthStr = formatDate(person.birthYear, person.birthMonth, person.birthDay)
+      const deathStr = formatDate(person.deathYear, person.deathMonth, person.deathDay)
+      return `(${birthStr}-${deathStr})`
+    } else if (hasBirth) {
+      // Caso: solo nacimiento
+      const birthStr = formatDate(person.birthYear, person.birthMonth, person.birthDay)
+      return `n. ${birthStr}`
+    } else {
+      // Caso: solo muerte
+      const deathStr = formatDate(person.deathYear, person.deathMonth, person.deathDay)
+      return `m. ${deathStr}`
+    }
   }
 
   const filteredMovies = results?.movies || []
@@ -267,9 +316,10 @@ export default function SearchPage() {
                           )}
                         </div>
                         {movie.synopsis && (
-                          <p className="text-sm text-zinc-400 line-clamp-2">
-                            {movie.synopsis}
-                          </p>
+                          <p 
+                            className="text-sm text-zinc-400 line-clamp-2"
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(movie.synopsis) }}
+                          />
                         )}
                       </div>
                     </Link>
@@ -313,9 +363,9 @@ export default function SearchPage() {
                       <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-zinc-300 transition-colors">
                         {getPersonName(person)}
                       </h3>
-                      {getBirthDate(person) && (
+                      {getLifeDates(person) && (
                         <p className="text-sm text-zinc-400 mb-1">
-                          n. {getBirthDate(person)}
+                          {getLifeDates(person)}
                         </p>
                       )}
                       {person._count && (
@@ -326,9 +376,10 @@ export default function SearchPage() {
                         </p>
                       )}
                       {person.biography && (
-                        <p className="text-sm text-zinc-400 line-clamp-2 mt-2">
-                          {person.biography}
-                        </p>
+                        <p 
+                          className="text-sm text-zinc-400 line-clamp-2 mt-2"
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(person.biography) }}
+                        />
                       )}
                     </div>
                   </Link>
