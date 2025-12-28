@@ -9,7 +9,7 @@ export interface PersonListFilters {
   birthLocationId?: number | '';
   deathLocationId?: number | '';
   nationalityId?: number | '';
-  roleId?: number | 'ACTOR' | '';  // 'ACTOR' es especial para buscar en cast
+  roleId?: number | 'ACTOR' | 'SELF' | '';  // 'ACTOR' para actuaciones, 'SELF' para apariciones como sí mismo
   birthYearFrom?: number | '';
   birthYearTo?: number | '';
   deathYearFrom?: number | '';

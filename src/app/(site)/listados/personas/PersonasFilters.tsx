@@ -124,7 +124,17 @@ export default function PersonasFilters({
           <label className="block text-xs text-gray-400 font-medium">Rol</label>
           <select
             value={filters.roleId || ''}
-            onChange={(e) => onFilterChange('roleId', e.target.value === 'ACTOR' ? 'ACTOR' : e.target.value ? parseInt(e.target.value) : '')}
+            onChange={(e) => {
+              const value = e.target.value;
+              // ACTOR y SELF son strings especiales, el resto son IDs numéricos
+              if (value === 'ACTOR' || value === 'SELF') {
+                onFilterChange('roleId', value);
+              } else if (value) {
+                onFilterChange('roleId', parseInt(value));
+              } else {
+                onFilterChange('roleId', '');
+              }
+            }}
             className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           >
             <option value=""></option>
