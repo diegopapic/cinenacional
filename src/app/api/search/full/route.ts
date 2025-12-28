@@ -56,6 +56,9 @@ export async function GET(request: NextRequest) {
           p.birth_year as "birthYear",
           p.birth_month as "birthMonth",
           p.birth_day as "birthDay",
+          p.death_year as "deathYear",
+          p.death_month as "deathMonth",
+          p.death_day as "deathDay",
           p.biography,
           (SELECT COUNT(*)::int FROM movie_cast WHERE person_id = p.id) as cast_roles,
           (SELECT COUNT(*)::int FROM movie_crew WHERE person_id = p.id) as crew_roles
@@ -141,6 +144,9 @@ export async function GET(request: NextRequest) {
             birthYear: true,
             birthMonth: true,
             birthDay: true,
+            deathYear: true,
+            deathMonth: true,
+            deathDay: true,
             biography: true,
             _count: {
               select: {
