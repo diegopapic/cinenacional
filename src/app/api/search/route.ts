@@ -101,7 +101,8 @@ export async function GET(request: NextRequest) {
             last_name,
             real_name,
             photo_url,
-            birth_year
+            birth_year,
+            death_year
           FROM people
           WHERE is_active = true
           AND (
@@ -134,7 +135,8 @@ export async function GET(request: NextRequest) {
             last_name,
             real_name,
             photo_url,
-            birth_year
+            birth_year,
+            death_year
           FROM people
           WHERE is_active = true
           AND (
@@ -177,7 +179,8 @@ export async function GET(request: NextRequest) {
           firstName: true,
           lastName: true,
           photoUrl: true,
-          birthYear: true
+          birthYear: true,
+          deathYear: true
         },
         take: limit,
         orderBy: [
@@ -192,7 +195,8 @@ export async function GET(request: NextRequest) {
         first_name: p.firstName,
         last_name: p.lastName,
         photo_url: p.photoUrl,
-        birth_year: p.birthYear
+        birth_year: p.birthYear,
+        death_year: p.deathYear
       }))
     }
 
@@ -213,6 +217,7 @@ export async function GET(request: NextRequest) {
       name: `${person.first_name || ''} ${person.last_name || ''}`.trim() || person.real_name || 'Sin nombre',
       photoUrl: person.photo_url,
       birthYear: person.birth_year,
+      deathYear: person.death_year,
       type: 'person' as const
     }))
 

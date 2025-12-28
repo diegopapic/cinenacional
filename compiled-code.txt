@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 6b8a238b0b261ce2ddbac16617d0080c6ba81448
-// Fecha: 2025-12-24T06:29:59.788Z
+// Commit: 369bba2b31196b76a54b4d25f32b2d138500c98d
+// Fecha: 2025-12-28T04:26:01.847Z
 // ============================================
 
 
@@ -17908,7 +17908,8 @@ export async function GET(request: NextRequest) {
             last_name,
             real_name,
             photo_url,
-            birth_year
+            birth_year,
+            death_year
           FROM people
           WHERE is_active = true
           AND (
@@ -17941,7 +17942,8 @@ export async function GET(request: NextRequest) {
             last_name,
             real_name,
             photo_url,
-            birth_year
+            birth_year,
+            death_year
           FROM people
           WHERE is_active = true
           AND (
@@ -17984,7 +17986,8 @@ export async function GET(request: NextRequest) {
           firstName: true,
           lastName: true,
           photoUrl: true,
-          birthYear: true
+          birthYear: true,
+          deathYear: true
         },
         take: limit,
         orderBy: [
@@ -17999,7 +18002,8 @@ export async function GET(request: NextRequest) {
         first_name: p.firstName,
         last_name: p.lastName,
         photo_url: p.photoUrl,
-        birth_year: p.birthYear
+        birth_year: p.birthYear,
+        death_year: p.deathYear
       }))
     }
 
@@ -18020,6 +18024,7 @@ export async function GET(request: NextRequest) {
       name: `${person.first_name || ''} ${person.last_name || ''}`.trim() || person.real_name || 'Sin nombre',
       photoUrl: person.photo_url,
       birthYear: person.birth_year,
+      deathYear: person.death_year,
       type: 'person' as const
     }))
 
@@ -31639,6 +31644,25 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 
+/**
+ * Formatea los años de nacimiento y muerte de una persona.
+ * - Ambos años: "1936-2017"
+ * - Solo nacimiento: "n. 1936"
+ * - Solo muerte: "m. 2017"
+ */
+function formatPersonYears(birthYear?: number, deathYear?: number): string | null {
+  if (birthYear && deathYear) {
+    return `${birthYear}-${deathYear}`
+  }
+  if (birthYear) {
+    return `n. ${birthYear}`
+  }
+  if (deathYear) {
+    return `m. ${deathYear}`
+  }
+  return null
+}
+
 export default function SearchBar() {
     const [showResults, setShowResults] = useState(false)
     const searchRef = useRef<HTMLDivElement>(null)
@@ -31808,8 +31832,10 @@ export default function SearchBar() {
                                                     <p className="text-sm font-medium text-white truncate group-hover:text-zinc-300 transition-colors">
                                                         {person.name}
                                                     </p>
-                                                    {person.birthYear && (
-                                                        <p className="text-xs text-zinc-400">n. {person.birthYear}</p>
+                                                    {formatPersonYears(person.birthYear, person.deathYear) && (
+                                                        <p className="text-xs text-zinc-400">
+                                                            {formatPersonYears(person.birthYear, person.deathYear)}
+                                                        </p>
                                                     )}
                                                 </div>
                                             </Link>
@@ -33968,6 +33994,7 @@ export interface PersonSearchResult {
   name: string
   photoUrl?: string
   birthYear?: number
+  deathYear?: number
   type: 'person'
 }
 
