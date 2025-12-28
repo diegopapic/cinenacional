@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
         ORDER BY LOWER(unaccent(l.name)) ASC
       `,
       
-      // Nacionalidades (países con personas) - sin cambios
+      // Nacionalidades (países con personas)
       prisma.$queryRaw<Array<{ id: number; name: string; count: number }>>`
         SELECT 
           l.id,
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
         ORDER BY LOWER(unaccent(l.name)) ASC
       `,
       
-      // Roles técnicos (de la tabla roles) - sin cambios
+      // Roles técnicos (de la tabla roles)
       prisma.$queryRaw<Array<{ id: number; name: string; department: string; count: number }>>`
         SELECT 
           r.id,
@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
         ORDER BY count DESC
       `,
       
-      // Rangos de años - sin cambios
+      // Rangos de años
       prisma.$queryRaw<Array<{
         birth_year_min: number | null;
         birth_year_max: number | null;
@@ -189,10 +189,18 @@ export async function GET(request: NextRequest) {
       `
     ]);
 
-    // Contar actores (personas en movie_cast) - sin cambios
+    // Contar actores (personas en movie_cast con is_actor = true)
     const actorCount = await prisma.$queryRaw<Array<{ count: number }>>`
       SELECT COUNT(DISTINCT person_id)::int as count
       FROM movie_cast
+      WHERE is_actor = true
+    `;
+
+    // Contar apariciones como sí mismo (personas en movie_cast con is_actor = false)
+    const selfCount = await prisma.$queryRaw<Array<{ count: number }>>`
+      SELECT COUNT(DISTINCT person_id)::int as count
+      FROM movie_cast
+      WHERE is_actor = false
     `;
 
     // Formatear respuesta
@@ -225,6 +233,14 @@ export async function GET(request: NextRequest) {
           department: 'ACTUACION',
           isActor: true,
           count: actorCount[0]?.count || 0
+        },
+        // Apariciones como sí mismo/a
+        {
+          id: 'SELF',
+          name: 'Como sí mismo/a',
+          department: 'ACTUACION',
+          isActor: false,
+          count: selfCount[0]?.count || 0
         },
         // Luego los roles técnicos
         ...roles.map(role => ({

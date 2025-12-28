@@ -117,13 +117,24 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // Filtro de rol (Actor o rol técnico)
+    // Filtro de rol (Actor, Como sí mismo, o rol técnico)
     if (roleId) {
       if (roleId === 'ACTOR') {
+        // Actuaciones reales (is_actor = true)
         where.castRoles = {
-          some: {}
+          some: {
+            isActor: true
+          }
+        };
+      } else if (roleId === 'SELF') {
+        // Apariciones como sí mismo (is_actor = false)
+        where.castRoles = {
+          some: {
+            isActor: false
+          }
         };
       } else {
+        // Roles técnicos
         where.crewRoles = {
           some: {
             roleId: parseInt(roleId)
@@ -197,9 +208,15 @@ export async function GET(request: NextRequest) {
         conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM person_nationalities pn WHERE pn.person_id = p.id AND pn.location_id = ${parseInt(nationalityId)})`);
       }
       if (roleId === 'ACTOR') {
-        conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM movie_cast mc WHERE mc.person_id = p.id)`);
+        // Actuaciones reales (is_actor = true)
+        conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM movie_cast mc WHERE mc.person_id = p.id AND mc.is_actor = true)`);
       }
-      if (roleId && roleId !== 'ACTOR') {
+      if (roleId === 'SELF') {
+        // Apariciones como sí mismo (is_actor = false)
+        conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM movie_cast mc WHERE mc.person_id = p.id AND mc.is_actor = false)`);
+      }
+      if (roleId && roleId !== 'ACTOR' && roleId !== 'SELF') {
+        // Roles técnicos
         conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM movie_crew mcr WHERE mcr.person_id = p.id AND mcr.role_id = ${parseInt(roleId)})`);
       }
       if (sortBy === 'birthDate') {
