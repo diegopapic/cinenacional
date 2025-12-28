@@ -334,6 +334,7 @@ model MovieCast {
   characterName String?  @map("character_name") @db.VarChar(255)
   billingOrder  Int?     @map("billing_order")
   isPrincipal   Boolean  @default(false) @map("is_principal")
+  isActor       Boolean  @default(true) @map("is_actor")
   notes         String?
   createdAt     DateTime @default(now()) @map("created_at")
   movie         Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
@@ -342,6 +343,7 @@ model MovieCast {
   @@unique([movieId, personId, characterName])
   @@index([movieId])
   @@index([personId])
+  @@index([isActor])
   @@map("movie_cast")
 }
 
