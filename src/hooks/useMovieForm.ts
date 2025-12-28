@@ -427,6 +427,7 @@ export function useMovieForm({
                         characterName: c.characterName,
                         billingOrder: c.billingOrder,
                         isPrincipal: c.isPrincipal,
+                        isActor: c.isActor,
                         notes: c.notes
                     }
                     console.log('🎬 Cast item mapeado:', mapped)
@@ -634,7 +635,8 @@ export function useMovieForm({
                             personId: personId,
                             characterName: member.characterName || '',
                             billingOrder: member.billingOrder ?? 0,
-                            isPrincipal: member.isPrincipal ?? false
+                            isPrincipal: member.isPrincipal ?? false,
+                            isActor: member.isActor ?? true
                         }
                     })
                     .filter(member => member !== null), // Filtrar los nulls
