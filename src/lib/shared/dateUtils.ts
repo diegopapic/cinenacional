@@ -129,7 +129,7 @@ export function formatPartialDate(
   // Año y mes
   if (!partial.day || !includeDay) {
     return monthFormat === 'long' 
-      ? `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} de ${partial.year}`
+      ? `${monthName} de ${partial.year}`
       : `${monthName} ${partial.year}`;
   }
   
