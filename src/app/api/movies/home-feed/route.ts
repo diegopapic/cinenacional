@@ -207,7 +207,8 @@ export async function GET() {
         take: 8
       }),
 
-      // Últimas personas - simplificado
+      // Últimas personas - con género y roles de última película
+      // Últimas personas - con género y roles de última película
       prisma.person.findMany({
         select: {
           id: true,
@@ -215,11 +216,30 @@ export async function GET() {
           firstName: true,
           lastName: true,
           photoUrl: true,
+          gender: true,
           _count: {
             select: {
               castRoles: true,
               crewRoles: true
             }
+          },
+          // Obtener los últimos roles de crew para determinar el rol específico
+          crewRoles: {
+            select: {
+              role: {
+                select: { name: true }
+              },
+              movie: {
+                select: {
+                  id: true,
+                  createdAt: true
+                }
+              }
+            },
+            orderBy: {
+              movie: { createdAt: 'desc' }
+            },
+            take: 10
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -246,11 +266,43 @@ export async function GET() {
       ultimasPeliculas,
 
       ultimasPersonas: ultimasPersonas.map(person => {
-        const { _count, ...personData } = person;
+        const { _count, crewRoles, ...personData } = person;
+
+        let role: string;
+
+        if (_count.castRoles > _count.crewRoles) {
+          // Es mayormente actor/actriz - usar género
+          if (person.gender === 'MALE') {
+            role = 'Actor';
+          } else if (person.gender === 'FEMALE') {
+            role = 'Actriz';
+          } else {
+            role = 'Actor/Actriz';
+          }
+        } else if (_count.crewRoles > 0 && crewRoles && crewRoles.length > 0) {
+          // Es mayormente crew - obtener roles de la última película
+          const lastMovieId = crewRoles[0]?.movie?.id;
+
+          if (lastMovieId) {
+            // Obtener todos los roles de esa película
+            const rolesInLastMovie = crewRoles
+              .filter(cr => cr.movie?.id === lastMovieId)
+              .map(cr => cr.role?.name)
+              .filter((r): r is string => !!r);
+
+            // Eliminar duplicados y unir con coma
+            const uniqueRoles = [...new Set(rolesInLastMovie)];
+            role = uniqueRoles.length > 0 ? uniqueRoles.join(', ') : 'Equipo técnico';
+          } else {
+            role = 'Equipo técnico';
+          }
+        } else {
+          role = 'Profesional del cine';
+        }
+
         return {
           ...personData,
-          role: _count.castRoles > _count.crewRoles ? 'Actor/Actriz' :
-            _count.crewRoles > 0 ? 'Equipo técnico' : 'Profesional del cine'
+          role
         };
       }),
 
