@@ -291,7 +291,7 @@ export default function PersonPage({ params }: PersonPageProps) {
       // Separar actores de apariciones como sí mismo
       const actingRoles = filmographyData.castRoles.filter((r: CastRole) => r.isActor !== false);
       const selfRoles = filmographyData.castRoles.filter((r: CastRole) => r.isActor === false);
-      
+
       if (actingRoles.length > 0) {
         allTabs['Actuación'] = actingRoles.length;
       }
@@ -383,11 +383,11 @@ export default function PersonPage({ params }: PersonPageProps) {
     // Separar actores de apariciones como sí mismo
     const actingRoles = filmography.castRoles.filter((r: CastRole) => r.isActor !== false);
     const selfRoles = filmography.castRoles.filter((r: CastRole) => r.isActor === false);
-    
+
     if (actingRoles.length > 0) {
       tabs['Actuación'] = actingRoles;
     }
-    
+
     if (selfRoles.length > 0) {
       // Determinar etiqueta según género de la persona
       const selfLabel = person.gender === 'FEMALE' ? 'Como sí misma' : 'Como sí mismo';
@@ -409,7 +409,7 @@ export default function PersonPage({ params }: PersonPageProps) {
   // Calcular stats separando actuaciones de apariciones como sí mismo
   const actingRolesForStats = filmography?.castRoles?.filter((r: CastRole) => r.isActor !== false) || [];
   const selfRolesForStats = filmography?.castRoles?.filter((r: CastRole) => r.isActor === false) || [];
-  
+
   const uniqueMoviesAsActor = new Set(actingRolesForStats.map((r: CastRole) => r.movie.id));
   const uniqueMoviesAsSelf = new Set(selfRolesForStats.map((r: CastRole) => r.movie.id));
   const uniqueMoviesAsCrew = new Set(filmography?.crewRoles?.map((r: CrewRole) => r.movie.id) || []);
@@ -564,8 +564,29 @@ export default function PersonPage({ params }: PersonPageProps) {
                           {person.birthYear}
                         </Link>
                       </>
+                    ) : person.birthMonth ? (
+                      <>
+                        <Link
+                          href={getEfemeridesUrl(person.birthMonth, 1)}
+                          className="text-gray-300 hover:text-blue-400 transition-colors"
+                        >
+                          {MONTHS[person.birthMonth - 1].label.toLowerCase()}
+                        </Link>
+                        <span className="text-gray-500"> de </span>
+                        <Link
+                          href={getBirthYearUrl(person.birthYear)}
+                          className="text-gray-300 hover:text-blue-400 transition-colors"
+                        >
+                          {person.birthYear}
+                        </Link>
+                      </>
                     ) : (
-                      <span>{birthDateFormatted}</span>
+                      <Link
+                        href={getBirthYearUrl(person.birthYear)}
+                        className="text-gray-300 hover:text-blue-400 transition-colors"
+                      >
+                        {person.birthYear}
+                      </Link>
                     )}
                     {person.birthLocation && (
                       <>
@@ -582,24 +603,45 @@ export default function PersonPage({ params }: PersonPageProps) {
                       {person.deathDay ? 'Murió el ' : 'Murió en '}
                     </span>
                     {person.deathDay && person.deathMonth ? (
-                      <>
-                        <Link
-                          href={getEfemeridesUrl(person.deathMonth, person.deathDay)}
-                          className="text-gray-300 hover:text-blue-400 transition-colors decoration-gray-600 hover:decoration-blue-400"
-                        >
-                          {person.deathDay} de {MONTHS[person.deathMonth - 1].label.toLowerCase()}
-                        </Link>
-                        <span className="text-gray-500"> de </span>
-                        <Link
-                          href={getDeathYearUrl(person.deathYear)}
-                          className="text-gray-300 hover:text-blue-400 transition-colors"
-                        >
-                          {person.deathYear}
-                        </Link>
-                      </>
-                    ) : (
-                      <span>{deathDateFormatted}</span>
-                    )}
+  <>
+    <Link
+      href={getEfemeridesUrl(person.deathMonth, person.deathDay)}
+      className="text-gray-300 hover:text-blue-400 transition-colors decoration-gray-600 hover:decoration-blue-400"
+    >
+      {person.deathDay} de {MONTHS[person.deathMonth - 1].label.toLowerCase()}
+    </Link>
+    <span className="text-gray-500"> de </span>
+    <Link
+      href={getDeathYearUrl(person.deathYear)}
+      className="text-gray-300 hover:text-blue-400 transition-colors"
+    >
+      {person.deathYear}
+    </Link>
+  </>
+) : person.deathMonth ? (
+  <>
+    <Link
+      href={getEfemeridesUrl(person.deathMonth, 1)}
+      className="text-gray-300 hover:text-blue-400 transition-colors"
+    >
+      {MONTHS[person.deathMonth - 1].label.toLowerCase()}
+    </Link>
+    <span className="text-gray-500"> de </span>
+    <Link
+      href={getDeathYearUrl(person.deathYear)}
+      className="text-gray-300 hover:text-blue-400 transition-colors"
+    >
+      {person.deathYear}
+    </Link>
+  </>
+) : (
+  <Link
+    href={getDeathYearUrl(person.deathYear)}
+    className="text-gray-300 hover:text-blue-400 transition-colors"
+  >
+    {person.deathYear}
+  </Link>
+)}
                     {person.deathLocation && (
                       <>
                         <span className="text-gray-500"> en </span>
