@@ -98,6 +98,7 @@ export interface SimplePerson {
   firstName?: string;
   lastName?: string;
   photoUrl?: string | null;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER' | null;
   role?: string;
 }
 
