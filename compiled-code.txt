@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 163d6b37ef70f4193622c42d0dade7c9e88725c2
-// Fecha: 2025-12-29T03:55:36.857Z
+// Commit: de62b771f10f51d4d57855b0f69e7c35d85a2045
+// Fecha: 2025-12-29T04:25:57.060Z
 // ============================================
 
 
@@ -12311,7 +12311,8 @@ export async function GET() {
         take: 8
       }),
 
-      // Últimas personas - simplificado
+      // Últimas personas - con género y roles de última película
+      // Últimas personas - con género y roles de última película
       prisma.person.findMany({
         select: {
           id: true,
@@ -12319,11 +12320,30 @@ export async function GET() {
           firstName: true,
           lastName: true,
           photoUrl: true,
+          gender: true,
           _count: {
             select: {
               castRoles: true,
               crewRoles: true
             }
+          },
+          // Obtener los últimos roles de crew para determinar el rol específico
+          crewRoles: {
+            select: {
+              role: {
+                select: { name: true }
+              },
+              movie: {
+                select: {
+                  id: true,
+                  createdAt: true
+                }
+              }
+            },
+            orderBy: {
+              movie: { createdAt: 'desc' }
+            },
+            take: 10
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -12350,11 +12370,43 @@ export async function GET() {
       ultimasPeliculas,
 
       ultimasPersonas: ultimasPersonas.map(person => {
-        const { _count, ...personData } = person;
+        const { _count, crewRoles, ...personData } = person;
+
+        let role: string;
+
+        if (_count.castRoles > _count.crewRoles) {
+          // Es mayormente actor/actriz - usar género
+          if (person.gender === 'MALE') {
+            role = 'Actor';
+          } else if (person.gender === 'FEMALE') {
+            role = 'Actriz';
+          } else {
+            role = 'Actor/Actriz';
+          }
+        } else if (_count.crewRoles > 0 && crewRoles && crewRoles.length > 0) {
+          // Es mayormente crew - obtener roles de la última película
+          const lastMovieId = crewRoles[0]?.movie?.id;
+
+          if (lastMovieId) {
+            // Obtener todos los roles de esa película
+            const rolesInLastMovie = crewRoles
+              .filter(cr => cr.movie?.id === lastMovieId)
+              .map(cr => cr.role?.name)
+              .filter((r): r is string => !!r);
+
+            // Eliminar duplicados y unir con coma
+            const uniqueRoles = [...new Set(rolesInLastMovie)];
+            role = uniqueRoles.length > 0 ? uniqueRoles.join(', ') : 'Equipo técnico';
+          } else {
+            role = 'Equipo técnico';
+          }
+        } else {
+          role = 'Profesional del cine';
+        }
+
         return {
           ...personData,
-          role: _count.castRoles > _count.crewRoles ? 'Actor/Actriz' :
-            _count.crewRoles > 0 ? 'Equipo técnico' : 'Profesional del cine'
+          role
         };
       }),
 
@@ -31565,11 +31617,6 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
     return parts.join(' ') || 'Sin nombre';
   };
 
-  const getPersonRole = (person: SimplePerson): string => {
-    // Esto podría venir del backend basado en sus roles más frecuentes
-    return person.role || 'Profesional del cine';
-  };
-
   return (
     <section className="mb-12">
       <h2 className="serif-heading text-3xl mb-6 text-white">Últimas personas ingresadas</h2>
@@ -31613,7 +31660,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
               <h3 className="text-sm font-medium text-white group-hover:text-cine-accent transition-colors">
                 {formatPersonName(persona)}
               </h3>
-              <p className="text-xs text-gray-400">{getPersonRole(persona)}</p>
+              <p className="text-xs text-gray-400">{persona.role || 'Profesional del cine'}</p>
             </Link>
           ))}
         </div>
@@ -41752,6 +41799,7 @@ export interface SimplePerson {
   firstName?: string;
   lastName?: string;
   photoUrl?: string | null;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER' | null;
   role?: string;
 }
 

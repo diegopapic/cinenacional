@@ -16,11 +16,6 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
     return parts.join(' ') || 'Sin nombre';
   };
 
-  const getPersonRole = (person: SimplePerson): string => {
-    // Esto podría venir del backend basado en sus roles más frecuentes
-    return person.role || 'Profesional del cine';
-  };
-
   return (
     <section className="mb-12">
       <h2 className="serif-heading text-3xl mb-6 text-white">Últimas personas ingresadas</h2>
@@ -64,7 +59,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
               <h3 className="text-sm font-medium text-white group-hover:text-cine-accent transition-colors">
                 {formatPersonName(persona)}
               </h3>
-              <p className="text-xs text-gray-400">{getPersonRole(persona)}</p>
+              <p className="text-xs text-gray-400">{persona.role || 'Profesional del cine'}</p>
             </Link>
           ))}
         </div>
