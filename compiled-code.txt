@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: f4d9665f15a1d30e1c126ce2474f687334d2b11b
-// Fecha: 2025-12-31T06:11:28.819Z
+// Commit: c754ba778b556bcc2a43f9a0bc2e6f3ed19b6e7e
+// Fecha: 2025-12-31T06:26:48.352Z
 // ============================================
 
 
@@ -5005,7 +5005,21 @@ export default function PersonPage({ params }: PersonPageProps) {
             {activeTab === 'Todos los roles' ? (
               // ✅ PESTAÑA "TODOS LOS ROLES"
               <div className="space-y-1">
-                <h2 className="text-2xl font-light mb-6 text-white">Filmografía</h2>
+                <h2 className="text-2xl font-light mb-6 text-white flex items-center gap-2">
+                  Filmografía en Argentina
+                  <div className="relative group">
+                    <button
+                      type="button"
+                      className="w-5 h-5 rounded-full bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white text-xs flex items-center justify-center transition-colors"
+                      aria-label="Más información"
+                    >
+                      ?
+                    </button>
+                    <div className="absolute left-0 top-full mt-2 w-72 p-3 bg-gray-800 border border-gray-700 rounded-lg shadow-xl text-sm text-gray-300 font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                      Esta filmografía incluye únicamente películas argentinas o coproducciones con participación de Argentina. Los trabajos realizados exclusivamente en el exterior no están incluidos.
+                    </div>
+                  </div>
+                </h2>
                 <div className="divide-y divide-gray-800/50">
                   {(showAllFilmography ? allRolesList : allRolesList.slice(0, 10)).map((item, index) => 
                     renderMovieItem(item, index, true, false)
@@ -5035,7 +5049,21 @@ export default function PersonPage({ params }: PersonPageProps) {
             ) : (
               // ✅ PESTAÑA "POR ROL" - Secciones agrupadas
               <div className="space-y-1">
-                <h2 className="text-2xl font-light mb-6 text-white">Filmografía</h2>
+                <h2 className="text-2xl font-light mb-6 text-white flex items-center gap-2">
+                  Filmografía en Argentina
+                  <div className="relative group">
+                    <button
+                      type="button"
+                      className="w-5 h-5 rounded-full bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white text-xs flex items-center justify-center transition-colors"
+                      aria-label="Más información"
+                    >
+                      ?
+                    </button>
+                    <div className="absolute left-0 top-full mt-2 w-72 p-3 bg-gray-800 border border-gray-700 rounded-lg shadow-xl text-sm text-gray-300 font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                      Esta filmografía incluye únicamente películas argentinas o coproducciones con participación de Argentina. Los trabajos realizados exclusivamente en el exterior no están incluidos.
+                    </div>
+                  </div>
+                </h2>
                 <div className="space-y-10">
                   {roleSections.map((section, sectionIndex) => (
                     <div key={section.roleName} className="space-y-1">
