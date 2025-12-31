@@ -1,4 +1,4 @@
-// src/app/persona/[slug]/page.tsx - VERSIÓN CORREGIDA COMPLETA
+// src/app/persona/[slug]/page.tsx - VERSIÓN CON 2 PESTAÑAS: "Todos los roles" y "Por rol"
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -42,7 +42,7 @@ interface Movie {
   releaseMonth?: number;
   releaseDay?: number;
   tipoDuracion?: 'largometraje' | 'mediometraje' | 'cortometraje';
-  stage?: string; // ✅ Agregado para manejar stages
+  stage?: string;
 }
 interface Role {
   id: number;
@@ -76,11 +76,23 @@ interface TabItem extends GroupedCrewRole {
   characterName?: string;
 }
 
+// Interfaz para "Todos los roles"
+interface AllRolesItem {
+  movie: Movie;
+  rolesDisplay: string[]; // Array de roles formateados para mostrar
+}
+
+// Interfaz para secciones de "Por rol"
+interface RoleSection {
+  roleName: string;
+  items: TabItem[];
+}
+
 export default function PersonPage({ params }: PersonPageProps) {
   const [person, setPerson] = useState<any>(null);
   const [filmography, setFilmography] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<string>('Todos los roles');
   const [showAllFilmography, setShowAllFilmography] = useState(false);
 
   // ✅ Agregar tracking cuando la persona esté cargada
@@ -235,82 +247,182 @@ export default function PersonPage({ params }: PersonPageProps) {
         : dateA.getTime() - dateB.getTime();
     });
   };
-  // Agrupar filmografía por rol, combinando múltiples roles por película
-  const groupFilmographyByRole = useCallback((crewRoles: CrewRole[]): { [key: string]: GroupedCrewRole[] } => {
-    const movieRolesMap: { [movieId: number]: { movie: Movie; roles: Set<string> } } = {};
 
-    crewRoles.forEach((item) => {
-      const movieId = item.movie.id;
-      const roleName = item.role?.name || 'Rol desconocido';
+  // ✅ NUEVA FUNCIÓN: Construir la lista de "Todos los roles"
+  const buildAllRolesList = useCallback((
+    castRoles: CastRole[] | undefined,
+    crewRoles: CrewRole[] | undefined,
+    personGender?: string
+  ): AllRolesItem[] => {
+    const movieMap: { [movieId: number]: { movie: Movie; crewRoles: string[]; castRoles: { label: string; isActor: boolean }[] } } = {};
 
-      if (!movieRolesMap[movieId]) {
-        movieRolesMap[movieId] = {
-          movie: item.movie,
-          roles: new Set()
-        };
-      }
+    // Procesar crew roles
+    if (crewRoles) {
+      crewRoles.forEach((item) => {
+        const movieId = item.movie.id;
+        const roleName = item.role?.name || 'Rol desconocido';
 
-      movieRolesMap[movieId].roles.add(roleName);
-    });
+        if (!movieMap[movieId]) {
+          movieMap[movieId] = {
+            movie: item.movie,
+            crewRoles: [],
+            castRoles: []
+          };
+        }
 
-    const groupedByRole: { [roleName: string]: GroupedCrewRole[] } = {};
-
-    crewRoles.forEach((item) => {
-      const roleName = item.role?.name || 'Rol desconocido';
-
-      if (!groupedByRole[roleName]) {
-        groupedByRole[roleName] = [];
-
-        const moviesWithThisRole = crewRoles
-          .filter(cr => cr.role?.name === roleName)
-          .map(cr => cr.movie.id);
-
-        const uniqueMovieIds = [...new Set(moviesWithThisRole)];
-
-        uniqueMovieIds.forEach(movieId => {
-          const movieData = movieRolesMap[movieId];
-          groupedByRole[roleName].push({
-            movie: movieData.movie,
-            roles: Array.from(movieData.roles)
-          });
-        });
-      }
-    });
-
-    Object.keys(groupedByRole).forEach(roleName => {
-      groupedByRole[roleName] = sortMoviesChronologically(groupedByRole[roleName], true);
-    });
-
-    return groupedByRole;
-  }, []);
-
-  const getFirstAvailableTab = useCallback((filmographyData: any, personGender?: string): string => {
-    const allTabs: { [key: string]: number } = {};
-
-    if (filmographyData?.castRoles?.length > 0) {
-      // Separar actores de apariciones como sí mismo
-      const actingRoles = filmographyData.castRoles.filter((r: CastRole) => r.isActor !== false);
-      const selfRoles = filmographyData.castRoles.filter((r: CastRole) => r.isActor === false);
-
-      if (actingRoles.length > 0) {
-        allTabs['Actuación'] = actingRoles.length;
-      }
-      if (selfRoles.length > 0) {
-        const selfLabel = personGender === 'FEMALE' ? 'Como sí misma' : 'Como sí mismo';
-        allTabs[selfLabel] = selfRoles.length;
-      }
-    }
-
-    if (filmographyData?.crewRoles?.length > 0) {
-      const grouped = groupFilmographyByRole(filmographyData.crewRoles);
-      Object.entries(grouped).forEach(([roleName, items]) => {
-        allTabs[roleName] = items.length;
+        // Evitar duplicados en crew
+        if (!movieMap[movieId].crewRoles.includes(roleName)) {
+          movieMap[movieId].crewRoles.push(roleName);
+        }
       });
     }
 
-    const sortedTabs = Object.entries(allTabs).sort((a, b) => b[1] - a[1]);
-    return sortedTabs.length > 0 ? sortedTabs[0][0] : '';
-  }, [groupFilmographyByRole]);
+    // Procesar cast roles
+    if (castRoles) {
+      castRoles.forEach((item) => {
+        const movieId = item.movie.id;
+
+        if (!movieMap[movieId]) {
+          movieMap[movieId] = {
+            movie: item.movie,
+            crewRoles: [],
+            castRoles: []
+          };
+        }
+
+        let label: string;
+        if (item.isActor === false) {
+          // Aparición como sí mismo/a
+          label = personGender === 'FEMALE' ? 'Como sí misma' : 'Como sí mismo';
+        } else {
+          // Actuación con personaje
+          const actorLabel = personGender === 'FEMALE' ? 'Actriz' : 'Actor';
+          if (item.characterName) {
+            label = `${actorLabel} [${item.characterName}]`;
+          } else {
+            label = actorLabel;
+          }
+        }
+
+        // Evitar duplicados exactos en cast
+        const exists = movieMap[movieId].castRoles.some(c => c.label === label);
+        if (!exists) {
+          movieMap[movieId].castRoles.push({ label, isActor: item.isActor !== false });
+        }
+      });
+    }
+
+    // Construir la lista final con roles ordenados por importancia (crew primero, luego cast)
+    const result: AllRolesItem[] = Object.values(movieMap).map(({ movie, crewRoles, castRoles }) => {
+      // Ordenar: crew primero (alfabético), luego cast (actores primero, luego "como sí mismo")
+      const sortedCrewRoles = [...crewRoles].sort((a, b) => a.localeCompare(b));
+      const sortedCastRoles = [...castRoles].sort((a, b) => {
+        // Actores van antes que "como sí mismo"
+        if (a.isActor && !b.isActor) return -1;
+        if (!a.isActor && b.isActor) return 1;
+        return a.label.localeCompare(b.label);
+      });
+
+      const rolesDisplay = [
+        ...sortedCrewRoles,
+        ...sortedCastRoles.map(c => c.label)
+      ];
+
+      return { movie, rolesDisplay };
+    });
+
+    // Ordenar películas cronológicamente
+    return sortMoviesChronologically(result, true);
+  }, []);
+
+  // ✅ NUEVA FUNCIÓN: Construir las secciones para "Por rol"
+  const buildRoleSections = useCallback((
+    castRoles: CastRole[] | undefined,
+    crewRoles: CrewRole[] | undefined,
+    personGender?: string
+  ): RoleSection[] => {
+    const sections: { [roleName: string]: TabItem[] } = {};
+
+    // Procesar crew roles
+    if (crewRoles) {
+      // Agrupar películas por rol, guardando todos los roles de cada película
+      const movieRolesMap: { [movieId: number]: { movie: Movie; roles: Set<string> } } = {};
+
+      crewRoles.forEach((item) => {
+        const movieId = item.movie.id;
+        const roleName = item.role?.name || 'Rol desconocido';
+
+        if (!movieRolesMap[movieId]) {
+          movieRolesMap[movieId] = {
+            movie: item.movie,
+            roles: new Set()
+          };
+        }
+        movieRolesMap[movieId].roles.add(roleName);
+      });
+
+      // Crear secciones por rol
+      crewRoles.forEach((item) => {
+        const roleName = item.role?.name || 'Rol desconocido';
+
+        if (!sections[roleName]) {
+          sections[roleName] = [];
+
+          // Obtener todas las películas que tienen este rol
+          const moviesWithThisRole = crewRoles
+            .filter(cr => cr.role?.name === roleName)
+            .map(cr => cr.movie.id);
+
+          const uniqueMovieIds = [...new Set(moviesWithThisRole)];
+
+          uniqueMovieIds.forEach(movieId => {
+            const movieData = movieRolesMap[movieId];
+            sections[roleName].push({
+              movie: movieData.movie,
+              roles: Array.from(movieData.roles)
+            });
+          });
+        }
+      });
+    }
+
+    // Procesar cast roles - Actuación
+    if (castRoles) {
+      const actingRoles = castRoles.filter((r: CastRole) => r.isActor !== false);
+      const selfRoles = castRoles.filter((r: CastRole) => r.isActor === false);
+
+      if (actingRoles.length > 0) {
+        const actingLabel = 'Actuación';
+        sections[actingLabel] = sortMoviesChronologically(actingRoles.map(r => ({
+          movie: r.movie,
+          roles: [actingLabel],
+          characterName: r.characterName
+        })), true);
+      }
+
+      if (selfRoles.length > 0) {
+        const selfLabel = personGender === 'FEMALE' ? 'Como sí misma' : 'Como sí mismo';
+        sections[selfLabel] = sortMoviesChronologically(selfRoles.map(r => ({
+          movie: r.movie,
+          roles: [selfLabel]
+        })), true);
+      }
+    }
+
+    // Ordenar películas dentro de cada sección
+    Object.keys(sections).forEach(roleName => {
+      if (roleName !== 'Actuación' && !roleName.startsWith('Como sí')) {
+        sections[roleName] = sortMoviesChronologically(sections[roleName], true);
+      }
+    });
+
+    // Convertir a array y ordenar secciones por cantidad de películas
+    const sectionsArray: RoleSection[] = Object.entries(sections)
+      .map(([roleName, items]) => ({ roleName, items }))
+      .sort((a, b) => b.items.length - a.items.length);
+
+    return sectionsArray;
+  }, []);
 
   const fetchPersonData = useCallback(async () => {
     try {
@@ -331,18 +443,14 @@ export default function PersonPage({ params }: PersonPageProps) {
         }
 
         setFilmography(filmographyData);
-
-        const firstTab = getFirstAvailableTab(filmographyData, personData.gender);
-        if (firstTab) {
-          setActiveTab(firstTab);
-        }
+        setActiveTab('Todos los roles');
       }
     } catch (error) {
       console.error('Error fetching person data:', error);
     } finally {
       setLoading(false);
     }
-  }, [params.slug, getFirstAvailableTab]);
+  }, [params.slug]);
 
   useEffect(() => {
     fetchPersonData();
@@ -377,34 +485,23 @@ export default function PersonPage({ params }: PersonPageProps) {
     day: person.deathDay
   }, { monthFormat: 'long', includeDay: true }) : null;
 
-  const tabs: { [key: string]: TabItem[] } = {};
+  // ✅ Construir la lista de "Todos los roles"
+  const allRolesList = buildAllRolesList(
+    filmography?.castRoles,
+    filmography?.crewRoles,
+    person.gender
+  );
 
-  if (filmography?.castRoles?.length > 0) {
-    // Separar actores de apariciones como sí mismo
-    const actingRoles = filmography.castRoles.filter((r: CastRole) => r.isActor !== false);
-    const selfRoles = filmography.castRoles.filter((r: CastRole) => r.isActor === false);
+  // ✅ Construir las secciones de "Por rol"
+  const roleSections = buildRoleSections(
+    filmography?.castRoles,
+    filmography?.crewRoles,
+    person.gender
+  );
 
-    if (actingRoles.length > 0) {
-      tabs['Actuación'] = actingRoles;
-    }
-
-    if (selfRoles.length > 0) {
-      // Determinar etiqueta según género de la persona
-      const selfLabel = person.gender === 'FEMALE' ? 'Como sí misma' : 'Como sí mismo';
-      tabs[selfLabel] = selfRoles;
-    }
-  }
-
-  if (filmography?.crewRoles?.length > 0) {
-    const groupedCrew = groupFilmographyByRole(filmography.crewRoles);
-    Object.entries(groupedCrew).forEach(([roleName, items]) => {
-      tabs[roleName] = items;
-    });
-  }
-
-  const sortedTabEntries = Object.entries(tabs).sort((a, b) => {
-    return b[1].length - a[1].length;
-  });
+  // ✅ Solo 2 pestañas
+  const hasTabs = allRolesList.length > 0;
+  const tabs = hasTabs ? ['Todos los roles', 'Por rol'] : [];
 
   // Calcular stats separando actuaciones de apariciones como sí mismo
   const actingRolesForStats = filmography?.castRoles?.filter((r: CastRole) => r.isActor !== false) || [];
@@ -421,12 +518,6 @@ export default function PersonPage({ params }: PersonPageProps) {
     asSelf: uniqueMoviesAsSelf.size,
     asCrew: uniqueMoviesAsCrew.size
   };
-
-  const getFilmographyToShow = (): TabItem[] => {
-    const items = tabs[activeTab] || [];
-    return showAllFilmography ? items : items.slice(0, 10);
-  };
-
 
   // ✅ ACTUALIZADO: Determinar el badge a mostrar (incluyendo stages en desarrollo)
   const getMovieBadge = (movie: Movie): { text: string; color: string } | null => {
@@ -501,6 +592,55 @@ export default function PersonPage({ params }: PersonPageProps) {
     }
 
     return null;
+  };
+
+  // ✅ Renderizar una película individual
+  const renderMovieItem = (item: any, index: number, showRoles: boolean = false, showCharacter: boolean = false) => {
+    const movie = item.movie;
+    const year = getEffectiveYear(movie);
+    const displayYear = year > 0 ? year : '—';
+    const badge = getMovieBadge(movie);
+
+    return (
+      <div key={`${movie.id}-${index}`} className="py-4 hover:bg-gray-800/30 transition-colors group">
+        <div className="flex items-center gap-4">
+          <span className="text-sm w-12 text-left text-gray-500">
+            {displayYear}
+          </span>
+          <div className="flex-grow">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Link
+                href={`/pelicula/${movie.slug}`}
+                className="text-lg text-white hover:text-blue-400 transition-colors inline-block"
+              >
+                {movie.title}
+              </Link>
+
+              {/* BADGE */}
+              {badge && (
+                <span className={`text-xs px-2 py-0.5 rounded-full ${badge.color}`}>
+                  {badge.text}
+                </span>
+              )}
+
+              {/* Roles para "Todos los roles" */}
+              {showRoles && item.rolesDisplay && item.rolesDisplay.length > 0 && (
+                <span className="text-sm text-gray-500">
+                  ({item.rolesDisplay.join('; ')})
+                </span>
+              )}
+
+              {/* Personaje para Actuación */}
+              {showCharacter && item.characterName && (
+                <span className="text-sm text-gray-500">
+                  — {item.characterName}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -603,45 +743,45 @@ export default function PersonPage({ params }: PersonPageProps) {
                       {person.deathDay ? 'Murió el ' : 'Murió en '}
                     </span>
                     {person.deathDay && person.deathMonth ? (
-  <>
-    <Link
-      href={getEfemeridesUrl(person.deathMonth, person.deathDay)}
-      className="text-gray-300 hover:text-blue-400 transition-colors decoration-gray-600 hover:decoration-blue-400"
-    >
-      {person.deathDay} de {MONTHS[person.deathMonth - 1].label.toLowerCase()}
-    </Link>
-    <span className="text-gray-500"> de </span>
-    <Link
-      href={getDeathYearUrl(person.deathYear)}
-      className="text-gray-300 hover:text-blue-400 transition-colors"
-    >
-      {person.deathYear}
-    </Link>
-  </>
-) : person.deathMonth ? (
-  <>
-    <Link
-      href={getEfemeridesUrl(person.deathMonth, 1)}
-      className="text-gray-300 hover:text-blue-400 transition-colors"
-    >
-      {MONTHS[person.deathMonth - 1].label.toLowerCase()}
-    </Link>
-    <span className="text-gray-500"> de </span>
-    <Link
-      href={getDeathYearUrl(person.deathYear)}
-      className="text-gray-300 hover:text-blue-400 transition-colors"
-    >
-      {person.deathYear}
-    </Link>
-  </>
-) : (
-  <Link
-    href={getDeathYearUrl(person.deathYear)}
-    className="text-gray-300 hover:text-blue-400 transition-colors"
-  >
-    {person.deathYear}
-  </Link>
-)}
+                      <>
+                        <Link
+                          href={getEfemeridesUrl(person.deathMonth, person.deathDay)}
+                          className="text-gray-300 hover:text-blue-400 transition-colors decoration-gray-600 hover:decoration-blue-400"
+                        >
+                          {person.deathDay} de {MONTHS[person.deathMonth - 1].label.toLowerCase()}
+                        </Link>
+                        <span className="text-gray-500"> de </span>
+                        <Link
+                          href={getDeathYearUrl(person.deathYear)}
+                          className="text-gray-300 hover:text-blue-400 transition-colors"
+                        >
+                          {person.deathYear}
+                        </Link>
+                      </>
+                    ) : person.deathMonth ? (
+                      <>
+                        <Link
+                          href={getEfemeridesUrl(person.deathMonth, 1)}
+                          className="text-gray-300 hover:text-blue-400 transition-colors"
+                        >
+                          {MONTHS[person.deathMonth - 1].label.toLowerCase()}
+                        </Link>
+                        <span className="text-gray-500"> de </span>
+                        <Link
+                          href={getDeathYearUrl(person.deathYear)}
+                          className="text-gray-300 hover:text-blue-400 transition-colors"
+                        >
+                          {person.deathYear}
+                        </Link>
+                      </>
+                    ) : (
+                      <Link
+                        href={getDeathYearUrl(person.deathYear)}
+                        className="text-gray-300 hover:text-blue-400 transition-colors"
+                      >
+                        {person.deathYear}
+                      </Link>
+                    )}
                     {person.deathLocation && (
                       <>
                         <span className="text-gray-500"> en </span>
@@ -747,101 +887,88 @@ export default function PersonPage({ params }: PersonPageProps) {
       </section>
 
       {/* Filmography Section */}
-      {sortedTabEntries.length > 0 && (
+      {hasTabs && (
         <section className="py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Navigation Tabs */}
+            {/* Navigation Tabs - Solo 2 pestañas */}
             <div className="border-b border-gray-700 mb-8">
-              <nav className="flex space-x-8 overflow-x-auto">
-                {sortedTabEntries.map(([key, items]) => (
+              <nav className="flex space-x-8">
+                {tabs.map((tabName) => (
                   <button
-                    key={key}
-                    onClick={() => setActiveTab(key)}
-                    className={`pb-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === key
+                    key={tabName}
+                    onClick={() => {
+                      setActiveTab(tabName);
+                      setShowAllFilmography(false);
+                    }}
+                    className={`pb-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === tabName
                       ? 'border-blue-400 text-white'
                       : 'border-transparent text-gray-400 hover:text-white'
                       }`}
                   >
-                    {key} ({items.length})
+                    {tabName === 'Todos los roles' 
+                      ? `${tabName} (${allRolesList.length})`
+                      : `${tabName} (${roleSections.length})`
+                    }
                   </button>
                 ))}
               </nav>
             </div>
 
-            {/* Filmography Grid */}
-            <div className="space-y-1">
-              <h2 className="text-2xl font-light mb-6 text-white">
-                Filmografía - {activeTab}
-              </h2>
-
-              {/* Film Items */}
-              <div className="divide-y divide-gray-800/50">
-                {getFilmographyToShow().map((item: TabItem, index: number) => {
-                  const isActing = activeTab === 'Actuación';
-                  const movie = item.movie;
-                  const year = getEffectiveYear(movie);
-                  const displayYear = year > 0 ? year : '—';
-                  const badge = getMovieBadge(movie);
-
-                  return (
-                    <div key={`${movie.id}-${index}`} className="py-4 hover:bg-gray-800/30 transition-colors group">
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm w-12 text-left text-gray-500">
-                          {displayYear}
-                        </span>
-                        <div className="flex-grow">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Link
-                              href={`/pelicula/${movie.slug}`}
-                              className="text-lg text-white hover:text-blue-400 transition-colors inline-block"
-                            >
-                              {movie.title}
-                            </Link>
-
-                            {/* ✅ BADGE */}
-                            {badge && (
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${badge.color}`}>
-                                {badge.text}
-                              </span>
-                            )}
-
-                            {isActing && item.characterName && (
-                              <span className="text-sm text-gray-500">
-                                — {item.characterName}
-                              </span>
-                            )}
-
-                            {!isActing && item.roles && item.roles.length > 1 && (
-                              <span className="text-sm text-gray-500">
-                                (también: {item.roles.filter((r: string) => r !== activeTab).join(', ')})
-                              </span>
-                            )}
-                          </div>
-                        </div>
+            {/* Contenido según pestaña activa */}
+            {activeTab === 'Todos los roles' ? (
+              // ✅ PESTAÑA "TODOS LOS ROLES"
+              <div className="space-y-1">
+                <h2 className="text-2xl font-light mb-6 text-white">Filmografía</h2>
+                <div className="divide-y divide-gray-800/50">
+                  {(showAllFilmography ? allRolesList : allRolesList.slice(0, 10)).map((item, index) => 
+                    renderMovieItem(item, index, true, false)
+                  )}
+                </div>
+                
+                {/* Show More Button */}
+                {allRolesList.length > 10 && (
+                  <div className="mt-8 text-center">
+                    <button
+                      onClick={() => setShowAllFilmography(!showAllFilmography)}
+                      className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors flex items-center space-x-2 mx-auto"
+                    >
+                      <span>{showAllFilmography ? 'Ver menos' : 'Ver filmografía completa'}</span>
+                      <svg
+                        className={`w-4 h-4 transition-transform duration-200 ${showAllFilmography ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // ✅ PESTAÑA "POR ROL" - Secciones agrupadas
+              <div className="space-y-1">
+                <h2 className="text-2xl font-light mb-6 text-white">Filmografía</h2>
+                <div className="space-y-10">
+                  {roleSections.map((section, sectionIndex) => (
+                    <div key={section.roleName} className="space-y-1">
+                      <h3 className="text-xl font-light text-white mb-4">
+                        {section.roleName}
+                        <span className="text-gray-500 ml-2">({section.items.length})</span>
+                      </h3>
+                      <div className="divide-y divide-gray-800/50">
+                        {section.items.map((item, index) => 
+                          renderMovieItem(
+                            item, 
+                            index, 
+                            false, 
+                            section.roleName === 'Actuación' // Solo mostrar personaje en Actuación
+                          )
+                        )}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Show More Button */}
-            {tabs[activeTab] && tabs[activeTab].length > 10 && (
-              <div className="mt-8 text-center">
-                <button
-                  onClick={() => setShowAllFilmography(!showAllFilmography)}
-                  className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors flex items-center space-x-2 mx-auto"
-                >
-                  <span>{showAllFilmography ? 'Ver menos' : 'Ver filmografía completa'}</span>
-                  <svg
-                    className={`w-4 h-4 transition-transform duration-200 ${showAllFilmography ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
