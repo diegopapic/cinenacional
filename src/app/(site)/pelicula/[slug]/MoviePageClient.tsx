@@ -2,7 +2,6 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
 import { TrailerSection } from "@/components/movies/TrailerSection";
 import { MovieHero } from "@/components/movies/MovieHero";
 import { CastSection } from "@/components/movies/CastSection";
@@ -37,6 +36,29 @@ interface CrewDepartment {
     [department: string]: CrewMember[];
 }
 
+// Tipo para las imágenes de galería con datos para caption
+interface GalleryImage {
+    id: number;
+    url: string;
+    cloudinaryPublicId: string;
+    type: string;
+    eventName?: string | null;
+    people: Array<{
+        personId: number;
+        position: number;
+        person: {
+            id: number;
+            firstName?: string | null;
+            lastName?: string | null;
+        }
+    }>;
+    movie?: {
+        id: number;
+        title: string;
+        releaseYear?: number | null;
+    } | null;
+}
+
 interface MoviePageClientProps {
     movie: any;
     displayYear: number | null;
@@ -59,6 +81,7 @@ interface MoviePageClientProps {
         year: number | null;
     } | null;
     heroBackgroundImage?: string | null;
+    galleryImages?: GalleryImage[];
 }
 
 // Slots de AdSense - Reemplazar con tus IDs reales
@@ -88,59 +111,10 @@ export function MoviePageClient({
     fullCrew,
     premiereVenues,
     releaseDate,
-    heroBackgroundImage
+    heroBackgroundImage,
+    galleryImages = []
 }: MoviePageClientProps) {
     usePageView({ pageType: 'MOVIE', movieId: movie.id });
-    const [movieGallery, setMovieGallery] = useState<string[]>([]);
-
-    // Función para cargar imágenes desde la API
-    const loadMovieImages = async (movieId: string) => {
-        try {
-            const response = await fetch(`/api/images/${movieId}`);
-            console.log(`📡 Respuesta de la API:`, response.status);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log(`📦 Datos recibidos:`, data);
-
-            if (data.images && data.images.length > 0) {
-                // Optimizar URLs para resolución máxima de 1024px
-                const images = data.images.map((img: any) => {
-                    let url = img.url;
-                    // Si es de Unsplash, limitar a 1024px de ancho máximo
-                    if (url.includes('unsplash.com')) {
-                        url = url.replace(/w=\d+/, 'w=1024').replace(/h=\d+/, '');
-                        if (!url.includes('w=')) {
-                            url += url.includes('?') ? '&w=1024&fit=crop&auto=format' : '?w=1024&fit=crop&auto=format';
-                        }
-                    }
-                    return url;
-                });
-
-                setMovieGallery(images);
-                console.log(`✅ Cargadas ${data.count} imágenes optimizadas a 1024px:`, images);
-            } else {
-                console.log('⚠️ No se encontraron imágenes, usando fallback');
-                setMovieGallery(getFallbackImages());
-            }
-        } catch (error) {
-            console.error('❌ Error cargando imágenes:', error);
-            setMovieGallery(getFallbackImages());
-        }
-    };
-
-    // Función para obtener imágenes de fallback optimizadas
-    const getFallbackImages = () => [
-        '/images/placeholder.jpg'
-    ];
-
-    // Cargar imágenes al montar el componente - COMENTADO TEMPORALMENTE
-    // useEffect(() => {
-    //     loadMovieImages(movie.slug);
-    // }, [movie.slug]);
 
     // Mostrar anuncio entre cast y crew solo si hay contenido suficiente
     const showCastCrewAd = mainCast.length > 3 || fullCast.length > 5;
@@ -246,16 +220,16 @@ export function MoviePageClient({
                 </div>
             </div>
 
-            {/* Image Gallery 
-            
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-gray-800">
-                <h2 className="serif-heading text-2xl text-white mb-6">Galería de Imágenes</h2>
-                <ImageGallery
-                    images={movieGallery}
-                    movieTitle={movie.title}
-                />
-            </div>
-            */}
+            {/* Image Gallery - Solo se muestra si hay imágenes */}
+            {galleryImages.length > 0 && (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-gray-800">
+                    <h2 className="serif-heading text-2xl text-white mb-6">Galería de Imágenes</h2>
+                    <ImageGallery
+                        images={galleryImages}
+                        movieTitle={movie.title}
+                    />
+                </div>
+            )}
 
             {/* Trailer - Solo se muestra si hay URL */}
             {movie.trailerUrl && (

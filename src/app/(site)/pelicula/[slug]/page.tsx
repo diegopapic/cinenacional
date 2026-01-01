@@ -202,12 +202,29 @@ async function getMovieData(slug: string) {
           }
         },
         
-        // Imágenes de la película para el hero
+        // Imágenes de la película para el hero y galería
         images: {
           select: {
             id: true,
             cloudinaryPublicId: true,
-            type: true
+            type: true,
+            eventName: true,
+            people: {
+              select: {
+                personId: true,
+                position: true,
+                person: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true
+                  }
+                }
+              },
+              orderBy: {
+                position: 'asc'
+              }
+            }
           }
         },
         
@@ -298,8 +315,48 @@ function formatPremiereVenues(venues: any[]): string {
   }
 }
 
+// Tipo para las imágenes que vienen de la BD
+interface MovieImageFromDB {
+  id: number;
+  cloudinaryPublicId: string;
+  type: string;
+  eventName?: string | null;
+  people: Array<{
+    personId: number;
+    position: number;
+    person: {
+      id: number;
+      firstName?: string | null;
+      lastName?: string | null;
+    }
+  }>;
+}
+
+// Tipo para las imágenes de galería (para el cliente)
+interface GalleryImage {
+  id: number;
+  url: string;
+  cloudinaryPublicId: string;
+  type: string;
+  eventName?: string | null;
+  people: Array<{
+    personId: number;
+    position: number;
+    person: {
+      id: number;
+      firstName?: string | null;
+      lastName?: string | null;
+    }
+  }>;
+  movie?: {
+    id: number;
+    title: string;
+    releaseYear?: number | null;
+  } | null;
+}
+
 // Función para seleccionar una imagen al azar para el hero
-function getRandomHeroImage(images: Array<{ id: number; cloudinaryPublicId: string; type: string }>): string | null {
+function getRandomHeroImage(images: MovieImageFromDB[]): string | null {
   if (!images || images.length === 0) {
     return null;
   }
@@ -310,6 +367,30 @@ function getRandomHeroImage(images: Array<{ id: number; cloudinaryPublicId: stri
   
   // Construir URL de Cloudinary optimizada para hero
   return buildCloudinaryUrl(selectedImage.cloudinaryPublicId);
+}
+
+// Función para construir los datos de galería con información para captions
+function buildGalleryImages(
+  images: MovieImageFromDB[], 
+  movie: { id: number; title: string; releaseYear?: number | null }
+): GalleryImage[] {
+  if (!images || images.length === 0) {
+    return [];
+  }
+  
+  return images.map(img => ({
+    id: img.id,
+    url: buildCloudinaryUrl(img.cloudinaryPublicId),
+    cloudinaryPublicId: img.cloudinaryPublicId,
+    type: img.type,
+    eventName: img.eventName,
+    people: img.people,
+    movie: {
+      id: movie.id,
+      title: movie.title,
+      releaseYear: movie.releaseYear
+    }
+  }));
 }
 
 export default async function MoviePage({ params }: PageProps) {
@@ -361,6 +442,13 @@ export default async function MoviePage({ params }: PageProps) {
 
   // Obtener imagen aleatoria para el hero
   const heroBackgroundImage = getRandomHeroImage(movie.images || []);
+
+  // Obtener todas las imágenes para la galería con datos para caption
+  const galleryImages = buildGalleryImages(movie.images || [], {
+    id: movie.id,
+    title: movie.title,
+    releaseYear: movie.releaseYear || movie.year
+  });
 
   // PROCESAR CAST
   const allCast = movie.cast?.map((c: any) => ({
@@ -522,6 +610,7 @@ export default async function MoviePage({ params }: PageProps) {
           : null
       }
       heroBackgroundImage={heroBackgroundImage}
+      galleryImages={galleryImages}
     />
   );
 }
