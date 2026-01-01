@@ -1,15 +1,56 @@
+// src/components/movies/ImageGallery.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
+import { generateImageCaption } from '@/lib/images/imageUtils';
+
+// Tipo para las imágenes de galería
+interface GalleryImage {
+  id: number;
+  url: string;
+  cloudinaryPublicId: string;
+  type: string;
+  eventName?: string | null;
+  people: Array<{
+    personId: number;
+    position: number;
+    person: {
+      id: number;
+      firstName?: string | null;
+      lastName?: string | null;
+    }
+  }>;
+  movie?: {
+    id: number;
+    title: string;
+    releaseYear?: number | null;
+  } | null;
+}
 
 interface ImageGalleryProps {
-  images: string[];
+  images: GalleryImage[];
   movieTitle: string;
 }
 
 export function ImageGallery({ images, movieTitle }: ImageGalleryProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [lightboxImage, setLightboxImage] = useState<{ src: string, alt: string, index: number } | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<{ src: string, caption: string, index: number } | null>(null);
+
+  // Generar caption para una imagen
+  const getCaption = (image: GalleryImage): string => {
+    // Convertir a formato ImageWithRelations para generateImageCaption
+    const imageForCaption = {
+      id: image.id,
+      cloudinaryPublicId: image.cloudinaryPublicId,
+      type: image.type as any,
+      eventName: image.eventName,
+      people: image.people,
+      movie: image.movie,
+      createdAt: '',
+      updatedAt: ''
+    };
+    return generateImageCaption(imageForCaption);
+  };
 
   // Slider functions
   const nextSlide = () => {
@@ -30,8 +71,9 @@ export function ImageGallery({ images, movieTitle }: ImageGalleryProps) {
     });
   };
 
-  const openLightbox = (src: string, alt: string, index: number) => {
-    setLightboxImage({ src, alt, index });
+  const openLightbox = (image: GalleryImage, index: number) => {
+    const caption = getCaption(image);
+    setLightboxImage({ src: image.url, caption, index });
     document.body.style.overflow = 'hidden';
   };
 
@@ -51,9 +93,12 @@ export function ImageGallery({ images, movieTitle }: ImageGalleryProps) {
       newIndex = lightboxImage.index === 0 ? images.length - 1 : lightboxImage.index - 1;
     }
 
+    const newImage = images[newIndex];
+    const caption = getCaption(newImage);
+    
     setLightboxImage({
-      src: images[newIndex],
-      alt: `Imagen ${newIndex + 1} - ${movieTitle}`,
+      src: newImage.url,
+      caption,
       index: newIndex
     });
   };
@@ -91,28 +136,31 @@ export function ImageGallery({ images, movieTitle }: ImageGalleryProps) {
             style={{ transform: `translateX(-${currentSlide * (100 / 3)}%)` }}
           >
             {images.length > 0 ? (
-              images.map((imageSrc, index) => (
-                <div key={index} className="flex-shrink-0 w-1/3 px-2">
-                  <div
-                    className="group cursor-pointer relative overflow-hidden rounded-lg aspect-video bg-cine-gray"
-                    onClick={() => openLightbox(imageSrc, `Imagen ${index + 1} - ${movieTitle}`, index)}
-                  >
-                    <img
-                      src={imageSrc}
-                      alt={`Imagen ${index + 1} - ${movieTitle}`}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                      loading="lazy"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=800&fit=crop&auto=format';
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <p className="text-white text-sm font-medium">Imagen {index + 1}</p>
+              images.map((image, index) => {
+                const caption = getCaption(image);
+                return (
+                  <div key={image.id} className="flex-shrink-0 w-1/3 px-2">
+                    <div
+                      className="group cursor-pointer relative overflow-hidden rounded-lg aspect-video bg-cine-gray"
+                      onClick={() => openLightbox(image, index)}
+                    >
+                      <img
+                        src={image.url}
+                        alt={caption}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=800&fit=crop&auto=format';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
+                      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <p className="text-white text-sm font-medium line-clamp-2">{caption}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="flex-shrink-0 w-1/3 px-2">
                 <div className="group cursor-pointer relative overflow-hidden rounded-lg aspect-video bg-cine-gray">
@@ -186,11 +234,11 @@ export function ImageGallery({ images, movieTitle }: ImageGalleryProps) {
               </button>
               <img
                 src={lightboxImage.src}
-                alt={lightboxImage.alt}
+                alt={lightboxImage.caption}
                 className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
               />
               <div className="absolute -bottom-12 left-0 right-0 text-center">
-                <p className="text-white text-base font-medium">{lightboxImage.alt}</p>
+                <p className="text-white text-base font-medium">{lightboxImage.caption}</p>
                 <p className="text-gray-400 text-sm mt-1">{lightboxImage.index + 1} de {images.length}</p>
               </div>
             </div>
