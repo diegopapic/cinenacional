@@ -16,6 +16,7 @@ interface Person {
 
 interface PersonSearchInputProps {
   value?: number
+  initialPersonName?: string  // Nombre inicial para evitar llamada API
   onChange: (personId: number, personName?: string) => void
   placeholder?: string
   disabled?: boolean
@@ -67,6 +68,7 @@ async function saveFirstNameGender(firstName: string, gender: 'MALE' | 'FEMALE')
 
 export default function PersonSearchInput({
   value,
+  initialPersonName,
   onChange,
   placeholder = "Buscar persona...",
   disabled = false,
@@ -90,6 +92,13 @@ export default function PersonSearchInput({
   // Cargar persona seleccionada si existe
   useEffect(() => {
     if (value && value > 0) {
+      // Si ya tenemos el nombre inicial, usarlo directamente SIN llamar a la API
+      if (initialPersonName) {
+        setSearchTerm(initialPersonName)
+        return
+      }
+      
+      // Solo hacer la llamada si NO tenemos el nombre
       peopleService.getById(value)
         .then((person: any) => {
           const fullName = person.name || `${person.firstName || ''} ${person.lastName || ''}`.trim()
@@ -98,7 +107,7 @@ export default function PersonSearchInput({
         })
         .catch(err => console.error('Error cargando persona:', err))
     }
-  }, [value])
+  }, [value, initialPersonName])
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {

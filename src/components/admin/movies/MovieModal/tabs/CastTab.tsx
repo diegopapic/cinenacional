@@ -82,6 +82,7 @@ function SortableCastMember({
         <div className="flex-1 min-w-0" style={{ maxWidth: '250px' }}>
           <PersonSearchInput
             value={member.personId}
+            initialPersonName={member.personName}
             onChange={(personId, personName) => updateCastMember(index, {
               personId,
               personName
@@ -305,7 +306,7 @@ export default function CastTab() {
           <h3 className="text-lg font-medium text-gray-900">Reparto</h3>
           {isDocumental && (
             <p className="text-xs text-amber-600 mt-1">
-              📽️ Película documental - Las personas se agregan como "sí mismos" por defecto
+              🎞️ Película documental - Las personas se agregan como "sí mismos" por defecto
             </p>
           )}
         </div>
