@@ -1,4 +1,4 @@
-// Archivos del admin - 2026-01-06T22:27:57.741Z
+// Archivos del admin - 2026-01-06T23:58:45.424Z
 // ==================
 
 
@@ -14018,6 +14018,7 @@ function SortableCastMember({
         <div className="flex-1 min-w-0" style={{ maxWidth: '250px' }}>
           <PersonSearchInput
             value={member.personId}
+            initialPersonName={member.personName}
             onChange={(personId, personName) => updateCastMember(index, {
               personId,
               personName
@@ -14241,7 +14242,7 @@ export default function CastTab() {
           <h3 className="text-lg font-medium text-gray-900">Reparto</h3>
           {isDocumental && (
             <p className="text-xs text-amber-600 mt-1">
-              📽️ Película documental - Las personas se agregan como "sí mismos" por defecto
+              🎞️ Película documental - Las personas se agregan como "sí mismos" por defecto
             </p>
           )}
         </div>
@@ -19007,6 +19008,7 @@ interface Person {
 
 interface PersonSearchInputProps {
   value?: number
+  initialPersonName?: string  // Nombre inicial para evitar llamada API
   onChange: (personId: number, personName?: string) => void
   placeholder?: string
   disabled?: boolean
@@ -19058,6 +19060,7 @@ async function saveFirstNameGender(firstName: string, gender: 'MALE' | 'FEMALE')
 
 export default function PersonSearchInput({
   value,
+  initialPersonName,
   onChange,
   placeholder = "Buscar persona...",
   disabled = false,
@@ -19081,6 +19084,13 @@ export default function PersonSearchInput({
   // Cargar persona seleccionada si existe
   useEffect(() => {
     if (value && value > 0) {
+      // Si ya tenemos el nombre inicial, usarlo directamente SIN llamar a la API
+      if (initialPersonName) {
+        setSearchTerm(initialPersonName)
+        return
+      }
+      
+      // Solo hacer la llamada si NO tenemos el nombre
       peopleService.getById(value)
         .then((person: any) => {
           const fullName = person.name || `${person.firstName || ''} ${person.lastName || ''}`.trim()
@@ -19089,7 +19099,7 @@ export default function PersonSearchInput({
         })
         .catch(err => console.error('Error cargando persona:', err))
     }
-  }, [value])
+  }, [value, initialPersonName])
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
