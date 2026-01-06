@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generatePersonSlug } from '@/lib/people/peopleUtils';
+import { splitFullName } from '@/lib/people/nameUtils';
 import RedisClient from '@/lib/redis';
 
 // ============================================
@@ -446,15 +447,16 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST sin cambios
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
 
+    // ✨ SEPARACIÓN INTELIGENTE DE NOMBRES
+    // Usa FirstNameGender para identificar qué palabras son nombres
     if (data.name && !data.firstName && !data.lastName) {
-      const nameParts = data.name.trim().split(' ');
-      data.firstName = nameParts[0];
-      data.lastName = nameParts.slice(1).join(' ') || null;
+      const { firstName, lastName } = await splitFullName(data.name, prisma);
+      data.firstName = firstName;
+      data.lastName = lastName;
     }
 
     let baseSlug = generatePersonSlug(data.firstName, data.lastName);
