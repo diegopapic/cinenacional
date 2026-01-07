@@ -89,6 +89,7 @@ function SortableCrewMember({
           </label>
           <PersonSearchInput
             value={member.personId}
+            initialPersonName={member.personName}
             onChange={(personId, personName) => updateCrewMember(index, {
               personId,
               personName
@@ -276,7 +277,7 @@ export default function CrewTab() {
   }
 
   const updateCrewMember = (index: number, updates: Partial<CrewMember>) => {
-    console.log('📄 Actualizando miembro:', index, updates)
+    console.log('🔄 Actualizando miembro:', index, updates)
     const updatedCrew = [...crew]
     updatedCrew[index] = {
       ...updatedCrew[index],
