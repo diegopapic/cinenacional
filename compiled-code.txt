@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 940a0e833d8855fcc760dc261364a8569f8077c6
-// Fecha: 2026-01-10T19:06:50.203Z
+// Commit: 6a7828dff9602247c11d6eb803efe0bbe0b09e73
+// Fecha: 2026-01-10T23:14:17.511Z
 // ============================================
 
 
@@ -4202,6 +4202,11 @@ function formatLocationPath(location: any): string {
   return parts.join(', ');
 }
 
+// Helper para obtener etiqueta de "acreditado/a" según género
+function getCreditedLabel(gender?: string | null): string {
+  return gender === 'FEMALE' ? 'También acreditada como' : 'También acreditado como';
+}
+
 interface PersonPageProps {
   params: {
     slug: string;
@@ -4262,6 +4267,12 @@ interface AllRolesItem {
 interface RoleSection {
   roleName: string;
   items: TabItem[];
+}
+
+// Interfaz para nombres alternativos
+interface AlternativeName {
+  id: number;
+  fullName: string;
 }
 
 export default function PersonPage({ params }: PersonPageProps) {
@@ -4855,6 +4866,14 @@ export default function PersonPage({ params }: PersonPageProps) {
                 <p className="text-gray-400 mb-2">
                   <span className="text-gray-500">Nombre real: </span>
                   {person.realName}
+                </p>
+              )}
+
+              {/* ✅ NUEVO: Mostrar nombres alternativos */}
+              {person.alternativeNames && person.alternativeNames.length > 0 && (
+                <p className="text-gray-400 mb-2">
+                  <span className="text-gray-500">{getCreditedLabel(person.gender)}: </span>
+                  {person.alternativeNames.map((alt: AlternativeName) => alt.fullName).join(', ')}
                 </p>
               )}
 
@@ -16408,6 +16427,11 @@ export async function GET(
         nationalities: {
           include: {
             location: true
+          }
+        },
+        alternativeNames: {
+          orderBy: {
+            createdAt: 'asc'
           }
         }
       }
