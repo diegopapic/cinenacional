@@ -48,6 +48,15 @@ export interface PersonLink {
   updatedAt?: string;
 }
 
+// Tipo para nombres alternativos
+export interface PersonAlternativeName {
+  id?: number;
+  personId?: number;
+  fullName: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // Tipos de links disponibles
 export type PersonLinkType = 
   | 'IMDB'
@@ -88,6 +97,7 @@ export interface Location {
 // Tipo extendido con relaciones
 export interface PersonWithRelations extends Person {
   links?: PersonLink[];
+  alternativeNames?: PersonAlternativeName[];
   nationalities?: Array<{
     personId?: number;
     locationId: number;
@@ -102,6 +112,9 @@ export interface PersonWithRelations extends Person {
     crewRoles: number;
     awards: number;
   };
+  // Campos de búsqueda: indican si el match fue en un nombre alternativo
+  matchedAlternativeName?: string | null;
+  matchedAlternativeNameId?: number | null;
 }
 
 // Tipo para el formulario
@@ -121,10 +134,10 @@ export interface PersonFormData {
   // Flags para indicar si usar fecha parcial
   isPartialBirthDate?: boolean;
   isPartialDeathDate?: boolean;
-  birthLocationId?: number | null;  // <-- Agregar este campo
-  deathLocationId?: number | null;  // <-- Agregar este campo
-  birthLocation?: string;            // <-- Mantener para compatibilidad/display
-  deathLocation?: string;            // <-- Mantener para compatibilidad/display
+  birthLocationId?: number | null;
+  deathLocationId?: number | null;
+  birthLocation?: string;
+  deathLocation?: string;
   biography?: string;
   photoUrl?: string;
   photoPublicId?: string;
@@ -132,6 +145,7 @@ export interface PersonFormData {
   hideAge?: boolean;
   isActive?: boolean;
   links: PersonLink[];
+  alternativeNames?: PersonAlternativeName[];
   nationalities?: number[];
 }
 
@@ -154,4 +168,25 @@ export interface PaginatedPeopleResponse {
   page: number;
   totalPages: number;
   hasMore: boolean;
+}
+
+// Tipo para resultado de búsqueda con info de nombre alternativo
+export interface PersonSearchResult {
+  id: number;
+  firstName?: string | null;
+  lastName?: string | null;
+  slug: string;
+  name?: string;
+  alternativeNames?: PersonAlternativeName[];
+  // Si el match fue en un nombre alternativo
+  matchedAlternativeName?: string | null;
+  matchedAlternativeNameId?: number | null;
+}
+
+// Tipo para selección de persona (incluye alternativeNameId opcional)
+export interface PersonSelection {
+  personId: number;
+  personName: string;
+  alternativeNameId?: number | null;
+  alternativeName?: string | null;
 }

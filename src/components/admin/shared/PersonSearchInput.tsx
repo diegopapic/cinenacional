@@ -1,10 +1,15 @@
 // src/components/admin/shared/PersonSearchInput.tsx
 import { useState, useEffect, useRef } from 'react'
-import { Search, User, X, Plus } from 'lucide-react'
+import { Search, User, X, Plus, ArrowRight } from 'lucide-react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { peopleService } from '@/services/people.service'
 import toast from 'react-hot-toast'
 import GenderSelectionModal from './GenderSelectionModal'
+
+interface PersonAlternativeName {
+  id: number
+  fullName: string
+}
 
 interface Person {
   id: number
@@ -12,15 +17,26 @@ interface Person {
   lastName?: string | null
   slug: string
   name?: string
+  alternativeNames?: PersonAlternativeName[]
+  // Campos de búsqueda que indican match en nombre alternativo
+  matchedAlternativeName?: string | null
+  matchedAlternativeNameId?: number | null
 }
 
 interface PersonSearchInputProps {
   value?: number
+  alternativeNameId?: number | null  // 🆕 ID del nombre alternativo seleccionado
   initialPersonName?: string  // Nombre inicial para evitar llamada API
-  onChange: (personId: number, personName?: string) => void
+  onChange: (
+    personId: number, 
+    personName?: string, 
+    alternativeNameId?: number | null,
+    alternativeName?: string | null
+  ) => void
   placeholder?: string
   disabled?: boolean
   required?: boolean
+  showAlternativeNames?: boolean  // 🆕 Mostrar nombres alternativos en resultados
 }
 
 // Función para consultar el género de un nombre
@@ -68,11 +84,13 @@ async function saveFirstNameGender(firstName: string, gender: 'MALE' | 'FEMALE')
 
 export default function PersonSearchInput({
   value,
+  alternativeNameId,
   initialPersonName,
   onChange,
   placeholder = "Buscar persona...",
   disabled = false,
-  required = false
+  required = false,
+  showAlternativeNames = true
 }: PersonSearchInputProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -80,6 +98,7 @@ export default function PersonSearchInput({
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
+  const [selectedAlternativeNameId, setSelectedAlternativeNameId] = useState<number | null>(alternativeNameId || null)
   
   // Estado para el modal de selección de género
   const [showGenderModal, setShowGenderModal] = useState(false)
@@ -101,13 +120,23 @@ export default function PersonSearchInput({
       // Solo hacer la llamada si NO tenemos el nombre
       peopleService.getById(value)
         .then((person: any) => {
-          const fullName = person.name || `${person.firstName || ''} ${person.lastName || ''}`.trim()
+          // Si hay un alternativeNameId, buscar ese nombre
+          let displayName = person.name || `${person.firstName || ''} ${person.lastName || ''}`.trim()
+          
+          if (alternativeNameId && person.alternativeNames) {
+            const altName = person.alternativeNames.find((an: any) => an.id === alternativeNameId)
+            if (altName) {
+              displayName = altName.fullName
+            }
+          }
+          
           setSelectedPerson(person)
-          setSearchTerm(fullName)
+          setSearchTerm(displayName)
+          setSelectedAlternativeNameId(alternativeNameId || null)
         })
         .catch(err => console.error('Error cargando persona:', err))
     }
-  }, [value, initialPersonName])
+  }, [value, alternativeNameId, initialPersonName])
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
@@ -158,18 +187,34 @@ export default function PersonSearchInput({
     }
   }, [debouncedSearch, isOpen])
 
-  const handleSelectPerson = (person: Person) => {
-    const fullName = formatPersonName(person)
+  // Seleccionar nombre principal de la persona
+  const handleSelectPerson = (person: Person, useAlternativeName?: { id: number; name: string }) => {
+    let displayName: string
+    let altNameId: number | null = null
+    let altName: string | null = null
+    
+    if (useAlternativeName) {
+      // Seleccionó un nombre alternativo
+      displayName = useAlternativeName.name
+      altNameId = useAlternativeName.id
+      altName = useAlternativeName.name
+    } else {
+      // Seleccionó el nombre principal
+      displayName = formatPersonName(person)
+    }
+    
     setSelectedPerson(person)
-    setSearchTerm(fullName)
-    onChange(person.id, fullName)
+    setSearchTerm(displayName)
+    setSelectedAlternativeNameId(altNameId)
+    onChange(person.id, displayName, altNameId, altName)
     setIsOpen(false)
   }
 
   const handleClear = () => {
     setSearchTerm('')
     setSelectedPerson(null)
-    onChange(0, '')
+    setSelectedAlternativeNameId(null)
+    onChange(0, '', null, null)
     setIsOpen(false)
   }
 
@@ -247,7 +292,7 @@ export default function PersonSearchInput({
       
       toast.success(`Persona "${formatPersonName(newPerson)}" creada exitosamente`)
       
-      // Seleccionar la nueva persona
+      // Seleccionar la nueva persona (sin nombre alternativo)
       handleSelectPerson(newPerson)
       
     } catch (error) {
@@ -308,6 +353,83 @@ export default function PersonSearchInput({
     setIsOpen(true)
   }
 
+  // Renderizar un resultado de persona con sus nombres alternativos
+  const renderPersonResult = (person: Person) => {
+    const mainName = formatPersonName(person)
+    const hasMatchedAlternative = person.matchedAlternativeName && person.matchedAlternativeNameId
+    
+    return (
+      <div key={person.id} className="border-b border-gray-100 last:border-b-0">
+        {/* Nombre principal */}
+        <button
+          type="button"
+          onClick={() => handleSelectPerson(person)}
+          className={`w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center space-x-3 transition-colors ${
+            hasMatchedAlternative ? 'bg-gray-50' : ''
+          }`}
+        >
+          <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-gray-900 truncate">
+              {mainName}
+            </div>
+            <div className="text-xs text-gray-500">
+              ID: {person.id} • {person.slug}
+            </div>
+          </div>
+        </button>
+        
+        {/* Nombre alternativo que hizo match (si aplica) */}
+        {hasMatchedAlternative && (
+          <button
+            type="button"
+            onClick={() => handleSelectPerson(person, { 
+              id: person.matchedAlternativeNameId!, 
+              name: person.matchedAlternativeName! 
+            })}
+            className="w-full text-left px-3 py-2 pl-10 hover:bg-yellow-50 flex items-center space-x-2 transition-colors bg-yellow-25"
+          >
+            <ArrowRight className="h-3 w-3 text-yellow-600 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm text-yellow-800 truncate">
+                <span className="font-medium">{person.matchedAlternativeName}</span>
+                <span className="text-yellow-600 ml-2">→ {mainName}</span>
+              </div>
+              <div className="text-xs text-yellow-600">
+                Nombre alternativo
+              </div>
+            </div>
+          </button>
+        )}
+        
+        {/* Otros nombres alternativos (si showAlternativeNames está activo y hay más) */}
+        {showAlternativeNames && person.alternativeNames && person.alternativeNames.length > 0 && (
+          <>
+            {person.alternativeNames
+              .filter(alt => alt.id !== person.matchedAlternativeNameId) // Excluir el que ya se mostró
+              .map(alt => (
+                <button
+                  key={alt.id}
+                  type="button"
+                  onClick={() => handleSelectPerson(person, { id: alt.id, name: alt.fullName })}
+                  className="w-full text-left px-3 py-1.5 pl-10 hover:bg-gray-50 flex items-center space-x-2 transition-colors text-sm"
+                >
+                  <ArrowRight className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-gray-600 truncate">
+                      {alt.fullName}
+                      <span className="text-gray-400 ml-2">→ {mainName}</span>
+                    </span>
+                  </div>
+                </button>
+              ))
+            }
+          </>
+        )}
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="relative" ref={containerRef}>
@@ -342,9 +464,17 @@ export default function PersonSearchInput({
           )}
         </div>
 
+        {/* Indicador de nombre alternativo seleccionado */}
+        {selectedAlternativeNameId && selectedPerson && (
+          <div className="mt-1 text-xs text-yellow-700 bg-yellow-50 px-2 py-1 rounded flex items-center">
+            <ArrowRight className="h-3 w-3 mr-1" />
+            <span>Usando nombre alternativo de: {formatPersonName(selectedPerson)}</span>
+          </div>
+        )}
+
         {/* Dropdown de resultados */}
         {isOpen && !disabled && !creating && (
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-80 overflow-auto">
             {loading ? (
               <div className="p-3 text-center text-gray-500">
                 <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
@@ -375,24 +505,7 @@ export default function PersonSearchInput({
             ) : (
               <>
                 <div className="py-1">
-                  {people.map(person => (
-                    <button
-                      key={person.id}
-                      type="button"
-                      onClick={() => handleSelectPerson(person)}
-                      className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center space-x-3 transition-colors"
-                    >
-                      <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 truncate">
-                          {formatPersonName(person)}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          ID: {person.id} • {person.slug}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                  {people.map(person => renderPersonResult(person))}
                 </div>
                 <div className="border-t border-gray-200">
                   <button
