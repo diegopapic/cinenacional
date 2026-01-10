@@ -164,7 +164,7 @@ export async function GET(
           select: {
             roleId: true,
             billingOrder: true,
-            note: true,
+            notes: true,
             alternativeNameId: true,  // 🆕
             alternativeName: {         // 🆕
               select: {
@@ -519,7 +519,7 @@ export async function PUT(
               role: item.role,
               roleId: item.roleId,
               billingOrder: item.billingOrder || index + 1,
-              note: item.note || null
+              notes: item.note || null
             }))
           })
         }
