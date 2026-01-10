@@ -82,6 +82,11 @@ function formatPersonDataForAPI(data: PersonFormData): any {
     apiData.links = data.links;
   }
 
+  // Procesar nombres alternativos si existen
+  if (data.alternativeNames && data.alternativeNames.length > 0) {
+    apiData.alternativeNames = data.alternativeNames;
+  }
+
   return apiData;
 }
 
@@ -103,6 +108,7 @@ function formatPersonFromAPI(person: any): PersonFormData {
     biography: person.biography || '',
     photoUrl: person.photoUrl || '',
     links: person.links || [],
+    alternativeNames: person.alternativeNames || [],
     nationalities: []
   };
 

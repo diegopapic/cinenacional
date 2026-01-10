@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2026-01-07T07:08:52.086Z
+# Generado automáticamente el: 2026-01-10T09:35:02.078Z
 # ================================================
 
 ## Schema Prisma
@@ -232,16 +232,19 @@ model Person {
 }
 
 model PersonAlternativeName {
-  id        Int      @id @default(autoincrement())
-  personId  Int      @map("person_id")
-  firstName String?  @map("first_name") @db.VarChar(255)
-  lastName  String?  @map("last_name") @db.VarChar(255)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
-  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id        Int         @id @default(autoincrement())
+  personId  Int         @map("person_id")
+  fullName  String      @map("full_name") @db.VarChar(255)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  person    Person      @relation(fields: [personId], references: [id], onDelete: Cascade)
+  castRoles MovieCast[]
+  crewRoles MovieCrew[]
 
-  @@index([lastName], map: "idx_person_alternative_names_last_name")
-  @@map("person_alternative_names")
+  @@unique([personId, fullName])
+  @@index([personId])
+  @@index([fullName])
+  @@map("people_alternative_names")
 }
 
 model PersonNationality {
@@ -335,42 +338,48 @@ model DistributionCompany {
 }
 
 model MovieCast {
-  id            Int      @id @default(autoincrement())
-  movieId       Int      @map("movie_id")
-  personId      Int      @map("person_id")
-  characterName String?  @map("character_name") @db.VarChar(255)
-  billingOrder  Int?     @map("billing_order")
-  isPrincipal   Boolean  @default(false) @map("is_principal")
-  isActor       Boolean  @default(true) @map("is_actor")
-  notes         String?
-  createdAt     DateTime @default(now()) @map("created_at")
-  movie         Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  person        Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  id                Int                    @id @default(autoincrement())
+  movieId           Int                    @map("movie_id")
+  personId          Int                    @map("person_id")
+  alternativeNameId Int?                   @map("alternative_name_id")
+  characterName     String?                @map("character_name") @db.VarChar(255)
+  billingOrder      Int?                   @map("billing_order")
+  isPrincipal       Boolean                @default(false) @map("is_principal")
+  isActor           Boolean                @default(true) @map("is_actor")
+  notes             String?
+  createdAt         DateTime               @default(now()) @map("created_at")
+  movie             Movie                  @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  person            Person                 @relation(fields: [personId], references: [id], onDelete: Cascade)
+  alternativeName   PersonAlternativeName? @relation(fields: [alternativeNameId], references: [id], onDelete: SetNull)
 
   @@unique([movieId, personId, characterName])
   @@index([movieId])
   @@index([personId])
+  @@index([alternativeNameId])
   @@index([isActor])
   @@map("movie_cast")
 }
 
 model MovieCrew {
-  id           Int      @id @default(autoincrement())
-  movieId      Int      @map("movie_id")
-  personId     Int      @map("person_id")
-  roleId       Int      @map("role_id")
-  billingOrder Int?     @map("billing_order")
-  notes        String?
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  movie        Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  person       Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
-  role         Role     @relation(fields: [roleId], references: [id])
+  id                Int                    @id @default(autoincrement())
+  movieId           Int                    @map("movie_id")
+  personId          Int                    @map("person_id")
+  roleId            Int                    @map("role_id")
+  alternativeNameId Int?                   @map("alternative_name_id")
+  billingOrder      Int?                   @map("billing_order")
+  notes             String?
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
+  movie             Movie                  @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  person            Person                 @relation(fields: [personId], references: [id], onDelete: Cascade)
+  role              Role                   @relation(fields: [roleId], references: [id])
+  alternativeName   PersonAlternativeName? @relation(fields: [alternativeNameId], references: [id], onDelete: SetNull)
 
   @@unique([movieId, personId, roleId])
   @@index([movieId])
   @@index([personId])
   @@index([roleId])
+  @@index([alternativeNameId])
   @@index([movieId, roleId])
   @@map("movie_crew")
 }
@@ -1103,15 +1112,14 @@ CREATE TABLE "people" (
 );
 
 -- CreateTable
-CREATE TABLE "person_alternative_names" (
+CREATE TABLE "people_alternative_names" (
     "id" SERIAL NOT NULL,
     "person_id" INTEGER NOT NULL,
-    "first_name" VARCHAR(255),
-    "last_name" VARCHAR(255),
-    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "full_name" VARCHAR(255) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "person_alternative_names_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "people_alternative_names_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -1199,6 +1207,7 @@ CREATE TABLE "movie_cast" (
     "id" SERIAL NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "person_id" INTEGER NOT NULL,
+    "alternative_name_id" INTEGER,
     "character_name" VARCHAR(255),
     "billing_order" INTEGER,
     "is_principal" BOOLEAN NOT NULL DEFAULT false,
@@ -1215,6 +1224,7 @@ CREATE TABLE "movie_crew" (
     "movie_id" INTEGER NOT NULL,
     "person_id" INTEGER NOT NULL,
     "role_id" INTEGER NOT NULL,
+    "alternative_name_id" INTEGER,
     "billing_order" INTEGER,
     "notes" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1669,7 +1679,13 @@ CREATE INDEX "people_death_year_death_month_idx" ON "people"("death_year", "deat
 CREATE INDEX "people_created_at_idx" ON "people"("created_at");
 
 -- CreateIndex
-CREATE INDEX "idx_person_alternative_names_last_name" ON "person_alternative_names"("last_name");
+CREATE INDEX "people_alternative_names_person_id_idx" ON "people_alternative_names"("person_id");
+
+-- CreateIndex
+CREATE INDEX "people_alternative_names_full_name_idx" ON "people_alternative_names"("full_name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "people_alternative_names_person_id_full_name_key" ON "people_alternative_names"("person_id", "full_name");
 
 -- CreateIndex
 CREATE INDEX "idx_movie_stats_week" ON "movie_stats"("views_week" DESC);
@@ -1708,6 +1724,9 @@ CREATE INDEX "movie_cast_movie_id_idx" ON "movie_cast"("movie_id");
 CREATE INDEX "movie_cast_person_id_idx" ON "movie_cast"("person_id");
 
 -- CreateIndex
+CREATE INDEX "movie_cast_alternative_name_id_idx" ON "movie_cast"("alternative_name_id");
+
+-- CreateIndex
 CREATE INDEX "movie_cast_is_actor_idx" ON "movie_cast"("is_actor");
 
 -- CreateIndex
@@ -1721,6 +1740,9 @@ CREATE INDEX "movie_crew_person_id_idx" ON "movie_crew"("person_id");
 
 -- CreateIndex
 CREATE INDEX "movie_crew_role_id_idx" ON "movie_crew"("role_id");
+
+-- CreateIndex
+CREATE INDEX "movie_crew_alternative_name_id_idx" ON "movie_crew"("alternative_name_id");
 
 -- CreateIndex
 CREATE INDEX "movie_crew_movie_id_role_id_idx" ON "movie_crew"("movie_id", "role_id");
@@ -1885,7 +1907,7 @@ ALTER TABLE "people" ADD CONSTRAINT "people_birth_location_id_fkey" FOREIGN KEY 
 ALTER TABLE "people" ADD CONSTRAINT "people_death_location_id_fkey" FOREIGN KEY ("death_location_id") REFERENCES "locations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "person_alternative_names" ADD CONSTRAINT "person_alternative_names_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE "people_alternative_names" ADD CONSTRAINT "people_alternative_names_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "person_nationalities" ADD CONSTRAINT "person_nationalities_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "locations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1906,6 +1928,9 @@ ALTER TABLE "movie_cast" ADD CONSTRAINT "movie_cast_movie_id_fkey" FOREIGN KEY (
 ALTER TABLE "movie_cast" ADD CONSTRAINT "movie_cast_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "movie_cast" ADD CONSTRAINT "movie_cast_alternative_name_id_fkey" FOREIGN KEY ("alternative_name_id") REFERENCES "people_alternative_names"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "movie_crew" ADD CONSTRAINT "movie_crew_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -1913,6 +1938,9 @@ ALTER TABLE "movie_crew" ADD CONSTRAINT "movie_crew_person_id_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "movie_crew" ADD CONSTRAINT "movie_crew_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "movie_crew" ADD CONSTRAINT "movie_crew_alternative_name_id_fkey" FOREIGN KEY ("alternative_name_id") REFERENCES "people_alternative_names"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "movie_genres" ADD CONSTRAINT "movie_genres_genre_id_fkey" FOREIGN KEY ("genre_id") REFERENCES "genres"("id") ON DELETE CASCADE ON UPDATE CASCADE;

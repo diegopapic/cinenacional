@@ -16,7 +16,7 @@ export async function GET(
     try {
         const { id } = await params;
         const personId = parseInt(id);
-        
+
         // Generar clave de caché única
         const cacheKey = `person:id:${personId}:v1`;
 
@@ -71,6 +71,9 @@ export async function GET(
             include: {
                 links: {
                     orderBy: { displayOrder: 'asc' },
+                },
+                alternativeNames: {
+                    orderBy: { createdAt: 'asc' },
                 },
                 nationalities: {
                     include: {
@@ -300,11 +303,29 @@ export async function PUT(
                 });
             }
 
+            // Eliminar nombres alternativos existentes
+            await tx.personAlternativeName.deleteMany({
+                where: { personId },
+            });
+
+            // Crear nuevos nombres alternativos si existen
+            if (data.alternativeNames && data.alternativeNames.length > 0) {
+                await tx.personAlternativeName.createMany({
+                    data: data.alternativeNames
+                        .filter((alt: any) => alt.fullName && alt.fullName.trim() !== '')
+                        .map((alt: any) => ({
+                            personId,
+                            fullName: alt.fullName.trim(),
+                        })),
+                });
+            }
+
             // Retornar la persona actualizada con sus relaciones
             return tx.person.findUnique({
                 where: { id: personId },
                 include: {
                     links: true,
+                    alternativeNames: true,
                     nationalities: {
                         include: {
                             location: true
@@ -393,7 +414,7 @@ export async function DELETE(
     try {
         const { id } = await params;
         const personId = parseInt(id);
-        
+
         // Verificar si la persona tiene películas asociadas
         const person = await prisma.person.findUnique({
             where: { id: personId },

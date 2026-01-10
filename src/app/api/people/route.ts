@@ -142,39 +142,94 @@ export async function GET(request: NextRequest) {
         const searchTerms = search.toLowerCase().trim().split(/\s+/);
         const skip = (page - 1) * limit;
         
-        // Búsqueda mejorada que incluye nombre completo concatenado
+        // ============================================
+        // BÚSQUEDA MEJORADA CON NOMBRES ALTERNATIVOS
+        // ============================================
+        // Busca en nombre principal Y en nombres alternativos
+        // Retorna información sobre qué nombre hizo match
         const peopleResults = await prisma.$queryRaw<any[]>`
-          SELECT id
-          FROM people
-          WHERE 
-            unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(COALESCE(real_name, ''))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(CONCAT(COALESCE(last_name, ''), ' ', COALESCE(first_name, '')))) LIKE unaccent(${searchPattern})
+          WITH search_results AS (
+            -- Búsqueda en nombre principal
+            SELECT 
+              id,
+              NULL::integer as matched_alternative_id,
+              NULL::text as matched_alternative_name,
+              1 as source_priority,
+              CASE 
+                WHEN unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) = unaccent(${search.toLowerCase().trim()}) THEN 1
+                WHEN unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) LIKE unaccent(${search.toLowerCase().trim() + '%'}) THEN 2
+                WHEN unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${searchPattern}) OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${searchPattern}) THEN 3
+                ELSE 4
+              END as match_rank
+            FROM people
+            WHERE 
+              unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(COALESCE(real_name, ''))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(CONCAT(COALESCE(last_name, ''), ' ', COALESCE(first_name, '')))) LIKE unaccent(${searchPattern})
+            
+            UNION ALL
+            
+            -- Búsqueda en nombres alternativos
+            SELECT 
+              p.id,
+              pan.id as matched_alternative_id,
+              pan.full_name as matched_alternative_name,
+              2 as source_priority,
+              CASE 
+                WHEN unaccent(LOWER(pan.full_name)) = unaccent(${search.toLowerCase().trim()}) THEN 1
+                WHEN unaccent(LOWER(pan.full_name)) LIKE unaccent(${search.toLowerCase().trim() + '%'}) THEN 2
+                ELSE 3
+              END as match_rank
+            FROM people p
+            INNER JOIN people_alternative_names pan ON p.id = pan.person_id
+            WHERE unaccent(LOWER(pan.full_name)) LIKE unaccent(${searchPattern})
+          ),
+          -- Eliminar duplicados manteniendo el mejor match
+          ranked_results AS (
+            SELECT 
+              id,
+              matched_alternative_id,
+              matched_alternative_name,
+              ROW_NUMBER() OVER (
+                PARTITION BY id 
+                ORDER BY source_priority ASC, match_rank ASC
+              ) as rn
+            FROM search_results
+          )
+          SELECT id, matched_alternative_id, matched_alternative_name
+          FROM ranked_results
+          WHERE rn = 1
           ORDER BY 
-            CASE 
-              WHEN unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) = unaccent(${search.toLowerCase().trim()}) THEN 1
-              WHEN unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) LIKE unaccent(${search.toLowerCase().trim() + '%'}) THEN 2
-              WHEN unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${searchPattern}) OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${searchPattern}) THEN 3
-              ELSE 4
-            END,
-            last_name ASC, 
-            first_name ASC
+            CASE WHEN matched_alternative_id IS NULL THEN 0 ELSE 1 END,
+            id
           LIMIT ${limit}
           OFFSET ${skip}
         `;
 
-        // Obtener el total para paginación
+        // Obtener el total para paginación (incluyendo nombres alternativos)
         const countResult = await prisma.$queryRaw<{count: number}[]>`
-          SELECT COUNT(*)::int as count
-          FROM people
-          WHERE 
-            unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(COALESCE(real_name, ''))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(CONCAT(COALESCE(last_name, ''), ' ', COALESCE(first_name, '')))) LIKE unaccent(${searchPattern})
+          SELECT COUNT(DISTINCT person_id)::int as count
+          FROM (
+            -- Conteo de matches en nombre principal
+            SELECT id as person_id
+            FROM people
+            WHERE 
+              unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(COALESCE(real_name, ''))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(CONCAT(COALESCE(last_name, ''), ' ', COALESCE(first_name, '')))) LIKE unaccent(${searchPattern})
+            
+            UNION
+            
+            -- Conteo de matches en nombres alternativos
+            SELECT p.id as person_id
+            FROM people p
+            INNER JOIN people_alternative_names pan ON p.id = pan.person_id
+            WHERE unaccent(LOWER(pan.full_name)) LIKE unaccent(${searchPattern})
+          ) combined
         `;
         
         const totalCount = countResult[0]?.count || 0;
@@ -188,6 +243,17 @@ export async function GET(request: NextRequest) {
             totalPages: 0,
             hasMore: false,
           });
+        }
+
+        // Crear mapa de matches alternativos para enriquecer resultados
+        const alternativeMatchMap = new Map<number, { id: number; name: string }>();
+        for (const result of peopleResults) {
+          if (result.matched_alternative_id) {
+            alternativeMatchMap.set(result.id, {
+              id: result.matched_alternative_id,
+              name: result.matched_alternative_name
+            });
+          }
         }
 
         // Obtener datos completos con Prisma
@@ -207,6 +273,9 @@ export async function GET(request: NextRequest) {
               where: { isActive: true },
               orderBy: { displayOrder: 'asc' }
             },
+            alternativeNames: {
+              orderBy: { createdAt: 'asc' }
+            },
             _count: {
               select: {
                 links: true,
@@ -221,11 +290,17 @@ export async function GET(request: NextRequest) {
           ]
         });
 
-        // IMPORTANTE: Agregar el campo 'name' formateado a cada persona
-        const peopleWithName = people.map(person => ({
-          ...person,
-          name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre'
-        }));
+        // IMPORTANTE: Agregar el campo 'name' formateado y info de match alternativo
+        const peopleWithName = people.map(person => {
+          const altMatch = alternativeMatchMap.get(person.id);
+          return {
+            ...person,
+            name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre',
+            // Info del match alternativo (si aplica)
+            matchedAlternativeName: altMatch?.name || null,
+            matchedAlternativeNameId: altMatch?.id || null
+          };
+        });
 
         return NextResponse.json({
           data: peopleWithName,
@@ -245,15 +320,17 @@ export async function GET(request: NextRequest) {
     const where: any = {};
 
     if (search && search.trim().length >= 2) {
-      // Búsqueda mejorada usando Prisma OR
+      // Búsqueda mejorada usando Prisma OR (incluye nombres alternativos)
       const searchTerms = search.trim().split(/\s+/);
       
       if (searchTerms.length === 1) {
-        // Un solo término: buscar en cada campo
+        // Un solo término: buscar en cada campo Y en nombres alternativos
         where.OR = [
           { firstName: { contains: search, mode: 'insensitive' } },
           { lastName: { contains: search, mode: 'insensitive' } },
           { realName: { contains: search, mode: 'insensitive' } },
+          // Buscar en nombres alternativos
+          { alternativeNames: { some: { fullName: { contains: search, mode: 'insensitive' } } } },
         ];
       } else {
         // Múltiples términos: buscar combinaciones
@@ -268,7 +345,9 @@ export async function GET(request: NextRequest) {
                 { lastName: { contains: term, mode: 'insensitive' } },
               ]
             }))
-          }
+          },
+          // Buscar en nombres alternativos (búsqueda completa)
+          { alternativeNames: { some: { fullName: { contains: search, mode: 'insensitive' } } } },
         ];
       }
     }
@@ -335,6 +414,9 @@ export async function GET(request: NextRequest) {
           where: { isActive: true },
           orderBy: { displayOrder: 'asc' }
         },
+        alternativeNames: {
+          orderBy: { createdAt: 'asc' }
+        },
         _count: {
           select: {
             links: true,
@@ -356,10 +438,38 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(totalCount / limit);
 
     // IMPORTANTE: Agregar el campo 'name' formateado a cada persona
-    const peopleWithName = people.map(person => ({
-      ...person,
-      name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre'
-    }));
+    // También identificar si algún nombre alternativo hizo match (para Prisma fallback)
+    const peopleWithName = people.map(person => {
+      let matchedAlternativeName: string | null = null;
+      let matchedAlternativeNameId: number | null = null;
+      
+      // Si hay búsqueda, verificar si el match fue en un nombre alternativo
+      if (search && search.trim().length >= 2 && person.alternativeNames?.length) {
+        const searchLower = search.toLowerCase().trim();
+        const mainName = `${person.firstName || ''} ${person.lastName || ''}`.toLowerCase().trim();
+        
+        // Si el nombre principal no contiene el término de búsqueda,
+        // buscar cuál nombre alternativo hizo match
+        if (!mainName.includes(searchLower) && 
+            !(person.firstName?.toLowerCase().includes(searchLower)) &&
+            !(person.lastName?.toLowerCase().includes(searchLower))) {
+          for (const alt of person.alternativeNames) {
+            if (alt.fullName.toLowerCase().includes(searchLower)) {
+              matchedAlternativeName = alt.fullName;
+              matchedAlternativeNameId = alt.id;
+              break;
+            }
+          }
+        }
+      }
+      
+      return {
+        ...person,
+        name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre',
+        matchedAlternativeName,
+        matchedAlternativeNameId
+      };
+    });
 
     const result = {
       data: peopleWithName,
@@ -518,6 +628,21 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // 🆕 Crear nombres alternativos si se enviaron
+      if (data.alternativeNames && data.alternativeNames.length > 0) {
+        const validNames = data.alternativeNames.filter(
+          (alt: any) => alt.fullName && alt.fullName.trim()
+        );
+        if (validNames.length > 0) {
+          await tx.personAlternativeName.createMany({
+            data: validNames.map((alt: any) => ({
+              personId: newPerson.id,
+              fullName: alt.fullName.trim(),
+            })),
+          });
+        }
+      }
+
       return tx.person.findUnique({
         where: { id: newPerson.id },
         include: {
@@ -530,6 +655,9 @@ export async function POST(request: NextRequest) {
           },
           deathLocation: {
             include: { parent: true }
+          },
+          alternativeNames: {
+            orderBy: { createdAt: 'asc' }
           },
           _count: {
             select: {

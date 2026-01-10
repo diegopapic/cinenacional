@@ -277,6 +277,7 @@
 - [src/components/admin/MoviesTable.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/MoviesTable.tsx)
 - [src/components/admin/people/PeopleTable.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/people/PeopleTable.tsx)
 - [src/components/admin/people/PersonForm.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/people/PersonForm.tsx)
+- [src/components/admin/people/PersonFormFields/AlternativeNamesSection.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/people/PersonFormFields/AlternativeNamesSection.tsx)
 - [src/components/admin/people/PersonFormFields/BasicInfoFields.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/people/PersonFormFields/BasicInfoFields.tsx)
 - [src/components/admin/people/PersonFormFields/BiographyFields.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/people/PersonFormFields/BiographyFields.tsx)
 - [src/components/admin/people/PersonFormFields/LinksSection.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/people/PersonFormFields/LinksSection.tsx)

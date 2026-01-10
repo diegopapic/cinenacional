@@ -1,5 +1,5 @@
 // ==================================================
-// src/app/api/movies/[id]/route.ts - CON SYNOPSIS_LOCKED CORREGIDO ✅
+// src/app/api/movies/[id]/route.ts - CON ALTERNATIVE_NAME_ID ✅
 // ==================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -123,6 +123,7 @@ export async function GET(
           }
         },
 
+        // 🆕 Cast con alternativeNameId
         cast: {
           orderBy: { billingOrder: 'asc' },
           select: {
@@ -131,29 +132,59 @@ export async function GET(
             isPrincipal: true,
             isActor: true,
             notes: true,
+            alternativeNameId: true,  // 🆕
+            alternativeName: {         // 🆕
+              select: {
+                id: true,
+                fullName: true
+              }
+            },
             person: {
               select: {
                 id: true,
                 firstName: true,
                 lastName: true,
                 slug: true,
-                photoUrl: true
+                photoUrl: true,
+                alternativeNames: {     // 🆕 Para mostrar opciones en el formulario
+                  select: {
+                    id: true,
+                    fullName: true
+                  },
+                  orderBy: { createdAt: 'asc' }
+                }
               }
             }
           }
         },
 
+        // 🆕 Crew con alternativeNameId
         crew: {
           orderBy: { billingOrder: 'asc' },
           select: {
             roleId: true,
             billingOrder: true,
+            note: true,
+            alternativeNameId: true,  // 🆕
+            alternativeName: {         // 🆕
+              select: {
+                id: true,
+                fullName: true
+              }
+            },
             person: {
               select: {
                 id: true,
                 firstName: true,
                 lastName: true,
-                slug: true
+                slug: true,
+                alternativeNames: {     // 🆕 Para mostrar opciones en el formulario
+                  select: {
+                    id: true,
+                    fullName: true
+                  },
+                  orderBy: { createdAt: 'asc' }
+                }
               }
             },
             role: true
@@ -457,7 +488,7 @@ export async function PUT(
         }
       }
 
-      // 3. Actualizar cast
+      // 3. Actualizar cast - 🆕 CON alternativeNameId
       if (cast) {
         await tx.movieCast.deleteMany({ where: { movieId: id } })
         if (cast.length > 0) {
@@ -465,6 +496,7 @@ export async function PUT(
             data: cast.map((item, index) => ({
               movieId: id,
               personId: item.personId,
+              alternativeNameId: item.alternativeNameId || null,  // 🆕
               characterName: item.characterName || null,
               billingOrder: item.billingOrder || index + 1,
               isPrincipal: item.isPrincipal || false,
@@ -475,7 +507,7 @@ export async function PUT(
         }
       }
 
-      // 4. Actualizar crew
+      // 4. Actualizar crew - 🆕 CON alternativeNameId
       if (crew) {
         await tx.movieCrew.deleteMany({ where: { movieId: id } })
         if (crew.length > 0) {
@@ -483,9 +515,11 @@ export async function PUT(
             data: crew.map((item, index) => ({
               movieId: id,
               personId: item.personId,
+              alternativeNameId: item.alternativeNameId || null,  // 🆕
               role: item.role,
               roleId: item.roleId,
-              billingOrder: item.billingOrder || index + 1
+              billingOrder: item.billingOrder || index + 1,
+              note: item.note || null
             }))
           })
         }
@@ -603,12 +637,14 @@ export async function PUT(
           },
           cast: {
             include: {
-              person: true
+              person: true,
+              alternativeName: true  // 🆕
             }
           },
           crew: {
             include: {
-              person: true
+              person: true,
+              alternativeName: true  // 🆕
             }
           },
           themes: {
