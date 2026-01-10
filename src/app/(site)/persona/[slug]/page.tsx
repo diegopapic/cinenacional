@@ -26,6 +26,11 @@ function formatLocationPath(location: any): string {
   return parts.join(', ');
 }
 
+// Helper para obtener etiqueta de "acreditado/a" según género
+function getCreditedLabel(gender?: string | null): string {
+  return gender === 'FEMALE' ? 'También acreditada como' : 'También acreditado como';
+}
+
 interface PersonPageProps {
   params: {
     slug: string;
@@ -86,6 +91,12 @@ interface AllRolesItem {
 interface RoleSection {
   roleName: string;
   items: TabItem[];
+}
+
+// Interfaz para nombres alternativos
+interface AlternativeName {
+  id: number;
+  fullName: string;
 }
 
 export default function PersonPage({ params }: PersonPageProps) {
@@ -679,6 +690,14 @@ export default function PersonPage({ params }: PersonPageProps) {
                 <p className="text-gray-400 mb-2">
                   <span className="text-gray-500">Nombre real: </span>
                   {person.realName}
+                </p>
+              )}
+
+              {/* ✅ NUEVO: Mostrar nombres alternativos */}
+              {person.alternativeNames && person.alternativeNames.length > 0 && (
+                <p className="text-gray-400 mb-2">
+                  <span className="text-gray-500">{getCreditedLabel(person.gender)}: </span>
+                  {person.alternativeNames.map((alt: AlternativeName) => alt.fullName).join(', ')}
                 </p>
               )}
 
