@@ -105,6 +105,7 @@ export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
   hideAge: false,
   isActive: true,
   links: [],
+  alternativeNames: [],
   nationalities: []
 };
 

@@ -44,51 +44,56 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
 
     // Cargar persona existente
     const loadPerson = async () => {
-    if (!personId) return;
+        if (!personId) return;
 
-    try {
-        setLoading(true);
-        const person = await peopleService.getById(personId);
-        console.log('usePeopleForm - Raw person from getById:', person);
-        const formattedData = formatPersonDataForForm(person);
-        
-        // NUEVO: Agregar el ID al formData para saber que es edición
-        formattedData.id = personId;
-        
-        // NUEVO: Preservar el photoPublicId si existe
-        if (person.photoPublicId) {
-            formattedData.photoPublicId = person.photoPublicId;
-        }
-        
-        // Si la persona tiene links, cargarlos también
-        if (person.links) {
-            formattedData.links = person.links;
-        }
+        try {
+            setLoading(true);
+            const person = await peopleService.getById(personId);
+            console.log('usePeopleForm - Raw person from getById:', person);
+            const formattedData = formatPersonDataForForm(person);
 
-        // Si la persona tiene nacionalidades, cargarlas como array de IDs
-        if (person.nationalities && Array.isArray(person.nationalities)) {
-            formattedData.nationalities = person.nationalities.map((n: any) => {
-                if (typeof n === 'number') {
+            // NUEVO: Agregar el ID al formData para saber que es edición
+            formattedData.id = personId;
+
+            // NUEVO: Preservar el photoPublicId si existe
+            if (person.photoPublicId) {
+                formattedData.photoPublicId = person.photoPublicId;
+            }
+
+            // Si la persona tiene links, cargarlos también
+            if (person.links) {
+                formattedData.links = person.links;
+            }
+
+            // Si la persona tiene nombres alternativos, cargarlos también
+            if (person.alternativeNames) {
+                formattedData.alternativeNames = person.alternativeNames;
+            }
+
+            // Si la persona tiene nacionalidades, cargarlas como array de IDs
+            if (person.nationalities && Array.isArray(person.nationalities)) {
+                formattedData.nationalities = person.nationalities.map((n: any) => {
+                    if (typeof n === 'number') {
+                        return n;
+                    }
+                    if (typeof n === 'object' && n !== null) {
+                        const id = n.locationId || n;
+                        return id;
+                    }
                     return n;
-                } 
-                if (typeof n === 'object' && n !== null) {
-                    const id = n.locationId || n;
-                    return id;
-                }
-                return n;
-            });
-        } else {
-            formattedData.nationalities = [];
-        }
+                });
+            } else {
+                formattedData.nationalities = [];
+            }
 
-        setFormData(formattedData);
-    } catch (error) {
-        console.error('Error loading person:', error);
-        toast.error('No se pudo cargar la información de la persona');
-    } finally {
-        setLoading(false);
-    }
-};
+            setFormData(formattedData);
+        } catch (error) {
+            console.error('Error loading person:', error);
+            toast.error('No se pudo cargar la información de la persona');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Actualizar campo del formulario
     const updateField = useCallback(<K extends keyof PersonFormData>(

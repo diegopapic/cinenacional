@@ -26,6 +26,8 @@ import { CSS } from '@dnd-kit/utilities'
 interface CastMember {
   personId: number
   personName?: string
+  alternativeNameId?: number | null  // 🆕 ID del nombre alternativo
+  alternativeName?: string | null     // 🆕 Nombre alternativo (para display)
   characterName?: string
   billingOrder?: number
   isPrincipal?: boolean
@@ -60,6 +62,9 @@ function SortableCastMember({
     opacity: isDragging ? 0.5 : 1,
   }
 
+  // Determinar el nombre a mostrar (alternativo o principal)
+  const displayName = member.alternativeName || member.personName || ''
+
   return (
     <div
       ref={setNodeRef}
@@ -82,10 +87,13 @@ function SortableCastMember({
         <div className="flex-1 min-w-0" style={{ maxWidth: '250px' }}>
           <PersonSearchInput
             value={member.personId}
-            initialPersonName={member.personName}
-            onChange={(personId, personName) => updateCastMember(index, {
+            alternativeNameId={member.alternativeNameId}
+            initialPersonName={displayName}
+            onChange={(personId, personName, alternativeNameId, alternativeName) => updateCastMember(index, {
               personId,
-              personName
+              personName: personName,
+              alternativeNameId: alternativeNameId || null,
+              alternativeName: alternativeName || null
             })}
             placeholder="Buscar actor/actriz..."
           />
@@ -212,9 +220,25 @@ export default function CastTab() {
           personName = member.person.name || `${member.person.firstName || ''} ${member.person.lastName || ''}`.trim()
         }
 
+        // 🆕 Obtener nombre alternativo si existe
+        let alternativeName: string | null = null
+        if (member.alternativeNameId && member.alternativeName) {
+          alternativeName = member.alternativeName.fullName || member.alternativeName
+        } else if (member.alternativeNameId && member.person?.alternativeNames) {
+          // Buscar en los nombres alternativos de la persona
+          const altName = member.person.alternativeNames.find(
+            (an: any) => an.id === member.alternativeNameId
+          )
+          if (altName) {
+            alternativeName = altName.fullName
+          }
+        }
+
         const formatted = {
           personId: member.personId || member.person?.id || 0,
           personName: personName,
+          alternativeNameId: member.alternativeNameId || null,
+          alternativeName: alternativeName,
           characterName: member.characterName || '',
           billingOrder: member.billingOrder || 0,
           isPrincipal: member.isPrincipal || false,
@@ -277,6 +301,8 @@ export default function CastTab() {
     const newMember: CastMember = {
       personId: 0,
       personName: '',
+      alternativeNameId: null,
+      alternativeName: null,
       characterName: '',
       billingOrder: cast.length + 1,
       isPrincipal: cast.length < 5,  // Primeros 5 son principales por defecto

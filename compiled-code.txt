@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 432ff76c0de8241f46cc9888e365ad010d703900
-// Fecha: 2026-01-07T07:08:48.377Z
+// Commit: 18b7559b9b84f7804e3418e2cc4d4bc303e411c1
+// Fecha: 2026-01-10T09:35:01.451Z
 // ============================================
 
 
@@ -13624,7 +13624,7 @@ export async function GET(
 // src/app/api/movies/[id]/route.ts
 // ==================================================
 // ==================================================
-// src/app/api/movies/[id]/route.ts - CON SYNOPSIS_LOCKED CORREGIDO ✅
+// src/app/api/movies/[id]/route.ts - CON ALTERNATIVE_NAME_ID ✅
 // ==================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -13748,6 +13748,7 @@ export async function GET(
           }
         },
 
+        // 🆕 Cast con alternativeNameId
         cast: {
           orderBy: { billingOrder: 'asc' },
           select: {
@@ -13756,29 +13757,59 @@ export async function GET(
             isPrincipal: true,
             isActor: true,
             notes: true,
+            alternativeNameId: true,  // 🆕
+            alternativeName: {         // 🆕
+              select: {
+                id: true,
+                fullName: true
+              }
+            },
             person: {
               select: {
                 id: true,
                 firstName: true,
                 lastName: true,
                 slug: true,
-                photoUrl: true
+                photoUrl: true,
+                alternativeNames: {     // 🆕 Para mostrar opciones en el formulario
+                  select: {
+                    id: true,
+                    fullName: true
+                  },
+                  orderBy: { createdAt: 'asc' }
+                }
               }
             }
           }
         },
 
+        // 🆕 Crew con alternativeNameId
         crew: {
           orderBy: { billingOrder: 'asc' },
           select: {
             roleId: true,
             billingOrder: true,
+            note: true,
+            alternativeNameId: true,  // 🆕
+            alternativeName: {         // 🆕
+              select: {
+                id: true,
+                fullName: true
+              }
+            },
             person: {
               select: {
                 id: true,
                 firstName: true,
                 lastName: true,
-                slug: true
+                slug: true,
+                alternativeNames: {     // 🆕 Para mostrar opciones en el formulario
+                  select: {
+                    id: true,
+                    fullName: true
+                  },
+                  orderBy: { createdAt: 'asc' }
+                }
               }
             },
             role: true
@@ -14082,7 +14113,7 @@ export async function PUT(
         }
       }
 
-      // 3. Actualizar cast
+      // 3. Actualizar cast - 🆕 CON alternativeNameId
       if (cast) {
         await tx.movieCast.deleteMany({ where: { movieId: id } })
         if (cast.length > 0) {
@@ -14090,6 +14121,7 @@ export async function PUT(
             data: cast.map((item, index) => ({
               movieId: id,
               personId: item.personId,
+              alternativeNameId: item.alternativeNameId || null,  // 🆕
               characterName: item.characterName || null,
               billingOrder: item.billingOrder || index + 1,
               isPrincipal: item.isPrincipal || false,
@@ -14100,7 +14132,7 @@ export async function PUT(
         }
       }
 
-      // 4. Actualizar crew
+      // 4. Actualizar crew - 🆕 CON alternativeNameId
       if (crew) {
         await tx.movieCrew.deleteMany({ where: { movieId: id } })
         if (crew.length > 0) {
@@ -14108,9 +14140,11 @@ export async function PUT(
             data: crew.map((item, index) => ({
               movieId: id,
               personId: item.personId,
+              alternativeNameId: item.alternativeNameId || null,  // 🆕
               role: item.role,
               roleId: item.roleId,
-              billingOrder: item.billingOrder || index + 1
+              billingOrder: item.billingOrder || index + 1,
+              note: item.note || null
             }))
           })
         }
@@ -14228,12 +14262,14 @@ export async function PUT(
           },
           cast: {
             include: {
-              person: true
+              person: true,
+              alternativeName: true  // 🆕
             }
           },
           crew: {
             include: {
-              person: true
+              person: true,
+              alternativeName: true  // 🆕
             }
           },
           themes: {
@@ -15711,39 +15747,94 @@ export async function GET(request: NextRequest) {
         const searchTerms = search.toLowerCase().trim().split(/\s+/);
         const skip = (page - 1) * limit;
         
-        // Búsqueda mejorada que incluye nombre completo concatenado
+        // ============================================
+        // BÚSQUEDA MEJORADA CON NOMBRES ALTERNATIVOS
+        // ============================================
+        // Busca en nombre principal Y en nombres alternativos
+        // Retorna información sobre qué nombre hizo match
         const peopleResults = await prisma.$queryRaw<any[]>`
-          SELECT id
-          FROM people
-          WHERE 
-            unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(COALESCE(real_name, ''))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(CONCAT(COALESCE(last_name, ''), ' ', COALESCE(first_name, '')))) LIKE unaccent(${searchPattern})
+          WITH search_results AS (
+            -- Búsqueda en nombre principal
+            SELECT 
+              id,
+              NULL::integer as matched_alternative_id,
+              NULL::text as matched_alternative_name,
+              1 as source_priority,
+              CASE 
+                WHEN unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) = unaccent(${search.toLowerCase().trim()}) THEN 1
+                WHEN unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) LIKE unaccent(${search.toLowerCase().trim() + '%'}) THEN 2
+                WHEN unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${searchPattern}) OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${searchPattern}) THEN 3
+                ELSE 4
+              END as match_rank
+            FROM people
+            WHERE 
+              unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(COALESCE(real_name, ''))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(CONCAT(COALESCE(last_name, ''), ' ', COALESCE(first_name, '')))) LIKE unaccent(${searchPattern})
+            
+            UNION ALL
+            
+            -- Búsqueda en nombres alternativos
+            SELECT 
+              p.id,
+              pan.id as matched_alternative_id,
+              pan.full_name as matched_alternative_name,
+              2 as source_priority,
+              CASE 
+                WHEN unaccent(LOWER(pan.full_name)) = unaccent(${search.toLowerCase().trim()}) THEN 1
+                WHEN unaccent(LOWER(pan.full_name)) LIKE unaccent(${search.toLowerCase().trim() + '%'}) THEN 2
+                ELSE 3
+              END as match_rank
+            FROM people p
+            INNER JOIN people_alternative_names pan ON p.id = pan.person_id
+            WHERE unaccent(LOWER(pan.full_name)) LIKE unaccent(${searchPattern})
+          ),
+          -- Eliminar duplicados manteniendo el mejor match
+          ranked_results AS (
+            SELECT 
+              id,
+              matched_alternative_id,
+              matched_alternative_name,
+              ROW_NUMBER() OVER (
+                PARTITION BY id 
+                ORDER BY source_priority ASC, match_rank ASC
+              ) as rn
+            FROM search_results
+          )
+          SELECT id, matched_alternative_id, matched_alternative_name
+          FROM ranked_results
+          WHERE rn = 1
           ORDER BY 
-            CASE 
-              WHEN unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) = unaccent(${search.toLowerCase().trim()}) THEN 1
-              WHEN unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) LIKE unaccent(${search.toLowerCase().trim() + '%'}) THEN 2
-              WHEN unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${searchPattern}) OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${searchPattern}) THEN 3
-              ELSE 4
-            END,
-            last_name ASC, 
-            first_name ASC
+            CASE WHEN matched_alternative_id IS NULL THEN 0 ELSE 1 END,
+            id
           LIMIT ${limit}
           OFFSET ${skip}
         `;
 
-        // Obtener el total para paginación
+        // Obtener el total para paginación (incluyendo nombres alternativos)
         const countResult = await prisma.$queryRaw<{count: number}[]>`
-          SELECT COUNT(*)::int as count
-          FROM people
-          WHERE 
-            unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(COALESCE(real_name, ''))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) LIKE unaccent(${searchPattern})
-            OR unaccent(LOWER(CONCAT(COALESCE(last_name, ''), ' ', COALESCE(first_name, '')))) LIKE unaccent(${searchPattern})
+          SELECT COUNT(DISTINCT person_id)::int as count
+          FROM (
+            -- Conteo de matches en nombre principal
+            SELECT id as person_id
+            FROM people
+            WHERE 
+              unaccent(LOWER(COALESCE(first_name, ''))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(COALESCE(last_name, ''))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(COALESCE(real_name, ''))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) LIKE unaccent(${searchPattern})
+              OR unaccent(LOWER(CONCAT(COALESCE(last_name, ''), ' ', COALESCE(first_name, '')))) LIKE unaccent(${searchPattern})
+            
+            UNION
+            
+            -- Conteo de matches en nombres alternativos
+            SELECT p.id as person_id
+            FROM people p
+            INNER JOIN people_alternative_names pan ON p.id = pan.person_id
+            WHERE unaccent(LOWER(pan.full_name)) LIKE unaccent(${searchPattern})
+          ) combined
         `;
         
         const totalCount = countResult[0]?.count || 0;
@@ -15757,6 +15848,17 @@ export async function GET(request: NextRequest) {
             totalPages: 0,
             hasMore: false,
           });
+        }
+
+        // Crear mapa de matches alternativos para enriquecer resultados
+        const alternativeMatchMap = new Map<number, { id: number; name: string }>();
+        for (const result of peopleResults) {
+          if (result.matched_alternative_id) {
+            alternativeMatchMap.set(result.id, {
+              id: result.matched_alternative_id,
+              name: result.matched_alternative_name
+            });
+          }
         }
 
         // Obtener datos completos con Prisma
@@ -15776,6 +15878,9 @@ export async function GET(request: NextRequest) {
               where: { isActive: true },
               orderBy: { displayOrder: 'asc' }
             },
+            alternativeNames: {
+              orderBy: { createdAt: 'asc' }
+            },
             _count: {
               select: {
                 links: true,
@@ -15790,11 +15895,17 @@ export async function GET(request: NextRequest) {
           ]
         });
 
-        // IMPORTANTE: Agregar el campo 'name' formateado a cada persona
-        const peopleWithName = people.map(person => ({
-          ...person,
-          name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre'
-        }));
+        // IMPORTANTE: Agregar el campo 'name' formateado y info de match alternativo
+        const peopleWithName = people.map(person => {
+          const altMatch = alternativeMatchMap.get(person.id);
+          return {
+            ...person,
+            name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre',
+            // Info del match alternativo (si aplica)
+            matchedAlternativeName: altMatch?.name || null,
+            matchedAlternativeNameId: altMatch?.id || null
+          };
+        });
 
         return NextResponse.json({
           data: peopleWithName,
@@ -15814,15 +15925,17 @@ export async function GET(request: NextRequest) {
     const where: any = {};
 
     if (search && search.trim().length >= 2) {
-      // Búsqueda mejorada usando Prisma OR
+      // Búsqueda mejorada usando Prisma OR (incluye nombres alternativos)
       const searchTerms = search.trim().split(/\s+/);
       
       if (searchTerms.length === 1) {
-        // Un solo término: buscar en cada campo
+        // Un solo término: buscar en cada campo Y en nombres alternativos
         where.OR = [
           { firstName: { contains: search, mode: 'insensitive' } },
           { lastName: { contains: search, mode: 'insensitive' } },
           { realName: { contains: search, mode: 'insensitive' } },
+          // Buscar en nombres alternativos
+          { alternativeNames: { some: { fullName: { contains: search, mode: 'insensitive' } } } },
         ];
       } else {
         // Múltiples términos: buscar combinaciones
@@ -15837,7 +15950,9 @@ export async function GET(request: NextRequest) {
                 { lastName: { contains: term, mode: 'insensitive' } },
               ]
             }))
-          }
+          },
+          // Buscar en nombres alternativos (búsqueda completa)
+          { alternativeNames: { some: { fullName: { contains: search, mode: 'insensitive' } } } },
         ];
       }
     }
@@ -15904,6 +16019,9 @@ export async function GET(request: NextRequest) {
           where: { isActive: true },
           orderBy: { displayOrder: 'asc' }
         },
+        alternativeNames: {
+          orderBy: { createdAt: 'asc' }
+        },
         _count: {
           select: {
             links: true,
@@ -15925,10 +16043,38 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(totalCount / limit);
 
     // IMPORTANTE: Agregar el campo 'name' formateado a cada persona
-    const peopleWithName = people.map(person => ({
-      ...person,
-      name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre'
-    }));
+    // También identificar si algún nombre alternativo hizo match (para Prisma fallback)
+    const peopleWithName = people.map(person => {
+      let matchedAlternativeName: string | null = null;
+      let matchedAlternativeNameId: number | null = null;
+      
+      // Si hay búsqueda, verificar si el match fue en un nombre alternativo
+      if (search && search.trim().length >= 2 && person.alternativeNames?.length) {
+        const searchLower = search.toLowerCase().trim();
+        const mainName = `${person.firstName || ''} ${person.lastName || ''}`.toLowerCase().trim();
+        
+        // Si el nombre principal no contiene el término de búsqueda,
+        // buscar cuál nombre alternativo hizo match
+        if (!mainName.includes(searchLower) && 
+            !(person.firstName?.toLowerCase().includes(searchLower)) &&
+            !(person.lastName?.toLowerCase().includes(searchLower))) {
+          for (const alt of person.alternativeNames) {
+            if (alt.fullName.toLowerCase().includes(searchLower)) {
+              matchedAlternativeName = alt.fullName;
+              matchedAlternativeNameId = alt.id;
+              break;
+            }
+          }
+        }
+      }
+      
+      return {
+        ...person,
+        name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre',
+        matchedAlternativeName,
+        matchedAlternativeNameId
+      };
+    });
 
     const result = {
       data: peopleWithName,
@@ -16087,6 +16233,21 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // 🆕 Crear nombres alternativos si se enviaron
+      if (data.alternativeNames && data.alternativeNames.length > 0) {
+        const validNames = data.alternativeNames.filter(
+          (alt: any) => alt.fullName && alt.fullName.trim()
+        );
+        if (validNames.length > 0) {
+          await tx.personAlternativeName.createMany({
+            data: validNames.map((alt: any) => ({
+              personId: newPerson.id,
+              fullName: alt.fullName.trim(),
+            })),
+          });
+        }
+      }
+
       return tx.person.findUnique({
         where: { id: newPerson.id },
         include: {
@@ -16099,6 +16260,9 @@ export async function POST(request: NextRequest) {
           },
           deathLocation: {
             include: { parent: true }
+          },
+          alternativeNames: {
+            orderBy: { createdAt: 'asc' }
           },
           _count: {
             select: {
@@ -16456,7 +16620,7 @@ export async function GET(
     try {
         const { id } = await params;
         const personId = parseInt(id);
-        
+
         // Generar clave de caché única
         const cacheKey = `person:id:${personId}:v1`;
 
@@ -16511,6 +16675,9 @@ export async function GET(
             include: {
                 links: {
                     orderBy: { displayOrder: 'asc' },
+                },
+                alternativeNames: {
+                    orderBy: { createdAt: 'asc' },
                 },
                 nationalities: {
                     include: {
@@ -16740,11 +16907,29 @@ export async function PUT(
                 });
             }
 
+            // Eliminar nombres alternativos existentes
+            await tx.personAlternativeName.deleteMany({
+                where: { personId },
+            });
+
+            // Crear nuevos nombres alternativos si existen
+            if (data.alternativeNames && data.alternativeNames.length > 0) {
+                await tx.personAlternativeName.createMany({
+                    data: data.alternativeNames
+                        .filter((alt: any) => alt.fullName && alt.fullName.trim() !== '')
+                        .map((alt: any) => ({
+                            personId,
+                            fullName: alt.fullName.trim(),
+                        })),
+                });
+            }
+
             // Retornar la persona actualizada con sus relaciones
             return tx.person.findUnique({
                 where: { id: personId },
                 include: {
                     links: true,
+                    alternativeNames: true,
                     nationalities: {
                         include: {
                             location: true
@@ -16833,7 +17018,7 @@ export async function DELETE(
     try {
         const { id } = await params;
         const personId = parseInt(id);
-        
+
         // Verificar si la persona tiene películas asociadas
         const person = await prisma.person.findUnique({
             where: { id: personId },
@@ -24978,6 +25163,8 @@ import { CSS } from '@dnd-kit/utilities'
 interface CastMember {
   personId: number
   personName?: string
+  alternativeNameId?: number | null  // 🆕 ID del nombre alternativo
+  alternativeName?: string | null     // 🆕 Nombre alternativo (para display)
   characterName?: string
   billingOrder?: number
   isPrincipal?: boolean
@@ -25012,6 +25199,9 @@ function SortableCastMember({
     opacity: isDragging ? 0.5 : 1,
   }
 
+  // Determinar el nombre a mostrar (alternativo o principal)
+  const displayName = member.alternativeName || member.personName || ''
+
   return (
     <div
       ref={setNodeRef}
@@ -25034,10 +25224,13 @@ function SortableCastMember({
         <div className="flex-1 min-w-0" style={{ maxWidth: '250px' }}>
           <PersonSearchInput
             value={member.personId}
-            initialPersonName={member.personName}
-            onChange={(personId, personName) => updateCastMember(index, {
+            alternativeNameId={member.alternativeNameId}
+            initialPersonName={displayName}
+            onChange={(personId, personName, alternativeNameId, alternativeName) => updateCastMember(index, {
               personId,
-              personName
+              personName: personName,
+              alternativeNameId: alternativeNameId || null,
+              alternativeName: alternativeName || null
             })}
             placeholder="Buscar actor/actriz..."
           />
@@ -25164,9 +25357,25 @@ export default function CastTab() {
           personName = member.person.name || `${member.person.firstName || ''} ${member.person.lastName || ''}`.trim()
         }
 
+        // 🆕 Obtener nombre alternativo si existe
+        let alternativeName: string | null = null
+        if (member.alternativeNameId && member.alternativeName) {
+          alternativeName = member.alternativeName.fullName || member.alternativeName
+        } else if (member.alternativeNameId && member.person?.alternativeNames) {
+          // Buscar en los nombres alternativos de la persona
+          const altName = member.person.alternativeNames.find(
+            (an: any) => an.id === member.alternativeNameId
+          )
+          if (altName) {
+            alternativeName = altName.fullName
+          }
+        }
+
         const formatted = {
           personId: member.personId || member.person?.id || 0,
           personName: personName,
+          alternativeNameId: member.alternativeNameId || null,
+          alternativeName: alternativeName,
           characterName: member.characterName || '',
           billingOrder: member.billingOrder || 0,
           isPrincipal: member.isPrincipal || false,
@@ -25229,6 +25438,8 @@ export default function CastTab() {
     const newMember: CastMember = {
       personId: 0,
       personName: '',
+      alternativeNameId: null,
+      alternativeName: null,
       characterName: '',
       billingOrder: cast.length + 1,
       isPrincipal: cast.length < 5,  // Primeros 5 son principales por defecto
@@ -25391,6 +25602,8 @@ import { CSS } from '@dnd-kit/utilities'
 interface CrewMember {
   personId: number
   personName?: string
+  alternativeNameId?: number | null  // 🆕 ID del nombre alternativo
+  alternativeName?: string | null     // 🆕 Nombre alternativo (para display)
   roleId?: number | null
   role?: any
   department?: string
@@ -25426,6 +25639,9 @@ function SortableCrewMember({
     opacity: isDragging ? 0.5 : 1,
   }
 
+  // Determinar el nombre a mostrar (alternativo o principal)
+  const displayName = member.alternativeName || member.personName || ''
+
   return (
     <div
       ref={setNodeRef}
@@ -25453,14 +25669,17 @@ function SortableCrewMember({
           </label>
           <PersonSearchInput
             value={member.personId}
-            initialPersonName={member.personName}
-            onChange={(personId, personName) => updateCrewMember(index, {
+            alternativeNameId={member.alternativeNameId}
+            initialPersonName={displayName}
+            onChange={(personId, personName, alternativeNameId, alternativeName) => updateCrewMember(index, {
               personId,
-              personName
+              personName: personName,
+              alternativeNameId: alternativeNameId || null,
+              alternativeName: alternativeName || null
             })}
             placeholder="Buscar persona..."
           />
-          {member.personName && (
+          {member.personName && !member.alternativeName && (
             <p className="text-xs text-gray-500 mt-1">{member.personName}</p>
           )}
         </div>
@@ -25589,9 +25808,25 @@ export default function CrewTab() {
           roleName = member.role.name || ''
         }
 
+        // 🆕 Obtener nombre alternativo si existe
+        let alternativeName: string | null = null
+        if (member.alternativeNameId && member.alternativeName) {
+          alternativeName = member.alternativeName.fullName || member.alternativeName
+        } else if (member.alternativeNameId && member.person?.alternativeNames) {
+          // Buscar en los nombres alternativos de la persona
+          const altName = member.person.alternativeNames.find(
+            (an: any) => an.id === member.alternativeNameId
+          )
+          if (altName) {
+            alternativeName = altName.fullName
+          }
+        }
+
         const formatted = {
           personId: member.personId || member.person?.id || 0,
           personName: personName,
+          alternativeNameId: member.alternativeNameId || null,
+          alternativeName: alternativeName,
           roleId: roleId || null,
           role: roleName,
           department: member.department || member.role?.department || '',
@@ -25655,6 +25890,8 @@ export default function CrewTab() {
     const newMember: CrewMember = {
       personId: 0,
       personName: '',
+      alternativeNameId: null,
+      alternativeName: null,
       roleId: null,
       role: '',
       department: '',
@@ -28208,14 +28445,89 @@ export function PersonForm({
 }
 
 // ==================================================
+// src/components/admin/people/PersonFormFields/AlternativeNamesSection.tsx
+// ==================================================
+// src/components/admin/people/PersonFormFields/AlternativeNamesSection.tsx
+
+'use client';
+
+import { PersonAlternativeName } from '@/lib/people/peopleTypes';
+import { Plus, Trash2, User } from 'lucide-react';
+
+interface AlternativeNamesSectionProps {
+    alternativeNames: PersonAlternativeName[];
+    onAdd: () => void;
+    onUpdate: (index: number, fullName: string) => void;
+    onRemove: (index: number) => void;
+}
+
+export function AlternativeNamesSection({
+    alternativeNames,
+    onAdd,
+    onUpdate,
+    onRemove
+}: AlternativeNamesSectionProps) {
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">
+                    <User className="inline w-4 h-4 mr-1" />
+                    Nombres Alternativos
+                </label>
+                <button
+                    type="button"
+                    onClick={onAdd}
+                    className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Agregar
+                </button>
+            </div>
+
+            <p className="text-xs text-gray-500">
+                Nombres con los que aparece acreditada en algunas películas (ej: Andy Kleinman en lugar de Andrea Kleinman)
+            </p>
+
+            {alternativeNames.length === 0 ? (
+                <p className="text-sm text-gray-400 italic">
+                    No hay nombres alternativos registrados
+                </p>
+            ) : (
+                <div className="space-y-2">
+                    {alternativeNames.map((altName, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={altName.fullName}
+                                onChange={(e) => onUpdate(index, e.target.value)}
+                                placeholder="Nombre alternativo completo"
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => onRemove(index)}
+                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Eliminar"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ==================================================
 // src/components/admin/people/PersonFormFields/BasicInfoFields.tsx
 // ==================================================
 // src/components/admin/people/PersonFormFields/BasicInfoFields.tsx
 
 'use client';
 
-import { PersonFormData } from '@/lib/people/peopleTypes';
-import { Calendar } from 'lucide-react';
+import { PersonFormData, PersonAlternativeName } from '@/lib/people/peopleTypes';
+import { Calendar, Plus, Trash2, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { PartialDate } from '@/lib/shared/dateUtils';
 
@@ -28291,6 +28603,26 @@ export function BasicInfoFields({
         } else {
             updateField('deathDate', '');
         }
+    };
+
+    // --- Funciones para nombres alternativos ---
+    const alternativeNames = formData.alternativeNames || [];
+
+    const handleAddAlternativeName = () => {
+        const newAltName: PersonAlternativeName = { fullName: '' };
+        updateField('alternativeNames', [...alternativeNames, newAltName]);
+    };
+
+    const handleUpdateAlternativeName = (index: number, fullName: string) => {
+        const updated = alternativeNames.map((alt, i) => 
+            i === index ? { ...alt, fullName } : alt
+        );
+        updateField('alternativeNames', updated);
+    };
+
+    const handleRemoveAlternativeName = (index: number) => {
+        const updated = alternativeNames.filter((_, i) => i !== index);
+        updateField('alternativeNames', updated);
     };
 
     // Generar opciones de años
@@ -28369,6 +28701,56 @@ export function BasicInfoFields({
                         <option value="OTHER">Otro</option>
                     </select>
                 </div>
+            </div>
+
+            {/* Nombres Alternativos */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-700">
+                        <User className="inline w-4 h-4 mr-1" />
+                        Nombres Alternativos
+                    </label>
+                    <button
+                        type="button"
+                        onClick={handleAddAlternativeName}
+                        className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Agregar
+                    </button>
+                </div>
+
+                <p className="text-xs text-gray-500">
+                    Nombres con los que aparece acreditada en algunas películas (ej: Andy Kleinman en lugar de Andrea Kleinman)
+                </p>
+
+                {alternativeNames.length === 0 ? (
+                    <p className="text-sm text-gray-400 italic">
+                        No hay nombres alternativos registrados
+                    </p>
+                ) : (
+                    <div className="space-y-2">
+                        {alternativeNames.map((altName, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    value={altName.fullName}
+                                    onChange={(e) => handleUpdateAlternativeName(index, e.target.value)}
+                                    placeholder="Nombre alternativo completo"
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => handleRemoveAlternativeName(index)}
+                                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Eliminar"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Fecha de nacimiento */}
@@ -30009,11 +30391,16 @@ export default function GenderSelectionModal({
 // ==================================================
 // src/components/admin/shared/PersonSearchInput.tsx
 import { useState, useEffect, useRef } from 'react'
-import { Search, User, X, Plus } from 'lucide-react'
+import { Search, User, X, Plus, ArrowRight } from 'lucide-react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { peopleService } from '@/services/people.service'
 import toast from 'react-hot-toast'
 import GenderSelectionModal from './GenderSelectionModal'
+
+interface PersonAlternativeName {
+  id: number
+  fullName: string
+}
 
 interface Person {
   id: number
@@ -30021,15 +30408,26 @@ interface Person {
   lastName?: string | null
   slug: string
   name?: string
+  alternativeNames?: PersonAlternativeName[]
+  // Campos de búsqueda que indican match en nombre alternativo
+  matchedAlternativeName?: string | null
+  matchedAlternativeNameId?: number | null
 }
 
 interface PersonSearchInputProps {
   value?: number
+  alternativeNameId?: number | null  // 🆕 ID del nombre alternativo seleccionado
   initialPersonName?: string  // Nombre inicial para evitar llamada API
-  onChange: (personId: number, personName?: string) => void
+  onChange: (
+    personId: number, 
+    personName?: string, 
+    alternativeNameId?: number | null,
+    alternativeName?: string | null
+  ) => void
   placeholder?: string
   disabled?: boolean
   required?: boolean
+  showAlternativeNames?: boolean  // 🆕 Mostrar nombres alternativos en resultados
 }
 
 // Función para consultar el género de un nombre
@@ -30077,11 +30475,13 @@ async function saveFirstNameGender(firstName: string, gender: 'MALE' | 'FEMALE')
 
 export default function PersonSearchInput({
   value,
+  alternativeNameId,
   initialPersonName,
   onChange,
   placeholder = "Buscar persona...",
   disabled = false,
-  required = false
+  required = false,
+  showAlternativeNames = true
 }: PersonSearchInputProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -30089,6 +30489,7 @@ export default function PersonSearchInput({
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
+  const [selectedAlternativeNameId, setSelectedAlternativeNameId] = useState<number | null>(alternativeNameId || null)
   
   // Estado para el modal de selección de género
   const [showGenderModal, setShowGenderModal] = useState(false)
@@ -30110,13 +30511,23 @@ export default function PersonSearchInput({
       // Solo hacer la llamada si NO tenemos el nombre
       peopleService.getById(value)
         .then((person: any) => {
-          const fullName = person.name || `${person.firstName || ''} ${person.lastName || ''}`.trim()
+          // Si hay un alternativeNameId, buscar ese nombre
+          let displayName = person.name || `${person.firstName || ''} ${person.lastName || ''}`.trim()
+          
+          if (alternativeNameId && person.alternativeNames) {
+            const altName = person.alternativeNames.find((an: any) => an.id === alternativeNameId)
+            if (altName) {
+              displayName = altName.fullName
+            }
+          }
+          
           setSelectedPerson(person)
-          setSearchTerm(fullName)
+          setSearchTerm(displayName)
+          setSelectedAlternativeNameId(alternativeNameId || null)
         })
         .catch(err => console.error('Error cargando persona:', err))
     }
-  }, [value, initialPersonName])
+  }, [value, alternativeNameId, initialPersonName])
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
@@ -30167,18 +30578,34 @@ export default function PersonSearchInput({
     }
   }, [debouncedSearch, isOpen])
 
-  const handleSelectPerson = (person: Person) => {
-    const fullName = formatPersonName(person)
+  // Seleccionar nombre principal de la persona
+  const handleSelectPerson = (person: Person, useAlternativeName?: { id: number; name: string }) => {
+    let displayName: string
+    let altNameId: number | null = null
+    let altName: string | null = null
+    
+    if (useAlternativeName) {
+      // Seleccionó un nombre alternativo
+      displayName = useAlternativeName.name
+      altNameId = useAlternativeName.id
+      altName = useAlternativeName.name
+    } else {
+      // Seleccionó el nombre principal
+      displayName = formatPersonName(person)
+    }
+    
     setSelectedPerson(person)
-    setSearchTerm(fullName)
-    onChange(person.id, fullName)
+    setSearchTerm(displayName)
+    setSelectedAlternativeNameId(altNameId)
+    onChange(person.id, displayName, altNameId, altName)
     setIsOpen(false)
   }
 
   const handleClear = () => {
     setSearchTerm('')
     setSelectedPerson(null)
-    onChange(0, '')
+    setSelectedAlternativeNameId(null)
+    onChange(0, '', null, null)
     setIsOpen(false)
   }
 
@@ -30256,7 +30683,7 @@ export default function PersonSearchInput({
       
       toast.success(`Persona "${formatPersonName(newPerson)}" creada exitosamente`)
       
-      // Seleccionar la nueva persona
+      // Seleccionar la nueva persona (sin nombre alternativo)
       handleSelectPerson(newPerson)
       
     } catch (error) {
@@ -30317,6 +30744,83 @@ export default function PersonSearchInput({
     setIsOpen(true)
   }
 
+  // Renderizar un resultado de persona con sus nombres alternativos
+  const renderPersonResult = (person: Person) => {
+    const mainName = formatPersonName(person)
+    const hasMatchedAlternative = person.matchedAlternativeName && person.matchedAlternativeNameId
+    
+    return (
+      <div key={person.id} className="border-b border-gray-100 last:border-b-0">
+        {/* Nombre principal */}
+        <button
+          type="button"
+          onClick={() => handleSelectPerson(person)}
+          className={`w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center space-x-3 transition-colors ${
+            hasMatchedAlternative ? 'bg-gray-50' : ''
+          }`}
+        >
+          <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-gray-900 truncate">
+              {mainName}
+            </div>
+            <div className="text-xs text-gray-500">
+              ID: {person.id} • {person.slug}
+            </div>
+          </div>
+        </button>
+        
+        {/* Nombre alternativo que hizo match (si aplica) */}
+        {hasMatchedAlternative && (
+          <button
+            type="button"
+            onClick={() => handleSelectPerson(person, { 
+              id: person.matchedAlternativeNameId!, 
+              name: person.matchedAlternativeName! 
+            })}
+            className="w-full text-left px-3 py-2 pl-10 hover:bg-yellow-50 flex items-center space-x-2 transition-colors bg-yellow-25"
+          >
+            <ArrowRight className="h-3 w-3 text-yellow-600 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm text-yellow-800 truncate">
+                <span className="font-medium">{person.matchedAlternativeName}</span>
+                <span className="text-yellow-600 ml-2">→ {mainName}</span>
+              </div>
+              <div className="text-xs text-yellow-600">
+                Nombre alternativo
+              </div>
+            </div>
+          </button>
+        )}
+        
+        {/* Otros nombres alternativos (si showAlternativeNames está activo y hay más) */}
+        {showAlternativeNames && person.alternativeNames && person.alternativeNames.length > 0 && (
+          <>
+            {person.alternativeNames
+              .filter(alt => alt.id !== person.matchedAlternativeNameId) // Excluir el que ya se mostró
+              .map(alt => (
+                <button
+                  key={alt.id}
+                  type="button"
+                  onClick={() => handleSelectPerson(person, { id: alt.id, name: alt.fullName })}
+                  className="w-full text-left px-3 py-1.5 pl-10 hover:bg-gray-50 flex items-center space-x-2 transition-colors text-sm"
+                >
+                  <ArrowRight className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-gray-600 truncate">
+                      {alt.fullName}
+                      <span className="text-gray-400 ml-2">→ {mainName}</span>
+                    </span>
+                  </div>
+                </button>
+              ))
+            }
+          </>
+        )}
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="relative" ref={containerRef}>
@@ -30351,9 +30855,17 @@ export default function PersonSearchInput({
           )}
         </div>
 
+        {/* Indicador de nombre alternativo seleccionado */}
+        {selectedAlternativeNameId && selectedPerson && (
+          <div className="mt-1 text-xs text-yellow-700 bg-yellow-50 px-2 py-1 rounded flex items-center">
+            <ArrowRight className="h-3 w-3 mr-1" />
+            <span>Usando nombre alternativo de: {formatPersonName(selectedPerson)}</span>
+          </div>
+        )}
+
         {/* Dropdown de resultados */}
         {isOpen && !disabled && !creating && (
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-80 overflow-auto">
             {loading ? (
               <div className="p-3 text-center text-gray-500">
                 <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
@@ -30384,24 +30896,7 @@ export default function PersonSearchInput({
             ) : (
               <>
                 <div className="py-1">
-                  {people.map(person => (
-                    <button
-                      key={person.id}
-                      type="button"
-                      onClick={() => handleSelectPerson(person)}
-                      className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center space-x-3 transition-colors"
-                    >
-                      <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 truncate">
-                          {formatPersonName(person)}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          ID: {person.id} • {person.slug}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                  {people.map(person => renderPersonResult(person))}
                 </div>
                 <div className="border-t border-gray-200">
                   <button
@@ -36071,51 +36566,56 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
 
     // Cargar persona existente
     const loadPerson = async () => {
-    if (!personId) return;
+        if (!personId) return;
 
-    try {
-        setLoading(true);
-        const person = await peopleService.getById(personId);
-        console.log('usePeopleForm - Raw person from getById:', person);
-        const formattedData = formatPersonDataForForm(person);
-        
-        // NUEVO: Agregar el ID al formData para saber que es edición
-        formattedData.id = personId;
-        
-        // NUEVO: Preservar el photoPublicId si existe
-        if (person.photoPublicId) {
-            formattedData.photoPublicId = person.photoPublicId;
-        }
-        
-        // Si la persona tiene links, cargarlos también
-        if (person.links) {
-            formattedData.links = person.links;
-        }
+        try {
+            setLoading(true);
+            const person = await peopleService.getById(personId);
+            console.log('usePeopleForm - Raw person from getById:', person);
+            const formattedData = formatPersonDataForForm(person);
 
-        // Si la persona tiene nacionalidades, cargarlas como array de IDs
-        if (person.nationalities && Array.isArray(person.nationalities)) {
-            formattedData.nationalities = person.nationalities.map((n: any) => {
-                if (typeof n === 'number') {
+            // NUEVO: Agregar el ID al formData para saber que es edición
+            formattedData.id = personId;
+
+            // NUEVO: Preservar el photoPublicId si existe
+            if (person.photoPublicId) {
+                formattedData.photoPublicId = person.photoPublicId;
+            }
+
+            // Si la persona tiene links, cargarlos también
+            if (person.links) {
+                formattedData.links = person.links;
+            }
+
+            // Si la persona tiene nombres alternativos, cargarlos también
+            if (person.alternativeNames) {
+                formattedData.alternativeNames = person.alternativeNames;
+            }
+
+            // Si la persona tiene nacionalidades, cargarlas como array de IDs
+            if (person.nationalities && Array.isArray(person.nationalities)) {
+                formattedData.nationalities = person.nationalities.map((n: any) => {
+                    if (typeof n === 'number') {
+                        return n;
+                    }
+                    if (typeof n === 'object' && n !== null) {
+                        const id = n.locationId || n;
+                        return id;
+                    }
                     return n;
-                } 
-                if (typeof n === 'object' && n !== null) {
-                    const id = n.locationId || n;
-                    return id;
-                }
-                return n;
-            });
-        } else {
-            formattedData.nationalities = [];
-        }
+                });
+            } else {
+                formattedData.nationalities = [];
+            }
 
-        setFormData(formattedData);
-    } catch (error) {
-        console.error('Error loading person:', error);
-        toast.error('No se pudo cargar la información de la persona');
-    } finally {
-        setLoading(false);
-    }
-};
+            setFormData(formattedData);
+        } catch (error) {
+            console.error('Error loading person:', error);
+            toast.error('No se pudo cargar la información de la persona');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Actualizar campo del formulario
     const updateField = useCallback(<K extends keyof PersonFormData>(
@@ -38656,6 +39156,7 @@ export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
   hideAge: false,
   isActive: true,
   links: [],
+  alternativeNames: [],
   nationalities: []
 };
 
@@ -38784,6 +39285,15 @@ export interface PersonLink {
   updatedAt?: string;
 }
 
+// Tipo para nombres alternativos
+export interface PersonAlternativeName {
+  id?: number;
+  personId?: number;
+  fullName: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // Tipos de links disponibles
 export type PersonLinkType = 
   | 'IMDB'
@@ -38824,6 +39334,7 @@ export interface Location {
 // Tipo extendido con relaciones
 export interface PersonWithRelations extends Person {
   links?: PersonLink[];
+  alternativeNames?: PersonAlternativeName[];
   nationalities?: Array<{
     personId?: number;
     locationId: number;
@@ -38838,6 +39349,9 @@ export interface PersonWithRelations extends Person {
     crewRoles: number;
     awards: number;
   };
+  // Campos de búsqueda: indican si el match fue en un nombre alternativo
+  matchedAlternativeName?: string | null;
+  matchedAlternativeNameId?: number | null;
 }
 
 // Tipo para el formulario
@@ -38857,10 +39371,10 @@ export interface PersonFormData {
   // Flags para indicar si usar fecha parcial
   isPartialBirthDate?: boolean;
   isPartialDeathDate?: boolean;
-  birthLocationId?: number | null;  // <-- Agregar este campo
-  deathLocationId?: number | null;  // <-- Agregar este campo
-  birthLocation?: string;            // <-- Mantener para compatibilidad/display
-  deathLocation?: string;            // <-- Mantener para compatibilidad/display
+  birthLocationId?: number | null;
+  deathLocationId?: number | null;
+  birthLocation?: string;
+  deathLocation?: string;
   biography?: string;
   photoUrl?: string;
   photoPublicId?: string;
@@ -38868,6 +39382,7 @@ export interface PersonFormData {
   hideAge?: boolean;
   isActive?: boolean;
   links: PersonLink[];
+  alternativeNames?: PersonAlternativeName[];
   nationalities?: number[];
 }
 
@@ -38890,6 +39405,27 @@ export interface PaginatedPeopleResponse {
   page: number;
   totalPages: number;
   hasMore: boolean;
+}
+
+// Tipo para resultado de búsqueda con info de nombre alternativo
+export interface PersonSearchResult {
+  id: number;
+  firstName?: string | null;
+  lastName?: string | null;
+  slug: string;
+  name?: string;
+  alternativeNames?: PersonAlternativeName[];
+  // Si el match fue en un nombre alternativo
+  matchedAlternativeName?: string | null;
+  matchedAlternativeNameId?: number | null;
+}
+
+// Tipo para selección de persona (incluye alternativeNameId opcional)
+export interface PersonSelection {
+  personId: number;
+  personName: string;
+  alternativeNameId?: number | null;
+  alternativeName?: string | null;
 }
 
 // ==================================================
@@ -42024,6 +42560,11 @@ function formatPersonDataForAPI(data: PersonFormData): any {
     apiData.links = data.links;
   }
 
+  // Procesar nombres alternativos si existen
+  if (data.alternativeNames && data.alternativeNames.length > 0) {
+    apiData.alternativeNames = data.alternativeNames;
+  }
+
   return apiData;
 }
 
@@ -42045,6 +42586,7 @@ function formatPersonFromAPI(person: any): PersonFormData {
     biography: person.biography || '',
     photoUrl: person.photoUrl || '',
     links: person.links || [],
+    alternativeNames: person.alternativeNames || [],
     nationalities: []
   };
 
