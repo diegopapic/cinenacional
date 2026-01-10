@@ -13,11 +13,19 @@ interface CastMember {
   personSlug?: string;
   isPrincipal?: boolean;
   billingOrder?: number;
+  creditedAs?: string | null;  // 🆕 Nombre alternativo usado en créditos
+  gender?: string | null;       // 🆕 Género para "Acreditado/a"
 }
 
 interface CastSectionProps {
   mainCast: CastMember[];
   fullCast?: CastMember[];
+}
+
+// 🆕 Helper para obtener el texto "Acreditado/a" según género
+function getCreditedLabel(gender?: string | null): string {
+  // FEMALE → "Acreditada", otros casos → "Acreditado"
+  return gender === 'FEMALE' ? 'Acreditada' : 'Acreditado';
 }
 
 export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
@@ -77,6 +85,12 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
               {actor.character && (
                 <p className="text-sm text-gray-400">{actor.character}</p>
               )}
+              {/* 🆕 Mostrar "Acreditado/a como" si hay nombre alternativo */}
+              {actor.creditedAs && (
+                <p className="text-xs text-gray-500 italic">
+                  {getCreditedLabel(actor.gender)} como: {actor.creditedAs}
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -129,6 +143,12 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
                   )}
                   {actor.character && (
                     <p className="text-xs text-gray-400">{actor.character}</p>
+                  )}
+                  {/* 🆕 Mostrar "Acreditado/a como" si hay nombre alternativo */}
+                  {actor.creditedAs && (
+                    <p className="text-xs text-gray-500 italic">
+                      {getCreditedLabel(actor.gender)} como: {actor.creditedAs}
+                    </p>
                   )}
                 </div>
               ))}

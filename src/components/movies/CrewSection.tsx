@@ -8,6 +8,8 @@ interface CrewMember {
   name: string;
   role: string;
   personSlug?: string;
+  creditedAs?: string | null;  // 🆕 Nombre alternativo usado en créditos
+  gender?: string | null;       // 🆕 Género para "Acreditado/a"
 }
 
 interface CrewDepartment {
@@ -17,6 +19,12 @@ interface CrewDepartment {
 interface CrewSectionProps {
   basicCrew: CrewDepartment;
   fullCrew?: CrewDepartment;
+}
+
+// 🆕 Helper para obtener el texto "Acreditado/a" según género
+function getCreditedLabel(gender?: string | null): string {
+  // FEMALE → "Acreditada", otros casos → "Acreditado"
+  return gender === 'FEMALE' ? 'Acreditada' : 'Acreditado';
 }
 
 export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
@@ -35,19 +43,30 @@ export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
       <span className="text-white">{member.name}</span>
     );
 
+    // 🆕 Elemento para "Acreditado/a como" si existe
+    const creditedAsElement = member.creditedAs ? (
+      <span className="text-gray-500 text-xs italic ml-1">
+        ({getCreditedLabel(member.gender)} como: {member.creditedAs})
+      </span>
+    ) : null;
+
     if (showRole) {
       return (
-        <div key={index} className="flex justify-between">
-          {nameElement}
-          <span className="text-gray-400 text-xs">{member.role}</span>
+        <div key={index} className="flex justify-between items-start">
+          <div className="flex flex-wrap items-baseline">
+            {nameElement}
+            {creditedAsElement}
+          </div>
+          <span className="text-gray-400 text-xs ml-2 flex-shrink-0">{member.role}</span>
         </div>
       );
     }
     
-    // IMPORTANTE: Cambiar aquí para que el enlace funcione sin roles
+    // Sin roles
     return (
-      <div key={index}>
+      <div key={index} className="flex flex-wrap items-baseline">
         {nameElement}
+        {creditedAsElement}
       </div>
     );
   };
