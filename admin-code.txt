@@ -1,4 +1,4 @@
-// Archivos del admin - 2026-01-10T09:35:01.508Z
+// Archivos del admin - 2026-01-10T09:48:14.813Z
 // ==================
 
 
@@ -5808,7 +5808,7 @@ export async function GET(
           select: {
             roleId: true,
             billingOrder: true,
-            note: true,
+            notes: true,
             alternativeNameId: true,  // 🆕
             alternativeName: {         // 🆕
               select: {
@@ -6163,7 +6163,7 @@ export async function PUT(
               role: item.role,
               roleId: item.roleId,
               billingOrder: item.billingOrder || index + 1,
-              note: item.note || null
+              notes: item.note || null
             }))
           })
         }
