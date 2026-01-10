@@ -519,7 +519,7 @@ export async function PUT(
               role: item.role,
               roleId: item.roleId,
               billingOrder: item.billingOrder || index + 1,
-              notes: item.note || null
+              notes: item.notes || null
             }))
           })
         }
