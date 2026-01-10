@@ -248,7 +248,9 @@ export function useMovieForm({
             console.log(`👥 Crew[${index}]:`, {
                 personId: member.personId,
                 person: member.person,
-                roleId: member.roleId
+                roleId: member.roleId,
+                alternativeNameId: member.alternativeNameId,  // ✅ AGREGADO LOG
+                notes: member.notes  // ✅ AGREGADO LOG
             })
         })
         setMovieRelations(prev => ({ ...prev, crew }))
@@ -418,7 +420,7 @@ export function useMovieForm({
                 genres: (cleanedMovie.genres?.map((g: any) => g.genre?.id || g.id) || [])
                     .filter((g: number) => g != null && g !== 0 && !isNaN(g)),
 
-                // PROCESAMIENTO MEJORADO DEL CAST
+                // ✅ PROCESAMIENTO MEJORADO DEL CAST - CON alternativeNameId
                 cast: cleanedMovie.cast?.map((c: any) => {
                     console.log('🎬 Procesando cast item desde DB:', c)
                     const mapped = {
@@ -428,13 +430,15 @@ export function useMovieForm({
                         billingOrder: c.billingOrder,
                         isPrincipal: c.isPrincipal,
                         isActor: c.isActor,
-                        notes: c.notes
+                        notes: c.notes,
+                        alternativeNameId: c.alternativeNameId || null,  // ✅ AGREGADO
+                        alternativeName: c.alternativeName || null       // ✅ AGREGADO
                     }
                     console.log('🎬 Cast item mapeado:', mapped)
                     return mapped
                 }) || [],
 
-                // PROCESAMIENTO DEL CREW
+                // ✅ PROCESAMIENTO DEL CREW - CON alternativeNameId y notes
                 crew: (() => {
                     const crewData = cleanedMovie.crew?.map((c: any) => {
                         console.log('📌 Crew item desde DB:', c)
@@ -443,7 +447,10 @@ export function useMovieForm({
                             roleId: c.roleId,
                             billingOrder: c.billingOrder,
                             person: c.person,
-                            role: c.role
+                            role: c.role,
+                            notes: c.notes || '',                          // ✅ AGREGADO
+                            alternativeNameId: c.alternativeNameId || null, // ✅ AGREGADO
+                            alternativeName: c.alternativeName || null      // ✅ AGREGADO
                         }
                         console.log('📌 Crew item mapeado:', mapped)
                         return mapped
@@ -573,7 +580,8 @@ export function useMovieForm({
                     personIdType: typeof member.personId,
                     hasPersonObject: !!member.person,
                     personFromObject: member.person?.id,
-                    characterName: member.characterName
+                    characterName: member.characterName,
+                    alternativeNameId: member.alternativeNameId  // ✅ AGREGADO LOG
                 })
             })
 
@@ -585,6 +593,8 @@ export function useMovieForm({
                     roleId: member.roleId,
                     roleIdType: typeof member.roleId,
                     roleFromObject: member.role?.id,
+                    alternativeNameId: member.alternativeNameId,  // ✅ AGREGADO LOG
+                    notes: member.notes,                          // ✅ AGREGADO LOG
                     fullMember: member
                 })
             })
@@ -609,7 +619,7 @@ export function useMovieForm({
                 // IMPORTANTE: Usar las relaciones del estado, no del data del formulario
                 genres: movieRelations.genres.filter(g => g != null && g !== 0 && !isNaN(g)),
 
-                // PROCESAMIENTO MEJORADO DEL CAST
+                // ✅ PROCESAMIENTO MEJORADO DEL CAST - CON alternativeNameId
                 cast: movieRelations.cast
                     .map(member => {
                         // Intentar obtener personId de diferentes fuentes
@@ -623,6 +633,7 @@ export function useMovieForm({
                         console.log(`📍 Procesando cast member:`, {
                             original: member,
                             extractedPersonId: personId,
+                            alternativeNameId: member.alternativeNameId,  // ✅ AGREGADO LOG
                             willInclude: personId && personId > 0
                         })
 
@@ -636,12 +647,13 @@ export function useMovieForm({
                             characterName: member.characterName || '',
                             billingOrder: member.billingOrder ?? 0,
                             isPrincipal: member.isPrincipal ?? false,
-                            isActor: member.isActor ?? true
+                            isActor: member.isActor ?? true,
+                            alternativeNameId: member.alternativeNameId || null  // ✅ AGREGADO
                         }
                     })
                     .filter(member => member !== null), // Filtrar los nulls
 
-                // PROCESAMIENTO MEJORADO DEL CREW
+                // ✅ PROCESAMIENTO MEJORADO DEL CREW - CON alternativeNameId y notes
                 crew: movieRelations.crew
                     .map(member => {
                         let personId = member.personId
@@ -658,6 +670,8 @@ export function useMovieForm({
                             original: member,
                             extractedPersonId: personId,
                             extractedRoleId: roleId,
+                            alternativeNameId: member.alternativeNameId,  // ✅ AGREGADO LOG
+                            notes: member.notes,                          // ✅ AGREGADO LOG
                             willInclude: personId && personId > 0 && roleId && roleId > 0
                         })
 
@@ -668,7 +682,9 @@ export function useMovieForm({
                         return {
                             personId: personId,
                             roleId: roleId,
-                            billingOrder: member.billingOrder ?? 0
+                            billingOrder: member.billingOrder ?? 0,
+                            notes: member.notes || null,                    // ✅ AGREGADO
+                            alternativeNameId: member.alternativeNameId || null  // ✅ AGREGADO
                         }
                     })
                     .filter(member => member !== null),
