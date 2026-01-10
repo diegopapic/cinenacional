@@ -33,7 +33,7 @@ interface CrewMember {
   role?: any
   department?: string
   billingOrder?: number
-  note?: string
+  notes?: string  // ✅ CORREGIDO: era 'note', ahora es 'notes'
   person?: any
 }
 
@@ -164,8 +164,8 @@ function SortableCrewMember({
         <div className="col-span-8">
           <input
             type="text"
-            value={member.note || ''}
-            onChange={(e) => updateCrewMember(index, { note: e.target.value })}
+            value={member.notes || ''}
+            onChange={(e) => updateCrewMember(index, { notes: e.target.value })}
             placeholder="Nota adicional (opcional)"
             className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md"
           />
@@ -256,7 +256,7 @@ export default function CrewTab() {
           role: roleName,
           department: member.department || member.role?.department || '',
           billingOrder: member.billingOrder || 0,
-          note: member.note || '',
+          notes: member.notes || '',  // ✅ CORREGIDO: era 'note'
           person: member.person
         }
 
@@ -321,7 +321,7 @@ export default function CrewTab() {
       role: '',
       department: '',
       billingOrder: crew.length,
-      note: ''
+      notes: ''  // ✅ CORREGIDO: era 'note'
     }
     setCrew([...crew, newMember])
   }
