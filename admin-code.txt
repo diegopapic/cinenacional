@@ -1,4 +1,4 @@
-// Archivos del admin - 2026-01-10T19:06:50.245Z
+// Archivos del admin - 2026-01-10T23:14:17.678Z
 // ==================
 
 
@@ -8401,6 +8401,11 @@ export async function GET(
         nationalities: {
           include: {
             location: true
+          }
+        },
+        alternativeNames: {
+          orderBy: {
+            createdAt: 'asc'
           }
         }
       }

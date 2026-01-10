@@ -51,6 +51,11 @@ export async function GET(
           include: {
             location: true
           }
+        },
+        alternativeNames: {
+          orderBy: {
+            createdAt: 'asc'
+          }
         }
       }
     });
