@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 6a7828dff9602247c11d6eb803efe0bbe0b09e73
-// Fecha: 2026-01-10T23:14:17.511Z
+// Commit: 13af7975a86735a1f892e11ebfa8e04fa9174431
+// Fecha: 2026-01-12T05:43:04.697Z
 // ============================================
 
 
@@ -87,6 +87,1571 @@ async function createAdmin() {
 }
 
 createAdmin()
+
+// ==================================================
+// scripts/tmdb/config.ts
+// ==================================================
+// TMDB API Configuration
+// Documentación: https://developer.themoviedb.org/docs
+
+export const config = {
+  // API Read Access Token (Bearer token)
+  tmdbAccessToken: process.env.TMDB_ACCESS_TOKEN || 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJkZWU4NjYxYmU4NDc4YzQ2ODljOWZmYTVmMTAzOGY4ZiIsIm5iZiI6MTU3NDIxMjg5NC41MzMsInN1YiI6IjVkZDQ5NTFlMzU2YTcxNTg3NWViM2RmNyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.nhpEuKh4uyr4Mp0avMqNmGuwPC2cj0byvHJaAsGIdkE',
+  
+  // API Key (v3 auth) - alternativa
+  tmdbApiKey: process.env.TMDB_API_KEY || 'dee8661be8478c4689c9ffa5f1038f8f',
+  
+  // Base URLs
+  tmdbBaseUrl: 'https://api.themoviedb.org/3',
+  
+  // Database connection (para scripts standalone)
+  databaseUrl: process.env.DATABASE_URL || 'postgresql://cinenacional:Paganitzu@localhost:5433/cinenacional',
+  
+  // Rate limiting
+  requestsPerSecond: 35, // TMDB permite ~40, dejamos margen
+  delayBetweenRequests: 30, // ms entre requests
+  
+  // Matching thresholds
+  matching: {
+    // Para personas
+    person: {
+      autoAcceptScore: 80,    // Score >= 80: aceptar automáticamente
+      reviewScore: 50,         // Score 50-79: marcar para revisión
+      rejectScore: 49,         // Score < 50: rechazar
+    },
+    // Para películas
+    movie: {
+      exactTitleYearBonus: 50,
+      directorMatchBonus: 30,
+      argentinaCountryBonus: 20,
+      durationToleranceMinutes: 5,
+      durationMatchBonus: 10,
+    }
+  },
+  
+  // IDs conocidos
+  roles: {
+    director: 2, // role_id para Director
+  },
+  
+  // Países
+  countries: {
+    argentina: {
+      tmdbCode: 'AR',
+      iso: 'AR',
+    }
+  }
+};
+
+export default config;
+
+
+// ==================================================
+// scripts/tmdb/enrich-movies.ts
+// ==================================================
+/**
+ * Script para enriquecer películas con IMDB ID desde TMDB
+ * 
+ * Uso:
+ *   npx ts-node enrich-movies.ts --dry-run          # Solo genera CSV
+ *   npx ts-node enrich-movies.ts --apply            # Aplica cambios a la BD
+ *   npx ts-node enrich-movies.ts --apply-csv        # Aplica desde CSV revisado
+ *   npx ts-node enrich-movies.ts --limit 100        # Procesar solo 100 películas
+ *   npx ts-node enrich-movies.ts --offset 500       # Empezar desde la 501
+ */
+
+import { searchMovies, getMovieDetails, testConnection, TMDBMovieDetails } from './tmdb-client';
+import { 
+  getPool, 
+  closePool, 
+  normalizeText, 
+  stringSimilarity,
+  saveToCSV, 
+  loadFromCSV,
+  formatDuration,
+  progressBar,
+  log 
+} from './utils';
+import config from './config';
+
+// Tipos
+interface LocalMovie {
+  id: number;
+  title: string;
+  year: number | null;
+  duration: number | null;
+  imdb_id: string | null;
+  director_names: string | null; // "Nombre1, Nombre2"
+}
+
+interface MatchResult {
+  local_id: number;
+  local_title: string;
+  local_year: number | null;
+  local_director: string | null;
+  tmdb_id: number | null;
+  tmdb_title: string | null;
+  tmdb_year: number | null;
+  tmdb_director: string | null;
+  imdb_id: string | null;
+  match_score: number;
+  match_status: 'auto_accept' | 'review' | 'no_match' | 'multiple';
+  match_reason: string;
+}
+
+/**
+ * Obtener películas sin IMDB ID de la base de datos
+ */
+async function getMoviesWithoutImdbId(limit?: number, offset?: number): Promise<LocalMovie[]> {
+  const pool = getPool();
+  
+  const query = `
+    SELECT 
+      m.id,
+      m.title,
+      m.year,
+      m.duration,
+      m.imdb_id,
+      STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as director_names
+    FROM movies m
+    LEFT JOIN movie_crew mc ON m.id = mc.movie_id AND mc.role_id = $1
+    LEFT JOIN people p ON mc.person_id = p.id
+    WHERE m.imdb_id IS NULL OR m.imdb_id = ''
+    GROUP BY m.id, m.title, m.year, m.duration, m.imdb_id
+    ORDER BY m.year DESC NULLS LAST, m.id
+    ${limit ? `LIMIT ${limit}` : ''}
+    ${offset ? `OFFSET ${offset}` : ''}
+  `;
+  
+  const result = await pool.query(query, [config.roles.director]);
+  return result.rows;
+}
+
+/**
+ * Calcular score de match entre película local y TMDB
+ */
+function calculateMatchScore(
+  local: LocalMovie,
+  tmdb: TMDBMovieDetails
+): { score: number; reasons: string[] } {
+  let score = 0;
+  const reasons: string[] = [];
+  
+  // 1. Comparar títulos
+  const titleSimilarity = Math.max(
+    stringSimilarity(local.title, tmdb.title),
+    stringSimilarity(local.title, tmdb.original_title)
+  );
+  
+  if (titleSimilarity >= 95) {
+    score += 40;
+    reasons.push(`Título exacto (${titleSimilarity}%)`);
+  } else if (titleSimilarity >= 80) {
+    score += 30;
+    reasons.push(`Título similar (${titleSimilarity}%)`);
+  } else if (titleSimilarity >= 60) {
+    score += 15;
+    reasons.push(`Título parcial (${titleSimilarity}%)`);
+  }
+  
+  // 2. Comparar año
+  if (local.year && tmdb.release_date) {
+    const tmdbYear = parseInt(tmdb.release_date.split('-')[0]);
+    if (local.year === tmdbYear) {
+      score += 25;
+      reasons.push('Año exacto');
+    } else if (Math.abs(local.year - tmdbYear) === 1) {
+      score += 15;
+      reasons.push('Año ±1');
+    }
+  }
+  
+  // 3. Comparar director
+  if (local.director_names && tmdb.credits?.crew) {
+    const tmdbDirectors = tmdb.credits.crew
+      .filter(c => c.job === 'Director')
+      .map(c => normalizeText(c.name));
+    
+    const localDirectors = local.director_names
+      .split(',')
+      .map(d => normalizeText(d.trim()));
+    
+    const hasDirectorMatch = localDirectors.some(ld => 
+      tmdbDirectors.some(td => stringSimilarity(ld, td) >= 80)
+    );
+    
+    if (hasDirectorMatch) {
+      score += config.matching.movie.directorMatchBonus;
+      reasons.push('Director coincide');
+    }
+  }
+  
+  // 4. País Argentina
+  if (tmdb.production_countries?.some(c => c.iso_3166_1 === 'AR')) {
+    score += config.matching.movie.argentinaCountryBonus;
+    reasons.push('Producción Argentina');
+  }
+  
+  // 5. Comparar duración
+  if (local.duration && tmdb.runtime) {
+    const diff = Math.abs(local.duration - tmdb.runtime);
+    if (diff <= config.matching.movie.durationToleranceMinutes) {
+      score += config.matching.movie.durationMatchBonus;
+      reasons.push(`Duración similar (±${diff}min)`);
+    }
+  }
+  
+  return { score, reasons };
+}
+
+/**
+ * Buscar y matchear una película
+ */
+async function findMatchForMovie(movie: LocalMovie): Promise<MatchResult> {
+  const result: MatchResult = {
+    local_id: movie.id,
+    local_title: movie.title,
+    local_year: movie.year,
+    local_director: movie.director_names,
+    tmdb_id: null,
+    tmdb_title: null,
+    tmdb_year: null,
+    tmdb_director: null,
+    imdb_id: null,
+    match_score: 0,
+    match_status: 'no_match',
+    match_reason: '',
+  };
+  
+  try {
+    // Buscar por título y año
+    const searchResult = await searchMovies(movie.title, movie.year || undefined);
+    
+    if (searchResult.total_results === 0) {
+      // Intentar sin año
+      const searchWithoutYear = await searchMovies(movie.title);
+      if (searchWithoutYear.total_results === 0) {
+        result.match_reason = 'Sin resultados en TMDB';
+        return result;
+      }
+      searchResult.results = searchWithoutYear.results;
+    }
+    
+    // Evaluar cada candidato
+    const candidates: Array<{
+      tmdb: TMDBMovieDetails;
+      score: number;
+      reasons: string[];
+    }> = [];
+    
+    // Limitar a los primeros 5 resultados para no hacer demasiadas requests
+    for (const tmdbMovie of searchResult.results.slice(0, 5)) {
+      const details = await getMovieDetails(tmdbMovie.id);
+      const { score, reasons } = calculateMatchScore(movie, details);
+      
+      if (score > 0) {
+        candidates.push({ tmdb: details, score, reasons });
+      }
+    }
+    
+    if (candidates.length === 0) {
+      result.match_reason = 'Ningún candidato supera umbral mínimo';
+      return result;
+    }
+    
+    // Ordenar por score descendente
+    candidates.sort((a, b) => b.score - a.score);
+    const best = candidates[0];
+    
+    // Obtener director de TMDB
+    const tmdbDirector = best.tmdb.credits?.crew
+      ?.filter(c => c.job === 'Director')
+      .map(c => c.name)
+      .join(', ') || null;
+    
+    result.tmdb_id = best.tmdb.id;
+    result.tmdb_title = best.tmdb.title;
+    result.tmdb_year = best.tmdb.release_date ? parseInt(best.tmdb.release_date.split('-')[0]) : null;
+    result.tmdb_director = tmdbDirector;
+    result.imdb_id = best.tmdb.imdb_id;
+    result.match_score = best.score;
+    result.match_reason = best.reasons.join('; ');
+    
+    // Determinar status
+    if (best.score >= config.matching.person.autoAcceptScore) {
+      result.match_status = 'auto_accept';
+    } else if (best.score >= config.matching.person.reviewScore) {
+      if (candidates.length > 1 && candidates[1].score >= config.matching.person.reviewScore) {
+        result.match_status = 'multiple';
+        result.match_reason += ` [Alternativas: ${candidates.slice(1, 3).map(c => c.tmdb.title).join(', ')}]`;
+      } else {
+        result.match_status = 'review';
+      }
+    }
+    
+  } catch (error) {
+    result.match_reason = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
+  
+  return result;
+}
+
+/**
+ * Aplicar cambios a la base de datos
+ */
+async function applyChanges(matches: MatchResult[]): Promise<{ updated: number; errors: number }> {
+  const pool = getPool();
+  let updated = 0;
+  let errors = 0;
+  
+  for (const match of matches) {
+    if (!match.imdb_id || match.match_status === 'no_match') continue;
+    
+    try {
+      await pool.query(
+        'UPDATE movies SET imdb_id = $1 WHERE id = $2',
+        [match.imdb_id, match.local_id]
+      );
+      updated++;
+    } catch (error) {
+      log(`Error actualizando película ${match.local_id}: ${error}`, 'error');
+      errors++;
+    }
+  }
+  
+  return { updated, errors };
+}
+
+/**
+ * Main function
+ */
+async function main() {
+  const args = process.argv.slice(2);
+  const isDryRun = args.includes('--dry-run') || !args.includes('--apply');
+  const applyFromCSV = args.includes('--apply-csv');
+  
+  const limitArg = args.find(a => a.startsWith('--limit'));
+  const limit = limitArg ? parseInt(limitArg.split('=')[1] || args[args.indexOf('--limit') + 1]) : undefined;
+  
+  const offsetArg = args.find(a => a.startsWith('--offset'));
+  const offset = offsetArg ? parseInt(offsetArg.split('=')[1] || args[args.indexOf('--offset') + 1]) : undefined;
+  
+  console.log('\n🎬 TMDB Movie Enrichment Script');
+  console.log('================================\n');
+  
+  // Test conexión a TMDB
+  log('Probando conexión a TMDB...', 'info');
+  const connected = await testConnection();
+  if (!connected) {
+    log('No se pudo conectar a TMDB', 'error');
+    process.exit(1);
+  }
+  log('Conexión a TMDB exitosa', 'success');
+  
+  if (applyFromCSV) {
+    // Modo: Aplicar desde CSV revisado
+    log('Cargando matches desde CSV...', 'info');
+    const matches = loadFromCSV('movies-matches.csv') as MatchResult[];
+    
+    if (matches.length === 0) {
+      log('No se encontró el archivo movies-matches.csv', 'error');
+      process.exit(1);
+    }
+    
+    const toApply = matches.filter(m => 
+      m.match_status === 'auto_accept' || m.match_status === 'review'
+    );
+    
+    log(`Aplicando ${toApply.length} matches a la base de datos...`, 'info');
+    const { updated, errors } = await applyChanges(toApply);
+    
+    log(`Actualizadas: ${updated} | Errores: ${errors}`, updated > 0 ? 'success' : 'warn');
+    
+  } else {
+    // Modo: Procesar películas
+    log('Obteniendo películas sin IMDB ID...', 'info');
+    const movies = await getMoviesWithoutImdbId(limit, offset);
+    log(`Encontradas ${movies.length} películas para procesar`, 'info');
+    
+    if (movies.length === 0) {
+      log('No hay películas para procesar', 'success');
+      await closePool();
+      return;
+    }
+    
+    const startTime = Date.now();
+    const results: MatchResult[] = [];
+    
+    // Stats
+    let processed = 0;
+    let autoAccepted = 0;
+    let needsReview = 0;
+    let noMatch = 0;
+    let multiple = 0;
+    
+    for (const movie of movies) {
+      processed++;
+      process.stdout.write(`\r${progressBar(processed, movies.length)} - ${movie.title.slice(0, 30)}...`);
+      
+      const match = await findMatchForMovie(movie);
+      results.push(match);
+      
+      switch (match.match_status) {
+        case 'auto_accept': autoAccepted++; break;
+        case 'review': needsReview++; break;
+        case 'no_match': noMatch++; break;
+        case 'multiple': multiple++; break;
+      }
+    }
+    
+    console.log('\n');
+    
+    const elapsed = Date.now() - startTime;
+    
+    // Guardar CSV
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+    saveToCSV(results, `movies-matches-${timestamp}.csv`, [
+      'local_id', 'local_title', 'local_year', 'local_director',
+      'tmdb_id', 'tmdb_title', 'tmdb_year', 'tmdb_director',
+      'imdb_id', 'match_score', 'match_status', 'match_reason'
+    ]);
+    
+    // También guardar versión "latest" para aplicar después
+    saveToCSV(results, 'movies-matches.csv', [
+      'local_id', 'local_title', 'local_year', 'local_director',
+      'tmdb_id', 'tmdb_title', 'tmdb_year', 'tmdb_director',
+      'imdb_id', 'match_score', 'match_status', 'match_reason'
+    ]);
+    
+    // Resumen
+    console.log('\n📊 Resumen:');
+    console.log(`   Procesadas:      ${processed}`);
+    console.log(`   Auto-aceptadas:  ${autoAccepted} (score >= ${config.matching.person.autoAcceptScore})`);
+    console.log(`   Para revisar:    ${needsReview} (score ${config.matching.person.reviewScore}-${config.matching.person.autoAcceptScore - 1})`);
+    console.log(`   Múltiples:       ${multiple}`);
+    console.log(`   Sin match:       ${noMatch}`);
+    console.log(`   Tiempo:          ${formatDuration(elapsed)}`);
+    
+    if (!isDryRun) {
+      const toApply = results.filter(r => r.match_status === 'auto_accept');
+      log(`\nAplicando ${toApply.length} matches automáticos a la BD...`, 'info');
+      const { updated, errors } = await applyChanges(toApply);
+      log(`Actualizadas: ${updated} | Errores: ${errors}`, 'success');
+    } else {
+      console.log('\n💡 Modo dry-run: No se aplicaron cambios.');
+      console.log('   Para aplicar auto-aceptados: npx ts-node enrich-movies.ts --apply');
+      console.log('   Para aplicar desde CSV:      npx ts-node enrich-movies.ts --apply-csv');
+    }
+  }
+  
+  await closePool();
+  console.log('\n✨ Proceso completado\n');
+}
+
+main().catch(error => {
+  console.error('Error fatal:', error);
+  process.exit(1);
+});
+
+
+// ==================================================
+// scripts/tmdb/enrich-people.ts
+// ==================================================
+/**
+ * Script para enriquecer personas con IMDB ID desde TMDB
+ * 
+ * Uso:
+ *   npx ts-node enrich-people.ts --dry-run          # Solo genera CSV
+ *   npx ts-node enrich-people.ts --apply            # Aplica cambios a la BD
+ *   npx ts-node enrich-people.ts --apply-csv        # Aplica desde CSV revisado
+ *   npx ts-node enrich-people.ts --limit 100        # Procesar solo 100 personas
+ *   npx ts-node enrich-people.ts --offset 500       # Empezar desde la 501
+ *   npx ts-node enrich-people.ts --min-movies 3     # Solo personas con 3+ películas
+ */
+
+import { searchPeople, getPersonDetails, testConnection, TMDBPersonDetails } from './tmdb-client';
+import { 
+  getPool, 
+  closePool, 
+  normalizeText, 
+  stringSimilarity,
+  parseTMDBDate,
+  compareDates,
+  isArgentineLocation,
+  saveToCSV, 
+  loadFromCSV,
+  formatDuration,
+  progressBar,
+  log 
+} from './utils';
+import config from './config';
+
+// Tipos
+interface LocalPerson {
+  id: number;
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string;
+  birth_year: number | null;
+  birth_month: number | null;
+  birth_day: number | null;
+  death_year: number | null;
+  death_month: number | null;
+  death_day: number | null;
+  imdb_id: string | null;
+  movie_count: number;
+  movie_titles: string | null; // "Película1, Película2"
+}
+
+interface MatchResult {
+  local_id: number;
+  local_name: string;
+  local_birth: string | null;
+  local_death: string | null;
+  local_movies: number;
+  tmdb_id: number | null;
+  tmdb_name: string | null;
+  tmdb_birth: string | null;
+  tmdb_death: string | null;
+  tmdb_place: string | null;
+  imdb_id: string | null;
+  match_score: number;
+  match_status: 'auto_accept' | 'review' | 'no_match' | 'multiple';
+  match_reason: string;
+}
+
+/**
+ * Obtener personas sin IMDB ID de la base de datos
+ */
+async function getPeopleWithoutImdbId(
+  limit?: number, 
+  offset?: number,
+  minMovies: number = 1
+): Promise<LocalPerson[]> {
+  const pool = getPool();
+  
+  const query = `
+    WITH person_movies AS (
+      SELECT 
+        person_id,
+        COUNT(DISTINCT movie_id) as movie_count,
+        STRING_AGG(DISTINCT m.title, ', ' ORDER BY m.title) as movie_titles
+      FROM (
+        SELECT person_id, movie_id FROM movie_cast
+        UNION ALL
+        SELECT person_id, movie_id FROM movie_crew
+      ) all_roles
+      JOIN movies m ON all_roles.movie_id = m.id
+      GROUP BY person_id
+    )
+    SELECT 
+      p.id,
+      p.first_name,
+      p.last_name,
+      CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, '')) as full_name,
+      p.birth_year,
+      p.birth_month,
+      p.birth_day,
+      p.death_year,
+      p.death_month,
+      p.death_day,
+      p.imdb_id,
+      COALESCE(pm.movie_count, 0) as movie_count,
+      pm.movie_titles
+    FROM people p
+    LEFT JOIN person_movies pm ON p.id = pm.person_id
+    WHERE (p.tmdb_id IS NULL OR p.tmdb_id = 0)
+      AND COALESCE(pm.movie_count, 0) >= $1
+    ORDER BY COALESCE(pm.movie_count, 0) DESC, p.id
+    ${limit ? `LIMIT ${limit}` : ''}
+    ${offset ? `OFFSET ${offset}` : ''}
+  `;
+  
+  const result = await pool.query(query, [minMovies]);
+  return result.rows;
+}
+
+/**
+ * Obtener títulos de películas de una persona en nuestra BD
+ */
+async function getPersonMovieTitles(personId: number): Promise<string[]> {
+  const pool = getPool();
+  
+  const query = `
+    SELECT DISTINCT m.title, m.year
+    FROM movies m
+    JOIN (
+      SELECT movie_id FROM movie_cast WHERE person_id = $1
+      UNION
+      SELECT movie_id FROM movie_crew WHERE person_id = $1
+    ) roles ON m.id = roles.movie_id
+    ORDER BY m.year DESC NULLS LAST
+    LIMIT 20
+  `;
+  
+  const result = await pool.query(query, [personId]);
+  return result.rows.map(r => r.title);
+}
+
+/**
+ * Calcular score de match entre persona local y TMDB
+ */
+function calculateMatchScore(
+  local: LocalPerson,
+  tmdb: TMDBPersonDetails,
+  localMovieTitles: string[]
+): { score: number; reasons: string[] } {
+  let score = 0;
+  const reasons: string[] = [];
+  
+  // 1. Comparar nombres
+  const nameSimilarity = stringSimilarity(local.full_name, tmdb.name);
+  
+  if (nameSimilarity >= 95) {
+    score += 30;
+    reasons.push(`Nombre exacto (${nameSimilarity}%)`);
+  } else if (nameSimilarity >= 80) {
+    score += 20;
+    reasons.push(`Nombre similar (${nameSimilarity}%)`);
+  } else if (nameSimilarity >= 60) {
+    score += 10;
+    reasons.push(`Nombre parcial (${nameSimilarity}%)`);
+  }
+  
+  // También verificar nombres alternativos de TMDB
+  if (tmdb.also_known_as) {
+    for (const altName of tmdb.also_known_as) {
+      const altSimilarity = stringSimilarity(local.full_name, altName);
+      if (altSimilarity >= 90 && altSimilarity > nameSimilarity) {
+        score += 10;
+        reasons.push(`Nombre alternativo match`);
+        break;
+      }
+    }
+  }
+  
+  // 2. Comparar fecha de nacimiento
+  if (local.birth_year && tmdb.birthday) {
+    const tmdbBirth = parseTMDBDate(tmdb.birthday);
+    const localBirth = {
+      year: local.birth_year,
+      month: local.birth_month,
+      day: local.birth_day,
+    };
+    
+    const birthScore = compareDates(localBirth, tmdbBirth);
+    if (birthScore >= 50) {
+      score += birthScore / 2; // Max 50 puntos
+      reasons.push(`Nacimiento coincide (${birthScore}%)`);
+    }
+  }
+  
+  // 3. Comparar fecha de muerte
+  if (local.death_year && tmdb.deathday) {
+    const tmdbDeath = parseTMDBDate(tmdb.deathday);
+    const localDeath = {
+      year: local.death_year,
+      month: local.death_month,
+      day: local.death_day,
+    };
+    
+    const deathScore = compareDates(localDeath, tmdbDeath);
+    if (deathScore >= 50) {
+      score += deathScore / 2; // Max 50 puntos
+      reasons.push(`Fallecimiento coincide (${deathScore}%)`);
+    }
+  }
+  
+  // 4. Verificar si es argentino
+  if (isArgentineLocation(tmdb.place_of_birth)) {
+    score += 15;
+    reasons.push('Origen argentino');
+  }
+  
+  // 5. Comparar filmografía (muy importante para homónimos)
+  if (tmdb.movie_credits && localMovieTitles.length > 0) {
+    const tmdbMovies = [
+      ...tmdb.movie_credits.cast.map(m => normalizeText(m.title)),
+      ...tmdb.movie_credits.crew.map(m => normalizeText(m.title)),
+    ];
+    
+    let movieMatches = 0;
+    for (const localTitle of localMovieTitles) {
+      const normalizedLocal = normalizeText(localTitle);
+      if (tmdbMovies.some(tm => stringSimilarity(normalizedLocal, tm) >= 80)) {
+        movieMatches++;
+      }
+    }
+    
+    if (movieMatches > 0) {
+      const movieScore = Math.min(movieMatches * 10, 30); // Max 30 puntos
+      score += movieScore;
+      reasons.push(`${movieMatches} película(s) en común`);
+    }
+  }
+  
+  return { score, reasons };
+}
+
+/**
+ * Buscar y matchear una persona
+ */
+async function findMatchForPerson(person: LocalPerson): Promise<MatchResult> {
+  const result: MatchResult = {
+    local_id: person.id,
+    local_name: person.full_name.trim(),
+    local_birth: person.birth_year ? 
+      `${person.birth_year}${person.birth_month ? '-' + String(person.birth_month).padStart(2, '0') : ''}${person.birth_day ? '-' + String(person.birth_day).padStart(2, '0') : ''}` 
+      : null,
+    local_death: person.death_year ?
+      `${person.death_year}${person.death_month ? '-' + String(person.death_month).padStart(2, '0') : ''}${person.death_day ? '-' + String(person.death_day).padStart(2, '0') : ''}`
+      : null,
+    local_movies: person.movie_count,
+    tmdb_id: null,
+    tmdb_name: null,
+    tmdb_birth: null,
+    tmdb_death: null,
+    tmdb_place: null,
+    imdb_id: null,
+    match_score: 0,
+    match_status: 'no_match',
+    match_reason: '',
+  };
+  
+  // Nombre vacío
+  if (!person.full_name.trim()) {
+    result.match_reason = 'Nombre vacío';
+    return result;
+  }
+  
+  try {
+    // Obtener películas de la persona para comparar filmografía
+    const localMovieTitles = await getPersonMovieTitles(person.id);
+    
+    // Buscar en TMDB
+    const searchResult = await searchPeople(person.full_name.trim());
+    
+    if (searchResult.total_results === 0) {
+      result.match_reason = 'Sin resultados en TMDB';
+      return result;
+    }
+    
+    // Evaluar cada candidato
+    const candidates: Array<{
+      tmdb: TMDBPersonDetails;
+      score: number;
+      reasons: string[];
+    }> = [];
+    
+    // Limitar a los primeros 5 resultados
+    for (const tmdbPerson of searchResult.results.slice(0, 5)) {
+      const details = await getPersonDetails(tmdbPerson.id);
+      const { score, reasons } = calculateMatchScore(person, details, localMovieTitles);
+      
+      if (score > 0) {
+        candidates.push({ tmdb: details, score, reasons });
+      }
+    }
+    
+    if (candidates.length === 0) {
+      result.match_reason = 'Ningún candidato supera umbral mínimo';
+      return result;
+    }
+    
+    // Ordenar por score descendente
+    candidates.sort((a, b) => b.score - a.score);
+    const best = candidates[0];
+    
+    result.tmdb_id = best.tmdb.id;
+    result.tmdb_name = best.tmdb.name;
+    result.tmdb_birth = best.tmdb.birthday;
+    result.tmdb_death = best.tmdb.deathday;
+    result.tmdb_place = best.tmdb.place_of_birth;
+    result.imdb_id = best.tmdb.imdb_id;
+    result.match_score = best.score;
+    result.match_reason = best.reasons.join('; ');
+    
+    // Determinar status
+    // Regla especial: nombre exacto + 2 películas en común = auto_accept
+    const hasExactName = best.reasons.some(r => r.includes('Nombre exacto'));
+    const movieMatchReason = best.reasons.find(r => r.includes('película(s) en común'));
+    const movieMatchCount = movieMatchReason ? parseInt(movieMatchReason.match(/(\d+)/)?.[1] || '0') : 0;
+    
+    if (best.score >= config.matching.person.autoAcceptScore) {
+      result.match_status = 'auto_accept';
+    } else if (hasExactName && movieMatchCount >= 2) {
+      // Nombre exacto + 2 películas = suficiente confianza
+      result.match_status = 'auto_accept';
+      result.match_reason += ' [Auto: nombre exacto + películas]';
+    } else if (best.score >= config.matching.person.reviewScore) {
+      // Verificar si hay múltiples candidatos con score similar
+      if (candidates.length > 1 && candidates[1].score >= config.matching.person.reviewScore) {
+        result.match_status = 'multiple';
+        result.match_reason += ` [Alternativas: ${candidates.slice(1, 3).map(c => `${c.tmdb.name} (${c.score})`).join(', ')}]`;
+      } else {
+        result.match_status = 'review';
+      }
+    }
+    
+  } catch (error) {
+    result.match_reason = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
+  
+  return result;
+}
+
+/**
+ * Aplicar cambios a la base de datos
+ */
+async function applyChanges(matches: MatchResult[]): Promise<{ updated: number; errors: number }> {
+  const pool = getPool();
+  let updated = 0;
+  let errors = 0;
+  
+  for (const match of matches) {
+    if (!match.tmdb_id || match.match_status === 'no_match') continue;
+    
+    try {
+      await pool.query(
+        'UPDATE people SET tmdb_id = $1 WHERE id = $2',
+        [match.tmdb_id, match.local_id]
+      );
+      updated++;
+    } catch (error) {
+      log(`Error actualizando persona ${match.local_id}: ${error}`, 'error');
+      errors++;
+    }
+  }
+  
+  return { updated, errors };
+}
+
+/**
+ * Main function
+ */
+async function main() {
+  const args = process.argv.slice(2);
+  const isDryRun = args.includes('--dry-run') || !args.includes('--apply');
+  const applyFromCSV = args.includes('--apply-csv');
+  
+  const limitArg = args.find(a => a.startsWith('--limit'));
+  const limit = limitArg ? parseInt(limitArg.split('=')[1] || args[args.indexOf('--limit') + 1]) : undefined;
+  
+  const offsetArg = args.find(a => a.startsWith('--offset'));
+  const offset = offsetArg ? parseInt(offsetArg.split('=')[1] || args[args.indexOf('--offset') + 1]) : undefined;
+  
+  const minMoviesArg = args.find(a => a.startsWith('--min-movies'));
+  const minMovies = minMoviesArg ? parseInt(minMoviesArg.split('=')[1] || args[args.indexOf('--min-movies') + 1]) : 1;
+  
+  console.log('\n👤 TMDB People Enrichment Script');
+  console.log('=================================\n');
+  
+  // Test conexión a TMDB
+  log('Probando conexión a TMDB...', 'info');
+  const connected = await testConnection();
+  if (!connected) {
+    log('No se pudo conectar a TMDB', 'error');
+    process.exit(1);
+  }
+  log('Conexión a TMDB exitosa', 'success');
+  
+  if (applyFromCSV) {
+    // Modo: Aplicar desde CSV revisado
+    log('Cargando matches desde CSV...', 'info');
+    const matches = loadFromCSV('people-matches.csv') as MatchResult[];
+    
+    if (matches.length === 0) {
+      log('No se encontró el archivo people-matches.csv', 'error');
+      process.exit(1);
+    }
+    
+    const toApply = matches.filter(m => 
+      m.match_status === 'auto_accept' || m.match_status === 'review'
+    );
+    
+    log(`Aplicando ${toApply.length} matches a la base de datos...`, 'info');
+    const { updated, errors } = await applyChanges(toApply);
+    
+    log(`Actualizadas: ${updated} | Errores: ${errors}`, updated > 0 ? 'success' : 'warn');
+    
+  } else {
+    // Modo: Procesar personas
+    log(`Obteniendo personas sin IMDB ID (min ${minMovies} película(s))...`, 'info');
+    const people = await getPeopleWithoutImdbId(limit, offset, minMovies);
+    log(`Encontradas ${people.length} personas para procesar`, 'info');
+    
+    if (people.length === 0) {
+      log('No hay personas para procesar', 'success');
+      await closePool();
+      return;
+    }
+    
+    const startTime = Date.now();
+    const results: MatchResult[] = [];
+    
+    // Stats
+    let processed = 0;
+    let autoAccepted = 0;
+    let needsReview = 0;
+    let noMatch = 0;
+    let multiple = 0;
+    
+    for (const person of people) {
+      processed++;
+      process.stdout.write(`\r${progressBar(processed, people.length)} - ${person.full_name.slice(0, 25)}...`);
+      
+      const match = await findMatchForPerson(person);
+      results.push(match);
+      
+      switch (match.match_status) {
+        case 'auto_accept': autoAccepted++; break;
+        case 'review': needsReview++; break;
+        case 'no_match': noMatch++; break;
+        case 'multiple': multiple++; break;
+      }
+    }
+    
+    console.log('\n');
+    
+    const elapsed = Date.now() - startTime;
+    
+    // Guardar CSV
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+    saveToCSV(results, `people-matches-${timestamp}.csv`, [
+      'local_id', 'local_name', 'local_birth', 'local_death', 'local_movies',
+      'tmdb_id', 'tmdb_name', 'tmdb_birth', 'tmdb_death', 'tmdb_place',
+      'imdb_id', 'match_score', 'match_status', 'match_reason'
+    ]);
+    
+    // También guardar versión "latest" para aplicar después
+    saveToCSV(results, 'people-matches.csv', [
+      'local_id', 'local_name', 'local_birth', 'local_death', 'local_movies',
+      'tmdb_id', 'tmdb_name', 'tmdb_birth', 'tmdb_death', 'tmdb_place',
+      'imdb_id', 'match_score', 'match_status', 'match_reason'
+    ]);
+    
+    // Resumen
+    console.log('\n📊 Resumen:');
+    console.log(`   Procesadas:      ${processed}`);
+    console.log(`   Auto-aceptadas:  ${autoAccepted} (score >= ${config.matching.person.autoAcceptScore})`);
+    console.log(`   Para revisar:    ${needsReview} (score ${config.matching.person.reviewScore}-${config.matching.person.autoAcceptScore - 1})`);
+    console.log(`   Múltiples:       ${multiple}`);
+    console.log(`   Sin match:       ${noMatch}`);
+    console.log(`   Tiempo:          ${formatDuration(elapsed)}`);
+    
+    // Estimación para todo el dataset
+    if (limit && processed > 0) {
+      const avgTimePerPerson = elapsed / processed;
+      const totalPeople = 63950; // De los datos que me diste
+      const estimatedTotal = avgTimePerPerson * totalPeople;
+      console.log(`\n⏱️  Tiempo estimado para ${totalPeople} personas: ${formatDuration(estimatedTotal)}`);
+    }
+    
+    if (!isDryRun) {
+      const toApply = results.filter(r => r.match_status === 'auto_accept');
+      log(`\nAplicando ${toApply.length} matches automáticos a la BD...`, 'info');
+      const { updated, errors } = await applyChanges(toApply);
+      log(`Actualizadas: ${updated} | Errores: ${errors}`, 'success');
+    } else {
+      console.log('\n💡 Modo dry-run: No se aplicaron cambios.');
+      console.log('   Para aplicar auto-aceptados: npx ts-node enrich-people.ts --apply');
+      console.log('   Para aplicar desde CSV:      npx ts-node enrich-people.ts --apply-csv');
+    }
+  }
+  
+  await closePool();
+  console.log('\n✨ Proceso completado\n');
+}
+
+main().catch(error => {
+  console.error('Error fatal:', error);
+  process.exit(1);
+});
+
+// ==================================================
+// scripts/tmdb/test-connection.ts
+// ==================================================
+/**
+ * Test de conexión a TMDB y PostgreSQL
+ */
+
+import { testConnection, searchMovies, searchPeople } from './tmdb-client';
+import { getPool, closePool, log } from './utils';
+
+async function main() {
+  console.log('\n🔌 Test de Conexiones\n');
+  
+  // Test TMDB
+  log('Probando TMDB API...', 'info');
+  const tmdbOk = await testConnection();
+  if (tmdbOk) {
+    log('TMDB API: OK', 'success');
+    
+    // Test búsqueda de película
+    log('Buscando "El secreto de sus ojos"...', 'info');
+    const movieSearch = await searchMovies('El secreto de sus ojos', 2009);
+    log(`Encontradas ${movieSearch.total_results} películas`, 'info');
+    if (movieSearch.results.length > 0) {
+      const first = movieSearch.results[0];
+      log(`  → ${first.title} (${first.release_date})`, 'success');
+    }
+    
+    // Test búsqueda de persona
+    log('Buscando "Ricardo Darín"...', 'info');
+    const personSearch = await searchPeople('Ricardo Darín');
+    log(`Encontradas ${personSearch.total_results} personas`, 'info');
+    if (personSearch.results.length > 0) {
+      const first = personSearch.results[0];
+      log(`  → ${first.name} (${first.known_for_department})`, 'success');
+    }
+  } else {
+    log('TMDB API: FALLO', 'error');
+  }
+  
+  console.log('');
+  
+  // Test PostgreSQL
+  log('Probando PostgreSQL...', 'info');
+  try {
+    const pool = getPool();
+    const result = await pool.query('SELECT COUNT(*) as count FROM movies');
+    log(`PostgreSQL: OK (${result.rows[0].count} películas)`, 'success');
+    
+    const peopleResult = await pool.query('SELECT COUNT(*) as count FROM people');
+    log(`PostgreSQL: OK (${peopleResult.rows[0].count} personas)`, 'success');
+  } catch (error) {
+    log(`PostgreSQL: FALLO - ${error}`, 'error');
+  }
+  
+  await closePool();
+  console.log('\n✨ Test completado\n');
+}
+
+main().catch(console.error);
+
+
+// ==================================================
+// scripts/tmdb/tmdb-client.ts
+// ==================================================
+/**
+ * TMDB API Client
+ * Documentación: https://developer.themoviedb.org/reference/intro/getting-started
+ */
+
+import config from './config';
+
+// Tipos para respuestas de TMDB
+export interface TMDBMovie {
+  id: number;
+  title: string;
+  original_title: string;
+  release_date: string; // "YYYY-MM-DD"
+  overview: string;
+  popularity: number;
+  vote_average: number;
+  vote_count: number;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  genre_ids: number[];
+  original_language: string;
+  adult: boolean;
+  video: boolean;
+}
+
+export interface TMDBMovieDetails extends TMDBMovie {
+  imdb_id: string | null;
+  runtime: number | null;
+  budget: number;
+  revenue: number;
+  status: string;
+  tagline: string;
+  production_countries: Array<{ iso_3166_1: string; name: string }>;
+  production_companies: Array<{ id: number; name: string; origin_country: string }>;
+  spoken_languages: Array<{ iso_639_1: string; name: string }>;
+  genres: Array<{ id: number; name: string }>;
+  credits?: {
+    cast: Array<{
+      id: number;
+      name: string;
+      character: string;
+      order: number;
+    }>;
+    crew: Array<{
+      id: number;
+      name: string;
+      job: string;
+      department: string;
+    }>;
+  };
+}
+
+export interface TMDBPerson {
+  id: number;
+  name: string;
+  original_name: string;
+  popularity: number;
+  profile_path: string | null;
+  adult: boolean;
+  gender: number; // 0: not specified, 1: female, 2: male, 3: non-binary
+  known_for_department: string;
+  known_for: TMDBMovie[];
+}
+
+export interface TMDBPersonDetails extends TMDBPerson {
+  imdb_id: string | null;
+  birthday: string | null; // "YYYY-MM-DD"
+  deathday: string | null; // "YYYY-MM-DD"
+  place_of_birth: string | null;
+  biography: string;
+  also_known_as: string[];
+  homepage: string | null;
+  movie_credits?: {
+    cast: Array<{
+      id: number;
+      title: string;
+      character: string;
+      release_date: string;
+    }>;
+    crew: Array<{
+      id: number;
+      title: string;
+      job: string;
+      department: string;
+      release_date: string;
+    }>;
+  };
+}
+
+export interface TMDBSearchResult<T> {
+  page: number;
+  total_pages: number;
+  total_results: number;
+  results: T[];
+}
+
+// Rate limiting
+let lastRequestTime = 0;
+
+async function rateLimitedFetch(url: string, options: RequestInit): Promise<Response> {
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  
+  if (timeSinceLastRequest < config.delayBetweenRequests) {
+    await new Promise(resolve => setTimeout(resolve, config.delayBetweenRequests - timeSinceLastRequest));
+  }
+  
+  lastRequestTime = Date.now();
+  return fetch(url, options);
+}
+
+// Headers comunes para todas las requests
+function getHeaders(): HeadersInit {
+  return {
+    'Authorization': `Bearer ${config.tmdbAccessToken}`,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+}
+
+/**
+ * Buscar películas por título
+ */
+export async function searchMovies(
+  query: string, 
+  year?: number,
+  page: number = 1
+): Promise<TMDBSearchResult<TMDBMovie>> {
+  const params = new URLSearchParams({
+    query,
+    language: 'es-AR',
+    page: page.toString(),
+    include_adult: 'false',
+  });
+  
+  if (year) {
+    params.append('year', year.toString());
+  }
+  
+  const url = `${config.tmdbBaseUrl}/search/movie?${params}`;
+  
+  const response = await rateLimitedFetch(url, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  
+  if (!response.ok) {
+    throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+/**
+ * Obtener detalles de una película (incluye imdb_id)
+ */
+export async function getMovieDetails(tmdbId: number): Promise<TMDBMovieDetails> {
+  const params = new URLSearchParams({
+    language: 'es-AR',
+    append_to_response: 'credits',
+  });
+  
+  const url = `${config.tmdbBaseUrl}/movie/${tmdbId}?${params}`;
+  
+  const response = await rateLimitedFetch(url, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  
+  if (!response.ok) {
+    throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+/**
+ * Buscar personas por nombre
+ */
+export async function searchPeople(
+  query: string,
+  page: number = 1
+): Promise<TMDBSearchResult<TMDBPerson>> {
+  const params = new URLSearchParams({
+    query,
+    language: 'es-AR',
+    page: page.toString(),
+    include_adult: 'false',
+  });
+  
+  const url = `${config.tmdbBaseUrl}/search/person?${params}`;
+  
+  const response = await rateLimitedFetch(url, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  
+  if (!response.ok) {
+    throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+/**
+ * Obtener detalles de una persona (incluye imdb_id)
+ */
+export async function getPersonDetails(tmdbId: number): Promise<TMDBPersonDetails> {
+  const params = new URLSearchParams({
+    language: 'es-AR',
+    append_to_response: 'movie_credits',
+  });
+  
+  const url = `${config.tmdbBaseUrl}/person/${tmdbId}?${params}`;
+  
+  const response = await rateLimitedFetch(url, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+  
+  if (!response.ok) {
+    throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
+/**
+ * Test de conexión a la API
+ */
+export async function testConnection(): Promise<boolean> {
+  try {
+    const url = `${config.tmdbBaseUrl}/configuration`;
+    const response = await rateLimitedFetch(url, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Error testing TMDB connection:', error);
+    return false;
+  }
+}
+
+export default {
+  searchMovies,
+  getMovieDetails,
+  searchPeople,
+  getPersonDetails,
+  testConnection,
+};
+
+
+// ==================================================
+// scripts/tmdb/utils.ts
+// ==================================================
+/**
+ * Utilidades comunes para scripts de enriquecimiento
+ */
+
+import { Pool } from 'pg';
+import * as fs from 'fs';
+import * as path from 'path';
+import config from './config';
+
+// Pool de conexión a PostgreSQL
+let pool: Pool | null = null;
+
+export function getPool(): Pool {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: config.databaseUrl,
+    });
+  }
+  return pool;
+}
+
+export async function closePool(): Promise<void> {
+  if (pool) {
+    await pool.end();
+    pool = null;
+  }
+}
+
+/**
+ * Normalizar texto para comparación
+ * - Quita acentos
+ * - Convierte a minúsculas
+ * - Quita caracteres especiales
+ */
+export function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Quitar acentos
+    .replace(/[^a-z0-9\s]/g, ' ')    // Quitar caracteres especiales
+    .replace(/\s+/g, ' ')            // Normalizar espacios
+    .trim();
+}
+
+/**
+ * Calcular similitud entre dos strings (0-100)
+ * Usa distancia de Levenshtein normalizada
+ */
+export function stringSimilarity(str1: string, str2: string): number {
+  const s1 = normalizeText(str1);
+  const s2 = normalizeText(str2);
+  
+  if (s1 === s2) return 100;
+  if (s1.length === 0 || s2.length === 0) return 0;
+  
+  const matrix: number[][] = [];
+  
+  for (let i = 0; i <= s1.length; i++) {
+    matrix[i] = [i];
+  }
+  
+  for (let j = 0; j <= s2.length; j++) {
+    matrix[0][j] = j;
+  }
+  
+  for (let i = 1; i <= s1.length; i++) {
+    for (let j = 1; j <= s2.length; j++) {
+      const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,      // deletion
+        matrix[i][j - 1] + 1,      // insertion
+        matrix[i - 1][j - 1] + cost // substitution
+      );
+    }
+  }
+  
+  const distance = matrix[s1.length][s2.length];
+  const maxLength = Math.max(s1.length, s2.length);
+  return Math.round((1 - distance / maxLength) * 100);
+}
+
+/**
+ * Parsear fecha de TMDB (YYYY-MM-DD) a objeto
+ */
+export function parseTMDBDate(dateStr: string | null): { year: number | null; month: number | null; day: number | null } {
+  if (!dateStr) return { year: null, month: null, day: null };
+  
+  const parts = dateStr.split('-');
+  return {
+    year: parts[0] ? parseInt(parts[0]) : null,
+    month: parts[1] ? parseInt(parts[1]) : null,
+    day: parts[2] ? parseInt(parts[2]) : null,
+  };
+}
+
+/**
+ * Comparar fechas parciales
+ * Retorna puntuación: 0-100 basado en coincidencia
+ */
+export function compareDates(
+  date1: { year: number | null; month: number | null; day: number | null },
+  date2: { year: number | null; month: number | null; day: number | null }
+): number {
+  if (!date1.year || !date2.year) return 0;
+  
+  let score = 0;
+  
+  // Año coincide: 50 puntos
+  if (date1.year === date2.year) {
+    score += 50;
+    
+    // Si ambos tienen mes y coincide: 30 puntos más
+    if (date1.month && date2.month && date1.month === date2.month) {
+      score += 30;
+      
+      // Si ambos tienen día y coincide: 20 puntos más
+      if (date1.day && date2.day && date1.day === date2.day) {
+        score += 20;
+      }
+    }
+  } else if (Math.abs(date1.year - date2.year) === 1) {
+    // Un año de diferencia: 20 puntos (puede ser error de datos)
+    score += 20;
+  }
+  
+  return score;
+}
+
+/**
+ * Verificar si un lugar contiene "Argentina"
+ */
+export function isArgentineLocation(place: string | null): boolean {
+  if (!place) return false;
+  const normalized = normalizeText(place);
+  return normalized.includes('argentina') || 
+         normalized.includes('buenos aires') ||
+         normalized.includes('cordoba') ||
+         normalized.includes('rosario') ||
+         normalized.includes('mendoza');
+}
+
+/**
+ * Guardar resultados en CSV
+ */
+export function saveToCSV(
+  data: Record<string, any>[],
+  filename: string,
+  headers: string[]
+): void {
+  const reportsDir = path.join(__dirname, 'reports');
+  
+  if (!fs.existsSync(reportsDir)) {
+    fs.mkdirSync(reportsDir, { recursive: true });
+  }
+  
+  const filepath = path.join(reportsDir, filename);
+  
+  // Escapar valores CSV
+  const escapeCSV = (value: any): string => {
+    if (value === null || value === undefined) return '';
+    const str = String(value);
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+  
+  const lines = [
+    headers.join(','),
+    ...data.map(row => headers.map(h => escapeCSV(row[h])).join(','))
+  ];
+  
+  fs.writeFileSync(filepath, lines.join('\n'), 'utf-8');
+  console.log(`✅ Guardado: ${filepath} (${data.length} registros)`);
+}
+
+/**
+ * Cargar CSV existente
+ */
+export function loadFromCSV(filename: string): Record<string, any>[] {
+  const filepath = path.join(__dirname, 'reports', filename);
+  
+  if (!fs.existsSync(filepath)) {
+    return [];
+  }
+  
+  const content = fs.readFileSync(filepath, 'utf-8');
+  const lines = content.split('\n').filter(l => l.trim());
+  
+  if (lines.length < 2) return [];
+  
+  const headers = lines[0].split(',');
+  const data: Record<string, any>[] = [];
+  
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(',');
+    const row: Record<string, any> = {};
+    headers.forEach((h, idx) => {
+      row[h] = values[idx] || '';
+    });
+    data.push(row);
+  }
+  
+  return data;
+}
+
+/**
+ * Formatear duración para logging
+ */
+export function formatDuration(ms: number): string {
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${seconds % 60}s`;
+  } else {
+    return `${seconds}s`;
+  }
+}
+
+/**
+ * Progress bar simple para consola
+ */
+export function progressBar(current: number, total: number, width: number = 40): string {
+  const percentage = Math.round((current / total) * 100);
+  const filled = Math.round((current / total) * width);
+  const empty = width - filled;
+  
+  return `[${'█'.repeat(filled)}${'░'.repeat(empty)}] ${percentage}% (${current}/${total})`;
+}
+
+/**
+ * Logger con timestamp
+ */
+export function log(message: string, level: 'info' | 'warn' | 'error' | 'success' = 'info'): void {
+  const timestamp = new Date().toISOString().slice(11, 19);
+  const icons = {
+    info: 'ℹ️',
+    warn: '⚠️',
+    error: '❌',
+    success: '✅',
+  };
+  console.log(`[${timestamp}] ${icons[level]} ${message}`);
+}
+
+export default {
+  getPool,
+  closePool,
+  normalizeText,
+  stringSimilarity,
+  parseTMDBDate,
+  compareDates,
+  isArgentineLocation,
+  saveToCSV,
+  loadFromCSV,
+  formatDuration,
+  progressBar,
+  log,
+};
+
 
 // ==================================================
 // src/app/(site)/buscar/loading.tsx
@@ -30437,6 +32002,335 @@ export default function GenderSelectionModal({
 }
 
 // ==================================================
+// src/components/admin/shared/NameSplitModal.tsx
+// ==================================================
+// src/components/admin/shared/NameSplitModal.tsx
+
+import { useState, useEffect } from 'react'
+import { X, User, UserCircle, Check } from 'lucide-react'
+
+interface NameSplitModalProps {
+  isOpen: boolean
+  fullName: string
+  onConfirm: (
+    firstName: string,
+    lastName: string,
+    gender: 'MALE' | 'FEMALE' | 'OTHER' | null,
+    saveToDatabase: boolean
+  ) => void
+  onCancel: () => void
+}
+
+/**
+ * Modal para seleccionar qué palabras forman el nombre y el género.
+ * Se muestra cuando no se reconoce ningún nombre en FirstNameGender.
+ */
+export default function NameSplitModal({
+  isOpen,
+  fullName,
+  onConfirm,
+  onCancel
+}: NameSplitModalProps) {
+  const [words, setWords] = useState<string[]>([])
+  const [firstNameWordCount, setFirstNameWordCount] = useState(1)
+  const [selectedGender, setSelectedGender] = useState<'MALE' | 'FEMALE' | 'OTHER' | null>(null)
+  const [step, setStep] = useState<'name' | 'gender'>('name')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Parsear palabras cuando cambia fullName
+  useEffect(() => {
+    if (fullName) {
+      // Tokenizar respetando apodos entre comillas
+      const tokens = tokenizeName(fullName.trim())
+      setWords(tokens)
+      setFirstNameWordCount(1)
+      setSelectedGender(null)
+      setStep('name')
+    }
+  }, [fullName])
+
+  if (!isOpen) return null
+
+  // Calcular nombre y apellido basado en selección
+  const firstName = words.slice(0, firstNameWordCount).join(' ')
+  const lastName = words.slice(firstNameWordCount).join(' ')
+
+  const handleNameConfirm = () => {
+    if (firstNameWordCount > 0 && firstNameWordCount < words.length) {
+      setStep('gender')
+    }
+  }
+
+  const handleGenderSelect = async (gender: 'MALE' | 'FEMALE' | 'OTHER' | null) => {
+    setIsSubmitting(true)
+    setSelectedGender(gender)
+    
+    // Solo guardar en la base de datos si es MALE o FEMALE
+    const shouldSave = gender === 'MALE' || gender === 'FEMALE'
+    
+    onConfirm(firstName, lastName, gender, shouldSave)
+    setIsSubmitting(false)
+  }
+
+  const handleBack = () => {
+    setStep('name')
+    setSelectedGender(null)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center gap-2">
+            <UserCircle className="h-5 w-5 text-blue-600" />
+            <h3 className="text-lg font-semibold text-gray-900">
+              {step === 'name' ? 'Separar nombre y apellido' : 'Seleccionar género'}
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+            disabled={isSubmitting}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {step === 'name' ? (
+            <>
+              <p className="text-gray-600 mb-4 text-center">
+                No se reconoció ningún nombre en{' '}
+                <span className="font-semibold text-gray-900">"{fullName}"</span>.
+                <br />
+                Selecciona cuántas palabras forman el <strong>nombre</strong>:
+              </p>
+
+              {/* Selector de palabras */}
+              <div className="flex flex-wrap gap-2 justify-center mb-6">
+                {words.map((word, index) => {
+                  const isSelected = index < firstNameWordCount
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setFirstNameWordCount(index + 1)}
+                      className={`
+                        px-4 py-2 rounded-lg font-medium transition-all border-2
+                        ${isSelected 
+                          ? 'bg-blue-100 border-blue-500 text-blue-800' 
+                          : 'bg-gray-100 border-gray-300 text-gray-600 hover:border-gray-400'
+                        }
+                      `}
+                    >
+                      {word}
+                      {isSelected && (
+                        <Check className="inline-block ml-1 h-4 w-4" />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Slider alternativo */}
+              <div className="mb-6">
+                <input
+                  type="range"
+                  min={1}
+                  max={words.length - 1}
+                  value={firstNameWordCount}
+                  onChange={(e) => setFirstNameWordCount(parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>1 palabra</span>
+                  <span>{words.length - 1} palabras</span>
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="text-sm text-gray-500 mb-2 text-center">Vista previa:</div>
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Nombre</div>
+                    <div className="font-semibold text-blue-700 text-lg">
+                      {firstName || <span className="text-gray-400 italic">vacío</span>}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Apellido</div>
+                    <div className="font-semibold text-green-700 text-lg">
+                      {lastName || <span className="text-gray-400 italic">vacío</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botón continuar */}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleNameConfirm}
+                  disabled={!firstName || !lastName}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Continuar
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-gray-600 mb-2 text-center">
+                Nombre: <span className="font-semibold text-blue-700">{firstName}</span>
+                <br />
+                Apellido: <span className="font-semibold text-green-700">{lastName}</span>
+              </p>
+              <p className="text-gray-600 mb-6 text-center">
+                Selecciona el género para <span className="font-semibold">"{firstName}"</span>:
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* Masculino */}
+                <button
+                  type="button"
+                  onClick={() => handleGenderSelect('MALE')}
+                  disabled={isSubmitting}
+                  className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <User className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <span className="font-medium text-gray-900">Masculino</span>
+                  <span className="text-xs text-gray-500">Se guardará en la base</span>
+                </button>
+
+                {/* Femenino */}
+                <button
+                  type="button"
+                  onClick={() => handleGenderSelect('FEMALE')}
+                  disabled={isSubmitting}
+                  className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-pink-500 hover:bg-pink-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center">
+                    <User className="h-6 w-6 text-pink-600" />
+                  </div>
+                  <span className="font-medium text-gray-900">Femenino</span>
+                  <span className="text-xs text-gray-500">Se guardará en la base</span>
+                </button>
+
+                {/* Otro */}
+                <button
+                  type="button"
+                  onClick={() => handleGenderSelect('OTHER')}
+                  disabled={isSubmitting}
+                  className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                    <User className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <span className="font-medium text-gray-900">Otro</span>
+                  <span className="text-xs text-gray-500">No se guardará</span>
+                </button>
+
+                {/* Desconocido */}
+                <button
+                  type="button"
+                  onClick={() => handleGenderSelect(null)}
+                  disabled={isSubmitting}
+                  className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                    <User className="h-6 w-6 text-gray-400" />
+                  </div>
+                  <span className="font-medium text-gray-900">Desconocido</span>
+                  <span className="text-xs text-gray-500">No se guardará</span>
+                </button>
+              </div>
+
+              {/* Botón volver */}
+              <div className="flex justify-start mt-4">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  ← Volver
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+          <p className="text-xs text-gray-500 text-center">
+            {step === 'name' 
+              ? '💡 Haz clic en las palabras que forman el nombre o usa el slider.'
+              : `💡 Si eliges Masculino o Femenino, "${firstName}" se guardará para futuras asignaciones.`
+            }
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Tokeniza un nombre respetando apodos entre comillas
+ */
+function tokenizeName(fullName: string): string[] {
+  const tokens: string[] = []
+  let current = ''
+  let inQuotes = false
+  let quoteChar = ''
+  
+  for (let i = 0; i < fullName.length; i++) {
+    const char = fullName[i]
+    const prevChar = i > 0 ? fullName[i - 1] : ''
+    
+    // Detectar inicio de comillas (solo si hay espacio antes o es el inicio)
+    if (!inQuotes && (char === '"' || char === "'" || char === '«' || char === '"')) {
+      if (prevChar === ' ' || i === 0) {
+        inQuotes = true
+        quoteChar = char === '«' ? '»' : (char === '"' ? '"' : char)
+        current += char
+        continue
+      }
+    }
+    
+    // Detectar fin de comillas
+    if (inQuotes && (char === quoteChar || (quoteChar === '"' && char === '"'))) {
+      current += char
+      inQuotes = false
+      quoteChar = ''
+      continue
+    }
+    
+    // Espacios fuera de comillas separan tokens
+    if (char === ' ' && !inQuotes) {
+      if (current.trim()) {
+        tokens.push(current.trim())
+      }
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  
+  // Agregar última palabra
+  if (current.trim()) {
+    tokens.push(current.trim())
+  }
+  
+  return tokens
+}
+
+// ==================================================
 // src/components/admin/shared/PersonSearchInput.tsx
 // ==================================================
 // src/components/admin/shared/PersonSearchInput.tsx
@@ -30446,6 +32340,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { peopleService } from '@/services/people.service'
 import toast from 'react-hot-toast'
 import GenderSelectionModal from './GenderSelectionModal'
+import NameSplitModal from './NameSplitModal'
 
 interface PersonAlternativeName {
   id: number
@@ -30459,15 +32354,14 @@ interface Person {
   slug: string
   name?: string
   alternativeNames?: PersonAlternativeName[]
-  // Campos de búsqueda que indican match en nombre alternativo
   matchedAlternativeName?: string | null
   matchedAlternativeNameId?: number | null
 }
 
 interface PersonSearchInputProps {
   value?: number
-  alternativeNameId?: number | null  // 🆕 ID del nombre alternativo seleccionado
-  initialPersonName?: string  // Nombre inicial para evitar llamada API
+  alternativeNameId?: number | null
+  initialPersonName?: string
   onChange: (
     personId: number, 
     personName?: string, 
@@ -30477,7 +32371,7 @@ interface PersonSearchInputProps {
   placeholder?: string
   disabled?: boolean
   required?: boolean
-  showAlternativeNames?: boolean  // 🆕 Mostrar nombres alternativos en resultados
+  showAlternativeNames?: boolean
 }
 
 // Función para consultar el género de un nombre
@@ -30519,8 +32413,74 @@ async function saveFirstNameGender(firstName: string, gender: 'MALE' | 'FEMALE')
     return true
   } catch (error) {
     console.error('❌ Error guardando género del nombre:', error)
-    throw error // Re-lanzar para que se maneje arriba
+    throw error
   }
+}
+
+// Detectar si una palabra es inicial (A., J., O., etc.)
+function isInitial(word: string): boolean {
+  return /^[A-ZÁÉÍÓÚÑÜ]{1,2}\.$/i.test(word)
+}
+
+// Detectar si una palabra es apodo (entre comillas)
+function isNickname(word: string): boolean {
+  const quotePatterns = [
+    /^".*"$/,
+    /^'.*'$/,
+    /^«.*»$/,
+    /^".*"$/,
+  ]
+  return quotePatterns.some(pattern => pattern.test(word))
+}
+
+// Tokenizar nombre respetando apodos
+function tokenizeName(fullName: string): string[] {
+  const tokens: string[] = []
+  let current = ''
+  let inQuotes = false
+  let quoteChar = ''
+  
+  for (let i = 0; i < fullName.length; i++) {
+    const char = fullName[i]
+    const prevChar = i > 0 ? fullName[i - 1] : ''
+    
+    if (!inQuotes && (char === '"' || char === "'" || char === '«' || char === '"')) {
+      if (prevChar === ' ' || i === 0) {
+        inQuotes = true
+        quoteChar = char === '«' ? '»' : (char === '"' ? '"' : char)
+        current += char
+        continue
+      }
+    }
+    
+    if (inQuotes && (char === quoteChar || (quoteChar === '"' && char === '"'))) {
+      current += char
+      inQuotes = false
+      quoteChar = ''
+      continue
+    }
+    
+    if (char === ' ' && !inQuotes) {
+      if (current.trim()) {
+        tokens.push(current.trim())
+      }
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  
+  if (current.trim()) {
+    tokens.push(current.trim())
+  }
+  
+  return tokens
+}
+
+// Verificar si el nombre tiene apodos o iniciales
+function hasNicknameOrInitial(fullName: string): boolean {
+  const tokens = tokenizeName(fullName)
+  return tokens.some(t => isNickname(t) || isInitial(t))
 }
 
 export default function PersonSearchInput({
@@ -30541,10 +32501,13 @@ export default function PersonSearchInput({
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
   const [selectedAlternativeNameId, setSelectedAlternativeNameId] = useState<number | null>(alternativeNameId || null)
   
-  // Estado para el modal de selección de género
+  // Estado para el modal de selección de género (caso con apodo/inicial)
   const [showGenderModal, setShowGenderModal] = useState(false)
   const [pendingPersonName, setPendingPersonName] = useState('')
   const [pendingFirstName, setPendingFirstName] = useState('')
+  
+  // Estado para el modal de separación de nombre (caso sin nombres conocidos)
+  const [showNameSplitModal, setShowNameSplitModal] = useState(false)
   
   const containerRef = useRef<HTMLDivElement>(null)
   const debouncedSearch = useDebounce(searchTerm, 300)
@@ -30552,16 +32515,13 @@ export default function PersonSearchInput({
   // Cargar persona seleccionada si existe
   useEffect(() => {
     if (value && value > 0) {
-      // Si ya tenemos el nombre inicial, usarlo directamente SIN llamar a la API
       if (initialPersonName) {
         setSearchTerm(initialPersonName)
         return
       }
       
-      // Solo hacer la llamada si NO tenemos el nombre
       peopleService.getById(value)
         .then((person: any) => {
-          // Si hay un alternativeNameId, buscar ese nombre
           let displayName = person.name || `${person.firstName || ''} ${person.lastName || ''}`.trim()
           
           if (alternativeNameId && person.alternativeNames) {
@@ -30635,12 +32595,10 @@ export default function PersonSearchInput({
     let altName: string | null = null
     
     if (useAlternativeName) {
-      // Seleccionó un nombre alternativo
       displayName = useAlternativeName.name
       altNameId = useAlternativeName.id
       altName = useAlternativeName.name
     } else {
-      // Seleccionó el nombre principal
       displayName = formatPersonName(person)
     }
     
@@ -30674,30 +32632,41 @@ export default function PersonSearchInput({
     }
 
     const fullName = debouncedSearch.trim()
-    const nameParts = fullName.split(' ')
-    const firstName = nameParts[0]
+    const tokens = tokenizeName(fullName)
+    const firstToken = tokens[0]
 
     // Guardar datos para uso posterior
     setPendingPersonName(fullName)
-    setPendingFirstName(firstName)
+    setPendingFirstName(firstToken)
 
     setCreating(true)
     setIsOpen(false)
 
     try {
-      // 1. Consultar el género del nombre de pila
-      console.log(`🔍 Consultando género para "${firstName}"...`)
-      const genderResult = await checkFirstNameGender(firstName)
+      // 1. Consultar el género del primer token (si no es inicial ni apodo)
+      if (!isInitial(firstToken) && !isNickname(firstToken)) {
+        console.log(`🔍 Consultando género para "${firstToken}"...`)
+        const genderResult = await checkFirstNameGender(firstToken)
+        
+        if (genderResult.found && genderResult.gender && genderResult.gender !== 'UNISEX') {
+          // Género determinado automáticamente
+          console.log(`✅ Género determinado automáticamente: ${genderResult.gender}`)
+          await createPersonWithGender(fullName, genderResult.gender)
+          return
+        }
+      }
       
-      if (genderResult.found && genderResult.gender && genderResult.gender !== 'UNISEX') {
-        // Género determinado automáticamente (MALE o FEMALE)
-        console.log(`✅ Género determinado automáticamente: ${genderResult.gender}`)
-        await createPersonWithGender(fullName, genderResult.gender)
-      } else {
-        // Género no determinado o UNISEX - mostrar modal
-        console.log(`❓ Género no determinado para "${firstName}", mostrando modal`)
-        setCreating(false)
+      // 2. Si no se encontró el género, decidir qué modal mostrar
+      setCreating(false)
+      
+      if (hasNicknameOrInitial(fullName)) {
+        // Tiene apodo o inicial → el algoritmo puede separar bien, solo pedir género
+        console.log(`❓ Nombre tiene apodo/inicial, mostrando modal de género`)
         setShowGenderModal(true)
+      } else {
+        // No tiene nada conocido → mostrar modal de separación + género
+        console.log(`❓ No se reconoce ningún nombre, mostrando modal de separación`)
+        setShowNameSplitModal(true)
       }
     } catch (error) {
       console.error('Error en proceso de creación:', error)
@@ -30706,7 +32675,7 @@ export default function PersonSearchInput({
     }
   }
 
-  // Función para crear persona con género ya determinado
+  // Función para crear persona con género ya determinado (separación automática por API)
   const createPersonWithGender = async (
     fullName: string, 
     gender: 'MALE' | 'FEMALE' | 'OTHER' | null
@@ -30733,7 +32702,6 @@ export default function PersonSearchInput({
       
       toast.success(`Persona "${formatPersonName(newPerson)}" creada exitosamente`)
       
-      // Seleccionar la nueva persona (sin nombre alternativo)
       handleSelectPerson(newPerson)
       
     } catch (error) {
@@ -30744,38 +32712,70 @@ export default function PersonSearchInput({
     }
   }
 
-  // Handler para cuando se selecciona género en el modal
+  // Función para crear persona con nombre y apellido ya separados
+  const createPersonWithSplit = async (
+    firstName: string,
+    lastName: string,
+    gender: 'MALE' | 'FEMALE' | 'OTHER' | null
+  ) => {
+    try {
+      console.log(`🚀 Creando persona firstName="${firstName}", lastName="${lastName}", gender=${gender}`)
+      
+      const response = await fetch('/api/people', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          firstName,
+          lastName,
+          gender
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        throw new Error(`Error ${response.status}: ${errorData || response.statusText}`)
+      }
+
+      const newPerson = await response.json()
+      console.log('✅ Persona creada:', newPerson)
+      
+      toast.success(`Persona "${formatPersonName(newPerson)}" creada exitosamente`)
+      
+      handleSelectPerson(newPerson)
+      
+    } catch (error) {
+      console.error('❌ Error creando persona:', error)
+      toast.error(error instanceof Error ? error.message : 'Error al crear la persona')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  // Handler para cuando se selecciona género en el modal simple
   const handleGenderSelect = async (
     gender: 'MALE' | 'FEMALE' | 'OTHER' | null, 
     saveToDatabase: boolean
   ) => {
-    console.log(`🎯 handleGenderSelect llamado:`, { 
-      gender, 
-      saveToDatabase, 
-      pendingFirstName, 
-      pendingPersonName 
-    })
+    console.log(`🎯 handleGenderSelect:`, { gender, saveToDatabase, pendingFirstName, pendingPersonName })
     
     setShowGenderModal(false)
     setCreating(true)
 
     try {
-      // Si es MALE o FEMALE, guardar el nombre en la tabla first_name_genders
+      // Si es MALE o FEMALE, guardar el nombre en first_name_genders
       if (saveToDatabase && (gender === 'MALE' || gender === 'FEMALE')) {
-        console.log(`💾 Guardando "${pendingFirstName}" como ${gender} en first_name_genders...`)
+        console.log(`💾 Guardando "${pendingFirstName}" como ${gender}...`)
         
         try {
           await saveFirstNameGender(pendingFirstName, gender)
           toast.success(`El nombre "${pendingFirstName}" se guardó como ${gender === 'MALE' ? 'masculino' : 'femenino'}`)
         } catch (saveError) {
-          console.error('⚠️ Error guardando en first_name_genders (continuando con creación de persona):', saveError)
+          console.error('⚠️ Error guardando en first_name_genders:', saveError)
           toast.error(`No se pudo guardar el nombre "${pendingFirstName}" en la base de datos de nombres`)
         }
-      } else {
-        console.log(`ℹ️ No se guarda en first_name_genders: saveToDatabase=${saveToDatabase}, gender=${gender}`)
       }
 
-      // Crear la persona con el género seleccionado
+      // Crear la persona con el género seleccionado (la API separa automáticamente)
       await createPersonWithGender(pendingPersonName, gender)
       
     } catch (error) {
@@ -30785,12 +32785,63 @@ export default function PersonSearchInput({
     }
   }
 
-  // Handler para cancelar el modal
+  // Handler para cuando se confirma el modal de separación
+  const handleNameSplitConfirm = async (
+    firstName: string,
+    lastName: string,
+    gender: 'MALE' | 'FEMALE' | 'OTHER' | null,
+    saveToDatabase: boolean
+  ) => {
+    console.log(`🎯 handleNameSplitConfirm:`, { firstName, lastName, gender, saveToDatabase })
+    
+    setShowNameSplitModal(false)
+    setCreating(true)
+
+    try {
+      // Si es MALE o FEMALE, guardar CADA PALABRA del nombre en first_name_genders
+      if (saveToDatabase && (gender === 'MALE' || gender === 'FEMALE')) {
+        const firstNameWords = tokenizeName(firstName).filter(w => !isInitial(w) && !isNickname(w))
+        
+        console.log(`💾 Guardando ${firstNameWords.length} nombre(s): ${firstNameWords.join(', ')}`)
+        
+        for (const word of firstNameWords) {
+          try {
+            await saveFirstNameGender(word, gender)
+            console.log(`✅ "${word}" guardado como ${gender}`)
+          } catch (saveError) {
+            // Puede fallar si ya existe, ignorar
+            console.log(`⚠️ "${word}" ya existe o error:`, saveError)
+          }
+        }
+        
+        if (firstNameWords.length > 0) {
+          toast.success(`Nombre(s) guardado(s): ${firstNameWords.join(', ')}`)
+        }
+      }
+
+      // Crear la persona con firstName y lastName ya separados
+      await createPersonWithSplit(firstName, lastName, gender)
+      
+    } catch (error) {
+      console.error('Error en confirmación de nombre:', error)
+      toast.error('Error al procesar la solicitud')
+      setCreating(false)
+    }
+  }
+
+  // Handler para cancelar el modal de género
   const handleGenderCancel = () => {
     setShowGenderModal(false)
     setPendingPersonName('')
     setPendingFirstName('')
-    // Reabrir el dropdown
+    setIsOpen(true)
+  }
+
+  // Handler para cancelar el modal de separación
+  const handleNameSplitCancel = () => {
+    setShowNameSplitModal(false)
+    setPendingPersonName('')
+    setPendingFirstName('')
     setIsOpen(true)
   }
 
@@ -30843,11 +32894,11 @@ export default function PersonSearchInput({
           </button>
         )}
         
-        {/* Otros nombres alternativos (si showAlternativeNames está activo y hay más) */}
+        {/* Otros nombres alternativos */}
         {showAlternativeNames && person.alternativeNames && person.alternativeNames.length > 0 && (
           <>
             {person.alternativeNames
-              .filter(alt => alt.id !== person.matchedAlternativeNameId) // Excluir el que ya se mostró
+              .filter(alt => alt.id !== person.matchedAlternativeNameId)
               .map(alt => (
                 <button
                   key={alt.id}
@@ -30964,12 +33015,20 @@ export default function PersonSearchInput({
         )}
       </div>
 
-      {/* Modal de selección de género */}
+      {/* Modal de selección de género (para casos con apodo/inicial) */}
       <GenderSelectionModal
         isOpen={showGenderModal}
         firstName={pendingFirstName}
         onSelect={handleGenderSelect}
         onCancel={handleGenderCancel}
+      />
+
+      {/* Modal de separación de nombre (para casos sin nombres conocidos) */}
+      <NameSplitModal
+        isOpen={showNameSplitModal}
+        fullName={pendingPersonName}
+        onConfirm={handleNameSplitConfirm}
+        onCancel={handleNameSplitCancel}
       />
     </>
   )
