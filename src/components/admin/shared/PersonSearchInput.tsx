@@ -5,6 +5,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { peopleService } from '@/services/people.service'
 import toast from 'react-hot-toast'
 import GenderSelectionModal from './GenderSelectionModal'
+import NameSplitModal from './NameSplitModal'
 
 interface PersonAlternativeName {
   id: number
@@ -18,15 +19,14 @@ interface Person {
   slug: string
   name?: string
   alternativeNames?: PersonAlternativeName[]
-  // Campos de búsqueda que indican match en nombre alternativo
   matchedAlternativeName?: string | null
   matchedAlternativeNameId?: number | null
 }
 
 interface PersonSearchInputProps {
   value?: number
-  alternativeNameId?: number | null  // 🆕 ID del nombre alternativo seleccionado
-  initialPersonName?: string  // Nombre inicial para evitar llamada API
+  alternativeNameId?: number | null
+  initialPersonName?: string
   onChange: (
     personId: number, 
     personName?: string, 
@@ -36,7 +36,7 @@ interface PersonSearchInputProps {
   placeholder?: string
   disabled?: boolean
   required?: boolean
-  showAlternativeNames?: boolean  // 🆕 Mostrar nombres alternativos en resultados
+  showAlternativeNames?: boolean
 }
 
 // Función para consultar el género de un nombre
@@ -78,8 +78,74 @@ async function saveFirstNameGender(firstName: string, gender: 'MALE' | 'FEMALE')
     return true
   } catch (error) {
     console.error('❌ Error guardando género del nombre:', error)
-    throw error // Re-lanzar para que se maneje arriba
+    throw error
   }
+}
+
+// Detectar si una palabra es inicial (A., J., O., etc.)
+function isInitial(word: string): boolean {
+  return /^[A-ZÁÉÍÓÚÑÜ]{1,2}\.$/i.test(word)
+}
+
+// Detectar si una palabra es apodo (entre comillas)
+function isNickname(word: string): boolean {
+  const quotePatterns = [
+    /^".*"$/,
+    /^'.*'$/,
+    /^«.*»$/,
+    /^".*"$/,
+  ]
+  return quotePatterns.some(pattern => pattern.test(word))
+}
+
+// Tokenizar nombre respetando apodos
+function tokenizeName(fullName: string): string[] {
+  const tokens: string[] = []
+  let current = ''
+  let inQuotes = false
+  let quoteChar = ''
+  
+  for (let i = 0; i < fullName.length; i++) {
+    const char = fullName[i]
+    const prevChar = i > 0 ? fullName[i - 1] : ''
+    
+    if (!inQuotes && (char === '"' || char === "'" || char === '«' || char === '"')) {
+      if (prevChar === ' ' || i === 0) {
+        inQuotes = true
+        quoteChar = char === '«' ? '»' : (char === '"' ? '"' : char)
+        current += char
+        continue
+      }
+    }
+    
+    if (inQuotes && (char === quoteChar || (quoteChar === '"' && char === '"'))) {
+      current += char
+      inQuotes = false
+      quoteChar = ''
+      continue
+    }
+    
+    if (char === ' ' && !inQuotes) {
+      if (current.trim()) {
+        tokens.push(current.trim())
+      }
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  
+  if (current.trim()) {
+    tokens.push(current.trim())
+  }
+  
+  return tokens
+}
+
+// Verificar si el nombre tiene apodos o iniciales
+function hasNicknameOrInitial(fullName: string): boolean {
+  const tokens = tokenizeName(fullName)
+  return tokens.some(t => isNickname(t) || isInitial(t))
 }
 
 export default function PersonSearchInput({
@@ -100,10 +166,13 @@ export default function PersonSearchInput({
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
   const [selectedAlternativeNameId, setSelectedAlternativeNameId] = useState<number | null>(alternativeNameId || null)
   
-  // Estado para el modal de selección de género
+  // Estado para el modal de selección de género (caso con apodo/inicial)
   const [showGenderModal, setShowGenderModal] = useState(false)
   const [pendingPersonName, setPendingPersonName] = useState('')
   const [pendingFirstName, setPendingFirstName] = useState('')
+  
+  // Estado para el modal de separación de nombre (caso sin nombres conocidos)
+  const [showNameSplitModal, setShowNameSplitModal] = useState(false)
   
   const containerRef = useRef<HTMLDivElement>(null)
   const debouncedSearch = useDebounce(searchTerm, 300)
@@ -111,16 +180,13 @@ export default function PersonSearchInput({
   // Cargar persona seleccionada si existe
   useEffect(() => {
     if (value && value > 0) {
-      // Si ya tenemos el nombre inicial, usarlo directamente SIN llamar a la API
       if (initialPersonName) {
         setSearchTerm(initialPersonName)
         return
       }
       
-      // Solo hacer la llamada si NO tenemos el nombre
       peopleService.getById(value)
         .then((person: any) => {
-          // Si hay un alternativeNameId, buscar ese nombre
           let displayName = person.name || `${person.firstName || ''} ${person.lastName || ''}`.trim()
           
           if (alternativeNameId && person.alternativeNames) {
@@ -194,12 +260,10 @@ export default function PersonSearchInput({
     let altName: string | null = null
     
     if (useAlternativeName) {
-      // Seleccionó un nombre alternativo
       displayName = useAlternativeName.name
       altNameId = useAlternativeName.id
       altName = useAlternativeName.name
     } else {
-      // Seleccionó el nombre principal
       displayName = formatPersonName(person)
     }
     
@@ -233,30 +297,41 @@ export default function PersonSearchInput({
     }
 
     const fullName = debouncedSearch.trim()
-    const nameParts = fullName.split(' ')
-    const firstName = nameParts[0]
+    const tokens = tokenizeName(fullName)
+    const firstToken = tokens[0]
 
     // Guardar datos para uso posterior
     setPendingPersonName(fullName)
-    setPendingFirstName(firstName)
+    setPendingFirstName(firstToken)
 
     setCreating(true)
     setIsOpen(false)
 
     try {
-      // 1. Consultar el género del nombre de pila
-      console.log(`🔍 Consultando género para "${firstName}"...`)
-      const genderResult = await checkFirstNameGender(firstName)
+      // 1. Consultar el género del primer token (si no es inicial ni apodo)
+      if (!isInitial(firstToken) && !isNickname(firstToken)) {
+        console.log(`🔍 Consultando género para "${firstToken}"...`)
+        const genderResult = await checkFirstNameGender(firstToken)
+        
+        if (genderResult.found && genderResult.gender && genderResult.gender !== 'UNISEX') {
+          // Género determinado automáticamente
+          console.log(`✅ Género determinado automáticamente: ${genderResult.gender}`)
+          await createPersonWithGender(fullName, genderResult.gender)
+          return
+        }
+      }
       
-      if (genderResult.found && genderResult.gender && genderResult.gender !== 'UNISEX') {
-        // Género determinado automáticamente (MALE o FEMALE)
-        console.log(`✅ Género determinado automáticamente: ${genderResult.gender}`)
-        await createPersonWithGender(fullName, genderResult.gender)
-      } else {
-        // Género no determinado o UNISEX - mostrar modal
-        console.log(`❓ Género no determinado para "${firstName}", mostrando modal`)
-        setCreating(false)
+      // 2. Si no se encontró el género, decidir qué modal mostrar
+      setCreating(false)
+      
+      if (hasNicknameOrInitial(fullName)) {
+        // Tiene apodo o inicial → el algoritmo puede separar bien, solo pedir género
+        console.log(`❓ Nombre tiene apodo/inicial, mostrando modal de género`)
         setShowGenderModal(true)
+      } else {
+        // No tiene nada conocido → mostrar modal de separación + género
+        console.log(`❓ No se reconoce ningún nombre, mostrando modal de separación`)
+        setShowNameSplitModal(true)
       }
     } catch (error) {
       console.error('Error en proceso de creación:', error)
@@ -265,7 +340,7 @@ export default function PersonSearchInput({
     }
   }
 
-  // Función para crear persona con género ya determinado
+  // Función para crear persona con género ya determinado (separación automática por API)
   const createPersonWithGender = async (
     fullName: string, 
     gender: 'MALE' | 'FEMALE' | 'OTHER' | null
@@ -292,7 +367,6 @@ export default function PersonSearchInput({
       
       toast.success(`Persona "${formatPersonName(newPerson)}" creada exitosamente`)
       
-      // Seleccionar la nueva persona (sin nombre alternativo)
       handleSelectPerson(newPerson)
       
     } catch (error) {
@@ -303,38 +377,70 @@ export default function PersonSearchInput({
     }
   }
 
-  // Handler para cuando se selecciona género en el modal
+  // Función para crear persona con nombre y apellido ya separados
+  const createPersonWithSplit = async (
+    firstName: string,
+    lastName: string,
+    gender: 'MALE' | 'FEMALE' | 'OTHER' | null
+  ) => {
+    try {
+      console.log(`🚀 Creando persona firstName="${firstName}", lastName="${lastName}", gender=${gender}`)
+      
+      const response = await fetch('/api/people', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          firstName,
+          lastName,
+          gender
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        throw new Error(`Error ${response.status}: ${errorData || response.statusText}`)
+      }
+
+      const newPerson = await response.json()
+      console.log('✅ Persona creada:', newPerson)
+      
+      toast.success(`Persona "${formatPersonName(newPerson)}" creada exitosamente`)
+      
+      handleSelectPerson(newPerson)
+      
+    } catch (error) {
+      console.error('❌ Error creando persona:', error)
+      toast.error(error instanceof Error ? error.message : 'Error al crear la persona')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  // Handler para cuando se selecciona género en el modal simple
   const handleGenderSelect = async (
     gender: 'MALE' | 'FEMALE' | 'OTHER' | null, 
     saveToDatabase: boolean
   ) => {
-    console.log(`🎯 handleGenderSelect llamado:`, { 
-      gender, 
-      saveToDatabase, 
-      pendingFirstName, 
-      pendingPersonName 
-    })
+    console.log(`🎯 handleGenderSelect:`, { gender, saveToDatabase, pendingFirstName, pendingPersonName })
     
     setShowGenderModal(false)
     setCreating(true)
 
     try {
-      // Si es MALE o FEMALE, guardar el nombre en la tabla first_name_genders
+      // Si es MALE o FEMALE, guardar el nombre en first_name_genders
       if (saveToDatabase && (gender === 'MALE' || gender === 'FEMALE')) {
-        console.log(`💾 Guardando "${pendingFirstName}" como ${gender} en first_name_genders...`)
+        console.log(`💾 Guardando "${pendingFirstName}" como ${gender}...`)
         
         try {
           await saveFirstNameGender(pendingFirstName, gender)
           toast.success(`El nombre "${pendingFirstName}" se guardó como ${gender === 'MALE' ? 'masculino' : 'femenino'}`)
         } catch (saveError) {
-          console.error('⚠️ Error guardando en first_name_genders (continuando con creación de persona):', saveError)
+          console.error('⚠️ Error guardando en first_name_genders:', saveError)
           toast.error(`No se pudo guardar el nombre "${pendingFirstName}" en la base de datos de nombres`)
         }
-      } else {
-        console.log(`ℹ️ No se guarda en first_name_genders: saveToDatabase=${saveToDatabase}, gender=${gender}`)
       }
 
-      // Crear la persona con el género seleccionado
+      // Crear la persona con el género seleccionado (la API separa automáticamente)
       await createPersonWithGender(pendingPersonName, gender)
       
     } catch (error) {
@@ -344,12 +450,63 @@ export default function PersonSearchInput({
     }
   }
 
-  // Handler para cancelar el modal
+  // Handler para cuando se confirma el modal de separación
+  const handleNameSplitConfirm = async (
+    firstName: string,
+    lastName: string,
+    gender: 'MALE' | 'FEMALE' | 'OTHER' | null,
+    saveToDatabase: boolean
+  ) => {
+    console.log(`🎯 handleNameSplitConfirm:`, { firstName, lastName, gender, saveToDatabase })
+    
+    setShowNameSplitModal(false)
+    setCreating(true)
+
+    try {
+      // Si es MALE o FEMALE, guardar CADA PALABRA del nombre en first_name_genders
+      if (saveToDatabase && (gender === 'MALE' || gender === 'FEMALE')) {
+        const firstNameWords = tokenizeName(firstName).filter(w => !isInitial(w) && !isNickname(w))
+        
+        console.log(`💾 Guardando ${firstNameWords.length} nombre(s): ${firstNameWords.join(', ')}`)
+        
+        for (const word of firstNameWords) {
+          try {
+            await saveFirstNameGender(word, gender)
+            console.log(`✅ "${word}" guardado como ${gender}`)
+          } catch (saveError) {
+            // Puede fallar si ya existe, ignorar
+            console.log(`⚠️ "${word}" ya existe o error:`, saveError)
+          }
+        }
+        
+        if (firstNameWords.length > 0) {
+          toast.success(`Nombre(s) guardado(s): ${firstNameWords.join(', ')}`)
+        }
+      }
+
+      // Crear la persona con firstName y lastName ya separados
+      await createPersonWithSplit(firstName, lastName, gender)
+      
+    } catch (error) {
+      console.error('Error en confirmación de nombre:', error)
+      toast.error('Error al procesar la solicitud')
+      setCreating(false)
+    }
+  }
+
+  // Handler para cancelar el modal de género
   const handleGenderCancel = () => {
     setShowGenderModal(false)
     setPendingPersonName('')
     setPendingFirstName('')
-    // Reabrir el dropdown
+    setIsOpen(true)
+  }
+
+  // Handler para cancelar el modal de separación
+  const handleNameSplitCancel = () => {
+    setShowNameSplitModal(false)
+    setPendingPersonName('')
+    setPendingFirstName('')
     setIsOpen(true)
   }
 
@@ -402,11 +559,11 @@ export default function PersonSearchInput({
           </button>
         )}
         
-        {/* Otros nombres alternativos (si showAlternativeNames está activo y hay más) */}
+        {/* Otros nombres alternativos */}
         {showAlternativeNames && person.alternativeNames && person.alternativeNames.length > 0 && (
           <>
             {person.alternativeNames
-              .filter(alt => alt.id !== person.matchedAlternativeNameId) // Excluir el que ya se mostró
+              .filter(alt => alt.id !== person.matchedAlternativeNameId)
               .map(alt => (
                 <button
                   key={alt.id}
@@ -523,12 +680,20 @@ export default function PersonSearchInput({
         )}
       </div>
 
-      {/* Modal de selección de género */}
+      {/* Modal de selección de género (para casos con apodo/inicial) */}
       <GenderSelectionModal
         isOpen={showGenderModal}
         firstName={pendingFirstName}
         onSelect={handleGenderSelect}
         onCancel={handleGenderCancel}
+      />
+
+      {/* Modal de separación de nombre (para casos sin nombres conocidos) */}
+      <NameSplitModal
+        isOpen={showNameSplitModal}
+        fullName={pendingPersonName}
+        onConfirm={handleNameSplitConfirm}
+        onCancel={handleNameSplitCancel}
       />
     </>
   )

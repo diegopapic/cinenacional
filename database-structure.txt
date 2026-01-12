@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2026-01-10T23:14:18.438Z
+# Generado automáticamente el: 2026-01-12T05:43:07.580Z
 # ================================================
 
 ## Schema Prisma
@@ -52,6 +52,8 @@ model Movie {
   metaDescription       String?                    @map("meta_description")
   metaKeywords          String[]                   @map("meta_keywords")
   synopsisLocked        Boolean                    @default(false) @map("synopsis_locked")
+  tmdbId                Int?                       @map("tmdb_id")
+  images                Image[]
   alternativeTitles     MovieAlternativeTitle[]
   awards                MovieAward[]
   cast                  MovieCast[]
@@ -59,19 +61,18 @@ model Movie {
   crew                  MovieCrew[]
   distributionCompanies MovieDistributionCompany[]
   genres                MovieGenre[]
-  images                Image[]
   links                 MovieLink[]
   productionCompanies   MovieProductionCompany[]
   screenings            MovieScreening[]
+  stats                 MovieStats?
   themes                MovieTheme[]
   videos                MovieVideo[]
   colorType             ColorType?                 @relation(fields: [colorTypeId], references: [id])
   rating                Rating?                    @relation(fields: [ratingId], references: [id])
+  pageViews             PageView[]
   userRatings           UserRating[]
   watchedBy             UserWatched[]
   watchlists            UserWatchlist[]
-  pageViews             PageView[]
-  stats                 MovieStats?
 
   @@index([slug])
   @@index([title])
@@ -89,6 +90,7 @@ model Movie {
   @@index([releaseYear, releaseMonth, releaseDay])
   @@index([createdAt])
   @@index([synopsisLocked], map: "idx_movies_synopsis_locked")
+  @@index([tmdbId], map: "idx_movies_tmdb_id")
   @@map("movies")
 }
 
@@ -206,16 +208,18 @@ model Person {
   createdAt        DateTime                @default(now()) @map("created_at")
   updatedAt        DateTime                @updatedAt @map("updated_at")
   photoPublicId    String?                 @map("photo_public_id") @db.VarChar(255)
+  imdbId           String?                 @map("imdb_id") @db.VarChar(20)
+  tmdbId           Int?                    @map("tmdb_id")
+  imageAppearances ImagePerson[]
   awards           MovieAward[]
   castRoles        MovieCast[]
   crewRoles        MovieCrew[]
+  pageViews        PageView[]
   birthLocation    Location?               @relation("BirthLocation", fields: [birthLocationId], references: [id])
   deathLocation    Location?               @relation("DeathLocation", fields: [deathLocationId], references: [id])
   alternativeNames PersonAlternativeName[]
   links            PersonLink[]
   nationalities    PersonNationality[]
-  imageAppearances ImagePerson[]
-  pageViews        PageView[]
 
   @@index([slug])
   @@index([firstName])
@@ -228,6 +232,8 @@ model Person {
   @@index([deathYear])
   @@index([deathYear, deathMonth])
   @@index([createdAt])
+  @@index([imdbId], map: "idx_people_imdb_id")
+  @@index([tmdbId], map: "idx_people_tmdb_id")
   @@map("people")
 }
 
@@ -235,15 +241,15 @@ model PersonAlternativeName {
   id        Int         @id @default(autoincrement())
   personId  Int         @map("person_id")
   fullName  String      @map("full_name") @db.VarChar(255)
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
-  person    Person      @relation(fields: [personId], references: [id], onDelete: Cascade)
+  createdAt DateTime?   @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime?   @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
   castRoles MovieCast[]
   crewRoles MovieCrew[]
+  person    Person      @relation(fields: [personId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([personId, fullName])
-  @@index([personId])
-  @@index([fullName])
+  @@unique([personId, fullName], map: "uq_people_alt_names_person_fullname")
+  @@index([fullName], map: "idx_people_alt_names_full_name")
+  @@index([personId], map: "idx_people_alt_names_person_id")
   @@map("people_alternative_names")
 }
 
@@ -259,14 +265,13 @@ model PersonNationality {
 }
 
 model MovieStats {
-  movieId     Int      @id @map("movie_id")
-  viewsWeek   Int      @default(0) @map("views_week")
-  viewsMonth  Int      @default(0) @map("views_month")
-  viewsYear   Int      @default(0) @map("views_year")
-  viewsTotal  Int      @default(0) @map("views_total")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
-
-  movie       Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  movieId    Int       @id @map("movie_id")
+  viewsWeek  Int?      @default(0) @map("views_week")
+  viewsMonth Int?      @default(0) @map("views_month")
+  viewsYear  Int?      @default(0) @map("views_year")
+  viewsTotal Int?      @default(0) @map("views_total")
+  updatedAt  DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  movie      Movie     @relation(fields: [movieId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([viewsWeek(sort: Desc)], map: "idx_movie_stats_week")
   @@index([viewsMonth(sort: Desc)], map: "idx_movie_stats_month")
@@ -341,22 +346,22 @@ model MovieCast {
   id                Int                    @id @default(autoincrement())
   movieId           Int                    @map("movie_id")
   personId          Int                    @map("person_id")
-  alternativeNameId Int?                   @map("alternative_name_id")
   characterName     String?                @map("character_name") @db.VarChar(255)
   billingOrder      Int?                   @map("billing_order")
   isPrincipal       Boolean                @default(false) @map("is_principal")
-  isActor           Boolean                @default(true) @map("is_actor")
   notes             String?
   createdAt         DateTime               @default(now()) @map("created_at")
+  isActor           Boolean                @default(true) @map("is_actor")
+  alternativeNameId Int?                   @map("alternative_name_id")
+  alternativeName   PersonAlternativeName? @relation(fields: [alternativeNameId], references: [id], onUpdate: NoAction)
   movie             Movie                  @relation(fields: [movieId], references: [id], onDelete: Cascade)
   person            Person                 @relation(fields: [personId], references: [id], onDelete: Cascade)
-  alternativeName   PersonAlternativeName? @relation(fields: [alternativeNameId], references: [id], onDelete: SetNull)
 
   @@unique([movieId, personId, characterName])
   @@index([movieId])
   @@index([personId])
-  @@index([alternativeNameId])
-  @@index([isActor])
+  @@index([alternativeNameId], map: "idx_movie_cast_alt_name")
+  @@index([isActor], map: "idx_movie_cast_is_actor")
   @@map("movie_cast")
 }
 
@@ -365,22 +370,22 @@ model MovieCrew {
   movieId           Int                    @map("movie_id")
   personId          Int                    @map("person_id")
   roleId            Int                    @map("role_id")
-  alternativeNameId Int?                   @map("alternative_name_id")
   billingOrder      Int?                   @map("billing_order")
   notes             String?
   createdAt         DateTime               @default(now()) @map("created_at")
   updatedAt         DateTime               @updatedAt @map("updated_at")
+  alternativeNameId Int?                   @map("alternative_name_id")
+  alternativeName   PersonAlternativeName? @relation(fields: [alternativeNameId], references: [id], onUpdate: NoAction)
   movie             Movie                  @relation(fields: [movieId], references: [id], onDelete: Cascade)
   person            Person                 @relation(fields: [personId], references: [id], onDelete: Cascade)
   role              Role                   @relation(fields: [roleId], references: [id])
-  alternativeName   PersonAlternativeName? @relation(fields: [alternativeNameId], references: [id], onDelete: SetNull)
 
   @@unique([movieId, personId, roleId])
   @@index([movieId])
   @@index([personId])
   @@index([roleId])
-  @@index([alternativeNameId])
   @@index([movieId, roleId])
+  @@index([alternativeNameId], map: "idx_movie_crew_alt_name")
   @@map("movie_crew")
 }
 
@@ -625,11 +630,11 @@ model FirstNameGender {
   id        Int                 @id @default(autoincrement())
   name      String              @unique @db.VarChar(100)
   gender    FirstNameGenderType
-  createdAt DateTime            @default(now()) @map("created_at")
-  updatedAt DateTime            @updatedAt @map("updated_at")
+  createdAt DateTime?           @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime?           @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
 
-  @@index([name])
-  @@index([gender])
+  @@index([gender], map: "idx_first_name_genders_gender")
+  @@index([name], map: "idx_first_name_genders_name")
   @@map("first_name_genders")
 }
 
@@ -700,42 +705,33 @@ model countries {
   created_at DateTime @default(now())
 }
 
-// Tabla principal de imágenes
 model Image {
-  id                  Int           @id @default(autoincrement())
-  cloudinaryPublicId  String        @unique @map("cloudinary_public_id")
-  type                ImageType
-  photoDate           DateTime?     @map("photo_date")
-  photographerCredit  String?       @map("photographer_credit")
-  eventName           String?       @map("event_name")
-  
-  movieId             Int?          @map("movie_id")
-  movie               Movie?        @relation(fields: [movieId], references: [id], onDelete: SetNull)
-  
-  people              ImagePerson[]
-  
-  createdAt           DateTime      @default(now()) @map("created_at")
-  updatedAt           DateTime      @updatedAt @map("updated_at")
-  
-  @@index([movieId])
-  @@index([type])
-  @@index([photoDate])
+  id                 Int           @id @default(autoincrement())
+  cloudinaryPublicId String        @unique @map("cloudinary_public_id") @db.VarChar(255)
+  type               ImageType
+  photoDate          DateTime?     @map("photo_date") @db.Timestamp(6)
+  photographerCredit String?       @map("photographer_credit") @db.VarChar(255)
+  eventName          String?       @map("event_name") @db.VarChar(255)
+  movieId            Int?          @map("movie_id")
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt          DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  people             ImagePerson[]
+  movie              Movie?        @relation(fields: [movieId], references: [id], onUpdate: NoAction)
+
+  @@index([photoDate], map: "idx_images_photo_date")
   @@map("images")
 }
 
-// Tabla intermedia imagen-persona
 model ImagePerson {
-  id        Int     @id @default(autoincrement())
-  imageId   Int     @map("image_id")
-  personId  Int     @map("person_id")
-  position  Int     @default(0)
-  
-  image     Image   @relation(fields: [imageId], references: [id], onDelete: Cascade)
-  person    Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
-  
+  id       Int    @id @default(autoincrement())
+  imageId  Int    @map("image_id")
+  personId Int    @map("person_id")
+  position Int    @default(0)
+  image    Image  @relation(fields: [imageId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  person   Person @relation(fields: [personId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
   @@unique([imageId, personId])
-  @@index([imageId])
-  @@index([personId])
+  @@index([personId], map: "idx_image_people_person_id")
   @@map("image_people")
 }
 
@@ -744,23 +740,15 @@ model PageView {
   pageType  PageType  @map("page_type")
   movieId   Int?      @map("movie_id")
   personId  Int?      @map("person_id")
-  extraData Json?     @map("extra_data") @db.JsonB
+  extraData Json?     @map("extra_data")
   sessionId String?   @map("session_id") @db.Uuid
   ipHash    String?   @map("ip_hash") @db.VarChar(64)
   userAgent String?   @map("user_agent") @db.VarChar(500)
   referrer  String?   @db.VarChar(500)
-  createdAt DateTime  @default(now()) @map("created_at")
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  movie     Movie?    @relation(fields: [movieId], references: [id], onUpdate: NoAction)
+  person    Person?   @relation(fields: [personId], references: [id], onUpdate: NoAction)
 
-  // Relaciones opcionales (ON DELETE SET NULL para no perder stats si se borra película/persona)
-  movie     Movie?    @relation(fields: [movieId], references: [id], onDelete: SetNull)
-  person    Person?   @relation(fields: [personId], references: [id], onDelete: SetNull)
-
-  // Índices optimizados para consultas frecuentes
-  @@index([movieId], map: "idx_page_views_movie_id")
-  @@index([personId], map: "idx_page_views_person_id")
-  @@index([pageType], map: "idx_page_views_page_type")
-  @@index([createdAt], map: "idx_page_views_created_at")
-  @@index([sessionId], map: "idx_page_views_session_id")
   @@index([pageType, createdAt], map: "idx_page_views_type_date")
   @@map("page_views")
 }
@@ -915,8 +903,17 @@ enum PageType {
   PERSON_LIST
   RELEASES
   OBITUARIES
+
   @@map("page_type")
 }
+
+enum image_type {
+  POSTER
+  BACKDROP
+  STILL
+  BEHIND_SCENES
+}
+
 ```
 
 ## SQL Generado
@@ -964,6 +961,9 @@ CREATE TYPE "movie_stage" AS ENUM ('COMPLETA', 'EN_DESARROLLO', 'EN_POSTPRODUCCI
 -- CreateEnum
 CREATE TYPE "page_type" AS ENUM ('HOME', 'MOVIE', 'PERSON', 'EPHEMERIS', 'PERSON_LIST', 'RELEASES', 'OBITUARIES');
 
+-- CreateEnum
+CREATE TYPE "image_type" AS ENUM ('POSTER', 'BACKDROP', 'STILL', 'BEHIND_SCENES');
+
 -- CreateTable
 CREATE TABLE "movies" (
     "id" SERIAL NOT NULL,
@@ -1002,6 +1002,7 @@ CREATE TABLE "movies" (
     "meta_description" TEXT,
     "meta_keywords" TEXT[],
     "synopsis_locked" BOOLEAN NOT NULL DEFAULT false,
+    "tmdb_id" INTEGER,
 
     CONSTRAINT "movies_pkey" PRIMARY KEY ("id")
 );
@@ -1107,6 +1108,8 @@ CREATE TABLE "people" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
     "photo_public_id" VARCHAR(255),
+    "imdb_id" VARCHAR(20),
+    "tmdb_id" INTEGER,
 
     CONSTRAINT "people_pkey" PRIMARY KEY ("id")
 );
@@ -1116,8 +1119,8 @@ CREATE TABLE "people_alternative_names" (
     "id" SERIAL NOT NULL,
     "person_id" INTEGER NOT NULL,
     "full_name" VARCHAR(255) NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "people_alternative_names_pkey" PRIMARY KEY ("id")
 );
@@ -1134,11 +1137,11 @@ CREATE TABLE "person_nationalities" (
 -- CreateTable
 CREATE TABLE "movie_stats" (
     "movie_id" INTEGER NOT NULL,
-    "views_week" INTEGER NOT NULL DEFAULT 0,
-    "views_month" INTEGER NOT NULL DEFAULT 0,
-    "views_year" INTEGER NOT NULL DEFAULT 0,
-    "views_total" INTEGER NOT NULL DEFAULT 0,
-    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "views_week" INTEGER DEFAULT 0,
+    "views_month" INTEGER DEFAULT 0,
+    "views_year" INTEGER DEFAULT 0,
+    "views_total" INTEGER DEFAULT 0,
+    "updated_at" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "movie_stats_pkey" PRIMARY KEY ("movie_id")
 );
@@ -1207,13 +1210,13 @@ CREATE TABLE "movie_cast" (
     "id" SERIAL NOT NULL,
     "movie_id" INTEGER NOT NULL,
     "person_id" INTEGER NOT NULL,
-    "alternative_name_id" INTEGER,
     "character_name" VARCHAR(255),
     "billing_order" INTEGER,
     "is_principal" BOOLEAN NOT NULL DEFAULT false,
-    "is_actor" BOOLEAN NOT NULL DEFAULT true,
     "notes" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "is_actor" BOOLEAN NOT NULL DEFAULT true,
+    "alternative_name_id" INTEGER,
 
     CONSTRAINT "movie_cast_pkey" PRIMARY KEY ("id")
 );
@@ -1224,11 +1227,11 @@ CREATE TABLE "movie_crew" (
     "movie_id" INTEGER NOT NULL,
     "person_id" INTEGER NOT NULL,
     "role_id" INTEGER NOT NULL,
-    "alternative_name_id" INTEGER,
     "billing_order" INTEGER,
     "notes" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "alternative_name_id" INTEGER,
 
     CONSTRAINT "movie_crew_pkey" PRIMARY KEY ("id")
 );
@@ -1443,8 +1446,8 @@ CREATE TABLE "first_name_genders" (
     "id" SERIAL NOT NULL,
     "name" VARCHAR(100) NOT NULL,
     "gender" "first_name_gender_type" NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "first_name_genders_pkey" PRIMARY KEY ("id")
 );
@@ -1511,14 +1514,14 @@ CREATE TABLE "countries" (
 -- CreateTable
 CREATE TABLE "images" (
     "id" SERIAL NOT NULL,
-    "cloudinary_public_id" TEXT NOT NULL,
+    "cloudinary_public_id" VARCHAR(255) NOT NULL,
     "type" "ImageType" NOT NULL,
-    "photo_date" TIMESTAMP(3),
-    "photographer_credit" TEXT,
-    "event_name" TEXT,
+    "photo_date" TIMESTAMP(6),
+    "photographer_credit" VARCHAR(255),
+    "event_name" VARCHAR(255),
     "movie_id" INTEGER,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "images_pkey" PRIMARY KEY ("id")
 );
@@ -1544,7 +1547,7 @@ CREATE TABLE "page_views" (
     "ip_hash" VARCHAR(64),
     "user_agent" VARCHAR(500),
     "referrer" VARCHAR(500),
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "page_views_pkey" PRIMARY KEY ("id")
 );
@@ -1599,6 +1602,9 @@ CREATE INDEX "movies_created_at_idx" ON "movies"("created_at");
 
 -- CreateIndex
 CREATE INDEX "idx_movies_synopsis_locked" ON "movies"("synopsis_locked");
+
+-- CreateIndex
+CREATE INDEX "idx_movies_tmdb_id" ON "movies"("tmdb_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "screening_venues_slug_key" ON "screening_venues"("slug");
@@ -1679,13 +1685,19 @@ CREATE INDEX "people_death_year_death_month_idx" ON "people"("death_year", "deat
 CREATE INDEX "people_created_at_idx" ON "people"("created_at");
 
 -- CreateIndex
-CREATE INDEX "people_alternative_names_person_id_idx" ON "people_alternative_names"("person_id");
+CREATE INDEX "idx_people_imdb_id" ON "people"("imdb_id");
 
 -- CreateIndex
-CREATE INDEX "people_alternative_names_full_name_idx" ON "people_alternative_names"("full_name");
+CREATE INDEX "idx_people_tmdb_id" ON "people"("tmdb_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "people_alternative_names_person_id_full_name_key" ON "people_alternative_names"("person_id", "full_name");
+CREATE INDEX "idx_people_alt_names_full_name" ON "people_alternative_names"("full_name");
+
+-- CreateIndex
+CREATE INDEX "idx_people_alt_names_person_id" ON "people_alternative_names"("person_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "uq_people_alt_names_person_fullname" ON "people_alternative_names"("person_id", "full_name");
 
 -- CreateIndex
 CREATE INDEX "idx_movie_stats_week" ON "movie_stats"("views_week" DESC);
@@ -1724,10 +1736,10 @@ CREATE INDEX "movie_cast_movie_id_idx" ON "movie_cast"("movie_id");
 CREATE INDEX "movie_cast_person_id_idx" ON "movie_cast"("person_id");
 
 -- CreateIndex
-CREATE INDEX "movie_cast_alternative_name_id_idx" ON "movie_cast"("alternative_name_id");
+CREATE INDEX "idx_movie_cast_alt_name" ON "movie_cast"("alternative_name_id");
 
 -- CreateIndex
-CREATE INDEX "movie_cast_is_actor_idx" ON "movie_cast"("is_actor");
+CREATE INDEX "idx_movie_cast_is_actor" ON "movie_cast"("is_actor");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "movie_cast_movie_id_person_id_character_name_key" ON "movie_cast"("movie_id", "person_id", "character_name");
@@ -1742,10 +1754,10 @@ CREATE INDEX "movie_crew_person_id_idx" ON "movie_crew"("person_id");
 CREATE INDEX "movie_crew_role_id_idx" ON "movie_crew"("role_id");
 
 -- CreateIndex
-CREATE INDEX "movie_crew_alternative_name_id_idx" ON "movie_crew"("alternative_name_id");
+CREATE INDEX "movie_crew_movie_id_role_id_idx" ON "movie_crew"("movie_id", "role_id");
 
 -- CreateIndex
-CREATE INDEX "movie_crew_movie_id_role_id_idx" ON "movie_crew"("movie_id", "role_id");
+CREATE INDEX "idx_movie_crew_alt_name" ON "movie_crew"("alternative_name_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "movie_crew_movie_id_person_id_role_id_key" ON "movie_crew"("movie_id", "person_id", "role_id");
@@ -1826,10 +1838,10 @@ CREATE UNIQUE INDEX "languages_code_key" ON "languages"("code");
 CREATE UNIQUE INDEX "first_name_genders_name_key" ON "first_name_genders"("name");
 
 -- CreateIndex
-CREATE INDEX "first_name_genders_name_idx" ON "first_name_genders"("name");
+CREATE INDEX "idx_first_name_genders_gender" ON "first_name_genders"("gender");
 
 -- CreateIndex
-CREATE INDEX "first_name_genders_gender_idx" ON "first_name_genders"("gender");
+CREATE INDEX "idx_first_name_genders_name" ON "first_name_genders"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
@@ -1844,37 +1856,13 @@ CREATE UNIQUE INDEX "countries_code_key" ON "countries"("code");
 CREATE UNIQUE INDEX "images_cloudinary_public_id_key" ON "images"("cloudinary_public_id");
 
 -- CreateIndex
-CREATE INDEX "images_movie_id_idx" ON "images"("movie_id");
+CREATE INDEX "idx_images_photo_date" ON "images"("photo_date");
 
 -- CreateIndex
-CREATE INDEX "images_type_idx" ON "images"("type");
-
--- CreateIndex
-CREATE INDEX "images_photo_date_idx" ON "images"("photo_date");
-
--- CreateIndex
-CREATE INDEX "image_people_image_id_idx" ON "image_people"("image_id");
-
--- CreateIndex
-CREATE INDEX "image_people_person_id_idx" ON "image_people"("person_id");
+CREATE INDEX "idx_image_people_person_id" ON "image_people"("person_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "image_people_image_id_person_id_key" ON "image_people"("image_id", "person_id");
-
--- CreateIndex
-CREATE INDEX "idx_page_views_movie_id" ON "page_views"("movie_id");
-
--- CreateIndex
-CREATE INDEX "idx_page_views_person_id" ON "page_views"("person_id");
-
--- CreateIndex
-CREATE INDEX "idx_page_views_page_type" ON "page_views"("page_type");
-
--- CreateIndex
-CREATE INDEX "idx_page_views_created_at" ON "page_views"("created_at");
-
--- CreateIndex
-CREATE INDEX "idx_page_views_session_id" ON "page_views"("session_id");
 
 -- CreateIndex
 CREATE INDEX "idx_page_views_type_date" ON "page_views"("page_type", "created_at");
@@ -1907,7 +1895,7 @@ ALTER TABLE "people" ADD CONSTRAINT "people_birth_location_id_fkey" FOREIGN KEY 
 ALTER TABLE "people" ADD CONSTRAINT "people_death_location_id_fkey" FOREIGN KEY ("death_location_id") REFERENCES "locations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "people_alternative_names" ADD CONSTRAINT "people_alternative_names_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "people_alternative_names" ADD CONSTRAINT "people_alternative_names_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "person_nationalities" ADD CONSTRAINT "person_nationalities_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "locations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1916,10 +1904,13 @@ ALTER TABLE "person_nationalities" ADD CONSTRAINT "person_nationalities_location
 ALTER TABLE "person_nationalities" ADD CONSTRAINT "person_nationalities_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "movie_stats" ADD CONSTRAINT "movie_stats_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "movie_stats" ADD CONSTRAINT "movie_stats_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "person_links" ADD CONSTRAINT "person_links_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "movie_cast" ADD CONSTRAINT "movie_cast_alternative_name_id_fkey" FOREIGN KEY ("alternative_name_id") REFERENCES "people_alternative_names"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "movie_cast" ADD CONSTRAINT "movie_cast_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1928,7 +1919,7 @@ ALTER TABLE "movie_cast" ADD CONSTRAINT "movie_cast_movie_id_fkey" FOREIGN KEY (
 ALTER TABLE "movie_cast" ADD CONSTRAINT "movie_cast_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "movie_cast" ADD CONSTRAINT "movie_cast_alternative_name_id_fkey" FOREIGN KEY ("alternative_name_id") REFERENCES "people_alternative_names"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "movie_crew" ADD CONSTRAINT "movie_crew_alternative_name_id_fkey" FOREIGN KEY ("alternative_name_id") REFERENCES "people_alternative_names"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "movie_crew" ADD CONSTRAINT "movie_crew_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1938,9 +1929,6 @@ ALTER TABLE "movie_crew" ADD CONSTRAINT "movie_crew_person_id_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "movie_crew" ADD CONSTRAINT "movie_crew_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "movie_crew" ADD CONSTRAINT "movie_crew_alternative_name_id_fkey" FOREIGN KEY ("alternative_name_id") REFERENCES "people_alternative_names"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "movie_genres" ADD CONSTRAINT "movie_genres_genre_id_fkey" FOREIGN KEY ("genre_id") REFERENCES "genres"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -2012,19 +2000,19 @@ ALTER TABLE "user_watched" ADD CONSTRAINT "user_watched_movie_id_fkey" FOREIGN K
 ALTER TABLE "user_watched" ADD CONSTRAINT "user_watched_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "images" ADD CONSTRAINT "images_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "images" ADD CONSTRAINT "images_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "image_people" ADD CONSTRAINT "image_people_image_id_fkey" FOREIGN KEY ("image_id") REFERENCES "images"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "image_people" ADD CONSTRAINT "image_people_image_id_fkey" FOREIGN KEY ("image_id") REFERENCES "images"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "image_people" ADD CONSTRAINT "image_people_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "image_people" ADD CONSTRAINT "image_people_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "page_views" ADD CONSTRAINT "page_views_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "page_views" ADD CONSTRAINT "page_views_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "page_views" ADD CONSTRAINT "page_views_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "page_views" ADD CONSTRAINT "page_views_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
 
 
 ```
