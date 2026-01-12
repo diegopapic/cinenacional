@@ -45,6 +45,8 @@ model Movie {
   metaDescription       String?                    @map("meta_description")
   metaKeywords          String[]                   @map("meta_keywords")
   synopsisLocked        Boolean                    @default(false) @map("synopsis_locked")
+  tmdbId                Int?                       @map("tmdb_id")
+  images                Image[]
   alternativeTitles     MovieAlternativeTitle[]
   awards                MovieAward[]
   cast                  MovieCast[]
@@ -52,19 +54,18 @@ model Movie {
   crew                  MovieCrew[]
   distributionCompanies MovieDistributionCompany[]
   genres                MovieGenre[]
-  images                Image[]
   links                 MovieLink[]
   productionCompanies   MovieProductionCompany[]
   screenings            MovieScreening[]
+  stats                 MovieStats?
   themes                MovieTheme[]
   videos                MovieVideo[]
   colorType             ColorType?                 @relation(fields: [colorTypeId], references: [id])
   rating                Rating?                    @relation(fields: [ratingId], references: [id])
+  pageViews             PageView[]
   userRatings           UserRating[]
   watchedBy             UserWatched[]
   watchlists            UserWatchlist[]
-  pageViews             PageView[]
-  stats                 MovieStats?
 
   @@index([slug])
   @@index([title])
@@ -82,6 +83,7 @@ model Movie {
   @@index([releaseYear, releaseMonth, releaseDay])
   @@index([createdAt])
   @@index([synopsisLocked], map: "idx_movies_synopsis_locked")
+  @@index([tmdbId], map: "idx_movies_tmdb_id")
   @@map("movies")
 }
 
@@ -199,16 +201,18 @@ model Person {
   createdAt        DateTime                @default(now()) @map("created_at")
   updatedAt        DateTime                @updatedAt @map("updated_at")
   photoPublicId    String?                 @map("photo_public_id") @db.VarChar(255)
+  imdbId           String?                 @map("imdb_id") @db.VarChar(20)
+  tmdbId           Int?                    @map("tmdb_id")
+  imageAppearances ImagePerson[]
   awards           MovieAward[]
   castRoles        MovieCast[]
   crewRoles        MovieCrew[]
+  pageViews        PageView[]
   birthLocation    Location?               @relation("BirthLocation", fields: [birthLocationId], references: [id])
   deathLocation    Location?               @relation("DeathLocation", fields: [deathLocationId], references: [id])
   alternativeNames PersonAlternativeName[]
   links            PersonLink[]
   nationalities    PersonNationality[]
-  imageAppearances ImagePerson[]
-  pageViews        PageView[]
 
   @@index([slug])
   @@index([firstName])
@@ -221,6 +225,8 @@ model Person {
   @@index([deathYear])
   @@index([deathYear, deathMonth])
   @@index([createdAt])
+  @@index([imdbId], map: "idx_people_imdb_id")
+  @@index([tmdbId], map: "idx_people_tmdb_id")
   @@map("people")
 }
 
@@ -228,15 +234,15 @@ model PersonAlternativeName {
   id        Int         @id @default(autoincrement())
   personId  Int         @map("person_id")
   fullName  String      @map("full_name") @db.VarChar(255)
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
-  person    Person      @relation(fields: [personId], references: [id], onDelete: Cascade)
+  createdAt DateTime?   @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime?   @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
   castRoles MovieCast[]
   crewRoles MovieCrew[]
+  person    Person      @relation(fields: [personId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([personId, fullName])
-  @@index([personId])
-  @@index([fullName])
+  @@unique([personId, fullName], map: "uq_people_alt_names_person_fullname")
+  @@index([fullName], map: "idx_people_alt_names_full_name")
+  @@index([personId], map: "idx_people_alt_names_person_id")
   @@map("people_alternative_names")
 }
 
@@ -252,14 +258,13 @@ model PersonNationality {
 }
 
 model MovieStats {
-  movieId     Int      @id @map("movie_id")
-  viewsWeek   Int      @default(0) @map("views_week")
-  viewsMonth  Int      @default(0) @map("views_month")
-  viewsYear   Int      @default(0) @map("views_year")
-  viewsTotal  Int      @default(0) @map("views_total")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
-
-  movie       Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  movieId    Int       @id @map("movie_id")
+  viewsWeek  Int?      @default(0) @map("views_week")
+  viewsMonth Int?      @default(0) @map("views_month")
+  viewsYear  Int?      @default(0) @map("views_year")
+  viewsTotal Int?      @default(0) @map("views_total")
+  updatedAt  DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  movie      Movie     @relation(fields: [movieId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([viewsWeek(sort: Desc)], map: "idx_movie_stats_week")
   @@index([viewsMonth(sort: Desc)], map: "idx_movie_stats_month")
@@ -334,22 +339,22 @@ model MovieCast {
   id                Int                    @id @default(autoincrement())
   movieId           Int                    @map("movie_id")
   personId          Int                    @map("person_id")
-  alternativeNameId Int?                   @map("alternative_name_id")
   characterName     String?                @map("character_name") @db.VarChar(255)
   billingOrder      Int?                   @map("billing_order")
   isPrincipal       Boolean                @default(false) @map("is_principal")
-  isActor           Boolean                @default(true) @map("is_actor")
   notes             String?
   createdAt         DateTime               @default(now()) @map("created_at")
+  isActor           Boolean                @default(true) @map("is_actor")
+  alternativeNameId Int?                   @map("alternative_name_id")
+  alternativeName   PersonAlternativeName? @relation(fields: [alternativeNameId], references: [id], onUpdate: NoAction)
   movie             Movie                  @relation(fields: [movieId], references: [id], onDelete: Cascade)
   person            Person                 @relation(fields: [personId], references: [id], onDelete: Cascade)
-  alternativeName   PersonAlternativeName? @relation(fields: [alternativeNameId], references: [id], onDelete: SetNull)
 
   @@unique([movieId, personId, characterName])
   @@index([movieId])
   @@index([personId])
-  @@index([alternativeNameId])
-  @@index([isActor])
+  @@index([alternativeNameId], map: "idx_movie_cast_alt_name")
+  @@index([isActor], map: "idx_movie_cast_is_actor")
   @@map("movie_cast")
 }
 
@@ -358,22 +363,22 @@ model MovieCrew {
   movieId           Int                    @map("movie_id")
   personId          Int                    @map("person_id")
   roleId            Int                    @map("role_id")
-  alternativeNameId Int?                   @map("alternative_name_id")
   billingOrder      Int?                   @map("billing_order")
   notes             String?
   createdAt         DateTime               @default(now()) @map("created_at")
   updatedAt         DateTime               @updatedAt @map("updated_at")
+  alternativeNameId Int?                   @map("alternative_name_id")
+  alternativeName   PersonAlternativeName? @relation(fields: [alternativeNameId], references: [id], onUpdate: NoAction)
   movie             Movie                  @relation(fields: [movieId], references: [id], onDelete: Cascade)
   person            Person                 @relation(fields: [personId], references: [id], onDelete: Cascade)
   role              Role                   @relation(fields: [roleId], references: [id])
-  alternativeName   PersonAlternativeName? @relation(fields: [alternativeNameId], references: [id], onDelete: SetNull)
 
   @@unique([movieId, personId, roleId])
   @@index([movieId])
   @@index([personId])
   @@index([roleId])
-  @@index([alternativeNameId])
   @@index([movieId, roleId])
+  @@index([alternativeNameId], map: "idx_movie_crew_alt_name")
   @@map("movie_crew")
 }
 
@@ -618,11 +623,11 @@ model FirstNameGender {
   id        Int                 @id @default(autoincrement())
   name      String              @unique @db.VarChar(100)
   gender    FirstNameGenderType
-  createdAt DateTime            @default(now()) @map("created_at")
-  updatedAt DateTime            @updatedAt @map("updated_at")
+  createdAt DateTime?           @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime?           @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
 
-  @@index([name])
-  @@index([gender])
+  @@index([gender], map: "idx_first_name_genders_gender")
+  @@index([name], map: "idx_first_name_genders_name")
   @@map("first_name_genders")
 }
 
@@ -693,42 +698,33 @@ model countries {
   created_at DateTime @default(now())
 }
 
-// Tabla principal de imágenes
 model Image {
-  id                  Int           @id @default(autoincrement())
-  cloudinaryPublicId  String        @unique @map("cloudinary_public_id")
-  type                ImageType
-  photoDate           DateTime?     @map("photo_date")
-  photographerCredit  String?       @map("photographer_credit")
-  eventName           String?       @map("event_name")
-  
-  movieId             Int?          @map("movie_id")
-  movie               Movie?        @relation(fields: [movieId], references: [id], onDelete: SetNull)
-  
-  people              ImagePerson[]
-  
-  createdAt           DateTime      @default(now()) @map("created_at")
-  updatedAt           DateTime      @updatedAt @map("updated_at")
-  
-  @@index([movieId])
-  @@index([type])
-  @@index([photoDate])
+  id                 Int           @id @default(autoincrement())
+  cloudinaryPublicId String        @unique @map("cloudinary_public_id") @db.VarChar(255)
+  type               ImageType
+  photoDate          DateTime?     @map("photo_date") @db.Timestamp(6)
+  photographerCredit String?       @map("photographer_credit") @db.VarChar(255)
+  eventName          String?       @map("event_name") @db.VarChar(255)
+  movieId            Int?          @map("movie_id")
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt          DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  people             ImagePerson[]
+  movie              Movie?        @relation(fields: [movieId], references: [id], onUpdate: NoAction)
+
+  @@index([photoDate], map: "idx_images_photo_date")
   @@map("images")
 }
 
-// Tabla intermedia imagen-persona
 model ImagePerson {
-  id        Int     @id @default(autoincrement())
-  imageId   Int     @map("image_id")
-  personId  Int     @map("person_id")
-  position  Int     @default(0)
-  
-  image     Image   @relation(fields: [imageId], references: [id], onDelete: Cascade)
-  person    Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
-  
+  id       Int    @id @default(autoincrement())
+  imageId  Int    @map("image_id")
+  personId Int    @map("person_id")
+  position Int    @default(0)
+  image    Image  @relation(fields: [imageId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  person   Person @relation(fields: [personId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
   @@unique([imageId, personId])
-  @@index([imageId])
-  @@index([personId])
+  @@index([personId], map: "idx_image_people_person_id")
   @@map("image_people")
 }
 
@@ -737,23 +733,15 @@ model PageView {
   pageType  PageType  @map("page_type")
   movieId   Int?      @map("movie_id")
   personId  Int?      @map("person_id")
-  extraData Json?     @map("extra_data") @db.JsonB
+  extraData Json?     @map("extra_data")
   sessionId String?   @map("session_id") @db.Uuid
   ipHash    String?   @map("ip_hash") @db.VarChar(64)
   userAgent String?   @map("user_agent") @db.VarChar(500)
   referrer  String?   @db.VarChar(500)
-  createdAt DateTime  @default(now()) @map("created_at")
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  movie     Movie?    @relation(fields: [movieId], references: [id], onUpdate: NoAction)
+  person    Person?   @relation(fields: [personId], references: [id], onUpdate: NoAction)
 
-  // Relaciones opcionales (ON DELETE SET NULL para no perder stats si se borra película/persona)
-  movie     Movie?    @relation(fields: [movieId], references: [id], onDelete: SetNull)
-  person    Person?   @relation(fields: [personId], references: [id], onDelete: SetNull)
-
-  // Índices optimizados para consultas frecuentes
-  @@index([movieId], map: "idx_page_views_movie_id")
-  @@index([personId], map: "idx_page_views_person_id")
-  @@index([pageType], map: "idx_page_views_page_type")
-  @@index([createdAt], map: "idx_page_views_created_at")
-  @@index([sessionId], map: "idx_page_views_session_id")
   @@index([pageType, createdAt], map: "idx_page_views_type_date")
   @@map("page_views")
 }
@@ -908,5 +896,13 @@ enum PageType {
   PERSON_LIST
   RELEASES
   OBITUARIES
+
   @@map("page_type")
+}
+
+enum image_type {
+  POSTER
+  BACKDROP
+  STILL
+  BEHIND_SCENES
 }

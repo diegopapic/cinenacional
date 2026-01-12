@@ -1,0 +1,25 @@
+{
+  "name": "tmdb-enrichment",
+  "version": "1.0.0",
+  "description": "Scripts para enriquecer películas y personas con IMDB IDs desde TMDB",
+  "scripts": {
+    "movies:dry-run": "npx tsx enrich-movies.ts --dry-run",
+    "movies:apply": "npx tsx enrich-movies.ts --apply",
+    "movies:apply-csv": "npx tsx enrich-movies.ts --apply-csv",
+    "movies:test": "npx tsx enrich-movies.ts --dry-run --limit 10",
+    "people:dry-run": "npx tsx enrich-people.ts --dry-run",
+    "people:apply": "npx tsx enrich-people.ts --apply",
+    "people:apply-csv": "npx tsx enrich-people.ts --apply-csv",
+    "people:test": "npx tsx enrich-people.ts --dry-run --limit 10",
+    "test-connection": "npx tsx test-connection.ts"
+  },
+  "dependencies": {
+    "pg": "^8.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/pg": "^8.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}
