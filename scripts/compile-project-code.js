@@ -2,6 +2,13 @@
 const fs = require('fs');
 const path = require('path');
 
+// Archivos a excluir por contener secrets/API keys
+const EXCLUDED_FILES = [
+  'scripts/telegram-bot-handler.ts',
+  'scripts/tmdb/config.ts',
+  'scripts/tmdb/test-api.ts'
+];
+
 // Función para construir la ruta completa del archivo
 function buildFilePath(structure, currentPath = '') {
   let paths = [];
@@ -51,13 +58,19 @@ async function compileProject() {
     // Filtrar solo los archivos relevantes
     const relevantFiles = files.filter(file => {
       const ext = path.extname(file.path);
+      
+      // Verificar si el archivo está en la lista de excluidos
+      const isExcluded = EXCLUDED_FILES.some(excluded => file.path.includes(excluded));
+      
       return ['.tsx', '.ts'].includes(ext) && 
              !file.path.includes('node_modules') &&
              !file.path.includes('.json') &&
-             !file.path.includes('package-lock');
+             !file.path.includes('package-lock') &&
+             !isExcluded;
     });
     
     console.log(`Compilando ${relevantFiles.length} archivos...`);
+    console.log(`(Excluidos ${EXCLUDED_FILES.length} archivos con secrets)`);
     
     let output = `// Código compilado del proyecto: ${projectData.repository}
 // Commit: ${projectData.commit || 'local'}

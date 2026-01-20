@@ -175,6 +175,49 @@ export function saveToCSV(
 }
 
 /**
+ * Parsear una línea CSV respetando comillas
+ */
+function parseCSVLine(line: string): string[] {
+  const values: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+    
+    if (inQuotes) {
+      if (char === '"' && nextChar === '"') {
+        // Comilla escapada
+        current += '"';
+        i++;
+      } else if (char === '"') {
+        // Fin de campo entrecomillado
+        inQuotes = false;
+      } else {
+        current += char;
+      }
+    } else {
+      if (char === '"') {
+        // Inicio de campo entrecomillado
+        inQuotes = true;
+      } else if (char === ',') {
+        // Fin de campo
+        values.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+  }
+  
+  // Último campo
+  values.push(current);
+  
+  return values;
+}
+
+/**
  * Cargar CSV existente
  */
 export function loadFromCSV(filename: string): Record<string, any>[] {
@@ -189,11 +232,11 @@ export function loadFromCSV(filename: string): Record<string, any>[] {
   
   if (lines.length < 2) return [];
   
-  const headers = lines[0].split(',');
+  const headers = parseCSVLine(lines[0]);
   const data: Record<string, any>[] = [];
   
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',');
+    const values = parseCSVLine(lines[i]);
     const row: Record<string, any> = {};
     headers.forEach((h, idx) => {
       row[h] = values[idx] || '';

@@ -1,0 +1,3 @@
+tmdb_id,full_name,first_name,last_name,gender,reason,movie_title,role
+5057397,"Carito Lopez","Carito","Lopez",NULL,"Primer nombre "Carito" no encontrado en base de datos","La Noche del Sereno","cast"
+5057403,"Luna Gainle","","",NULL,"Job no mapeado: "Assistant Director" (Directing)","La Noche del Sereno","Assistant Director"
