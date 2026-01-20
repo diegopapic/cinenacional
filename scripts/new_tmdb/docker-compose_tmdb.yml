@@ -1,0 +1,56 @@
+# docker-compose.tmdb.yml
+# Servicios para detección de películas en TMDB y bot de Telegram
+#
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.tmdb.yml up -d
+
+version: '3.8'
+
+services:
+  # Bot de Telegram - corre continuamente haciendo polling
+  telegram-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.telegram-bot
+    container_name: cinenacional-telegram-bot
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://cinenacional:Paganitzu@postgres:5432/cinenacional
+      - TMDB_ACCESS_TOKEN=${TMDB_ACCESS_TOKEN:-eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJkZWU4NjYxYmU4NDc4YzQ2ODljOWZmYTVmMTAzOGY4ZiIsIm5iZiI6MTU3NDIxMjg5NC41MzMsInN1YiI6IjVkZDQ5NTFlMzU2YTcxNTg3NWViM2RmNyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.nhpEuKh4uyr4Mp0avMqNmGuwPC2cj0byvHJaAsGIdkE}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-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}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-7690309153:AAEa3LZ1o-f5NayeOHwtjyuQ1BfY6LRj6s0}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-1414789486}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cinenacional-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Detector diario - solo se ejecuta manualmente o via cron
+  tmdb-detector:
+    build:
+      context: .
+      dockerfile: Dockerfile.telegram-bot
+    container_name: cinenacional-tmdb-detector
+    profiles:
+      - tools
+    environment:
+      - DATABASE_URL=postgresql://cinenacional:Paganitzu@postgres:5432/cinenacional
+      - TMDB_ACCESS_TOKEN=${TMDB_ACCESS_TOKEN:-eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJkZWU4NjYxYmU4NDc4YzQ2ODljOWZmYTVmMTAzOGY4ZiIsIm5iZiI6MTU3NDIxMjg5NC41MzMsInN1YiI6IjVkZDQ5NTFlMzU2YTcxNTg3NWViM2RmNyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.nhpEuKh4uyr4Mp0avMqNmGuwPC2cj0byvHJaAsGIdkE}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-7690309153:AAEa3LZ1o-f5NayeOHwtjyuQ1BfY6LRj6s0}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-1414789486}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cinenacional-network
+    command: ["tsx", "scripts/tmdb-daily-detector.ts"]
+
+networks:
+  cinenacional-network:
+    external: true

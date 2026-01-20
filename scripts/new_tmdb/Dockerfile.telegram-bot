@@ -1,0 +1,23 @@
+# Dockerfile para el servicio de Telegram Bot Handler
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Instalar dependencias del sistema necesarias
+RUN apk add --no-cache postgresql-client
+
+# Copiar archivos de dependencias
+COPY package*.json ./
+
+# Instalar dependencias
+RUN npm ci --only=production
+
+# Instalar tsx para ejecutar TypeScript directamente
+RUN npm install -g tsx
+
+# Copiar los scripts necesarios
+COPY scripts/telegram-bot-handler.ts ./scripts/
+COPY scripts/tmdb-daily-detector.ts ./scripts/
+
+# El script se ejecuta continuamente
+CMD ["tsx", "scripts/telegram-bot-handler.ts"]

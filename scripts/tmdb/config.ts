@@ -8,6 +8,9 @@ export const config = {
   // API Key (v3 auth) - alternativa
   tmdbApiKey: process.env.TMDB_API_KEY || 'dee8661be8478c4689c9ffa5f1038f8f',
   
+  // API Key de Claude
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || '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',
+
   // Base URLs
   tmdbBaseUrl: 'https://api.themoviedb.org/3',
   
