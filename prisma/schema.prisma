@@ -60,6 +60,7 @@ model Movie {
   stats                 MovieStats?
   themes                MovieTheme[]
   videos                MovieVideo[]
+  tmdbPendingMovies     TmdbPendingMovie[]
   colorType             ColorType?                 @relation(fields: [colorTypeId], references: [id])
   rating                Rating?                    @relation(fields: [ratingId], references: [id])
   pageViews             PageView[]
@@ -744,6 +745,38 @@ model PageView {
 
   @@index([pageType, createdAt], map: "idx_page_views_type_date")
   @@map("page_views")
+}
+
+model TmdbPendingMovie {
+  id                  Int       @id @default(autoincrement())
+  tmdbId              Int       @unique @map("tmdb_id")
+  tmdbTitle           String    @map("tmdb_title") @db.VarChar(255)
+  tmdbOriginalTitle   String?   @map("tmdb_original_title") @db.VarChar(255)
+  tmdbYear            Int?      @map("tmdb_year")
+  tmdbOverview        String?   @map("tmdb_overview")
+  tmdbRuntime         Int?      @map("tmdb_runtime")
+  tmdbDirectorName    String?   @map("tmdb_director_name") @db.VarChar(255)
+  tmdbDirectorId      Int?      @map("tmdb_director_id")
+  
+  localMovieId        Int?      @map("local_movie_id")
+  localMovieTitle     String?   @map("local_movie_title") @db.VarChar(255)
+  localMovieYear      Int?      @map("local_movie_year")
+  localDirectorName   String?   @map("local_director_name") @db.VarChar(255)
+  
+  status              String    @default("pending") @db.VarChar(20)
+  actionType          String    @map("action_type") @db.VarChar(20)
+  matchScore          Int?      @map("match_score")
+  telegramMessageId   BigInt?   @map("telegram_message_id")
+  
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  processedAt         DateTime? @map("processed_at") @db.Timestamptz
+  
+  localMovie          Movie?    @relation(fields: [localMovieId], references: [id], onDelete: SetNull)
+  
+  @@index([status])
+  @@index([tmdbId])
+  @@index([createdAt])
+  @@map("tmdb_pending_movies")
 }
 
 enum ImageType {

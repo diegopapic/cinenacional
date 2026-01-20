@@ -1,12 +1,12 @@
 /**
- * Script para enriquecer películas con IMDB ID desde TMDB
+ * Script para enriquecer películas con TMDB ID desde TMDB
  * 
  * Uso:
- *   npx ts-node enrich-movies.ts --dry-run          # Solo genera CSV
- *   npx ts-node enrich-movies.ts --apply            # Aplica cambios a la BD
- *   npx ts-node enrich-movies.ts --apply-csv        # Aplica desde CSV revisado
- *   npx ts-node enrich-movies.ts --limit 100        # Procesar solo 100 películas
- *   npx ts-node enrich-movies.ts --offset 500       # Empezar desde la 501
+ *   npx tsx enrich-movies.ts --dry-run          # Solo genera CSV
+ *   npx tsx enrich-movies.ts --apply            # Aplica cambios a la BD
+ *   npx tsx enrich-movies.ts --apply-csv        # Aplica desde CSV revisado
+ *   npx tsx enrich-movies.ts --limit 100        # Procesar solo 100 películas
+ *   npx tsx enrich-movies.ts --offset 500       # Empezar desde la 501
  */
 
 import { searchMovies, getMovieDetails, testConnection, TMDBMovieDetails } from './tmdb-client';
@@ -49,9 +49,9 @@ interface MatchResult {
 }
 
 /**
- * Obtener películas sin IMDB ID de la base de datos
+ * Obtener películas sin TMDB ID de la base de datos
  */
-async function getMoviesWithoutImdbId(limit?: number, offset?: number): Promise<LocalMovie[]> {
+async function getMoviesWithoutTmdbId(limit?: number, offset?: number): Promise<LocalMovie[]> {
   const pool = getPool();
   
   const query = `
@@ -65,7 +65,7 @@ async function getMoviesWithoutImdbId(limit?: number, offset?: number): Promise<
     FROM movies m
     LEFT JOIN movie_crew mc ON m.id = mc.movie_id AND mc.role_id = $1
     LEFT JOIN people p ON mc.person_id = p.id
-    WHERE m.imdb_id IS NULL OR m.imdb_id = ''
+    WHERE m.tmdb_id IS NULL OR m.tmdb_id = 0
     GROUP BY m.id, m.title, m.year, m.duration, m.imdb_id
     ORDER BY m.year DESC NULLS LAST, m.id
     ${limit ? `LIMIT ${limit}` : ''}
@@ -227,10 +227,18 @@ async function findMatchForMovie(movie: LocalMovie): Promise<MatchResult> {
     result.match_reason = best.reasons.join('; ');
     
     // Determinar status
-    if (best.score >= config.matching.person.autoAcceptScore) {
+    // Regla especial: título exacto + director coincide = auto_accept
+    const hasExactTitle = best.reasons.some(r => r.includes('Título exacto'));
+    const hasDirectorMatch = best.reasons.some(r => r.includes('Director coincide'));
+    
+    if (best.score >= config.matching.movie.autoAcceptScore) {
       result.match_status = 'auto_accept';
-    } else if (best.score >= config.matching.person.reviewScore) {
-      if (candidates.length > 1 && candidates[1].score >= config.matching.person.reviewScore) {
+    } else if (hasExactTitle && hasDirectorMatch) {
+      // Título exacto + director = suficiente confianza
+      result.match_status = 'auto_accept';
+      result.match_reason += ' [Auto: título exacto + director]';
+    } else if (best.score >= config.matching.movie.reviewScore) {
+      if (candidates.length > 1 && candidates[1].score >= config.matching.movie.reviewScore) {
         result.match_status = 'multiple';
         result.match_reason += ` [Alternativas: ${candidates.slice(1, 3).map(c => c.tmdb.title).join(', ')}]`;
       } else {
@@ -246,7 +254,7 @@ async function findMatchForMovie(movie: LocalMovie): Promise<MatchResult> {
 }
 
 /**
- * Aplicar cambios a la base de datos
+ * Aplicar cambios a la base de datos (guarda tmdb_id)
  */
 async function applyChanges(matches: MatchResult[]): Promise<{ updated: number; errors: number }> {
   const pool = getPool();
@@ -254,12 +262,12 @@ async function applyChanges(matches: MatchResult[]): Promise<{ updated: number; 
   let errors = 0;
   
   for (const match of matches) {
-    if (!match.imdb_id || match.match_status === 'no_match') continue;
+    if (!match.tmdb_id || match.match_status === 'no_match') continue;
     
     try {
       await pool.query(
-        'UPDATE movies SET imdb_id = $1 WHERE id = $2',
-        [match.imdb_id, match.local_id]
+        'UPDATE movies SET tmdb_id = $1 WHERE id = $2',
+        [match.tmdb_id, match.local_id]
       );
       updated++;
     } catch (error) {
@@ -318,8 +326,8 @@ async function main() {
     
   } else {
     // Modo: Procesar películas
-    log('Obteniendo películas sin IMDB ID...', 'info');
-    const movies = await getMoviesWithoutImdbId(limit, offset);
+    log('Obteniendo películas sin TMDB ID...', 'info');
+    const movies = await getMoviesWithoutTmdbId(limit, offset);
     log(`Encontradas ${movies.length} películas para procesar`, 'info');
     
     if (movies.length === 0) {
@@ -375,8 +383,8 @@ async function main() {
     // Resumen
     console.log('\n📊 Resumen:');
     console.log(`   Procesadas:      ${processed}`);
-    console.log(`   Auto-aceptadas:  ${autoAccepted} (score >= ${config.matching.person.autoAcceptScore})`);
-    console.log(`   Para revisar:    ${needsReview} (score ${config.matching.person.reviewScore}-${config.matching.person.autoAcceptScore - 1})`);
+    console.log(`   Auto-aceptadas:  ${autoAccepted} (score >= ${config.matching.movie.autoAcceptScore})`);
+    console.log(`   Para revisar:    ${needsReview} (score ${config.matching.movie.reviewScore}-${config.matching.movie.autoAcceptScore - 1})`);
     console.log(`   Múltiples:       ${multiple}`);
     console.log(`   Sin match:       ${noMatch}`);
     console.log(`   Tiempo:          ${formatDuration(elapsed)}`);
@@ -388,8 +396,8 @@ async function main() {
       log(`Actualizadas: ${updated} | Errores: ${errors}`, 'success');
     } else {
       console.log('\n💡 Modo dry-run: No se aplicaron cambios.');
-      console.log('   Para aplicar auto-aceptados: npx ts-node enrich-movies.ts --apply');
-      console.log('   Para aplicar desde CSV:      npx ts-node enrich-movies.ts --apply-csv');
+      console.log('   Para aplicar auto-aceptados: npx tsx enrich-movies.ts --apply');
+      console.log('   Para aplicar desde CSV:      npx tsx enrich-movies.ts --apply-csv');
     }
   }
   
