@@ -303,6 +303,7 @@
 - [src/components/admin/shared/NameSplitModal.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/shared/NameSplitModal.tsx)
 - [src/components/admin/shared/PersonSearchInput.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/shared/PersonSearchInput.tsx)
 - [src/components/admin/ThemeSelector.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/ThemeSelector.tsx)
+- [src/components/admin/ui/DateInput.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/admin/ui/DateInput.tsx)
 - [src/components/ads/AdBanner.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/ads/AdBanner.tsx)
 - [src/components/ads/HomeBottomBanner.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/ads/HomeBottomBanner.tsx)
 - [src/components/ads/HomeMiddleBanner.tsx](https://raw.githubusercontent.com/diegopapic/cinenacional/main/src/components/ads/HomeMiddleBanner.tsx)
