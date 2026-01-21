@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(npx tsc:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npx update-browserslist-db@latest:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx next build)"
     ]
   }
 }

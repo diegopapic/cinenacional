@@ -2,6 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Esta ruta debe ser dinámica
+export const dynamic = 'force-dynamic';
+
 // GET /api/images/hero - Obtener imágenes para el hero (una por película)
 export async function GET(request: NextRequest) {
   try {

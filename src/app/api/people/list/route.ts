@@ -4,6 +4,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
+// Esta ruta usa searchParams, debe ser dinámica
+export const dynamic = 'force-dynamic';
+
 /**
  * Obtiene todos los IDs de ubicaciones descendientes (hijos, nietos, etc.) de una ubicación dada,
  * incluyendo la ubicación original.

@@ -3,6 +3,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import RedisClient from '@/lib/redis';
 
+// Esta ruta debe ser dinámica
+export const dynamic = 'force-dynamic';
+
 // Cache en memoria como fallback
 const memoryCache = new Map<string, { data: any; timestamp: number }>();
 const MEMORY_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 horas en ms
