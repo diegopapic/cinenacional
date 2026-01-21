@@ -36,6 +36,9 @@ yarn-error.log*
 # Prisma
 prisma/migrations/dev/
 
+# Scripts
+scripts/assign-genders.js
+
 # Dumps de la base de datos de Wordpress
 dumps/
 
