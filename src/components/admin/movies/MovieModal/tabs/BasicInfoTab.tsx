@@ -1,10 +1,10 @@
 // src/components/admin/movies/MovieModal/tabs/BasicInfoTab.tsx
-import { useState, useEffect } from 'react'
 import { TIPOS_DURACION, DATA_COMPLETENESS_LEVELS, SOUND_TYPES } from '@/lib/movies/movieConstants'
 import { MONTHS } from '@/lib/shared/dateUtils'
 import { getErrorMessage } from '@/lib/movies/movieUtils'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
+import { DateInput } from '@/components/admin/ui/DateInput'
 
 export default function BasicInfoTab() {
   // Obtener todos los datos necesarios del context
@@ -39,27 +39,6 @@ export default function BasicInfoTab() {
 
   const errors = formState?.errors || {}
   const editingMovieId = editingMovie?.id
-
-  // Estado local para el valor visual de la fecha (DD/MM/YYYY)
-  const [releaseDateDisplay, setReleaseDateDisplay] = useState('')
-
-  // Sincronizar estado local con el valor del formulario al cargar/editar
-  useEffect(() => {
-    const releaseDate = watch('releaseDate')
-    if (!releaseDate) {
-      setReleaseDateDisplay('')
-      return
-    }
-
-    // Si es formato YYYY-MM-DD, convertir a DD/MM/YYYY
-    if (releaseDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = releaseDate.split('-')
-      setReleaseDateDisplay(`${day}/${month}/${year}`)
-    } else if (releaseDate.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-      // Ya está en formato DD/MM/YYYY
-      setReleaseDateDisplay(releaseDate)
-    }
-  }, [watch('releaseDate')])
 
   return (
     <div className="space-y-6">
@@ -122,62 +101,9 @@ export default function BasicInfoTab() {
               </div>
 
               {!isPartialDate ? (
-                <input
-                  type="text"
-                  placeholder="DD/MM/YYYY"
-                  maxLength={10}
-                  value={releaseDateDisplay}
-                  onChange={(e) => {
-                    const input = e.target.value
-
-                    // Permitir solo números y barras
-                    let cleaned = input.replace(/[^\d/]/g, '')
-
-                    // Auto-formatear: agregar barras automáticamente
-                    const numbers = cleaned.replace(/\//g, '')
-                    let formatted = ''
-
-                    if (numbers.length > 0) {
-                      formatted = numbers.slice(0, 2)
-                      if (numbers.length >= 2) {
-                        formatted += '/' + numbers.slice(2, 4)
-                      }
-                      if (numbers.length >= 4) {
-                        formatted += '/' + numbers.slice(4, 8)
-                      }
-                    }
-
-                    // Actualizar estado local
-                    setReleaseDateDisplay(formatted)
-
-                    // Si la fecha está completa (DD/MM/YYYY), convertir a YYYY-MM-DD y guardar en el form
-                    if (formatted.length === 10) {
-                      const [day, month, year] = formatted.split('/')
-
-                      // Validación básica
-                      const dayNum = parseInt(day)
-                      const monthNum = parseInt(month)
-                      const yearNum = parseInt(year)
-
-                      if (dayNum >= 1 && dayNum <= 31 &&
-                        monthNum >= 1 && monthNum <= 12 &&
-                        yearNum >= 1800 && yearNum <= 2100) {
-                        setValue('releaseDate', `${year}-${month}-${day}`, { shouldValidate: true })
-                      }
-                    } else {
-                      // Si no está completa, limpiar el valor en el form
-                      setValue('releaseDate', '', { shouldValidate: false })
-                    }
-                  }}
-                  onBlur={() => {
-                    // Al perder el foco, validar formato completo
-                    if (releaseDateDisplay && releaseDateDisplay.length !== 10) {
-                      // Si no está completo, limpiar
-                      setReleaseDateDisplay('')
-                      setValue('releaseDate', '', { shouldValidate: false })
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                <DateInput
+                  value={watch('releaseDate') || ''}
+                  onChange={(value) => setValue('releaseDate', value, { shouldValidate: true })}
                 />
               ) : (
                 <div className="flex gap-2">
