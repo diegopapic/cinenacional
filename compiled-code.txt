@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 95bc999f740f6d18c9fe05dcf6ced5302cc996d5
-// Fecha: 2026-01-21T04:07:14.844Z
+// Commit: dc2d8c9965e0c70a0b8068795389d85e5aea4d8f
+// Fecha: 2026-01-21T17:17:17.677Z
 // ============================================
 
 
@@ -37779,7 +37779,7 @@ export default function HeaderStats() {
   ]
 
   return (
-    <div className="bg-zinc-800/50 border-b border-zinc-700/50">
+    <div className="bg-zinc-800/50 border-b border-zinc-700/50 relative z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
         <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm">
           {statsDisplay.map((stat, index) => (
