@@ -26,6 +26,7 @@ const crimsonText = Crimson_Text({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://cinenacional.com'),
   title: 'cinenacional.com - Base de datos del cine argentino',
   description: 'La base de datos más completa del cine argentino. Descubrí películas, directores, actores y toda la historia cinematográfica de Argentina.',
   icons: {
