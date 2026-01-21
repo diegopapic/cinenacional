@@ -37,8 +37,6 @@
 ## Complejidad Baja (cambios puntuales o bugs simples)
 
 ### Bugs
-- [ ] Corregir el formato de fechas de nacimiento y muerte de personas, que ahora dice MM/DD/AAAA (en la notebook se ven bien)
-- [ ] Corregir la carga de fecha de estreno de películas. Ahora la primera vez que toco una tecla no pasa nada, recién a la segunda aparece el caracter
 - [ ] Cuando grabo una línea de cast o crew repetida (misma persona, mismo rol) tira error - mejorar mensaje o prevenir
 - [ ] No me permite subir solo mes y año en las fechas de nacimiento y muerte (sí solo año)
 
