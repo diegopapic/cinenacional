@@ -6,7 +6,8 @@
       "Bash(npx update-browserslist-db@latest:*)",
       "Bash(npx prisma generate:*)",
       "Bash(npx next build)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(node scripts/assign-genders.js:*)"
     ]
   }
 }
