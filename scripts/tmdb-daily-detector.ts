@@ -1,5 +1,5 @@
 /**
- * TMDB Daily Detector v2.0
+ * TMDB Daily Detector v2.1
  * 
  * Script que detecta películas argentinas nuevas en TMDB basándose en IDs.
  * Guarda el último ID procesado para retomar en la próxima ejecución.
@@ -52,6 +52,8 @@ interface TMDBMovie {
     runtime: number | null;
     genre_ids?: number[];
     adult: boolean;
+    popularity: number;
+    status: string;
 }
 
 interface TMDBMovieDetails extends TMDBMovie {
@@ -86,6 +88,8 @@ interface PendingMovie {
     tmdb_release_date: string | null;
     tmdb_overview: string | null;
     tmdb_runtime: number | null;
+    tmdb_popularity: number | null;
+    tmdb_status: string | null;
     tmdb_director_name: string | null;
     tmdb_director_id: number | null;
     local_movie_id: number | null;
@@ -472,6 +476,22 @@ async function sendTelegramMessage(
     }
 }
 
+/**
+ * Traduce el status de TMDB a español
+ */
+function translateStatus(status: string | null): string {
+    if (!status) return '';
+    const translations: Record<string, string> = {
+        'Released': 'Estrenada',
+        'Post Production': 'En postproducción',
+        'In Production': 'En rodaje',
+        'Planned': 'En desarrollo',
+        'Canceled': 'Cancelada',
+        'Rumored': 'Rumor',
+    };
+    return translations[status] || status;
+}
+
 function formatMovieMessage(pending: PendingMovie): string {
     let message = `🎬 <b>Nueva película argentina en TMDB</b>\n\n`;
     message += `<b>Título:</b> ${pending.tmdb_title}\n`;
@@ -494,6 +514,14 @@ function formatMovieMessage(pending: PendingMovie): string {
     
     if (pending.tmdb_runtime) {
         message += `<b>Duración:</b> ${pending.tmdb_runtime} min\n`;
+    }
+    
+    if (pending.tmdb_status && pending.tmdb_status !== 'Released') {
+        message += `<b>Estado:</b> ${translateStatus(pending.tmdb_status)}\n`;
+    }
+    
+    if (pending.tmdb_popularity) {
+        message += `<b>Popularidad:</b> ${pending.tmdb_popularity.toFixed(1)}\n`;
     }
     
     message += `\n🔗 <a href="https://www.themoviedb.org/movie/${pending.tmdb_id}">Ver en TMDB</a>\n`;
@@ -555,13 +583,16 @@ async function savePendingMovie(pending: PendingMovie): Promise<number> {
     const result = await pool.query(`
         INSERT INTO tmdb_pending_movies (
             tmdb_id, tmdb_title, tmdb_original_title, tmdb_year, tmdb_release_date,
-            tmdb_overview, tmdb_runtime, tmdb_director_name, tmdb_director_id,
+            tmdb_overview, tmdb_runtime, tmdb_popularity, tmdb_status,
+            tmdb_director_name, tmdb_director_id,
             local_movie_id, local_movie_title, local_movie_year, local_director_name,
             action_type, match_score, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'pending')
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'pending')
         ON CONFLICT (tmdb_id) DO UPDATE SET
             tmdb_title = EXCLUDED.tmdb_title,
             tmdb_release_date = EXCLUDED.tmdb_release_date,
+            tmdb_popularity = EXCLUDED.tmdb_popularity,
+            tmdb_status = EXCLUDED.tmdb_status,
             local_movie_id = EXCLUDED.local_movie_id,
             match_score = EXCLUDED.match_score,
             action_type = EXCLUDED.action_type,
@@ -575,6 +606,8 @@ async function savePendingMovie(pending: PendingMovie): Promise<number> {
         pending.tmdb_release_date,
         pending.tmdb_overview,
         pending.tmdb_runtime,
+        pending.tmdb_popularity,
+        pending.tmdb_status,
         pending.tmdb_director_name,
         pending.tmdb_director_id,
         pending.local_movie_id,
@@ -639,6 +672,9 @@ async function processMovie(tmdbId: number, dryRun: boolean): Promise<'skipped' 
     if (director) {
         console.log(`   Director: ${director.name}`);
     }
+    if (movie.status && movie.status !== 'Released') {
+        console.log(`   Estado: ${movie.status}`);
+    }
     
     // Buscar matches potenciales
     const matches = await findPotentialMatches(movie.title, movie.original_title, year);
@@ -692,6 +728,8 @@ async function processMovie(tmdbId: number, dryRun: boolean): Promise<'skipped' 
             tmdb_release_date: movie.release_date || null,
             tmdb_overview: movie.overview || null,
             tmdb_runtime: movie.runtime,
+            tmdb_popularity: movie.popularity || null,
+            tmdb_status: movie.status || null,
             tmdb_director_name: director?.name || null,
             tmdb_director_id: director?.id || null,
             local_movie_id: bestMatch?.id || null,
@@ -725,7 +763,7 @@ async function processMovie(tmdbId: number, dryRun: boolean): Promise<'skipped' 
 // ============================================================================
 
 async function main(): Promise<void> {
-    console.log('🎬 TMDB Daily Detector v2.0 (ID-based)');
+    console.log('🎬 TMDB Daily Detector v2.1 (ID-based)');
     console.log('=======================================\n');
     
     const args = process.argv.slice(2);

@@ -59,6 +59,16 @@ const config = {
         'IT': 'Italia', 'DE': 'Alemania', 'GB': 'Reino Unido', 'CO': 'Colombia',
         'PE': 'Perú', 'VE': 'Venezuela', 'BO': 'Bolivia', 'PY': 'Paraguay',
     } as Record<string, string>,
+    
+    // Mapeo de status TMDB -> stage CineNacional
+    tmdbStatusToStage: {
+        'Released': 'COMPLETA',
+        'Post Production': 'EN_POSTPRODUCCION',
+        'In Production': 'EN_RODAJE',
+        'Planned': 'EN_DESARROLLO',
+        'Canceled': 'INCONCLUSA',
+        'Rumored': 'EN_DESARROLLO',
+    } as Record<string, string>,
 };
 
 // ============================================================================
@@ -90,6 +100,7 @@ interface PendingMovie {
     tmdb_director_id: number | null;
     local_movie_id: number | null;
     local_movie_title: string | null;
+    local_movie_year: number | null;
     action_type: string;
     match_score: number | null;
     telegram_message_id: number | null;
@@ -102,6 +113,7 @@ interface TMDBMovieDetails {
     overview: string;
     release_date: string;
     runtime: number | null;
+    status: string;
     genres: Array<{ id: number; name: string }>;
     production_countries: Array<{ iso_3166_1: string; name: string }>;
     credits: {
@@ -330,6 +342,14 @@ function getSpanishOverview(movie: TMDBMovieDetails): string {
     return es?.data?.overview || movie.overview || '';
 }
 
+/**
+ * Mapea el status de TMDB al stage de CineNacional
+ */
+function getStageFromTmdbStatus(status: string | null): string {
+    if (!status) return 'COMPLETA';
+    return config.tmdbStatusToStage[status] || 'COMPLETA';
+}
+
 async function askClaude(prompt: string): Promise<string> {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -491,6 +511,10 @@ async function importMovie(tmdbId: number): Promise<{ success: boolean; movieId?
         const year = movie.release_date ? parseInt(movie.release_date.split('-')[0]) : null;
         const isDocumental = movie.genres.some(g => g.id === 99);
         
+        // Mapear status de TMDB a stage de CineNacional
+        const stage = getStageFromTmdbStatus(movie.status);
+        console.log(`   Estado TMDB: ${movie.status} → Stage: ${stage}`);
+        
         // Reescribir sinopsis con Claude
         const rawSynopsis = getSpanishOverview(movie);
         const synopsis = await rewriteSynopsis(rawSynopsis, isDocumental);
@@ -518,15 +542,15 @@ async function importMovie(tmdbId: number): Promise<{ success: boolean; movieId?
             slug = `${baseSlug}-${year}-${counter++}`;
         }
         
-        // Insertar película
+        // Insertar película con stage mapeado desde status de TMDB
         const movieResult = await pool.query(`
             INSERT INTO movies (
                 title, slug, year, duration, synopsis, tmdb_id,
                 stage, data_completeness, sound_type, color_type_id, tipo_duracion,
                 is_coproduction, created_at, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, 'COMPLETA', 'BASIC_PRESS_KIT', 'Sonora', 1, $7, $8, NOW(), NOW())
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'BASIC_PRESS_KIT', 'Sonora', 1, $8, $9, NOW(), NOW())
             RETURNING id
-        `, [title, slug, year, movie.runtime, synopsis, tmdbId, tipoDuracion, hasCoproduction]);
+        `, [title, slug, year, movie.runtime, synopsis, tmdbId, stage, tipoDuracion, hasCoproduction]);
         
         const movieId = movieResult.rows[0].id;
         console.log(`   ✅ Película creada con ID ${movieId}`);
@@ -778,7 +802,7 @@ async function processCallback(update: TelegramUpdate): Promise<void> {
 // ============================================================================
 
 async function main(): Promise<void> {
-    console.log('🤖 Telegram Bot Handler v1.0');
+    console.log('🤖 Telegram Bot Handler v1.1');
     console.log('============================\n');
     
     const args = process.argv.slice(2);
