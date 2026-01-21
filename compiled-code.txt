@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 8e9d8b2314faffdf1e0070f427c902dfca47f894
-// Fecha: 2026-01-21T23:27:20.334Z
+// Commit: b19e8942734b57ebaef887a98e6153ab3f0d7a9e
+// Fecha: 2026-01-21T23:35:25.264Z
 // ============================================
 
 
@@ -47438,7 +47438,7 @@ export const moviesService = {
       limit: '20',
       search: filters.searchTerm,
       year: filters.selectedYear,
-      sortBy: 'createdAt',
+      sortBy: 'updatedAt',
       sortOrder: 'desc'
     })
 
