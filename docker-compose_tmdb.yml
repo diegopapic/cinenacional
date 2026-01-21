@@ -4,8 +4,6 @@
 # Uso:
 #   docker compose -f docker-compose.yml -f docker-compose.tmdb.yml up -d
 
-version: '3.8'
-
 services:
   # Bot de Telegram - corre continuamente haciendo polling
   telegram-bot:
@@ -53,4 +51,5 @@ services:
 
 networks:
   cinenacional-network:
+    name: cinenacional_cinenacional-network
     external: true
