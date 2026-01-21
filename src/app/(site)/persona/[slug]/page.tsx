@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { formatPartialDate, MONTHS } from '@/lib/shared/dateUtils';
 import DOMPurify from 'isomorphic-dompurify';
 import { trackPageView } from '@/hooks/usePageView';
+import { ImageGallery } from '@/components/movies/ImageGallery';
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -97,6 +98,29 @@ interface RoleSection {
 interface AlternativeName {
   id: number;
   fullName: string;
+}
+
+// Interfaz para imágenes de galería
+interface GalleryImage {
+  id: number;
+  url: string;
+  cloudinaryPublicId: string;
+  type: string;
+  eventName?: string | null;
+  people: Array<{
+    personId: number;
+    position: number;
+    person: {
+      id: number;
+      firstName?: string | null;
+      lastName?: string | null;
+    }
+  }>;
+  movie?: {
+    id: number;
+    title: string;
+    releaseYear?: number | null;
+  } | null;
 }
 
 export default function PersonPage({ params }: PersonPageProps) {
@@ -1018,6 +1042,19 @@ export default function PersonPage({ params }: PersonPageProps) {
                 </div>
               </div>
             )}
+          </div>
+        </section>
+      )}
+
+      {/* Image Gallery - Solo se muestra si hay imágenes */}
+      {person.galleryImages && person.galleryImages.length > 0 && (
+        <section className="py-12 border-t border-gray-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="serif-heading text-2xl text-white mb-6">Galería de Imágenes</h2>
+            <ImageGallery
+              images={person.galleryImages}
+              movieTitle={fullName}
+            />
           </div>
         </section>
       )}
