@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production  # Requiere aprobación manual (opcional)
+    # environment: production  # Deshabilitado - deploy automático sin aprobación
     
     steps:
     - name: Deploy to Production
