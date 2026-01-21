@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const releaseDateTo = searchParams.get('releaseDateTo');
     const productionYearFrom = searchParams.get('productionYearFrom');
     const productionYearTo = searchParams.get('productionYearTo');
-    const sortBy = searchParams.get('sortBy') || 'id';
+    const sortBy = searchParams.get('sortBy') || 'updatedAt';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '60'), 100);
@@ -173,8 +173,11 @@ export async function GET(request: NextRequest) {
         orderBy = { duration: sortOrder === 'desc' ? { sort: 'desc', nulls: 'last' } : { sort: 'asc', nulls: 'last' } };
         break;
       case 'id':
-      default:
         orderBy = { id: sortOrder };
+        break;
+      case 'updatedAt':
+      default:
+        orderBy = { updatedAt: sortOrder };
         break;
     }
 
