@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: cbc42229b8308f00327130a88cb4bca46252b8c6
-// Fecha: 2026-01-21T23:09:39.394Z
+// Commit: 8e9d8b2314faffdf1e0070f427c902dfca47f894
+// Fecha: 2026-01-21T23:27:20.334Z
 // ============================================
 
 
@@ -18117,7 +18117,7 @@ export async function GET(request: NextRequest) {
     const releaseDateTo = searchParams.get('releaseDateTo');
     const productionYearFrom = searchParams.get('productionYearFrom');
     const productionYearTo = searchParams.get('productionYearTo');
-    const sortBy = searchParams.get('sortBy') || 'id';
+    const sortBy = searchParams.get('sortBy') || 'updatedAt';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = Math.min(parseInt(searchParams.get('limit') || '60'), 100);
@@ -18268,8 +18268,11 @@ export async function GET(request: NextRequest) {
         orderBy = { duration: sortOrder === 'desc' ? { sort: 'desc', nulls: 'last' } : { sort: 'asc', nulls: 'last' } };
         break;
       case 'id':
-      default:
         orderBy = { id: sortOrder };
+        break;
+      case 'updatedAt':
+      default:
+        orderBy = { updatedAt: sortOrder };
         break;
     }
 
