@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Esta ruta debe ser dinámica
+export const dynamic = 'force-dynamic';
+
 // GET: Obtener casos para revisar
 export async function GET() {
   try {

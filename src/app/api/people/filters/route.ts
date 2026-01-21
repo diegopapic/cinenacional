@@ -3,6 +3,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Esta ruta debe ser dinámica para evitar errores en build
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Ejecutar todas las consultas en paralelo
