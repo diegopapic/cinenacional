@@ -225,7 +225,7 @@ export const moviesService = {
       limit: '20',
       search: filters.searchTerm,
       year: filters.selectedYear,
-      sortBy: 'createdAt',
+      sortBy: 'updatedAt',
       sortOrder: 'desc'
     })
 
