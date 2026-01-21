@@ -7,7 +7,9 @@
       "Bash(npx prisma generate:*)",
       "Bash(npx next build)",
       "Bash(curl:*)",
-      "Bash(node scripts/assign-genders.js:*)"
+      "Bash(node scripts/assign-genders.js:*)",
+      "Bash(npm install)",
+      "Bash(npm audit fix:*)"
     ]
   }
 }
