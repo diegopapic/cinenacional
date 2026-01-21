@@ -24,19 +24,28 @@ interface Location {
   };
 }
 
+// ID conocido de Ciudad de Buenos Aires en la base de datos
+const CABA_LOCATION = {
+  id: 1, // Se buscará dinámicamente
+  name: 'Ciudad de Buenos Aires',
+  path: 'Ciudad de Buenos Aires, Argentina'
+};
+
 // Componente de Autocompletado reutilizable
-function LocationAutocomplete({ 
-  value, 
-  onChange, 
+function LocationAutocomplete({
+  value,
+  onChange,
   placeholder,
   disabled = false,
-  label
+  label,
+  showCabaButton = false
 }: {
   value: number | null;
   onChange: (locationId: number | null, locationName: string) => void;
   placeholder: string;
   disabled?: boolean;
   label: string;
+  showCabaButton?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -160,14 +169,53 @@ function LocationAutocomplete({
     inputRef.current?.focus();
   };
 
+  // Setear Ciudad de Buenos Aires
+  const handleSetCaba = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/locations/search?q=${encodeURIComponent('Ciudad de Buenos Aires')}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Buscar la ubicación exacta de CABA
+        const caba = data.find((loc: Location) =>
+          loc.name === 'Ciudad de Buenos Aires' ||
+          loc.name === 'Ciudad Autónoma de Buenos Aires'
+        );
+        if (caba) {
+          const formatted = formatLocationDisplay(caba);
+          setSearchTerm(formatted);
+          setDisplayValue(formatted);
+          onChange(caba.id, formatted);
+        }
+      }
+    } catch (error) {
+      console.error('Error setting CABA:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div>
-      <label htmlFor={label} className="block text-sm font-medium text-gray-700 mb-1">
-        <span className="flex items-center gap-2">
-          <MapPin className="w-4 h-4" />
-          {label}
-        </span>
-      </label>
+      <div className="flex items-center justify-between mb-1">
+        <label htmlFor={label} className="block text-sm font-medium text-gray-700">
+          <span className="flex items-center gap-2">
+            <MapPin className="w-4 h-4" />
+            {label}
+          </span>
+        </label>
+        {showCabaButton && !disabled && (
+          <button
+            type="button"
+            onClick={handleSetCaba}
+            disabled={loading}
+            className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors disabled:opacity-50"
+            title="Ciudad de Buenos Aires, Argentina"
+          >
+            CABA
+          </button>
+        )}
+      </div>
       <div className="relative" ref={dropdownRef}>
         <div className="relative">
           <input
@@ -267,6 +315,7 @@ export function LocationFields({ formData, updateField }: LocationFieldsProps) {
         onChange={handleBirthLocationChange}
         placeholder="Buscar ciudad, provincia o país"
         label="Lugar de Nacimiento"
+        showCabaButton={true}
       />
 
       {/* Lugar de Fallecimiento */}
@@ -274,8 +323,9 @@ export function LocationFields({ formData, updateField }: LocationFieldsProps) {
         value={formData.deathLocationId || null}
         onChange={handleDeathLocationChange}
         placeholder="Buscar ciudad, provincia o país"
-        disabled={false}  // Cambiar a false para permitir edición siempre
+        disabled={false}
         label="Lugar de Fallecimiento"
+        showCabaButton={true}
       />
     </div>
   );
