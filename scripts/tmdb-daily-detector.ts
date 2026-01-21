@@ -83,6 +83,7 @@ interface PendingMovie {
     tmdb_title: string;
     tmdb_original_title: string | null;
     tmdb_year: number | null;
+    tmdb_release_date: string | null;
     tmdb_overview: string | null;
     tmdb_runtime: number | null;
     tmdb_director_name: string | null;
@@ -483,6 +484,10 @@ function formatMovieMessage(pending: PendingMovie): string {
         message += `<b>Año:</b> ${pending.tmdb_year}\n`;
     }
     
+    if (pending.tmdb_release_date) {
+        message += `<b>Estreno:</b> ${pending.tmdb_release_date}\n`;
+    }
+    
     if (pending.tmdb_director_name) {
         message += `<b>Director:</b> ${pending.tmdb_director_name}\n`;
     }
@@ -549,13 +554,14 @@ async function savePendingMovie(pending: PendingMovie): Promise<number> {
     
     const result = await pool.query(`
         INSERT INTO tmdb_pending_movies (
-            tmdb_id, tmdb_title, tmdb_original_title, tmdb_year,
+            tmdb_id, tmdb_title, tmdb_original_title, tmdb_year, tmdb_release_date,
             tmdb_overview, tmdb_runtime, tmdb_director_name, tmdb_director_id,
             local_movie_id, local_movie_title, local_movie_year, local_director_name,
             action_type, match_score, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'pending')
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'pending')
         ON CONFLICT (tmdb_id) DO UPDATE SET
             tmdb_title = EXCLUDED.tmdb_title,
+            tmdb_release_date = EXCLUDED.tmdb_release_date,
             local_movie_id = EXCLUDED.local_movie_id,
             match_score = EXCLUDED.match_score,
             action_type = EXCLUDED.action_type,
@@ -566,6 +572,7 @@ async function savePendingMovie(pending: PendingMovie): Promise<number> {
         pending.tmdb_title,
         pending.tmdb_original_title,
         pending.tmdb_year,
+        pending.tmdb_release_date,
         pending.tmdb_overview,
         pending.tmdb_runtime,
         pending.tmdb_director_name,
@@ -682,6 +689,7 @@ async function processMovie(tmdbId: number, dryRun: boolean): Promise<'skipped' 
             tmdb_title: movie.title,
             tmdb_original_title: movie.original_title !== movie.title ? movie.original_title : null,
             tmdb_year: year,
+            tmdb_release_date: movie.release_date || null,
             tmdb_overview: movie.overview || null,
             tmdb_runtime: movie.runtime,
             tmdb_director_name: director?.name || null,
