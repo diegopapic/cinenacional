@@ -6,6 +6,7 @@ import { PersonFormData, PersonAlternativeName } from '@/lib/people/peopleTypes'
 import { Calendar, Plus, Trash2, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { PartialDate } from '@/lib/shared/dateUtils';
+import { DateInput } from '@/components/admin/ui/DateInput';
 
 interface BasicInfoFieldsProps {
     formData: PersonFormData;
@@ -296,11 +297,9 @@ export function BasicInfoFields({
                         </div>
                     </div>
                 ) : (
-                    <input
-                        type="date"
+                    <DateInput
                         value={formData.birthDate}
-                        onChange={(e) => updateField('birthDate', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        onChange={(value) => updateField('birthDate', value)}
                     />
                 )}
             </div>
@@ -372,11 +371,9 @@ export function BasicInfoFields({
                         </div>
                     </div>
                 ) : (
-                    <input
-                        type="date"
+                    <DateInput
                         value={formData.deathDate}
-                        onChange={(e) => updateField('deathDate', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        onChange={(value) => updateField('deathDate', value)}
                     />
                 )}
             </div>
