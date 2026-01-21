@@ -1,6 +1,5 @@
 # Dockerfile para el servicio de Telegram Bot Handler
 FROM node:18-alpine
-
 WORKDIR /app
 
 # Instalar dependencias del sistema necesarias
@@ -8,9 +7,13 @@ RUN apk add --no-cache postgresql-client
 
 # Copiar archivos de dependencias
 COPY package*.json ./
+COPY prisma ./prisma/
 
-# Instalar dependencias
-RUN npm ci --only=production
+# Instalar dependencias (sin postinstall para evitar problemas)
+RUN HUSKY=0 npm ci --only=production --ignore-scripts
+
+# Generar cliente Prisma manualmente
+RUN npx prisma generate
 
 # Instalar tsx para ejecutar TypeScript directamente
 RUN npm install -g tsx
