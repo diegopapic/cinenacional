@@ -9,7 +9,14 @@
       "Bash(curl:*)",
       "Bash(node scripts/assign-genders.js:*)",
       "Bash(npm install)",
-      "Bash(npm audit fix:*)"
+      "Bash(npm audit fix:*)",
+      "Bash(npx tsx:*)",
+      "Bash(ls:*)",
+      "Bash(dir \"C:\\\\Users\\\\diego\\\\cinenacional\\\\src\\\\app\\\\admin\"\")",
+      "Bash(dir \"C:\\\\Users\\\\diego\\\\cinenacional\\\\src\\\\components\\\\admin\"\")",
+      "Bash(cat:*)",
+      "Bash(npx prisma migrate:*)",
+      "Bash(npx prisma db push:*)"
     ]
   }
 }

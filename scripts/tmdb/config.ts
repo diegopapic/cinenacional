@@ -1,15 +1,21 @@
 // TMDB API Configuration
 // Documentación: https://developer.themoviedb.org/docs
 
+import * as path from 'path';
+import dotenv from 'dotenv';
+
+// Cargar variables de entorno desde .env en la raíz del proyecto
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
 export const config = {
   // API Read Access Token (Bearer token)
-  tmdbAccessToken: process.env.TMDB_ACCESS_TOKEN || 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJkZWU4NjYxYmU4NDc4YzQ2ODljOWZmYTVmMTAzOGY4ZiIsIm5iZiI6MTU3NDIxMjg5NC41MzMsInN1YiI6IjVkZDQ5NTFlMzU2YTcxNTg3NWViM2RmNyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.nhpEuKh4uyr4Mp0avMqNmGuwPC2cj0byvHJaAsGIdkE',
-  
+  tmdbAccessToken: process.env.TMDB_ACCESS_TOKEN || '',
+
   // API Key (v3 auth) - alternativa
-  tmdbApiKey: process.env.TMDB_API_KEY || 'dee8661be8478c4689c9ffa5f1038f8f',
-  
+  tmdbApiKey: process.env.TMDB_API_KEY || '',
+
   // API Key de Claude
-  anthropicApiKey: process.env.ANTHROPIC_API_KEY || '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',
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
 
   // Base URLs
   tmdbBaseUrl: 'https://api.themoviedb.org/3',

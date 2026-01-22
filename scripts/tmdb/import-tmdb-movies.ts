@@ -163,23 +163,77 @@ const DEPARTMENT_MAP: Record<string, string> = {
 };
 
 // Mapeo de jobs de TMDB a role_id de CineNacional
+// Para jobs simples que mapean a un solo role_id
 const JOB_TO_ROLE_ID: Record<string, number> = {
     'Director': config.roles.director,
     'Director of Photography': 526,
+    'Cinematography': 526,
     'Screenplay': 3,
     'Writer': 3,
+    'Co-Writer': 939,
+    'Story': 927,
+    'Idea': 553,
     'Producer': 689,
     'Executive Producer': 703,
+    'Associate Producer': 712,
+    'Production Assistant': 217,
+    'Production Supervisor': 798,
+    'Production Coordinator': 354,
+    'Production Manager': 401,
+    'Post Production Coordinator': 351,
+    "Producer's Assistant": 217,
     'Editor': 636,
+    'Additional Editor': 637,
     'Original Music Composer': 641,
     'Music': 641,
     'Production Design': 836,
     'Art Direction': 836,
+    'Set Decoration': 840,
+    'Art Department Assistant': 866,
+    'Art Department Coordinator': 342,
+    'Art Department Trainee': 868,
     'Costume Design': 835,
+    'Costumer': 835,
+    'Assistant Costume Designer': 841,
     'Makeup Artist': 838,
+    'Makeup Effects': 598,
+    'Makeup Effects Designer': 598,
+    'Special Effects Makeup Artist': 598,
+    'Hairstylist': 839,
     'Sound Designer': 444,
     'Sound Mixer': 629,
     'Sound': 767,
+    'Sound Director': 402,
+    'Sound Assistant': 223,
+    'Boom Operator': 631,
+    'Assistant Director': 4,
+    'Third Assistant Director': 26,
+    'Continuity': 337,
+    'Focus Puller': 521,
+    'Gaffer': 538,
+    'Electrician': 478,
+    'Lighting Technician': 478,
+    'Camera Operator': 272,
+    'Additional Camera': 273,
+    'Additional Director of Photography': 528,
+    'Clapper Loader': 237,
+    'Colorist': 318,
+    'Color Grading': 316,
+    'Still Photographer': 524,
+    'Casting': 392,
+    'Location Manager': 571,
+    'Assistant Location': 210,
+    'Assistant Property Master': 887,
+    'VFX Supervisor': 904,
+    'Administration': 105,
+    'Animation': 111,
+    'Animation Director': 388,
+};
+
+// Jobs que mapean a múltiples roles (deben crear múltiples registros)
+const JOB_TO_MULTIPLE_ROLES: Record<string, number[]> = {
+    'Makeup & Hair': [838, 839],           // Maquillaje y Peinados
+    'Makeup & Hair Assistant': [845, 883], // Asistente de Maquillaje y Asistente de Peinados
 };
 
 // Mapeo de código ISO a nombre del país en castellano (como está en locations)
@@ -376,7 +430,7 @@ Contenido:
 - Presentá los personajes principales y el conflicto central
 - Sin spoilers: no reveles giros argumentales, desenlaces ni información del último tercio de la película
 ${isDocumental ? '- Es un documental: comenzá con la estructura "Documental que..." e integrá esa palabra al texto' : ''}
-- Si el texto fuente no ofrece suficiente información para alcanzar los 400 caracteres, es preferible entregar una sinopsis más breve antes que inventar o inferir datos que no estén en el original
+- Si el texto fuente no ofrece suficiente información narrativa para desarrollar una sinopsis cinematográfica (por ejemplo, si son solo frases sueltas, aforismos o reflexiones sin contexto narrativo), respondé ÚNICAMENTE con la palabra: SINOPSIS_VACIA
 
 Estilo:
 - Tono neutral y objetivo, sin juicios de valor
@@ -389,15 +443,24 @@ Restricciones:
 - NO incluyas título, director, actores, países ni datos técnicos
 - NO uses metadiscurso como "La película narra...", "El film cuenta...", "Esta historia trata de..."
 - Comenzá directamente con la acción o situación ${isDocumental ? '(usando "Documental que...")' : ''}
+- NUNCA expliques por qué no podés escribir la sinopsis. Si no hay suficiente información, respondé solo con: SINOPSIS_VACIA
 
 Texto original:
 ${originalSynopsis}
 
-Responde SOLO con la sinopsis reescrita, sin explicaciones ni comentarios adicionales.`;
+Responde SOLO con la sinopsis reescrita o con SINOPSIS_VACIA si no hay suficiente información narrativa.`;
 
     try {
         const rewritten = await askClaude(prompt);
-        return rewritten.trim();
+        const trimmed = rewritten.trim();
+
+        // Si Claude indica que no hay suficiente información, devolver vacío
+        if (trimmed === 'SINOPSIS_VACIA' || trimmed.includes('SINOPSIS_VACIA')) {
+            console.log(`     ℹ️  Sinopsis vacía: no hay suficiente información narrativa en el texto original`);
+            return '';
+        }
+
+        return trimmed;
     } catch (error) {
         console.log(`     ⚠ Error al reescribir sinopsis con Claude: ${error}`);
         return originalSynopsis; // Fallback al original
@@ -534,9 +597,76 @@ function lookupGender(name: string): 'MALE' | 'FEMALE' | null {
 }
 
 /**
- * Separa un nombre completo en nombre y apellido, y determina el género
+ * Consulta a Claude para determinar el género de un nombre de pila
+ * Solo retorna un género si es claramente masculino o femenino.
+ * Si es unisex o ambiguo, retorna null.
  */
-function splitNameAndGetGender(fullName: string): NameSplitResult {
+async function askClaudeForGender(firstName: string): Promise<'MALE' | 'FEMALE' | null> {
+    const prompt = `¿El nombre de pila "${firstName}" es típicamente masculino o femenino?
+
+Responde ÚNICAMENTE con una de estas tres opciones:
+- MALE (si es claramente un nombre masculino)
+- FEMALE (si es claramente un nombre femenino)
+- UNISEX (si es un nombre usado tanto por hombres como mujeres, o si es ambiguo)
+
+Considerá el uso global del nombre, no solo en un país específico.
+Responde con una sola palabra: MALE, FEMALE o UNISEX`;
+
+    try {
+        const response = await askClaude(prompt);
+        const trimmed = response.trim().toUpperCase();
+
+        if (trimmed === 'MALE' || trimmed.startsWith('MALE')) {
+            return 'MALE';
+        } else if (trimmed === 'FEMALE' || trimmed.startsWith('FEMALE')) {
+            return 'FEMALE';
+        } else {
+            // UNISEX o cualquier otra respuesta = no asignar género
+            return null;
+        }
+    } catch (error) {
+        console.log(`     ⚠ Error al consultar género a Claude para "${firstName}": ${error}`);
+        return null;
+    }
+}
+
+/**
+ * Inserta un nombre en la tabla first_name_genders
+ */
+async function insertFirstNameGender(name: string, gender: 'MALE' | 'FEMALE' | null): Promise<void> {
+    const pool = getPool();
+    const cleanName = name
+        .replace(/["'"«»""]/g, '')
+        .trim();
+
+    // Solo insertar si el nombre no existe ya
+    const existing = await pool.query(
+        'SELECT name FROM first_name_genders WHERE LOWER(name) = LOWER($1)',
+        [cleanName]
+    );
+
+    if (existing.rows.length > 0) {
+        return; // Ya existe
+    }
+
+    await pool.query(
+        'INSERT INTO first_name_genders (name, gender) VALUES ($1, $2)',
+        [cleanName, gender]
+    );
+
+    // Actualizar cache local
+    if (firstNameGenderCache && gender) {
+        firstNameGenderCache.set(cleanName.toLowerCase(), gender);
+    }
+
+    console.log(`     📝 Nombre "${cleanName}" agregado a first_name_genders con género: ${gender || 'NULL'}`);
+}
+
+/**
+ * Separa un nombre completo en nombre y apellido, y determina el género (versión síncrona)
+ * Esta versión no consulta a Claude - usa solo la base de datos local
+ */
+function splitNameAndGetGenderSync(fullName: string): NameSplitResult {
     const tokens = tokenizeName(fullName.trim());
 
     if (tokens.length === 0) {
@@ -549,18 +679,17 @@ function splitNameAndGetGender(fullName: string): NameSplitResult {
         };
     }
 
+    // REGLA: Una sola palabra siempre va en apellido
     if (tokens.length === 1) {
-        const gender = lookupGender(tokens[0]);
         return {
-            firstName: tokens[0],
-            lastName: '',
-            gender,
-            needsReview: gender === null,
-            reviewReason: gender === null ? 'Nombre único no encontrado en base de datos' : undefined
+            firstName: '',
+            lastName: tokens[0],
+            gender: null,
+            needsReview: false // No necesita revisión, es una regla clara
         };
     }
 
-    // Buscar progresivamente cuántos tokens forman el nombre
+    // Buscar progresivamente cuántos tokens son nombres de pila conocidos
     let firstNameWordCount = 0;
     let detectedGender: 'MALE' | 'FEMALE' | null = null;
 
@@ -579,7 +708,20 @@ function splitNameAndGetGender(fullName: string): NameSplitResult {
         }
     }
 
-    // Si no se encontró ningún nombre conocido, usar la primera palabra
+    // REGLA: apellido nunca puede ser NULL
+    // Si todos los tokens son nombres de pila, el último va a apellido
+    if (firstNameWordCount === tokens.length) {
+        const firstName = tokens.slice(0, -1).join(' ');
+        const lastName = tokens[tokens.length - 1];
+        return {
+            firstName,
+            lastName,
+            gender: detectedGender,
+            needsReview: false
+        };
+    }
+
+    // Si no se encontró ningún nombre conocido, usar la primera palabra como nombre
     if (firstNameWordCount === 0) {
         return {
             firstName: tokens[0],
@@ -599,6 +741,135 @@ function splitNameAndGetGender(fullName: string): NameSplitResult {
         gender: detectedGender,
         needsReview: false
     };
+}
+
+/**
+ * Separa un nombre completo en nombre y apellido, y determina el género
+ * Consulta a Claude si un nombre no está en la base de datos
+ */
+async function splitNameAndGetGender(fullName: string): Promise<NameSplitResult> {
+    const tokens = tokenizeName(fullName.trim());
+
+    if (tokens.length === 0) {
+        return {
+            firstName: '',
+            lastName: '',
+            gender: null,
+            needsReview: true,
+            reviewReason: 'Nombre vacío'
+        };
+    }
+
+    // REGLA: Una sola palabra siempre va en apellido
+    if (tokens.length === 1) {
+        return {
+            firstName: '',
+            lastName: tokens[0],
+            gender: null,
+            needsReview: false
+        };
+    }
+
+    // Buscar progresivamente cuántos tokens son nombres de pila conocidos
+    // También consultar a Claude para nombres desconocidos
+    let firstNameWordCount = 0;
+    let detectedGender: 'MALE' | 'FEMALE' | null = null;
+
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        let gender = lookupGender(token);
+
+        // Si no está en la base de datos, consultar a Claude
+        if (gender === null) {
+            console.log(`     🤖 Consultando a Claude por el género de "${token}"...`);
+            const claudeGender = await askClaudeForGender(token);
+
+            if (claudeGender !== null) {
+                // Es un nombre de pila con género definido
+                gender = claudeGender;
+                await insertFirstNameGender(token, claudeGender);
+            } else {
+                // Claude dice que es unisex o no es un nombre de pila
+                // Verificar si al menos parece un nombre de pila (consultando a Claude)
+                const isFirstName = await askClaudeIfFirstName(token);
+                if (isFirstName) {
+                    // Es un nombre de pila pero unisex, guardarlo sin género
+                    await insertFirstNameGender(token, null);
+                    // Continuar considerándolo como nombre de pila
+                    firstNameWordCount = i + 1;
+                    continue;
+                } else {
+                    // No es un nombre de pila, parar aquí
+                    break;
+                }
+            }
+        }
+
+        if (gender !== null) {
+            firstNameWordCount = i + 1;
+            if (detectedGender === null) {
+                detectedGender = gender;
+            }
+        } else {
+            break;
+        }
+    }
+
+    // REGLA: apellido nunca puede ser NULL
+    // Si todos los tokens son nombres de pila, el último va a apellido
+    if (firstNameWordCount === tokens.length) {
+        const firstName = tokens.slice(0, -1).join(' ');
+        const lastName = tokens[tokens.length - 1];
+        return {
+            firstName,
+            lastName,
+            gender: detectedGender,
+            needsReview: false
+        };
+    }
+
+    // Si no se encontró ningún nombre conocido, usar la primera palabra como nombre
+    if (firstNameWordCount === 0) {
+        return {
+            firstName: tokens[0],
+            lastName: tokens.slice(1).join(' '),
+            gender: null,
+            needsReview: true,
+            reviewReason: `Primer nombre "${tokens[0]}" no encontrado en base de datos`
+        };
+    }
+
+    const firstName = tokens.slice(0, firstNameWordCount).join(' ');
+    const lastName = tokens.slice(firstNameWordCount).join(' ');
+
+    return {
+        firstName,
+        lastName,
+        gender: detectedGender,
+        needsReview: false
+    };
+}
+
+/**
+ * Consulta a Claude si una palabra es un nombre de pila
+ */
+async function askClaudeIfFirstName(word: string): Promise<boolean> {
+    const prompt = `¿"${word}" es un nombre de pila (nombre propio de persona)?
+
+Responde ÚNICAMENTE con:
+- SI (si es un nombre de pila, ya sea masculino, femenino o unisex)
+- NO (si es un apellido, una palabra común, o no es un nombre de persona)
+
+Responde con una sola palabra: SI o NO`;
+
+    try {
+        const response = await askClaude(prompt);
+        const trimmed = response.trim().toUpperCase();
+        return trimmed === 'SI' || trimmed.startsWith('SI');
+    } catch (error) {
+        console.log(`     ⚠ Error al consultar a Claude si "${word}" es nombre de pila: ${error}`);
+        return false;
+    }
 }
 
 // ============================================================================
@@ -710,6 +981,7 @@ async function findPersonByNameAndDepartment(
 
 /**
  * Analiza una persona y determina qué se haría (sin insertar)
+ * Usa la versión síncrona para dry-run (no consulta a Claude)
  */
 async function analyzePersonMatch(
     tmdbId: number,
@@ -739,8 +1011,8 @@ async function analyzePersonMatch(
         };
     }
 
-    // 3. Se crearía nueva - analizar nombre
-    const splitResult = splitNameAndGetGender(name);
+    // 3. Se crearía nueva - analizar nombre (versión síncrona para dry-run)
+    const splitResult = splitNameAndGetGenderSync(name);
 
     if (splitResult.needsReview) {
         return {
@@ -773,7 +1045,7 @@ async function createPerson(
 ): Promise<number> {
     const pool = getPool();
 
-    const splitResult = splitNameAndGetGender(name);
+    const splitResult = await splitNameAndGetGender(name);
     const { firstName, lastName, gender, needsReview, reviewReason } = splitResult;
 
     if (needsReview) {
@@ -1000,9 +1272,14 @@ async function addMovieCrew(
     const pool = getPool();
     let imported = 0;
 
-    const importantJobs = Object.keys(JOB_TO_ROLE_ID);
+    // Jobs que mapean a un solo role
+    const singleRoleJobs = Object.keys(JOB_TO_ROLE_ID);
+    // Jobs que mapean a múltiples roles
+    const multiRoleJobs = Object.keys(JOB_TO_MULTIPLE_ROLES);
+    // Todos los jobs importables
+    const allImportableJobs = [...singleRoleJobs, ...multiRoleJobs];
 
-    const relevantCrew = crew.filter(c => importantJobs.includes(c.job));
+    const relevantCrew = crew.filter(c => allImportableJobs.includes(c.job));
     const uniqueCrew = new Map<string, TMDBCrewMember>();
 
     for (const member of relevantCrew) {
@@ -1013,7 +1290,7 @@ async function addMovieCrew(
     }
 
     // Registrar jobs no mapeados para el reporte
-    const unmappedJobs = crew.filter(c => !importantJobs.includes(c.job));
+    const unmappedJobs = crew.filter(c => !allImportableJobs.includes(c.job));
     const uniqueUnmappedJobs = new Map<string, TMDBCrewMember>();
     for (const member of unmappedJobs) {
         const key = `${member.id}-${member.job}`;
@@ -1069,15 +1346,28 @@ async function addMovieCrew(
             }
         }
 
-        const roleId = JOB_TO_ROLE_ID[member.job];
-
-        await pool.query(`
-      INSERT INTO movie_crew (movie_id, person_id, role_id, billing_order, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, NOW(), NOW())
-      ON CONFLICT DO NOTHING
-    `, [movieId, personId, roleId, null]);
-
-        imported++;
+        // Determinar si es un job de un solo role o múltiples
+        if (JOB_TO_ROLE_ID[member.job]) {
+            // Job de un solo role
+            const roleId = JOB_TO_ROLE_ID[member.job];
+            await pool.query(`
+              INSERT INTO movie_crew (movie_id, person_id, role_id, billing_order, created_at, updated_at)
+              VALUES ($1, $2, $3, $4, NOW(), NOW())
+              ON CONFLICT DO NOTHING
+            `, [movieId, personId, roleId, null]);
+            imported++;
+        } else if (JOB_TO_MULTIPLE_ROLES[member.job]) {
+            // Job que mapea a múltiples roles (ej: Makeup & Hair -> Maquillaje + Peinados)
+            const roleIds = JOB_TO_MULTIPLE_ROLES[member.job];
+            for (const roleId of roleIds) {
+                await pool.query(`
+                  INSERT INTO movie_crew (movie_id, person_id, role_id, billing_order, created_at, updated_at)
+                  VALUES ($1, $2, $3, $4, NOW(), NOW())
+                  ON CONFLICT DO NOTHING
+                `, [movieId, personId, roleId, null]);
+                imported++;
+            }
+        }
     }
 
     return imported;
@@ -1115,10 +1405,9 @@ async function analyzeMovieDryRun(
     }
 
     // Analizar Crew
-    const importantJobs = ['Director', 'Director of Photography', 'Screenplay', 'Writer',
-        'Producer', 'Executive Producer', 'Editor', 'Original Music Composer', 'Music',
-        'Production Design', 'Art Direction', 'Costume Design', 'Makeup Artist',
-        'Sound Designer', 'Sound Mixer'];
+    const singleRoleJobs = Object.keys(JOB_TO_ROLE_ID);
+    const multiRoleJobs = Object.keys(JOB_TO_MULTIPLE_ROLES);
+    const importantJobs = [...singleRoleJobs, ...multiRoleJobs];
 
     const relevantCrew = movie.credits.crew.filter(c => importantJobs.includes(c.job));
     const uniqueCrew = new Map<string, TMDBCrewMember>();
