@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
         const skip = (page - 1) * limit
 
         const movies = await prisma.$queryRaw<any[]>`
-          SELECT 
+          SELECT
             id,
             slug,
             title,
@@ -147,9 +147,16 @@ export async function GET(request: NextRequest) {
             poster_url as "posterUrl",
             stage
           FROM movies
-          WHERE 
+          WHERE
             unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
-          ORDER BY title ASC
+          ORDER BY
+            CASE
+              WHEN unaccent(LOWER(title)) = unaccent(${searchQuery}) THEN 0
+              WHEN unaccent(LOWER(title)) LIKE unaccent(${searchQuery + '%'}) THEN 1
+              ELSE 2
+            END,
+            LENGTH(title) ASC,
+            title ASC
           LIMIT ${limit}
           OFFSET ${skip}
         `

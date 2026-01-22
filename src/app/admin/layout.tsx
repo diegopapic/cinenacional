@@ -4,12 +4,12 @@
 import './admin.css'
 
 import Link from 'next/link'
-import { 
-  Film, 
-  Users, 
-  Building2, 
-  Award, 
-  Globe, 
+import {
+  Film,
+  Users,
+  Building2,
+  Award,
+  Globe,
   Tv,
   Clapperboard,
   Home,
@@ -17,7 +17,8 @@ import {
   X,
   Tag,
   Hash,
-  BarChart3
+  BarChart3,
+  Calendar
 } from 'lucide-react'
 import { ReactNode, useState } from 'react'
 
@@ -39,6 +40,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Pantallas de Estreno', href: '/admin/screening-venues', icon: Tv },
     { name: 'Roles', href: '/admin/roles', icon: Clapperboard },
     { name: 'Premios', href: '/admin/awards', icon: Award },
+    { name: 'Festivales', href: '/admin/festivals', icon: Calendar },
     { name: 'Lugares', href: '/admin/locations', icon: Globe },
     { name: 'Temas', href: '/admin/themes', icon: Tag },
     { name: 'Calificaciones', href: '/admin/calificaciones', icon: Tag }

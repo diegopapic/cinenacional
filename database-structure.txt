@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2026-01-22T02:42:41.315Z
+# Generado automáticamente el: 2026-01-22T14:40:27.059Z
 # ================================================
 
 ## Schema Prisma
@@ -74,6 +74,8 @@ model Movie {
   userRatings           UserRating[]
   watchedBy             UserWatched[]
   watchlists            UserWatchlist[]
+  festivalScreenings    FestivalScreening[]
+  festivalAwardWinners  FestivalAwardWinner[]
 
   @@index([slug])
   @@index([title])
@@ -112,7 +114,8 @@ model ScreeningVenue {
   isActive    Boolean          @default(true) @map("is_active")
   createdAt   DateTime         @default(now()) @map("created_at")
   updatedAt   DateTime         @updatedAt @map("updated_at")
-  screenings  MovieScreening[]
+  screenings          MovieScreening[]
+  festivalScreenings  FestivalScreening[]
 
   @@index([name])
   @@index([type])
@@ -218,9 +221,11 @@ model Person {
   pageViews        PageView[]
   birthLocation    Location?               @relation("BirthLocation", fields: [birthLocationId], references: [id])
   deathLocation    Location?               @relation("DeathLocation", fields: [deathLocationId], references: [id])
-  alternativeNames PersonAlternativeName[]
-  links            PersonLink[]
-  nationalities    PersonNationality[]
+  alternativeNames     PersonAlternativeName[]
+  links                PersonLink[]
+  nationalities        PersonNationality[]
+  festivalJury         FestivalJury[]
+  festivalAwardWinners FestivalAwardWinner[]
 
   @@index([slug])
   @@index([firstName])
@@ -455,6 +460,7 @@ model Location {
   peopleBornHere      Person[]            @relation("BirthLocation")
   peopleDiedHere      Person[]            @relation("DeathLocation")
   personNationalities PersonNationality[]
+  festivals           Festival[]
 
   @@index([parentId])
   @@index([name])
@@ -947,6 +953,230 @@ enum image_type {
   BEHIND_SCENES
 }
 
+// ============================================
+// ENUMS DE FESTIVALES
+// ============================================
+
+enum PremiereType {
+  WORLD_PREMIERE
+  INTERNATIONAL_PREMIERE
+  NATIONAL_PREMIERE
+  REGIONAL_PREMIERE
+  REGULAR
+
+  @@map("premiere_type")
+}
+
+enum FestivalAwardType {
+  FILM
+  PERSON
+  TECHNICAL
+  HONORARY
+  AUDIENCE
+
+  @@map("festival_award_type")
+}
+
+// ============================================
+// MODELOS DE FESTIVALES
+// ============================================
+
+model Festival {
+  id          Int               @id @default(autoincrement())
+  slug        String            @unique @db.VarChar(255)
+  name        String            @db.VarChar(255)
+  shortName   String?           @map("short_name") @db.VarChar(100)
+  description String?
+  logoUrl     String?           @map("logo_url") @db.VarChar(500)
+  website     String?           @db.VarChar(500)
+  locationId  Int               @map("location_id")
+  foundedYear Int?              @map("founded_year")
+  isActive    Boolean           @default(true) @map("is_active")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  location         Location                  @relation(fields: [locationId], references: [id])
+  editions         FestivalEdition[]
+  awards           FestivalAward[]
+  sectionTemplates FestivalSectionTemplate[]
+
+  @@index([slug])
+  @@index([name])
+  @@index([locationId])
+  @@index([isActive])
+  @@map("festivals")
+}
+
+model FestivalEdition {
+  id            Int      @id @default(autoincrement())
+  festivalId    Int      @map("festival_id")
+  editionNumber Int      @map("edition_number")
+  year          Int
+  startDate     DateTime @map("start_date") @db.Date
+  endDate       DateTime @map("end_date") @db.Date
+  theme         String?  @db.VarChar(255)
+  description   String?
+  posterUrl     String?  @map("poster_url") @db.VarChar(500)
+  websiteUrl    String?  @map("website_url") @db.VarChar(500)
+  isPublished   Boolean  @default(false) @map("is_published")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  festival     Festival              @relation(fields: [festivalId], references: [id], onDelete: Cascade)
+  sections     FestivalSection[]
+  screenings   FestivalScreening[]
+  awardWinners FestivalAwardWinner[]
+
+  @@unique([festivalId, editionNumber])
+  @@unique([festivalId, year])
+  @@index([festivalId])
+  @@index([year])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([isPublished])
+  @@map("festival_editions")
+}
+
+model FestivalSectionTemplate {
+  id            Int      @id @default(autoincrement())
+  festivalId    Int      @map("festival_id")
+  slug          String   @db.VarChar(255)
+  name          String   @db.VarChar(255)
+  description   String?
+  isCompetitive Boolean  @default(false) @map("is_competitive")
+  displayOrder  Int      @default(0) @map("display_order")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  festival Festival          @relation(fields: [festivalId], references: [id], onDelete: Cascade)
+  sections FestivalSection[]
+
+  @@unique([festivalId, slug])
+  @@index([festivalId])
+  @@index([isActive])
+  @@map("festival_section_templates")
+}
+
+model FestivalSection {
+  id            Int      @id @default(autoincrement())
+  editionId     Int      @map("edition_id")
+  templateId    Int?     @map("template_id")
+  slug          String   @db.VarChar(255)
+  name          String   @db.VarChar(255)
+  description   String?
+  isCompetitive Boolean  @default(false) @map("is_competitive")
+  displayOrder  Int      @default(0) @map("display_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  edition     FestivalEdition          @relation(fields: [editionId], references: [id], onDelete: Cascade)
+  template    FestivalSectionTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  juryMembers FestivalJury[]
+  screenings  FestivalScreening[]
+
+  @@unique([editionId, slug])
+  @@index([editionId])
+  @@index([templateId])
+  @@index([isCompetitive])
+  @@map("festival_sections")
+}
+
+model FestivalJury {
+  id           Int      @id @default(autoincrement())
+  sectionId    Int      @map("section_id")
+  personId     Int      @map("person_id")
+  role         String?  @db.VarChar(100)
+  billingOrder Int      @default(0) @map("billing_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  section FestivalSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  person  Person          @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionId, personId])
+  @@index([sectionId])
+  @@index([personId])
+  @@map("festival_jury")
+}
+
+model FestivalScreening {
+  id            Int          @id @default(autoincrement())
+  editionId     Int          @map("edition_id")
+  sectionId     Int          @map("section_id")
+  movieId       Int          @map("movie_id")
+  screeningDate DateTime     @map("screening_date") @db.Date
+  screeningTime DateTime?    @map("screening_time") @db.Time
+  venueId       Int?         @map("venue_id")
+  premiereType  PremiereType @default(REGULAR) @map("premiere_type")
+  isOfficial    Boolean      @default(true) @map("is_official")
+  notes         String?
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  edition FestivalEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+  section FestivalSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  movie   Movie           @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  venue   ScreeningVenue? @relation(fields: [venueId], references: [id])
+
+  @@index([editionId])
+  @@index([sectionId])
+  @@index([movieId])
+  @@index([screeningDate])
+  @@index([premiereType])
+  @@index([venueId])
+  @@index([editionId, sectionId])
+  @@index([editionId, screeningDate])
+  @@map("festival_screenings")
+}
+
+model FestivalAward {
+  id           Int               @id @default(autoincrement())
+  festivalId   Int               @map("festival_id")
+  slug         String            @db.VarChar(255)
+  name         String            @db.VarChar(255)
+  description  String?
+  awardType    FestivalAwardType @default(FILM) @map("award_type")
+  isActive     Boolean           @default(true) @map("is_active")
+  displayOrder Int               @default(0) @map("display_order")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  festival Festival              @relation(fields: [festivalId], references: [id], onDelete: Cascade)
+  winners  FestivalAwardWinner[]
+
+  @@unique([festivalId, slug])
+  @@index([festivalId])
+  @@index([awardType])
+  @@index([isActive])
+  @@map("festival_awards")
+}
+
+model FestivalAwardWinner {
+  id        Int         @id @default(autoincrement())
+  awardId   Int         @map("award_id")
+  editionId Int         @map("edition_id")
+  movieId   Int?        @map("movie_id")
+  personId  Int?        @map("person_id")
+  result    AwardResult @default(WON)
+  citation  String?     @db.VarChar(500)
+  notes     String?
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  award   FestivalAward   @relation(fields: [awardId], references: [id], onDelete: Cascade)
+  edition FestivalEdition @relation(fields: [editionId], references: [id], onDelete: Cascade)
+  movie   Movie?          @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  person  Person?         @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([awardId])
+  @@index([editionId])
+  @@index([movieId])
+  @@index([personId])
+  @@index([result])
+  @@index([editionId, awardId])
+  @@map("festival_award_winners")
+}
+
 ```
 
 ## SQL Generado
@@ -996,6 +1226,12 @@ CREATE TYPE "page_type" AS ENUM ('HOME', 'MOVIE', 'PERSON', 'EPHEMERIS', 'PERSON
 
 -- CreateEnum
 CREATE TYPE "image_type" AS ENUM ('POSTER', 'BACKDROP', 'STILL', 'BEHIND_SCENES');
+
+-- CreateEnum
+CREATE TYPE "premiere_type" AS ENUM ('WORLD_PREMIERE', 'INTERNATIONAL_PREMIERE', 'NATIONAL_PREMIERE', 'REGIONAL_PREMIERE', 'REGULAR');
+
+-- CreateEnum
+CREATE TYPE "festival_award_type" AS ENUM ('FILM', 'PERSON', 'TECHNICAL', 'HONORARY', 'AUDIENCE');
 
 -- CreateTable
 CREATE TABLE "movies" (
@@ -1610,6 +1846,137 @@ CREATE TABLE "tmdb_pending_movies" (
     CONSTRAINT "tmdb_pending_movies_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "festivals" (
+    "id" SERIAL NOT NULL,
+    "slug" VARCHAR(255) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "short_name" VARCHAR(100),
+    "description" TEXT,
+    "logo_url" VARCHAR(500),
+    "website" VARCHAR(500),
+    "location_id" INTEGER NOT NULL,
+    "founded_year" INTEGER,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "festivals_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "festival_editions" (
+    "id" SERIAL NOT NULL,
+    "festival_id" INTEGER NOT NULL,
+    "edition_number" INTEGER NOT NULL,
+    "year" INTEGER NOT NULL,
+    "start_date" DATE NOT NULL,
+    "end_date" DATE NOT NULL,
+    "theme" VARCHAR(255),
+    "description" TEXT,
+    "poster_url" VARCHAR(500),
+    "website_url" VARCHAR(500),
+    "is_published" BOOLEAN NOT NULL DEFAULT false,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "festival_editions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "festival_section_templates" (
+    "id" SERIAL NOT NULL,
+    "festival_id" INTEGER NOT NULL,
+    "slug" VARCHAR(255) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "description" TEXT,
+    "is_competitive" BOOLEAN NOT NULL DEFAULT false,
+    "display_order" INTEGER NOT NULL DEFAULT 0,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "festival_section_templates_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "festival_sections" (
+    "id" SERIAL NOT NULL,
+    "edition_id" INTEGER NOT NULL,
+    "template_id" INTEGER,
+    "slug" VARCHAR(255) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "description" TEXT,
+    "is_competitive" BOOLEAN NOT NULL DEFAULT false,
+    "display_order" INTEGER NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "festival_sections_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "festival_jury" (
+    "id" SERIAL NOT NULL,
+    "section_id" INTEGER NOT NULL,
+    "person_id" INTEGER NOT NULL,
+    "role" VARCHAR(100),
+    "billing_order" INTEGER NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "festival_jury_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "festival_screenings" (
+    "id" SERIAL NOT NULL,
+    "edition_id" INTEGER NOT NULL,
+    "section_id" INTEGER NOT NULL,
+    "movie_id" INTEGER NOT NULL,
+    "screening_date" DATE NOT NULL,
+    "screening_time" TIME,
+    "venue_id" INTEGER,
+    "premiere_type" "premiere_type" NOT NULL DEFAULT 'REGULAR',
+    "is_official" BOOLEAN NOT NULL DEFAULT true,
+    "notes" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "festival_screenings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "festival_awards" (
+    "id" SERIAL NOT NULL,
+    "festival_id" INTEGER NOT NULL,
+    "slug" VARCHAR(255) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "description" TEXT,
+    "award_type" "festival_award_type" NOT NULL DEFAULT 'FILM',
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "display_order" INTEGER NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "festival_awards_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "festival_award_winners" (
+    "id" SERIAL NOT NULL,
+    "award_id" INTEGER NOT NULL,
+    "edition_id" INTEGER NOT NULL,
+    "movie_id" INTEGER,
+    "person_id" INTEGER,
+    "result" "award_result" NOT NULL DEFAULT 'WON',
+    "citation" VARCHAR(500),
+    "notes" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "festival_award_winners_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "movies_slug_key" ON "movies"("slug");
 
@@ -1937,6 +2304,126 @@ CREATE INDEX "tmdb_pending_movies_tmdb_id_idx" ON "tmdb_pending_movies"("tmdb_id
 -- CreateIndex
 CREATE INDEX "tmdb_pending_movies_created_at_idx" ON "tmdb_pending_movies"("created_at");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "festivals_slug_key" ON "festivals"("slug");
+
+-- CreateIndex
+CREATE INDEX "festivals_slug_idx" ON "festivals"("slug");
+
+-- CreateIndex
+CREATE INDEX "festivals_name_idx" ON "festivals"("name");
+
+-- CreateIndex
+CREATE INDEX "festivals_location_id_idx" ON "festivals"("location_id");
+
+-- CreateIndex
+CREATE INDEX "festivals_is_active_idx" ON "festivals"("is_active");
+
+-- CreateIndex
+CREATE INDEX "festival_editions_festival_id_idx" ON "festival_editions"("festival_id");
+
+-- CreateIndex
+CREATE INDEX "festival_editions_year_idx" ON "festival_editions"("year");
+
+-- CreateIndex
+CREATE INDEX "festival_editions_start_date_idx" ON "festival_editions"("start_date");
+
+-- CreateIndex
+CREATE INDEX "festival_editions_end_date_idx" ON "festival_editions"("end_date");
+
+-- CreateIndex
+CREATE INDEX "festival_editions_is_published_idx" ON "festival_editions"("is_published");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "festival_editions_festival_id_edition_number_key" ON "festival_editions"("festival_id", "edition_number");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "festival_editions_festival_id_year_key" ON "festival_editions"("festival_id", "year");
+
+-- CreateIndex
+CREATE INDEX "festival_section_templates_festival_id_idx" ON "festival_section_templates"("festival_id");
+
+-- CreateIndex
+CREATE INDEX "festival_section_templates_is_active_idx" ON "festival_section_templates"("is_active");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "festival_section_templates_festival_id_slug_key" ON "festival_section_templates"("festival_id", "slug");
+
+-- CreateIndex
+CREATE INDEX "festival_sections_edition_id_idx" ON "festival_sections"("edition_id");
+
+-- CreateIndex
+CREATE INDEX "festival_sections_template_id_idx" ON "festival_sections"("template_id");
+
+-- CreateIndex
+CREATE INDEX "festival_sections_is_competitive_idx" ON "festival_sections"("is_competitive");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "festival_sections_edition_id_slug_key" ON "festival_sections"("edition_id", "slug");
+
+-- CreateIndex
+CREATE INDEX "festival_jury_section_id_idx" ON "festival_jury"("section_id");
+
+-- CreateIndex
+CREATE INDEX "festival_jury_person_id_idx" ON "festival_jury"("person_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "festival_jury_section_id_person_id_key" ON "festival_jury"("section_id", "person_id");
+
+-- CreateIndex
+CREATE INDEX "festival_screenings_edition_id_idx" ON "festival_screenings"("edition_id");
+
+-- CreateIndex
+CREATE INDEX "festival_screenings_section_id_idx" ON "festival_screenings"("section_id");
+
+-- CreateIndex
+CREATE INDEX "festival_screenings_movie_id_idx" ON "festival_screenings"("movie_id");
+
+-- CreateIndex
+CREATE INDEX "festival_screenings_screening_date_idx" ON "festival_screenings"("screening_date");
+
+-- CreateIndex
+CREATE INDEX "festival_screenings_premiere_type_idx" ON "festival_screenings"("premiere_type");
+
+-- CreateIndex
+CREATE INDEX "festival_screenings_venue_id_idx" ON "festival_screenings"("venue_id");
+
+-- CreateIndex
+CREATE INDEX "festival_screenings_edition_id_section_id_idx" ON "festival_screenings"("edition_id", "section_id");
+
+-- CreateIndex
+CREATE INDEX "festival_screenings_edition_id_screening_date_idx" ON "festival_screenings"("edition_id", "screening_date");
+
+-- CreateIndex
+CREATE INDEX "festival_awards_festival_id_idx" ON "festival_awards"("festival_id");
+
+-- CreateIndex
+CREATE INDEX "festival_awards_award_type_idx" ON "festival_awards"("award_type");
+
+-- CreateIndex
+CREATE INDEX "festival_awards_is_active_idx" ON "festival_awards"("is_active");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "festival_awards_festival_id_slug_key" ON "festival_awards"("festival_id", "slug");
+
+-- CreateIndex
+CREATE INDEX "festival_award_winners_award_id_idx" ON "festival_award_winners"("award_id");
+
+-- CreateIndex
+CREATE INDEX "festival_award_winners_edition_id_idx" ON "festival_award_winners"("edition_id");
+
+-- CreateIndex
+CREATE INDEX "festival_award_winners_movie_id_idx" ON "festival_award_winners"("movie_id");
+
+-- CreateIndex
+CREATE INDEX "festival_award_winners_person_id_idx" ON "festival_award_winners"("person_id");
+
+-- CreateIndex
+CREATE INDEX "festival_award_winners_result_idx" ON "festival_award_winners"("result");
+
+-- CreateIndex
+CREATE INDEX "festival_award_winners_edition_id_award_id_idx" ON "festival_award_winners"("edition_id", "award_id");
+
 -- AddForeignKey
 ALTER TABLE "movies" ADD CONSTRAINT "movies_color_type_id_fkey" FOREIGN KEY ("color_type_id") REFERENCES "color_types"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -2086,6 +2573,54 @@ ALTER TABLE "page_views" ADD CONSTRAINT "page_views_person_id_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "tmdb_pending_movies" ADD CONSTRAINT "tmdb_pending_movies_local_movie_id_fkey" FOREIGN KEY ("local_movie_id") REFERENCES "movies"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festivals" ADD CONSTRAINT "festivals_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "locations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_editions" ADD CONSTRAINT "festival_editions_festival_id_fkey" FOREIGN KEY ("festival_id") REFERENCES "festivals"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_section_templates" ADD CONSTRAINT "festival_section_templates_festival_id_fkey" FOREIGN KEY ("festival_id") REFERENCES "festivals"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_sections" ADD CONSTRAINT "festival_sections_edition_id_fkey" FOREIGN KEY ("edition_id") REFERENCES "festival_editions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_sections" ADD CONSTRAINT "festival_sections_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "festival_section_templates"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_jury" ADD CONSTRAINT "festival_jury_section_id_fkey" FOREIGN KEY ("section_id") REFERENCES "festival_sections"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_jury" ADD CONSTRAINT "festival_jury_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_screenings" ADD CONSTRAINT "festival_screenings_edition_id_fkey" FOREIGN KEY ("edition_id") REFERENCES "festival_editions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_screenings" ADD CONSTRAINT "festival_screenings_section_id_fkey" FOREIGN KEY ("section_id") REFERENCES "festival_sections"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_screenings" ADD CONSTRAINT "festival_screenings_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_screenings" ADD CONSTRAINT "festival_screenings_venue_id_fkey" FOREIGN KEY ("venue_id") REFERENCES "screening_venues"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_awards" ADD CONSTRAINT "festival_awards_festival_id_fkey" FOREIGN KEY ("festival_id") REFERENCES "festivals"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_award_winners" ADD CONSTRAINT "festival_award_winners_award_id_fkey" FOREIGN KEY ("award_id") REFERENCES "festival_awards"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_award_winners" ADD CONSTRAINT "festival_award_winners_edition_id_fkey" FOREIGN KEY ("edition_id") REFERENCES "festival_editions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_award_winners" ADD CONSTRAINT "festival_award_winners_movie_id_fkey" FOREIGN KEY ("movie_id") REFERENCES "movies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "festival_award_winners" ADD CONSTRAINT "festival_award_winners_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "people"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 
 ```
