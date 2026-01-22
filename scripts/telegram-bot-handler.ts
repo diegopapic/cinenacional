@@ -16,12 +16,12 @@ import { Pool } from 'pg';
 // ============================================================================
 
 const config = {
-    tmdbAccessToken: process.env.TMDB_ACCESS_TOKEN || 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJkZWU4NjYxYmU4NDc4YzQ2ODljOWZmYTVmMTAzOGY4ZiIsIm5iZiI6MTU3NDIxMjg5NC41MzMsInN1YiI6IjVkZDQ5NTFlMzU2YTcxNTg3NWViM2RmNyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.nhpEuKh4uyr4Mp0avMqNmGuwPC2cj0byvHJaAsGIdkE',
+    tmdbAccessToken: process.env.TMDB_ACCESS_TOKEN || '',
     tmdbBaseUrl: 'https://api.themoviedb.org/3',
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY || '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',
-    databaseUrl: process.env.DATABASE_URL || 'postgresql://cinenacional:Paganitzu@localhost:5432/cinenacional',
-    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '7690309153:AAEa3LZ1o-f5NayeOHwtjyuQ1BfY6LRj6s0',
-    telegramChatId: process.env.TELEGRAM_CHAT_ID || '1414789486',
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
+    databaseUrl: process.env.DATABASE_URL || '',
+    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
+    telegramChatId: process.env.TELEGRAM_CHAT_ID || '',
     
     pollingInterval: 5000,  // 5 segundos entre polls
     
