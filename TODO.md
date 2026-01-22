@@ -30,7 +30,6 @@
 
 ### Admin - Mejoras
 - [ ] Ahora cuando pongo "Actualizar película", cierra la ventana. Que no la cierre (y chequear que si cambio de pestaña no se borren los datos)
-- [ ] Películas en el admin ordenadas por recién modificada
 
 ---
 
@@ -48,11 +47,5 @@
 ## Optimizaciones técnicas (baja prioridad)
 
 ### Dependencias
-- [ ] Eliminar `@types/ioredis` del package.json (ioredis ya incluye sus propios tipos)
 - [ ] Actualizar a ESLint 9 cuando Next.js lo soporte oficialmente
 - [ ] Considerar actualizar a Prisma 7 (es un major update, requiere seguir guía de migración)
-- [ ] Ejecutar `npm audit fix` para revisar vulnerabilidades de dependencias
-
-### Build / Deploy
-- [ ] Actualizar `package-lock.json` en servidor para que browserslist quede actualizado en Docker
-- [ ] Limpiar contenedores huérfanos de staging en servidor (`docker compose down --remove-orphans`)
