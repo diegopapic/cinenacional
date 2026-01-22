@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 7ef2c3da17bbd4bd40462d0763f0f32eb4569331
-// Fecha: 2026-01-22T02:42:40.878Z
+// Commit: 4d4316265c0afa74266147b353104bf8dbc8060d
+// Fecha: 2026-01-22T14:40:26.133Z
 // ============================================
 
 
@@ -362,10 +362,15 @@ interface PremiereInfo {
  * Obtener información de la primera release de una película
  */
 async function getPremiereInfo(tmdbId: number): Promise<PremiereInfo> {
-  const url = `${TMDB_BASE_URL}/movie/${tmdbId}/release_dates?api_key=${config.tmdbApiKey}`;
-  
+  const url = `${TMDB_BASE_URL}/movie/${tmdbId}/release_dates`;
+
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${config.tmdbAccessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
     
     if (!response.ok) {
       return { date: '', country: '', note: '' };
@@ -441,7 +446,6 @@ async function discoverArgentineMovies(year?: number, fromYear?: number): Promis
   
   while (page <= totalPages && page <= 500) { // TMDB limita a 500 páginas
     const params = new URLSearchParams({
-      api_key: config.tmdbApiKey,
       with_origin_country: 'AR',
       language: 'es-AR',
       sort_by: 'primary_release_date.desc',
@@ -449,18 +453,23 @@ async function discoverArgentineMovies(year?: number, fromYear?: number): Promis
       include_adult: 'true',
       include_video: 'false',
     });
-    
+
     // Filtros de año
     if (year) {
       params.set('primary_release_year', year.toString());
     } else if (fromYear) {
       params.set('primary_release_date.gte', `${fromYear}-01-01`);
     }
-    
+
     const url = `${TMDB_BASE_URL}/discover/movie?${params}`;
-    
+
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${config.tmdbAccessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
       
       if (!response.ok) {
         throw new Error(`TMDB error: ${response.status}`);
@@ -1853,23 +1862,77 @@ const DEPARTMENT_MAP: Record<string, string> = {
 };
 
 // Mapeo de jobs de TMDB a role_id de CineNacional
+// Para jobs simples que mapean a un solo role_id
 const JOB_TO_ROLE_ID: Record<string, number> = {
     'Director': config.roles.director,
     'Director of Photography': 526,
+    'Cinematography': 526,
     'Screenplay': 3,
     'Writer': 3,
+    'Co-Writer': 939,
+    'Story': 927,
+    'Idea': 553,
     'Producer': 689,
     'Executive Producer': 703,
+    'Associate Producer': 712,
+    'Production Assistant': 217,
+    'Production Supervisor': 798,
+    'Production Coordinator': 354,
+    'Production Manager': 401,
+    'Post Production Coordinator': 351,
+    "Producer's Assistant": 217,
     'Editor': 636,
+    'Additional Editor': 637,
     'Original Music Composer': 641,
     'Music': 641,
     'Production Design': 836,
     'Art Direction': 836,
+    'Set Decoration': 840,
+    'Art Department Assistant': 866,
+    'Art Department Coordinator': 342,
+    'Art Department Trainee': 868,
     'Costume Design': 835,
+    'Costumer': 835,
+    'Assistant Costume Designer': 841,
     'Makeup Artist': 838,
+    'Makeup Effects': 598,
+    'Makeup Effects Designer': 598,
+    'Special Effects Makeup Artist': 598,
+    'Hairstylist': 839,
     'Sound Designer': 444,
     'Sound Mixer': 629,
     'Sound': 767,
+    'Sound Director': 402,
+    'Sound Assistant': 223,
+    'Boom Operator': 631,
+    'Assistant Director': 4,
+    'Third Assistant Director': 26,
+    'Continuity': 337,
+    'Focus Puller': 521,
+    'Gaffer': 538,
+    'Electrician': 478,
+    'Lighting Technician': 478,
+    'Camera Operator': 272,
+    'Additional Camera': 273,
+    'Additional Director of Photography': 528,
+    'Clapper Loader': 237,
+    'Colorist': 318,
+    'Color Grading': 316,
+    'Still Photographer': 524,
+    'Casting': 392,
+    'Location Manager': 571,
+    'Assistant Location': 210,
+    'Assistant Property Master': 887,
+    'VFX Supervisor': 904,
+    'Administration': 105,
+    'Animation': 111,
+    'Animation Director': 388,
+};
+
+// Jobs que mapean a múltiples roles (deben crear múltiples registros)
+const JOB_TO_MULTIPLE_ROLES: Record<string, number[]> = {
+    'Makeup & Hair': [838, 839],           // Maquillaje y Peinados
+    'Makeup & Hair Assistant': [845, 883], // Asistente de Maquillaje y Asistente de Peinados
 };
 
 // Mapeo de código ISO a nombre del país en castellano (como está en locations)
@@ -2066,7 +2129,7 @@ Contenido:
 - Presentá los personajes principales y el conflicto central
 - Sin spoilers: no reveles giros argumentales, desenlaces ni información del último tercio de la película
 ${isDocumental ? '- Es un documental: comenzá con la estructura "Documental que..." e integrá esa palabra al texto' : ''}
-- Si el texto fuente no ofrece suficiente información para alcanzar los 400 caracteres, es preferible entregar una sinopsis más breve antes que inventar o inferir datos que no estén en el original
+- Si el texto fuente no ofrece suficiente información narrativa para desarrollar una sinopsis cinematográfica (por ejemplo, si son solo frases sueltas, aforismos o reflexiones sin contexto narrativo), respondé ÚNICAMENTE con la palabra: SINOPSIS_VACIA
 
 Estilo:
 - Tono neutral y objetivo, sin juicios de valor
@@ -2079,15 +2142,24 @@ Restricciones:
 - NO incluyas título, director, actores, países ni datos técnicos
 - NO uses metadiscurso como "La película narra...", "El film cuenta...", "Esta historia trata de..."
 - Comenzá directamente con la acción o situación ${isDocumental ? '(usando "Documental que...")' : ''}
+- NUNCA expliques por qué no podés escribir la sinopsis. Si no hay suficiente información, respondé solo con: SINOPSIS_VACIA
 
 Texto original:
 ${originalSynopsis}
 
-Responde SOLO con la sinopsis reescrita, sin explicaciones ni comentarios adicionales.`;
+Responde SOLO con la sinopsis reescrita o con SINOPSIS_VACIA si no hay suficiente información narrativa.`;
 
     try {
         const rewritten = await askClaude(prompt);
-        return rewritten.trim();
+        const trimmed = rewritten.trim();
+
+        // Si Claude indica que no hay suficiente información, devolver vacío
+        if (trimmed === 'SINOPSIS_VACIA' || trimmed.includes('SINOPSIS_VACIA')) {
+            console.log(`     ℹ️  Sinopsis vacía: no hay suficiente información narrativa en el texto original`);
+            return '';
+        }
+
+        return trimmed;
     } catch (error) {
         console.log(`     ⚠ Error al reescribir sinopsis con Claude: ${error}`);
         return originalSynopsis; // Fallback al original
@@ -2224,9 +2296,76 @@ function lookupGender(name: string): 'MALE' | 'FEMALE' | null {
 }
 
 /**
- * Separa un nombre completo en nombre y apellido, y determina el género
+ * Consulta a Claude para determinar el género de un nombre de pila
+ * Solo retorna un género si es claramente masculino o femenino.
+ * Si es unisex o ambiguo, retorna null.
  */
-function splitNameAndGetGender(fullName: string): NameSplitResult {
+async function askClaudeForGender(firstName: string): Promise<'MALE' | 'FEMALE' | null> {
+    const prompt = `¿El nombre de pila "${firstName}" es típicamente masculino o femenino?
+
+Responde ÚNICAMENTE con una de estas tres opciones:
+- MALE (si es claramente un nombre masculino)
+- FEMALE (si es claramente un nombre femenino)
+- UNISEX (si es un nombre usado tanto por hombres como mujeres, o si es ambiguo)
+
+Considerá el uso global del nombre, no solo en un país específico.
+Responde con una sola palabra: MALE, FEMALE o UNISEX`;
+
+    try {
+        const response = await askClaude(prompt);
+        const trimmed = response.trim().toUpperCase();
+
+        if (trimmed === 'MALE' || trimmed.startsWith('MALE')) {
+            return 'MALE';
+        } else if (trimmed === 'FEMALE' || trimmed.startsWith('FEMALE')) {
+            return 'FEMALE';
+        } else {
+            // UNISEX o cualquier otra respuesta = no asignar género
+            return null;
+        }
+    } catch (error) {
+        console.log(`     ⚠ Error al consultar género a Claude para "${firstName}": ${error}`);
+        return null;
+    }
+}
+
+/**
+ * Inserta un nombre en la tabla first_name_genders
+ */
+async function insertFirstNameGender(name: string, gender: 'MALE' | 'FEMALE' | null): Promise<void> {
+    const pool = getPool();
+    const cleanName = name
+        .replace(/["'"«»""]/g, '')
+        .trim();
+
+    // Solo insertar si el nombre no existe ya
+    const existing = await pool.query(
+        'SELECT name FROM first_name_genders WHERE LOWER(name) = LOWER($1)',
+        [cleanName]
+    );
+
+    if (existing.rows.length > 0) {
+        return; // Ya existe
+    }
+
+    await pool.query(
+        'INSERT INTO first_name_genders (name, gender) VALUES ($1, $2)',
+        [cleanName, gender]
+    );
+
+    // Actualizar cache local
+    if (firstNameGenderCache && gender) {
+        firstNameGenderCache.set(cleanName.toLowerCase(), gender);
+    }
+
+    console.log(`     📝 Nombre "${cleanName}" agregado a first_name_genders con género: ${gender || 'NULL'}`);
+}
+
+/**
+ * Separa un nombre completo en nombre y apellido, y determina el género (versión síncrona)
+ * Esta versión no consulta a Claude - usa solo la base de datos local
+ */
+function splitNameAndGetGenderSync(fullName: string): NameSplitResult {
     const tokens = tokenizeName(fullName.trim());
 
     if (tokens.length === 0) {
@@ -2239,18 +2378,17 @@ function splitNameAndGetGender(fullName: string): NameSplitResult {
         };
     }
 
+    // REGLA: Una sola palabra siempre va en apellido
     if (tokens.length === 1) {
-        const gender = lookupGender(tokens[0]);
         return {
-            firstName: tokens[0],
-            lastName: '',
-            gender,
-            needsReview: gender === null,
-            reviewReason: gender === null ? 'Nombre único no encontrado en base de datos' : undefined
+            firstName: '',
+            lastName: tokens[0],
+            gender: null,
+            needsReview: false // No necesita revisión, es una regla clara
         };
     }
 
-    // Buscar progresivamente cuántos tokens forman el nombre
+    // Buscar progresivamente cuántos tokens son nombres de pila conocidos
     let firstNameWordCount = 0;
     let detectedGender: 'MALE' | 'FEMALE' | null = null;
 
@@ -2269,7 +2407,20 @@ function splitNameAndGetGender(fullName: string): NameSplitResult {
         }
     }
 
-    // Si no se encontró ningún nombre conocido, usar la primera palabra
+    // REGLA: apellido nunca puede ser NULL
+    // Si todos los tokens son nombres de pila, el último va a apellido
+    if (firstNameWordCount === tokens.length) {
+        const firstName = tokens.slice(0, -1).join(' ');
+        const lastName = tokens[tokens.length - 1];
+        return {
+            firstName,
+            lastName,
+            gender: detectedGender,
+            needsReview: false
+        };
+    }
+
+    // Si no se encontró ningún nombre conocido, usar la primera palabra como nombre
     if (firstNameWordCount === 0) {
         return {
             firstName: tokens[0],
@@ -2289,6 +2440,135 @@ function splitNameAndGetGender(fullName: string): NameSplitResult {
         gender: detectedGender,
         needsReview: false
     };
+}
+
+/**
+ * Separa un nombre completo en nombre y apellido, y determina el género
+ * Consulta a Claude si un nombre no está en la base de datos
+ */
+async function splitNameAndGetGender(fullName: string): Promise<NameSplitResult> {
+    const tokens = tokenizeName(fullName.trim());
+
+    if (tokens.length === 0) {
+        return {
+            firstName: '',
+            lastName: '',
+            gender: null,
+            needsReview: true,
+            reviewReason: 'Nombre vacío'
+        };
+    }
+
+    // REGLA: Una sola palabra siempre va en apellido
+    if (tokens.length === 1) {
+        return {
+            firstName: '',
+            lastName: tokens[0],
+            gender: null,
+            needsReview: false
+        };
+    }
+
+    // Buscar progresivamente cuántos tokens son nombres de pila conocidos
+    // También consultar a Claude para nombres desconocidos
+    let firstNameWordCount = 0;
+    let detectedGender: 'MALE' | 'FEMALE' | null = null;
+
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        let gender = lookupGender(token);
+
+        // Si no está en la base de datos, consultar a Claude
+        if (gender === null) {
+            console.log(`     🤖 Consultando a Claude por el género de "${token}"...`);
+            const claudeGender = await askClaudeForGender(token);
+
+            if (claudeGender !== null) {
+                // Es un nombre de pila con género definido
+                gender = claudeGender;
+                await insertFirstNameGender(token, claudeGender);
+            } else {
+                // Claude dice que es unisex o no es un nombre de pila
+                // Verificar si al menos parece un nombre de pila (consultando a Claude)
+                const isFirstName = await askClaudeIfFirstName(token);
+                if (isFirstName) {
+                    // Es un nombre de pila pero unisex, guardarlo sin género
+                    await insertFirstNameGender(token, null);
+                    // Continuar considerándolo como nombre de pila
+                    firstNameWordCount = i + 1;
+                    continue;
+                } else {
+                    // No es un nombre de pila, parar aquí
+                    break;
+                }
+            }
+        }
+
+        if (gender !== null) {
+            firstNameWordCount = i + 1;
+            if (detectedGender === null) {
+                detectedGender = gender;
+            }
+        } else {
+            break;
+        }
+    }
+
+    // REGLA: apellido nunca puede ser NULL
+    // Si todos los tokens son nombres de pila, el último va a apellido
+    if (firstNameWordCount === tokens.length) {
+        const firstName = tokens.slice(0, -1).join(' ');
+        const lastName = tokens[tokens.length - 1];
+        return {
+            firstName,
+            lastName,
+            gender: detectedGender,
+            needsReview: false
+        };
+    }
+
+    // Si no se encontró ningún nombre conocido, usar la primera palabra como nombre
+    if (firstNameWordCount === 0) {
+        return {
+            firstName: tokens[0],
+            lastName: tokens.slice(1).join(' '),
+            gender: null,
+            needsReview: true,
+            reviewReason: `Primer nombre "${tokens[0]}" no encontrado en base de datos`
+        };
+    }
+
+    const firstName = tokens.slice(0, firstNameWordCount).join(' ');
+    const lastName = tokens.slice(firstNameWordCount).join(' ');
+
+    return {
+        firstName,
+        lastName,
+        gender: detectedGender,
+        needsReview: false
+    };
+}
+
+/**
+ * Consulta a Claude si una palabra es un nombre de pila
+ */
+async function askClaudeIfFirstName(word: string): Promise<boolean> {
+    const prompt = `¿"${word}" es un nombre de pila (nombre propio de persona)?
+
+Responde ÚNICAMENTE con:
+- SI (si es un nombre de pila, ya sea masculino, femenino o unisex)
+- NO (si es un apellido, una palabra común, o no es un nombre de persona)
+
+Responde con una sola palabra: SI o NO`;
+
+    try {
+        const response = await askClaude(prompt);
+        const trimmed = response.trim().toUpperCase();
+        return trimmed === 'SI' || trimmed.startsWith('SI');
+    } catch (error) {
+        console.log(`     ⚠ Error al consultar a Claude si "${word}" es nombre de pila: ${error}`);
+        return false;
+    }
 }
 
 // ============================================================================
@@ -2400,6 +2680,7 @@ async function findPersonByNameAndDepartment(
 
 /**
  * Analiza una persona y determina qué se haría (sin insertar)
+ * Usa la versión síncrona para dry-run (no consulta a Claude)
  */
 async function analyzePersonMatch(
     tmdbId: number,
@@ -2429,8 +2710,8 @@ async function analyzePersonMatch(
         };
     }
 
-    // 3. Se crearía nueva - analizar nombre
-    const splitResult = splitNameAndGetGender(name);
+    // 3. Se crearía nueva - analizar nombre (versión síncrona para dry-run)
+    const splitResult = splitNameAndGetGenderSync(name);
 
     if (splitResult.needsReview) {
         return {
@@ -2463,7 +2744,7 @@ async function createPerson(
 ): Promise<number> {
     const pool = getPool();
 
-    const splitResult = splitNameAndGetGender(name);
+    const splitResult = await splitNameAndGetGender(name);
     const { firstName, lastName, gender, needsReview, reviewReason } = splitResult;
 
     if (needsReview) {
@@ -2690,9 +2971,14 @@ async function addMovieCrew(
     const pool = getPool();
     let imported = 0;
 
-    const importantJobs = Object.keys(JOB_TO_ROLE_ID);
+    // Jobs que mapean a un solo role
+    const singleRoleJobs = Object.keys(JOB_TO_ROLE_ID);
+    // Jobs que mapean a múltiples roles
+    const multiRoleJobs = Object.keys(JOB_TO_MULTIPLE_ROLES);
+    // Todos los jobs importables
+    const allImportableJobs = [...singleRoleJobs, ...multiRoleJobs];
 
-    const relevantCrew = crew.filter(c => importantJobs.includes(c.job));
+    const relevantCrew = crew.filter(c => allImportableJobs.includes(c.job));
     const uniqueCrew = new Map<string, TMDBCrewMember>();
 
     for (const member of relevantCrew) {
@@ -2703,7 +2989,7 @@ async function addMovieCrew(
     }
 
     // Registrar jobs no mapeados para el reporte
-    const unmappedJobs = crew.filter(c => !importantJobs.includes(c.job));
+    const unmappedJobs = crew.filter(c => !allImportableJobs.includes(c.job));
     const uniqueUnmappedJobs = new Map<string, TMDBCrewMember>();
     for (const member of unmappedJobs) {
         const key = `${member.id}-${member.job}`;
@@ -2759,15 +3045,28 @@ async function addMovieCrew(
             }
         }
 
-        const roleId = JOB_TO_ROLE_ID[member.job];
-
-        await pool.query(`
-      INSERT INTO movie_crew (movie_id, person_id, role_id, billing_order, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, NOW(), NOW())
-      ON CONFLICT DO NOTHING
-    `, [movieId, personId, roleId, null]);
-
-        imported++;
+        // Determinar si es un job de un solo role o múltiples
+        if (JOB_TO_ROLE_ID[member.job]) {
+            // Job de un solo role
+            const roleId = JOB_TO_ROLE_ID[member.job];
+            await pool.query(`
+              INSERT INTO movie_crew (movie_id, person_id, role_id, billing_order, created_at, updated_at)
+              VALUES ($1, $2, $3, $4, NOW(), NOW())
+              ON CONFLICT DO NOTHING
+            `, [movieId, personId, roleId, null]);
+            imported++;
+        } else if (JOB_TO_MULTIPLE_ROLES[member.job]) {
+            // Job que mapea a múltiples roles (ej: Makeup & Hair -> Maquillaje + Peinados)
+            const roleIds = JOB_TO_MULTIPLE_ROLES[member.job];
+            for (const roleId of roleIds) {
+                await pool.query(`
+                  INSERT INTO movie_crew (movie_id, person_id, role_id, billing_order, created_at, updated_at)
+                  VALUES ($1, $2, $3, $4, NOW(), NOW())
+                  ON CONFLICT DO NOTHING
+                `, [movieId, personId, roleId, null]);
+                imported++;
+            }
+        }
     }
 
     return imported;
@@ -2805,10 +3104,9 @@ async function analyzeMovieDryRun(
     }
 
     // Analizar Crew
-    const importantJobs = ['Director', 'Director of Photography', 'Screenplay', 'Writer',
-        'Producer', 'Executive Producer', 'Editor', 'Original Music Composer', 'Music',
-        'Production Design', 'Art Direction', 'Costume Design', 'Makeup Artist',
-        'Sound Designer', 'Sound Mixer'];
+    const singleRoleJobs = Object.keys(JOB_TO_ROLE_ID);
+    const multiRoleJobs = Object.keys(JOB_TO_MULTIPLE_ROLES);
+    const importantJobs = [...singleRoleJobs, ...multiRoleJobs];
 
     const relevantCrew = movie.credits.crew.filter(c => importantJobs.includes(c.job));
     const uniqueCrew = new Map<string, TMDBCrewMember>();
@@ -10813,6 +11111,1534 @@ export default function AdminCalificacionesPage() {
 }
 
 // ==================================================
+// src/app/admin/festival-editions/[id]/AddScreeningSection.tsx
+// ==================================================
+// src/app/admin/festival-editions/[id]/AddScreeningSection.tsx
+
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Plus, ChevronDown, ChevronUp } from 'lucide-react'
+import FestivalScreeningForm from '@/components/admin/festivals/FestivalScreeningForm'
+// Simple section type for the form - only needs id, name, isCompetitive
+interface SimpleFestivalSection {
+  id: number
+  name: string
+  isCompetitive: boolean
+}
+
+interface AddScreeningSectionProps {
+  editionId: number
+  sections: SimpleFestivalSection[]
+}
+
+export default function AddScreeningSection({ editionId, sections }: AddScreeningSectionProps) {
+  const router = useRouter()
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  const handleSuccess = () => {
+    setIsExpanded(false)
+    router.refresh()
+  }
+
+  return (
+    <div className="bg-white shadow rounded-lg">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50"
+      >
+        <div className="flex items-center gap-2">
+          <Plus className="h-5 w-5 text-indigo-600" />
+          <span className="font-medium text-gray-900">Agregar proyección</span>
+        </div>
+        {isExpanded ? (
+          <ChevronUp className="h-5 w-5 text-gray-400" />
+        ) : (
+          <ChevronDown className="h-5 w-5 text-gray-400" />
+        )}
+      </button>
+
+      {isExpanded && (
+        <div className="px-6 pb-6 border-t border-gray-200 pt-4">
+          <FestivalScreeningForm
+            editionId={editionId}
+            sections={sections}
+            onSuccess={handleSuccess}
+            onCancel={() => setIsExpanded(false)}
+            compact
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+// ==================================================
+// src/app/admin/festival-editions/[id]/DeleteScreeningButton.tsx
+// ==================================================
+// src/app/admin/festival-editions/[id]/DeleteScreeningButton.tsx
+
+'use client'
+
+import { Trash2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+
+interface DeleteScreeningButtonProps {
+  screeningId: number
+  movieTitle: string
+}
+
+export default function DeleteScreeningButton({ screeningId, movieTitle }: DeleteScreeningButtonProps) {
+  const router = useRouter()
+
+  const handleDelete = async () => {
+    if (!confirm(`¿Eliminar la proyección de "${movieTitle}"?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/festival-screenings/${screeningId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Error al eliminar')
+      }
+
+      toast.success('Proyección eliminada')
+      router.refresh()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al eliminar')
+    }
+  }
+
+  return (
+    <button
+      onClick={handleDelete}
+      className="p-2 text-gray-400 hover:text-red-600"
+      title="Eliminar"
+    >
+      <Trash2 className="h-4 w-4" />
+    </button>
+  )
+}
+
+
+// ==================================================
+// src/app/admin/festival-editions/[id]/page.tsx
+// ==================================================
+// src/app/admin/festival-editions/[id]/page.tsx
+
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft, Plus, Edit, Trash2, Film, Calendar, Clock, MapPin, Star } from 'lucide-react'
+import { prisma } from '@/lib/prisma'
+import { format, parseISO } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { PremiereTypeLabels } from '@/lib/festivals/festivalTypes'
+import AddScreeningSection from './AddScreeningSection'
+import DeleteScreeningButton from './DeleteScreeningButton'
+
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default async function EditionDetailPage({ params }: PageProps) {
+  const { id } = await params
+  const editionId = parseInt(id)
+
+  if (isNaN(editionId)) {
+    notFound()
+  }
+
+  const edition = await prisma.festivalEdition.findUnique({
+    where: { id: editionId },
+    include: {
+      festival: {
+        select: {
+          id: true,
+          name: true,
+          shortName: true,
+          sectionTemplates: {
+            where: { isActive: true },
+            orderBy: { displayOrder: 'asc' }
+          }
+        }
+      },
+      sections: {
+        orderBy: { displayOrder: 'asc' },
+        include: {
+          _count: {
+            select: { screenings: true }
+          }
+        }
+      },
+      screenings: {
+        include: {
+          movie: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              year: true,
+              posterUrl: true
+            }
+          },
+          section: {
+            select: { id: true, name: true }
+          },
+          venue: {
+            select: { id: true, name: true }
+          }
+        },
+        orderBy: [
+          { screeningDate: 'asc' },
+          { screeningTime: 'asc' }
+        ]
+      }
+    }
+  })
+
+  if (!edition) {
+    notFound()
+  }
+
+  // Group screenings by date
+  const screeningsByDate = edition.screenings.reduce((acc, screening) => {
+    // Use the date string directly to avoid timezone issues
+    const dateStr = screening.screeningDate instanceof Date
+      ? screening.screeningDate.toISOString().split('T')[0]
+      : String(screening.screeningDate).split('T')[0]
+    if (!acc[dateStr]) {
+      acc[dateStr] = []
+    }
+    acc[dateStr].push(screening)
+    return acc
+  }, {} as Record<string, typeof edition.screenings>)
+
+  const sortedDates = Object.keys(screeningsByDate).sort()
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link
+            href={`/admin/festivals/${edition.festivalId}`}
+            className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {edition.festival.shortName || edition.festival.name} - {edition.editionNumber}° Edición
+            </h1>
+            <p className="text-sm text-gray-500">
+              {format(new Date(edition.startDate), "d 'de' MMMM", { locale: es })} -{' '}
+              {format(new Date(edition.endDate), "d 'de' MMMM, yyyy", { locale: es })}
+            </p>
+          </div>
+        </div>
+        <Link
+          href={`/admin/festival-editions/${edition.id}/edit`}
+          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+        >
+          <Edit className="h-4 w-4 mr-2" />
+          Editar edición
+        </Link>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="text-sm text-gray-500">Secciones</div>
+          <div className="text-2xl font-bold text-gray-900">{edition.sections.length}</div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="text-sm text-gray-500">Películas</div>
+          <div className="text-2xl font-bold text-gray-900">
+            {new Set(edition.screenings.map(s => s.movieId)).size}
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="text-sm text-gray-500">Proyecciones</div>
+          <div className="text-2xl font-bold text-gray-900">{edition.screenings.length}</div>
+        </div>
+      </div>
+
+      {/* Sections */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-medium text-gray-900">Secciones</h2>
+          <Link
+            href={`/admin/festival-editions/${edition.id}/sections/new`}
+            className="text-sm text-indigo-600 hover:text-indigo-800"
+          >
+            + Agregar sección
+          </Link>
+        </div>
+
+        {edition.sections.length === 0 ? (
+          <div className="text-center py-6">
+            <p className="text-sm text-gray-500 mb-4">
+              No hay secciones definidas para esta edición.
+            </p>
+            {edition.festival.sectionTemplates.length > 0 && (
+              <p className="text-sm text-gray-500">
+                Puedes crear secciones desde las plantillas del festival.
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {edition.sections.map((section) => (
+              <div
+                key={section.id}
+                className={`p-3 rounded-lg border ${
+                  section.isCompetitive
+                    ? 'border-amber-200 bg-amber-50'
+                    : 'border-gray-200 bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-900">{section.name}</span>
+                  {section.isCompetitive && (
+                    <Star className="h-4 w-4 text-amber-500" />
+                  )}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {section._count.screenings} películas
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Add Screening */}
+      {edition.sections.length > 0 && (
+        <AddScreeningSection
+          editionId={edition.id}
+          sections={edition.sections}
+        />
+      )}
+
+      {/* Screenings by Date */}
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-medium text-gray-900">
+            Programación ({edition.screenings.length} proyecciones)
+          </h2>
+        </div>
+
+        {edition.screenings.length === 0 ? (
+          <div className="p-6 text-center">
+            <Film className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No hay proyecciones</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {edition.sections.length === 0
+                ? 'Primero debes crear secciones para poder agregar proyecciones.'
+                : 'Usa el formulario de arriba para agregar proyecciones.'}
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {sortedDates.map((dateKey) => (
+              <div key={dateKey} className="p-4">
+                <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-400" />
+                  {format(parseISO(dateKey), "EEEE d 'de' MMMM", { locale: es })}
+                  <span className="text-sm font-normal text-gray-500">
+                    ({screeningsByDate[dateKey].length} proyecciones)
+                  </span>
+                </h3>
+                <div className="space-y-2">
+                  {screeningsByDate[dateKey].map((screening) => (
+                    <div
+                      key={screening.id}
+                      className="flex items-center gap-4 p-3 rounded-lg bg-gray-50 hover:bg-gray-100"
+                    >
+                      {/* Poster */}
+                      {screening.movie.posterUrl ? (
+                        <img
+                          src={screening.movie.posterUrl}
+                          alt=""
+                          className="w-10 h-14 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-10 h-14 bg-gray-200 rounded flex items-center justify-center">
+                          <Film className="h-5 w-5 text-gray-400" />
+                        </div>
+                      )}
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/admin/movies?search=${encodeURIComponent(screening.movie.title)}`}
+                            className="font-medium text-gray-900 hover:text-indigo-600 truncate"
+                          >
+                            {screening.movie.title}
+                          </Link>
+                          {screening.movie.year && (
+                            <span className="text-sm text-gray-500">({screening.movie.year})</span>
+                          )}
+                          {screening.premiereType !== 'REGULAR' && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                              {PremiereTypeLabels[screening.premiereType as keyof typeof PremiereTypeLabels]}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">{screening.section.name}</span>
+                          </span>
+                          {screening.screeningTime && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {(() => {
+                                const timeStr = String(screening.screeningTime)
+                                // Extract HH:mm from the time string (handles both Date and string)
+                                const match = timeStr.match(/(\d{2}):(\d{2})/)
+                                return match ? `${match[1]}:${match[2]}` : format(new Date(screening.screeningTime), 'HH:mm')
+                              })()}
+                            </span>
+                          )}
+                          {screening.venue && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {screening.venue.name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1">
+                        <Link
+                          href={`/admin/festival-screenings/${screening.id}/edit`}
+                          className="p-2 text-gray-400 hover:text-indigo-600"
+                          title="Editar"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Link>
+                        <DeleteScreeningButton
+                          screeningId={screening.id}
+                          movieTitle={screening.movie.title}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+
+// ==================================================
+// src/app/admin/festival-editions/[id]/sections/new/FestivalSectionForm.tsx
+// ==================================================
+// src/app/admin/festival-editions/[id]/sections/new/FestivalSectionForm.tsx
+
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Loader2, Copy } from 'lucide-react'
+import toast from 'react-hot-toast'
+
+interface SectionTemplate {
+  id: number
+  slug: string
+  name: string
+  description: string | null
+  isCompetitive: boolean
+  displayOrder: number
+}
+
+interface FestivalSectionFormProps {
+  editionId: number
+  templates: SectionTemplate[]
+}
+
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+export default function FestivalSectionForm({ editionId, templates }: FestivalSectionFormProps) {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [mode, setMode] = useState<'template' | 'custom'>(templates.length > 0 ? 'template' : 'custom')
+  const [selectedTemplates, setSelectedTemplates] = useState<number[]>([])
+
+  const [formData, setFormData] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    isCompetitive: false,
+    displayOrder: 0,
+  })
+
+  const handleChange = (field: string, value: any) => {
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value }
+      // Auto-generate slug when name changes
+      if (field === 'name') {
+        updated.slug = generateSlug(value)
+      }
+      return updated
+    })
+  }
+
+  const toggleTemplate = (templateId: number) => {
+    setSelectedTemplates(prev =>
+      prev.includes(templateId)
+        ? prev.filter(id => id !== templateId)
+        : [...prev, templateId]
+    )
+  }
+
+  const handleSubmitTemplates = async () => {
+    if (selectedTemplates.length === 0) {
+      setError('Selecciona al menos una plantilla')
+      return
+    }
+
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch(`/api/festival-editions/${editionId}/sections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateIds: selectedTemplates })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al crear secciones')
+      }
+
+      toast.success(`${data.length} sección(es) creada(s)`)
+      router.push(`/admin/festival-editions/${editionId}`)
+      router.refresh()
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Error al crear secciones')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSubmitCustom = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!formData.name || !formData.slug) {
+      setError('El nombre y slug son requeridos')
+      return
+    }
+
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch(`/api/festival-editions/${editionId}/sections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al crear sección')
+      }
+
+      toast.success('Sección creada')
+      router.push(`/admin/festival-editions/${editionId}`)
+      router.refresh()
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Error al crear sección')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+
+      {/* Mode selector */}
+      {templates.length > 0 && (
+        <div className="flex gap-4 border-b border-gray-200 pb-4">
+          <button
+            type="button"
+            onClick={() => setMode('template')}
+            className={`px-4 py-2 text-sm font-medium rounded-md ${
+              mode === 'template'
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Copy className="h-4 w-4 inline mr-2" />
+            Desde plantillas
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('custom')}
+            className={`px-4 py-2 text-sm font-medium rounded-md ${
+              mode === 'custom'
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Sección personalizada
+          </button>
+        </div>
+      )}
+
+      {mode === 'template' && templates.length > 0 ? (
+        /* Template selection mode */
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Selecciona las plantillas para crear secciones en esta edición:
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {templates.map((template) => (
+              <label
+                key={template.id}
+                className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
+                  selectedTemplates.includes(template.id)
+                    ? 'border-indigo-500 bg-indigo-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedTemplates.includes(template.id)}
+                  onChange={() => toggleTemplate(template.id)}
+                  className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900">{template.name}</span>
+                    {template.isCompetitive && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                        Competencia
+                      </span>
+                    )}
+                  </div>
+                  {template.description && (
+                    <p className="text-sm text-gray-500 mt-1">{template.description}</p>
+                  )}
+                </div>
+              </label>
+            ))}
+          </div>
+
+          <div className="flex justify-end gap-4 pt-4">
+            <Link
+              href={`/admin/festival-editions/${editionId}`}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancelar
+            </Link>
+            <button
+              type="button"
+              onClick={handleSubmitTemplates}
+              disabled={isLoading || selectedTemplates.length === 0}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isLoading ? 'Creando...' : `Crear ${selectedTemplates.length} sección(es)`}
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* Custom section form */
+        <form onSubmit={handleSubmitCustom} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                Nombre *
+              </label>
+              <input
+                type="text"
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Competencia Internacional"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="slug" className="block text-sm font-medium text-gray-700">
+                Slug *
+              </label>
+              <input
+                type="text"
+                id="slug"
+                value={formData.slug}
+                onChange={(e) => handleChange('slug', e.target.value)}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="competencia-internacional"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+              Descripción
+            </label>
+            <textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              rows={3}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="isCompetitive"
+                checked={formData.isCompetitive}
+                onChange={(e) => handleChange('isCompetitive', e.target.checked)}
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <label htmlFor="isCompetitive" className="ml-2 block text-sm text-gray-900">
+                Es sección competitiva (tiene jurado y premios)
+              </label>
+            </div>
+
+            <div>
+              <label htmlFor="displayOrder" className="block text-sm font-medium text-gray-700">
+                Orden de visualización
+              </label>
+              <input
+                type="number"
+                id="displayOrder"
+                value={formData.displayOrder}
+                onChange={(e) => handleChange('displayOrder', parseInt(e.target.value) || 0)}
+                min="0"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <Link
+              href={`/admin/festival-editions/${editionId}`}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancelar
+            </Link>
+            <button
+              type="submit"
+              disabled={isLoading || !formData.name || !formData.slug}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isLoading ? 'Creando...' : 'Crear sección'}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  )
+}
+
+
+// ==================================================
+// src/app/admin/festival-editions/[id]/sections/new/page.tsx
+// ==================================================
+// src/app/admin/festival-editions/[id]/sections/new/page.tsx
+
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+import { prisma } from '@/lib/prisma'
+import FestivalSectionForm from './FestivalSectionForm'
+
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default async function NewSectionPage({ params }: PageProps) {
+  const { id } = await params
+  const editionId = parseInt(id)
+
+  if (isNaN(editionId)) {
+    notFound()
+  }
+
+  const edition = await prisma.festivalEdition.findUnique({
+    where: { id: editionId },
+    include: {
+      festival: {
+        select: {
+          id: true,
+          name: true,
+          sectionTemplates: {
+            where: { isActive: true },
+            orderBy: { displayOrder: 'asc' }
+          }
+        }
+      },
+      sections: {
+        select: { slug: true }
+      }
+    }
+  })
+
+  if (!edition) {
+    notFound()
+  }
+
+  // Filter out templates that already have sections in this edition
+  const existingSlugs = new Set(edition.sections.map(s => s.slug))
+  const availableTemplates = edition.festival.sectionTemplates.filter(
+    t => !existingSlugs.has(t.slug)
+  )
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Link
+          href={`/admin/festival-editions/${editionId}`}
+          className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Nueva Sección</h1>
+          <p className="text-sm text-gray-500">
+            {edition.festival.name} - {edition.editionNumber}° Edición ({edition.year})
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-white shadow rounded-lg p-6">
+        <FestivalSectionForm
+          editionId={editionId}
+          templates={availableTemplates}
+        />
+      </div>
+    </div>
+  )
+}
+
+
+// ==================================================
+// src/app/admin/festival-screenings/[id]/edit/page.tsx
+// ==================================================
+// src/app/admin/festival-screenings/[id]/edit/page.tsx
+
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+import { prisma } from '@/lib/prisma'
+import FestivalScreeningForm from '@/components/admin/festivals/FestivalScreeningForm'
+
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default async function EditScreeningPage({ params }: PageProps) {
+  const { id } = await params
+  const screeningId = parseInt(id)
+
+  if (isNaN(screeningId)) {
+    notFound()
+  }
+
+  const screening = await prisma.festivalScreening.findUnique({
+    where: { id: screeningId },
+    include: {
+      movie: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          year: true,
+          posterUrl: true
+        }
+      },
+      section: {
+        select: {
+          id: true,
+          name: true,
+          isCompetitive: true
+        }
+      },
+      edition: {
+        select: {
+          id: true,
+          year: true,
+          editionNumber: true,
+          festival: {
+            select: {
+              id: true,
+              name: true,
+              shortName: true
+            }
+          },
+          sections: {
+            select: {
+              id: true,
+              name: true,
+              isCompetitive: true
+            },
+            orderBy: { displayOrder: 'asc' }
+          }
+        }
+      },
+      venue: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
+    }
+  })
+
+  if (!screening) {
+    notFound()
+  }
+
+  // Transform screening data for the form
+  // Convert Date objects to ISO strings to avoid serialization issues
+  const screeningForForm = {
+    id: screening.id,
+    editionId: screening.editionId,
+    sectionId: screening.sectionId,
+    movieId: screening.movieId,
+    screeningDate: screening.screeningDate instanceof Date
+      ? screening.screeningDate.toISOString()
+      : screening.screeningDate,
+    screeningTime: screening.screeningTime instanceof Date
+      ? screening.screeningTime.toISOString()
+      : screening.screeningTime,
+    venueId: screening.venueId,
+    premiereType: screening.premiereType,
+    isOfficial: screening.isOfficial,
+    notes: screening.notes,
+    movie: screening.movie
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Link
+          href={`/admin/festival-editions/${screening.editionId}`}
+          className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Editar Proyeccion</h1>
+          <p className="text-sm text-gray-500">
+            {screening.edition.festival.shortName || screening.edition.festival.name} - {screening.edition.editionNumber} Edicion ({screening.edition.year})
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-white shadow rounded-lg p-6">
+        <FestivalScreeningForm
+          editionId={screening.editionId}
+          sections={screening.edition.sections}
+          screening={screeningForForm}
+        />
+      </div>
+    </div>
+  )
+}
+
+
+// ==================================================
+// src/app/admin/festivals/new/page.tsx
+// ==================================================
+// src/app/admin/festivals/new/page.tsx
+
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+import FestivalForm from '@/components/admin/festivals/FestivalForm'
+
+export default function NewFestivalPage() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Link
+          href="/admin/festivals"
+          className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="text-2xl font-bold text-gray-900">Nuevo Festival</h1>
+      </div>
+
+      <div className="bg-white shadow rounded-lg p-6">
+        <FestivalForm />
+      </div>
+    </div>
+  )
+}
+
+
+// ==================================================
+// src/app/admin/festivals/page.tsx
+// ==================================================
+// src/app/admin/festivals/page.tsx
+
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { Plus, Edit, Trash2, Calendar, ChevronRight, Search, Loader2 } from 'lucide-react'
+import toast from 'react-hot-toast'
+
+interface FestivalListItem {
+  id: number
+  slug: string
+  name: string
+  shortName?: string | null
+  locationName: string
+  foundedYear?: number | null
+  isActive: boolean
+  editionsCount: number
+}
+
+export default function FestivalsPage() {
+  const [festivals, setFestivals] = useState<FestivalListItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [total, setTotal] = useState(0)
+
+  useEffect(() => {
+    loadFestivals()
+  }, [search])
+
+  const loadFestivals = async () => {
+    setIsLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (search) params.set('search', search)
+      params.set('limit', '50')
+
+      const response = await fetch(`/api/festivals?${params}`)
+      if (response.ok) {
+        const data = await response.json()
+        setFestivals(data.data)
+        setTotal(data.total)
+      }
+    } catch (error) {
+      console.error('Error loading festivals:', error)
+      toast.error('Error al cargar festivales')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDelete = async (id: number, name: string) => {
+    if (!confirm(`¿Eliminar el festival "${name}"?`)) return
+
+    try {
+      const response = await fetch(`/api/festivals/${id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Error al eliminar')
+      }
+
+      toast.success('Festival eliminado')
+      loadFestivals()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al eliminar')
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Festivales</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {total} {total === 1 ? 'festival' : 'festivales'}
+          </p>
+        </div>
+        <Link
+          href="/admin/festivals/new"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Nuevo Festival
+        </Link>
+      </div>
+
+      {/* Búsqueda */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Buscar festivales..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+        />
+      </div>
+
+      {/* Lista */}
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+        </div>
+      ) : festivals.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+          <Calendar className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No hay festivales</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {search ? 'No se encontraron festivales con ese criterio.' : 'Comienza creando un nuevo festival.'}
+          </p>
+          {!search && (
+            <div className="mt-6">
+              <Link
+                href="/admin/festivals/new"
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Festival
+              </Link>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white shadow overflow-hidden rounded-md">
+          <ul className="divide-y divide-gray-200">
+            {festivals.map((festival) => (
+              <li key={festival.id}>
+                <div className="px-4 py-4 flex items-center justify-between hover:bg-gray-50">
+                  <div className="flex-1 min-w-0">
+                    <Link
+                      href={`/admin/festivals/${festival.id}`}
+                      className="flex items-center gap-2 group"
+                    >
+                      <h3 className="text-sm font-medium text-indigo-600 truncate group-hover:text-indigo-800">
+                        {festival.name}
+                      </h3>
+                      {festival.shortName && (
+                        <span className="text-xs text-gray-500">
+                          ({festival.shortName})
+                        </span>
+                      )}
+                      {!festival.isActive && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                          Inactivo
+                        </span>
+                      )}
+                    </Link>
+                    <div className="mt-1 flex items-center gap-4 text-sm text-gray-500">
+                      <span>{festival.locationName}</span>
+                      {festival.foundedYear && (
+                        <span>Desde {festival.foundedYear}</span>
+                      )}
+                      <span>
+                        {festival.editionsCount} {festival.editionsCount === 1 ? 'edición' : 'ediciones'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/admin/festivals/${festival.id}`}
+                      className="p-2 text-gray-400 hover:text-indigo-600"
+                      title="Ver ediciones"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </Link>
+                    <Link
+                      href={`/admin/festivals/${festival.id}/edit`}
+                      className="p-2 text-gray-400 hover:text-indigo-600"
+                      title="Editar"
+                    >
+                      <Edit className="h-5 w-5" />
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(festival.id, festival.name)}
+                      className="p-2 text-gray-400 hover:text-red-600"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+// ==================================================
+// src/app/admin/festivals/[id]/DeleteEditionButton.tsx
+// ==================================================
+// src/app/admin/festivals/[id]/DeleteEditionButton.tsx
+
+'use client'
+
+import { Trash2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+
+interface DeleteEditionButtonProps {
+  editionId: number
+  editionName: string
+}
+
+export default function DeleteEditionButton({ editionId, editionName }: DeleteEditionButtonProps) {
+  const router = useRouter()
+
+  const handleDelete = async () => {
+    if (!confirm(`¿Eliminar la edición "${editionName}"? Esto eliminará también todas las secciones y proyecciones asociadas.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/festival-editions/${editionId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Error al eliminar')
+      }
+
+      toast.success('Edición eliminada')
+      router.refresh()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al eliminar')
+    }
+  }
+
+  return (
+    <button
+      onClick={handleDelete}
+      className="p-2 text-gray-400 hover:text-red-600"
+      title="Eliminar"
+    >
+      <Trash2 className="h-5 w-5" />
+    </button>
+  )
+}
+
+
+// ==================================================
+// src/app/admin/festivals/[id]/editions/new/page.tsx
+// ==================================================
+// src/app/admin/festivals/[id]/editions/new/page.tsx
+
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+import { prisma } from '@/lib/prisma'
+import FestivalEditionForm from '@/components/admin/festivals/FestivalEditionForm'
+
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default async function NewEditionPage({ params }: PageProps) {
+  const { id } = await params
+  const festivalId = parseInt(id)
+
+  if (isNaN(festivalId)) {
+    notFound()
+  }
+
+  const festival = await prisma.festival.findUnique({
+    where: { id: festivalId },
+    select: { id: true, name: true }
+  })
+
+  if (!festival) {
+    notFound()
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Link
+          href={`/admin/festivals/${festivalId}`}
+          className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="text-2xl font-bold text-gray-900">Nueva Edición</h1>
+      </div>
+
+      <div className="bg-white shadow rounded-lg p-6">
+        <FestivalEditionForm
+          festivalId={festivalId}
+          festivalName={festival.name}
+        />
+      </div>
+    </div>
+  )
+}
+
+
+// ==================================================
+// src/app/admin/festivals/[id]/page.tsx
+// ==================================================
+// src/app/admin/festivals/[id]/page.tsx
+
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft, Plus, Edit, Trash2, Calendar, Eye, EyeOff, ExternalLink } from 'lucide-react'
+import { prisma } from '@/lib/prisma'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
+import DeleteEditionButton from './DeleteEditionButton'
+
+interface PageProps {
+  params: Promise<{ id: string }>
+}
+
+export default async function FestivalDetailPage({ params }: PageProps) {
+  const { id } = await params
+  const festivalId = parseInt(id)
+
+  if (isNaN(festivalId)) {
+    notFound()
+  }
+
+  const festival = await prisma.festival.findUnique({
+    where: { id: festivalId },
+    include: {
+      location: {
+        select: { id: true, name: true }
+      },
+      editions: {
+        orderBy: { year: 'desc' },
+        include: {
+          _count: {
+            select: { sections: true, screenings: true }
+          }
+        }
+      },
+      sectionTemplates: {
+        where: { isActive: true },
+        orderBy: { displayOrder: 'asc' }
+      }
+    }
+  })
+
+  if (!festival) {
+    notFound()
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/admin/festivals"
+            className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{festival.name}</h1>
+            <p className="text-sm text-gray-500">
+              {festival.location.name}
+              {festival.foundedYear && ` • Desde ${festival.foundedYear}`}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {festival.website && (
+            <a
+              href={festival.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Sitio web
+            </a>
+          )}
+          <Link
+            href={`/admin/festivals/${festival.id}/edit`}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Editar
+          </Link>
+        </div>
+      </div>
+
+      {/* Info Card */}
+      {festival.description && (
+        <div className="bg-white shadow rounded-lg p-4">
+          <p className="text-sm text-gray-600">{festival.description}</p>
+        </div>
+      )}
+
+      {/* Section Templates */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-medium text-gray-900">Plantillas de Secciones</h2>
+          <Link
+            href={`/admin/festivals/${festival.id}/section-templates/new`}
+            className="text-sm text-indigo-600 hover:text-indigo-800"
+          >
+            + Agregar plantilla
+          </Link>
+        </div>
+
+        {festival.sectionTemplates.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            No hay plantillas de secciones definidas. Las plantillas se copian automáticamente a cada nueva edición.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {festival.sectionTemplates.map((template) => (
+              <span
+                key={template.id}
+                className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
+                  template.isCompetitive
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                {template.name}
+                {template.isCompetitive && ' (Competencia)'}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Editions */}
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-lg font-medium text-gray-900">
+            Ediciones ({festival.editions.length})
+          </h2>
+          <Link
+            href={`/admin/festivals/${festival.id}/editions/new`}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Edición
+          </Link>
+        </div>
+
+        {festival.editions.length === 0 ? (
+          <div className="p-6 text-center">
+            <Calendar className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No hay ediciones</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Crea la primera edición del festival.
+            </p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-gray-200">
+            {festival.editions.map((edition) => (
+              <li key={edition.id} className="px-6 py-4 hover:bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <Link
+                      href={`/admin/festival-editions/${edition.id}`}
+                      className="flex items-center gap-3"
+                    >
+                      <span className="text-lg font-medium text-indigo-600 hover:text-indigo-800">
+                        {edition.editionNumber}° Edición
+                      </span>
+                      <span className="text-gray-500">({edition.year})</span>
+                      {edition.isPublished ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          <Eye className="h-3 w-3 mr-1" />
+                          Publicada
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                          <EyeOff className="h-3 w-3 mr-1" />
+                          Borrador
+                        </span>
+                      )}
+                    </Link>
+                    <div className="mt-1 text-sm text-gray-500">
+                      {format(new Date(edition.startDate), "d 'de' MMMM", { locale: es })} -{' '}
+                      {format(new Date(edition.endDate), "d 'de' MMMM, yyyy", { locale: es })}
+                      <span className="mx-2">•</span>
+                      {edition._count.sections} secciones
+                      <span className="mx-2">•</span>
+                      {edition._count.screenings} proyecciones
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/admin/festival-editions/${edition.id}`}
+                      className="p-2 text-gray-400 hover:text-indigo-600"
+                      title="Ver detalle"
+                    >
+                      <Calendar className="h-5 w-5" />
+                    </Link>
+                    <Link
+                      href={`/admin/festival-editions/${edition.id}/edit`}
+                      className="p-2 text-gray-400 hover:text-indigo-600"
+                      title="Editar"
+                    >
+                      <Edit className="h-5 w-5" />
+                    </Link>
+                    <DeleteEditionButton
+                      editionId={edition.id}
+                      editionName={`${edition.editionNumber}° Edición (${edition.year})`}
+                    />
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  )
+}
+
+
+// ==================================================
 // src/app/admin/genres/page.tsx
 // ==================================================
 // src/app/admin/genres/page.tsx
@@ -11226,12 +13052,12 @@ export default function AdminGenresPage() {
 import './admin.css'
 
 import Link from 'next/link'
-import { 
-  Film, 
-  Users, 
-  Building2, 
-  Award, 
-  Globe, 
+import {
+  Film,
+  Users,
+  Building2,
+  Award,
+  Globe,
   Tv,
   Clapperboard,
   Home,
@@ -11239,7 +13065,8 @@ import {
   X,
   Tag,
   Hash,
-  BarChart3
+  BarChart3,
+  Calendar
 } from 'lucide-react'
 import { ReactNode, useState } from 'react'
 
@@ -11261,6 +13088,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Pantallas de Estreno', href: '/admin/screening-venues', icon: Tv },
     { name: 'Roles', href: '/admin/roles', icon: Clapperboard },
     { name: 'Premios', href: '/admin/awards', icon: Award },
+    { name: 'Festivales', href: '/admin/festivals', icon: Calendar },
     { name: 'Lugares', href: '/admin/locations', icon: Globe },
     { name: 'Temas', href: '/admin/themes', icon: Tag },
     { name: 'Calificaciones', href: '/admin/calificaciones', icon: Tag }
@@ -15862,6 +17690,1735 @@ export async function GET(request: NextRequest) {
 }
 
 // ==================================================
+// src/app/api/festival-editions/[id]/route.ts
+// ==================================================
+// src/app/api/festival-editions/[id]/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { festivalEditionFormSchema } from '@/lib/festivals/festivalTypes'
+
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const editionId = parseInt(id)
+
+    if (isNaN(editionId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    const edition = await prisma.festivalEdition.findUnique({
+      where: { id: editionId },
+      include: {
+        festival: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            shortName: true,
+            location: {
+              select: { id: true, name: true }
+            }
+          }
+        },
+        sections: {
+          orderBy: { displayOrder: 'asc' },
+          include: {
+            template: {
+              select: { id: true, name: true }
+            },
+            _count: {
+              select: { screenings: true, juryMembers: true }
+            }
+          }
+        },
+        screenings: {
+          include: {
+            movie: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                year: true,
+                posterUrl: true
+              }
+            },
+            section: {
+              select: { id: true, name: true }
+            },
+            venue: {
+              select: { id: true, name: true }
+            }
+          },
+          orderBy: [
+            { screeningDate: 'asc' },
+            { screeningTime: 'asc' }
+          ]
+        }
+      }
+    })
+
+    if (!edition) {
+      return NextResponse.json(
+        { error: 'Edición no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(edition)
+  } catch (error) {
+    console.error('Error fetching edition:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener edición' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const editionId = parseInt(id)
+
+    if (isNaN(editionId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    const body = await request.json()
+
+    // Obtener la edición existente
+    const existing = await prisma.festivalEdition.findUnique({
+      where: { id: editionId }
+    })
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Edición no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    // Validar datos parcialmente
+    const dataToValidate = { ...body, festivalId: existing.festivalId }
+    const validation = festivalEditionFormSchema.partial().safeParse(dataToValidate)
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: validation.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const data = validation.data
+
+    // Verificar conflictos si se cambia número de edición o año
+    if (data.editionNumber !== undefined || data.year !== undefined) {
+      const conflicting = await prisma.festivalEdition.findFirst({
+        where: {
+          festivalId: existing.festivalId,
+          id: { not: editionId },
+          OR: [
+            ...(data.editionNumber !== undefined ? [{ editionNumber: data.editionNumber }] : []),
+            ...(data.year !== undefined ? [{ year: data.year }] : [])
+          ]
+        }
+      })
+
+      if (conflicting) {
+        return NextResponse.json(
+          { error: 'Ya existe una edición con ese número o año' },
+          { status: 400 }
+        )
+      }
+    }
+
+    const edition = await prisma.festivalEdition.update({
+      where: { id: editionId },
+      data: {
+        ...(data.editionNumber !== undefined && { editionNumber: data.editionNumber }),
+        ...(data.year !== undefined && { year: data.year }),
+        ...(data.startDate && { startDate: new Date(data.startDate) }),
+        ...(data.endDate && { endDate: new Date(data.endDate) }),
+        ...(data.theme !== undefined && { theme: data.theme || null }),
+        ...(data.description !== undefined && { description: data.description || null }),
+        ...(data.posterUrl !== undefined && { posterUrl: data.posterUrl || null }),
+        ...(data.websiteUrl !== undefined && { websiteUrl: data.websiteUrl || null }),
+        ...(data.isPublished !== undefined && { isPublished: data.isPublished }),
+      },
+      include: {
+        festival: {
+          select: { id: true, name: true, slug: true }
+        }
+      }
+    })
+
+    return NextResponse.json(edition)
+  } catch (error) {
+    console.error('Error updating edition:', error)
+    return NextResponse.json(
+      { error: 'Error al actualizar edición' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const editionId = parseInt(id)
+
+    if (isNaN(editionId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    const existing = await prisma.festivalEdition.findUnique({
+      where: { id: editionId },
+      include: {
+        _count: {
+          select: { screenings: true }
+        }
+      }
+    })
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Edición no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    // Las secciones y proyecciones se eliminarán en cascada
+    await prisma.festivalEdition.delete({
+      where: { id: editionId }
+    })
+
+    return new NextResponse(null, { status: 204 })
+  } catch (error) {
+    console.error('Error deleting edition:', error)
+    return NextResponse.json(
+      { error: 'Error al eliminar edición' },
+      { status: 500 }
+    )
+  }
+}
+
+
+// ==================================================
+// src/app/api/festival-editions/[id]/screenings/route.ts
+// ==================================================
+// src/app/api/festival-editions/[id]/screenings/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { festivalScreeningFormSchema } from '@/lib/festivals/festivalTypes'
+
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const editionId = parseInt(id)
+
+    if (isNaN(editionId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    const searchParams = request.nextUrl.searchParams
+    const sectionId = searchParams.get('sectionId')
+    const movieId = searchParams.get('movieId')
+    const premiereType = searchParams.get('premiereType')
+    const dateFrom = searchParams.get('dateFrom')
+    const dateTo = searchParams.get('dateTo')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '50')
+
+    const where: any = { editionId }
+
+    if (sectionId) {
+      where.sectionId = parseInt(sectionId)
+    }
+
+    if (movieId) {
+      where.movieId = parseInt(movieId)
+    }
+
+    if (premiereType) {
+      where.premiereType = premiereType
+    }
+
+    if (dateFrom || dateTo) {
+      where.screeningDate = {}
+      if (dateFrom) {
+        where.screeningDate.gte = new Date(dateFrom)
+      }
+      if (dateTo) {
+        where.screeningDate.lte = new Date(dateTo)
+      }
+    }
+
+    const [screenings, total] = await Promise.all([
+      prisma.festivalScreening.findMany({
+        where,
+        include: {
+          movie: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              year: true,
+              posterUrl: true
+            }
+          },
+          section: {
+            select: { id: true, name: true }
+          },
+          venue: {
+            select: { id: true, name: true }
+          }
+        },
+        orderBy: [
+          { screeningDate: 'asc' },
+          { screeningTime: 'asc' }
+        ],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.festivalScreening.count({ where })
+    ])
+
+    const data = screenings.map(s => ({
+      id: s.id,
+      movieTitle: s.movie.title,
+      movieSlug: s.movie.slug,
+      movieYear: s.movie.year,
+      sectionName: s.section.name,
+      screeningDate: s.screeningDate,
+      screeningTime: s.screeningTime,
+      venueName: s.venue?.name || null,
+      premiereType: s.premiereType
+    }))
+
+    return NextResponse.json({
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    })
+  } catch (error) {
+    console.error('Error fetching screenings:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener proyecciones' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const editionId = parseInt(id)
+
+    if (isNaN(editionId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    // Verificar que la edición existe
+    const edition = await prisma.festivalEdition.findUnique({
+      where: { id: editionId }
+    })
+
+    if (!edition) {
+      return NextResponse.json(
+        { error: 'Edición no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    const body = await request.json()
+
+    // Endpoint especial para bulk create
+    if (body.screenings && Array.isArray(body.screenings)) {
+      return bulkCreateScreenings(editionId, body.screenings)
+    }
+
+    // Agregar editionId al body
+    const dataToValidate = { ...body, editionId }
+
+    const validation = festivalScreeningFormSchema.safeParse(dataToValidate)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: validation.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const data = validation.data
+
+    // Verificar que la sección pertenece a esta edición
+    const section = await prisma.festivalSection.findFirst({
+      where: {
+        id: data.sectionId,
+        editionId
+      }
+    })
+
+    if (!section) {
+      return NextResponse.json(
+        { error: 'La sección no pertenece a esta edición' },
+        { status: 400 }
+      )
+    }
+
+    // Verificar que la película existe
+    const movie = await prisma.movie.findUnique({
+      where: { id: data.movieId }
+    })
+
+    if (!movie) {
+      return NextResponse.json(
+        { error: 'Película no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    const screening = await prisma.festivalScreening.create({
+      data: {
+        editionId,
+        sectionId: data.sectionId,
+        movieId: data.movieId,
+        screeningDate: new Date(data.screeningDate),
+        screeningTime: data.screeningTime ? new Date(`1970-01-01T${data.screeningTime}`) : null,
+        venueId: data.venueId || null,
+        premiereType: data.premiereType || 'REGULAR',
+        isOfficial: data.isOfficial ?? true,
+        notes: data.notes || null,
+      },
+      include: {
+        movie: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            year: true
+          }
+        },
+        section: {
+          select: { id: true, name: true }
+        },
+        venue: {
+          select: { id: true, name: true }
+        }
+      }
+    })
+
+    return NextResponse.json(screening, { status: 201 })
+  } catch (error) {
+    console.error('Error creating screening:', error)
+    return NextResponse.json(
+      { error: 'Error al crear proyección' },
+      { status: 500 }
+    )
+  }
+}
+
+async function bulkCreateScreenings(editionId: number, screeningsData: any[]) {
+  try {
+    const results: any[] = []
+    const errors: any[] = []
+
+    for (const data of screeningsData) {
+      const dataToValidate = { ...data, editionId }
+      const validation = festivalScreeningFormSchema.safeParse(dataToValidate)
+
+      if (!validation.success) {
+        errors.push({
+          data,
+          error: validation.error.flatten()
+        })
+        continue
+      }
+
+      const validData = validation.data
+
+      try {
+        const screening = await prisma.festivalScreening.create({
+          data: {
+            editionId,
+            sectionId: validData.sectionId,
+            movieId: validData.movieId,
+            screeningDate: new Date(validData.screeningDate),
+            screeningTime: validData.screeningTime ? new Date(`1970-01-01T${validData.screeningTime}`) : null,
+            venueId: validData.venueId || null,
+            premiereType: validData.premiereType || 'REGULAR',
+            isOfficial: validData.isOfficial ?? true,
+            notes: validData.notes || null,
+          }
+        })
+        results.push(screening)
+      } catch (err) {
+        errors.push({
+          data,
+          error: 'Error al crear proyección'
+        })
+      }
+    }
+
+    return NextResponse.json({
+      created: results.length,
+      errors: errors.length,
+      screenings: results,
+      errorDetails: errors.length > 0 ? errors : undefined
+    }, { status: 201 })
+  } catch (error) {
+    console.error('Error bulk creating screenings:', error)
+    return NextResponse.json(
+      { error: 'Error al crear proyecciones' },
+      { status: 500 }
+    )
+  }
+}
+
+
+// ==================================================
+// src/app/api/festival-editions/[id]/sections/route.ts
+// ==================================================
+// src/app/api/festival-editions/[id]/sections/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { festivalSectionFormSchema } from '@/lib/festivals/festivalTypes'
+
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const editionId = parseInt(id)
+
+    if (isNaN(editionId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    const sections = await prisma.festivalSection.findMany({
+      where: { editionId },
+      include: {
+        template: {
+          select: { id: true, name: true }
+        },
+        _count: {
+          select: { screenings: true, juryMembers: true }
+        }
+      },
+      orderBy: { displayOrder: 'asc' }
+    })
+
+    return NextResponse.json(sections)
+  } catch (error) {
+    console.error('Error fetching sections:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener secciones' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const editionId = parseInt(id)
+
+    if (isNaN(editionId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    // Verificar que la edición existe
+    const edition = await prisma.festivalEdition.findUnique({
+      where: { id: editionId }
+    })
+
+    if (!edition) {
+      return NextResponse.json(
+        { error: 'Edición no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    const body = await request.json()
+
+    // Endpoint especial para crear desde templates
+    if (body.templateIds && Array.isArray(body.templateIds)) {
+      return createSectionsFromTemplates(editionId, body.templateIds)
+    }
+
+    // Agregar editionId al body
+    const dataToValidate = { ...body, editionId }
+
+    const validation = festivalSectionFormSchema.safeParse(dataToValidate)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: validation.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const data = validation.data
+    const slug = data.slug || generateSlug(data.name)
+
+    // Verificar que no exista otra sección con el mismo slug en esta edición
+    const existingSection = await prisma.festivalSection.findFirst({
+      where: {
+        editionId,
+        slug
+      }
+    })
+
+    if (existingSection) {
+      return NextResponse.json(
+        { error: 'Ya existe una sección con ese slug en esta edición' },
+        { status: 400 }
+      )
+    }
+
+    // Obtener el máximo displayOrder actual
+    const maxOrder = await prisma.festivalSection.aggregate({
+      where: { editionId },
+      _max: { displayOrder: true }
+    })
+
+    const section = await prisma.festivalSection.create({
+      data: {
+        editionId,
+        templateId: data.templateId || null,
+        slug,
+        name: data.name,
+        description: data.description || null,
+        isCompetitive: data.isCompetitive ?? false,
+        displayOrder: data.displayOrder ?? (maxOrder._max.displayOrder ?? 0) + 1,
+      },
+      include: {
+        template: {
+          select: { id: true, name: true }
+        }
+      }
+    })
+
+    return NextResponse.json(section, { status: 201 })
+  } catch (error) {
+    console.error('Error creating section:', error)
+    return NextResponse.json(
+      { error: 'Error al crear sección' },
+      { status: 500 }
+    )
+  }
+}
+
+async function createSectionsFromTemplates(editionId: number, templateIds: number[]) {
+  try {
+    // Obtener los templates
+    const templates = await prisma.festivalSectionTemplate.findMany({
+      where: {
+        id: { in: templateIds },
+        isActive: true
+      },
+      orderBy: { displayOrder: 'asc' }
+    })
+
+    if (templates.length === 0) {
+      return NextResponse.json(
+        { error: 'No se encontraron templates válidos' },
+        { status: 400 }
+      )
+    }
+
+    // Obtener secciones existentes para evitar duplicados
+    const existingSections = await prisma.festivalSection.findMany({
+      where: { editionId },
+      select: { slug: true }
+    })
+    const existingSlugs = new Set(existingSections.map(s => s.slug))
+
+    // Filtrar templates que ya tienen sección
+    const templatesToCreate = templates.filter(t => !existingSlugs.has(t.slug))
+
+    if (templatesToCreate.length === 0) {
+      return NextResponse.json(
+        { error: 'Todas las secciones ya existen en esta edición' },
+        { status: 400 }
+      )
+    }
+
+    // Crear secciones
+    const sections = await prisma.$transaction(
+      templatesToCreate.map((template, index) =>
+        prisma.festivalSection.create({
+          data: {
+            editionId,
+            templateId: template.id,
+            slug: template.slug,
+            name: template.name,
+            description: template.description,
+            isCompetitive: template.isCompetitive,
+            displayOrder: template.displayOrder,
+          },
+          include: {
+            template: {
+              select: { id: true, name: true }
+            }
+          }
+        })
+      )
+    )
+
+    return NextResponse.json(sections, { status: 201 })
+  } catch (error) {
+    console.error('Error creating sections from templates:', error)
+    return NextResponse.json(
+      { error: 'Error al crear secciones desde templates' },
+      { status: 500 }
+    )
+  }
+}
+
+
+// ==================================================
+// src/app/api/festival-screenings/[id]/route.ts
+// ==================================================
+// src/app/api/festival-screenings/[id]/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { festivalScreeningFormSchema } from '@/lib/festivals/festivalTypes'
+
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const screeningId = parseInt(id)
+
+    if (isNaN(screeningId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    const screening = await prisma.festivalScreening.findUnique({
+      where: { id: screeningId },
+      include: {
+        movie: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            year: true,
+            posterUrl: true,
+            duration: true
+          }
+        },
+        section: {
+          select: {
+            id: true,
+            name: true,
+            isCompetitive: true
+          }
+        },
+        edition: {
+          select: {
+            id: true,
+            editionNumber: true,
+            year: true,
+            festival: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
+          }
+        },
+        venue: {
+          select: { id: true, name: true, address: true }
+        }
+      }
+    })
+
+    if (!screening) {
+      return NextResponse.json(
+        { error: 'Proyección no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(screening)
+  } catch (error) {
+    console.error('Error fetching screening:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener proyección' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const screeningId = parseInt(id)
+
+    if (isNaN(screeningId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    const existing = await prisma.festivalScreening.findUnique({
+      where: { id: screeningId }
+    })
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Proyección no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    const body = await request.json()
+
+    // Agregar IDs necesarios para validación
+    const dataToValidate = {
+      ...body,
+      editionId: existing.editionId,
+      sectionId: body.sectionId ?? existing.sectionId,
+      movieId: body.movieId ?? existing.movieId,
+      screeningDate: body.screeningDate ?? existing.screeningDate.toISOString().split('T')[0]
+    }
+
+    const validation = festivalScreeningFormSchema.partial().safeParse(dataToValidate)
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: validation.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const data = validation.data
+
+    // Si se cambia la sección, verificar que pertenece a la misma edición
+    if (data.sectionId && data.sectionId !== existing.sectionId) {
+      const section = await prisma.festivalSection.findFirst({
+        where: {
+          id: data.sectionId,
+          editionId: existing.editionId
+        }
+      })
+
+      if (!section) {
+        return NextResponse.json(
+          { error: 'La sección no pertenece a esta edición' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Si se cambia la película, verificar que existe
+    if (data.movieId && data.movieId !== existing.movieId) {
+      const movie = await prisma.movie.findUnique({
+        where: { id: data.movieId }
+      })
+
+      if (!movie) {
+        return NextResponse.json(
+          { error: 'Película no encontrada' },
+          { status: 404 }
+        )
+      }
+    }
+
+    const screening = await prisma.festivalScreening.update({
+      where: { id: screeningId },
+      data: {
+        ...(data.sectionId && { sectionId: data.sectionId }),
+        ...(data.movieId && { movieId: data.movieId }),
+        ...(data.screeningDate && { screeningDate: new Date(data.screeningDate) }),
+        ...(data.screeningTime !== undefined && {
+          screeningTime: data.screeningTime ? new Date(`1970-01-01T${data.screeningTime}`) : null
+        }),
+        ...(data.venueId !== undefined && { venueId: data.venueId || null }),
+        ...(data.premiereType && { premiereType: data.premiereType }),
+        ...(data.isOfficial !== undefined && { isOfficial: data.isOfficial }),
+        ...(data.notes !== undefined && { notes: data.notes || null }),
+      },
+      include: {
+        movie: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            year: true
+          }
+        },
+        section: {
+          select: { id: true, name: true }
+        },
+        venue: {
+          select: { id: true, name: true }
+        }
+      }
+    })
+
+    return NextResponse.json(screening)
+  } catch (error) {
+    console.error('Error updating screening:', error)
+    return NextResponse.json(
+      { error: 'Error al actualizar proyección' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const screeningId = parseInt(id)
+
+    if (isNaN(screeningId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    const existing = await prisma.festivalScreening.findUnique({
+      where: { id: screeningId }
+    })
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Proyección no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    await prisma.festivalScreening.delete({
+      where: { id: screeningId }
+    })
+
+    return new NextResponse(null, { status: 204 })
+  } catch (error) {
+    console.error('Error deleting screening:', error)
+    return NextResponse.json(
+      { error: 'Error al eliminar proyección' },
+      { status: 500 }
+    )
+  }
+}
+
+
+// ==================================================
+// src/app/api/festival-sections/[id]/route.ts
+// ==================================================
+// src/app/api/festival-sections/[id]/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { festivalSectionFormSchema } from '@/lib/festivals/festivalTypes'
+
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const sectionId = parseInt(id)
+
+    if (isNaN(sectionId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    const section = await prisma.festivalSection.findUnique({
+      where: { id: sectionId },
+      include: {
+        template: {
+          select: { id: true, name: true }
+        },
+        edition: {
+          select: {
+            id: true,
+            editionNumber: true,
+            year: true,
+            festival: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
+          }
+        },
+        juryMembers: {
+          include: {
+            person: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                photoUrl: true
+              }
+            }
+          },
+          orderBy: { billingOrder: 'asc' }
+        },
+        screenings: {
+          include: {
+            movie: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                year: true,
+                posterUrl: true
+              }
+            }
+          },
+          orderBy: [
+            { screeningDate: 'asc' },
+            { screeningTime: 'asc' }
+          ]
+        }
+      }
+    })
+
+    if (!section) {
+      return NextResponse.json(
+        { error: 'Sección no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(section)
+  } catch (error) {
+    console.error('Error fetching section:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener sección' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const sectionId = parseInt(id)
+
+    if (isNaN(sectionId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    const existing = await prisma.festivalSection.findUnique({
+      where: { id: sectionId }
+    })
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Sección no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    const body = await request.json()
+
+    // Agregar editionId para validación
+    const dataToValidate = {
+      ...body,
+      editionId: existing.editionId,
+      slug: body.slug ?? existing.slug,
+      name: body.name ?? existing.name
+    }
+
+    const validation = festivalSectionFormSchema.partial().safeParse(dataToValidate)
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: validation.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const data = validation.data
+
+    // Si se cambia el slug, verificar que no exista en la edición
+    if (data.slug && data.slug !== existing.slug) {
+      const slugExists = await prisma.festivalSection.findFirst({
+        where: {
+          editionId: existing.editionId,
+          slug: data.slug,
+          id: { not: sectionId }
+        }
+      })
+
+      if (slugExists) {
+        return NextResponse.json(
+          { error: 'Ya existe una sección con ese slug en esta edición' },
+          { status: 400 }
+        )
+      }
+    }
+
+    const section = await prisma.festivalSection.update({
+      where: { id: sectionId },
+      data: {
+        ...(data.name && { name: data.name }),
+        ...(data.slug && { slug: data.slug }),
+        ...(data.description !== undefined && { description: data.description || null }),
+        ...(data.isCompetitive !== undefined && { isCompetitive: data.isCompetitive }),
+        ...(data.displayOrder !== undefined && { displayOrder: data.displayOrder }),
+        ...(data.templateId !== undefined && { templateId: data.templateId || null }),
+      },
+      include: {
+        template: {
+          select: { id: true, name: true }
+        }
+      }
+    })
+
+    return NextResponse.json(section)
+  } catch (error) {
+    console.error('Error updating section:', error)
+    return NextResponse.json(
+      { error: 'Error al actualizar sección' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const sectionId = parseInt(id)
+
+    if (isNaN(sectionId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    const existing = await prisma.festivalSection.findUnique({
+      where: { id: sectionId },
+      include: {
+        _count: {
+          select: { screenings: true }
+        }
+      }
+    })
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Sección no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    // Advertir si tiene proyecciones
+    if (existing._count.screenings > 0) {
+      return NextResponse.json(
+        { error: `No se puede eliminar: la sección tiene ${existing._count.screenings} proyección(es)` },
+        { status: 400 }
+      )
+    }
+
+    await prisma.festivalSection.delete({
+      where: { id: sectionId }
+    })
+
+    return new NextResponse(null, { status: 204 })
+  } catch (error) {
+    console.error('Error deleting section:', error)
+    return NextResponse.json(
+      { error: 'Error al eliminar sección' },
+      { status: 500 }
+    )
+  }
+}
+
+
+// ==================================================
+// src/app/api/festivals/route.ts
+// ==================================================
+// src/app/api/festivals/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { festivalFormSchema } from '@/lib/festivals/festivalTypes'
+
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams
+    const search = searchParams.get('search')
+    const isActive = searchParams.get('isActive')
+    const locationId = searchParams.get('locationId')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '20')
+
+    const where: any = {}
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { shortName: { contains: search, mode: 'insensitive' } },
+      ]
+    }
+
+    if (isActive !== null && isActive !== undefined) {
+      where.isActive = isActive === 'true'
+    }
+
+    if (locationId) {
+      where.locationId = parseInt(locationId)
+    }
+
+    const [festivals, total] = await Promise.all([
+      prisma.festival.findMany({
+        where,
+        include: {
+          location: {
+            select: { id: true, name: true }
+          },
+          _count: {
+            select: { editions: true, awards: true }
+          }
+        },
+        orderBy: { name: 'asc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.festival.count({ where })
+    ])
+
+    const data = festivals.map(f => ({
+      id: f.id,
+      slug: f.slug,
+      name: f.name,
+      shortName: f.shortName,
+      locationName: f.location.name,
+      foundedYear: f.foundedYear,
+      isActive: f.isActive,
+      editionsCount: f._count.editions
+    }))
+
+    return NextResponse.json({
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    })
+  } catch (error) {
+    console.error('Error fetching festivals:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener festivales' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+
+    // Validar datos
+    const validation = festivalFormSchema.safeParse(body)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: validation.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const data = validation.data
+
+    // Generar slug si no se proporciona
+    const slug = data.slug || generateSlug(data.name)
+
+    // Verificar que el slug no exista
+    const existing = await prisma.festival.findUnique({
+      where: { slug }
+    })
+
+    if (existing) {
+      return NextResponse.json(
+        { error: 'Ya existe un festival con ese slug' },
+        { status: 400 }
+      )
+    }
+
+    const festival = await prisma.festival.create({
+      data: {
+        slug,
+        name: data.name,
+        shortName: data.shortName || null,
+        description: data.description || null,
+        logoUrl: data.logoUrl || null,
+        website: data.website || null,
+        locationId: data.locationId,
+        foundedYear: data.foundedYear || null,
+        isActive: data.isActive ?? true,
+      },
+      include: {
+        location: {
+          select: { id: true, name: true }
+        }
+      }
+    })
+
+    return NextResponse.json(festival, { status: 201 })
+  } catch (error) {
+    console.error('Error creating festival:', error)
+    return NextResponse.json(
+      { error: 'Error al crear festival' },
+      { status: 500 }
+    )
+  }
+}
+
+
+// ==================================================
+// src/app/api/festivals/[id]/editions/route.ts
+// ==================================================
+// src/app/api/festivals/[id]/editions/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { festivalEditionFormSchema } from '@/lib/festivals/festivalTypes'
+
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const festivalId = parseInt(id)
+
+    if (isNaN(festivalId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    const searchParams = request.nextUrl.searchParams
+    const year = searchParams.get('year')
+    const isPublished = searchParams.get('isPublished')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '20')
+
+    const where: any = { festivalId }
+
+    if (year) {
+      where.year = parseInt(year)
+    }
+
+    if (isPublished !== null && isPublished !== undefined) {
+      where.isPublished = isPublished === 'true'
+    }
+
+    const [editions, total] = await Promise.all([
+      prisma.festivalEdition.findMany({
+        where,
+        include: {
+          _count: {
+            select: { sections: true, screenings: true, awardWinners: true }
+          }
+        },
+        orderBy: { year: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.festivalEdition.count({ where })
+    ])
+
+    const data = editions.map(e => ({
+      id: e.id,
+      editionNumber: e.editionNumber,
+      year: e.year,
+      startDate: e.startDate,
+      endDate: e.endDate,
+      isPublished: e.isPublished,
+      sectionsCount: e._count.sections,
+      screeningsCount: e._count.screenings
+    }))
+
+    return NextResponse.json({
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    })
+  } catch (error) {
+    console.error('Error fetching editions:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener ediciones' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const festivalId = parseInt(id)
+
+    if (isNaN(festivalId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    // Verificar que el festival existe
+    const festival = await prisma.festival.findUnique({
+      where: { id: festivalId }
+    })
+
+    if (!festival) {
+      return NextResponse.json(
+        { error: 'Festival no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    const body = await request.json()
+
+    // Agregar festivalId al body para validación
+    const dataToValidate = { ...body, festivalId }
+
+    const validation = festivalEditionFormSchema.safeParse(dataToValidate)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: validation.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const data = validation.data
+
+    // Verificar que no exista otra edición con el mismo número o año
+    const existingEdition = await prisma.festivalEdition.findFirst({
+      where: {
+        festivalId,
+        OR: [
+          { editionNumber: data.editionNumber },
+          { year: data.year }
+        ]
+      }
+    })
+
+    if (existingEdition) {
+      return NextResponse.json(
+        { error: 'Ya existe una edición con ese número o año' },
+        { status: 400 }
+      )
+    }
+
+    const edition = await prisma.festivalEdition.create({
+      data: {
+        festivalId,
+        editionNumber: data.editionNumber,
+        year: data.year,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+        theme: data.theme || null,
+        description: data.description || null,
+        posterUrl: data.posterUrl || null,
+        websiteUrl: data.websiteUrl || null,
+        isPublished: data.isPublished ?? false,
+      },
+      include: {
+        festival: {
+          select: { id: true, name: true, slug: true }
+        }
+      }
+    })
+
+    return NextResponse.json(edition, { status: 201 })
+  } catch (error) {
+    console.error('Error creating edition:', error)
+    return NextResponse.json(
+      { error: 'Error al crear edición' },
+      { status: 500 }
+    )
+  }
+}
+
+
+// ==================================================
+// src/app/api/festivals/[id]/route.ts
+// ==================================================
+// src/app/api/festivals/[id]/route.ts
+
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { festivalFormSchema } from '@/lib/festivals/festivalTypes'
+
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const festivalId = parseInt(id)
+
+    if (isNaN(festivalId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    const festival = await prisma.festival.findUnique({
+      where: { id: festivalId },
+      include: {
+        location: {
+          select: { id: true, name: true }
+        },
+        editions: {
+          orderBy: { year: 'desc' },
+          select: {
+            id: true,
+            editionNumber: true,
+            year: true,
+            startDate: true,
+            endDate: true,
+            isPublished: true,
+            _count: {
+              select: { sections: true, screenings: true }
+            }
+          }
+        },
+        sectionTemplates: {
+          where: { isActive: true },
+          orderBy: { displayOrder: 'asc' }
+        },
+        awards: {
+          where: { isActive: true },
+          orderBy: { displayOrder: 'asc' }
+        }
+      }
+    })
+
+    if (!festival) {
+      return NextResponse.json(
+        { error: 'Festival no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(festival)
+  } catch (error) {
+    console.error('Error fetching festival:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener festival' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const festivalId = parseInt(id)
+
+    if (isNaN(festivalId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    const body = await request.json()
+
+    // Validar datos parcialmente
+    const validation = festivalFormSchema.partial().safeParse(body)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: validation.error.flatten() },
+        { status: 400 }
+      )
+    }
+
+    const data = validation.data
+
+    // Verificar que el festival existe
+    const existing = await prisma.festival.findUnique({
+      where: { id: festivalId }
+    })
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Festival no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    // Si se cambia el slug, verificar que no exista
+    if (data.slug && data.slug !== existing.slug) {
+      const slugExists = await prisma.festival.findUnique({
+        where: { slug: data.slug }
+      })
+
+      if (slugExists) {
+        return NextResponse.json(
+          { error: 'Ya existe un festival con ese slug' },
+          { status: 400 }
+        )
+      }
+    }
+
+    const festival = await prisma.festival.update({
+      where: { id: festivalId },
+      data: {
+        ...(data.name && { name: data.name }),
+        ...(data.slug && { slug: data.slug }),
+        ...(data.shortName !== undefined && { shortName: data.shortName || null }),
+        ...(data.description !== undefined && { description: data.description || null }),
+        ...(data.logoUrl !== undefined && { logoUrl: data.logoUrl || null }),
+        ...(data.website !== undefined && { website: data.website || null }),
+        ...(data.locationId && { locationId: data.locationId }),
+        ...(data.foundedYear !== undefined && { foundedYear: data.foundedYear || null }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+      },
+      include: {
+        location: {
+          select: { id: true, name: true }
+        }
+      }
+    })
+
+    return NextResponse.json(festival)
+  } catch (error) {
+    console.error('Error updating festival:', error)
+    return NextResponse.json(
+      { error: 'Error al actualizar festival' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params
+    const festivalId = parseInt(id)
+
+    if (isNaN(festivalId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
+    // Verificar que el festival existe
+    const existing = await prisma.festival.findUnique({
+      where: { id: festivalId },
+      include: {
+        _count: {
+          select: { editions: true }
+        }
+      }
+    })
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Festival no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    // Advertir si tiene ediciones
+    if (existing._count.editions > 0) {
+      return NextResponse.json(
+        { error: `No se puede eliminar: el festival tiene ${existing._count.editions} edición(es)` },
+        { status: 400 }
+      )
+    }
+
+    await prisma.festival.delete({
+      where: { id: festivalId }
+    })
+
+    return new NextResponse(null, { status: 204 })
+  } catch (error) {
+    console.error('Error deleting festival:', error)
+    return NextResponse.json(
+      { error: 'Error al eliminar festival' },
+      { status: 500 }
+    )
+  }
+}
+
+
+// ==================================================
 // src/app/api/first-name-gender/route.ts
 // ==================================================
 // src/app/api/first-name-gender/route.ts
@@ -18750,7 +22307,7 @@ export async function GET(request: NextRequest) {
         const skip = (page - 1) * limit
 
         const movies = await prisma.$queryRaw<any[]>`
-          SELECT 
+          SELECT
             id,
             slug,
             title,
@@ -18762,9 +22319,16 @@ export async function GET(request: NextRequest) {
             poster_url as "posterUrl",
             stage
           FROM movies
-          WHERE 
+          WHERE
             unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
-          ORDER BY title ASC
+          ORDER BY
+            CASE
+              WHEN unaccent(LOWER(title)) = unaccent(${searchQuery}) THEN 0
+              WHEN unaccent(LOWER(title)) LIKE unaccent(${searchQuery + '%'}) THEN 1
+              ELSE 2
+            END,
+            LENGTH(title) ASC,
+            title ASC
           LIMIT ${limit}
           OFFSET ${skip}
         `
@@ -25967,6 +29531,1200 @@ export function CountrySelector({
     </div>
   )
 }
+
+// ==================================================
+// src/components/admin/festivals/FestivalEditionForm.tsx
+// ==================================================
+// src/components/admin/festivals/FestivalEditionForm.tsx
+
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Loader2 } from 'lucide-react'
+import { FestivalEdition, FestivalEditionFormData, festivalEditionFormSchema } from '@/lib/festivals/festivalTypes'
+import { DateInput } from '@/components/admin/ui/DateInput'
+import toast from 'react-hot-toast'
+
+interface FestivalEditionFormProps {
+  festivalId: number
+  festivalName: string
+  edition?: FestivalEdition
+}
+
+export default function FestivalEditionForm({ festivalId, festivalName, edition }: FestivalEditionFormProps) {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const [formData, setFormData] = useState<Partial<FestivalEditionFormData>>({
+    festivalId,
+    editionNumber: edition?.editionNumber || undefined,
+    year: edition?.year || new Date().getFullYear(),
+    startDate: edition?.startDate ? new Date(edition.startDate).toISOString().split('T')[0] : '',
+    endDate: edition?.endDate ? new Date(edition.endDate).toISOString().split('T')[0] : '',
+    theme: edition?.theme || '',
+    description: edition?.description || '',
+    posterUrl: edition?.posterUrl || '',
+    websiteUrl: edition?.websiteUrl || '',
+    isPublished: edition?.isPublished ?? false,
+  })
+
+  // Auto-set year when dates change
+  useEffect(() => {
+    if (formData.startDate) {
+      const year = new Date(formData.startDate).getFullYear()
+      if (year !== formData.year) {
+        setFormData(prev => ({ ...prev, year }))
+      }
+    }
+  }, [formData.startDate])
+
+  const handleChange = (field: keyof FestivalEditionFormData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    // Validate
+    const validation = festivalEditionFormSchema.safeParse(formData)
+    if (!validation.success) {
+      const firstError = validation.error.errors[0]
+      setError(firstError.message)
+      return
+    }
+
+    // Validate date range
+    if (formData.startDate && formData.endDate) {
+      if (new Date(formData.startDate) > new Date(formData.endDate)) {
+        setError('La fecha de inicio debe ser anterior a la fecha de fin')
+        return
+      }
+    }
+
+    setIsLoading(true)
+
+    try {
+      const url = edition
+        ? `/api/festival-editions/${edition.id}`
+        : `/api/festivals/${festivalId}/editions`
+
+      const method = edition ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al guardar la edición')
+      }
+
+      toast.success(edition ? 'Edición actualizada' : 'Edición creada')
+      router.push(`/admin/festivals/${festivalId}`)
+      router.refresh()
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Error al guardar la edición')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+
+      <div className="bg-gray-50 px-4 py-3 rounded-md">
+        <p className="text-sm text-gray-600">
+          Festival: <span className="font-medium text-gray-900">{festivalName}</span>
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Número de edición */}
+        <div>
+          <label htmlFor="editionNumber" className="block text-sm font-medium text-gray-700">
+            Número de edición *
+          </label>
+          <input
+            type="number"
+            id="editionNumber"
+            value={formData.editionNumber || ''}
+            onChange={(e) => handleChange('editionNumber', e.target.value ? parseInt(e.target.value) : undefined)}
+            required
+            min="1"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="25"
+          />
+          <p className="mt-1 text-sm text-gray-500">
+            Ej: 25° edición
+          </p>
+        </div>
+
+        {/* Año */}
+        <div>
+          <label htmlFor="year" className="block text-sm font-medium text-gray-700">
+            Año *
+          </label>
+          <input
+            type="number"
+            id="year"
+            value={formData.year || ''}
+            onChange={(e) => handleChange('year', e.target.value ? parseInt(e.target.value) : undefined)}
+            required
+            min="1900"
+            max="2100"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+
+        {/* Tema */}
+        <div>
+          <label htmlFor="theme" className="block text-sm font-medium text-gray-700">
+            Tema (opcional)
+          </label>
+          <input
+            type="text"
+            id="theme"
+            value={formData.theme || ''}
+            onChange={(e) => handleChange('theme', e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Cine latinoamericano"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Fecha de inicio */}
+        <div>
+          <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+            Fecha de inicio *
+          </label>
+          <DateInput
+            value={formData.startDate || ''}
+            onChange={(value: string) => handleChange('startDate', value)}
+          />
+        </div>
+
+        {/* Fecha de fin */}
+        <div>
+          <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
+            Fecha de fin *
+          </label>
+          <DateInput
+            value={formData.endDate || ''}
+            onChange={(value: string) => handleChange('endDate', value)}
+          />
+        </div>
+      </div>
+
+      {/* Descripción */}
+      <div>
+        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+          Descripción
+        </label>
+        <textarea
+          id="description"
+          value={formData.description || ''}
+          onChange={(e) => handleChange('description', e.target.value)}
+          rows={4}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="Descripción de esta edición del festival..."
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* URL del afiche */}
+        <div>
+          <label htmlFor="posterUrl" className="block text-sm font-medium text-gray-700">
+            URL del afiche
+          </label>
+          <input
+            type="url"
+            id="posterUrl"
+            value={formData.posterUrl || ''}
+            onChange={(e) => handleChange('posterUrl', e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="https://..."
+          />
+        </div>
+
+        {/* Website de la edición */}
+        <div>
+          <label htmlFor="websiteUrl" className="block text-sm font-medium text-gray-700">
+            Sitio web de la edición
+          </label>
+          <input
+            type="url"
+            id="websiteUrl"
+            value={formData.websiteUrl || ''}
+            onChange={(e) => handleChange('websiteUrl', e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="https://..."
+          />
+        </div>
+      </div>
+
+      {/* Publicado */}
+      <div className="flex items-center">
+        <input
+          type="checkbox"
+          id="isPublished"
+          checked={formData.isPublished}
+          onChange={(e) => handleChange('isPublished', e.target.checked)}
+          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+        />
+        <label htmlFor="isPublished" className="ml-2 block text-sm text-gray-900">
+          Edición publicada (visible en el sitio público)
+        </label>
+      </div>
+
+      {/* Botones */}
+      <div className="flex justify-end gap-4">
+        <Link
+          href={`/admin/festivals/${festivalId}`}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+        >
+          Cancelar
+        </Link>
+        <button
+          type="submit"
+          disabled={isLoading || !formData.editionNumber || !formData.startDate || !formData.endDate}
+          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isLoading ? 'Guardando...' : (edition ? 'Actualizar' : 'Crear')}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+
+// ==================================================
+// src/components/admin/festivals/FestivalForm.tsx
+// ==================================================
+// src/components/admin/festivals/FestivalForm.tsx
+
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { X, Loader2 } from 'lucide-react'
+import { useDebounce } from '@/hooks/useDebounce'
+import { Festival, FestivalFormData, festivalFormSchema } from '@/lib/festivals/festivalTypes'
+import toast from 'react-hot-toast'
+
+interface Location {
+  id: number
+  name: string
+  path?: string
+}
+
+interface FestivalFormProps {
+  festival?: Festival & { location?: Location }
+}
+
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+export default function FestivalForm({ festival }: FestivalFormProps) {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  // Form data
+  const [formData, setFormData] = useState<Partial<FestivalFormData>>({
+    name: festival?.name || '',
+    shortName: festival?.shortName || '',
+    slug: festival?.slug || '',
+    description: festival?.description || '',
+    logoUrl: festival?.logoUrl || '',
+    website: festival?.website || '',
+    locationId: festival?.locationId || undefined,
+    foundedYear: festival?.foundedYear || undefined,
+    isActive: festival?.isActive ?? true,
+  })
+
+  // Location autocomplete
+  const [locationSearch, setLocationSearch] = useState('')
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(
+    festival?.location || null
+  )
+  const [suggestions, setSuggestions] = useState<Location[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
+  const autocompleteRef = useRef<HTMLDivElement>(null)
+
+  const debouncedSearchTerm = useDebounce(locationSearch, 300)
+
+  // Auto-generate slug when name changes
+  useEffect(() => {
+    if (formData.name && !festival) {
+      setFormData(prev => ({
+        ...prev,
+        slug: generateSlug(formData.name || '')
+      }))
+    }
+  }, [formData.name, festival])
+
+  // Search locations
+  useEffect(() => {
+    if (debouncedSearchTerm.length >= 2) {
+      searchLocations(debouncedSearchTerm)
+    } else {
+      setSuggestions([])
+      setShowSuggestions(false)
+    }
+  }, [debouncedSearchTerm])
+
+  // Click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Load initial location
+  useEffect(() => {
+    if (festival?.location) {
+      setSelectedLocation(festival.location)
+      setLocationSearch(festival.location.name)
+    }
+  }, [festival])
+
+  const searchLocations = async (searchTerm: string) => {
+    setIsSearching(true)
+    try {
+      const response = await fetch(`/api/locations/search?q=${encodeURIComponent(searchTerm)}&limit=10`)
+      if (response.ok) {
+        const data = await response.json()
+        setSuggestions(data)
+        setShowSuggestions(true)
+      }
+    } catch (error) {
+      console.error('Error searching locations:', error)
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const handleLocationSearchChange = (value: string) => {
+    setLocationSearch(value)
+    setSelectedLocation(null)
+    setFormData(prev => ({ ...prev, locationId: undefined }))
+
+    if (!value.trim()) {
+      setSuggestions([])
+      setShowSuggestions(false)
+    }
+  }
+
+  const handleSelectLocation = (location: Location) => {
+    setSelectedLocation(location)
+    setLocationSearch(location.name)
+    setFormData(prev => ({ ...prev, locationId: location.id }))
+    setShowSuggestions(false)
+    setSuggestions([])
+  }
+
+  const handleClearLocation = () => {
+    setSelectedLocation(null)
+    setLocationSearch('')
+    setFormData(prev => ({ ...prev, locationId: undefined }))
+    setSuggestions([])
+  }
+
+  const handleChange = (field: keyof FestivalFormData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    // Validate
+    const validation = festivalFormSchema.safeParse(formData)
+    if (!validation.success) {
+      const firstError = validation.error.errors[0]
+      setError(firstError.message)
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const url = festival
+        ? `/api/festivals/${festival.id}`
+        : '/api/festivals'
+
+      const method = festival ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al guardar el festival')
+      }
+
+      toast.success(festival ? 'Festival actualizado' : 'Festival creado')
+      router.push('/admin/festivals')
+      router.refresh()
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Error al guardar el festival')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Nombre */}
+        <div>
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+            Nombre *
+          </label>
+          <input
+            type="text"
+            id="name"
+            value={formData.name || ''}
+            onChange={(e) => handleChange('name', e.target.value)}
+            required
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Festival Internacional de Cine de Mar del Plata"
+          />
+        </div>
+
+        {/* Nombre corto */}
+        <div>
+          <label htmlFor="shortName" className="block text-sm font-medium text-gray-700">
+            Nombre corto
+          </label>
+          <input
+            type="text"
+            id="shortName"
+            value={formData.shortName || ''}
+            onChange={(e) => handleChange('shortName', e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="BAFICI"
+          />
+        </div>
+      </div>
+
+      {/* Slug */}
+      <div>
+        <label htmlFor="slug" className="block text-sm font-medium text-gray-700">
+          Slug *
+        </label>
+        <input
+          type="text"
+          id="slug"
+          value={formData.slug || ''}
+          onChange={(e) => handleChange('slug', e.target.value)}
+          required
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="festival-mar-del-plata"
+        />
+        <p className="mt-1 text-sm text-gray-500">
+          Se usa en la URL: /festivales/{formData.slug || 'slug'}
+        </p>
+      </div>
+
+      {/* Ciudad (autocomplete) */}
+      <div ref={autocompleteRef}>
+        <label htmlFor="locationSearch" className="block text-sm font-medium text-gray-700">
+          Ciudad *
+        </label>
+        <div className="relative mt-1">
+          <div className="relative">
+            <input
+              type="text"
+              id="locationSearch"
+              value={locationSearch}
+              onChange={(e) => handleLocationSearchChange(e.target.value)}
+              placeholder="Buscar ciudad..."
+              required={!selectedLocation}
+              className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            {(locationSearch || selectedLocation) && (
+              <button
+                type="button"
+                onClick={handleClearLocation}
+                className="absolute inset-y-0 right-0 flex items-center pr-3"
+              >
+                <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
+
+          {selectedLocation && selectedLocation.path && (
+            <p className="mt-1 text-sm text-gray-500">
+              {selectedLocation.path}
+            </p>
+          )}
+
+          {showSuggestions && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+              {isSearching ? (
+                <div className="px-3 py-2 text-sm text-gray-500 flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Buscando...
+                </div>
+              ) : suggestions.length > 0 ? (
+                <ul className="py-1">
+                  {suggestions.map((suggestion) => (
+                    <li
+                      key={suggestion.id}
+                      onClick={() => handleSelectLocation(suggestion)}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                    >
+                      <div className="text-sm font-medium text-gray-900">
+                        {suggestion.name}
+                      </div>
+                      {suggestion.path && suggestion.path !== suggestion.name && (
+                        <div className="text-xs text-gray-500">
+                          {suggestion.path}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="px-3 py-2 text-sm text-gray-500">
+                  No se encontraron ciudades
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Año de fundación */}
+        <div>
+          <label htmlFor="foundedYear" className="block text-sm font-medium text-gray-700">
+            Año de fundación
+          </label>
+          <input
+            type="number"
+            id="foundedYear"
+            value={formData.foundedYear || ''}
+            onChange={(e) => handleChange('foundedYear', e.target.value ? parseInt(e.target.value) : null)}
+            min="1800"
+            max={new Date().getFullYear()}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="1985"
+          />
+        </div>
+
+        {/* Website */}
+        <div>
+          <label htmlFor="website" className="block text-sm font-medium text-gray-700">
+            Sitio web
+          </label>
+          <input
+            type="url"
+            id="website"
+            value={formData.website || ''}
+            onChange={(e) => handleChange('website', e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="https://www.bafici.gob.ar"
+          />
+        </div>
+      </div>
+
+      {/* Descripción */}
+      <div>
+        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+          Descripción
+        </label>
+        <textarea
+          id="description"
+          value={formData.description || ''}
+          onChange={(e) => handleChange('description', e.target.value)}
+          rows={4}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="Breve descripción del festival..."
+        />
+      </div>
+
+      {/* Logo URL */}
+      <div>
+        <label htmlFor="logoUrl" className="block text-sm font-medium text-gray-700">
+          URL del logo
+        </label>
+        <input
+          type="url"
+          id="logoUrl"
+          value={formData.logoUrl || ''}
+          onChange={(e) => handleChange('logoUrl', e.target.value)}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="https://..."
+        />
+      </div>
+
+      {/* Activo */}
+      <div className="flex items-center">
+        <input
+          type="checkbox"
+          id="isActive"
+          checked={formData.isActive}
+          onChange={(e) => handleChange('isActive', e.target.checked)}
+          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+        />
+        <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
+          Festival activo
+        </label>
+      </div>
+
+      {/* Botones */}
+      <div className="flex justify-end gap-4">
+        <Link
+          href="/admin/festivals"
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+        >
+          Cancelar
+        </Link>
+        <button
+          type="submit"
+          disabled={isLoading || !formData.name || !formData.locationId}
+          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isLoading ? 'Guardando...' : (festival ? 'Actualizar' : 'Crear')}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+
+// ==================================================
+// src/components/admin/festivals/FestivalScreeningForm.tsx
+// ==================================================
+// src/components/admin/festivals/FestivalScreeningForm.tsx
+
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { X, Loader2, Search } from 'lucide-react'
+import { useDebounce } from '@/hooks/useDebounce'
+import {
+  FestivalScreening,
+  FestivalScreeningFormData,
+  PremiereType,
+  PremiereTypeLabels,
+  festivalScreeningFormSchema
+} from '@/lib/festivals/festivalTypes'
+
+// Simple section type for the form - only needs id, name, isCompetitive
+interface SimpleFestivalSection {
+  id: number
+  name: string
+  isCompetitive: boolean
+}
+import { DateInput } from '@/components/admin/ui/DateInput'
+import toast from 'react-hot-toast'
+
+interface Movie {
+  id: number
+  title: string
+  slug: string
+  year?: number | null
+  posterUrl?: string | null
+}
+
+interface Venue {
+  id: number
+  name: string
+}
+
+interface FestivalScreeningFormProps {
+  editionId: number
+  sections: SimpleFestivalSection[]
+  screening?: FestivalScreening
+  onSuccess?: () => void
+  onCancel?: () => void
+  compact?: boolean
+}
+
+export default function FestivalScreeningForm({
+  editionId,
+  sections,
+  screening,
+  onSuccess,
+  onCancel,
+  compact = false
+}: FestivalScreeningFormProps) {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const [formData, setFormData] = useState<Partial<FestivalScreeningFormData>>(() => {
+    // Parse date without timezone conversion
+    let dateStr = ''
+    if (screening?.screeningDate) {
+      const d = String(screening.screeningDate)
+      dateStr = d.split('T')[0]
+    }
+
+    // Parse time without timezone conversion
+    let timeStr = ''
+    if (screening?.screeningTime) {
+      const t = String(screening.screeningTime)
+      const match = t.match(/(\d{2}):(\d{2})/)
+      if (match) {
+        timeStr = `${match[1]}:${match[2]}`
+      }
+    }
+
+    return {
+      editionId,
+      sectionId: screening?.sectionId || undefined,
+      movieId: screening?.movieId || undefined,
+      screeningDate: dateStr,
+      screeningTime: timeStr,
+      venueId: screening?.venueId || undefined,
+      premiereType: screening?.premiereType || 'REGULAR',
+      isOfficial: screening?.isOfficial ?? true,
+      notes: screening?.notes || '',
+    }
+  })
+
+  // Movie search
+  const [movieSearch, setMovieSearch] = useState(screening?.movie?.title || '')
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(screening?.movie || null)
+  const [movieSuggestions, setMovieSuggestions] = useState<Movie[]>([])
+  const [showMovieSuggestions, setShowMovieSuggestions] = useState(false)
+  const [isSearchingMovies, setIsSearchingMovies] = useState(false)
+  const movieAutocompleteRef = useRef<HTMLDivElement>(null)
+
+  // Venues
+  const [venues, setVenues] = useState<Venue[]>([])
+
+  const debouncedMovieSearch = useDebounce(movieSearch, 300)
+
+  // Load venues
+  useEffect(() => {
+    loadVenues()
+  }, [])
+
+  // Search movies - only if no movie is already selected
+  useEffect(() => {
+    if (debouncedMovieSearch.length >= 2 && !selectedMovie) {
+      searchMovies(debouncedMovieSearch)
+    } else {
+      setMovieSuggestions([])
+      setShowMovieSuggestions(false)
+    }
+  }, [debouncedMovieSearch, selectedMovie])
+
+  // Click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (movieAutocompleteRef.current && !movieAutocompleteRef.current.contains(event.target as Node)) {
+        setShowMovieSuggestions(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+
+  const loadVenues = async () => {
+    try {
+      const response = await fetch('/api/screening-venues?limit=100')
+      if (response.ok) {
+        const data = await response.json()
+        // API returns { venues, pagination }
+        setVenues(data.venues || data.data || [])
+      }
+    } catch (error) {
+      console.error('Error loading venues:', error)
+    }
+  }
+
+  const searchMovies = async (searchTerm: string) => {
+    setIsSearchingMovies(true)
+    try {
+      const response = await fetch(`/api/movies?search=${encodeURIComponent(searchTerm)}&limit=10`)
+      if (response.ok) {
+        const data = await response.json()
+        // API returns { movies, pagination }
+        setMovieSuggestions(data.movies || data.data || [])
+        setShowMovieSuggestions(true)
+      }
+    } catch (error) {
+      console.error('Error searching movies:', error)
+    } finally {
+      setIsSearchingMovies(false)
+    }
+  }
+
+  const handleMovieSearchChange = (value: string) => {
+    setMovieSearch(value)
+    setSelectedMovie(null)
+    setFormData(prev => ({ ...prev, movieId: undefined }))
+
+    if (!value.trim()) {
+      setMovieSuggestions([])
+      setShowMovieSuggestions(false)
+    }
+  }
+
+  const handleSelectMovie = (movie: Movie) => {
+    setSelectedMovie(movie)
+    setMovieSearch(movie.title)
+    setFormData(prev => ({ ...prev, movieId: movie.id }))
+    setShowMovieSuggestions(false)
+    setMovieSuggestions([])
+  }
+
+  const handleClearMovie = () => {
+    setSelectedMovie(null)
+    setMovieSearch('')
+    setFormData(prev => ({ ...prev, movieId: undefined }))
+    setMovieSuggestions([])
+  }
+
+  const handleChange = (field: keyof FestivalScreeningFormData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    // Validate
+    const validation = festivalScreeningFormSchema.safeParse(formData)
+    if (!validation.success) {
+      const firstError = validation.error.errors[0]
+      setError(firstError.message)
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const url = screening
+        ? `/api/festival-screenings/${screening.id}`
+        : `/api/festival-editions/${editionId}/screenings`
+
+      const method = screening ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al guardar la proyección')
+      }
+
+      toast.success(screening ? 'Proyección actualizada' : 'Proyección creada')
+
+      if (onSuccess) {
+        onSuccess()
+      } else {
+        router.refresh()
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Error al guardar la proyección')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const formContent = (
+    <>
+      {error && (
+        <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Película (autocomplete) */}
+      <div ref={movieAutocompleteRef}>
+        <label htmlFor="movieSearch" className="block text-sm font-medium text-gray-700">
+          Película *
+        </label>
+        <div className="relative mt-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              id="movieSearch"
+              value={movieSearch}
+              onChange={(e) => handleMovieSearchChange(e.target.value)}
+              placeholder="Buscar película..."
+              required={!selectedMovie}
+              className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            {(movieSearch || selectedMovie) && (
+              <button
+                type="button"
+                onClick={handleClearMovie}
+                className="absolute inset-y-0 right-0 flex items-center pr-3"
+              >
+                <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
+          </div>
+
+          {selectedMovie && (
+            <p className="mt-1 text-sm text-gray-500">
+              {selectedMovie.title} {selectedMovie.year && `(${selectedMovie.year})`}
+            </p>
+          )}
+
+          {showMovieSuggestions && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+              {isSearchingMovies ? (
+                <div className="px-3 py-2 text-sm text-gray-500 flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Buscando...
+                </div>
+              ) : movieSuggestions.length > 0 ? (
+                <ul className="py-1">
+                  {movieSuggestions.map((movie) => (
+                    <li
+                      key={movie.id}
+                      onClick={() => handleSelectMovie(movie)}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-3"
+                    >
+                      {movie.posterUrl && (
+                        <img
+                          src={movie.posterUrl}
+                          alt=""
+                          className="w-8 h-12 object-cover rounded"
+                        />
+                      )}
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {movie.title}
+                        </div>
+                        {movie.year && (
+                          <div className="text-xs text-gray-500">
+                            {movie.year}
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="px-3 py-2 text-sm text-gray-500">
+                  No se encontraron películas
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sección */}
+      <div>
+        <label htmlFor="sectionId" className="block text-sm font-medium text-gray-700">
+          Sección *
+        </label>
+        <select
+          id="sectionId"
+          value={formData.sectionId || ''}
+          onChange={(e) => handleChange('sectionId', e.target.value ? parseInt(e.target.value) : undefined)}
+          required
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+        >
+          <option value="">Seleccionar sección</option>
+          {sections.map((section) => (
+            <option key={section.id} value={section.id}>
+              {section.name} {section.isCompetitive && '(Competencia)'}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Fecha de proyección */}
+        <div>
+          <label htmlFor="screeningDate" className="block text-sm font-medium text-gray-700">
+            Fecha *
+          </label>
+          <DateInput
+            value={formData.screeningDate || ''}
+            onChange={(value: string) => handleChange('screeningDate', value)}
+          />
+        </div>
+
+        {/* Horario */}
+        <div>
+          <label htmlFor="screeningTime" className="block text-sm font-medium text-gray-700">
+            Horario
+          </label>
+          <input
+            type="time"
+            id="screeningTime"
+            value={formData.screeningTime || ''}
+            onChange={(e) => handleChange('screeningTime', e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Tipo de premiere */}
+        <div>
+          <label htmlFor="premiereType" className="block text-sm font-medium text-gray-700">
+            Tipo de proyección
+          </label>
+          <select
+            id="premiereType"
+            value={formData.premiereType || 'REGULAR'}
+            onChange={(e) => handleChange('premiereType', e.target.value as PremiereType)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            {Object.entries(PremiereTypeLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Venue */}
+        <div>
+          <label htmlFor="venueId" className="block text-sm font-medium text-gray-700">
+            Sala / Lugar
+          </label>
+          <select
+            id="venueId"
+            value={formData.venueId || ''}
+            onChange={(e) => handleChange('venueId', e.target.value ? parseInt(e.target.value) : null)}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">Sin especificar</option>
+            {venues.map((venue) => (
+              <option key={venue.id} value={venue.id}>
+                {venue.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Notas */}
+      <div>
+        <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+          Notas
+        </label>
+        <textarea
+          id="notes"
+          value={formData.notes || ''}
+          onChange={(e) => handleChange('notes', e.target.value)}
+          rows={2}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="Presentación del director, subtitulada, etc."
+        />
+      </div>
+
+      {/* Oficial */}
+      <div className="flex items-center">
+        <input
+          type="checkbox"
+          id="isOfficial"
+          checked={formData.isOfficial}
+          onChange={(e) => handleChange('isOfficial', e.target.checked)}
+          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+        />
+        <label htmlFor="isOfficial" className="ml-2 block text-sm text-gray-900">
+          Proyección oficial
+        </label>
+      </div>
+
+      {/* Botones */}
+      <div className="flex justify-end gap-4">
+        {onCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+          >
+            Cancelar
+          </button>
+        ) : (
+          <Link
+            href={`/admin/festival-editions/${editionId}`}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+          >
+            Cancelar
+          </Link>
+        )}
+        <button
+          type="submit"
+          disabled={isLoading || !formData.movieId || !formData.sectionId || !formData.screeningDate}
+          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isLoading ? 'Guardando...' : (screening ? 'Actualizar' : 'Agregar')}
+        </button>
+      </div>
+    </>
+  )
+
+  if (compact) {
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {formContent}
+      </form>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {formContent}
+    </form>
+  )
+}
+
 
 // ==================================================
 // src/components/admin/locations/LocationForm.tsx
@@ -42314,6 +47072,367 @@ export function periodToApiFilters(period: DecadePeriod, year: number | null): {
 }
 
 // ==================================================
+// src/lib/festivals/festivalTypes.ts
+// ==================================================
+// src/lib/festivals/festivalTypes.ts
+
+import { z } from 'zod'
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+export const PremiereType = {
+  WORLD_PREMIERE: 'WORLD_PREMIERE',
+  INTERNATIONAL_PREMIERE: 'INTERNATIONAL_PREMIERE',
+  NATIONAL_PREMIERE: 'NATIONAL_PREMIERE',
+  REGIONAL_PREMIERE: 'REGIONAL_PREMIERE',
+  REGULAR: 'REGULAR',
+} as const
+
+export type PremiereType = (typeof PremiereType)[keyof typeof PremiereType]
+
+export const PremiereTypeLabels: Record<PremiereType, string> = {
+  WORLD_PREMIERE: 'Premiere mundial',
+  INTERNATIONAL_PREMIERE: 'Premiere internacional',
+  NATIONAL_PREMIERE: 'Premiere nacional',
+  REGIONAL_PREMIERE: 'Premiere regional',
+  REGULAR: 'Proyección',
+}
+
+export const FestivalAwardType = {
+  FILM: 'FILM',
+  PERSON: 'PERSON',
+  TECHNICAL: 'TECHNICAL',
+  HONORARY: 'HONORARY',
+  AUDIENCE: 'AUDIENCE',
+} as const
+
+export type FestivalAwardType = (typeof FestivalAwardType)[keyof typeof FestivalAwardType]
+
+export const FestivalAwardTypeLabels: Record<FestivalAwardType, string> = {
+  FILM: 'Premio a película',
+  PERSON: 'Premio a persona',
+  TECHNICAL: 'Premio técnico',
+  HONORARY: 'Premio honorario',
+  AUDIENCE: 'Premio del público',
+}
+
+// ============================================================================
+// SCHEMAS DE VALIDACIÓN - FESTIVAL
+// ============================================================================
+
+export const festivalFormSchema = z.object({
+  name: z.string().min(1, 'El nombre es requerido'),
+  shortName: z.string().optional(),
+  slug: z.string().min(1, 'El slug es requerido'),
+  description: z.string().optional(),
+  logoUrl: z.string().optional(),
+  website: z.string().url().optional().or(z.literal('')),
+  locationId: z.number({ required_error: 'La ciudad es requerida' }),
+  foundedYear: z.preprocess(
+    (val) => (val === '' || val === null ? null : Number(val)),
+    z.number().min(1800).max(new Date().getFullYear()).nullable().optional()
+  ),
+  isActive: z.boolean().default(true),
+})
+
+export type FestivalFormData = z.infer<typeof festivalFormSchema>
+
+// ============================================================================
+// SCHEMAS DE VALIDACIÓN - EDICIÓN
+// ============================================================================
+
+export const festivalEditionFormSchema = z.object({
+  festivalId: z.number(),
+  editionNumber: z.number().min(1, 'El número de edición es requerido'),
+  year: z.number().min(1900).max(2100),
+  startDate: z.string().min(1, 'La fecha de inicio es requerida'),
+  endDate: z.string().min(1, 'La fecha de fin es requerida'),
+  theme: z.string().optional(),
+  description: z.string().optional(),
+  posterUrl: z.string().optional(),
+  websiteUrl: z.string().url().optional().or(z.literal('')),
+  isPublished: z.boolean().default(false),
+})
+
+export type FestivalEditionFormData = z.infer<typeof festivalEditionFormSchema>
+
+// ============================================================================
+// SCHEMAS DE VALIDACIÓN - SECCIÓN TEMPLATE
+// ============================================================================
+
+export const festivalSectionTemplateFormSchema = z.object({
+  festivalId: z.number(),
+  name: z.string().min(1, 'El nombre es requerido'),
+  slug: z.string().min(1, 'El slug es requerido'),
+  description: z.string().optional(),
+  isCompetitive: z.boolean().default(false),
+  displayOrder: z.number().default(0),
+  isActive: z.boolean().default(true),
+})
+
+export type FestivalSectionTemplateFormData = z.infer<typeof festivalSectionTemplateFormSchema>
+
+// ============================================================================
+// SCHEMAS DE VALIDACIÓN - SECCIÓN
+// ============================================================================
+
+export const festivalSectionFormSchema = z.object({
+  editionId: z.number(),
+  templateId: z.number().nullable().optional(),
+  name: z.string().min(1, 'El nombre es requerido'),
+  slug: z.string().min(1, 'El slug es requerido'),
+  description: z.string().optional(),
+  isCompetitive: z.boolean().default(false),
+  displayOrder: z.number().default(0),
+})
+
+export type FestivalSectionFormData = z.infer<typeof festivalSectionFormSchema>
+
+// ============================================================================
+// SCHEMAS DE VALIDACIÓN - PROYECCIÓN
+// ============================================================================
+
+export const festivalScreeningFormSchema = z.object({
+  editionId: z.number(),
+  sectionId: z.number({ required_error: 'La sección es requerida' }),
+  movieId: z.number({ required_error: 'La película es requerida' }),
+  screeningDate: z.string().min(1, 'La fecha de proyección es requerida'),
+  screeningTime: z.string().optional(),
+  venueId: z.number().nullable().optional(),
+  premiereType: z.enum([
+    'WORLD_PREMIERE',
+    'INTERNATIONAL_PREMIERE',
+    'NATIONAL_PREMIERE',
+    'REGIONAL_PREMIERE',
+    'REGULAR',
+  ]).default('REGULAR'),
+  isOfficial: z.boolean().default(true),
+  notes: z.string().optional(),
+})
+
+export type FestivalScreeningFormData = z.infer<typeof festivalScreeningFormSchema>
+
+// ============================================================================
+// INTERFACES
+// ============================================================================
+
+export interface Festival {
+  id: number
+  slug: string
+  name: string
+  shortName?: string | null
+  description?: string | null
+  logoUrl?: string | null
+  website?: string | null
+  locationId: number
+  foundedYear?: number | null
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+  location?: {
+    id: number
+    name: string
+  }
+  _count?: {
+    editions: number
+    awards: number
+  }
+}
+
+export interface FestivalEdition {
+  id: number
+  festivalId: number
+  editionNumber: number
+  year: number
+  startDate: Date
+  endDate: Date
+  theme?: string | null
+  description?: string | null
+  posterUrl?: string | null
+  websiteUrl?: string | null
+  isPublished: boolean
+  createdAt: Date
+  updatedAt: Date
+  festival?: Festival
+  _count?: {
+    sections: number
+    screenings: number
+    awardWinners: number
+  }
+}
+
+export interface FestivalSectionTemplate {
+  id: number
+  festivalId: number
+  slug: string
+  name: string
+  description?: string | null
+  isCompetitive: boolean
+  displayOrder: number
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface FestivalSection {
+  id: number
+  editionId: number
+  templateId?: number | null
+  slug: string
+  name: string
+  description?: string | null
+  isCompetitive: boolean
+  displayOrder: number
+  createdAt: Date
+  updatedAt: Date
+  template?: FestivalSectionTemplate | null
+  _count?: {
+    screenings: number
+    juryMembers: number
+  }
+}
+
+export interface FestivalScreening {
+  id: number
+  editionId: number
+  sectionId: number
+  movieId: number
+  screeningDate: Date
+  screeningTime?: Date | null
+  venueId?: number | null
+  premiereType: PremiereType
+  isOfficial: boolean
+  notes?: string | null
+  createdAt: Date
+  updatedAt: Date
+  movie?: {
+    id: number
+    title: string
+    slug: string
+    year?: number | null
+    posterUrl?: string | null
+  }
+  section?: FestivalSection
+  venue?: {
+    id: number
+    name: string
+  } | null
+}
+
+export interface FestivalJury {
+  id: number
+  sectionId: number
+  personId: number
+  role?: string | null
+  billingOrder: number
+  createdAt: Date
+  person?: {
+    id: number
+    firstName?: string | null
+    lastName?: string | null
+    photoUrl?: string | null
+  }
+}
+
+export interface FestivalAward {
+  id: number
+  festivalId: number
+  slug: string
+  name: string
+  description?: string | null
+  awardType: FestivalAwardType
+  isActive: boolean
+  displayOrder: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface FestivalAwardWinner {
+  id: number
+  awardId: number
+  editionId: number
+  movieId?: number | null
+  personId?: number | null
+  result: 'WON' | 'NOMINATED'
+  citation?: string | null
+  notes?: string | null
+  createdAt: Date
+  updatedAt: Date
+  award?: FestivalAward
+  movie?: {
+    id: number
+    title: string
+    slug: string
+  } | null
+  person?: {
+    id: number
+    firstName?: string | null
+    lastName?: string | null
+  } | null
+}
+
+// ============================================================================
+// TIPOS PARA LISTADOS
+// ============================================================================
+
+export interface FestivalListItem {
+  id: number
+  slug: string
+  name: string
+  shortName?: string | null
+  locationName: string
+  foundedYear?: number | null
+  isActive: boolean
+  editionsCount: number
+}
+
+export interface FestivalEditionListItem {
+  id: number
+  editionNumber: number
+  year: number
+  startDate: Date
+  endDate: Date
+  isPublished: boolean
+  sectionsCount: number
+  screeningsCount: number
+}
+
+export interface FestivalScreeningListItem {
+  id: number
+  movieTitle: string
+  movieSlug: string
+  movieYear?: number | null
+  sectionName: string
+  screeningDate: Date
+  screeningTime?: Date | null
+  venueName?: string | null
+  premiereType: PremiereType
+}
+
+// ============================================================================
+// TIPOS PARA FORMULARIOS
+// ============================================================================
+
+export interface FestivalWithRelations extends Festival {
+  location: {
+    id: number
+    name: string
+  }
+  editions: FestivalEdition[]
+  sectionTemplates: FestivalSectionTemplate[]
+  awards: FestivalAward[]
+}
+
+export interface FestivalEditionWithRelations extends FestivalEdition {
+  festival: Festival
+  sections: FestivalSection[]
+  screenings: FestivalScreening[]
+}
+
+
+// ==================================================
 // src/lib/images/imageTypes.ts
 // ==================================================
 // src/lib/images/imageTypes.ts
@@ -46943,6 +52062,232 @@ export const apiClient = new ApiClient('/api')
 
 // Exportar la clase por si se necesita crear instancias personalizadas
 export default ApiClient
+
+// ==================================================
+// src/services/festivals.service.ts
+// ==================================================
+// src/services/festivals.service.ts
+
+import { apiClient } from './api-client'
+import {
+  Festival,
+  FestivalFormData,
+  FestivalEdition,
+  FestivalEditionFormData,
+  FestivalSection,
+  FestivalSectionFormData,
+  FestivalSectionTemplate,
+  FestivalSectionTemplateFormData,
+  FestivalScreening,
+  FestivalScreeningFormData,
+  FestivalListItem,
+  FestivalEditionListItem,
+  FestivalScreeningListItem,
+  FestivalWithRelations,
+  FestivalEditionWithRelations,
+} from '@/lib/festivals/festivalTypes'
+
+// ============================================================================
+// INTERFACES PARA RESPUESTAS
+// ============================================================================
+
+interface PaginatedResponse<T> {
+  data: T[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+interface FestivalFilters {
+  search?: string
+  isActive?: boolean
+  locationId?: number
+  page?: number
+  limit?: number
+}
+
+interface FestivalEditionFilters {
+  festivalId?: number
+  year?: number
+  isPublished?: boolean
+  page?: number
+  limit?: number
+}
+
+interface FestivalScreeningFilters {
+  editionId?: number
+  sectionId?: number
+  movieId?: number
+  premiereType?: string
+  dateFrom?: string
+  dateTo?: string
+  page?: number
+  limit?: number
+}
+
+// ============================================================================
+// SERVICIO DE FESTIVALES
+// ============================================================================
+
+export const festivalsService = {
+  // --------------------------------------------------------------------------
+  // FESTIVALES
+  // --------------------------------------------------------------------------
+
+  async getAll(filters?: FestivalFilters): Promise<PaginatedResponse<FestivalListItem>> {
+    const params: Record<string, string> = {}
+
+    if (filters?.search) params.search = filters.search
+    if (filters?.isActive !== undefined) params.isActive = String(filters.isActive)
+    if (filters?.locationId) params.locationId = String(filters.locationId)
+    if (filters?.page) params.page = String(filters.page)
+    if (filters?.limit) params.limit = String(filters.limit)
+
+    return apiClient.get<PaginatedResponse<FestivalListItem>>('/festivals', { params })
+  },
+
+  async getById(id: number): Promise<FestivalWithRelations> {
+    return apiClient.get<FestivalWithRelations>(`/festivals/${id}`)
+  },
+
+  async create(data: FestivalFormData): Promise<Festival> {
+    return apiClient.post<Festival>('/festivals', data)
+  },
+
+  async update(id: number, data: Partial<FestivalFormData>): Promise<Festival> {
+    return apiClient.put<Festival>(`/festivals/${id}`, data)
+  },
+
+  async delete(id: number): Promise<void> {
+    await apiClient.delete(`/festivals/${id}`)
+  },
+
+  async search(query: string, limit: number = 10): Promise<Festival[]> {
+    if (query.length < 2) return []
+    return apiClient.get<Festival[]>('/festivals/search', {
+      params: { q: query, limit: String(limit) }
+    })
+  },
+
+  // --------------------------------------------------------------------------
+  // EDICIONES
+  // --------------------------------------------------------------------------
+
+  async getEditions(festivalId: number, filters?: FestivalEditionFilters): Promise<PaginatedResponse<FestivalEditionListItem>> {
+    const params: Record<string, string> = {}
+
+    if (filters?.year) params.year = String(filters.year)
+    if (filters?.isPublished !== undefined) params.isPublished = String(filters.isPublished)
+    if (filters?.page) params.page = String(filters.page)
+    if (filters?.limit) params.limit = String(filters.limit)
+
+    return apiClient.get<PaginatedResponse<FestivalEditionListItem>>(`/festivals/${festivalId}/editions`, { params })
+  },
+
+  async getEditionById(editionId: number): Promise<FestivalEditionWithRelations> {
+    return apiClient.get<FestivalEditionWithRelations>(`/festival-editions/${editionId}`)
+  },
+
+  async createEdition(data: FestivalEditionFormData): Promise<FestivalEdition> {
+    return apiClient.post<FestivalEdition>(`/festivals/${data.festivalId}/editions`, data)
+  },
+
+  async updateEdition(editionId: number, data: Partial<FestivalEditionFormData>): Promise<FestivalEdition> {
+    return apiClient.put<FestivalEdition>(`/festival-editions/${editionId}`, data)
+  },
+
+  async deleteEdition(editionId: number): Promise<void> {
+    await apiClient.delete(`/festival-editions/${editionId}`)
+  },
+
+  // --------------------------------------------------------------------------
+  // TEMPLATES DE SECCIONES
+  // --------------------------------------------------------------------------
+
+  async getSectionTemplates(festivalId: number): Promise<FestivalSectionTemplate[]> {
+    return apiClient.get<FestivalSectionTemplate[]>(`/festivals/${festivalId}/section-templates`)
+  },
+
+  async createSectionTemplate(data: FestivalSectionTemplateFormData): Promise<FestivalSectionTemplate> {
+    return apiClient.post<FestivalSectionTemplate>(`/festivals/${data.festivalId}/section-templates`, data)
+  },
+
+  async updateSectionTemplate(templateId: number, data: Partial<FestivalSectionTemplateFormData>): Promise<FestivalSectionTemplate> {
+    return apiClient.put<FestivalSectionTemplate>(`/festival-section-templates/${templateId}`, data)
+  },
+
+  async deleteSectionTemplate(templateId: number): Promise<void> {
+    await apiClient.delete(`/festival-section-templates/${templateId}`)
+  },
+
+  // --------------------------------------------------------------------------
+  // SECCIONES
+  // --------------------------------------------------------------------------
+
+  async getSections(editionId: number): Promise<FestivalSection[]> {
+    return apiClient.get<FestivalSection[]>(`/festival-editions/${editionId}/sections`)
+  },
+
+  async createSection(data: FestivalSectionFormData): Promise<FestivalSection> {
+    return apiClient.post<FestivalSection>(`/festival-editions/${data.editionId}/sections`, data)
+  },
+
+  async updateSection(sectionId: number, data: Partial<FestivalSectionFormData>): Promise<FestivalSection> {
+    return apiClient.put<FestivalSection>(`/festival-sections/${sectionId}`, data)
+  },
+
+  async deleteSection(sectionId: number): Promise<void> {
+    await apiClient.delete(`/festival-sections/${sectionId}`)
+  },
+
+  async createSectionsFromTemplates(editionId: number, templateIds: number[]): Promise<FestivalSection[]> {
+    return apiClient.post<FestivalSection[]>(`/festival-editions/${editionId}/sections/from-templates`, {
+      templateIds
+    })
+  },
+
+  // --------------------------------------------------------------------------
+  // PROYECCIONES
+  // --------------------------------------------------------------------------
+
+  async getScreenings(editionId: number, filters?: FestivalScreeningFilters): Promise<PaginatedResponse<FestivalScreeningListItem>> {
+    const params: Record<string, string> = {}
+
+    if (filters?.sectionId) params.sectionId = String(filters.sectionId)
+    if (filters?.movieId) params.movieId = String(filters.movieId)
+    if (filters?.premiereType) params.premiereType = filters.premiereType
+    if (filters?.dateFrom) params.dateFrom = filters.dateFrom
+    if (filters?.dateTo) params.dateTo = filters.dateTo
+    if (filters?.page) params.page = String(filters.page)
+    if (filters?.limit) params.limit = String(filters.limit)
+
+    return apiClient.get<PaginatedResponse<FestivalScreeningListItem>>(`/festival-editions/${editionId}/screenings`, { params })
+  },
+
+  async getScreeningById(screeningId: number): Promise<FestivalScreening> {
+    return apiClient.get<FestivalScreening>(`/festival-screenings/${screeningId}`)
+  },
+
+  async createScreening(data: FestivalScreeningFormData): Promise<FestivalScreening> {
+    return apiClient.post<FestivalScreening>(`/festival-editions/${data.editionId}/screenings`, data)
+  },
+
+  async updateScreening(screeningId: number, data: Partial<FestivalScreeningFormData>): Promise<FestivalScreening> {
+    return apiClient.put<FestivalScreening>(`/festival-screenings/${screeningId}`, data)
+  },
+
+  async deleteScreening(screeningId: number): Promise<void> {
+    await apiClient.delete(`/festival-screenings/${screeningId}`)
+  },
+
+  async bulkCreateScreenings(editionId: number, screenings: FestivalScreeningFormData[]): Promise<FestivalScreening[]> {
+    return apiClient.post<FestivalScreening[]>(`/festival-editions/${editionId}/screenings/bulk`, {
+      screenings
+    })
+  },
+}
+
 
 // ==================================================
 // src/services/images.service.ts

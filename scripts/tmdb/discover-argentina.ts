@@ -63,10 +63,15 @@ interface PremiereInfo {
  * Obtener información de la primera release de una película
  */
 async function getPremiereInfo(tmdbId: number): Promise<PremiereInfo> {
-  const url = `${TMDB_BASE_URL}/movie/${tmdbId}/release_dates?api_key=${config.tmdbApiKey}`;
-  
+  const url = `${TMDB_BASE_URL}/movie/${tmdbId}/release_dates`;
+
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${config.tmdbAccessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
     
     if (!response.ok) {
       return { date: '', country: '', note: '' };
@@ -142,7 +147,6 @@ async function discoverArgentineMovies(year?: number, fromYear?: number): Promis
   
   while (page <= totalPages && page <= 500) { // TMDB limita a 500 páginas
     const params = new URLSearchParams({
-      api_key: config.tmdbApiKey,
       with_origin_country: 'AR',
       language: 'es-AR',
       sort_by: 'primary_release_date.desc',
@@ -150,18 +154,23 @@ async function discoverArgentineMovies(year?: number, fromYear?: number): Promis
       include_adult: 'true',
       include_video: 'false',
     });
-    
+
     // Filtros de año
     if (year) {
       params.set('primary_release_year', year.toString());
     } else if (fromYear) {
       params.set('primary_release_date.gte', `${fromYear}-01-01`);
     }
-    
+
     const url = `${TMDB_BASE_URL}/discover/movie?${params}`;
-    
+
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${config.tmdbAccessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
       
       if (!response.ok) {
         throw new Error(`TMDB error: ${response.status}`);
