@@ -75,8 +75,9 @@ export async function findPersonByNameAndDepartment(
 
     for (const candidate of candidates) {
         const deptResult = await pool.query(`
-            SELECT DISTINCT mc.department
+            SELECT DISTINCT r.department
             FROM movie_crew mc
+            JOIN roles r ON mc.role_id = r.id
             WHERE mc.person_id = $1
         `, [candidate.id]);
 

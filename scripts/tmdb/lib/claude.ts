@@ -123,14 +123,18 @@ Responde con una sola palabra: MALE, FEMALE o UNISEX`;
 }
 
 /**
- * Consulta a Claude si una palabra es un nombre de pila
+ * Consulta a Claude si una palabra es un nombre de pila (no un apellido)
  */
 export async function askClaudeIfFirstName(word: string): Promise<boolean> {
-    const prompt = `¿"${word}" es un nombre de pila (nombre propio de persona)?
+    const prompt = `¿"${word}" es un nombre de pila (first name / given name)?
+
+IMPORTANTE: Distinguir entre NOMBRE DE PILA y APELLIDO.
+- Nombres de pila: María, Juan, Carlos, Ana, Pedro, Lucía, etc.
+- Apellidos hispanos comunes: García, Martínez, López, González, Rodríguez, Fernández, Pérez, Sánchez, Ramírez, Torres, Flores, Rivera, Gómez, Díaz, Reyes, Morales, Cruz, Ortiz, Gutiérrez, Chávez, Ramos, Vignolo, etc.
 
 Responde ÚNICAMENTE con:
-- SI (si es un nombre de pila, ya sea masculino, femenino o unisex)
-- NO (si es un apellido, una palabra común, o no es un nombre de persona)
+- SI (si es claramente un nombre de pila como María, Juan, Carlos, Ana)
+- NO (si es un apellido como García, Martínez, López, o cualquier palabra que no sea un nombre de pila)
 
 Responde con una sola palabra: SI o NO`;
 
@@ -206,33 +210,40 @@ export async function splitNameAndGetGender(fullName: string): Promise<NameSplit
         const token = tokens[i];
         let gender = lookupGender(token);
 
-        // Si no está en la base de datos, consultar a Claude
-        if (gender === null) {
-            console.log(`     🤖 Consultando a Claude por el género de "${token}"...`);
-            const claudeGender = await askClaudeForGender(token);
-
-            if (claudeGender !== null) {
-                gender = claudeGender;
-                await insertFirstNameGender(token, claudeGender);
-            } else {
-                const isFirstName = await askClaudeIfFirstName(token);
-                if (isFirstName) {
-                    await insertFirstNameGender(token, null);
-                    firstNameWordCount = i + 1;
-                    continue;
-                } else {
-                    break;
-                }
-            }
-        }
-
+        // Si está en el cache, usar ese valor
         if (gender !== null) {
             firstNameWordCount = i + 1;
             if (detectedGender === null) {
                 detectedGender = gender;
             }
-        } else {
+            continue;
+        }
+
+        // Si no está en la base de datos, primero verificar si es un nombre de pila
+        console.log(`     🤖 Consultando a Claude si "${token}" es un nombre de pila...`);
+        const isFirstName = await askClaudeIfFirstName(token);
+
+        if (!isFirstName) {
+            // No es un nombre de pila (es un apellido), parar aquí
+            console.log(`     ℹ️  "${token}" no es un nombre de pila, asumiendo apellido`);
             break;
+        }
+
+        // Es un nombre de pila, ahora consultar el género
+        console.log(`     🤖 Consultando a Claude por el género de "${token}"...`);
+        const claudeGender = await askClaudeForGender(token);
+
+        if (claudeGender !== null) {
+            gender = claudeGender;
+            await insertFirstNameGender(token, claudeGender);
+            firstNameWordCount = i + 1;
+            if (detectedGender === null) {
+                detectedGender = gender;
+            }
+        } else {
+            // Es un nombre de pila pero unisex
+            await insertFirstNameGender(token, null);
+            firstNameWordCount = i + 1;
         }
     }
 
