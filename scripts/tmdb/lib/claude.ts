@@ -4,7 +4,7 @@
 
 import config from '../config';
 import { getPool } from './database';
-import { tokenizeName, lookupGender, splitNameAndGetGenderSync } from './names';
+import { tokenizeName, lookupGender, isKnownFirstName, splitNameAndGetGenderSync } from './names';
 import type { NameSplitResult, PersonForReview } from './config';
 
 // Lista de personas que necesitan revisión (se usa en import-tmdb-movies)
@@ -208,12 +208,12 @@ export async function splitNameAndGetGender(fullName: string): Promise<NameSplit
 
     for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
-        let gender = lookupGender(token);
 
-        // Si está en el cache, usar ese valor
-        if (gender !== null) {
+        // Primero verificar si ya está en el cache (puede ser MALE, FEMALE o UNISEX)
+        if (isKnownFirstName(token)) {
             firstNameWordCount = i + 1;
-            if (detectedGender === null) {
+            const gender = lookupGender(token); // Retorna null para UNISEX
+            if (gender !== null && detectedGender === null) {
                 detectedGender = gender;
             }
             continue;
@@ -221,9 +221,9 @@ export async function splitNameAndGetGender(fullName: string): Promise<NameSplit
 
         // Si no está en la base de datos, primero verificar si es un nombre de pila
         console.log(`     🤖 Consultando a Claude si "${token}" es un nombre de pila...`);
-        const isFirstName = await askClaudeIfFirstName(token);
+        const isFirstNameResult = await askClaudeIfFirstName(token);
 
-        if (!isFirstName) {
+        if (!isFirstNameResult) {
             // No es un nombre de pila (es un apellido), parar aquí
             console.log(`     ℹ️  "${token}" no es un nombre de pila, asumiendo apellido`);
             break;
@@ -234,14 +234,13 @@ export async function splitNameAndGetGender(fullName: string): Promise<NameSplit
         const claudeGender = await askClaudeForGender(token);
 
         if (claudeGender !== null) {
-            gender = claudeGender;
             await insertFirstNameGender(token, claudeGender);
             firstNameWordCount = i + 1;
             if (detectedGender === null) {
-                detectedGender = gender;
+                detectedGender = claudeGender;
             }
         } else {
-            // Es un nombre de pila pero unisex
+            // Es un nombre de pila pero unisex - guardar sin género
             await insertFirstNameGender(token, null);
             firstNameWordCount = i + 1;
         }
