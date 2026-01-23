@@ -6,7 +6,8 @@ import { getPool } from './database';
 import type { NameSplitResult } from './config';
 
 // Cache global para first_name_gender
-let firstNameGenderCache: Map<string, 'MALE' | 'FEMALE'> | null = null;
+// Guarda 'MALE', 'FEMALE', o 'UNISEX' (que se trata como nombre conocido pero sin género)
+let firstNameGenderCache: Map<string, 'MALE' | 'FEMALE' | 'UNISEX'> | null = null;
 
 export async function loadFirstNameGenderCache(): Promise<void> {
     if (firstNameGenderCache !== null) {
@@ -20,12 +21,20 @@ export async function loadFirstNameGenderCache(): Promise<void> {
 
     firstNameGenderCache = new Map();
     for (const row of result.rows) {
-        firstNameGenderCache.set(row.name.toLowerCase(), row.gender);
+        // Guardar el género tal cual viene (MALE, FEMALE, UNISEX, o null como UNISEX)
+        const gender = row.gender || 'UNISEX';
+        firstNameGenderCache.set(row.name.toLowerCase(), gender);
     }
 
     console.log(`📚 Cache de nombres cargado: ${firstNameGenderCache.size} entradas`);
 }
 
+/**
+ * Busca un nombre en el cache.
+ * Retorna 'MALE' o 'FEMALE' si tiene género definido.
+ * Retorna null si no está en el cache.
+ * Si está en el cache como UNISEX, retorna null (pero isKnownFirstName retornará true).
+ */
 export function lookupGender(name: string): 'MALE' | 'FEMALE' | null {
     if (!firstNameGenderCache) {
         return null;
@@ -36,7 +45,30 @@ export function lookupGender(name: string): 'MALE' | 'FEMALE' | null {
         .trim()
         .toLowerCase();
 
-    return firstNameGenderCache.get(cleanName) || null;
+    const gender = firstNameGenderCache.get(cleanName);
+
+    // Si es UNISEX, retornar null (sin género definido)
+    if (gender === 'UNISEX') {
+        return null;
+    }
+
+    return gender || null;
+}
+
+/**
+ * Verifica si un nombre está en el cache (independientemente de su género)
+ */
+export function isKnownFirstName(name: string): boolean {
+    if (!firstNameGenderCache) {
+        return false;
+    }
+
+    const cleanName = name
+        .replace(/["'"«»""]/g, '')
+        .trim()
+        .toLowerCase();
+
+    return firstNameGenderCache.has(cleanName);
 }
 
 /**
@@ -122,16 +154,18 @@ export function splitNameAndGetGenderSync(fullName: string): NameSplitResult {
 
     for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
-        const gender = lookupGender(token);
 
-        if (gender !== null) {
-            firstNameWordCount = i + 1;
-
-            if (detectedGender === null) {
-                detectedGender = gender;
-            }
-        } else {
+        // Verificar si es un nombre conocido (puede ser MALE, FEMALE o UNISEX)
+        if (!isKnownFirstName(token)) {
             break;
+        }
+
+        firstNameWordCount = i + 1;
+
+        // Solo actualizar el género si tiene uno definido (no UNISEX)
+        const gender = lookupGender(token);
+        if (gender !== null && detectedGender === null) {
+            detectedGender = gender;
         }
     }
 
@@ -190,12 +224,17 @@ export function splitNameSimple(fullName: string): { firstName: string; lastName
     let detectedGender: 'MALE' | 'FEMALE' | null = null;
 
     for (let i = 0; i < tokens.length; i++) {
-        const gender = lookupGender(tokens[i]);
-        if (gender !== null) {
-            firstNameWordCount = i + 1;
-            if (detectedGender === null) detectedGender = gender;
-        } else {
+        // Verificar si es un nombre conocido
+        if (!isKnownFirstName(tokens[i])) {
             break;
+        }
+
+        firstNameWordCount = i + 1;
+
+        // Solo actualizar el género si tiene uno definido
+        const gender = lookupGender(tokens[i]);
+        if (gender !== null && detectedGender === null) {
+            detectedGender = gender;
         }
     }
 
