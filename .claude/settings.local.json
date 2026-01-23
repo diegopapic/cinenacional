@@ -16,7 +16,8 @@
       "Bash(dir \"C:\\\\Users\\\\diego\\\\cinenacional\\\\src\\\\components\\\\admin\"\")",
       "Bash(cat:*)",
       "Bash(npx prisma migrate:*)",
-      "Bash(npx prisma db push:*)"
+      "Bash(npx prisma db push:*)",
+      "Bash(grep:*)"
     ]
   }
 }
