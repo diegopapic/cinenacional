@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: bb1a25843df843445711261927863f4bbf8abd5d
-// Fecha: 2026-01-23T01:59:27.760Z
+// Commit: 6174adc199096f0ead0ef5df24391de156fc5b12
+// Fecha: 2026-01-23T02:08:47.448Z
 // ============================================
 
 
@@ -2208,7 +2208,7 @@ export async function getMovieDetails(tmdbId: number): Promise<TMDBMovieDetails>
 
 import config from '../config';
 import { getPool } from './database';
-import { tokenizeName, lookupGender, splitNameAndGetGenderSync } from './names';
+import { tokenizeName, lookupGender, isKnownFirstName, splitNameAndGetGenderSync } from './names';
 import type { NameSplitResult, PersonForReview } from './config';
 
 // Lista de personas que necesitan revisión (se usa en import-tmdb-movies)
@@ -2412,12 +2412,12 @@ export async function splitNameAndGetGender(fullName: string): Promise<NameSplit
 
     for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
-        let gender = lookupGender(token);
 
-        // Si está en el cache, usar ese valor
-        if (gender !== null) {
+        // Primero verificar si ya está en el cache (puede ser MALE, FEMALE o UNISEX)
+        if (isKnownFirstName(token)) {
             firstNameWordCount = i + 1;
-            if (detectedGender === null) {
+            const gender = lookupGender(token); // Retorna null para UNISEX
+            if (gender !== null && detectedGender === null) {
                 detectedGender = gender;
             }
             continue;
@@ -2425,9 +2425,9 @@ export async function splitNameAndGetGender(fullName: string): Promise<NameSplit
 
         // Si no está en la base de datos, primero verificar si es un nombre de pila
         console.log(`     🤖 Consultando a Claude si "${token}" es un nombre de pila...`);
-        const isFirstName = await askClaudeIfFirstName(token);
+        const isFirstNameResult = await askClaudeIfFirstName(token);
 
-        if (!isFirstName) {
+        if (!isFirstNameResult) {
             // No es un nombre de pila (es un apellido), parar aquí
             console.log(`     ℹ️  "${token}" no es un nombre de pila, asumiendo apellido`);
             break;
@@ -2438,14 +2438,13 @@ export async function splitNameAndGetGender(fullName: string): Promise<NameSplit
         const claudeGender = await askClaudeForGender(token);
 
         if (claudeGender !== null) {
-            gender = claudeGender;
             await insertFirstNameGender(token, claudeGender);
             firstNameWordCount = i + 1;
             if (detectedGender === null) {
-                detectedGender = gender;
+                detectedGender = claudeGender;
             }
         } else {
-            // Es un nombre de pila pero unisex
+            // Es un nombre de pila pero unisex - guardar sin género
             await insertFirstNameGender(token, null);
             firstNameWordCount = i + 1;
         }
@@ -3493,7 +3492,8 @@ import { getPool } from './database';
 import type { NameSplitResult } from './config';
 
 // Cache global para first_name_gender
-let firstNameGenderCache: Map<string, 'MALE' | 'FEMALE'> | null = null;
+// Guarda 'MALE', 'FEMALE', o 'UNISEX' (que se trata como nombre conocido pero sin género)
+let firstNameGenderCache: Map<string, 'MALE' | 'FEMALE' | 'UNISEX'> | null = null;
 
 export async function loadFirstNameGenderCache(): Promise<void> {
     if (firstNameGenderCache !== null) {
@@ -3507,12 +3507,20 @@ export async function loadFirstNameGenderCache(): Promise<void> {
 
     firstNameGenderCache = new Map();
     for (const row of result.rows) {
-        firstNameGenderCache.set(row.name.toLowerCase(), row.gender);
+        // Guardar el género tal cual viene (MALE, FEMALE, UNISEX, o null como UNISEX)
+        const gender = row.gender || 'UNISEX';
+        firstNameGenderCache.set(row.name.toLowerCase(), gender);
     }
 
     console.log(`📚 Cache de nombres cargado: ${firstNameGenderCache.size} entradas`);
 }
 
+/**
+ * Busca un nombre en el cache.
+ * Retorna 'MALE' o 'FEMALE' si tiene género definido.
+ * Retorna null si no está en el cache.
+ * Si está en el cache como UNISEX, retorna null (pero isKnownFirstName retornará true).
+ */
 export function lookupGender(name: string): 'MALE' | 'FEMALE' | null {
     if (!firstNameGenderCache) {
         return null;
@@ -3523,7 +3531,30 @@ export function lookupGender(name: string): 'MALE' | 'FEMALE' | null {
         .trim()
         .toLowerCase();
 
-    return firstNameGenderCache.get(cleanName) || null;
+    const gender = firstNameGenderCache.get(cleanName);
+
+    // Si es UNISEX, retornar null (sin género definido)
+    if (gender === 'UNISEX') {
+        return null;
+    }
+
+    return gender || null;
+}
+
+/**
+ * Verifica si un nombre está en el cache (independientemente de su género)
+ */
+export function isKnownFirstName(name: string): boolean {
+    if (!firstNameGenderCache) {
+        return false;
+    }
+
+    const cleanName = name
+        .replace(/["'"«»""]/g, '')
+        .trim()
+        .toLowerCase();
+
+    return firstNameGenderCache.has(cleanName);
 }
 
 /**
@@ -3609,16 +3640,18 @@ export function splitNameAndGetGenderSync(fullName: string): NameSplitResult {
 
     for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
-        const gender = lookupGender(token);
 
-        if (gender !== null) {
-            firstNameWordCount = i + 1;
-
-            if (detectedGender === null) {
-                detectedGender = gender;
-            }
-        } else {
+        // Verificar si es un nombre conocido (puede ser MALE, FEMALE o UNISEX)
+        if (!isKnownFirstName(token)) {
             break;
+        }
+
+        firstNameWordCount = i + 1;
+
+        // Solo actualizar el género si tiene uno definido (no UNISEX)
+        const gender = lookupGender(token);
+        if (gender !== null && detectedGender === null) {
+            detectedGender = gender;
         }
     }
 
@@ -3677,12 +3710,17 @@ export function splitNameSimple(fullName: string): { firstName: string; lastName
     let detectedGender: 'MALE' | 'FEMALE' | null = null;
 
     for (let i = 0; i < tokens.length; i++) {
-        const gender = lookupGender(tokens[i]);
-        if (gender !== null) {
-            firstNameWordCount = i + 1;
-            if (detectedGender === null) detectedGender = gender;
-        } else {
+        // Verificar si es un nombre conocido
+        if (!isKnownFirstName(tokens[i])) {
             break;
+        }
+
+        firstNameWordCount = i + 1;
+
+        // Solo actualizar el género si tiene uno definido
+        const gender = lookupGender(tokens[i]);
+        if (gender !== null && detectedGender === null) {
+            detectedGender = gender;
         }
     }
 
