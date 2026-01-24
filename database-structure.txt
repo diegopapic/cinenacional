@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2026-01-23T02:08:47.895Z
+# Generado automáticamente el: 2026-01-24T07:44:05.889Z
 # ================================================
 
 ## Schema Prisma
@@ -53,6 +53,8 @@ model Movie {
   metaKeywords          String[]                   @map("meta_keywords")
   synopsisLocked        Boolean                    @default(false) @map("synopsis_locked")
   tmdbId                Int?                       @map("tmdb_id")
+  tmdbPopularity        Float?                     @map("tmdb_popularity")
+  tmdbPopularityUpdatedAt DateTime?                @map("tmdb_popularity_updated_at") @db.Timestamptz
   images                Image[]
   alternativeTitles     MovieAlternativeTitle[]
   awards                MovieAward[]
@@ -214,6 +216,8 @@ model Person {
   photoPublicId    String?                 @map("photo_public_id") @db.VarChar(255)
   imdbId           String?                 @map("imdb_id") @db.VarChar(20)
   tmdbId           Int?                    @map("tmdb_id")
+  tmdbPopularity   Float?                  @map("tmdb_popularity")
+  tmdbPopularityUpdatedAt DateTime?        @map("tmdb_popularity_updated_at") @db.Timestamptz
   imageAppearances ImagePerson[]
   awards           MovieAward[]
   castRoles        MovieCast[]
@@ -770,7 +774,9 @@ model TmdbPendingMovie {
   tmdbRuntime         Int?      @map("tmdb_runtime")
   tmdbDirectorName    String?   @map("tmdb_director_name") @db.VarChar(255)
   tmdbDirectorId      Int?      @map("tmdb_director_id")
-  
+  tmdbPopularity      Float?    @map("tmdb_popularity")
+  tmdbPremiereInfo    String?   @map("tmdb_premiere_info") @db.VarChar(500)
+
   localMovieId        Int?      @map("local_movie_id")
   localMovieTitle     String?   @map("local_movie_title") @db.VarChar(255)
   localMovieYear      Int?      @map("local_movie_year")
@@ -1272,6 +1278,8 @@ CREATE TABLE "movies" (
     "meta_keywords" TEXT[],
     "synopsis_locked" BOOLEAN NOT NULL DEFAULT false,
     "tmdb_id" INTEGER,
+    "tmdb_popularity" DOUBLE PRECISION,
+    "tmdb_popularity_updated_at" TIMESTAMPTZ,
 
     CONSTRAINT "movies_pkey" PRIMARY KEY ("id")
 );
@@ -1379,6 +1387,8 @@ CREATE TABLE "people" (
     "photo_public_id" VARCHAR(255),
     "imdb_id" VARCHAR(20),
     "tmdb_id" INTEGER,
+    "tmdb_popularity" DOUBLE PRECISION,
+    "tmdb_popularity_updated_at" TIMESTAMPTZ,
 
     CONSTRAINT "people_pkey" PRIMARY KEY ("id")
 );
@@ -1832,6 +1842,8 @@ CREATE TABLE "tmdb_pending_movies" (
     "tmdb_runtime" INTEGER,
     "tmdb_director_name" VARCHAR(255),
     "tmdb_director_id" INTEGER,
+    "tmdb_popularity" DOUBLE PRECISION,
+    "tmdb_premiere_info" VARCHAR(500),
     "local_movie_id" INTEGER,
     "local_movie_title" VARCHAR(255),
     "local_movie_year" INTEGER,
