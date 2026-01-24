@@ -46,6 +46,8 @@ model Movie {
   metaKeywords          String[]                   @map("meta_keywords")
   synopsisLocked        Boolean                    @default(false) @map("synopsis_locked")
   tmdbId                Int?                       @map("tmdb_id")
+  tmdbPopularity        Float?                     @map("tmdb_popularity")
+  tmdbPopularityUpdatedAt DateTime?                @map("tmdb_popularity_updated_at") @db.Timestamptz
   images                Image[]
   alternativeTitles     MovieAlternativeTitle[]
   awards                MovieAward[]
@@ -207,6 +209,8 @@ model Person {
   photoPublicId    String?                 @map("photo_public_id") @db.VarChar(255)
   imdbId           String?                 @map("imdb_id") @db.VarChar(20)
   tmdbId           Int?                    @map("tmdb_id")
+  tmdbPopularity   Float?                  @map("tmdb_popularity")
+  tmdbPopularityUpdatedAt DateTime?        @map("tmdb_popularity_updated_at") @db.Timestamptz
   imageAppearances ImagePerson[]
   awards           MovieAward[]
   castRoles        MovieCast[]
@@ -763,7 +767,9 @@ model TmdbPendingMovie {
   tmdbRuntime         Int?      @map("tmdb_runtime")
   tmdbDirectorName    String?   @map("tmdb_director_name") @db.VarChar(255)
   tmdbDirectorId      Int?      @map("tmdb_director_id")
-  
+  tmdbPopularity      Float?    @map("tmdb_popularity")
+  tmdbPremiereInfo    String?   @map("tmdb_premiere_info") @db.VarChar(500)
+
   localMovieId        Int?      @map("local_movie_id")
   localMovieTitle     String?   @map("local_movie_title") @db.VarChar(255)
   localMovieYear      Int?      @map("local_movie_year")
