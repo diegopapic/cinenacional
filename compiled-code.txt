@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: d35c5e1ca82d0c46d7db1d97209cdffda4992115
-// Fecha: 2026-01-24T07:44:05.134Z
+// Commit: 0a67df6ed7b39fda1952ed4d0b548150f57cb85d
+// Fecha: 2026-01-24T08:14:23.547Z
 // ============================================
 
 
@@ -3639,6 +3639,7 @@ import {
 } from './config';
 import { getPool, findPersonByTmdbId, findPersonByNameAndDepartment, updatePersonTmdbId, getCountryIdByName } from './database';
 import { splitNameAndGetGender, rewriteSynopsis, peopleForReview } from './claude';
+import { getPersonDetails } from '../tmdb-client';
 import { v2 as cloudinary } from 'cloudinary';
 
 // Configurar Cloudinary
@@ -3788,6 +3789,46 @@ export async function uploadPosterToCloudinary(
     }
 }
 
+/**
+ * Sube el retrato de una persona desde TMDB a Cloudinary
+ * Usa proporción 3:4 con detección de cara para centrar el crop
+ */
+export async function uploadPortraitToCloudinary(
+    personId: number,
+    profilePath: string
+): Promise<{ success: boolean; url?: string; publicId?: string; error?: string }> {
+    try {
+        const tmdbProfileUrl = `${TMDB_IMAGE_BASE_URL}${profilePath}`;
+
+        const result = await cloudinary.uploader.upload(tmdbProfileUrl, {
+            folder: `cinenacional/people/${personId}`,
+            public_id: 'portrait',
+            overwrite: true,
+            resource_type: 'image',
+            timeout: 120000,
+            transformation: [
+                { aspect_ratio: '3:4', gravity: 'face', crop: 'fill' },
+                { quality: 'auto:best' },
+                { fetch_format: 'auto' }
+            ]
+        });
+
+        // Actualizar la persona con la URL del retrato
+        const pool = getPool();
+        await pool.query(
+            'UPDATE people SET photo_url = $1, photo_public_id = $2, updated_at = NOW() WHERE id = $3',
+            [result.secure_url, result.public_id, personId]
+        );
+
+        return { success: true, url: result.secure_url, publicId: result.public_id };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error)
+        };
+    }
+}
+
 // ============================================================================
 // FUNCIONES DE CREACIÓN
 // ============================================================================
@@ -3839,7 +3880,25 @@ export async function createPerson(
         RETURNING id
     `, [firstName, lastName, slug, tmdbId, gender]);
 
-    return result.rows[0].id;
+    const personId = result.rows[0].id;
+
+    // Intentar migrar retrato desde TMDB
+    try {
+        const tmdbDetails = await getPersonDetails(tmdbId);
+        if (tmdbDetails.profile_path) {
+            const portraitResult = await uploadPortraitToCloudinary(personId, tmdbDetails.profile_path);
+            if (portraitResult.success) {
+                console.log(`     ✓ Retrato migrado: ${portraitResult.url}`);
+            } else {
+                console.log(`     ⚠️ Error migrando retrato: ${portraitResult.error}`);
+            }
+        }
+    } catch (error) {
+        // No fallar si no se puede migrar el retrato, solo loguear
+        console.log(`     ⚠️ Error obteniendo retrato de TMDB: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    return personId;
 }
 
 export async function createMovie(
@@ -4491,6 +4550,345 @@ export function splitNameSimple(fullName: string): { firstName: string; lastName
         gender: detectedGender,
     };
 }
+
+
+// ==================================================
+// scripts/tmdb/migrate-tmdb-portraits.ts
+// ==================================================
+/**
+ * Script para migrar retratos de personas desde TMDB a Cloudinary
+ *
+ * Busca personas en la base de datos que:
+ * 1. Tienen tmdb_id
+ * 2. No tienen photo_url (o está vacío)
+ *
+ * Para cada una, obtiene el retrato de TMDB y lo sube a Cloudinary
+ *
+ * Uso:
+ *   npx ts-node scripts/tmdb/migrate-tmdb-portraits.ts [opciones]
+ *
+ * Opciones:
+ *   --dry-run      Ver qué personas se procesarían sin hacer cambios
+ *   --limit=N      Procesar solo N personas
+ *   --person-id=N  Procesar solo la persona con ID específico
+ */
+
+import { PrismaClient } from '@prisma/client';
+import { v2 as cloudinary } from 'cloudinary';
+import * as fs from 'fs';
+import * as path from 'path';
+import config from './config';
+import { getPersonDetails } from './tmdb-client';
+
+// Configurar Cloudinary
+cloudinary.config({
+  cloud_name: 'dzndglyjr',
+  api_key: process.env.CLOUDINARY_API_KEY || '916999397279161',
+  api_secret: process.env.CLOUDINARY_API_SECRET || '6K7EQkELG4dgl4RgdA5wsTwSPpI'
+});
+
+const prisma = new PrismaClient();
+
+// URLs base de TMDB para imágenes
+const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
+const PROFILE_SIZE = 'original'; // Tamaños disponibles: w45, w185, h632, original
+
+interface MigrationResult {
+  personId: number;
+  name: string;
+  tmdbId: number;
+  success: boolean;
+  photoUrl?: string;
+  publicId?: string;
+  error?: string;
+}
+
+interface MigrationStats {
+  total: number;
+  success: number;
+  failed: number;
+  skipped: number;
+  results: MigrationResult[];
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Obtiene la URL completa del retrato de TMDB
+ */
+function getTmdbProfileUrl(profilePath: string): string {
+  return `${TMDB_IMAGE_BASE_URL}/${PROFILE_SIZE}${profilePath}`;
+}
+
+/**
+ * Sube una imagen desde URL a Cloudinary
+ */
+async function uploadToCloudinary(
+  imageUrl: string,
+  personId: number
+): Promise<{ url: string; publicId: string }> {
+  const result = await cloudinary.uploader.upload(imageUrl, {
+    folder: `cinenacional/people/${personId}`,
+    public_id: 'portrait',
+    overwrite: true,
+    resource_type: 'image',
+    timeout: 120000, // 2 minutos
+    transformation: [
+      { aspect_ratio: '3:4', gravity: 'face', crop: 'fill' },
+      { quality: 'auto:best' },
+      { fetch_format: 'auto' }
+    ]
+  });
+
+  return {
+    url: result.secure_url,
+    publicId: result.public_id
+  };
+}
+
+/**
+ * Construye el nombre completo de una persona
+ */
+function getPersonFullName(person: { firstName: string | null; lastName: string | null }): string {
+  return [person.firstName, person.lastName].filter(Boolean).join(' ') || 'Sin nombre';
+}
+
+/**
+ * Procesa una persona: obtiene retrato de TMDB y lo sube a Cloudinary
+ */
+async function processPerson(
+  person: { id: number; firstName: string | null; lastName: string | null; tmdbId: number },
+  dryRun: boolean
+): Promise<MigrationResult> {
+  const name = getPersonFullName(person);
+  const result: MigrationResult = {
+    personId: person.id,
+    name,
+    tmdbId: person.tmdbId,
+    success: false
+  };
+
+  try {
+    // Obtener detalles de TMDB
+    const tmdbDetails = await getPersonDetails(person.tmdbId);
+
+    if (!tmdbDetails.profile_path) {
+      result.error = 'No tiene retrato en TMDB';
+      return result;
+    }
+
+    const tmdbProfileUrl = getTmdbProfileUrl(tmdbDetails.profile_path);
+
+    if (dryRun) {
+      result.success = true;
+      result.photoUrl = tmdbProfileUrl;
+      result.error = '[DRY RUN] Se subiría este retrato';
+      return result;
+    }
+
+    // Subir a Cloudinary
+    const cloudinaryResult = await uploadToCloudinary(tmdbProfileUrl, person.id);
+
+    // Actualizar base de datos
+    await prisma.person.update({
+      where: { id: person.id },
+      data: {
+        photoUrl: cloudinaryResult.url,
+        photoPublicId: cloudinaryResult.publicId
+      }
+    });
+
+    result.success = true;
+    result.photoUrl = cloudinaryResult.url;
+    result.publicId = cloudinaryResult.publicId;
+
+  } catch (error) {
+    result.error = error instanceof Error ? error.message : String(error);
+  }
+
+  return result;
+}
+
+/**
+ * Guarda el reporte de migración en CSV
+ */
+async function saveReport(stats: MigrationStats, dryRun: boolean): Promise<string> {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const prefix = dryRun ? 'dry-run-' : '';
+  const filename = `${prefix}portrait-migration-${timestamp}.csv`;
+  const filepath = path.join(__dirname, 'reports', filename);
+
+  // Crear directorio de reportes si no existe
+  const reportsDir = path.join(__dirname, 'reports');
+  if (!fs.existsSync(reportsDir)) {
+    fs.mkdirSync(reportsDir, { recursive: true });
+  }
+
+  const csvLines = [
+    'person_id,name,tmdb_id,success,photo_url,public_id,error'
+  ];
+
+  for (const r of stats.results) {
+    const name = r.name.replace(/"/g, '""');
+    const error = (r.error || '').replace(/"/g, '""');
+    csvLines.push(
+      `${r.personId},"${name}",${r.tmdbId},${r.success},"${r.photoUrl || ''}","${r.publicId || ''}","${error}"`
+    );
+  }
+
+  fs.writeFileSync(filepath, csvLines.join('\n'), 'utf8');
+  return filepath;
+}
+
+/**
+ * Función principal de migración
+ */
+async function migratePortraits(options: {
+  dryRun: boolean;
+  limit?: number;
+  personId?: number;
+}): Promise<void> {
+  console.log('='.repeat(60));
+  console.log('MIGRACION DE RETRATOS TMDB -> CLOUDINARY');
+  console.log('='.repeat(60));
+
+  if (options.dryRun) {
+    console.log('\n[DRY RUN] No se realizarán cambios en la base de datos\n');
+  }
+
+  // Buscar personas que tienen tmdb_id pero no tienen foto
+  const whereClause: any = {
+    tmdbId: { not: null },
+    OR: [
+      { photoUrl: null },
+      { photoUrl: '' }
+    ]
+  };
+
+  if (options.personId) {
+    whereClause.id = options.personId;
+  }
+
+  const people = await prisma.person.findMany({
+    where: whereClause,
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      tmdbId: true
+    },
+    orderBy: { id: 'asc' },
+    take: options.limit
+  });
+
+  console.log(`Encontradas ${people.length} personas sin retrato con tmdb_id\n`);
+
+  if (people.length === 0) {
+    console.log('No hay personas para procesar.');
+    return;
+  }
+
+  const stats: MigrationStats = {
+    total: people.length,
+    success: 0,
+    failed: 0,
+    skipped: 0,
+    results: []
+  };
+
+  for (let i = 0; i < people.length; i++) {
+    const person = people[i];
+    const name = getPersonFullName(person);
+    const progress = `[${i + 1}/${people.length}]`;
+
+    console.log(`${progress} Procesando: ${name} (ID: ${person.id}, TMDB: ${person.tmdbId})`);
+
+    const result = await processPerson(
+      { id: person.id, firstName: person.firstName, lastName: person.lastName, tmdbId: person.tmdbId! },
+      options.dryRun
+    );
+
+    stats.results.push(result);
+
+    if (result.success) {
+      stats.success++;
+      console.log(`  ✓ ${result.photoUrl}`);
+    } else if (result.error?.includes('No tiene retrato')) {
+      stats.skipped++;
+      console.log(`  - Saltado: ${result.error}`);
+    } else {
+      stats.failed++;
+      console.log(`  ✗ Error: ${result.error}`);
+    }
+
+    // Rate limiting: esperar entre requests
+    if (i < people.length - 1) {
+      await delay(config.delayBetweenRequests + 100); // Extra delay para Cloudinary
+    }
+
+    // Mostrar progreso cada 50 personas
+    if ((i + 1) % 50 === 0) {
+      console.log(`\n--- Progreso: ${i + 1}/${people.length} | OK: ${stats.success} | Saltados: ${stats.skipped} | Errores: ${stats.failed} ---\n`);
+    }
+  }
+
+  // Guardar reporte
+  const reportPath = await saveReport(stats, options.dryRun);
+
+  // Resumen final
+  console.log('\n' + '='.repeat(60));
+  console.log('RESUMEN DE MIGRACION');
+  console.log('='.repeat(60));
+  console.log(`Total procesado:  ${stats.total}`);
+  console.log(`✓ Exitosos:       ${stats.success}`);
+  console.log(`- Saltados:       ${stats.skipped} (sin retrato en TMDB)`);
+  console.log(`✗ Errores:        ${stats.failed}`);
+  const processed = stats.total - stats.skipped;
+  const successRate = processed > 0 ? ((stats.success / processed) * 100).toFixed(2) : '0.00';
+  console.log(`Tasa de exito:    ${successRate}%`);
+  console.log(`\nReporte guardado: ${reportPath}`);
+  console.log('='.repeat(60));
+}
+
+// Parsear argumentos de línea de comandos
+function parseArgs(): { dryRun: boolean; limit?: number; personId?: number } {
+  const args = process.argv.slice(2);
+  const options = {
+    dryRun: false,
+    limit: undefined as number | undefined,
+    personId: undefined as number | undefined
+  };
+
+  for (const arg of args) {
+    if (arg === '--dry-run') {
+      options.dryRun = true;
+    } else if (arg.startsWith('--limit=')) {
+      options.limit = parseInt(arg.split('=')[1], 10);
+    } else if (arg.startsWith('--person-id=')) {
+      options.personId = parseInt(arg.split('=')[1], 10);
+    }
+  }
+
+  return options;
+}
+
+// Ejecutar
+const options = parseArgs();
+
+migratePortraits(options)
+  .then(() => {
+    console.log('\n✅ Migración completada');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('\n❌ Error fatal:', error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
 
 
 // ==================================================
