@@ -155,7 +155,7 @@
 - [scripts/tmdb/lib/names.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/tmdb/lib/names.ts)
 - [scripts/tmdb/migrate-tmdb-portraits.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/tmdb/migrate-tmdb-portraits.ts)
 - [scripts/tmdb/migrate-tmdb-posters.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/tmdb/migrate-tmdb-posters.ts)
-- [scripts/tmdb/sync-popularity.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/tmdb/sync-popularity.ts)
+- [scripts/tmdb/sync-imdb-votes.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/tmdb/sync-imdb-votes.ts)
 - [scripts/tmdb/test-api.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/tmdb/test-api.ts)
 - [scripts/tmdb/test-connection.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/tmdb/test-connection.ts)
 - [scripts/tmdb/tmdb-client.ts](https://raw.githubusercontent.com/diegopapic/cinenacional/main/scripts/tmdb/tmdb-client.ts)
