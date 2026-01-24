@@ -46,8 +46,8 @@ model Movie {
   metaKeywords          String[]                   @map("meta_keywords")
   synopsisLocked        Boolean                    @default(false) @map("synopsis_locked")
   tmdbId                Int?                       @map("tmdb_id")
-  tmdbPopularity        Float?                     @map("tmdb_popularity")
-  tmdbPopularityUpdatedAt DateTime?                @map("tmdb_popularity_updated_at") @db.Timestamptz
+  imdbVotes             Int?                       @map("imdb_votes")
+  imdbVotesUpdatedAt    DateTime?                  @map("imdb_votes_updated_at") @db.Timestamptz
   images                Image[]
   alternativeTitles     MovieAlternativeTitle[]
   awards                MovieAward[]

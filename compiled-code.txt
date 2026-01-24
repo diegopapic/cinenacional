@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 35ae8e84bff35bb983ed0622fc87b57b68375549
-// Fecha: 2026-01-24T16:23:19.332Z
+// Commit: 2380bc7fdd9741f61d68713ebd79ad20728ca6f9
+// Fecha: 2026-01-24T17:22:39.058Z
 // ============================================
 
 
@@ -2863,30 +2863,6 @@ export async function getMovieDetails(tmdbId: number): Promise<TMDBMovieDetails>
     });
 }
 
-// Tipos para respuestas de popularidad (campos mínimos necesarios)
-export interface TMDBPopularityResponse {
-    id: number;
-    popularity: number;
-}
-
-export interface TMDBPersonBasicDetails {
-    id: number;
-    name: string;
-    popularity: number;
-}
-
-// Funciones para obtener solo popularidad (más eficientes)
-export async function getMoviePopularity(tmdbId: number): Promise<TMDBPopularityResponse> {
-    return fetchTMDB<TMDBPopularityResponse>(`/movie/${tmdbId}`, {
-        language: 'es-ES',
-    });
-}
-
-export async function getPersonPopularity(tmdbId: number): Promise<TMDBPersonBasicDetails> {
-    return fetchTMDB<TMDBPersonBasicDetails>(`/person/${tmdbId}`, {
-        language: 'es-ES',
-    });
-}
 
 
 // ==================================================
@@ -5218,33 +5194,40 @@ migratePosters(options)
 
 
 // ==================================================
-// scripts/tmdb/sync-popularity.ts
+// scripts/tmdb/sync-imdb-votes.ts
 // ==================================================
 /**
- * Script para sincronizar popularidad de TMDB a películas y personas
+ * Script para sincronizar imdbVotes desde OMDB API
  *
  * Uso:
- *   npx tsx scripts/tmdb/sync-popularity.ts [opciones]
+ *   npx tsx scripts/tmdb/sync-imdb-votes.ts [opciones]
  *
  * Opciones:
- *   --type movies|people|all  Tipo de registros a sincronizar (default: all)
  *   --limit N                 Límite de registros a procesar (default: sin límite)
  *   --dry-run                 Modo prueba, no escribe en DB
  *   --batch-size N            Tamaño del batch (default: 100)
- *   --delay N                 Delay entre requests en ms (default: 30)
- *   --only-missing            Solo actualizar registros sin popularidad
+ *   --delay N                 Delay entre requests en ms (default: 100)
+ *   --only-missing            Solo actualizar registros sin imdbVotes
  */
 
 import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
-import config from './config';
-import { getMoviePopularity, getPersonPopularity, sleep } from './lib/api';
+
+// Cargar dotenv solo si está disponible
+try {
+    const pathModule = require('path');
+    const dotenv = require('dotenv');
+    dotenv.config({ path: pathModule.resolve(__dirname, '../../.env') });
+} catch {
+    // dotenv no disponible
+}
 
 const prisma = new PrismaClient();
 
+const OMDB_API_KEY = process.env.OMDB_API_KEY || 'trilogy';
+
 interface SyncOptions {
-    type: 'movies' | 'people' | 'all';
     limit?: number;
     dryRun: boolean;
     batchSize: number;
@@ -5254,42 +5237,47 @@ interface SyncOptions {
 
 interface SyncResult {
     id: number;
-    tmdbId: number;
+    imdbId: string;
     title: string;
-    oldPopularity: number | null;
-    newPopularity: number | null;
+    oldVotes: number | null;
+    newVotes: number | null;
     status: 'updated' | 'unchanged' | 'error' | 'not_found';
     error?: string;
 }
 
-interface SyncStats {
-    total: number;
-    updated: number;
-    unchanged: number;
-    errors: number;
-    notFound: number;
-    startTime: Date;
-    endTime?: Date;
+interface OMDBResponse {
+    Response: string;
+    imdbVotes?: string;
+    Title?: string;
+    Error?: string;
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchOMDB(imdbId: string): Promise<OMDBResponse> {
+    const url = `http://www.omdbapi.com/?i=${imdbId}&apikey=${OMDB_API_KEY}`;
+    const response = await fetch(url);
+    return response.json();
+}
+
+function parseVotes(votesStr: string | undefined): number | null {
+    if (!votesStr || votesStr === 'N/A') return null;
+    return parseInt(votesStr.replace(/,/g, ''), 10);
 }
 
 function parseArgs(): SyncOptions {
     const args = process.argv.slice(2);
     const options: SyncOptions = {
-        type: 'all',
         dryRun: false,
         batchSize: 100,
-        delay: config.delayBetweenRequests,
+        delay: 100, // OMDB tiene rate limit más estricto
         onlyMissing: false,
     };
 
     for (let i = 0; i < args.length; i++) {
         switch (args[i]) {
-            case '--type':
-                const type = args[++i];
-                if (type === 'movies' || type === 'people' || type === 'all') {
-                    options.type = type;
-                }
-                break;
             case '--limit':
                 options.limit = parseInt(args[++i], 10);
                 break;
@@ -5311,22 +5299,22 @@ function parseArgs(): SyncOptions {
     return options;
 }
 
-async function syncMoviesPopularity(options: SyncOptions): Promise<SyncResult[]> {
+async function syncImdbVotes(options: SyncOptions): Promise<SyncResult[]> {
     const results: SyncResult[] = [];
 
     const whereClause: any = {
-        tmdbId: { not: null },
+        imdbId: { not: null },
     };
 
     if (options.onlyMissing) {
-        whereClause.tmdbPopularity = null;
+        whereClause.imdbVotes = null;
     }
 
     const totalCount = await prisma.movie.count({ where: whereClause });
     const limit = options.limit || totalCount;
 
-    console.log(`\n📽️  Sincronizando películas...`);
-    console.log(`   Total con tmdbId: ${totalCount}`);
+    console.log(`\n📽️  Sincronizando IMDB votes...`);
+    console.log(`   Total con imdbId: ${totalCount}`);
     console.log(`   A procesar: ${Math.min(limit, totalCount)}`);
 
     let processed = 0;
@@ -5339,12 +5327,12 @@ async function syncMoviesPopularity(options: SyncOptions): Promise<SyncResult[]>
             where: whereClause,
             select: {
                 id: true,
-                tmdbId: true,
+                imdbId: true,
                 title: true,
-                tmdbPopularity: true,
+                imdbVotes: true,
             },
             orderBy: [
-                { tmdbPopularityUpdatedAt: { sort: 'asc', nulls: 'first' } },
+                { imdbVotesUpdatedAt: { sort: 'asc', nulls: 'first' } },
                 { id: 'asc' }
             ],
             skip: offset,
@@ -5356,46 +5344,49 @@ async function syncMoviesPopularity(options: SyncOptions): Promise<SyncResult[]>
         for (const movie of movies) {
             const result: SyncResult = {
                 id: movie.id,
-                tmdbId: movie.tmdbId!,
+                imdbId: movie.imdbId!,
                 title: movie.title,
-                oldPopularity: movie.tmdbPopularity,
-                newPopularity: null,
+                oldVotes: movie.imdbVotes,
+                newVotes: null,
                 status: 'unchanged',
             };
 
             try {
-                const tmdbData = await getMoviePopularity(movie.tmdbId!);
-                result.newPopularity = tmdbData.popularity;
+                const omdbData = await fetchOMDB(movie.imdbId!);
 
-                if (result.oldPopularity !== result.newPopularity) {
-                    result.status = 'updated';
+                if (omdbData.Response === 'False') {
+                    result.status = 'not_found';
+                    result.error = omdbData.Error || 'No encontrado en OMDB';
+                } else {
+                    result.newVotes = parseVotes(omdbData.imdbVotes);
 
-                    if (!options.dryRun) {
-                        await prisma.movie.update({
-                            where: { id: movie.id },
-                            data: {
-                                tmdbPopularity: tmdbData.popularity,
-                                tmdbPopularityUpdatedAt: new Date(),
-                            },
-                        });
+                    if (result.oldVotes !== result.newVotes) {
+                        result.status = 'updated';
+
+                        if (!options.dryRun) {
+                            await prisma.movie.update({
+                                where: { id: movie.id },
+                                data: {
+                                    imdbVotes: result.newVotes,
+                                    imdbVotesUpdatedAt: new Date(),
+                                },
+                            });
+                        }
                     }
                 }
             } catch (error: any) {
-                if (error.message?.includes('404')) {
-                    result.status = 'not_found';
-                    result.error = 'No encontrado en TMDB';
-                } else {
-                    result.status = 'error';
-                    result.error = error.message;
-                }
+                result.status = 'error';
+                result.error = error.message;
             }
 
             results.push(result);
             processed++;
 
-            if (processed % 50 === 0) {
-                console.log(`   Procesadas: ${processed}/${Math.min(limit, totalCount)}`);
-            }
+            const statusIcon = result.status === 'updated' ? '✅' :
+                              result.status === 'unchanged' ? '➖' :
+                              result.status === 'not_found' ? '🔍' : '❌';
+            const votesDisplay = result.newVotes !== null ? result.newVotes.toLocaleString() : 'N/A';
+            console.log(`   ${statusIcon} [${processed}/${Math.min(limit, totalCount)}] ${movie.title}: ${votesDisplay} votes`);
 
             await sleep(options.delay);
         }
@@ -5406,105 +5397,7 @@ async function syncMoviesPopularity(options: SyncOptions): Promise<SyncResult[]>
     return results;
 }
 
-async function syncPeoplePopularity(options: SyncOptions): Promise<SyncResult[]> {
-    const results: SyncResult[] = [];
-
-    const whereClause: any = {
-        tmdbId: { not: null },
-    };
-
-    if (options.onlyMissing) {
-        whereClause.tmdbPopularity = null;
-    }
-
-    const totalCount = await prisma.person.count({ where: whereClause });
-    const limit = options.limit || totalCount;
-
-    console.log(`\n👤 Sincronizando personas...`);
-    console.log(`   Total con tmdbId: ${totalCount}`);
-    console.log(`   A procesar: ${Math.min(limit, totalCount)}`);
-
-    let processed = 0;
-    let offset = 0;
-
-    while (processed < limit) {
-        const batchLimit = Math.min(options.batchSize, limit - processed);
-
-        const people = await prisma.person.findMany({
-            where: whereClause,
-            select: {
-                id: true,
-                tmdbId: true,
-                firstName: true,
-                lastName: true,
-                tmdbPopularity: true,
-            },
-            orderBy: [
-                { tmdbPopularityUpdatedAt: { sort: 'asc', nulls: 'first' } },
-                { id: 'asc' }
-            ],
-            skip: offset,
-            take: batchLimit,
-        });
-
-        if (people.length === 0) break;
-
-        for (const person of people) {
-            const fullName = [person.firstName, person.lastName].filter(Boolean).join(' ') || `ID ${person.id}`;
-
-            const result: SyncResult = {
-                id: person.id,
-                tmdbId: person.tmdbId!,
-                title: fullName,
-                oldPopularity: person.tmdbPopularity,
-                newPopularity: null,
-                status: 'unchanged',
-            };
-
-            try {
-                const tmdbData = await getPersonPopularity(person.tmdbId!);
-                result.newPopularity = tmdbData.popularity;
-
-                if (result.oldPopularity !== result.newPopularity) {
-                    result.status = 'updated';
-
-                    if (!options.dryRun) {
-                        await prisma.person.update({
-                            where: { id: person.id },
-                            data: {
-                                tmdbPopularity: tmdbData.popularity,
-                                tmdbPopularityUpdatedAt: new Date(),
-                            },
-                        });
-                    }
-                }
-            } catch (error: any) {
-                if (error.message?.includes('404')) {
-                    result.status = 'not_found';
-                    result.error = 'No encontrado en TMDB';
-                } else {
-                    result.status = 'error';
-                    result.error = error.message;
-                }
-            }
-
-            results.push(result);
-            processed++;
-
-            if (processed % 50 === 0) {
-                console.log(`   Procesadas: ${processed}/${Math.min(limit, totalCount)}`);
-            }
-
-            await sleep(options.delay);
-        }
-
-        offset += batchLimit;
-    }
-
-    return results;
-}
-
-function generateReport(movieResults: SyncResult[], peopleResults: SyncResult[], options: SyncOptions): void {
+function generateReport(results: SyncResult[], options: SyncOptions): void {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const prefix = options.dryRun ? 'dry-run-' : '';
     const reportsDir = path.join(__dirname, 'reports');
@@ -5513,59 +5406,35 @@ function generateReport(movieResults: SyncResult[], peopleResults: SyncResult[],
         fs.mkdirSync(reportsDir, { recursive: true });
     }
 
-    const allResults = [
-        ...movieResults.map(r => ({ ...r, type: 'movie' })),
-        ...peopleResults.map(r => ({ ...r, type: 'person' })),
-    ];
-
-    const csvPath = path.join(reportsDir, `${prefix}popularity-sync-${timestamp}.csv`);
-    const csvHeader = 'type,id,tmdb_id,title,old_popularity,new_popularity,status,error\n';
-    const csvRows = allResults.map(r =>
-        `${r.type},${r.id},${r.tmdbId},"${r.title.replace(/"/g, '""')}",${r.oldPopularity ?? ''},${r.newPopularity ?? ''},${r.status},"${r.error || ''}"`
+    const csvPath = path.join(reportsDir, `${prefix}imdb-votes-sync-${timestamp}.csv`);
+    const csvHeader = 'id,imdb_id,title,old_votes,new_votes,status,error\n';
+    const csvRows = results.map(r =>
+        `${r.id},${r.imdbId},"${r.title.replace(/"/g, '""')}",${r.oldVotes ?? ''},${r.newVotes ?? ''},${r.status},"${r.error || ''}"`
     ).join('\n');
 
     fs.writeFileSync(csvPath, csvHeader + csvRows);
     console.log(`\n📄 Reporte guardado en: ${csvPath}`);
 }
 
-function printSummary(movieResults: SyncResult[], peopleResults: SyncResult[], stats: SyncStats): void {
-    const movieStats = {
-        updated: movieResults.filter(r => r.status === 'updated').length,
-        unchanged: movieResults.filter(r => r.status === 'unchanged').length,
-        errors: movieResults.filter(r => r.status === 'error').length,
-        notFound: movieResults.filter(r => r.status === 'not_found').length,
+function printSummary(results: SyncResult[], startTime: Date, endTime: Date): void {
+    const stats = {
+        updated: results.filter(r => r.status === 'updated').length,
+        unchanged: results.filter(r => r.status === 'unchanged').length,
+        errors: results.filter(r => r.status === 'error').length,
+        notFound: results.filter(r => r.status === 'not_found').length,
     };
 
-    const peopleStats = {
-        updated: peopleResults.filter(r => r.status === 'updated').length,
-        unchanged: peopleResults.filter(r => r.status === 'unchanged').length,
-        errors: peopleResults.filter(r => r.status === 'error').length,
-        notFound: peopleResults.filter(r => r.status === 'not_found').length,
-    };
-
-    const duration = stats.endTime
-        ? Math.round((stats.endTime.getTime() - stats.startTime.getTime()) / 1000)
-        : 0;
+    const duration = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
 
     console.log('\n' + '='.repeat(50));
     console.log('RESUMEN DE SINCRONIZACIÓN');
     console.log('='.repeat(50));
 
-    if (movieResults.length > 0) {
-        console.log(`\n📽️  PELÍCULAS (${movieResults.length} procesadas)`);
-        console.log(`   ✅ Actualizadas: ${movieStats.updated}`);
-        console.log(`   ➖ Sin cambios:  ${movieStats.unchanged}`);
-        console.log(`   ❌ Errores:      ${movieStats.errors}`);
-        console.log(`   🔍 No encontradas: ${movieStats.notFound}`);
-    }
-
-    if (peopleResults.length > 0) {
-        console.log(`\n👤 PERSONAS (${peopleResults.length} procesadas)`);
-        console.log(`   ✅ Actualizadas: ${peopleStats.updated}`);
-        console.log(`   ➖ Sin cambios:  ${peopleStats.unchanged}`);
-        console.log(`   ❌ Errores:      ${peopleStats.errors}`);
-        console.log(`   🔍 No encontradas: ${peopleStats.notFound}`);
-    }
+    console.log(`\n📽️  PELÍCULAS (${results.length} procesadas)`);
+    console.log(`   ✅ Actualizadas: ${stats.updated}`);
+    console.log(`   ➖ Sin cambios:  ${stats.unchanged}`);
+    console.log(`   ❌ Errores:      ${stats.errors}`);
+    console.log(`   🔍 No encontradas: ${stats.notFound}`);
 
     console.log(`\n⏱️  Duración: ${duration} segundos`);
     console.log('='.repeat(50));
@@ -5573,41 +5442,23 @@ function printSummary(movieResults: SyncResult[], peopleResults: SyncResult[], s
 
 async function main() {
     const options = parseArgs();
-    const stats: SyncStats = {
-        total: 0,
-        updated: 0,
-        unchanged: 0,
-        errors: 0,
-        notFound: 0,
-        startTime: new Date(),
-    };
+    const startTime = new Date();
 
     console.log('='.repeat(50));
-    console.log('SINCRONIZACIÓN DE POPULARIDAD TMDB');
+    console.log('SINCRONIZACIÓN DE IMDB VOTES');
     console.log('='.repeat(50));
-    console.log(`Tipo: ${options.type}`);
     console.log(`Límite: ${options.limit || 'sin límite'}`);
     console.log(`Dry-run: ${options.dryRun ? 'SÍ' : 'NO'}`);
     console.log(`Solo missing: ${options.onlyMissing ? 'SÍ' : 'NO'}`);
     console.log(`Batch size: ${options.batchSize}`);
     console.log(`Delay: ${options.delay}ms`);
 
-    let movieResults: SyncResult[] = [];
-    let peopleResults: SyncResult[] = [];
-
     try {
-        if (options.type === 'movies' || options.type === 'all') {
-            movieResults = await syncMoviesPopularity(options);
-        }
+        const results = await syncImdbVotes(options);
+        const endTime = new Date();
 
-        if (options.type === 'people' || options.type === 'all') {
-            peopleResults = await syncPeoplePopularity(options);
-        }
-
-        stats.endTime = new Date();
-
-        generateReport(movieResults, peopleResults, options);
-        printSummary(movieResults, peopleResults, stats);
+        generateReport(results, options);
+        printSummary(results, startTime, endTime);
 
     } catch (error) {
         console.error('Error durante la sincronización:', error);

@@ -36,27 +36,3 @@ export async function getMovieDetails(tmdbId: number): Promise<TMDBMovieDetails>
     });
 }
 
-// Tipos para respuestas de popularidad (campos mínimos necesarios)
-export interface TMDBPopularityResponse {
-    id: number;
-    popularity: number;
-}
-
-export interface TMDBPersonBasicDetails {
-    id: number;
-    name: string;
-    popularity: number;
-}
-
-// Funciones para obtener solo popularidad (más eficientes)
-export async function getMoviePopularity(tmdbId: number): Promise<TMDBPopularityResponse> {
-    return fetchTMDB<TMDBPopularityResponse>(`/movie/${tmdbId}`, {
-        language: 'es-ES',
-    });
-}
-
-export async function getPersonPopularity(tmdbId: number): Promise<TMDBPersonBasicDetails> {
-    return fetchTMDB<TMDBPersonBasicDetails>(`/person/${tmdbId}`, {
-        language: 'es-ES',
-    });
-}
