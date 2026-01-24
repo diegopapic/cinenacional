@@ -1,11 +1,15 @@
 // TMDB API Configuration
 // Documentación: https://developer.themoviedb.org/docs
 
-import * as path from 'path';
-import dotenv from 'dotenv';
-
-// Cargar variables de entorno desde .env en la raíz del proyecto
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Cargar dotenv solo si está disponible (desarrollo local)
+// En producción (Docker), las variables ya están en el entorno
+try {
+  const path = require('path');
+  const dotenv = require('dotenv');
+  dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+} catch {
+  // dotenv no disponible, usar variables de entorno del sistema
+}
 
 export const config = {
   // API Read Access Token (Bearer token)
