@@ -113,6 +113,7 @@ services:
       - cinenacional-network
     volumes:
       - ./public/uploads:/app/public/uploads
+      - ./scripts:/app/scripts
     deploy:
       resources:
         limits:
