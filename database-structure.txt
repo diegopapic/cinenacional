@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2026-01-24T16:23:19.876Z
+# Generado automáticamente el: 2026-01-24T17:22:39.845Z
 # ================================================
 
 ## Schema Prisma
@@ -53,8 +53,8 @@ model Movie {
   metaKeywords          String[]                   @map("meta_keywords")
   synopsisLocked        Boolean                    @default(false) @map("synopsis_locked")
   tmdbId                Int?                       @map("tmdb_id")
-  tmdbPopularity        Float?                     @map("tmdb_popularity")
-  tmdbPopularityUpdatedAt DateTime?                @map("tmdb_popularity_updated_at") @db.Timestamptz
+  imdbVotes             Int?                       @map("imdb_votes")
+  imdbVotesUpdatedAt    DateTime?                  @map("imdb_votes_updated_at") @db.Timestamptz
   images                Image[]
   alternativeTitles     MovieAlternativeTitle[]
   awards                MovieAward[]
@@ -1278,8 +1278,8 @@ CREATE TABLE "movies" (
     "meta_keywords" TEXT[],
     "synopsis_locked" BOOLEAN NOT NULL DEFAULT false,
     "tmdb_id" INTEGER,
-    "tmdb_popularity" DOUBLE PRECISION,
-    "tmdb_popularity_updated_at" TIMESTAMPTZ,
+    "imdb_votes" INTEGER,
+    "imdb_votes_updated_at" TIMESTAMPTZ,
 
     CONSTRAINT "movies_pkey" PRIMARY KEY ("id")
 );
