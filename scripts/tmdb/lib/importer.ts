@@ -16,6 +16,18 @@ import {
 } from './config';
 import { getPool, findPersonByTmdbId, findPersonByNameAndDepartment, updatePersonTmdbId, getCountryIdByName } from './database';
 import { splitNameAndGetGender, rewriteSynopsis, peopleForReview } from './claude';
+import { getPersonDetails } from '../tmdb-client';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configurar Cloudinary
+cloudinary.config({
+    cloud_name: 'dzndglyjr',
+    api_key: process.env.CLOUDINARY_API_KEY || '916999397279161',
+    api_secret: process.env.CLOUDINARY_API_SECRET || '6K7EQkELG4dgl4RgdA5wsTwSPpI'
+});
+
+// URL base de TMDB para imágenes
+const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 
 // ============================================================================
 // FUNCIONES DE TÍTULO Y SINOPSIS
@@ -113,6 +125,88 @@ export function filterCharacterName(character: string | null): string | null {
 }
 
 // ============================================================================
+// FUNCIONES DE POSTER
+// ============================================================================
+
+/**
+ * Sube el poster de TMDB a Cloudinary y actualiza la película
+ */
+export async function uploadPosterToCloudinary(
+    movieId: number,
+    posterPath: string
+): Promise<{ success: boolean; url?: string; error?: string }> {
+    try {
+        const tmdbPosterUrl = `${TMDB_IMAGE_BASE_URL}${posterPath}`;
+
+        const result = await cloudinary.uploader.upload(tmdbPosterUrl, {
+            folder: `cinenacional/posters/${movieId}`,
+            public_id: 'poster',
+            overwrite: true,
+            resource_type: 'image',
+            timeout: 120000,
+            transformation: [
+                { quality: 'auto:best' },
+                { fetch_format: 'auto' }
+            ]
+        });
+
+        // Actualizar la película con la URL del poster
+        const pool = getPool();
+        await pool.query(
+            'UPDATE movies SET poster_url = $1, poster_public_id = $2, updated_at = NOW() WHERE id = $3',
+            [result.secure_url, result.public_id, movieId]
+        );
+
+        return { success: true, url: result.secure_url };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error)
+        };
+    }
+}
+
+/**
+ * Sube el retrato de una persona desde TMDB a Cloudinary
+ * Usa proporción 3:4 con detección de cara para centrar el crop
+ */
+export async function uploadPortraitToCloudinary(
+    personId: number,
+    profilePath: string
+): Promise<{ success: boolean; url?: string; publicId?: string; error?: string }> {
+    try {
+        const tmdbProfileUrl = `${TMDB_IMAGE_BASE_URL}${profilePath}`;
+
+        const result = await cloudinary.uploader.upload(tmdbProfileUrl, {
+            folder: `cinenacional/people/${personId}`,
+            public_id: 'portrait',
+            overwrite: true,
+            resource_type: 'image',
+            timeout: 120000,
+            transformation: [
+                { aspect_ratio: '3:4', gravity: 'face', crop: 'fill' },
+                { quality: 'auto:best' },
+                { fetch_format: 'auto' }
+            ]
+        });
+
+        // Actualizar la persona con la URL del retrato
+        const pool = getPool();
+        await pool.query(
+            'UPDATE people SET photo_url = $1, photo_public_id = $2, updated_at = NOW() WHERE id = $3',
+            [result.secure_url, result.public_id, personId]
+        );
+
+        return { success: true, url: result.secure_url, publicId: result.public_id };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error)
+        };
+    }
+}
+
+// ============================================================================
 // FUNCIONES DE CREACIÓN
 // ============================================================================
 
@@ -163,7 +257,25 @@ export async function createPerson(
         RETURNING id
     `, [firstName, lastName, slug, tmdbId, gender]);
 
-    return result.rows[0].id;
+    const personId = result.rows[0].id;
+
+    // Intentar migrar retrato desde TMDB
+    try {
+        const tmdbDetails = await getPersonDetails(tmdbId);
+        if (tmdbDetails.profile_path) {
+            const portraitResult = await uploadPortraitToCloudinary(personId, tmdbDetails.profile_path);
+            if (portraitResult.success) {
+                console.log(`     ✓ Retrato migrado: ${portraitResult.url}`);
+            } else {
+                console.log(`     ⚠️ Error migrando retrato: ${portraitResult.error}`);
+            }
+        }
+    } catch (error) {
+        // No fallar si no se puede migrar el retrato, solo loguear
+        console.log(`     ⚠️ Error obteniendo retrato de TMDB: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    return personId;
 }
 
 export async function createMovie(
@@ -506,6 +618,19 @@ export async function importMovie(
         console.log(`  🎬 Importando crew...`);
         result.crew_imported = await addMovieCrew(movieId, movie.credits.crew, year, title, stats);
         result.people_created = stats.created;
+
+        // Subir poster a Cloudinary si existe
+        if (movie.poster_path) {
+            console.log(`  🖼️  Subiendo poster a Cloudinary...`);
+            const posterResult = await uploadPosterToCloudinary(movieId, movie.poster_path);
+            if (posterResult.success) {
+                console.log(`  ✓ Poster subido: ${posterResult.url}`);
+            } else {
+                console.log(`  ⚠️ Error subiendo poster: ${posterResult.error}`);
+            }
+        } else {
+            console.log(`  - Sin poster en TMDB`);
+        }
 
         result.status = 'success';
         result.message = `Importada exitosamente`;
