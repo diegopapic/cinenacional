@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 6174adc199096f0ead0ef5df24391de156fc5b12
-// Fecha: 2026-01-23T02:08:47.448Z
+// Commit: d35c5e1ca82d0c46d7db1d97209cdffda4992115
+// Fecha: 2026-01-24T07:44:05.134Z
 // ============================================
 
 
@@ -1695,6 +1695,671 @@ main().catch(error => {
 });
 
 // ==================================================
+// scripts/tmdb/generate-synopses.ts
+// ==================================================
+/**
+ * Script para generar sinopsis de películas usando Claude
+ *
+ * Busca películas que:
+ * - Tengan fecha de estreno (releaseYear no nulo)
+ * - Sean largometrajes (duración > 60 minutos)
+ * - No tengan la sinopsis lockeada (synopsisLocked = false)
+ *
+ * Uso:
+ *   npx tsx generate-synopses.ts --dry-run          # Solo mostrar qué películas se procesarían
+ *   npx tsx generate-synopses.ts --limit 10         # Procesar solo 10 películas
+ *   npx tsx generate-synopses.ts --movie-id 123     # Procesar una película específica
+ *   npx tsx generate-synopses.ts                    # Procesar todas las películas
+ */
+
+import * as fs from 'fs';
+import * as path from 'path';
+import dotenv from 'dotenv';
+
+// Cargar variables de entorno desde la raíz del proyecto ANTES de importar config
+// Usar override:true porque puede haber variables del sistema con valores vacíos
+const envPath = path.resolve(__dirname, '../../.env');
+dotenv.config({ path: envPath, override: true });
+
+import config from './config';
+import { getPool, closePool } from './lib/database';
+
+// Verificar API key (usar directamente de process.env ya que config puede tener problemas de timing)
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+if (!ANTHROPIC_API_KEY) {
+    console.error('❌ Error: ANTHROPIC_API_KEY no está configurada en', envPath);
+    console.error('   Verificá que el archivo .env existe y contiene ANTHROPIC_API_KEY');
+    process.exit(1);
+}
+
+const RATE_LIMIT_MS = 5000; // 5 segundos entre llamadas a Claude (web search usa más tokens)
+const MAX_RETRIES = 3; // Reintentos en caso de rate limit
+const RETRY_DELAY_MS = 60000; // 60 segundos de espera en caso de rate limit
+
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Mapeo de géneros del prompt a IDs en la base de datos
+const GENRE_NAME_TO_ID: Record<string, number> = {
+    'Acción': 32,
+    'Animación': 18,
+    'Aventuras': 30,
+    'Biográfica': 31,
+    'Bélica': 36,
+    'Ciencia ficción': 27,
+    'Comedia': 17,
+    'Deportes': 35,
+    'Documental': 15,
+    'Drama': 16,
+    'Ensayo': 37,
+    'Erótica': 34,
+    'Experimental': 20,
+    'Fantástico': 26,
+    'Histórica': 28,
+    'Infantil': 29,
+    'Musical': 25,
+    'Policial': 21,
+    'Política': 38,
+    'Romántica': 23,
+    'Suspenso': 22,
+    'Terror': 19,
+    'Thriller': 24,
+    'Western': 33,
+};
+
+interface MovieToProcess {
+    id: number;
+    title: string;
+    year: number | null;
+    releaseYear: number | null;
+    synopsis: string | null;
+    synopsisLocked: boolean;
+    duration: number | null;
+    directorName: string | null;
+}
+
+interface ProcessResult {
+    movieId: number;
+    title: string;
+    status: 'success' | 'skipped' | 'error' | 'empty';
+    message: string;
+    synopsis?: string;
+    genres?: string[];
+    charCount?: number;
+}
+
+// ============================================================================
+// FUNCIONES DE CLAUDE
+// ============================================================================
+
+async function askClaudeWithWebSearch(prompt: string, maxTokens: number = 4096, retryCount: number = 0): Promise<string> {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: maxTokens,
+            tools: [{
+                type: 'web_search_20250305',
+                name: 'web_search',
+                max_uses: 3
+            }],
+            messages: [
+                { role: 'user', content: prompt }
+            ]
+        })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+
+        // Si es rate limit y no hemos excedido los reintentos, esperar y reintentar
+        if (response.status === 429 && retryCount < MAX_RETRIES) {
+            const waitTime = RETRY_DELAY_MS * (retryCount + 1); // Backoff exponencial
+            console.log(`     ⏳ Rate limit alcanzado. Esperando ${waitTime / 1000}s antes de reintentar (${retryCount + 1}/${MAX_RETRIES})...`);
+            await sleep(waitTime);
+            return askClaudeWithWebSearch(prompt, maxTokens, retryCount + 1);
+        }
+
+        throw new Error(`Claude API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    // Extraer todos los bloques de texto de la respuesta
+    const textBlocks = data.content.filter((block: any) => block.type === 'text');
+    if (textBlocks.length === 0) {
+        throw new Error('No se encontró bloque de texto en la respuesta');
+    }
+
+    // Concatenar todos los textos
+    return textBlocks.map((block: any) => block.text).join('');
+}
+
+// Versión simple sin web search para reescritura de sinopsis existentes
+async function askClaude(prompt: string, maxTokens: number = 1500, retryCount: number = 0): Promise<string> {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: maxTokens,
+            messages: [
+                { role: 'user', content: prompt }
+            ]
+        })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+
+        // Si es rate limit y no hemos excedido los reintentos, esperar y reintentar
+        if (response.status === 429 && retryCount < MAX_RETRIES) {
+            const waitTime = RETRY_DELAY_MS * (retryCount + 1);
+            console.log(`     ⏳ Rate limit alcanzado. Esperando ${waitTime / 1000}s antes de reintentar (${retryCount + 1}/${MAX_RETRIES})...`);
+            await sleep(waitTime);
+            return askClaude(prompt, maxTokens, retryCount + 1);
+        }
+
+        throw new Error(`Claude API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data.content[0].text;
+}
+
+async function generateSynopsis(title: string, year: number | null, director: string | null): Promise<{ synopsis: string; genres: string[]; charCount: number } | null> {
+    const directorInfo = director ? `Director: ${director}` : '';
+    const yearInfo = year ? `Año: ${year}` : '';
+
+    const prompt = `PROMPT PARA GENERAR SINOPSIS DE PELÍCULAS ARGENTINAS
+
+IMPORTANTE: Usá la herramienta de búsqueda web para investigar sobre esta película argentina antes de escribir la sinopsis. Buscá información sobre su trama, personajes y género.
+
+Si después de buscar no encontrás información suficiente sobre esta película específica, respondé ÚNICAMENTE con: NO_INFO
+
+⚠️ FORMATO DE RESPUESTA OBLIGATORIO ⚠️
+
+Tu respuesta final debe tener EXACTAMENTE este formato (sin ningún texto adicional antes o después):
+
+[Texto de la sinopsis entre 400-500 caracteres]
+
+Caracteres: [número]
+
+Géneros: [lista separada por comas]
+
+PROHIBIDO:
+• NO escribas "Basándome en...", "Según la información...", "La sinopsis es..." ni ninguna introducción
+• NO generes artefactos ni documentos
+• NO muestres informes de investigación
+• NO incluyas análisis, contexto ni explicaciones
+• NO menciones premios, festivales ni recepción crítica
+• NO uses formato markdown con títulos ni secciones
+• NO inventes información si no la encontraste en la búsqueda
+• Comenzá DIRECTAMENTE con el texto de la sinopsis
+
+INSTRUCCIONES DE REDACCIÓN
+
+Paso 1 - Investigación:
+Usá la búsqueda web para encontrar información sobre la película. Buscá sinopsis, reseñas o información de la trama.
+
+Paso 2 - Redacción de sinopsis:
+Con la información obtenida, escribí una sinopsis que cumpla estos requisitos:
+• Extensión: entre 400 y 500 caracteres (incluyendo espacios)
+• Sin spoilers: no reveles giros argumentales, desenlaces ni información del último tercio de la película
+• Tono: neutral y objetivo, sin juicios de valor ni lenguaje promocional
+• Contenido: describí únicamente la premisa y situación inicial, presentando personajes principales y conflicto central
+• Estilo: redacción clara y directa, en tercera persona, tiempo presente
+• Terminología: usá "dictadura militar" (nunca "dictadura cívico-militar")
+• Lenguaje: español rioplatense (con voseo) pero sin lunfardo ni jerga. Evitá españolismos como "timo", "molar", "currar", "tío", etc. Usá formas rioplatenses: "vuelve" en lugar de "regresa", "chico" en lugar de "niño", "enojado" en lugar de "enfadado", "lindo" en lugar de "bonito", "agarrar" en lugar de "coger".
+• Números: los años (edad, fechas) deben escribirse en cifras, no en letras. Las décadas en letras: los ochenta, los noventa (no los 80, los 90)
+• Evitar repeticiones estructurales: no uses construcciones paralelas para describir personajes. Variá la sintaxis y el enfoque narrativo.
+• Documentales: si es documental, aclaralo explícitamente
+• Solo argumento: NO incluyas título, director, actores, países ni datos técnicos
+• Sin metadiscurso: NO uses "La película es…", "El film trata de…", etc. Comenzá directamente con la historia
+• Evitar lugares comunes: no uses expresiones cliché o fórmulas gastadas como "amigas inseparables", "viaje iniciático", "nada volverá a ser igual", "secretos que salen a la luz", "en busca de respuestas", etc. Buscá formas más precisas y originales de expresar las ideas.
+
+Paso 3 - Conteo:
+Antes de entregar, verificá el conteo de caracteres usando una herramienta de conteo. No estimes ni calcules mentalmente: contá con precisión.
+
+Paso 4 - Clasificación de géneros:
+Asigná a la película uno o más géneros de la siguiente lista cerrada. Usá únicamente los géneros que correspondan según el contenido y tono de la película. No inventes géneros ni uses sinónimos.
+
+Géneros disponibles: Acción, Animación, Aventuras, Biográfica, Bélica, Ciencia ficción, Comedia, Deportes, Documental, Drama, Ensayo, Erótica, Experimental, Fantástico, Histórica, Infantil, Musical, Policial, Política, Romántica, Suspenso, Terror, Thriller, Western.
+
+⚠️ RECORDATORIO FINAL:
+- Primero buscá información sobre la película en la web
+- Si no encontrás información suficiente → respondé solo: NO_INFO
+- Si encontrás información → respondé ÚNICAMENTE sinopsis + conteo + géneros
+
+Película argentina: ${title}
+${yearInfo}
+${directorInfo}`;
+
+    try {
+        const response = await askClaudeWithWebSearch(prompt);
+        const trimmed = response.trim();
+
+        // Si no hay información
+        if (trimmed === 'NO_INFO' || trimmed.includes('NO_INFO')) {
+            return null;
+        }
+
+        // Parsear la respuesta
+        const lines = trimmed.split('\n').filter(l => l.trim());
+
+        // Buscar la sinopsis (todo el texto hasta encontrar "Caracteres:" o "Géneros:")
+        let synopsisLines: string[] = [];
+        let charCount = 0;
+        let genres: string[] = [];
+
+        for (const line of lines) {
+            const lowerLine = line.toLowerCase();
+            if (lowerLine.startsWith('caracteres:') || lowerLine.startsWith('conteo:') || lowerLine.match(/^\d+\s*caracteres/i)) {
+                const match = line.match(/(\d+)/);
+                if (match) {
+                    charCount = parseInt(match[1]);
+                }
+            } else if (lowerLine.startsWith('géneros:') || lowerLine.startsWith('género:')) {
+                const genreText = line.replace(/^g[eé]neros?:\s*/i, '');
+                genres = genreText.split(/[,;]/).map(g => g.trim()).filter(g => g);
+            } else if (!lowerLine.includes('sinopsis:')) {
+                // Es parte de la sinopsis
+                synopsisLines.push(line);
+            }
+        }
+
+        const synopsis = synopsisLines.join('\n').trim();
+
+        if (!synopsis || synopsis.length < 100) {
+            return null;
+        }
+
+        // Si no se detectó el conteo, calcularlo
+        if (charCount === 0) {
+            charCount = synopsis.length;
+        }
+
+        return {
+            synopsis,
+            genres,
+            charCount
+        };
+    } catch (error) {
+        console.log(`     ⚠ Error al generar sinopsis con Claude: ${error}`);
+        return null;
+    }
+}
+
+async function rewriteExistingSynopsis(originalSynopsis: string, isDocumental: boolean): Promise<string> {
+    if (!originalSynopsis || originalSynopsis.trim().length === 0) {
+        return '';
+    }
+
+    const prompt = `Convertí el siguiente texto en una sinopsis cinematográfica que cumpla con estos criterios:
+
+Extensión: entre 400 y 500 caracteres (incluyendo espacios)
+
+Contenido:
+- Describí únicamente la premisa y situación inicial
+- Presentá los personajes principales y el conflicto central
+- Sin spoilers: no reveles giros argumentales, desenlaces ni información del último tercio de la película
+${isDocumental ? '- Es un documental: comenzá con la estructura "Documental que..." e integrá esa palabra al texto' : ''}
+- Si el texto fuente no ofrece suficiente información para alcanzar los 400 caracteres, es preferible entregar una sinopsis más breve antes que inventar o inferir datos que no estén en el original
+
+Estilo:
+- Tono neutral y objetivo, sin juicios de valor
+- Sin lenguaje promocional ni adjetivos laudatorios
+- Redacción clara y directa
+- Tercera persona, tiempo presente
+- Español rioplatense (con voseo) pero sin lunfardo ni jerga
+
+Restricciones:
+- NO incluyas título, director, actores, países ni datos técnicos
+- NO uses metadiscurso como "La película narra...", "El film cuenta...", "Esta historia trata de..."
+- Comenzá directamente con la acción o situación ${isDocumental ? '(usando "Documental que...")' : ''}
+
+Texto a convertir:
+${originalSynopsis}
+
+Responde SOLO con la sinopsis reescrita. Si el texto no tiene suficiente información narrativa, respondé ÚNICAMENTE con: SINOPSIS_VACIA`;
+
+    try {
+        const rewritten = await askClaude(prompt, 800);
+        const trimmed = rewritten.trim();
+
+        if (trimmed === 'SINOPSIS_VACIA' || trimmed.includes('SINOPSIS_VACIA')) {
+            return '';
+        }
+
+        return trimmed;
+    } catch (error) {
+        console.log(`     ⚠ Error al reescribir sinopsis con Claude: ${error}`);
+        throw error; // Propagar el error para manejarlo en el nivel superior
+    }
+}
+
+// ============================================================================
+// FUNCIONES DE BASE DE DATOS
+// ============================================================================
+
+async function getMoviesToProcess(movieId?: number, limit?: number): Promise<MovieToProcess[]> {
+    const pool = getPool();
+
+    let query = `
+        SELECT
+            m.id,
+            m.title,
+            m.year,
+            m.release_year as "releaseYear",
+            m.synopsis,
+            m.synopsis_locked as "synopsisLocked",
+            m.duration,
+            (
+                SELECT p.first_name || ' ' || p.last_name
+                FROM movie_crew mc
+                JOIN people p ON mc.person_id = p.id
+                WHERE mc.movie_id = m.id AND mc.role_id = 2
+                ORDER BY mc.billing_order NULLS LAST
+                LIMIT 1
+            ) as "directorName"
+        FROM movies m
+        WHERE m.release_year IS NOT NULL
+          AND m.duration > 60
+          AND m.synopsis_locked = false
+    `;
+
+    const params: any[] = [];
+
+    if (movieId) {
+        query += ` AND m.id = $1`;
+        params.push(movieId);
+    }
+
+    query += ` ORDER BY m.release_year DESC, m.id`;
+
+    if (limit && !movieId) {
+        query += ` LIMIT $${params.length + 1}`;
+        params.push(limit);
+    }
+
+    const result = await pool.query(query, params);
+    return result.rows;
+}
+
+async function hasGenreDocumental(movieId: number): Promise<boolean> {
+    const pool = getPool();
+    const result = await pool.query(
+        `SELECT 1 FROM movie_genres WHERE movie_id = $1 AND genre_id = $2 LIMIT 1`,
+        [movieId, GENRE_NAME_TO_ID['Documental']]
+    );
+    return result.rows.length > 0;
+}
+
+async function updateMovieSynopsisAndGenres(
+    movieId: number,
+    synopsis: string,
+    genres: string[],
+    lock: boolean
+): Promise<void> {
+    const pool = getPool();
+
+    // Actualizar sinopsis y lock
+    await pool.query(
+        `UPDATE movies SET synopsis = $1, synopsis_locked = $2, updated_at = NOW() WHERE id = $3`,
+        [synopsis, lock, movieId]
+    );
+
+    // Si hay géneros, actualizarlos
+    if (genres.length > 0) {
+        // Eliminar géneros existentes
+        await pool.query(`DELETE FROM movie_genres WHERE movie_id = $1`, [movieId]);
+
+        // Insertar nuevos géneros
+        for (let i = 0; i < genres.length; i++) {
+            const genreName = genres[i];
+            const genreId = GENRE_NAME_TO_ID[genreName];
+
+            if (genreId) {
+                const isPrimary = i === 0;
+                await pool.query(
+                    `INSERT INTO movie_genres (movie_id, genre_id, is_primary) VALUES ($1, $2, $3)`,
+                    [movieId, genreId, isPrimary]
+                );
+            }
+        }
+    }
+}
+
+// ============================================================================
+// FUNCIÓN PRINCIPAL DE PROCESAMIENTO
+// ============================================================================
+
+async function processMovie(movie: MovieToProcess, dryRun: boolean): Promise<ProcessResult> {
+    const result: ProcessResult = {
+        movieId: movie.id,
+        title: movie.title,
+        status: 'error',
+        message: ''
+    };
+
+    try {
+        console.log(`     📖 Generando sinopsis para "${movie.title}" (${movie.releaseYear})...`);
+
+        // Primero intentar generar sinopsis con investigación web
+        const generated = await generateSynopsis(movie.title, movie.releaseYear || movie.year, movie.directorName);
+
+        if (generated) {
+            result.synopsis = generated.synopsis;
+            result.genres = generated.genres;
+            result.charCount = generated.charCount;
+
+            if (dryRun) {
+                result.status = 'success';
+                result.message = `Generada (${generated.charCount} caracteres)`;
+            } else {
+                // Actualizar en la base de datos
+                await updateMovieSynopsisAndGenres(
+                    movie.id,
+                    generated.synopsis,
+                    generated.genres,
+                    true // Lock
+                );
+                result.status = 'success';
+                result.message = `Actualizada y lockeada (${generated.charCount} caracteres)`;
+            }
+            return result;
+        }
+
+        // Si no se pudo generar, intentar reescribir la existente
+        if (movie.synopsis && movie.synopsis.trim().length > 0) {
+            console.log(`     📝 Reescribiendo sinopsis existente...`);
+            const isDocumental = await hasGenreDocumental(movie.id);
+
+            try {
+                const rewritten = await rewriteExistingSynopsis(movie.synopsis, isDocumental);
+
+                if (rewritten && rewritten.length > 0) {
+                    result.synopsis = rewritten;
+                    result.charCount = rewritten.length;
+
+                    if (dryRun) {
+                        result.status = 'success';
+                        result.message = `Reescrita (${rewritten.length} caracteres)`;
+                    } else {
+                        await updateMovieSynopsisAndGenres(movie.id, rewritten, [], true);
+                        result.status = 'success';
+                        result.message = `Reescrita y lockeada (${rewritten.length} caracteres)`;
+                    }
+                    return result;
+                }
+            } catch (error) {
+                // Si falla la reescritura, continuar al caso "empty"
+                console.log(`     ℹ️  No se pudo reescribir, dejando sin cambios`);
+            }
+        }
+
+        // Si no hay sinopsis o no se pudo reescribir, dejar vacía
+        result.status = 'empty';
+        result.message = 'Sin información suficiente, sinopsis dejada vacía';
+
+    } catch (error) {
+        result.status = 'error';
+        result.message = error instanceof Error ? error.message : 'Error desconocido';
+    }
+
+    return result;
+}
+
+// ============================================================================
+// GENERACIÓN DE REPORTE
+// ============================================================================
+
+function generateReport(results: ProcessResult[], dryRun: boolean): void {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const prefix = dryRun ? 'dry-run-' : '';
+    const reportPath = path.join(__dirname, 'reports', `${prefix}synopses-${timestamp}.csv`);
+
+    const reportsDir = path.join(__dirname, 'reports');
+    if (!fs.existsSync(reportsDir)) {
+        fs.mkdirSync(reportsDir, { recursive: true });
+    }
+
+    const headers = ['movie_id', 'title', 'status', 'message', 'char_count', 'genres'];
+    const rows = results.map(r => [
+        r.movieId,
+        `"${r.title.replace(/"/g, '""')}"`,
+        r.status,
+        `"${r.message.replace(/"/g, '""')}"`,
+        r.charCount || '',
+        r.genres ? `"${r.genres.join(', ')}"` : ''
+    ].join(','));
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    fs.writeFileSync(reportPath, csvContent, 'utf-8');
+
+    console.log(`\n📋 Reporte guardado en: ${reportPath}`);
+}
+
+// ============================================================================
+// MAIN
+// ============================================================================
+
+async function main(): Promise<void> {
+    console.log('🎬 Generador de Sinopsis v1.0');
+    console.log('==============================\n');
+
+    const args = process.argv.slice(2);
+    const movieIdIndex = args.indexOf('--movie-id');
+    const limitIndex = args.indexOf('--limit');
+    const dryRun = args.includes('--dry-run');
+
+    let movieId: number | undefined;
+    let limit: number | undefined;
+
+    if (movieIdIndex !== -1 && args[movieIdIndex + 1]) {
+        movieId = parseInt(args[movieIdIndex + 1]);
+        if (isNaN(movieId)) {
+            console.error('❌ ID de película inválido');
+            process.exit(1);
+        }
+    }
+
+    if (limitIndex !== -1 && args[limitIndex + 1]) {
+        limit = parseInt(args[limitIndex + 1]);
+        if (isNaN(limit)) {
+            console.error('❌ Límite inválido');
+            process.exit(1);
+        }
+    }
+
+    if (dryRun) {
+        console.log('🔍 MODO DRY-RUN: No se aplicarán cambios\n');
+    }
+
+    // Obtener películas a procesar
+    console.log('📋 Buscando películas a procesar...');
+    const movies = await getMoviesToProcess(movieId, limit);
+
+    if (movies.length === 0) {
+        console.log('✅ No hay películas que procesar.');
+        await closePool();
+        return;
+    }
+
+    console.log(`📋 Películas a procesar: ${movies.length}\n`);
+
+    const results: ProcessResult[] = [];
+    const startTime = Date.now();
+
+    for (let i = 0; i < movies.length; i++) {
+        const movie = movies[i];
+        console.log(`[${i + 1}/${movies.length}] 🎬 ${movie.title} (ID: ${movie.id})`);
+
+        const result = await processMovie(movie, dryRun);
+        results.push(result);
+
+        const statusIcon = result.status === 'success' ? '✅' :
+            result.status === 'empty' ? '⚪' :
+            result.status === 'skipped' ? '⏭️' : '❌';
+
+        console.log(`     ${statusIcon} ${result.message}`);
+
+        if (result.synopsis && dryRun) {
+            console.log(`     📝 Sinopsis: ${result.synopsis.substring(0, 100)}...`);
+            if (result.genres && result.genres.length > 0) {
+                console.log(`     🎭 Géneros: ${result.genres.join(', ')}`);
+            }
+        }
+
+        // Rate limiting
+        if (i < movies.length - 1) {
+            await sleep(RATE_LIMIT_MS);
+        }
+    }
+
+    // Resumen
+    const elapsed = Date.now() - startTime;
+    const successCount = results.filter(r => r.status === 'success').length;
+    const emptyCount = results.filter(r => r.status === 'empty').length;
+    const errorCount = results.filter(r => r.status === 'error').length;
+
+    console.log('\n' + '='.repeat(50));
+    console.log('📊 RESUMEN GENERAL');
+    console.log('='.repeat(50));
+    console.log(`   Total procesadas:    ${results.length}`);
+    console.log(`   ✅ Exitosas:         ${successCount}`);
+    console.log(`   ⚪ Sin info:         ${emptyCount}`);
+    console.log(`   ❌ Errores:          ${errorCount}`);
+    console.log(`   ⏱️  Tiempo:           ${Math.round(elapsed / 1000)}s`);
+
+    if (dryRun) {
+        console.log('\n💡 Modo dry-run: Para aplicar cambios, quitar --dry-run');
+    }
+
+    // Generar reporte
+    generateReport(results, dryRun);
+
+    await closePool();
+    console.log('\n✨ Proceso completado\n');
+}
+
+main().catch(error => {
+    console.error('Error fatal:', error);
+    closePool().finally(() => process.exit(1));
+});
+
+
+// ==================================================
 // scripts/tmdb/import-tmdb-movies.ts
 // ==================================================
 /**
@@ -2198,6 +2863,31 @@ export async function getMovieDetails(tmdbId: number): Promise<TMDBMovieDetails>
     });
 }
 
+// Tipos para respuestas de popularidad (campos mínimos necesarios)
+export interface TMDBPopularityResponse {
+    id: number;
+    popularity: number;
+}
+
+export interface TMDBPersonBasicDetails {
+    id: number;
+    name: string;
+    popularity: number;
+}
+
+// Funciones para obtener solo popularidad (más eficientes)
+export async function getMoviePopularity(tmdbId: number): Promise<TMDBPopularityResponse> {
+    return fetchTMDB<TMDBPopularityResponse>(`/movie/${tmdbId}`, {
+        language: 'es-ES',
+    });
+}
+
+export async function getPersonPopularity(tmdbId: number): Promise<TMDBPersonBasicDetails> {
+    return fetchTMDB<TMDBPersonBasicDetails>(`/person/${tmdbId}`, {
+        language: 'es-ES',
+    });
+}
+
 
 // ==================================================
 // scripts/tmdb/lib/claude.ts
@@ -2690,6 +3380,7 @@ export interface TMDBMovieDetails {
     release_date: string;
     runtime: number | null;
     status: string;
+    poster_path: string | null;
     genres: Array<{ id: number; name: string }>;
     production_countries: Array<{ iso_3166_1: string; name: string }>;
     credits: {
@@ -2948,6 +3639,17 @@ import {
 } from './config';
 import { getPool, findPersonByTmdbId, findPersonByNameAndDepartment, updatePersonTmdbId, getCountryIdByName } from './database';
 import { splitNameAndGetGender, rewriteSynopsis, peopleForReview } from './claude';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configurar Cloudinary
+cloudinary.config({
+    cloud_name: 'dzndglyjr',
+    api_key: process.env.CLOUDINARY_API_KEY || '916999397279161',
+    api_secret: process.env.CLOUDINARY_API_SECRET || '6K7EQkELG4dgl4RgdA5wsTwSPpI'
+});
+
+// URL base de TMDB para imágenes
+const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 
 // ============================================================================
 // FUNCIONES DE TÍTULO Y SINOPSIS
@@ -3042,6 +3744,48 @@ export function filterCharacterName(character: string | null): string | null {
     }
 
     return character;
+}
+
+// ============================================================================
+// FUNCIONES DE POSTER
+// ============================================================================
+
+/**
+ * Sube el poster de TMDB a Cloudinary y actualiza la película
+ */
+export async function uploadPosterToCloudinary(
+    movieId: number,
+    posterPath: string
+): Promise<{ success: boolean; url?: string; error?: string }> {
+    try {
+        const tmdbPosterUrl = `${TMDB_IMAGE_BASE_URL}${posterPath}`;
+
+        const result = await cloudinary.uploader.upload(tmdbPosterUrl, {
+            folder: `cinenacional/posters/${movieId}`,
+            public_id: 'poster',
+            overwrite: true,
+            resource_type: 'image',
+            timeout: 120000,
+            transformation: [
+                { quality: 'auto:best' },
+                { fetch_format: 'auto' }
+            ]
+        });
+
+        // Actualizar la película con la URL del poster
+        const pool = getPool();
+        await pool.query(
+            'UPDATE movies SET poster_url = $1, poster_public_id = $2, updated_at = NOW() WHERE id = $3',
+            [result.secure_url, result.public_id, movieId]
+        );
+
+        return { success: true, url: result.secure_url };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : String(error)
+        };
+    }
 }
 
 // ============================================================================
@@ -3439,6 +4183,19 @@ export async function importMovie(
         result.crew_imported = await addMovieCrew(movieId, movie.credits.crew, year, title, stats);
         result.people_created = stats.created;
 
+        // Subir poster a Cloudinary si existe
+        if (movie.poster_path) {
+            console.log(`  🖼️  Subiendo poster a Cloudinary...`);
+            const posterResult = await uploadPosterToCloudinary(movieId, movie.poster_path);
+            if (posterResult.success) {
+                console.log(`  ✓ Poster subido: ${posterResult.url}`);
+            } else {
+                console.log(`  ⚠️ Error subiendo poster: ${posterResult.error}`);
+            }
+        } else {
+            console.log(`  - Sin poster en TMDB`);
+        }
+
         result.status = 'success';
         result.message = `Importada exitosamente`;
 
@@ -3734,6 +4491,735 @@ export function splitNameSimple(fullName: string): { firstName: string; lastName
         gender: detectedGender,
     };
 }
+
+
+// ==================================================
+// scripts/tmdb/migrate-tmdb-posters.ts
+// ==================================================
+/**
+ * Script para migrar afiches desde TMDB a Cloudinary
+ *
+ * Busca películas en la base de datos que:
+ * 1. Tienen tmdb_id
+ * 2. No tienen poster_url (o está vacío)
+ *
+ * Para cada una, obtiene el poster de TMDB y lo sube a Cloudinary
+ *
+ * Uso:
+ *   npx ts-node scripts/tmdb/migrate-tmdb-posters.ts [opciones]
+ *
+ * Opciones:
+ *   --dry-run      Ver qué películas se procesarían sin hacer cambios
+ *   --limit=N      Procesar solo N películas
+ *   --movie-id=N   Procesar solo la película con ID específico
+ */
+
+import { PrismaClient } from '@prisma/client';
+import { v2 as cloudinary } from 'cloudinary';
+import * as fs from 'fs';
+import * as path from 'path';
+import config from './config';
+import { getMovieDetails } from './tmdb-client';
+
+// Configurar Cloudinary
+cloudinary.config({
+  cloud_name: 'dzndglyjr',
+  api_key: process.env.CLOUDINARY_API_KEY || '916999397279161',
+  api_secret: process.env.CLOUDINARY_API_SECRET || '6K7EQkELG4dgl4RgdA5wsTwSPpI'
+});
+
+const prisma = new PrismaClient();
+
+// URLs base de TMDB para imágenes
+const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
+const POSTER_SIZE = 'original'; // Tamaños disponibles: w92, w154, w185, w342, w500, w780, original
+
+interface MigrationResult {
+  movieId: number;
+  title: string;
+  tmdbId: number;
+  success: boolean;
+  posterUrl?: string;
+  publicId?: string;
+  error?: string;
+}
+
+interface MigrationStats {
+  total: number;
+  success: number;
+  failed: number;
+  skipped: number;
+  results: MigrationResult[];
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Obtiene la URL completa del poster de TMDB
+ */
+function getTmdbPosterUrl(posterPath: string): string {
+  return `${TMDB_IMAGE_BASE_URL}/${POSTER_SIZE}${posterPath}`;
+}
+
+/**
+ * Sube una imagen desde URL a Cloudinary
+ */
+async function uploadToCloudinary(
+  imageUrl: string,
+  movieId: number
+): Promise<{ url: string; publicId: string }> {
+  const result = await cloudinary.uploader.upload(imageUrl, {
+    folder: `cinenacional/posters/${movieId}`,
+    public_id: 'poster',
+    overwrite: true,
+    resource_type: 'image',
+    timeout: 120000, // 2 minutos
+    transformation: [
+      { quality: 'auto:best' },
+      { fetch_format: 'auto' }
+    ]
+  });
+
+  return {
+    url: result.secure_url,
+    publicId: result.public_id
+  };
+}
+
+/**
+ * Procesa una película: obtiene poster de TMDB y lo sube a Cloudinary
+ */
+async function processMovie(
+  movie: { id: number; title: string; tmdbId: number },
+  dryRun: boolean
+): Promise<MigrationResult> {
+  const result: MigrationResult = {
+    movieId: movie.id,
+    title: movie.title,
+    tmdbId: movie.tmdbId,
+    success: false
+  };
+
+  try {
+    // Obtener detalles de TMDB
+    const tmdbDetails = await getMovieDetails(movie.tmdbId);
+
+    if (!tmdbDetails.poster_path) {
+      result.error = 'No tiene poster en TMDB';
+      return result;
+    }
+
+    const tmdbPosterUrl = getTmdbPosterUrl(tmdbDetails.poster_path);
+
+    if (dryRun) {
+      result.success = true;
+      result.posterUrl = tmdbPosterUrl;
+      result.error = '[DRY RUN] Se subiría este poster';
+      return result;
+    }
+
+    // Subir a Cloudinary
+    const cloudinaryResult = await uploadToCloudinary(tmdbPosterUrl, movie.id);
+
+    // Actualizar base de datos
+    await prisma.movie.update({
+      where: { id: movie.id },
+      data: {
+        posterUrl: cloudinaryResult.url,
+        posterPublicId: cloudinaryResult.publicId
+      }
+    });
+
+    result.success = true;
+    result.posterUrl = cloudinaryResult.url;
+    result.publicId = cloudinaryResult.publicId;
+
+  } catch (error) {
+    result.error = error instanceof Error ? error.message : String(error);
+  }
+
+  return result;
+}
+
+/**
+ * Guarda el reporte de migración en CSV
+ */
+async function saveReport(stats: MigrationStats, dryRun: boolean): Promise<string> {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const prefix = dryRun ? 'dry-run-' : '';
+  const filename = `${prefix}poster-migration-${timestamp}.csv`;
+  const filepath = path.join(__dirname, 'reports', filename);
+
+  // Crear directorio de reportes si no existe
+  const reportsDir = path.join(__dirname, 'reports');
+  if (!fs.existsSync(reportsDir)) {
+    fs.mkdirSync(reportsDir, { recursive: true });
+  }
+
+  const csvLines = [
+    'movie_id,title,tmdb_id,success,poster_url,public_id,error'
+  ];
+
+  for (const r of stats.results) {
+    const title = r.title.replace(/"/g, '""');
+    const error = (r.error || '').replace(/"/g, '""');
+    csvLines.push(
+      `${r.movieId},"${title}",${r.tmdbId},${r.success},"${r.posterUrl || ''}","${r.publicId || ''}","${error}"`
+    );
+  }
+
+  fs.writeFileSync(filepath, csvLines.join('\n'), 'utf8');
+  return filepath;
+}
+
+/**
+ * Función principal de migración
+ */
+async function migratePosters(options: {
+  dryRun: boolean;
+  limit?: number;
+  movieId?: number;
+}): Promise<void> {
+  console.log('='.repeat(60));
+  console.log('MIGRACIÓN DE POSTERS TMDB -> CLOUDINARY');
+  console.log('='.repeat(60));
+
+  if (options.dryRun) {
+    console.log('\n[DRY RUN] No se realizarán cambios en la base de datos\n');
+  }
+
+  // Buscar películas que tienen tmdb_id pero no tienen poster
+  const whereClause: any = {
+    tmdbId: { not: null },
+    OR: [
+      { posterUrl: null },
+      { posterUrl: '' }
+    ]
+  };
+
+  if (options.movieId) {
+    whereClause.id = options.movieId;
+  }
+
+  const movies = await prisma.movie.findMany({
+    where: whereClause,
+    select: {
+      id: true,
+      title: true,
+      tmdbId: true
+    },
+    orderBy: { id: 'asc' },
+    take: options.limit
+  });
+
+  console.log(`Encontradas ${movies.length} películas sin poster con tmdb_id\n`);
+
+  if (movies.length === 0) {
+    console.log('No hay películas para procesar.');
+    return;
+  }
+
+  const stats: MigrationStats = {
+    total: movies.length,
+    success: 0,
+    failed: 0,
+    skipped: 0,
+    results: []
+  };
+
+  for (let i = 0; i < movies.length; i++) {
+    const movie = movies[i];
+    const progress = `[${i + 1}/${movies.length}]`;
+
+    console.log(`${progress} Procesando: ${movie.title} (ID: ${movie.id}, TMDB: ${movie.tmdbId})`);
+
+    const result = await processMovie(
+      { id: movie.id, title: movie.title, tmdbId: movie.tmdbId! },
+      options.dryRun
+    );
+
+    stats.results.push(result);
+
+    if (result.success) {
+      stats.success++;
+      console.log(`  ✓ ${result.posterUrl}`);
+    } else if (result.error?.includes('No tiene poster')) {
+      stats.skipped++;
+      console.log(`  - Saltado: ${result.error}`);
+    } else {
+      stats.failed++;
+      console.log(`  ✗ Error: ${result.error}`);
+    }
+
+    // Rate limiting: esperar entre requests
+    if (i < movies.length - 1) {
+      await delay(config.delayBetweenRequests + 100); // Extra delay para Cloudinary
+    }
+
+    // Mostrar progreso cada 50 películas
+    if ((i + 1) % 50 === 0) {
+      console.log(`\n--- Progreso: ${i + 1}/${movies.length} | OK: ${stats.success} | Saltados: ${stats.skipped} | Errores: ${stats.failed} ---\n`);
+    }
+  }
+
+  // Guardar reporte
+  const reportPath = await saveReport(stats, options.dryRun);
+
+  // Resumen final
+  console.log('\n' + '='.repeat(60));
+  console.log('RESUMEN DE MIGRACIÓN');
+  console.log('='.repeat(60));
+  console.log(`Total procesado:  ${stats.total}`);
+  console.log(`✓ Exitosos:       ${stats.success}`);
+  console.log(`- Saltados:       ${stats.skipped} (sin poster en TMDB)`);
+  console.log(`✗ Errores:        ${stats.failed}`);
+  console.log(`Tasa de éxito:    ${((stats.success / (stats.total - stats.skipped)) * 100).toFixed(2)}%`);
+  console.log(`\nReporte guardado: ${reportPath}`);
+  console.log('='.repeat(60));
+}
+
+// Parsear argumentos de línea de comandos
+function parseArgs(): { dryRun: boolean; limit?: number; movieId?: number } {
+  const args = process.argv.slice(2);
+  const options = {
+    dryRun: false,
+    limit: undefined as number | undefined,
+    movieId: undefined as number | undefined
+  };
+
+  for (const arg of args) {
+    if (arg === '--dry-run') {
+      options.dryRun = true;
+    } else if (arg.startsWith('--limit=')) {
+      options.limit = parseInt(arg.split('=')[1], 10);
+    } else if (arg.startsWith('--movie-id=')) {
+      options.movieId = parseInt(arg.split('=')[1], 10);
+    }
+  }
+
+  return options;
+}
+
+// Ejecutar
+const options = parseArgs();
+
+migratePosters(options)
+  .then(() => {
+    console.log('\n✅ Migración completada');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('\n❌ Error fatal:', error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+
+
+// ==================================================
+// scripts/tmdb/sync-popularity.ts
+// ==================================================
+/**
+ * Script para sincronizar popularidad de TMDB a películas y personas
+ *
+ * Uso:
+ *   npx tsx scripts/tmdb/sync-popularity.ts [opciones]
+ *
+ * Opciones:
+ *   --type movies|people|all  Tipo de registros a sincronizar (default: all)
+ *   --limit N                 Límite de registros a procesar (default: sin límite)
+ *   --dry-run                 Modo prueba, no escribe en DB
+ *   --batch-size N            Tamaño del batch (default: 100)
+ *   --delay N                 Delay entre requests en ms (default: 30)
+ *   --only-missing            Solo actualizar registros sin popularidad
+ */
+
+import { PrismaClient } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
+import config from './config';
+import { getMoviePopularity, getPersonPopularity, sleep } from './lib/api';
+
+const prisma = new PrismaClient();
+
+interface SyncOptions {
+    type: 'movies' | 'people' | 'all';
+    limit?: number;
+    dryRun: boolean;
+    batchSize: number;
+    delay: number;
+    onlyMissing: boolean;
+}
+
+interface SyncResult {
+    id: number;
+    tmdbId: number;
+    title: string;
+    oldPopularity: number | null;
+    newPopularity: number | null;
+    status: 'updated' | 'unchanged' | 'error' | 'not_found';
+    error?: string;
+}
+
+interface SyncStats {
+    total: number;
+    updated: number;
+    unchanged: number;
+    errors: number;
+    notFound: number;
+    startTime: Date;
+    endTime?: Date;
+}
+
+function parseArgs(): SyncOptions {
+    const args = process.argv.slice(2);
+    const options: SyncOptions = {
+        type: 'all',
+        dryRun: false,
+        batchSize: 100,
+        delay: config.delayBetweenRequests,
+        onlyMissing: false,
+    };
+
+    for (let i = 0; i < args.length; i++) {
+        switch (args[i]) {
+            case '--type':
+                const type = args[++i];
+                if (type === 'movies' || type === 'people' || type === 'all') {
+                    options.type = type;
+                }
+                break;
+            case '--limit':
+                options.limit = parseInt(args[++i], 10);
+                break;
+            case '--dry-run':
+                options.dryRun = true;
+                break;
+            case '--batch-size':
+                options.batchSize = parseInt(args[++i], 10);
+                break;
+            case '--delay':
+                options.delay = parseInt(args[++i], 10);
+                break;
+            case '--only-missing':
+                options.onlyMissing = true;
+                break;
+        }
+    }
+
+    return options;
+}
+
+async function syncMoviesPopularity(options: SyncOptions): Promise<SyncResult[]> {
+    const results: SyncResult[] = [];
+
+    const whereClause: any = {
+        tmdbId: { not: null },
+    };
+
+    if (options.onlyMissing) {
+        whereClause.tmdbPopularity = null;
+    }
+
+    const totalCount = await prisma.movie.count({ where: whereClause });
+    const limit = options.limit || totalCount;
+
+    console.log(`\n📽️  Sincronizando películas...`);
+    console.log(`   Total con tmdbId: ${totalCount}`);
+    console.log(`   A procesar: ${Math.min(limit, totalCount)}`);
+
+    let processed = 0;
+    let offset = 0;
+
+    while (processed < limit) {
+        const batchLimit = Math.min(options.batchSize, limit - processed);
+
+        const movies = await prisma.movie.findMany({
+            where: whereClause,
+            select: {
+                id: true,
+                tmdbId: true,
+                title: true,
+                tmdbPopularity: true,
+            },
+            orderBy: [
+                { tmdbPopularityUpdatedAt: { sort: 'asc', nulls: 'first' } },
+                { id: 'asc' }
+            ],
+            skip: offset,
+            take: batchLimit,
+        });
+
+        if (movies.length === 0) break;
+
+        for (const movie of movies) {
+            const result: SyncResult = {
+                id: movie.id,
+                tmdbId: movie.tmdbId!,
+                title: movie.title,
+                oldPopularity: movie.tmdbPopularity,
+                newPopularity: null,
+                status: 'unchanged',
+            };
+
+            try {
+                const tmdbData = await getMoviePopularity(movie.tmdbId!);
+                result.newPopularity = tmdbData.popularity;
+
+                if (result.oldPopularity !== result.newPopularity) {
+                    result.status = 'updated';
+
+                    if (!options.dryRun) {
+                        await prisma.movie.update({
+                            where: { id: movie.id },
+                            data: {
+                                tmdbPopularity: tmdbData.popularity,
+                                tmdbPopularityUpdatedAt: new Date(),
+                            },
+                        });
+                    }
+                }
+            } catch (error: any) {
+                if (error.message?.includes('404')) {
+                    result.status = 'not_found';
+                    result.error = 'No encontrado en TMDB';
+                } else {
+                    result.status = 'error';
+                    result.error = error.message;
+                }
+            }
+
+            results.push(result);
+            processed++;
+
+            if (processed % 50 === 0) {
+                console.log(`   Procesadas: ${processed}/${Math.min(limit, totalCount)}`);
+            }
+
+            await sleep(options.delay);
+        }
+
+        offset += batchLimit;
+    }
+
+    return results;
+}
+
+async function syncPeoplePopularity(options: SyncOptions): Promise<SyncResult[]> {
+    const results: SyncResult[] = [];
+
+    const whereClause: any = {
+        tmdbId: { not: null },
+    };
+
+    if (options.onlyMissing) {
+        whereClause.tmdbPopularity = null;
+    }
+
+    const totalCount = await prisma.person.count({ where: whereClause });
+    const limit = options.limit || totalCount;
+
+    console.log(`\n👤 Sincronizando personas...`);
+    console.log(`   Total con tmdbId: ${totalCount}`);
+    console.log(`   A procesar: ${Math.min(limit, totalCount)}`);
+
+    let processed = 0;
+    let offset = 0;
+
+    while (processed < limit) {
+        const batchLimit = Math.min(options.batchSize, limit - processed);
+
+        const people = await prisma.person.findMany({
+            where: whereClause,
+            select: {
+                id: true,
+                tmdbId: true,
+                firstName: true,
+                lastName: true,
+                tmdbPopularity: true,
+            },
+            orderBy: [
+                { tmdbPopularityUpdatedAt: { sort: 'asc', nulls: 'first' } },
+                { id: 'asc' }
+            ],
+            skip: offset,
+            take: batchLimit,
+        });
+
+        if (people.length === 0) break;
+
+        for (const person of people) {
+            const fullName = [person.firstName, person.lastName].filter(Boolean).join(' ') || `ID ${person.id}`;
+
+            const result: SyncResult = {
+                id: person.id,
+                tmdbId: person.tmdbId!,
+                title: fullName,
+                oldPopularity: person.tmdbPopularity,
+                newPopularity: null,
+                status: 'unchanged',
+            };
+
+            try {
+                const tmdbData = await getPersonPopularity(person.tmdbId!);
+                result.newPopularity = tmdbData.popularity;
+
+                if (result.oldPopularity !== result.newPopularity) {
+                    result.status = 'updated';
+
+                    if (!options.dryRun) {
+                        await prisma.person.update({
+                            where: { id: person.id },
+                            data: {
+                                tmdbPopularity: tmdbData.popularity,
+                                tmdbPopularityUpdatedAt: new Date(),
+                            },
+                        });
+                    }
+                }
+            } catch (error: any) {
+                if (error.message?.includes('404')) {
+                    result.status = 'not_found';
+                    result.error = 'No encontrado en TMDB';
+                } else {
+                    result.status = 'error';
+                    result.error = error.message;
+                }
+            }
+
+            results.push(result);
+            processed++;
+
+            if (processed % 50 === 0) {
+                console.log(`   Procesadas: ${processed}/${Math.min(limit, totalCount)}`);
+            }
+
+            await sleep(options.delay);
+        }
+
+        offset += batchLimit;
+    }
+
+    return results;
+}
+
+function generateReport(movieResults: SyncResult[], peopleResults: SyncResult[], options: SyncOptions): void {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const prefix = options.dryRun ? 'dry-run-' : '';
+    const reportsDir = path.join(__dirname, 'reports');
+
+    if (!fs.existsSync(reportsDir)) {
+        fs.mkdirSync(reportsDir, { recursive: true });
+    }
+
+    const allResults = [
+        ...movieResults.map(r => ({ ...r, type: 'movie' })),
+        ...peopleResults.map(r => ({ ...r, type: 'person' })),
+    ];
+
+    const csvPath = path.join(reportsDir, `${prefix}popularity-sync-${timestamp}.csv`);
+    const csvHeader = 'type,id,tmdb_id,title,old_popularity,new_popularity,status,error\n';
+    const csvRows = allResults.map(r =>
+        `${r.type},${r.id},${r.tmdbId},"${r.title.replace(/"/g, '""')}",${r.oldPopularity ?? ''},${r.newPopularity ?? ''},${r.status},"${r.error || ''}"`
+    ).join('\n');
+
+    fs.writeFileSync(csvPath, csvHeader + csvRows);
+    console.log(`\n📄 Reporte guardado en: ${csvPath}`);
+}
+
+function printSummary(movieResults: SyncResult[], peopleResults: SyncResult[], stats: SyncStats): void {
+    const movieStats = {
+        updated: movieResults.filter(r => r.status === 'updated').length,
+        unchanged: movieResults.filter(r => r.status === 'unchanged').length,
+        errors: movieResults.filter(r => r.status === 'error').length,
+        notFound: movieResults.filter(r => r.status === 'not_found').length,
+    };
+
+    const peopleStats = {
+        updated: peopleResults.filter(r => r.status === 'updated').length,
+        unchanged: peopleResults.filter(r => r.status === 'unchanged').length,
+        errors: peopleResults.filter(r => r.status === 'error').length,
+        notFound: peopleResults.filter(r => r.status === 'not_found').length,
+    };
+
+    const duration = stats.endTime
+        ? Math.round((stats.endTime.getTime() - stats.startTime.getTime()) / 1000)
+        : 0;
+
+    console.log('\n' + '='.repeat(50));
+    console.log('RESUMEN DE SINCRONIZACIÓN');
+    console.log('='.repeat(50));
+
+    if (movieResults.length > 0) {
+        console.log(`\n📽️  PELÍCULAS (${movieResults.length} procesadas)`);
+        console.log(`   ✅ Actualizadas: ${movieStats.updated}`);
+        console.log(`   ➖ Sin cambios:  ${movieStats.unchanged}`);
+        console.log(`   ❌ Errores:      ${movieStats.errors}`);
+        console.log(`   🔍 No encontradas: ${movieStats.notFound}`);
+    }
+
+    if (peopleResults.length > 0) {
+        console.log(`\n👤 PERSONAS (${peopleResults.length} procesadas)`);
+        console.log(`   ✅ Actualizadas: ${peopleStats.updated}`);
+        console.log(`   ➖ Sin cambios:  ${peopleStats.unchanged}`);
+        console.log(`   ❌ Errores:      ${peopleStats.errors}`);
+        console.log(`   🔍 No encontradas: ${peopleStats.notFound}`);
+    }
+
+    console.log(`\n⏱️  Duración: ${duration} segundos`);
+    console.log('='.repeat(50));
+}
+
+async function main() {
+    const options = parseArgs();
+    const stats: SyncStats = {
+        total: 0,
+        updated: 0,
+        unchanged: 0,
+        errors: 0,
+        notFound: 0,
+        startTime: new Date(),
+    };
+
+    console.log('='.repeat(50));
+    console.log('SINCRONIZACIÓN DE POPULARIDAD TMDB');
+    console.log('='.repeat(50));
+    console.log(`Tipo: ${options.type}`);
+    console.log(`Límite: ${options.limit || 'sin límite'}`);
+    console.log(`Dry-run: ${options.dryRun ? 'SÍ' : 'NO'}`);
+    console.log(`Solo missing: ${options.onlyMissing ? 'SÍ' : 'NO'}`);
+    console.log(`Batch size: ${options.batchSize}`);
+    console.log(`Delay: ${options.delay}ms`);
+
+    let movieResults: SyncResult[] = [];
+    let peopleResults: SyncResult[] = [];
+
+    try {
+        if (options.type === 'movies' || options.type === 'all') {
+            movieResults = await syncMoviesPopularity(options);
+        }
+
+        if (options.type === 'people' || options.type === 'all') {
+            peopleResults = await syncPeoplePopularity(options);
+        }
+
+        stats.endTime = new Date();
+
+        generateReport(movieResults, peopleResults, options);
+        printSummary(movieResults, peopleResults, stats);
+
+    } catch (error) {
+        console.error('Error durante la sincronización:', error);
+        process.exit(1);
+    } finally {
+        await prisma.$disconnect();
+    }
+}
+
+main();
 
 
 // ==================================================
@@ -4380,6 +5866,11 @@ export default {
  */
 
 import { Pool } from 'pg';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Cargar variables de entorno desde .env (desde el directorio de trabajo actual)
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 // ============================================================================
 // CONFIGURACIÓN
@@ -4453,11 +5944,10 @@ interface PendingMovie {
     tmdb_title: string;
     tmdb_original_title: string | null;
     tmdb_year: number | null;
-    tmdb_release_date: string | null;
     tmdb_overview: string | null;
     tmdb_runtime: number | null;
     tmdb_popularity: number | null;
-    tmdb_status: string | null;
+    tmdb_premiere_info: string | null;
     tmdb_director_name: string | null;
     tmdb_director_id: number | null;
     local_movie_id: number | null;
@@ -4605,6 +6095,56 @@ function isArgentineMovie(movie: TMDBMovieDetails): boolean {
 function getDirector(movie: TMDBMovieDetails): { name: string; id: number } | null {
     const director = movie.credits?.crew?.find(c => c.job === 'Director');
     return director ? { name: director.name, id: director.id } : null;
+}
+
+interface TMDBReleaseDate {
+    certification: string;
+    descriptors: string[];
+    iso_639_1: string;
+    note: string;
+    release_date: string;
+    type: number; // 1=Premiere, 2=Theatrical (limited), 3=Theatrical, 4=Digital, 5=Physical, 6=TV
+}
+
+interface TMDBReleaseDatesResponse {
+    results: Array<{
+        iso_3166_1: string;
+        release_dates: TMDBReleaseDate[];
+    }>;
+}
+
+/**
+ * Obtiene info de premiere/festival de una película
+ * Prioriza: premiere (type=1) con nota, luego theatrical en AR
+ */
+async function getPremiereInfo(tmdbId: number): Promise<string | null> {
+    try {
+        const response = await fetchTMDB<TMDBReleaseDatesResponse>(`/movie/${tmdbId}/release_dates`);
+
+        // Buscar premiere (type=1) con nota en cualquier país
+        for (const country of response.results) {
+            for (const release of country.release_dates) {
+                if (release.type === 1 && release.note) {
+                    const date = release.release_date.split('T')[0];
+                    return `${release.note} (${date})`;
+                }
+            }
+        }
+
+        // Si no hay premiere con nota, buscar estreno en Argentina
+        const arRelease = response.results.find(r => r.iso_3166_1 === 'AR');
+        if (arRelease) {
+            const theatrical = arRelease.release_dates.find(r => r.type === 3 || r.type === 2);
+            if (theatrical) {
+                const date = theatrical.release_date.split('T')[0];
+                return `Estreno Argentina: ${date}`;
+            }
+        }
+
+        return null;
+    } catch {
+        return null;
+    }
 }
 
 // ============================================================================
@@ -4844,50 +6384,30 @@ async function sendTelegramMessage(
     }
 }
 
-/**
- * Traduce el status de TMDB a español
- */
-function translateStatus(status: string | null): string {
-    if (!status) return '';
-    const translations: Record<string, string> = {
-        'Released': 'Estrenada',
-        'Post Production': 'En postproducción',
-        'In Production': 'En rodaje',
-        'Planned': 'En desarrollo',
-        'Canceled': 'Cancelada',
-        'Rumored': 'Rumor',
-    };
-    return translations[status] || status;
-}
-
 function formatMovieMessage(pending: PendingMovie): string {
     let message = `🎬 <b>Nueva película argentina en TMDB</b>\n\n`;
     message += `<b>Título:</b> ${pending.tmdb_title}\n`;
-    
+
     if (pending.tmdb_original_title && pending.tmdb_original_title !== pending.tmdb_title) {
         message += `<b>Título original:</b> ${pending.tmdb_original_title}\n`;
     }
-    
+
     if (pending.tmdb_year) {
         message += `<b>Año:</b> ${pending.tmdb_year}\n`;
     }
-    
-    if (pending.tmdb_release_date) {
-        message += `<b>Estreno:</b> ${pending.tmdb_release_date}\n`;
+
+    if (pending.tmdb_premiere_info) {
+        message += `<b>Premiere:</b> ${pending.tmdb_premiere_info}\n`;
     }
-    
+
     if (pending.tmdb_director_name) {
         message += `<b>Director:</b> ${pending.tmdb_director_name}\n`;
     }
-    
+
     if (pending.tmdb_runtime) {
         message += `<b>Duración:</b> ${pending.tmdb_runtime} min\n`;
     }
-    
-    if (pending.tmdb_status && pending.tmdb_status !== 'Released') {
-        message += `<b>Estado:</b> ${translateStatus(pending.tmdb_status)}\n`;
-    }
-    
+
     if (pending.tmdb_popularity) {
         message += `<b>Popularidad:</b> ${pending.tmdb_popularity.toFixed(1)}\n`;
     }
@@ -4947,20 +6467,19 @@ function getMessageButtons(pending: PendingMovie): Array<Array<{ text: string; c
 
 async function savePendingMovie(pending: PendingMovie): Promise<number> {
     const pool = getPool();
-    
+
     const result = await pool.query(`
         INSERT INTO tmdb_pending_movies (
-            tmdb_id, tmdb_title, tmdb_original_title, tmdb_year, tmdb_release_date,
-            tmdb_overview, tmdb_runtime, tmdb_popularity, tmdb_status,
+            tmdb_id, tmdb_title, tmdb_original_title, tmdb_year,
+            tmdb_overview, tmdb_runtime, tmdb_popularity, tmdb_premiere_info,
             tmdb_director_name, tmdb_director_id,
             local_movie_id, local_movie_title, local_movie_year, local_director_name,
             action_type, match_score, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'pending')
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'pending')
         ON CONFLICT (tmdb_id) DO UPDATE SET
             tmdb_title = EXCLUDED.tmdb_title,
-            tmdb_release_date = EXCLUDED.tmdb_release_date,
             tmdb_popularity = EXCLUDED.tmdb_popularity,
-            tmdb_status = EXCLUDED.tmdb_status,
+            tmdb_premiere_info = EXCLUDED.tmdb_premiere_info,
             local_movie_id = EXCLUDED.local_movie_id,
             match_score = EXCLUDED.match_score,
             action_type = EXCLUDED.action_type,
@@ -4971,11 +6490,10 @@ async function savePendingMovie(pending: PendingMovie): Promise<number> {
         pending.tmdb_title,
         pending.tmdb_original_title,
         pending.tmdb_year,
-        pending.tmdb_release_date,
         pending.tmdb_overview,
         pending.tmdb_runtime,
         pending.tmdb_popularity,
-        pending.tmdb_status,
+        pending.tmdb_premiere_info,
         pending.tmdb_director_name,
         pending.tmdb_director_id,
         pending.local_movie_id,
@@ -4985,7 +6503,7 @@ async function savePendingMovie(pending: PendingMovie): Promise<number> {
         pending.action_type,
         pending.match_score,
     ]);
-    
+
     return result.rows[0].id;
 }
 
@@ -5088,16 +6606,18 @@ async function processMovie(tmdbId: number, dryRun: boolean): Promise<'skipped' 
     
     // Si no es match exacto, guardar para confirmación
     if (actionType !== 'match_exact') {
+        // Obtener info de premiere/festival
+        const premiereInfo = await getPremiereInfo(tmdbId);
+
         const pending: PendingMovie = {
             tmdb_id: tmdbId,
             tmdb_title: movie.title,
             tmdb_original_title: movie.original_title !== movie.title ? movie.original_title : null,
             tmdb_year: year,
-            tmdb_release_date: movie.release_date || null,
             tmdb_overview: movie.overview || null,
             tmdb_runtime: movie.runtime,
             tmdb_popularity: movie.popularity || null,
-            tmdb_status: movie.status || null,
+            tmdb_premiere_info: premiereInfo,
             tmdb_director_name: director?.name || null,
             tmdb_director_id: director?.id || null,
             local_movie_id: bestMatch?.id || null,
@@ -5107,7 +6627,7 @@ async function processMovie(tmdbId: number, dryRun: boolean): Promise<'skipped' 
             action_type: actionType,
             match_score: bestMatch ? bestScore : null,
         };
-        
+
         if (!dryRun) {
             // Guardar en BD
             const pendingId = await savePendingMovie(pending);
