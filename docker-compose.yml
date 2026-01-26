@@ -103,6 +103,7 @@ services:
     env_file:
       - .env
     environment:
+      - HOSTNAME=0.0.0.0
       - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dzndglyjr
       - DATABASE_URL=postgresql://cinenacional:Paganitzu@postgres:5432/cinenacional?schema=public&connection_limit=50&pool_timeout=10
       - REDIS_URL=redis://redis:6379
