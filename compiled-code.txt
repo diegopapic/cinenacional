@@ -1,8 +1,566 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 2380bc7fdd9741f61d68713ebd79ad20728ca6f9
-// Fecha: 2026-01-24T17:22:39.058Z
+// Commit: 1ee15fe9ff2f62560a1a2efed503520339d3fca5
+// Fecha: 2026-01-26T05:48:42.841Z
 // ============================================
 
+
+
+// ==================================================
+// check-beltza.ts
+// ==================================================
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+async function main() {
+  const movies = await prisma.movie.findMany({
+    where: { title: { contains: 'Beltza', mode: 'insensitive' } },
+    select: { id: true, title: true, year: true, tmdbId: true }
+  });
+  console.log(JSON.stringify(movies, null, 2));
+  await prisma.$disconnect();
+}
+main();
+
+
+// ==================================================
+// check-directors.ts
+// ==================================================
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  // Resumen del problema
+  console.log('=== RESUMEN DEL PROBLEMA DE DIRECTORES BORRADOS ===\n');
+
+  // 1. Total de películas sin director
+  const totalNoDirector = await prisma.$queryRaw<[{count: bigint}]>`
+    SELECT COUNT(*) as count FROM movies m
+    WHERE NOT EXISTS (
+      SELECT 1 FROM movie_crew mc WHERE mc.movie_id = m.id AND mc.role_id = 2
+    )
+  `;
+  console.log(`Total películas sin director: ${totalNoDirector[0].count.toString()}`);
+
+  // 2. Desglose por fecha
+  const byDate = await prisma.$queryRaw<{date: string, count: bigint}[]>`
+    SELECT DATE(m.updated_at) as date, COUNT(*) as count
+    FROM movies m
+    WHERE NOT EXISTS (
+      SELECT 1 FROM movie_crew mc WHERE mc.movie_id = m.id AND mc.role_id = 2
+    )
+    AND m.updated_at > '2026-01-01'
+    GROUP BY DATE(m.updated_at)
+    ORDER BY date DESC
+  `;
+  console.log('\nPelículas sin director por fecha (enero 2026):');
+  byDate.forEach(row => {
+    console.log(`  ${row.date}: ${row.count.toString()} películas`);
+  });
+
+  // 3. Películas sin director del 24 de enero con título NO duplicado
+  // (estas podrían haber perdido el director por otra razón)
+  const uniqueTitles = await prisma.$queryRaw<{id: number, title: string, year: number | null}[]>`
+    SELECT m.id, m.title, m.year
+    FROM movies m
+    WHERE NOT EXISTS (
+      SELECT 1 FROM movie_crew mc WHERE mc.movie_id = m.id AND mc.role_id = 2
+    )
+    AND DATE(m.updated_at) = '2026-01-24'
+    AND (
+      SELECT COUNT(*) FROM movies m2 WHERE LOWER(m2.title) = LOWER(m.title)
+    ) = 1
+    ORDER BY m.title
+  `;
+  console.log(`\nPelículas sin director del 24/1 con título ÚNICO (no duplicado): ${uniqueTitles.length}`);
+  uniqueTitles.slice(0, 10).forEach(m => {
+    console.log(`  ${m.id}: "${m.title}" (${m.year || '?'})`);
+  });
+  if (uniqueTitles.length > 10) {
+    console.log(`  ... y ${uniqueTitles.length - 10} más`);
+  }
+
+  // 4. Películas sin director del 24 de enero con título duplicado
+  const duplicateTitles = await prisma.$queryRaw<{id: number, title: string, year: number | null, dup_count: bigint}[]>`
+    SELECT m.id, m.title, m.year,
+      (SELECT COUNT(*) FROM movies m2 WHERE LOWER(m2.title) = LOWER(m.title)) as dup_count
+    FROM movies m
+    WHERE NOT EXISTS (
+      SELECT 1 FROM movie_crew mc WHERE mc.movie_id = m.id AND mc.role_id = 2
+    )
+    AND DATE(m.updated_at) = '2026-01-24'
+    AND (
+      SELECT COUNT(*) FROM movies m2 WHERE LOWER(m2.title) = LOWER(m.title)
+    ) > 1
+    ORDER BY dup_count DESC, m.title
+  `;
+  console.log(`\nPelículas sin director del 24/1 con título DUPLICADO: ${duplicateTitles.length}`);
+  duplicateTitles.slice(0, 20).forEach(m => {
+    console.log(`  ${m.id}: "${m.title}" (${m.year || '?'}) - ${m.dup_count.toString()} duplicados`);
+  });
+
+  await prisma.$disconnect();
+}
+
+main().catch(console.error);
+
+
+// ==================================================
+// check-movie.ts
+// ==================================================
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
+async function main() {
+  const movie = await prisma.movie.findFirst({
+    where: { id: 2113 },
+    select: {
+      id: true,
+      title: true,
+      year: true,
+      tmdbId: true,
+      imdbId: true,
+      crew: {
+        where: { role: { department: 'DIRECCION' } },
+        select: { person: { select: { firstName: true, lastName: true } } }
+      }
+    }
+  });
+  console.log(JSON.stringify(movie, null, 2));
+  await prisma.$disconnect();
+}
+main();
+
+
+// ==================================================
+// check-norita.ts
+// ==================================================
+import { searchMovies, getMovieDetails } from './scripts/tmdb/tmdb-client';
+import { stringSimilarity } from './scripts/tmdb/utils';
+import config from './scripts/tmdb/config';
+
+async function main() {
+  const localTitle = "Norita, Nora Cortiñas";
+  const localYear = 2018;
+
+  console.log("=== Simulando búsqueda como el script ===\n");
+  console.log("Título local:", localTitle);
+  console.log("Año local:", localYear);
+
+  const allResults: any[] = [];
+  const seenIds = new Set<number>();
+
+  const addResults = (results: any[], source: string) => {
+    for (const r of results) {
+      if (!seenIds.has(r.id)) {
+        seenIds.add(r.id);
+        allResults.push(r);
+        console.log(`  + ${r.id}: "${r.title}" (${r.release_date?.slice(0,4)}) [${source}]`);
+      }
+    }
+  };
+
+  // 1. Con año
+  console.log("\n1. Búsqueda con año:");
+  const s1 = await searchMovies(localTitle, localYear);
+  addResults(s1.results, "con año");
+
+  // 2. Sin año
+  console.log("\n2. Búsqueda sin año:");
+  const s2 = await searchMovies(localTitle);
+  addResults(s2.results, "sin año");
+
+  // 3. Título limpio
+  if (allResults.length === 0) {
+    console.log("\n3. Sin resultados, probando título limpio...");
+  }
+
+  // 4. Parte antes de la coma
+  if (allResults.length === 0 && localTitle.includes(',')) {
+    const firstPart = localTitle.split(',')[0].trim();
+    console.log(`\n4. Buscando parte antes de coma: "${firstPart}"`);
+    const s4 = await searchMovies(firstPart);
+    addResults(s4.results, "antes de coma");
+  }
+
+  console.log(`\nTotal resultados: ${allResults.length}`);
+
+  // Calcular scores
+  if (allResults.length > 0) {
+    console.log("\n=== Calculando scores ===");
+    for (const r of allResults.slice(0, 3)) {
+      const details = await getMovieDetails(r.id);
+      const sim = Math.max(
+        stringSimilarity(localTitle, details.title),
+        stringSimilarity(localTitle, details.original_title)
+      );
+
+      let score = 0;
+      const reasons: string[] = [];
+
+      if (sim >= 95) { score += 40; reasons.push(`Título exacto (${sim}%)`); }
+      else if (sim >= 80) { score += 30; reasons.push(`Título similar (${sim}%)`); }
+      else if (sim >= 60) { score += 15; reasons.push(`Título parcial (${sim}%)`); }
+
+      const tmdbYear = parseInt(details.release_date?.split('-')[0] || '0');
+      if (localYear === tmdbYear) { score += 25; reasons.push('Año exacto'); }
+      else if (Math.abs(localYear - tmdbYear) === 1) { score += 15; reasons.push('Año ±1'); }
+
+      if (details.production_countries?.some((c: any) => c.iso_3166_1 === 'AR')) {
+        score += 20;
+        reasons.push('Argentina');
+      }
+
+      console.log(`\n  ${r.id}: "${details.title}" (${tmdbYear})`);
+      console.log(`    Score: ${score} - ${reasons.join('; ')}`);
+      console.log(`    IMDB: ${details.imdb_id || 'N/A'}`);
+      console.log(`    ¿Auto-accept? ${score >= config.matching.movie.autoAcceptScore ? 'SÍ' : 'NO'}`);
+    }
+  }
+}
+
+main().catch(console.error);
+
+
+// ==================================================
+// check-not-processed.ts
+// ==================================================
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+async function main() {
+  // Verificar películas que no fueron procesadas pero tienen imdbId
+  const notProcessed = await prisma.movie.findMany({
+    where: { 
+      imdbId: { not: null },
+      imdbVotesUpdatedAt: null 
+    },
+    select: { id: true, title: true, imdbId: true },
+    orderBy: { id: 'asc' },
+    take: 20
+  });
+  console.log('Películas no procesadas (primeras 20):');
+  notProcessed.forEach(m => console.log(`  ${m.id}: ${m.title} (${m.imdbId})`));
+  
+  // Verificar si la película 191146 tiene alguna particularidad
+  const movie191146 = await prisma.movie.findUnique({
+    where: { id: 191146 },
+    select: { id: true, title: true, imdbId: true, tmdbId: true, releaseDate: true }
+  });
+  console.log('\nPelícula 191146:', movie191146);
+  
+  await prisma.$disconnect();
+}
+main();
+
+
+// ==================================================
+// check-order.ts
+// ==================================================
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+async function main() {
+  // Ver posición de la película 191146 en el orden de procesamiento
+  const whereClause = { imdbId: { not: null } };
+  
+  // Verificar cuántas películas vienen antes de 191146 en el orden
+  const movie = await prisma.movie.findUnique({
+    where: { id: 191146 },
+    select: { id: true, imdbVotesUpdatedAt: true }
+  });
+  
+  console.log('Película 191146:', movie);
+  
+  // Cuántas películas con imdbVotesUpdatedAt NULL y id < 191146
+  const countBefore = await prisma.movie.count({
+    where: {
+      imdbId: { not: null },
+      OR: [
+        { imdbVotesUpdatedAt: null, id: { lt: 191146 } },
+        { imdbVotesUpdatedAt: { not: null } }
+      ]
+    }
+  });
+  
+  console.log('Películas que deberían procesarse antes (aprox):', countBefore);
+  
+  // Mostrar algunas películas cercanas en el orden
+  const nearby = await prisma.movie.findMany({
+    where: { imdbId: { not: null } },
+    select: { id: true, title: true, imdbVotesUpdatedAt: true },
+    orderBy: [
+      { imdbVotesUpdatedAt: { sort: 'asc', nulls: 'first' } },
+      { id: 'asc' }
+    ],
+    skip: 7850,
+    take: 20
+  });
+  
+  console.log('\nPelículas en posiciones 7850-7870:');
+  nearby.forEach((m, i) => console.log(`  ${7850+i}: id=${m.id}, updatedAt=${m.imdbVotesUpdatedAt}, title=${m.title}`));
+  
+  await prisma.$disconnect();
+}
+main();
+
+
+// ==================================================
+// check-perceptio.ts
+// ==================================================
+import { getMovieDetails } from './scripts/tmdb/tmdb-client';
+import { stringSimilarity } from './scripts/tmdb/utils';
+
+async function main() {
+  const localTitle = "Perceptio";
+  const localYear = 2009;
+
+  // El match incorrecto
+  console.log("=== Match incorrecto (tt1047514) ===");
+  const wrong = await getMovieDetails(21474); // Perception (2009) - tt1047514
+  console.log("Título:", wrong.title);
+  console.log("Año:", wrong.release_date?.slice(0,4));
+  console.log("Países:", wrong.production_countries?.map(c => c.iso_3166_1));
+  console.log("Director:", wrong.credits?.crew?.filter(c => c.job === 'Director').map(c => c.name));
+
+  const simWrong = stringSimilarity(localTitle, wrong.title);
+  console.log("Similitud:", simWrong + "%");
+
+  // El match correcto
+  console.log("\n=== Match correcto (408148) ===");
+  const correct = await getMovieDetails(408148);
+  console.log("Título:", correct.title);
+  console.log("Año:", correct.release_date?.slice(0,4));
+  console.log("Países:", correct.production_countries?.map(c => c.iso_3166_1));
+  console.log("Director:", correct.credits?.crew?.filter(c => c.job === 'Director').map(c => c.name));
+
+  const simCorrect = stringSimilarity(localTitle, correct.title);
+  console.log("Similitud:", simCorrect + "%");
+}
+
+main().catch(console.error);
+
+
+// ==================================================
+// check-perceptio2.ts
+// ==================================================
+import { searchMovies, getMovieDetails } from './scripts/tmdb/tmdb-client';
+import { stringSimilarity } from './scripts/tmdb/utils';
+
+async function main() {
+  const localTitle = "Perceptio";
+  const localYear = 2009;
+  const localDirector = "Nicolás Giarrusso";
+
+  console.log("=== Buscando Perceptio ===\n");
+
+  const results = await searchMovies("Perceptio");
+  console.log("Resultados para 'Perceptio':", results.total_results);
+
+  for (const r of results.results) {
+    const details = await getMovieDetails(r.id);
+    const sim = stringSimilarity(localTitle, details.title);
+    const directors = details.credits?.crew?.filter(c => c.job === 'Director').map(c => c.name) || [];
+
+    console.log(`\n  ${r.id}: "${details.title}" (${details.release_date?.slice(0,4)})`);
+    console.log(`    Similitud: ${sim}%`);
+    console.log(`    Países: ${details.production_countries?.map(c => c.iso_3166_1).join(', ')}`);
+    console.log(`    Director: ${directors.join(', ') || 'N/A'}`);
+
+    // Verificar si el director local coincide
+    const dirMatch = directors.some(d => stringSimilarity(localDirector, d) >= 80);
+    console.log(`    ¿Director coincide? ${dirMatch ? 'SÍ' : 'NO'}`);
+  }
+
+  // Buscar también "Perception"
+  console.log("\n=== Buscando Perception ===\n");
+  const results2 = await searchMovies("Perception", 2009);
+  console.log("Resultados para 'Perception' (2009):", results2.total_results);
+
+  for (const r of results2.results.slice(0, 5)) {
+    const details = await getMovieDetails(r.id);
+    const sim = stringSimilarity(localTitle, details.title);
+    const directors = details.credits?.crew?.filter(c => c.job === 'Director').map(c => c.name) || [];
+
+    console.log(`\n  ${r.id}: "${details.title}" (${details.release_date?.slice(0,4)})`);
+    console.log(`    Similitud: ${sim}%`);
+    console.log(`    Director: ${directors.join(', ') || 'N/A'}`);
+
+    const dirMatch = directors.some(d => stringSimilarity(localDirector, d) >= 80);
+    console.log(`    ¿Director coincide? ${dirMatch ? 'SÍ' : 'NO'}`);
+  }
+}
+
+main().catch(console.error);
+
+
+// ==================================================
+// check-pos.ts
+// ==================================================
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+async function main() {
+  // Ver posición actual de 191146 en el orden
+  const beforeCount = await prisma.movie.count({
+    where: {
+      imdbId: { not: null },
+      OR: [
+        { imdbVotesUpdatedAt: null, id: { lt: 191146 } },
+      ]
+    }
+  });
+  
+  console.log('Películas con imdbVotesUpdatedAt=null e id < 191146:', beforeCount);
+  
+  // Total sin procesar
+  const totalNull = await prisma.movie.count({
+    where: {
+      imdbId: { not: null },
+      imdbVotesUpdatedAt: null
+    }
+  });
+  console.log('Total películas sin procesar:', totalNull);
+  
+  await prisma.$disconnect();
+}
+main();
+
+
+// ==================================================
+// check-pos2.ts
+// ==================================================
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+async function main() {
+  // Buscar la posición de la película 191146 en las no procesadas
+  const notProcessed = await prisma.movie.findMany({
+    where: { 
+      imdbId: { not: null },
+      imdbVotes: null  // --only-missing busca esto
+    },
+    select: { id: true },
+    orderBy: [
+      { imdbVotesUpdatedAt: { sort: 'asc', nulls: 'first' } },
+      { id: 'asc' }
+    ]
+  });
+  
+  const idx = notProcessed.findIndex(m => m.id === 191146);
+  console.log('Posición de 191146 en películas sin votes:', idx);
+  console.log('Total sin votes:', notProcessed.length);
+  
+  await prisma.$disconnect();
+}
+main();
+
+
+// ==================================================
+// check-residencia.ts
+// ==================================================
+import { getPool, closePool } from './scripts/tmdb/utils';
+
+async function main() {
+  const pool = getPool();
+
+  const result = await pool.query(`
+    SELECT
+      m.id, m.title, m.year, m.duration,
+      STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as directors
+    FROM movies m
+    LEFT JOIN movie_crew mc ON m.id = mc.movie_id AND mc.role_id = 2
+    LEFT JOIN people p ON mc.person_id = p.id
+    WHERE m.title ILIKE '%residencia%' AND m.year = 2022
+    GROUP BY m.id, m.title, m.year, m.duration
+  `);
+
+  console.log("Películas 'La residencia' (2022):");
+  console.log(result.rows);
+
+  await closePool();
+}
+
+main().catch(console.error);
+
+
+// ==================================================
+// check-sim.ts
+// ==================================================
+import { stringSimilarity } from './scripts/tmdb/utils';
+const local = 'Black is Beltza 2: Ainhoa';
+const tmdb = 'Black Is Beltza II: Ainhoa';
+console.log('Similitud:', stringSimilarity(local, tmdb) + '%');
+
+
+// ==================================================
+// check-stats.ts
+// ==================================================
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+async function main() {
+  const totalWithImdb = await prisma.movie.count({ where: { imdbId: { not: null } } });
+  const withVotes = await prisma.movie.count({ where: { imdbId: { not: null }, imdbVotes: { not: null } } });
+  const withoutVotes = await prisma.movie.count({ where: { imdbId: { not: null }, imdbVotes: null } });
+  const notProcessed = await prisma.movie.count({ where: { imdbId: { not: null }, imdbVotesUpdatedAt: null } });
+  console.log('Total películas con imdbId:', totalWithImdb);
+  console.log('Con imdbVotes:', withVotes);
+  console.log('Sin imdbVotes (null):', withoutVotes);
+  console.log('Nunca procesadas (imdbVotesUpdatedAt null):', notProcessed);
+  await prisma.$disconnect();
+}
+main();
+
+
+// ==================================================
+// find-elverso.ts
+// ==================================================
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
+async function main() {
+  const movies = await prisma.movie.findMany({
+    where: { tmdbId: null },
+    select: { id: true, title: true, year: true },
+    orderBy: [{ year: 'desc' }, { id: 'asc' }]
+  });
+  
+  console.log('Total sin tmdb_id:', movies.length);
+  
+  const idx = movies.findIndex(m => m.id === 2113);
+  if (idx >= 0) {
+    console.log('El verso está en posición:', idx);
+    console.log('Película:', movies[idx]);
+  } else {
+    console.log('El verso no encontrado en películas sin tmdb_id');
+    
+    // Verificar si tiene tmdb_id
+    const elverso = await prisma.movie.findFirst({ where: { id: 2113 }, select: { id: true, title: true, tmdbId: true }});
+    console.log('El verso en DB:', elverso);
+  }
+  
+  await prisma.$disconnect();
+}
+main();
+
+
+// ==================================================
+// find-verso-position.ts
+// ==================================================
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
+async function main() {
+  const movies = await prisma.movie.findMany({
+    where: { 
+      tmdbId: null,
+      title: { contains: 'verso', mode: 'insensitive' }
+    },
+    select: { id: true, title: true, year: true },
+    orderBy: [{ year: 'desc' }, { id: 'asc' }]
+  });
+  
+  console.log('Películas con "verso" sin tmdb_id:');
+  movies.forEach(m => console.log('  ', m.id, m.title, '(' + m.year + ')'));
+  
+  await prisma.$disconnect();
+}
+main();
 
 
 // ==================================================
@@ -13,6 +571,411 @@
 
 // NOTE: This file should not be edited
 // see https://nextjs.org/docs/app/building-your-application/configuring/typescript for more information.
+
+
+// ==================================================
+// scripts/assign-directors.ts
+// ==================================================
+/**
+ * Script interactivo para asignar directores a películas sin director
+ *
+ * Uso:
+ *   npx ts-node scripts/assign-directors.ts
+ *   npx ts-node scripts/assign-directors.ts --limit 10
+ *   npx ts-node scripts/assign-directors.ts --movie-id 123
+ */
+
+import * as readline from 'readline';
+import { getPool, closePool } from './tmdb/utils';
+
+const DIRECTOR_ROLE_ID = 2;
+
+/**
+ * Genera un slug único a partir de un nombre
+ */
+function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Quitar acentos
+    .replace(/[^a-z0-9\s-]/g, '')    // Solo letras, números, espacios y guiones
+    .trim()
+    .replace(/\s+/g, '-')            // Espacios a guiones
+    .replace(/-+/g, '-');            // Múltiples guiones a uno
+}
+
+/**
+ * Genera un slug único verificando que no exista en la BD
+ */
+async function generateUniqueSlug(baseSlug: string): Promise<string> {
+  const db = getPool();
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (true) {
+    const result = await db.query(
+      'SELECT id FROM people WHERE slug = $1',
+      [slug]
+    );
+    if (result.rows.length === 0) {
+      return slug;
+    }
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+}
+
+interface Movie {
+  id: number;
+  title: string;
+  year: number | null;
+}
+
+interface Person {
+  id: number;
+  first_name: string | null;
+  last_name: string | null;
+  birth_year: number | null;
+  director_count: number;
+}
+
+function formatPersonName(person: Person): string {
+  const name = [person.first_name, person.last_name].filter(Boolean).join(' ');
+  const info: string[] = [];
+  if (person.birth_year) info.push(`n. ${person.birth_year}`);
+  if (person.director_count > 0) info.push(`${person.director_count} películas dirigidas`);
+  return info.length > 0 ? `${name} (${info.join(', ')})` : name;
+}
+
+async function countMoviesWithoutDirector(): Promise<number> {
+  const db = getPool();
+  const result = await db.query(`
+    SELECT COUNT(*) as total
+    FROM movies m
+    WHERE NOT EXISTS (
+      SELECT 1 FROM movie_crew mc
+      WHERE mc.movie_id = m.id AND mc.role_id = $1
+    )
+  `, [DIRECTOR_ROLE_ID]);
+  return parseInt(result.rows[0].total);
+}
+
+async function getMoviesWithoutDirector(limit: number, movieId?: number): Promise<Movie[]> {
+  const db = getPool();
+
+  let query = `
+    SELECT m.id, m.title, m.year
+    FROM movies m
+    WHERE NOT EXISTS (
+      SELECT 1 FROM movie_crew mc
+      WHERE mc.movie_id = m.id AND mc.role_id = $1
+    )
+  `;
+
+  const params: any[] = [DIRECTOR_ROLE_ID];
+
+  if (movieId) {
+    query += ` AND m.id = $2`;
+    params.push(movieId);
+  }
+
+  query += ` ORDER BY m.year DESC NULLS LAST, m.title LIMIT $${params.length + 1}`;
+  params.push(limit);
+
+  const result = await db.query(query, params);
+  return result.rows;
+}
+
+async function searchPeople(searchTerm: string): Promise<Person[]> {
+  const db = getPool();
+
+  const result = await db.query(`
+    SELECT
+      p.id,
+      p.first_name,
+      p.last_name,
+      p.birth_year,
+      COUNT(DISTINCT mc.movie_id) FILTER (WHERE mc.role_id = $1) as director_count
+    FROM people p
+    LEFT JOIN movie_crew mc ON p.id = mc.person_id
+    WHERE
+      LOWER(CONCAT(COALESCE(p.first_name, ''), ' ', COALESCE(p.last_name, ''))) LIKE LOWER($2)
+      OR LOWER(CONCAT(COALESCE(p.last_name, ''), ' ', COALESCE(p.first_name, ''))) LIKE LOWER($2)
+      OR LOWER(p.first_name) LIKE LOWER($2)
+      OR LOWER(p.last_name) LIKE LOWER($2)
+    GROUP BY p.id
+    ORDER BY director_count DESC, p.last_name, p.first_name
+    LIMIT 20
+  `, [DIRECTOR_ROLE_ID, `%${searchTerm}%`]);
+
+  return result.rows;
+}
+
+async function getPersonById(personId: number): Promise<Person | null> {
+  const db = getPool();
+
+  const result = await db.query(`
+    SELECT
+      p.id,
+      p.first_name,
+      p.last_name,
+      p.birth_year,
+      COUNT(DISTINCT mc.movie_id) FILTER (WHERE mc.role_id = $1) as director_count
+    FROM people p
+    LEFT JOIN movie_crew mc ON p.id = mc.person_id
+    WHERE p.id = $2
+    GROUP BY p.id
+  `, [DIRECTOR_ROLE_ID, personId]);
+
+  return result.rows[0] || null;
+}
+
+async function assignDirector(movieId: number, personId: number): Promise<boolean> {
+  const db = getPool();
+
+  try {
+    await db.query(`
+      INSERT INTO movie_crew (movie_id, person_id, role_id, created_at, updated_at)
+      VALUES ($1, $2, $3, NOW(), NOW())
+      ON CONFLICT (movie_id, person_id, role_id) DO NOTHING
+    `, [movieId, personId, DIRECTOR_ROLE_ID]);
+    return true;
+  } catch (error) {
+    console.error('Error al asignar director:', error);
+    return false;
+  }
+}
+
+async function createPersonAndAssign(
+  movieId: number,
+  firstName: string,
+  lastName: string
+): Promise<{ personId: number; success: boolean }> {
+  const db = getPool();
+
+  try {
+    // Generar slug único
+    const fullName = [firstName, lastName].filter(Boolean).join(' ');
+    const baseSlug = generateSlug(fullName);
+    const slug = await generateUniqueSlug(baseSlug);
+
+    // Crear la persona
+    const insertResult = await db.query(`
+      INSERT INTO people (first_name, last_name, slug, created_at, updated_at)
+      VALUES ($1, $2, $3, NOW(), NOW())
+      RETURNING id
+    `, [firstName || null, lastName, slug]);
+
+    const personId = insertResult.rows[0].id;
+
+    // Asignar como director
+    await db.query(`
+      INSERT INTO movie_crew (movie_id, person_id, role_id, created_at, updated_at)
+      VALUES ($1, $2, $3, NOW(), NOW())
+    `, [movieId, personId, DIRECTOR_ROLE_ID]);
+
+    return { personId, success: true };
+  } catch (error) {
+    console.error('Error al crear persona:', error);
+    return { personId: 0, success: false };
+  }
+}
+
+function createReadlineInterface(): readline.Interface {
+  return readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+}
+
+async function prompt(rl: readline.Interface, question: string): Promise<string> {
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      resolve(answer.trim());
+    });
+  });
+}
+
+async function processMovie(rl: readline.Interface, movie: Movie, current: number, batchTotal: number, remaining: number): Promise<'assigned' | 'skipped' | 'quit'> {
+  console.log('\n' + '='.repeat(60));
+  console.log(`[${current}/${batchTotal}] (${remaining} pendientes) ${movie.title} (${movie.year || 'sin año'})`);
+  console.log(`ID: ${movie.id}`);
+  console.log('='.repeat(60));
+
+  while (true) {
+    console.log('\nOpciones:');
+    console.log('  [nombre]  - Buscar director por nombre');
+    console.log('  id:123    - Asignar persona por ID');
+    console.log('  new:Nombre Apellido - Crear nueva persona');
+    console.log('  s         - Saltar esta película');
+    console.log('  q         - Salir del script');
+
+    const input = await prompt(rl, '\n> ');
+
+    if (input.toLowerCase() === 'q') {
+      return 'quit';
+    }
+
+    if (input.toLowerCase() === 's') {
+      console.log('Película saltada.');
+      return 'skipped';
+    }
+
+    // Asignar por ID
+    if (input.toLowerCase().startsWith('id:')) {
+      const personId = parseInt(input.slice(3).trim());
+      if (isNaN(personId)) {
+        console.log('ID inválido. Usa el formato: id:123');
+        continue;
+      }
+
+      const person = await getPersonById(personId);
+      if (!person) {
+        console.log(`No se encontró persona con ID ${personId}`);
+        continue;
+      }
+
+      console.log(`\nAsignar: ${formatPersonName(person)}`);
+      const confirm = await prompt(rl, '¿Confirmar? (s/n): ');
+
+      if (confirm.toLowerCase() === 's') {
+        const success = await assignDirector(movie.id, personId);
+        if (success) {
+          console.log(`Director asignado correctamente.`);
+          return 'assigned';
+        }
+      }
+      continue;
+    }
+
+    // Crear nueva persona
+    if (input.toLowerCase().startsWith('new:')) {
+      const fullName = input.slice(4).trim();
+      if (!fullName) {
+        console.log('Nombre inválido. Usa el formato: new:Nombre Apellido');
+        continue;
+      }
+
+      const parts = fullName.split(' ');
+      const firstName = parts.slice(0, -1).join(' ') || '';
+      const lastName = parts[parts.length - 1];
+
+      console.log(`\nCrear nueva persona: "${firstName}" "${lastName}"`);
+      const confirm = await prompt(rl, '¿Confirmar? (s/n): ');
+
+      if (confirm.toLowerCase() === 's') {
+        const result = await createPersonAndAssign(movie.id, firstName, lastName);
+        if (result.success) {
+          console.log(`Persona creada (ID: ${result.personId}) y asignada como director.`);
+          return 'assigned';
+        }
+      }
+      continue;
+    }
+
+    // Buscar por nombre
+    if (input.length < 2) {
+      console.log('Ingresa al menos 2 caracteres para buscar.');
+      continue;
+    }
+
+    const results = await searchPeople(input);
+
+    if (results.length === 0) {
+      console.log('No se encontraron resultados. Puedes crear una nueva persona con: new:Nombre Apellido');
+      continue;
+    }
+
+    console.log(`\nResultados (${results.length}):`);
+    results.forEach((person, index) => {
+      console.log(`  ${index + 1}. [${person.id}] ${formatPersonName(person)}`);
+    });
+
+    const selection = await prompt(rl, '\nSelecciona número (o enter para buscar de nuevo): ');
+
+    if (!selection) continue;
+
+    const selectedIndex = parseInt(selection) - 1;
+    if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= results.length) {
+      console.log('Selección inválida.');
+      continue;
+    }
+
+    const selectedPerson = results[selectedIndex];
+    console.log(`\nAsignar: ${formatPersonName(selectedPerson)}`);
+    const confirm = await prompt(rl, '¿Confirmar? (s/n): ');
+
+    if (confirm.toLowerCase() === 's') {
+      const success = await assignDirector(movie.id, selectedPerson.id);
+      if (success) {
+        console.log(`Director asignado correctamente.`);
+        return 'assigned';
+      }
+    }
+  }
+}
+
+async function main(): Promise<void> {
+  const args = process.argv.slice(2);
+  let limit = 50;
+  let movieId: number | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--limit' && args[i + 1]) {
+      limit = parseInt(args[i + 1]);
+      i++;
+    } else if (args[i] === '--movie-id' && args[i + 1]) {
+      movieId = parseInt(args[i + 1]);
+      i++;
+    }
+  }
+
+  console.log('Buscando películas sin director...');
+
+  const totalWithoutDirector = await countMoviesWithoutDirector();
+  const movies = await getMoviesWithoutDirector(limit, movieId);
+
+  if (movies.length === 0) {
+    console.log('No hay películas sin director.');
+    await closePool();
+    return;
+  }
+
+  console.log(`Total sin director: ${totalWithoutDirector} | Procesando: ${movies.length}`);
+
+  const rl = createReadlineInterface();
+
+  let assigned = 0;
+  let skipped = 0;
+  let processed = 0;
+
+  try {
+    for (let i = 0; i < movies.length; i++) {
+      const movie = movies[i];
+      const result = await processMovie(rl, movie, i + 1, movies.length, totalWithoutDirector - processed);
+
+      if (result === 'quit') {
+        break;
+      } else if (result === 'assigned') {
+        assigned++;
+        processed++;
+      } else {
+        skipped++;
+      }
+    }
+  } finally {
+    rl.close();
+    await closePool();
+  }
+
+  console.log('\n' + '='.repeat(60));
+  console.log('Resumen:');
+  console.log(`  Directores asignados: ${assigned}`);
+  console.log(`  Películas saltadas: ${skipped}`);
+  console.log('='.repeat(60));
+}
+
+main().catch(console.error);
 
 
 // ==================================================
@@ -770,21 +1733,27 @@ main().catch(error => {
 // ==================================================
 /**
  * Script para enriquecer películas con TMDB ID desde TMDB
- * 
+ *
  * Uso:
  *   npx tsx enrich-movies.ts --dry-run          # Solo genera CSV
  *   npx tsx enrich-movies.ts --apply            # Aplica cambios a la BD
  *   npx tsx enrich-movies.ts --apply-csv        # Aplica desde CSV revisado
+ *   npx tsx enrich-movies.ts --reprocess-csv    # Reprocesa review/multiple del CSV
  *   npx tsx enrich-movies.ts --limit 100        # Procesar solo 100 películas
  *   npx tsx enrich-movies.ts --offset 500       # Empezar desde la 501
+ *   npx tsx enrich-movies.ts --reset            # Reiniciar progreso (borrar cache)
  */
 
-import { searchMovies, getMovieDetails, testConnection, TMDBMovieDetails } from './tmdb-client';
+import { searchMovies, getMovieDetails, testConnection, TMDBMovie, TMDBMovieDetails } from './tmdb-client';
+import * as fs from 'fs';
+import * as path from 'path';
 import { 
   getPool, 
   closePool, 
   normalizeText, 
   stringSimilarity,
+  compareTitles,
+  comparePersonNames,
   saveToCSV, 
   loadFromCSV,
   formatDuration,
@@ -816,6 +1785,52 @@ interface MatchResult {
   match_score: number;
   match_status: 'auto_accept' | 'review' | 'no_match' | 'multiple';
   match_reason: string;
+}
+
+// Archivo para guardar progreso
+const PROGRESS_FILE = path.join(__dirname, 'reports', '.enrich-progress.json');
+
+interface ProgressData {
+  processedIds: number[];  // IDs de películas ya procesadas
+  lastRun: string;         // Fecha de última ejecución
+}
+
+/**
+ * Cargar progreso guardado
+ */
+function loadProgress(): Set<number> {
+  try {
+    if (fs.existsSync(PROGRESS_FILE)) {
+      const data: ProgressData = JSON.parse(fs.readFileSync(PROGRESS_FILE, 'utf-8'));
+      return new Set(data.processedIds);
+    }
+  } catch (error) {
+    // Si hay error leyendo, empezar de cero
+  }
+  return new Set();
+}
+
+/**
+ * Guardar progreso
+ */
+function saveProgress(processedIds: Set<number>): void {
+  const data: ProgressData = {
+    processedIds: Array.from(processedIds),
+    lastRun: new Date().toISOString(),
+  };
+  fs.writeFileSync(PROGRESS_FILE, JSON.stringify(data, null, 2));
+}
+
+/**
+ * Borrar progreso guardado
+ */
+function resetProgress(): void {
+  if (fs.existsSync(PROGRESS_FILE)) {
+    fs.unlinkSync(PROGRESS_FILE);
+    log('Progreso reiniciado', 'success');
+  } else {
+    log('No había progreso guardado', 'info');
+  }
 }
 
 /**
@@ -856,10 +1871,10 @@ function calculateMatchScore(
   let score = 0;
   const reasons: string[] = [];
   
-  // 1. Comparar títulos
+  // 1. Comparar títulos (usando compareTitles que maneja subtítulos)
   const titleSimilarity = Math.max(
-    stringSimilarity(local.title, tmdb.title),
-    stringSimilarity(local.title, tmdb.original_title)
+    compareTitles(local.title, tmdb.title),
+    compareTitles(local.title, tmdb.original_title)
   );
   
   if (titleSimilarity >= 95) {
@@ -885,23 +1900,37 @@ function calculateMatchScore(
     }
   }
   
-  // 3. Comparar director
+  // 3. Comparar director (usando la nueva función inteligente)
   if (local.director_names && tmdb.credits?.crew) {
     const tmdbDirectors = tmdb.credits.crew
       .filter(c => c.job === 'Director')
-      .map(c => normalizeText(c.name));
-    
+      .map(c => c.name);
+
     const localDirectors = local.director_names
       .split(',')
-      .map(d => normalizeText(d.trim()));
+      .map(d => d.trim());
+
+    // Buscar match usando la función inteligente de comparación de nombres
+    let directorMatch: { isMatch: boolean; confidence: string; reason: string } | null = null;
     
-    const hasDirectorMatch = localDirectors.some(ld => 
-      tmdbDirectors.some(td => stringSimilarity(ld, td) >= 80)
-    );
-    
-    if (hasDirectorMatch) {
+    for (const ld of localDirectors) {
+      for (const td of tmdbDirectors) {
+        const comparison = comparePersonNames(ld, td);
+        if (comparison.isMatch) {
+          directorMatch = comparison;
+          break;
+        }
+      }
+      if (directorMatch) break;
+    }
+
+    if (directorMatch) {
       score += config.matching.movie.directorMatchBonus;
-      reasons.push('Director coincide');
+      reasons.push(`Director coincide (${directorMatch.confidence}: ${directorMatch.reason})`);
+    } else if (tmdbDirectors.length > 0 && localDirectors.length > 0) {
+      // Tenemos director local y director TMDB, pero NO coinciden
+      // Esto es una señal de alerta - marcar para revisión
+      reasons.push(`Director NO coincide (${localDirectors[0]} vs ${tmdbDirectors[0]})`);
     }
   }
   
@@ -943,31 +1972,83 @@ async function findMatchForMovie(movie: LocalMovie): Promise<MatchResult> {
   };
   
   try {
-    // Buscar por título y año
-    const searchResult = await searchMovies(movie.title, movie.year || undefined);
-    
-    if (searchResult.total_results === 0) {
-      // Intentar sin año
-      const searchWithoutYear = await searchMovies(movie.title);
-      if (searchWithoutYear.total_results === 0) {
-        result.match_reason = 'Sin resultados en TMDB';
-        return result;
+    // Buscar por título CON año y SIN año, combinar resultados únicos
+    const allResults: TMDBMovie[] = [];
+    const seenIds = new Set<number>();
+
+    // Función auxiliar para agregar resultados sin duplicar
+    const addResults = (results: TMDBMovie[]) => {
+      for (const r of results) {
+        if (!seenIds.has(r.id)) {
+          seenIds.add(r.id);
+          allResults.push(r);
+        }
       }
-      searchResult.results = searchWithoutYear.results;
+    };
+
+    // 1. Buscar con título original + año
+    if (movie.year) {
+      const searchWithYear = await searchMovies(movie.title, movie.year);
+      addResults(searchWithYear.results);
     }
-    
+
+    // 2. Buscar con título original sin año
+    const searchWithoutYear = await searchMovies(movie.title);
+    addResults(searchWithoutYear.results);
+
+    // 3. Si no hay resultados, intentar con título limpio (sin números de secuela)
+    if (allResults.length === 0) {
+      // Quitar números arábigos y romanos comunes de secuelas (ej: "2:", "II:", "3", "III")
+      // Solo si están rodeados de espacios o seguidos de : o -
+      const cleanTitle = movie.title
+        .replace(/\b[IVX]{2,}\b\s*[:.-]?\s*/g, ' ')  // Romanos: II, III, IV, VI, etc. (2+ caracteres para no confundir con palabras)
+        .replace(/\b\d+\s*[:.-]\s*/g, ' ')            // Arábigos seguidos de : o - (ej: "2:", "3-")
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (cleanTitle !== movie.title && cleanTitle.length > 3) {
+        const searchClean = await searchMovies(cleanTitle);
+        addResults(searchClean.results);
+      }
+    }
+
+    // 4. Si no hay resultados y el título tiene coma, buscar solo la parte antes de la coma
+    // Ej: "Norita, Nora Cortiñas" → buscar "Norita"
+    if (allResults.length === 0 && movie.title.includes(',')) {
+      const firstPart = movie.title.split(',')[0].trim();
+      if (firstPart.length >= 3) {
+        const searchFirstPart = await searchMovies(firstPart);
+        addResults(searchFirstPart.results);
+      }
+    }
+
+    // 5. Si no hay resultados y el título tiene ":", buscar solo la parte antes
+    // Ej: "Mujeres de la mina: De Piura al mundo" → buscar "Mujeres de la mina"
+    if (allResults.length === 0 && movie.title.includes(':')) {
+      const firstPart = movie.title.split(':')[0].trim();
+      if (firstPart.length >= 3) {
+        const searchFirstPart = await searchMovies(firstPart);
+        addResults(searchFirstPart.results);
+      }
+    }
+
+    if (allResults.length === 0) {
+      result.match_reason = 'Sin resultados en TMDB';
+      return result;
+    }
+
     // Evaluar cada candidato
     const candidates: Array<{
       tmdb: TMDBMovieDetails;
       score: number;
       reasons: string[];
     }> = [];
-    
+
     // Limitar a los primeros 5 resultados para no hacer demasiadas requests
-    for (const tmdbMovie of searchResult.results.slice(0, 5)) {
+    for (const tmdbMovie of allResults.slice(0, 5)) {
       const details = await getMovieDetails(tmdbMovie.id);
       const { score, reasons } = calculateMatchScore(movie, details);
-      
+
       if (score > 0) {
         candidates.push({ tmdb: details, score, reasons });
       }
@@ -997,11 +2078,31 @@ async function findMatchForMovie(movie: LocalMovie): Promise<MatchResult> {
     result.match_reason = best.reasons.join('; ');
     
     // Determinar status
-    // Regla especial: título exacto + director coincide = auto_accept
     const hasExactTitle = best.reasons.some(r => r.includes('Título exacto'));
+    const hasSimilarTitle = best.reasons.some(r => r.includes('Título similar'));
+    const hasPartialTitle = best.reasons.some(r => r.includes('Título parcial'));
+    const hasAnyTitleMatch = hasExactTitle || hasSimilarTitle || hasPartialTitle;
     const hasDirectorMatch = best.reasons.some(r => r.includes('Director coincide'));
-    
-    if (best.score >= config.matching.movie.autoAcceptScore) {
+    const hasDirectorMismatch = best.reasons.some(r => r.includes('Director NO coincide'));
+
+    // REGLA DE SEGURIDAD 1: Si el director local existe y NO coincide con TMDB,
+    // nunca auto_accept. Esto previene falsos positivos como "Perceptio" vs "Perception"
+    // donde título y año coinciden pero son películas de directores diferentes.
+    if (hasDirectorMismatch) {
+      if (best.score >= config.matching.movie.reviewScore) {
+        result.match_status = 'review';
+        result.match_reason += ' [Review: director no coincide]';
+      }
+    // REGLA DE SEGURIDAD 2: Si el título no tiene al menos similitud parcial (60%+),
+    // nunca auto_accept. Esto previene falsos positivos cuando solo coincide
+    // director + país + año pero son películas diferentes.
+    } else if (!hasAnyTitleMatch) {
+      // Sin match de título: máximo review, nunca auto_accept
+      if (best.score >= config.matching.movie.reviewScore) {
+        result.match_status = 'review';
+        result.match_reason += ' [Review: título muy diferente]';
+      }
+    } else if (best.score >= config.matching.movie.autoAcceptScore) {
       result.match_status = 'auto_accept';
     } else if (hasExactTitle && hasDirectorMatch) {
       // Título exacto + director = suficiente confianza
@@ -1024,21 +2125,29 @@ async function findMatchForMovie(movie: LocalMovie): Promise<MatchResult> {
 }
 
 /**
- * Aplicar cambios a la base de datos (guarda tmdb_id)
+ * Aplicar cambios a la base de datos (guarda tmdb_id e imdb_id si está disponible)
  */
 async function applyChanges(matches: MatchResult[]): Promise<{ updated: number; errors: number }> {
   const pool = getPool();
   let updated = 0;
   let errors = 0;
-  
+
   for (const match of matches) {
     if (!match.tmdb_id || match.match_status === 'no_match') continue;
-    
+
     try {
-      await pool.query(
-        'UPDATE movies SET tmdb_id = $1 WHERE id = $2',
-        [match.tmdb_id, match.local_id]
-      );
+      // Actualizar tmdb_id y también imdb_id si está disponible
+      if (match.imdb_id) {
+        await pool.query(
+          'UPDATE movies SET tmdb_id = $1, imdb_id = $2 WHERE id = $3',
+          [match.tmdb_id, match.imdb_id, match.local_id]
+        );
+      } else {
+        await pool.query(
+          'UPDATE movies SET tmdb_id = $1 WHERE id = $2',
+          [match.tmdb_id, match.local_id]
+        );
+      }
       updated++;
     } catch (error) {
       log(`Error actualizando película ${match.local_id}: ${error}`, 'error');
@@ -1056,16 +2165,24 @@ async function main() {
   const args = process.argv.slice(2);
   const isDryRun = args.includes('--dry-run') || !args.includes('--apply');
   const applyFromCSV = args.includes('--apply-csv');
-  
+  const reprocessCSV = args.includes('--reprocess-csv');
+  const shouldReset = args.includes('--reset');
+
   const limitArg = args.find(a => a.startsWith('--limit'));
   const limit = limitArg ? parseInt(limitArg.split('=')[1] || args[args.indexOf('--limit') + 1]) : undefined;
-  
+
   const offsetArg = args.find(a => a.startsWith('--offset'));
   const offset = offsetArg ? parseInt(offsetArg.split('=')[1] || args[args.indexOf('--offset') + 1]) : undefined;
-  
+
   console.log('\n🎬 TMDB Movie Enrichment Script');
   console.log('================================\n');
-  
+
+  // Modo reset: borrar progreso y salir
+  if (shouldReset) {
+    resetProgress();
+    return;
+  }
+
   // Test conexión a TMDB
   log('Probando conexión a TMDB...', 'info');
   const connected = await testConnection();
@@ -1074,67 +2191,254 @@ async function main() {
     process.exit(1);
   }
   log('Conexión a TMDB exitosa', 'success');
-  
+
   if (applyFromCSV) {
     // Modo: Aplicar desde CSV revisado
     log('Cargando matches desde CSV...', 'info');
     const matches = loadFromCSV('movies-matches.csv') as MatchResult[];
-    
+
     if (matches.length === 0) {
       log('No se encontró el archivo movies-matches.csv', 'error');
       process.exit(1);
     }
-    
-    const toApply = matches.filter(m => 
+
+    const toApply = matches.filter(m =>
       m.match_status === 'auto_accept' || m.match_status === 'review'
     );
-    
+
     log(`Aplicando ${toApply.length} matches a la base de datos...`, 'info');
     const { updated, errors } = await applyChanges(toApply);
-    
+
     log(`Actualizadas: ${updated} | Errores: ${errors}`, updated > 0 ? 'success' : 'warn');
-    
-  } else {
-    // Modo: Procesar películas
-    log('Obteniendo películas sin TMDB ID...', 'info');
-    const movies = await getMoviesWithoutTmdbId(limit, offset);
-    log(`Encontradas ${movies.length} películas para procesar`, 'info');
-    
-    if (movies.length === 0) {
-      log('No hay películas para procesar', 'success');
+
+  } else if (reprocessCSV) {
+    // Modo: Reprocesar películas review/multiple del CSV con la nueva lógica
+    log('Cargando matches desde CSV para reprocesar...', 'info');
+    const allMatches = loadFromCSV('movies-matches.csv') as MatchResult[];
+
+    if (allMatches.length === 0) {
+      log('No se encontró el archivo movies-matches.csv', 'error');
+      process.exit(1);
+    }
+
+    // Filtrar solo los que necesitan revisión
+    const toReprocess = allMatches.filter(m =>
+      m.match_status === 'review' || m.match_status === 'multiple'
+    );
+
+    const alreadyGood = allMatches.filter(m =>
+      m.match_status === 'auto_accept' || m.match_status === 'no_match'
+    );
+
+    log(`Total en CSV: ${allMatches.length}`, 'info');
+    log(`Ya resueltos (auto_accept/no_match): ${alreadyGood.length}`, 'info');
+    log(`Para reprocesar (review/multiple): ${toReprocess.length}`, 'info');
+
+    if (toReprocess.length === 0) {
+      log('No hay películas para reprocesar', 'success');
       await closePool();
       return;
     }
-    
+
+    const startTime = Date.now();
+    const newResults: MatchResult[] = [...alreadyGood]; // Mantener los que ya estaban bien
+
+    // Stats
+    let processed = 0;
+    let nowAutoAccept = 0;
+    let stillReview = 0;
+    let stillMultiple = 0;
+
+    console.log('');
+    console.log('Reprocesando con nueva lógica de comparación de nombres...');
+    console.log('');
+
+    for (const oldMatch of toReprocess) {
+      processed++;
+
+      // Crear LocalMovie desde el CSV
+      const movie: LocalMovie = {
+        id: Number(oldMatch.local_id),
+        title: oldMatch.local_title,
+        year: oldMatch.local_year ? Number(oldMatch.local_year) : null,
+        duration: null, // No tenemos esta info en el CSV
+        imdb_id: null,
+        director_names: oldMatch.local_director,
+      };
+
+      // Reprocesar
+      const newMatch = await findMatchForMovie(movie);
+      newResults.push(newMatch);
+
+      // Determinar si cambió
+      const oldStatus = oldMatch.match_status;
+      const newStatus = newMatch.match_status;
+      
+      let icon = '🔍';
+      let statusChange = '';
+      
+      if (newStatus === 'auto_accept') {
+        nowAutoAccept++;
+        icon = '✅';
+        if (oldStatus !== 'auto_accept') {
+          statusChange = ` (era ${oldStatus})`;
+        }
+      } else if (newStatus === 'review') {
+        stillReview++;
+        icon = '🔍';
+      } else if (newStatus === 'multiple') {
+        stillMultiple++;
+        icon = '🔄';
+      }
+
+      // Mostrar progreso
+      console.log(`${icon} [${processed}/${toReprocess.length}] ${movie.title} (${movie.year || '?'}) → ${newStatus}${statusChange}`);
+    }
+
+    const elapsed = Date.now() - startTime;
+
+    // Guardar nuevo CSV
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+    saveToCSV(newResults, `movies-matches-reprocessed-${timestamp}.csv`, [
+      'local_id', 'local_title', 'local_year', 'local_director',
+      'tmdb_id', 'tmdb_title', 'tmdb_year', 'tmdb_director',
+      'imdb_id', 'match_score', 'match_status', 'match_reason'
+    ]);
+
+    // También actualizar el "latest"
+    saveToCSV(newResults, 'movies-matches.csv', [
+      'local_id', 'local_title', 'local_year', 'local_director',
+      'tmdb_id', 'tmdb_title', 'tmdb_year', 'tmdb_director',
+      'imdb_id', 'match_score', 'match_status', 'match_reason'
+    ]);
+
+    // Resumen
+    console.log('\n' + '='.repeat(60));
+    console.log('📊 RESUMEN REPROCESAMIENTO');
+    console.log('='.repeat(60));
+    console.log(`   Reprocesadas:        ${processed}`);
+    console.log(`   ✅ Ahora auto_accept: ${nowAutoAccept}`);
+    console.log(`   🔍 Siguen en review:  ${stillReview}`);
+    console.log(`   🔄 Siguen multiple:   ${stillMultiple}`);
+    console.log(`   ⏱️  Tiempo:            ${formatDuration(elapsed)}`);
+    console.log('='.repeat(60));
+
+    if (nowAutoAccept > 0) {
+      log(`¡${nowAutoAccept} películas ahora pasan automáticamente!`, 'success');
+    }
+
+  } else {
+    // Modo: Procesar películas
+    log('Obteniendo películas sin TMDB ID...', 'info');
+    const allMovies = await getMoviesWithoutTmdbId(limit, offset);
+
+    // Cargar progreso y filtrar películas ya procesadas
+    const processedIds = loadProgress();
+    const movies = allMovies.filter(m => !processedIds.has(m.id));
+
+    const skipped = allMovies.length - movies.length;
+    if (skipped > 0) {
+      log(`Saltando ${skipped} películas ya procesadas (usar --reset para reiniciar)`, 'info');
+    }
+
+    log(`Películas a procesar: ${movies.length}`, 'info');
+    log(`Modo: ${isDryRun ? 'dry-run (no aplica cambios)' : 'apply (aplica cambios en tiempo real)'}`, 'info');
+
+    if (movies.length === 0) {
+      log('No hay películas nuevas para procesar', 'success');
+      await closePool();
+      return;
+    }
+
     const startTime = Date.now();
     const results: MatchResult[] = [];
-    
+    const pool = getPool();
+
     // Stats
     let processed = 0;
     let autoAccepted = 0;
+    let applied = 0;
     let needsReview = 0;
     let noMatch = 0;
     let multiple = 0;
-    
+    let errors = 0;
+
+    console.log('');
+
     for (const movie of movies) {
       processed++;
-      process.stdout.write(`\r${progressBar(processed, movies.length)} - ${movie.title.slice(0, 30)}...`);
-      
+
       const match = await findMatchForMovie(movie);
       results.push(match);
-      
+
+      // Marcar como procesada (independientemente del resultado)
+      processedIds.add(movie.id);
+
+      // Determinar icono y actualizar stats
+      let icon = '➖';
       switch (match.match_status) {
-        case 'auto_accept': autoAccepted++; break;
-        case 'review': needsReview++; break;
-        case 'no_match': noMatch++; break;
-        case 'multiple': multiple++; break;
+        case 'auto_accept':
+          autoAccepted++;
+          icon = '✅';
+          // Aplicar inmediatamente si no es dry-run
+          if (!isDryRun && match.tmdb_id) {
+            try {
+              if (match.imdb_id) {
+                await pool.query(
+                  'UPDATE movies SET tmdb_id = $1, imdb_id = $2 WHERE id = $3',
+                  [match.tmdb_id, match.imdb_id, match.local_id]
+                );
+              } else {
+                await pool.query(
+                  'UPDATE movies SET tmdb_id = $1 WHERE id = $2',
+                  [match.tmdb_id, match.local_id]
+                );
+              }
+              applied++;
+            } catch (err) {
+              errors++;
+              icon = '❌';
+            }
+          }
+          break;
+        case 'review':
+          needsReview++;
+          icon = '🔍';
+          break;
+        case 'no_match':
+          noMatch++;
+          icon = '➖';
+          break;
+        case 'multiple':
+          multiple++;
+          icon = '🔄';
+          break;
+      }
+
+      // Mostrar progreso en tiempo real
+      let tmdbInfo: string;
+      if (match.match_status === 'no_match') {
+        // Para no_match, mostrar el motivo (no el candidato rechazado)
+        tmdbInfo = match.match_reason || 'Sin match';
+      } else if (match.tmdb_id) {
+        // Para auto_accept, review, multiple: mostrar el candidato
+        tmdbInfo = `→ ${match.tmdb_title} (${match.tmdb_year}) [${match.imdb_id || 'sin imdb'}]`;
+      } else {
+        tmdbInfo = match.match_reason;
+      }
+      console.log(`${icon} [${processed}/${movies.length}] ${movie.title} (${movie.year || '?'}) ${tmdbInfo}`);
+
+      // Guardar progreso cada 10 películas
+      if (processed % 10 === 0) {
+        saveProgress(processedIds);
       }
     }
-    
-    console.log('\n');
-    
+
+    // Guardar progreso final
+    saveProgress(processedIds);
+
     const elapsed = Date.now() - startTime;
-    
+
     // Guardar CSV
     const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
     saveToCSV(results, `movies-matches-${timestamp}.csv`, [
@@ -1142,35 +2446,38 @@ async function main() {
       'tmdb_id', 'tmdb_title', 'tmdb_year', 'tmdb_director',
       'imdb_id', 'match_score', 'match_status', 'match_reason'
     ]);
-    
+
     // También guardar versión "latest" para aplicar después
     saveToCSV(results, 'movies-matches.csv', [
       'local_id', 'local_title', 'local_year', 'local_director',
       'tmdb_id', 'tmdb_title', 'tmdb_year', 'tmdb_director',
       'imdb_id', 'match_score', 'match_status', 'match_reason'
     ]);
-    
+
     // Resumen
-    console.log('\n📊 Resumen:');
+    console.log('\n' + '='.repeat(60));
+    console.log('📊 RESUMEN');
+    console.log('='.repeat(60));
     console.log(`   Procesadas:      ${processed}`);
-    console.log(`   Auto-aceptadas:  ${autoAccepted} (score >= ${config.matching.movie.autoAcceptScore})`);
-    console.log(`   Para revisar:    ${needsReview} (score ${config.matching.movie.reviewScore}-${config.matching.movie.autoAcceptScore - 1})`);
-    console.log(`   Múltiples:       ${multiple}`);
-    console.log(`   Sin match:       ${noMatch}`);
-    console.log(`   Tiempo:          ${formatDuration(elapsed)}`);
-    
+    console.log(`   ✅ Auto-accept:  ${autoAccepted}`);
     if (!isDryRun) {
-      const toApply = results.filter(r => r.match_status === 'auto_accept');
-      log(`\nAplicando ${toApply.length} matches automáticos a la BD...`, 'info');
-      const { updated, errors } = await applyChanges(toApply);
-      log(`Actualizadas: ${updated} | Errores: ${errors}`, 'success');
-    } else {
-      console.log('\n💡 Modo dry-run: No se aplicaron cambios.');
-      console.log('   Para aplicar auto-aceptados: npx tsx enrich-movies.ts --apply');
-      console.log('   Para aplicar desde CSV:      npx tsx enrich-movies.ts --apply-csv');
+      console.log(`   💾 Aplicadas:    ${applied}`);
+      if (errors > 0) console.log(`   ❌ Errores:      ${errors}`);
     }
+    console.log(`   🔍 Para revisar: ${needsReview}`);
+    console.log(`   🔄 Múltiples:    ${multiple}`);
+    console.log(`   ➖ Sin match:    ${noMatch}`);
+    console.log(`   ⏱️  Tiempo:       ${formatDuration(elapsed)}`);
+    console.log(`   📁 Progreso:     ${processedIds.size} películas en cache`);
+    console.log('='.repeat(60));
+
+    if (isDryRun) {
+      console.log('\n💡 Modo dry-run: No se aplicaron cambios.');
+      console.log('   Para aplicar: npx tsx scripts/tmdb/enrich-movies.ts --apply');
+    }
+    console.log('   Para reiniciar: npx tsx scripts/tmdb/enrich-movies.ts --reset');
   }
-  
+
   await closePool();
   console.log('\n✨ Proceso completado\n');
 }
@@ -4540,6 +5847,9 @@ export function splitNameSimple(fullName: string): { firstName: string; lastName
  *
  * Para cada una, obtiene el retrato de TMDB y lo sube a Cloudinary
  *
+ * El progreso se guarda en scripts/tmdb/state/portrait-migration-state.json
+ * para poder continuar desde donde quedó si se interrumpe.
+ *
  * Uso:
  *   npx ts-node scripts/tmdb/migrate-tmdb-portraits.ts [opciones]
  *
@@ -4547,6 +5857,7 @@ export function splitNameSimple(fullName: string): { firstName: string; lastName
  *   --dry-run      Ver qué personas se procesarían sin hacer cambios
  *   --limit=N      Procesar solo N personas
  *   --person-id=N  Procesar solo la persona con ID específico
+ *   --reset        Borrar el estado guardado y procesar todo desde cero
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -4555,6 +5866,76 @@ import * as fs from 'fs';
 import * as path from 'path';
 import config from './config';
 import { getPersonDetails } from './tmdb-client';
+
+// ============================================================================
+// PERSISTENCIA DE ESTADO
+// ============================================================================
+
+const STATE_DIR = path.join(__dirname, 'state');
+const STATE_FILE = path.join(STATE_DIR, 'portrait-migration-state.json');
+
+interface MigrationState {
+  version: number;
+  lastRun: string;
+  processedIds: number[];
+  stats: {
+    totalProcessed: number;
+    success: number;
+    skipped: number;
+    failed: number;
+  };
+}
+
+function createEmptyState(): MigrationState {
+  return {
+    version: 1,
+    lastRun: new Date().toISOString(),
+    processedIds: [],
+    stats: {
+      totalProcessed: 0,
+      success: 0,
+      skipped: 0,
+      failed: 0
+    }
+  };
+}
+
+function loadState(): MigrationState {
+  try {
+    if (fs.existsSync(STATE_FILE)) {
+      const data = fs.readFileSync(STATE_FILE, 'utf8');
+      const state = JSON.parse(data) as MigrationState;
+      console.log(`Estado cargado: ${state.processedIds.length} personas ya procesadas`);
+      return state;
+    }
+  } catch (error) {
+    console.warn('No se pudo cargar el estado anterior, iniciando desde cero');
+  }
+  return createEmptyState();
+}
+
+function saveState(state: MigrationState): void {
+  try {
+    if (!fs.existsSync(STATE_DIR)) {
+      fs.mkdirSync(STATE_DIR, { recursive: true });
+    }
+    state.lastRun = new Date().toISOString();
+    fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), 'utf8');
+  } catch (error) {
+    console.error('Error guardando estado:', error);
+  }
+}
+
+function resetState(): void {
+  try {
+    if (fs.existsSync(STATE_FILE)) {
+      fs.unlinkSync(STATE_FILE);
+      console.log('Estado reiniciado');
+    }
+  } catch (error) {
+    console.error('Error reiniciando estado:', error);
+  }
+}
 
 // Configurar Cloudinary
 cloudinary.config({
@@ -4725,6 +6106,7 @@ async function migratePortraits(options: {
   dryRun: boolean;
   limit?: number;
   personId?: number;
+  reset: boolean;
 }): Promise<void> {
   console.log('='.repeat(60));
   console.log('MIGRACION DE RETRATOS TMDB -> CLOUDINARY');
@@ -4733,6 +6115,15 @@ async function migratePortraits(options: {
   if (options.dryRun) {
     console.log('\n[DRY RUN] No se realizarán cambios en la base de datos\n');
   }
+
+  // Manejar --reset
+  if (options.reset) {
+    resetState();
+  }
+
+  // Cargar estado previo (a menos que sea --person-id específico)
+  const state = options.personId ? createEmptyState() : loadState();
+  const processedIdsSet = new Set(state.processedIds);
 
   // Buscar personas que tienen tmdb_id pero no tienen foto
   const whereClause: any = {
@@ -4747,7 +6138,7 @@ async function migratePortraits(options: {
     whereClause.id = options.personId;
   }
 
-  const people = await prisma.person.findMany({
+  const allPeople = await prisma.person.findMany({
     where: whereClause,
     select: {
       id: true,
@@ -4756,28 +6147,40 @@ async function migratePortraits(options: {
       tmdbId: true
     },
     orderBy: { id: 'asc' },
-    take: options.limit
+    take: options.limit ? options.limit + processedIdsSet.size : undefined
   });
 
-  console.log(`Encontradas ${people.length} personas sin retrato con tmdb_id\n`);
+  // Filtrar personas ya procesadas
+  const people = options.personId
+    ? allPeople
+    : allPeople.filter(p => !processedIdsSet.has(p.id));
 
-  if (people.length === 0) {
+  // Aplicar límite después de filtrar
+  const peopleLimited = options.limit ? people.slice(0, options.limit) : people;
+
+  console.log(`Encontradas ${allPeople.length} personas sin retrato con tmdb_id`);
+  if (!options.personId && processedIdsSet.size > 0) {
+    console.log(`Ya procesadas anteriormente: ${allPeople.length - people.length}`);
+  }
+  console.log(`A procesar en esta corrida: ${peopleLimited.length}\n`);
+
+  if (peopleLimited.length === 0) {
     console.log('No hay personas para procesar.');
     return;
   }
 
   const stats: MigrationStats = {
-    total: people.length,
+    total: peopleLimited.length,
     success: 0,
     failed: 0,
     skipped: 0,
     results: []
   };
 
-  for (let i = 0; i < people.length; i++) {
-    const person = people[i];
+  for (let i = 0; i < peopleLimited.length; i++) {
+    const person = peopleLimited[i];
     const name = getPersonFullName(person);
-    const progress = `[${i + 1}/${people.length}]`;
+    const progress = `[${i + 1}/${peopleLimited.length}]`;
 
     console.log(`${progress} Procesando: ${name} (ID: ${person.id}, TMDB: ${person.tmdbId})`);
 
@@ -4799,15 +6202,36 @@ async function migratePortraits(options: {
       console.log(`  ✗ Error: ${result.error}`);
     }
 
+    // Guardar progreso (agregar ID procesado)
+    if (!options.dryRun && !options.personId) {
+      state.processedIds.push(person.id);
+      state.stats.totalProcessed++;
+      if (result.success) state.stats.success++;
+      else if (result.error?.includes('No tiene retrato')) state.stats.skipped++;
+      else state.stats.failed++;
+
+      // Guardar estado cada 50 personas
+      if ((i + 1) % 50 === 0) {
+        saveState(state);
+        console.log(`  [Estado guardado: ${state.processedIds.length} IDs]`);
+      }
+    }
+
     // Rate limiting: esperar entre requests
-    if (i < people.length - 1) {
+    if (i < peopleLimited.length - 1) {
       await delay(config.delayBetweenRequests + 100); // Extra delay para Cloudinary
     }
 
     // Mostrar progreso cada 50 personas
     if ((i + 1) % 50 === 0) {
-      console.log(`\n--- Progreso: ${i + 1}/${people.length} | OK: ${stats.success} | Saltados: ${stats.skipped} | Errores: ${stats.failed} ---\n`);
+      console.log(`\n--- Progreso: ${i + 1}/${peopleLimited.length} | OK: ${stats.success} | Saltados: ${stats.skipped} | Errores: ${stats.failed} ---\n`);
     }
+  }
+
+  // Guardar estado final
+  if (!options.dryRun && !options.personId) {
+    saveState(state);
+    console.log(`\nEstado guardado: ${state.processedIds.length} personas procesadas en total`);
   }
 
   // Guardar reporte
@@ -4829,12 +6253,13 @@ async function migratePortraits(options: {
 }
 
 // Parsear argumentos de línea de comandos
-function parseArgs(): { dryRun: boolean; limit?: number; personId?: number } {
+function parseArgs(): { dryRun: boolean; limit?: number; personId?: number; reset: boolean } {
   const args = process.argv.slice(2);
   const options = {
     dryRun: false,
     limit: undefined as number | undefined,
-    personId: undefined as number | undefined
+    personId: undefined as number | undefined,
+    reset: false
   };
 
   for (const arg of args) {
@@ -4844,6 +6269,8 @@ function parseArgs(): { dryRun: boolean; limit?: number; personId?: number } {
       options.limit = parseInt(arg.split('=')[1], 10);
     } else if (arg.startsWith('--person-id=')) {
       options.personId = parseInt(arg.split('=')[1], 10);
+    } else if (arg === '--reset') {
+      options.reset = true;
     }
   }
 
@@ -5194,6 +6621,943 @@ migratePosters(options)
 
 
 // ==================================================
+// scripts/tmdb/search-imdb-ids.ts
+// ==================================================
+/**
+ * Script para buscar imdb_id en OMDB para películas que no tienen tmdb_id
+ *
+ * Las películas con tmdb_id ya tienen el imdb_id correcto (migrado de TMDB).
+ * Este script busca en OMDB para las que no tienen tmdb_id, validando con:
+ * - Título fuzzy (Levenshtein distance)
+ * - Año ±1
+ * - Director coincidente
+ *
+ * Solo acepta matches que cumplan los tres criterios.
+ *
+ * Uso:
+ *   npx tsx scripts/tmdb/search-imdb-ids.ts [opciones]
+ *
+ * Opciones:
+ *   --limit N                 Límite de registros a procesar (default: sin límite)
+ *   --dry-run                 Modo prueba, no escribe en DB
+ *   --batch-size N            Tamaño del batch (default: 100)
+ *   --delay N                 Delay entre requests en ms (default: 150)
+ *   --min-title-score N       Score mínimo de similitud de título (default: 70)
+ *   --apply-csv FILE          Aplicar imdb_ids desde un CSV (aplica todos los que tienen imdb_id)
+ */
+
+import { PrismaClient, Department } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
+import { stringSimilarity, normalizeText, loadFromCSV } from './utils';
+
+// Cargar dotenv solo si está disponible
+try {
+    const pathModule = require('path');
+    const dotenv = require('dotenv');
+    dotenv.config({ path: pathModule.resolve(__dirname, '../../.env') });
+} catch {
+    // dotenv no disponible
+}
+
+const prisma = new PrismaClient();
+
+const OMDB_API_KEY = process.env.OMDB_API_KEY || 'trilogy';
+
+interface SyncOptions {
+    limit?: number;
+    dryRun: boolean;
+    batchSize: number;
+    delay: number;
+    minTitleScore: number;
+    applyCsv?: string;
+}
+
+interface LocalMovie {
+    id: number;
+    title: string;
+    year: number | null;
+    imdbId: string | null;
+    directors: string[];
+}
+
+interface OMDBSearchResult {
+    Title: string;
+    Year: string;
+    imdbID: string;
+    Type: string;
+    Poster: string;
+}
+
+interface OMDBSearchResponse {
+    Search?: OMDBSearchResult[];
+    totalResults?: string;
+    Response: string;
+    Error?: string;
+}
+
+interface OMDBMovieDetails {
+    Title: string;
+    Year: string;
+    imdbID: string;
+    Director: string;
+    Response: string;
+    Error?: string;
+}
+
+interface MatchResult {
+    id: number;
+    title: string;
+    year: number | null;
+    localDirectors: string;
+    imdbId: string | null;
+    previousImdbId: string | null;
+    omdbTitle: string | null;
+    omdbYear: number | null;
+    omdbDirectors: string | null;
+    titleScore: number;
+    yearMatch: string;
+    directorMatch: string;
+    status: 'matched' | 'no_match' | 'error' | 'cleared';
+    reason: string;
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function parseArgs(): SyncOptions {
+    const args = process.argv.slice(2);
+    const options: SyncOptions = {
+        dryRun: false,
+        batchSize: 100,
+        delay: 150, // OMDB tiene rate limit
+        minTitleScore: 70,
+    };
+
+    for (let i = 0; i < args.length; i++) {
+        switch (args[i]) {
+            case '--limit':
+                options.limit = parseInt(args[++i], 10);
+                break;
+            case '--dry-run':
+                options.dryRun = true;
+                break;
+            case '--batch-size':
+                options.batchSize = parseInt(args[++i], 10);
+                break;
+            case '--delay':
+                options.delay = parseInt(args[++i], 10);
+                break;
+            case '--min-title-score':
+                options.minTitleScore = parseInt(args[++i], 10);
+                break;
+            case '--apply-csv':
+                options.applyCsv = args[++i];
+                break;
+        }
+    }
+
+    return options;
+}
+
+/**
+ * Buscar películas en OMDB por título
+ */
+async function searchOMDB(title: string, year?: number): Promise<OMDBSearchResponse> {
+    let url = `http://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(title)}&type=movie`;
+    if (year) {
+        url += `&y=${year}`;
+    }
+    const response = await fetch(url);
+    return response.json();
+}
+
+/**
+ * Obtener detalles de una película de OMDB por imdbID
+ */
+async function getOMDBDetails(imdbId: string): Promise<OMDBMovieDetails> {
+    const url = `http://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${imdbId}`;
+    const response = await fetch(url);
+    return response.json();
+}
+
+/**
+ * Parsear directores de OMDB (vienen separados por coma)
+ */
+function parseOMDBDirectors(directorString: string | undefined): string[] {
+    if (!directorString || directorString === 'N/A') {
+        return [];
+    }
+    return directorString.split(',').map(d => d.trim()).filter(d => d.length > 0);
+}
+
+/**
+ * Verificar si hay al menos un director coincidente
+ */
+function hasMatchingDirector(localDirectors: string[], omdbDirectors: string[]): { matches: boolean; matchedPair?: string } {
+    if (localDirectors.length === 0 || omdbDirectors.length === 0) {
+        return { matches: false };
+    }
+
+    for (const local of localDirectors) {
+        const localNorm = normalizeText(local);
+        for (const omdb of omdbDirectors) {
+            const omdbNorm = normalizeText(omdb);
+
+            // Verificar similitud alta (>= 80%)
+            const similarity = stringSimilarity(local, omdb);
+            if (similarity >= 80) {
+                return { matches: true, matchedPair: `${local} ≈ ${omdb} (${similarity}%)` };
+            }
+
+            // También verificar si los apellidos coinciden con misma inicial
+            const localParts = localNorm.split(' ').filter(p => p.length > 0);
+            const omdbParts = omdbNorm.split(' ').filter(p => p.length > 0);
+
+            if (localParts.length >= 2 && omdbParts.length >= 2) {
+                const localLastName = localParts[localParts.length - 1];
+                const omdbLastName = omdbParts[omdbParts.length - 1];
+
+                if (localLastName.length >= 3 && omdbLastName.length >= 3 && localLastName === omdbLastName) {
+                    const localFirstInitial = localParts[0][0];
+                    const omdbFirstInitial = omdbParts[0][0];
+                    if (localFirstInitial === omdbFirstInitial) {
+                        return { matches: true, matchedPair: `${local} ≈ ${omdb} (apellido+inicial)` };
+                    }
+                }
+            }
+        }
+    }
+
+    return { matches: false };
+}
+
+/**
+ * Verificar si el año coincide (exacto o ±1)
+ */
+function yearMatches(localYear: number | null, omdbYear: string | null): { matches: boolean; description: string } {
+    if (!localYear) {
+        return { matches: false, description: 'Sin año local' };
+    }
+    if (!omdbYear || omdbYear === 'N/A') {
+        return { matches: false, description: 'Sin año OMDB' };
+    }
+
+    // OMDB a veces devuelve rangos como "2019-2021", tomar el primero
+    const yearStr = omdbYear.split('–')[0].split('-')[0].trim();
+    const parsedYear = parseInt(yearStr);
+
+    if (isNaN(parsedYear)) {
+        return { matches: false, description: 'Año OMDB inválido' };
+    }
+
+    const diff = Math.abs(localYear - parsedYear);
+    if (diff === 0) {
+        return { matches: true, description: 'Año exacto' };
+    }
+    if (diff === 1) {
+        return { matches: true, description: `Año ±1 (local: ${localYear}, OMDB: ${parsedYear})` };
+    }
+
+    return { matches: false, description: `Años diferentes (local: ${localYear}, OMDB: ${parsedYear})` };
+}
+
+/**
+ * Buscar mejor match en OMDB para una película
+ */
+async function findMatchForMovie(movie: LocalMovie, options: SyncOptions): Promise<MatchResult> {
+    const result: MatchResult = {
+        id: movie.id,
+        title: movie.title,
+        year: movie.year,
+        localDirectors: movie.directors.join(', '),
+        imdbId: null,
+        previousImdbId: movie.imdbId,
+        omdbTitle: null,
+        omdbYear: null,
+        omdbDirectors: null,
+        titleScore: 0,
+        yearMatch: '',
+        directorMatch: '',
+        status: 'no_match',
+        reason: '',
+    };
+
+    try {
+        if (movie.directors.length === 0) {
+            result.reason = 'Sin director en la base local';
+            return result;
+        }
+
+        // Buscar con año primero
+        let searchResult = await searchOMDB(movie.title, movie.year || undefined);
+
+        if (searchResult.Response === 'False' || !searchResult.Search?.length) {
+            // Intentar sin año
+            await sleep(options.delay);
+            searchResult = await searchOMDB(movie.title);
+
+            if (searchResult.Response === 'False' || !searchResult.Search?.length) {
+                result.reason = searchResult.Error || 'Sin resultados en OMDB';
+                return result;
+            }
+        }
+
+        // Evaluar cada candidato (máximo 5)
+        for (const candidate of searchResult.Search.slice(0, 5)) {
+            // 1. Verificar título
+            const titleSimilarity = stringSimilarity(movie.title, candidate.Title);
+
+            if (titleSimilarity < options.minTitleScore) {
+                continue;
+            }
+
+            // 2. Verificar año (preliminar, con el año del search)
+            const yearCheck = yearMatches(movie.year, candidate.Year);
+            if (!yearCheck.matches) {
+                continue;
+            }
+
+            // 3. Obtener detalles para verificar director
+            await sleep(options.delay);
+            const details = await getOMDBDetails(candidate.imdbID);
+
+            if (details.Response === 'False') {
+                continue;
+            }
+
+            const omdbDirectors = parseOMDBDirectors(details.Director);
+            const directorCheck = hasMatchingDirector(movie.directors, omdbDirectors);
+
+            if (!directorCheck.matches) {
+                continue;
+            }
+
+            // ¡Match completo!
+            result.imdbId = candidate.imdbID;
+            result.omdbTitle = details.Title;
+            result.omdbYear = parseInt(details.Year) || null;
+            result.omdbDirectors = omdbDirectors.join(', ');
+            result.titleScore = titleSimilarity;
+            result.yearMatch = yearCheck.description;
+            result.directorMatch = directorCheck.matchedPair || 'Coincide';
+            result.status = 'matched';
+            result.reason = `Título: ${titleSimilarity}%, ${yearCheck.description}, ${directorCheck.matchedPair}`;
+            return result;
+        }
+
+        // No se encontró match
+        result.reason = 'Ningún candidato cumple los tres criterios (título + año + director)';
+
+    } catch (error: any) {
+        result.status = 'error';
+        result.reason = error.message;
+    }
+
+    return result;
+}
+
+async function searchImdbIds(options: SyncOptions): Promise<MatchResult[]> {
+    const results: MatchResult[] = [];
+
+    // Películas sin tmdb_id (las que tienen tmdb_id ya tienen imdb_id correcto)
+    const whereClause = {
+        tmdbId: null,
+    };
+
+    const totalCount = await prisma.movie.count({ where: whereClause });
+    const limit = options.limit || totalCount;
+
+    console.log(`\n📽️  Buscando IMDB IDs en OMDB...`);
+    console.log(`   Total sin tmdb_id: ${totalCount}`);
+    console.log(`   A procesar: ${Math.min(limit, totalCount)}`);
+    console.log(`   Score mínimo de título: ${options.minTitleScore}%`);
+    console.log(`   Criterios: Título fuzzy + Año ±1 + Director coincidente`);
+
+    if (totalCount === 0) {
+        console.log('   ✅ No hay películas pendientes');
+        return results;
+    }
+
+    let processed = 0;
+    let offset = 0;
+    let matched = 0;
+    let noMatch = 0;
+    let cleared = 0;
+    let errors = 0;
+
+    while (processed < limit) {
+        const batchLimit = Math.min(options.batchSize, limit - processed);
+
+        const movies = await prisma.movie.findMany({
+            where: whereClause,
+            select: {
+                id: true,
+                title: true,
+                year: true,
+                imdbId: true,
+                crew: {
+                    where: {
+                        role: {
+                            department: Department.DIRECCION,
+                        },
+                    },
+                    select: {
+                        person: {
+                            select: {
+                                firstName: true,
+                                lastName: true,
+                            },
+                        },
+                    },
+                },
+            },
+            orderBy: { id: 'asc' },
+            skip: offset,
+            take: batchLimit,
+        });
+
+        if (movies.length === 0) break;
+
+        for (const movie of movies) {
+            // Construir nombres de directores
+            const directors = movie.crew.map(c => {
+                const parts = [c.person.firstName, c.person.lastName].filter(Boolean);
+                return parts.join(' ');
+            }).filter(d => d.length > 0);
+
+            const localMovie: LocalMovie = {
+                id: movie.id,
+                title: movie.title,
+                year: movie.year,
+                imdbId: movie.imdbId,
+                directors,
+            };
+
+            const result = await findMatchForMovie(localMovie, options);
+
+            // Aplicar cambio
+            if (!options.dryRun) {
+                if (result.status === 'matched' && result.imdbId) {
+                    await prisma.movie.update({
+                        where: { id: movie.id },
+                        data: { imdbId: result.imdbId },
+                    });
+                    matched++;
+                } else if (result.status === 'no_match' && movie.imdbId !== null) {
+                    // Limpiar imdb_id si no hay match y antes tenía uno
+                    await prisma.movie.update({
+                        where: { id: movie.id },
+                        data: { imdbId: null },
+                    });
+                    result.status = 'cleared';
+                    cleared++;
+                } else if (result.status === 'no_match') {
+                    noMatch++;
+                } else if (result.status === 'error') {
+                    errors++;
+                }
+            } else {
+                if (result.status === 'matched') {
+                    matched++;
+                } else if (result.status === 'no_match' && movie.imdbId !== null) {
+                    result.status = 'cleared';
+                    cleared++;
+                } else if (result.status === 'no_match') {
+                    noMatch++;
+                } else if (result.status === 'error') {
+                    errors++;
+                }
+            }
+
+            results.push(result);
+            processed++;
+
+            const statusIcon = result.status === 'matched' ? '✅' :
+                              result.status === 'cleared' ? '🧹' :
+                              result.status === 'no_match' ? '➖' : '❌';
+            const imdbDisplay = result.imdbId ? result.imdbId :
+                               result.status === 'cleared' ? `(limpiado: ${result.previousImdbId})` : 'sin match';
+            console.log(`   ${statusIcon} [${processed}/${Math.min(limit, totalCount)}] ${movie.title} (${movie.year || '?'}): ${imdbDisplay}`);
+
+            await sleep(options.delay);
+        }
+
+        offset += batchLimit;
+    }
+
+    console.log('\n' + '─'.repeat(50));
+    console.log('PARCIAL:');
+    console.log(`   ✅ Con match:    ${matched}`);
+    console.log(`   🧹 Limpiados:    ${cleared}`);
+    console.log(`   ➖ Sin match:    ${noMatch}`);
+    console.log(`   ❌ Errores:      ${errors}`);
+
+    return results;
+}
+
+function generateReport(results: MatchResult[], options: SyncOptions): void {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const prefix = options.dryRun ? 'dry-run-' : '';
+    const reportsDir = path.join(__dirname, 'reports');
+
+    if (!fs.existsSync(reportsDir)) {
+        fs.mkdirSync(reportsDir, { recursive: true });
+    }
+
+    const csvPath = path.join(reportsDir, `${prefix}imdb-search-${timestamp}.csv`);
+    const csvHeader = 'id,title,year,local_directors,previous_imdb_id,imdb_id,omdb_title,omdb_year,omdb_directors,title_score,year_match,director_match,status,reason\n';
+    const csvRows = results.map(r =>
+        `${r.id},"${r.title.replace(/"/g, '""')}",${r.year ?? ''},"${r.localDirectors.replace(/"/g, '""')}",${r.previousImdbId || ''},${r.imdbId || ''},"${(r.omdbTitle || '').replace(/"/g, '""')}",${r.omdbYear ?? ''},"${(r.omdbDirectors || '').replace(/"/g, '""')}",${r.titleScore},"${r.yearMatch}","${r.directorMatch}",${r.status},"${r.reason.replace(/"/g, '""')}"`
+    ).join('\n');
+
+    fs.writeFileSync(csvPath, csvHeader + csvRows);
+    console.log(`\n📄 Reporte guardado en: ${csvPath}`);
+
+    // Guardar también los que fueron limpiados o con match
+    const needsReview = results.filter(r => r.status === 'cleared' || r.status === 'matched');
+    if (needsReview.length > 0) {
+        const reviewPath = path.join(reportsDir, `${prefix}imdb-search-review-${timestamp}.csv`);
+        const reviewRows = needsReview.map(r =>
+            `${r.id},"${r.title.replace(/"/g, '""')}",${r.year ?? ''},"${r.localDirectors.replace(/"/g, '""')}",${r.previousImdbId || ''},${r.imdbId || ''},"${(r.omdbTitle || '').replace(/"/g, '""')}",${r.omdbYear ?? ''},"${(r.omdbDirectors || '').replace(/"/g, '""')}",${r.titleScore},"${r.yearMatch}","${r.directorMatch}",${r.status},"${r.reason.replace(/"/g, '""')}"`
+        ).join('\n');
+        fs.writeFileSync(reviewPath, csvHeader + reviewRows);
+        console.log(`📄 Review guardado en: ${reviewPath}`);
+    }
+}
+
+function printSummary(results: MatchResult[], startTime: Date, endTime: Date): void {
+    const stats = {
+        matched: results.filter(r => r.status === 'matched').length,
+        cleared: results.filter(r => r.status === 'cleared').length,
+        noMatch: results.filter(r => r.status === 'no_match').length,
+        errors: results.filter(r => r.status === 'error').length,
+    };
+
+    const duration = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
+
+    console.log('\n' + '='.repeat(50));
+    console.log('RESUMEN DE BÚSQUEDA');
+    console.log('='.repeat(50));
+
+    console.log(`\n📽️  PELÍCULAS (${results.length} procesadas)`);
+    console.log(`   ✅ Con match:    ${stats.matched}`);
+    console.log(`   🧹 Limpiadas:    ${stats.cleared}`);
+    console.log(`   ➖ Sin match:    ${stats.noMatch}`);
+    console.log(`   ❌ Errores:      ${stats.errors}`);
+
+    console.log(`\n⏱️  Duración: ${Math.floor(duration / 60)}m ${duration % 60}s`);
+    console.log('='.repeat(50));
+}
+
+async function showStats(): Promise<void> {
+    const total = await prisma.movie.count();
+    const withTmdbId = await prisma.movie.count({ where: { tmdbId: { not: null } } });
+    const withoutTmdbId = await prisma.movie.count({ where: { tmdbId: null } });
+    const withImdbId = await prisma.movie.count({ where: { imdbId: { not: null } } });
+    const withoutImdbId = await prisma.movie.count({ where: { imdbId: null } });
+
+    console.log('\n📊 ESTADO ACTUAL DE LA BASE DE DATOS:');
+    console.log(`   Total películas:   ${total}`);
+    console.log(`   Con tmdb_id:       ${withTmdbId} (ya tienen imdb_id correcto)`);
+    console.log(`   Sin tmdb_id:       ${withoutTmdbId} (a procesar)`);
+    console.log(`   Con imdb_id:       ${withImdbId}`);
+    console.log(`   Sin imdb_id:       ${withoutImdbId}`);
+}
+
+/**
+ * Aplicar imdb_ids desde un CSV
+ */
+async function applyFromCsv(csvFile: string): Promise<void> {
+    const reportsDir = path.join(__dirname, 'reports');
+    const csvPath = csvFile.includes('/') || csvFile.includes('\\')
+        ? csvFile
+        : path.join(reportsDir, csvFile);
+
+    if (!fs.existsSync(csvPath)) {
+        console.error(`❌ No se encontró el archivo: ${csvPath}`);
+        process.exit(1);
+    }
+
+    console.log(`\n📄 Cargando CSV: ${csvPath}`);
+
+    // Si es ruta relativa, usar loadFromCSV que busca en reports/
+    const rows = csvFile.includes('/') || csvFile.includes('\\')
+        ? (() => {
+            const content = fs.readFileSync(csvPath, 'utf-8');
+            const lines = content.split('\n').filter(l => l.trim());
+            if (lines.length < 2) return [];
+            const headers = lines[0].split(',');
+            return lines.slice(1).map(line => {
+                const values = line.match(/(".*?"|[^,]+)(?=,|$)/g) || [];
+                const row: Record<string, string> = {};
+                headers.forEach((h, i) => {
+                    row[h.trim()] = (values[i] || '').replace(/^"|"$/g, '').replace(/""/g, '"');
+                });
+                return row;
+            });
+        })()
+        : loadFromCSV(csvFile);
+
+    const toApply = rows.filter(r => r.imdb_id && r.imdb_id.trim() !== '');
+
+    console.log(`   Total filas: ${rows.length}`);
+    console.log(`   Con imdb_id: ${toApply.length}`);
+
+    if (toApply.length === 0) {
+        console.log('   ⚠️ No hay registros para aplicar');
+        return;
+    }
+
+    let applied = 0;
+    let errors = 0;
+
+    for (const row of toApply) {
+        const id = parseInt(row.id, 10);
+        const imdbId = row.imdb_id.trim();
+
+        try {
+            await prisma.movie.update({
+                where: { id },
+                data: { imdbId },
+            });
+            applied++;
+            console.log(`   ✅ [${applied}/${toApply.length}] ID ${id}: ${imdbId}`);
+        } catch (error: any) {
+            errors++;
+            console.log(`   ❌ [${applied + errors}/${toApply.length}] ID ${id}: ${error.message}`);
+        }
+    }
+
+    console.log('\n' + '='.repeat(50));
+    console.log('RESUMEN DE APLICACIÓN');
+    console.log('='.repeat(50));
+    console.log(`   ✅ Aplicados: ${applied}`);
+    console.log(`   ❌ Errores:   ${errors}`);
+    console.log('='.repeat(50));
+}
+
+async function main() {
+    const options = parseArgs();
+    const startTime = new Date();
+
+    // Modo aplicar desde CSV
+    if (options.applyCsv) {
+        console.log('='.repeat(50));
+        console.log('APLICAR IMDB IDs DESDE CSV');
+        console.log('='.repeat(50));
+
+        try {
+            await showStats();
+            await applyFromCsv(options.applyCsv);
+            await showStats();
+        } catch (error) {
+            console.error('Error aplicando CSV:', error);
+            process.exit(1);
+        } finally {
+            await prisma.$disconnect();
+        }
+        return;
+    }
+
+    // Modo búsqueda normal
+    console.log('='.repeat(50));
+    console.log('BÚSQUEDA DE IMDB IDs EN OMDB');
+    console.log('='.repeat(50));
+    console.log(`Límite: ${options.limit || 'sin límite'}`);
+    console.log(`Dry-run: ${options.dryRun ? 'SÍ' : 'NO'}`);
+    console.log(`Batch size: ${options.batchSize}`);
+    console.log(`Delay: ${options.delay}ms`);
+    console.log(`Min title score: ${options.minTitleScore}%`);
+    console.log(`Criterios: Título fuzzy (>=${options.minTitleScore}%) + Año ±1 + Director`);
+
+    try {
+        await showStats();
+
+        const results = await searchImdbIds(options);
+        const endTime = new Date();
+
+        if (results.length > 0) {
+            generateReport(results, options);
+            printSummary(results, startTime, endTime);
+        }
+
+        await showStats();
+
+    } catch (error) {
+        console.error('Error durante la búsqueda:', error);
+        process.exit(1);
+    } finally {
+        await prisma.$disconnect();
+    }
+}
+
+main();
+
+
+// ==================================================
+// scripts/tmdb/sync-imdb-ids.ts
+// ==================================================
+/**
+ * Script para sincronizar imdb_id desde TMDB API
+ *
+ * Completa los imdb_id faltantes leyendo de TMDB para las películas
+ * que tienen tmdb_id pero no tienen imdb_id.
+ *
+ * Uso:
+ *   npx tsx scripts/tmdb/sync-imdb-ids.ts [opciones]
+ *
+ * Opciones:
+ *   --limit N                 Límite de registros a procesar (default: sin límite)
+ *   --dry-run                 Modo prueba, no escribe en DB
+ *   --batch-size N            Tamaño del batch (default: 100)
+ *   --delay N                 Delay entre requests en ms (default: 250)
+ */
+
+import { PrismaClient } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
+import { getMovieDetails } from './tmdb-client';
+
+// Cargar dotenv solo si está disponible
+try {
+    const pathModule = require('path');
+    const dotenv = require('dotenv');
+    dotenv.config({ path: pathModule.resolve(__dirname, '../../.env') });
+} catch {
+    // dotenv no disponible
+}
+
+const prisma = new PrismaClient();
+
+interface SyncOptions {
+    limit?: number;
+    dryRun: boolean;
+    batchSize: number;
+    delay: number;
+}
+
+interface SyncResult {
+    id: number;
+    tmdbId: number;
+    title: string;
+    imdbId: string | null;
+    status: 'updated' | 'no_imdb_id' | 'error';
+    error?: string;
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function parseArgs(): SyncOptions {
+    const args = process.argv.slice(2);
+    const options: SyncOptions = {
+        dryRun: false,
+        batchSize: 100,
+        delay: 250, // TMDB tiene rate limit de 40 req/10s
+    };
+
+    for (let i = 0; i < args.length; i++) {
+        switch (args[i]) {
+            case '--limit':
+                options.limit = parseInt(args[++i], 10);
+                break;
+            case '--dry-run':
+                options.dryRun = true;
+                break;
+            case '--batch-size':
+                options.batchSize = parseInt(args[++i], 10);
+                break;
+            case '--delay':
+                options.delay = parseInt(args[++i], 10);
+                break;
+        }
+    }
+
+    return options;
+}
+
+async function syncImdbIds(options: SyncOptions): Promise<SyncResult[]> {
+    const results: SyncResult[] = [];
+
+    // Películas con tmdb_id pero sin imdb_id
+    const whereClause = {
+        tmdbId: { not: null },
+        imdbId: null,
+    };
+
+    const totalCount = await prisma.movie.count({ where: whereClause });
+    const limit = options.limit || totalCount;
+
+    console.log(`\n📽️  Sincronizando IMDB IDs desde TMDB...`);
+    console.log(`   Total con tmdb_id y sin imdb_id: ${totalCount}`);
+    console.log(`   A procesar: ${Math.min(limit, totalCount)}`);
+
+    if (totalCount === 0) {
+        console.log('   ✅ No hay películas pendientes de sincronización');
+        return results;
+    }
+
+    let processed = 0;
+    let offset = 0;
+
+    while (processed < limit) {
+        const batchLimit = Math.min(options.batchSize, limit - processed);
+
+        const movies = await prisma.movie.findMany({
+            where: whereClause,
+            select: {
+                id: true,
+                tmdbId: true,
+                title: true,
+            },
+            orderBy: { id: 'asc' },
+            skip: offset,
+            take: batchLimit,
+        });
+
+        if (movies.length === 0) break;
+
+        for (const movie of movies) {
+            const result: SyncResult = {
+                id: movie.id,
+                tmdbId: movie.tmdbId!,
+                title: movie.title,
+                imdbId: null,
+                status: 'no_imdb_id',
+            };
+
+            try {
+                const tmdbDetails = await getMovieDetails(movie.tmdbId!);
+
+                if (tmdbDetails.imdb_id) {
+                    result.imdbId = tmdbDetails.imdb_id;
+                    result.status = 'updated';
+
+                    if (!options.dryRun) {
+                        await prisma.movie.update({
+                            where: { id: movie.id },
+                            data: { imdbId: tmdbDetails.imdb_id },
+                        });
+                    }
+                } else {
+                    result.status = 'no_imdb_id';
+                }
+            } catch (error: any) {
+                result.status = 'error';
+                result.error = error.message;
+            }
+
+            results.push(result);
+            processed++;
+
+            const statusIcon = result.status === 'updated' ? '✅' :
+                              result.status === 'no_imdb_id' ? '➖' : '❌';
+            const imdbDisplay = result.imdbId || 'sin IMDB ID';
+            console.log(`   ${statusIcon} [${processed}/${Math.min(limit, totalCount)}] ${movie.title}: ${imdbDisplay}`);
+
+            await sleep(options.delay);
+        }
+
+        offset += batchLimit;
+    }
+
+    return results;
+}
+
+function generateReport(results: SyncResult[], options: SyncOptions): void {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const prefix = options.dryRun ? 'dry-run-' : '';
+    const reportsDir = path.join(__dirname, 'reports');
+
+    if (!fs.existsSync(reportsDir)) {
+        fs.mkdirSync(reportsDir, { recursive: true });
+    }
+
+    const csvPath = path.join(reportsDir, `${prefix}imdb-ids-sync-${timestamp}.csv`);
+    const csvHeader = 'id,tmdb_id,title,imdb_id,status,error\n';
+    const csvRows = results.map(r =>
+        `${r.id},${r.tmdbId},"${r.title.replace(/"/g, '""')}",${r.imdbId || ''},${r.status},"${r.error || ''}"`
+    ).join('\n');
+
+    fs.writeFileSync(csvPath, csvHeader + csvRows);
+    console.log(`\n📄 Reporte guardado en: ${csvPath}`);
+}
+
+function printSummary(results: SyncResult[], startTime: Date, endTime: Date): void {
+    const stats = {
+        updated: results.filter(r => r.status === 'updated').length,
+        noImdbId: results.filter(r => r.status === 'no_imdb_id').length,
+        errors: results.filter(r => r.status === 'error').length,
+    };
+
+    const duration = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
+
+    console.log('\n' + '='.repeat(50));
+    console.log('RESUMEN DE SINCRONIZACIÓN');
+    console.log('='.repeat(50));
+
+    console.log(`\n📽️  PELÍCULAS (${results.length} procesadas)`);
+    console.log(`   ✅ Actualizadas: ${stats.updated}`);
+    console.log(`   ➖ Sin IMDB ID en TMDB: ${stats.noImdbId}`);
+    console.log(`   ❌ Errores: ${stats.errors}`);
+
+    console.log(`\n⏱️  Duración: ${duration} segundos`);
+    console.log('='.repeat(50));
+}
+
+async function showStats(): Promise<void> {
+    const withTmdbId = await prisma.movie.count({ where: { tmdbId: { not: null } } });
+    const withImdbId = await prisma.movie.count({ where: { imdbId: { not: null } } });
+    const withBoth = await prisma.movie.count({ where: { tmdbId: { not: null }, imdbId: { not: null } } });
+    const withTmdbNoImdb = await prisma.movie.count({ where: { tmdbId: { not: null }, imdbId: null } });
+
+    console.log('\n📊 ESTADO ACTUAL DE LA BASE DE DATOS:');
+    console.log(`   Con tmdb_id: ${withTmdbId}`);
+    console.log(`   Con imdb_id: ${withImdbId}`);
+    console.log(`   Con ambos:   ${withBoth}`);
+    console.log(`   Con tmdb_id sin imdb_id: ${withTmdbNoImdb}`);
+}
+
+async function main() {
+    const options = parseArgs();
+    const startTime = new Date();
+
+    console.log('='.repeat(50));
+    console.log('SINCRONIZACIÓN DE IMDB IDs DESDE TMDB');
+    console.log('='.repeat(50));
+    console.log(`Límite: ${options.limit || 'sin límite'}`);
+    console.log(`Dry-run: ${options.dryRun ? 'SÍ' : 'NO'}`);
+    console.log(`Batch size: ${options.batchSize}`);
+    console.log(`Delay: ${options.delay}ms`);
+
+    try {
+        await showStats();
+
+        const results = await syncImdbIds(options);
+        const endTime = new Date();
+
+        if (results.length > 0) {
+            generateReport(results, options);
+            printSummary(results, startTime, endTime);
+        }
+
+        await showStats();
+
+    } catch (error) {
+        console.error('Error durante la sincronización:', error);
+        process.exit(1);
+    } finally {
+        await prisma.$disconnect();
+    }
+}
+
+main();
+
+
+// ==================================================
 // scripts/tmdb/sync-imdb-votes.ts
 // ==================================================
 /**
@@ -5317,31 +7681,39 @@ async function syncImdbVotes(options: SyncOptions): Promise<SyncResult[]> {
     console.log(`   Total con imdbId: ${totalCount}`);
     console.log(`   A procesar: ${Math.min(limit, totalCount)}`);
 
-    let processed = 0;
-    let offset = 0;
+    // Obtener todos los IDs primero para evitar problemas de paginación
+    // cuando se actualiza imdbVotesUpdatedAt (cambia el orden durante el proceso)
+    const movieIds = await prisma.movie.findMany({
+        where: whereClause,
+        select: { id: true },
+        orderBy: [
+            { imdbVotesUpdatedAt: { sort: 'asc', nulls: 'first' } },
+            { id: 'asc' }
+        ],
+        take: limit,
+    });
 
-    while (processed < limit) {
-        const batchLimit = Math.min(options.batchSize, limit - processed);
+    console.log(`   IDs obtenidos: ${movieIds.length}`);
+
+    let processed = 0;
+
+    for (let i = 0; i < movieIds.length; i += options.batchSize) {
+        const batchIds = movieIds.slice(i, i + options.batchSize).map(m => m.id);
 
         const movies = await prisma.movie.findMany({
-            where: whereClause,
+            where: { id: { in: batchIds } },
             select: {
                 id: true,
                 imdbId: true,
                 title: true,
                 imdbVotes: true,
             },
-            orderBy: [
-                { imdbVotesUpdatedAt: { sort: 'asc', nulls: 'first' } },
-                { id: 'asc' }
-            ],
-            skip: offset,
-            take: batchLimit,
         });
 
-        if (movies.length === 0) break;
+        // Ordenar por el orden original de IDs
+        const orderedMovies = batchIds.map(id => movies.find(m => m.id === id)!).filter(Boolean);
 
-        for (const movie of movies) {
+        for (const movie of orderedMovies) {
             const result: SyncResult = {
                 id: movie.id,
                 imdbId: movie.imdbId!,
@@ -5357,21 +7729,28 @@ async function syncImdbVotes(options: SyncOptions): Promise<SyncResult[]> {
                 if (omdbData.Response === 'False') {
                     result.status = 'not_found';
                     result.error = omdbData.Error || 'No encontrado en OMDB';
+                    // Marcar como procesado aunque no se encuentre
+                    if (!options.dryRun) {
+                        await prisma.movie.update({
+                            where: { id: movie.id },
+                            data: { imdbVotesUpdatedAt: new Date() },
+                        });
+                    }
                 } else {
                     result.newVotes = parseVotes(omdbData.imdbVotes);
 
                     if (result.oldVotes !== result.newVotes) {
                         result.status = 'updated';
-
-                        if (!options.dryRun) {
-                            await prisma.movie.update({
-                                where: { id: movie.id },
-                                data: {
-                                    imdbVotes: result.newVotes,
-                                    imdbVotesUpdatedAt: new Date(),
-                                },
-                            });
-                        }
+                    }
+                    // Siempre actualizar imdbVotesUpdatedAt para marcar como procesado
+                    if (!options.dryRun) {
+                        await prisma.movie.update({
+                            where: { id: movie.id },
+                            data: {
+                                imdbVotes: result.newVotes,
+                                imdbVotesUpdatedAt: new Date(),
+                            },
+                        });
                     }
                 }
             } catch (error: any) {
@@ -5386,12 +7765,10 @@ async function syncImdbVotes(options: SyncOptions): Promise<SyncResult[]> {
                               result.status === 'unchanged' ? '➖' :
                               result.status === 'not_found' ? '🔍' : '❌';
             const votesDisplay = result.newVotes !== null ? result.newVotes.toLocaleString() : 'N/A';
-            console.log(`   ${statusIcon} [${processed}/${Math.min(limit, totalCount)}] ${movie.title}: ${votesDisplay} votes`);
+            console.log(`   ${statusIcon} [${processed}/${movieIds.length}] ${movie.title}: ${votesDisplay} votes`);
 
             await sleep(options.delay);
         }
-
-        offset += batchLimit;
     }
 
     return results;
@@ -5874,6 +8251,277 @@ export function stringSimilarity(str1: string, str2: string): number {
 }
 
 /**
+ * Verifica si un string es subsecuencia de otro (letras en orden, no necesariamente consecutivas)
+ * Ejemplo: "polo" es subsecuencia de "leopoldo" (l-e-o-P-O-L-d-O)
+ * Ejemplo: "ekian" es subsecuencia de "ekmekdjian" (E-K-m-e-k-d-j-I-A-N)
+ */
+function isSubsequenceOf(needle: string, haystack: string): boolean {
+  if (needle.length === 0) return true;
+  if (needle.length > haystack.length) return false;
+  
+  let needleIndex = 0;
+  
+  for (let i = 0; i < haystack.length && needleIndex < needle.length; i++) {
+    if (haystack[i] === needle[needleIndex]) {
+      needleIndex++;
+    }
+  }
+  
+  return needleIndex === needle.length;
+}
+
+/**
+ * Verifica si dos strings comparten un prefijo significativo (mínimo 3 caracteres o 50% del más corto)
+ */
+function shareSignificantPrefix(s1: string, s2: string): boolean {
+  const minLength = Math.min(s1.length, s2.length);
+  const requiredLength = Math.max(3, Math.floor(minLength * 0.5));
+  
+  let commonPrefix = 0;
+  for (let i = 0; i < minLength; i++) {
+    if (s1[i] === s2[i]) {
+      commonPrefix++;
+    } else {
+      break;
+    }
+  }
+  
+  return commonPrefix >= requiredLength;
+}
+
+/**
+ * Compara dos títulos de películas de forma inteligente.
+ * Maneja casos donde uno es el otro con un subtítulo agregado:
+ * - "Mankewenüy" vs "Mankewenüy, amiga del cóndor" → match
+ * - "El nombrador" vs "El nombrador, una película sobre Daniel Toro" → match
+ * 
+ * @returns Un número de 0-100 representando la similitud, 
+ *          con 100 = título exacto (incluyendo casos de subtítulo)
+ */
+export function compareTitles(title1: string, title2: string): number {
+  const t1 = normalizeText(title1);
+  const t2 = normalizeText(title2);
+  
+  // Caso 1: Exactamente iguales después de normalizar
+  if (t1 === t2) return 100;
+  
+  // Caso 2: Uno es prefijo del otro (antes de separadores como , : -)
+  // IMPORTANTE: Hacer el split ANTES de normalizar para no perder los separadores
+  const separators = /[,:\-–—]/;
+  
+  // Verificar si title1 es el título base de title2 (title2 tiene subtítulo)
+  if (title2.length > title1.length) {
+    const t2Parts = title2.split(separators);
+    if (t2Parts.length > 1) {
+      const t2Base = normalizeText(t2Parts[0].trim());
+      if (stringSimilarity(t1, t2Base) >= 95) {
+        return 100; // Considerar como título exacto
+      }
+    }
+  }
+  
+  // Verificar si title2 es el título base de title1 (title1 tiene subtítulo)
+  if (title1.length > title2.length) {
+    const t1Parts = title1.split(separators);
+    if (t1Parts.length > 1) {
+      const t1Base = normalizeText(t1Parts[0].trim());
+      if (stringSimilarity(t2, t1Base) >= 95) {
+        return 100; // Considerar como título exacto
+      }
+    }
+  }
+  
+  // Caso 3: Similitud normal
+  return stringSimilarity(title1, title2);
+}
+
+/**
+ * Compara dos nombres de personas de forma inteligente.
+ * Maneja casos como:
+ * - "Gustavo Giannini" vs "Gustavo Alex Giannini" → match
+ * - "Luis Galmes" vs "Luis Omar Galmes Klein" → match
+ * - "Javier Diment" vs "Valentin Javier Diment" → match
+ * - "Polo Obligado" vs "Leopoldo Obligado" → match (nombre contenido + apellido igual)
+ * - "Elizabeth Ekian" vs "Elizabeth Ekmekdjian" → match (nombre igual + apellido prefijo)
+ * 
+ * @returns Un objeto con:
+ *   - isMatch: true si se consideran la misma persona
+ *   - confidence: 'high' | 'medium' | 'low'
+ *   - reason: explicación del resultado
+ */
+export function comparePersonNames(
+  name1: string,
+  name2: string
+): { isMatch: boolean; confidence: 'high' | 'medium' | 'low'; reason: string } {
+  
+  const normalize = (s: string) => normalizeText(s).toLowerCase();
+  
+  // Tokenizar ambos nombres (filtrar tokens muy cortos como iniciales sueltas)
+  const tokens1 = normalize(name1).split(/\s+/).filter(t => t.length > 1);
+  const tokens2 = normalize(name2).split(/\s+/).filter(t => t.length > 1);
+  
+  if (tokens1.length === 0 || tokens2.length === 0) {
+    return { isMatch: false, confidence: 'low', reason: 'Nombre vacío o muy corto' };
+  }
+  
+  // Caso 1: Similitud alta de string completo (>= 90%)
+  const fullSimilarity = stringSimilarity(name1, name2);
+  if (fullSimilarity >= 90) {
+    return { isMatch: true, confidence: 'high', reason: `Similitud ${fullSimilarity}%` };
+  }
+  
+  // Obtener primer nombre y apellido (última palabra) de cada uno
+  const nombre1 = tokens1[0];
+  const nombre2 = tokens2[0];
+  const apellido1 = tokens1[tokens1.length - 1];
+  const apellido2 = tokens2[tokens2.length - 1];
+  
+  const apellidoExacto = stringSimilarity(apellido1, apellido2) >= 85;
+  const nombreExacto = stringSimilarity(nombre1, nombre2) >= 85;
+  
+  // Caso 2: Apellido igual + nombre de uno contenido en el otro
+  // Maneja: "Polo Obligado" vs "Leopoldo Obligado" (polo está en leopoldo)
+  if (apellidoExacto && tokens1.length >= 2 && tokens2.length >= 2) {
+    const nombre1EnNombre2 = isSubsequenceOf(nombre1, nombre2);
+    const nombre2EnNombre1 = isSubsequenceOf(nombre2, nombre1);
+    
+    if (nombre1EnNombre2 || nombre2EnNombre1) {
+      return { 
+        isMatch: true, 
+        confidence: 'high',
+        reason: `Apellido igual + nombre contenido (${nombre1EnNombre2 ? nombre1 + '⊂' + nombre2 : nombre2 + '⊂' + nombre1})` 
+      };
+    }
+    
+    // También: apellido igual + nombres comparten prefijo significativo
+    if (shareSignificantPrefix(nombre1, nombre2)) {
+      return { 
+        isMatch: true, 
+        confidence: 'medium',
+        reason: `Apellido igual + nombres comparten prefijo` 
+      };
+    }
+  }
+  
+  // Caso 3: Nombre igual + apellido de uno es prefijo/contenido del otro
+  // Maneja: "Elizabeth Ekian" vs "Elizabeth Ekmekdjian"
+  if (nombreExacto && tokens1.length >= 2 && tokens2.length >= 2) {
+    const apellido1EnApellido2 = isSubsequenceOf(apellido1, apellido2);
+    const apellido2EnApellido1 = isSubsequenceOf(apellido2, apellido1);
+    
+    if (apellido1EnApellido2 || apellido2EnApellido1) {
+      return { 
+        isMatch: true, 
+        confidence: 'high',
+        reason: `Nombre igual + apellido contenido` 
+      };
+    }
+    
+    // También: nombre igual + apellidos comparten prefijo significativo
+    if (shareSignificantPrefix(apellido1, apellido2)) {
+      return { 
+        isMatch: true, 
+        confidence: 'medium',
+        reason: `Nombre igual + apellidos comparten prefijo` 
+      };
+    }
+  }
+  
+  // Caso 4: Todos los tokens del nombre más corto están en el más largo
+  // Esto maneja: "Gustavo Giannini" vs "Gustavo Alex Giannini"
+  const [shorter, longer] = tokens1.length <= tokens2.length 
+    ? [tokens1, tokens2] 
+    : [tokens2, tokens1];
+  
+  const allShorterInLonger = shorter.every(shortToken =>
+    longer.some(longToken => 
+      longToken === shortToken || 
+      stringSimilarity(shortToken, longToken) >= 85  // Permitir pequeñas variaciones (tildes, etc.)
+    )
+  );
+  
+  if (allShorterInLonger) {
+    // Verificar que al menos coincida un "apellido" (última palabra de cada nombre original)
+    const apellidoMatch = stringSimilarity(apellido1, apellido2) >= 85;
+    
+    if (apellidoMatch) {
+      return { 
+        isMatch: true, 
+        confidence: shorter.length >= 2 ? 'high' : 'medium',
+        reason: `Nombre contenido (${shorter.join(' ')} ⊆ ${longer.join(' ')})` 
+      };
+    }
+    
+    // También verificar si el apellido del corto está en algún lugar del largo
+    // Esto maneja: "Luis Galmes" vs "Luis Omar Galmes Klein"
+    const apellidoCorto = shorter[shorter.length - 1];
+    const apellidoEnLargo = longer.some(t => stringSimilarity(t, apellidoCorto) >= 85);
+    
+    if (apellidoEnLargo) {
+      return { 
+        isMatch: true, 
+        confidence: 'high',
+        reason: `Nombre contenido con apellido (${shorter.join(' ')} ⊆ ${longer.join(' ')})` 
+      };
+    }
+  }
+  
+  // Caso 5: Coincide primer nombre + algún apellido en común
+  // Esto maneja variaciones de orden o apellidos compuestos
+  const primerNombreMatch = stringSimilarity(nombre1, nombre2) >= 85;
+  
+  if (primerNombreMatch && tokens1.length >= 2 && tokens2.length >= 2) {
+    // Buscar si hay algún apellido en común
+    const apellidos1 = tokens1.slice(1);
+    const apellidos2 = tokens2.slice(1);
+    
+    const hayApellidoComun = apellidos1.some(ap1 =>
+      apellidos2.some(ap2 => stringSimilarity(ap1, ap2) >= 85)
+    );
+    
+    if (hayApellidoComun) {
+      return { 
+        isMatch: true, 
+        confidence: 'medium',
+        reason: `Primer nombre + apellido común` 
+      };
+    }
+  }
+  
+  // Caso 6: El primer nombre de uno es el segundo del otro y comparten apellido
+  // Esto maneja: "Javier Diment" vs "Valentin Javier Diment"
+  if (tokens1.length >= 2 && tokens2.length >= 2) {
+    const nombre1EnTokens2 = tokens2.slice(0, -1).some(t => stringSimilarity(t, nombre1) >= 85);
+    const nombre2EnTokens1 = tokens1.slice(0, -1).some(t => stringSimilarity(t, nombre2) >= 85);
+    
+    if (nombre1EnTokens2 || nombre2EnTokens1) {
+      // Verificar apellido en común (puede estar en cualquier posición)
+      const apellido1EnTokens2 = tokens2.some(t => stringSimilarity(t, apellido1) >= 85);
+      const apellido2EnTokens1 = tokens1.some(t => stringSimilarity(t, apellido2) >= 85);
+      
+      if (apellido1EnTokens2 || apellido2EnTokens1) {
+        return { 
+          isMatch: true, 
+          confidence: 'medium',
+          reason: `Nombre cruzado + apellido común` 
+        };
+      }
+    }
+  }
+  
+  // Caso 7: Similitud media pero no suficiente
+  if (fullSimilarity >= 70) {
+    return { 
+      isMatch: false, 
+      confidence: 'low',
+      reason: `Similitud parcial ${fullSimilarity}% - requiere revisión` 
+    };
+  }
+  
+  return { isMatch: false, confidence: 'low', reason: `Sin coincidencia suficiente (${fullSimilarity}%)` };
+}
+
+/**
  * Parsear fecha de TMDB (YYYY-MM-DD) a objeto
  */
 export function parseTMDBDate(dateStr: string | null): { year: number | null; month: number | null; day: number | null } {
@@ -6088,6 +8736,8 @@ export default {
   closePool,
   normalizeText,
   stringSimilarity,
+  compareTitles,
+  comparePersonNames,
   parseTMDBDate,
   compareDates,
   isArgentineLocation,
@@ -55810,3 +58460,750 @@ export const obtenerGeneros = (movie: MovieWithRelease): string => {
   }
   return '';
 };
+
+// ==================================================
+// test-beltza-score.ts
+// ==================================================
+import { getMovieDetails } from './scripts/tmdb/tmdb-client';
+import { normalizeText, stringSimilarity } from './scripts/tmdb/utils';
+import config from './scripts/tmdb/config';
+
+async function main() {
+  // Datos locales
+  const local = {
+    title: "Black is Beltza 2: Ainhoa",
+    year: 2022,
+    duration: null,
+    director_names: null // ¿Tiene director en la BD local?
+  };
+
+  // TMDB ID correcto
+  const tmdbId = 814773;
+
+  console.log("=== Calculando score para Black is Beltza ===\n");
+  console.log("Local:", local);
+
+  const tmdb = await getMovieDetails(tmdbId);
+  console.log("\nTMDB:", {
+    id: tmdb.id,
+    title: tmdb.title,
+    original_title: tmdb.original_title,
+    release_date: tmdb.release_date,
+    runtime: tmdb.runtime,
+    countries: tmdb.production_countries?.map(c => c.iso_3166_1),
+    directors: tmdb.credits?.crew?.filter(c => c.job === 'Director').map(c => c.name)
+  });
+
+  // Calcular score manualmente
+  let score = 0;
+  const reasons: string[] = [];
+
+  // 1. Comparar títulos
+  const titleSimilarity = Math.max(
+    stringSimilarity(local.title, tmdb.title),
+    stringSimilarity(local.title, tmdb.original_title)
+  );
+
+  console.log(`\nSimilitud título: ${titleSimilarity}%`);
+
+  if (titleSimilarity >= 95) {
+    score += 40;
+    reasons.push(`Título exacto (${titleSimilarity}%)`);
+  } else if (titleSimilarity >= 80) {
+    score += 30;
+    reasons.push(`Título similar (${titleSimilarity}%)`);
+  } else if (titleSimilarity >= 60) {
+    score += 15;
+    reasons.push(`Título parcial (${titleSimilarity}%)`);
+  }
+
+  // 2. Comparar año
+  if (local.year && tmdb.release_date) {
+    const tmdbYear = parseInt(tmdb.release_date.split('-')[0]);
+    if (local.year === tmdbYear) {
+      score += 25;
+      reasons.push('Año exacto');
+    } else if (Math.abs(local.year - tmdbYear) === 1) {
+      score += 15;
+      reasons.push('Año ±1');
+    }
+  }
+
+  // 3. Director (no hay en local)
+  if (local.director_names && tmdb.credits?.crew) {
+    const tmdbDirectors = tmdb.credits.crew
+      .filter(c => c.job === 'Director')
+      .map(c => normalizeText(c.name));
+
+    const localDirectors = local.director_names
+      .split(',')
+      .map((d: string) => normalizeText(d.trim()));
+
+    const hasDirectorMatch = localDirectors.some((ld: string) =>
+      tmdbDirectors.some(td => stringSimilarity(ld, td) >= 80)
+    );
+
+    if (hasDirectorMatch) {
+      score += config.matching.movie.directorMatchBonus;
+      reasons.push('Director coincide');
+    }
+  }
+
+  // 4. País Argentina
+  if (tmdb.production_countries?.some(c => c.iso_3166_1 === 'AR')) {
+    score += config.matching.movie.argentinaCountryBonus;
+    reasons.push('Producción Argentina');
+  }
+
+  // 5. Duración
+  if (local.duration && tmdb.runtime) {
+    const diff = Math.abs(local.duration - tmdb.runtime);
+    if (diff <= config.matching.movie.durationToleranceMinutes) {
+      score += config.matching.movie.durationMatchBonus;
+      reasons.push(`Duración similar (±${diff}min)`);
+    }
+  }
+
+  console.log("\n=== RESULTADO ===");
+  console.log(`Score: ${score}`);
+  console.log(`Razones: ${reasons.join('; ')}`);
+  console.log(`\nUmbrales:`);
+  console.log(`  autoAcceptScore: ${config.matching.movie.autoAcceptScore}`);
+  console.log(`  reviewScore: ${config.matching.movie.reviewScore}`);
+
+  if (score >= config.matching.movie.autoAcceptScore) {
+    console.log(`\n✅ AUTO_ACCEPT (score ${score} >= ${config.matching.movie.autoAcceptScore})`);
+  } else if (score >= config.matching.movie.reviewScore) {
+    console.log(`\n🔍 REVIEW (score ${score} >= ${config.matching.movie.reviewScore})`);
+  } else {
+    console.log(`\n➖ NO_MATCH (score ${score} < ${config.matching.movie.reviewScore})`);
+  }
+}
+
+main().catch(console.error);
+
+
+// ==================================================
+// test-beltza-search.ts
+// ==================================================
+import { searchMovies, getMovieDetails } from './scripts/tmdb/tmdb-client';
+import { stringSimilarity } from './scripts/tmdb/utils';
+
+async function main() {
+  const localTitle = "Black is Beltza 2: Ainhoa";
+  const year = 2022;
+
+  console.log("=== Test búsqueda: Black Is Beltza ===\n");
+  console.log("Título local:", localTitle);
+  console.log("Año local:", year);
+
+  // Simular la lógica del script
+  const allResults: any[] = [];
+  const seenIds = new Set<number>();
+
+  const addResults = (results: any[], source: string) => {
+    for (const r of results) {
+      if (!seenIds.has(r.id)) {
+        seenIds.add(r.id);
+        allResults.push(r);
+        console.log(`  + ${r.id}: ${r.title} (${r.release_date?.slice(0,4)}) [desde ${source}]`);
+      }
+    }
+  };
+
+  // 1. Con año
+  console.log("\n1. Búsqueda CON año:");
+  const s1 = await searchMovies(localTitle, year);
+  console.log(`   Resultados: ${s1.total_results}`);
+  addResults(s1.results, "con año");
+
+  // 2. Sin año
+  console.log("\n2. Búsqueda SIN año:");
+  const s2 = await searchMovies(localTitle);
+  console.log(`   Resultados: ${s2.total_results}`);
+  addResults(s2.results, "sin año");
+
+  // 3. Título limpio (sin números de secuela)
+  if (allResults.length === 0) {
+    console.log("\n3. Sin resultados, intentando con título limpio...");
+
+    const cleanTitle = localTitle
+      .replace(/\b[IVX]{2,}\b\s*[:.-]?\s*/g, ' ')  // Romanos: II, III, IV, VI, etc.
+      .replace(/\b\d+\s*[:.-]\s*/g, ' ')            // Arábigos seguidos de : o -
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    console.log(`   Título limpio: "${cleanTitle}"`);
+
+    if (cleanTitle !== localTitle && cleanTitle.length > 3) {
+      const s3 = await searchMovies(cleanTitle);
+      console.log(`   Resultados: ${s3.total_results}`);
+      addResults(s3.results, "título limpio");
+    }
+  }
+
+  console.log(`\nTotal combinados: ${allResults.length}`);
+
+  // Verificar similitud con el resultado esperado
+  if (allResults.length > 0) {
+    console.log("\n=== Verificando matches ===");
+    for (const r of allResults.slice(0, 5)) {
+      const simTitle = stringSimilarity(localTitle, r.title);
+      const simOriginal = stringSimilarity(localTitle, r.original_title);
+      console.log(`  ${r.id}: "${r.title}" (${r.release_date?.slice(0,4)})`);
+      console.log(`      Sim título: ${simTitle}%, Sim original: ${simOriginal}%`);
+
+      // Obtener detalles para ver imdb_id
+      if (r.id === 814773) {
+        const details = await getMovieDetails(r.id);
+        console.log(`      IMDB: ${details.imdb_id || 'N/A'}`);
+        console.log(`      ** Este es el ID correcto (814773) **`);
+      }
+    }
+  }
+}
+
+main().catch(console.error);
+
+
+// ==================================================
+// test-beltza.ts
+// ==================================================
+import { searchMovies, getMovieDetails, TMDBMovie } from './scripts/tmdb/tmdb-client';
+import { stringSimilarity } from './scripts/tmdb/utils';
+
+async function main() {
+  const title = "Black is Beltza 2: Ainhoa";
+  const year = 2022;
+  
+  console.log("Título original:", title);
+  
+  const allResults: TMDBMovie[] = [];
+  const seenIds = new Set<number>();
+  
+  const addResults = (results: TMDBMovie[]) => {
+    for (const r of results) {
+      if (!seenIds.has(r.id)) {
+        seenIds.add(r.id);
+        allResults.push(r);
+      }
+    }
+  };
+
+  // 1. Con año
+  const s1 = await searchMovies(title, year);
+  console.log("1. Con año:", s1.total_results, "resultados");
+  addResults(s1.results);
+
+  // 2. Sin año
+  const s2 = await searchMovies(title);
+  console.log("2. Sin año:", s2.total_results, "resultados");
+  addResults(s2.results);
+
+  // 3. Título limpio
+  if (allResults.length === 0) {
+    const cleanTitle = title
+      .replace(/\s+[IVX]+\s*[:.-]?\s*/gi, ' ')
+      .replace(/\s+\d+\s*[:.-]?\s*/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    console.log("3. Título limpio:", cleanTitle);
+    const s3 = await searchMovies(cleanTitle);
+    console.log("   Resultados:", s3.total_results);
+    addResults(s3.results);
+  }
+
+  console.log("\nTotal combinados:", allResults.length);
+  
+  for (const r of allResults.slice(0, 3)) {
+    const sim = stringSimilarity(title, r.title);
+    console.log("  -", r.id, r.title, "(" + r.release_date?.slice(0,4) + ") - Sim:", sim + "%");
+  }
+}
+
+main().catch(console.error);
+
+
+// ==================================================
+// test-elverso.ts
+// ==================================================
+import { searchMovies, getMovieDetails, testConnection } from './scripts/tmdb/tmdb-client';
+import { stringSimilarity, normalizeText } from './scripts/tmdb/utils';
+
+async function main() {
+  const local = {
+    title: "El verso",
+    year: 1995,
+    director: "Santiago Carlos Oves"
+  };
+
+  console.log("Buscando:", local.title, local.year);
+  
+  // Buscar con año
+  let result = await searchMovies(local.title, local.year);
+  console.log("\nCon año 1995:", result.total_results, "resultados");
+  
+  if (result.total_results === 0) {
+    // Sin año
+    result = await searchMovies(local.title);
+    console.log("Sin año:", result.total_results, "resultados");
+  }
+  
+  if (result.results.length > 0) {
+    console.log("\nPrimer resultado:");
+    const first = result.results[0];
+    console.log("  TMDB ID:", first.id);
+    console.log("  Título:", first.title);
+    console.log("  Original:", first.original_title);
+    console.log("  Fecha:", first.release_date);
+    
+    const titleSim = Math.max(
+      stringSimilarity(local.title, first.title),
+      stringSimilarity(local.title, first.original_title)
+    );
+    console.log("  Similitud título:", titleSim + "%");
+    
+    const tmdbYear = parseInt(first.release_date?.split('-')[0] || '0');
+    console.log("  Diferencia año:", Math.abs(local.year - tmdbYear));
+    
+    // Obtener detalles con créditos
+    const details = await getMovieDetails(first.id);
+    const directors = details.credits?.crew?.filter(c => c.job === 'Director').map(c => c.name) || [];
+    console.log("  Directores TMDB:", directors.join(', '));
+    console.log("  IMDB ID:", details.imdb_id);
+    
+    // Comparar director
+    const localDirNorm = normalizeText(local.director);
+    const hasMatch = directors.some(d => stringSimilarity(local.director, d) >= 80);
+    console.log("  Director match:", hasMatch);
+  }
+}
+
+main().catch(console.error);
+
+
+// ==================================================
+// test-elverso2.ts
+// ==================================================
+import { searchMovies, getMovieDetails } from './scripts/tmdb/tmdb-client';
+import { stringSimilarity } from './scripts/tmdb/utils';
+
+async function main() {
+  // Buscar SIN año
+  const result = await searchMovies("El verso");
+  console.log("Sin año:", result.total_results, "resultados\n");
+  
+  for (const movie of result.results.slice(0, 5)) {
+    const titleSim = Math.max(
+      stringSimilarity("El verso", movie.title),
+      stringSimilarity("El verso", movie.original_title)
+    );
+    const year = movie.release_date ? movie.release_date.slice(0,4) : '????';
+    console.log(movie.id + ': "' + movie.title + '" (' + year + ') - Sim: ' + titleSim + '%');
+  }
+}
+
+main().catch(console.error);
+
+
+// ==================================================
+// test-enrich-elverso.ts
+// ==================================================
+import { searchMovies, getMovieDetails, TMDBMovie } from './scripts/tmdb/tmdb-client';
+import { stringSimilarity, normalizeText } from './scripts/tmdb/utils';
+
+async function main() {
+  const movie = {
+    title: "El verso",
+    year: 1995,
+    director_names: "Santiago Carlos Oves"
+  };
+
+  console.log("Buscando:", movie.title, "(" + movie.year + ")");
+  console.log("Director local:", movie.director_names);
+  console.log("");
+
+  // Nueva lógica: combinar búsquedas
+  const allResults: TMDBMovie[] = [];
+  const seenIds = new Set<number>();
+
+  // Con año
+  const searchWithYear = await searchMovies(movie.title, movie.year);
+  console.log("Con año:", searchWithYear.total_results, "resultados");
+  for (const r of searchWithYear.results) {
+    if (!seenIds.has(r.id)) {
+      seenIds.add(r.id);
+      allResults.push(r);
+    }
+  }
+
+  // Sin año
+  const searchWithoutYear = await searchMovies(movie.title);
+  console.log("Sin año:", searchWithoutYear.total_results, "resultados");
+  for (const r of searchWithoutYear.results) {
+    if (!seenIds.has(r.id)) {
+      seenIds.add(r.id);
+      allResults.push(r);
+    }
+  }
+
+  console.log("Total únicos:", allResults.length);
+  console.log("\nPrimeros 5 candidatos:");
+
+  for (const tmdb of allResults.slice(0, 5)) {
+    const titleSim = Math.max(
+      stringSimilarity(movie.title, tmdb.title),
+      stringSimilarity(movie.title, tmdb.original_title)
+    );
+    const year = tmdb.release_date ? tmdb.release_date.slice(0,4) : '????';
+    
+    // Obtener detalles
+    const details = await getMovieDetails(tmdb.id);
+    const directors = details.credits?.crew?.filter(c => c.job === 'Director').map(c => c.name) || [];
+    
+    // Verificar director
+    const localDirs = movie.director_names.split(',').map(d => d.trim());
+    const hasDirectorMatch = localDirs.some(ld => 
+      directors.some(td => stringSimilarity(ld, td) >= 80)
+    );
+    
+    console.log("");
+    console.log("  ID:", tmdb.id);
+    console.log("  Título:", tmdb.title, "(" + year + ")");
+    console.log("  Similitud:", titleSim + "%");
+    console.log("  Director TMDB:", directors.join(', '));
+    console.log("  Director match:", hasDirectorMatch);
+    console.log("  IMDB:", details.imdb_id);
+  }
+}
+
+main().catch(console.error);
+
+
+// ==================================================
+// test-enrich-specific.ts
+// ==================================================
+import { searchMovies, getMovieDetails, TMDBMovie, TMDBMovieDetails } from './scripts/tmdb/tmdb-client';
+import { stringSimilarity, normalizeText } from './scripts/tmdb/utils';
+
+interface LocalMovie {
+  id: number;
+  title: string;
+  year: number | null;
+  director_names: string | null;
+}
+
+function calculateMatchScore(local: LocalMovie, tmdb: TMDBMovieDetails) {
+  let score = 0;
+  const reasons: string[] = [];
+  
+  // 1. Comparar títulos
+  const titleSimilarity = Math.max(
+    stringSimilarity(local.title, tmdb.title),
+    stringSimilarity(local.title, tmdb.original_title)
+  );
+  
+  if (titleSimilarity >= 95) {
+    score += 40;
+    reasons.push('Título exacto (' + titleSimilarity + '%)');
+  } else if (titleSimilarity >= 80) {
+    score += 30;
+    reasons.push('Título similar (' + titleSimilarity + '%)');
+  } else if (titleSimilarity >= 60) {
+    score += 15;
+    reasons.push('Título parcial (' + titleSimilarity + '%)');
+  }
+  
+  // 2. Comparar año
+  if (local.year && tmdb.release_date) {
+    const tmdbYear = parseInt(tmdb.release_date.split('-')[0]);
+    if (local.year === tmdbYear) {
+      score += 25;
+      reasons.push('Año exacto');
+    } else if (Math.abs(local.year - tmdbYear) === 1) {
+      score += 15;
+      reasons.push('Año ±1');
+    }
+  }
+  
+  // 3. Comparar director
+  if (local.director_names && tmdb.credits?.crew) {
+    const tmdbDirectors = tmdb.credits.crew
+      .filter(c => c.job === 'Director')
+      .map(c => normalizeText(c.name));
+    
+    const localDirectors = local.director_names
+      .split(',')
+      .map(d => normalizeText(d.trim()));
+    
+    const hasDirectorMatch = localDirectors.some(ld => 
+      tmdbDirectors.some(td => stringSimilarity(ld, td) >= 80)
+    );
+    
+    if (hasDirectorMatch) {
+      score += 20; // directorMatchBonus
+      reasons.push('Director coincide');
+    }
+  }
+  
+  // 4. País Argentina
+  if (tmdb.production_countries?.some(c => c.iso_3166_1 === 'AR')) {
+    score += 10; // argentinaCountryBonus
+    reasons.push('Producción Argentina');
+  }
+  
+  return { score, reasons };
+}
+
+async function main() {
+  const movie: LocalMovie = {
+    id: 2113,
+    title: "El verso",
+    year: 1995,
+    director_names: "Santiago Carlos Oves"
+  };
+
+  console.log("=== Probando enrich-movies con El verso ===\n");
+  console.log("Local:", movie.title, "(" + movie.year + ")");
+  console.log("Director:", movie.director_names);
+  console.log("");
+
+  // Nueva lógica: combinar búsquedas
+  const allResults: TMDBMovie[] = [];
+  const seenIds = new Set<number>();
+
+  if (movie.year) {
+    const searchWithYear = await searchMovies(movie.title, movie.year);
+    console.log("Búsqueda con año " + movie.year + ":", searchWithYear.total_results, "resultados");
+    for (const r of searchWithYear.results) {
+      if (!seenIds.has(r.id)) {
+        seenIds.add(r.id);
+        allResults.push(r);
+      }
+    }
+  }
+
+  const searchWithoutYear = await searchMovies(movie.title);
+  console.log("Búsqueda sin año:", searchWithoutYear.total_results, "resultados");
+  for (const r of searchWithoutYear.results) {
+    if (!seenIds.has(r.id)) {
+      seenIds.add(r.id);
+      allResults.push(r);
+    }
+  }
+
+  console.log("Total combinados:", allResults.length);
+  console.log("\nEvaluando primeros 5 candidatos...\n");
+
+  const candidates: Array<{tmdb: TMDBMovieDetails; score: number; reasons: string[]}> = [];
+
+  for (const tmdbMovie of allResults.slice(0, 5)) {
+    const details = await getMovieDetails(tmdbMovie.id);
+    const { score, reasons } = calculateMatchScore(movie, details);
+    
+    if (score > 0) {
+      candidates.push({ tmdb: details, score, reasons });
+    }
+    
+    const year = details.release_date ? details.release_date.slice(0,4) : '????';
+    console.log("  " + details.id + ": " + details.title + " (" + year + ") - Score: " + score);
+    console.log("     Razones:", reasons.join('; '));
+  }
+
+  // Ordenar
+  candidates.sort((a, b) => b.score - a.score);
+  
+  console.log("\n=== RESULTADO ===\n");
+  if (candidates.length > 0) {
+    const best = candidates[0];
+    console.log("Mejor match:");
+    console.log("  TMDB ID:", best.tmdb.id);
+    console.log("  Título:", best.tmdb.title);
+    console.log("  Año:", best.tmdb.release_date?.slice(0,4));
+    console.log("  IMDB ID:", best.tmdb.imdb_id);
+    console.log("  Score:", best.score);
+    console.log("  Razones:", best.reasons.join('; '));
+    
+    // Verificar auto_accept
+    const hasExactTitle = best.reasons.some(r => r.includes('Título exacto'));
+    const hasDirectorMatch = best.reasons.some(r => r.includes('Director coincide'));
+    
+    if (best.score >= 80) {
+      console.log("  Status: auto_accept (score >= 80)");
+    } else if (hasExactTitle && hasDirectorMatch) {
+      console.log("  Status: auto_accept (título exacto + director)");
+    } else if (best.score >= 50) {
+      console.log("  Status: review");
+    } else {
+      console.log("  Status: no_match");
+    }
+  } else {
+    console.log("Sin match");
+  }
+}
+
+main().catch(console.error);
+
+
+// ==================================================
+// test-residencia.ts
+// ==================================================
+import { searchMovies, getMovieDetails } from './scripts/tmdb/tmdb-client';
+import { normalizeText, stringSimilarity } from './scripts/tmdb/utils';
+import config from './scripts/tmdb/config';
+
+async function main() {
+  const local = {
+    title: "La residencia",
+    year: 2022,
+    duration: null,
+    director_names: null
+  };
+
+  console.log("=== Investigando match de La residencia ===\n");
+  console.log("Local:", local);
+
+  // Buscar en TMDB
+  const results1 = await searchMovies(local.title, local.year);
+  const results2 = await searchMovies(local.title);
+
+  console.log("\nResultados con año:", results1.total_results);
+  console.log("Resultados sin año:", results2.total_results);
+
+  // Combinar resultados
+  const allResults = [...results1.results];
+  const seenIds = new Set(results1.results.map(r => r.id));
+  for (const r of results2.results) {
+    if (!seenIds.has(r.id)) {
+      allResults.push(r);
+    }
+  }
+
+  console.log("\nPrimeros 5 resultados combinados:");
+  for (const r of allResults.slice(0, 5)) {
+    const sim = Math.max(
+      stringSimilarity(local.title, r.title),
+      stringSimilarity(local.title, r.original_title)
+    );
+    console.log(`  - ${r.id}: "${r.title}" / "${r.original_title}" (${r.release_date?.slice(0,4)}) - Sim: ${sim}%`);
+  }
+
+  // Analizar el match incorrecto (¡Bienvenida, Violeta!)
+  console.log("\n=== Buscando ¡Bienvenida, Violeta! ===");
+  const violetaSearch = await searchMovies("Bienvenida Violeta");
+  if (violetaSearch.results.length > 0) {
+    const violeta = violetaSearch.results[0];
+    console.log("Encontrado:", violeta.id, violeta.title, violeta.release_date);
+
+    const details = await getMovieDetails(violeta.id);
+    console.log("Países:", details.production_countries?.map(c => c.iso_3166_1));
+    console.log("Directores:", details.credits?.crew?.filter(c => c.job === 'Director').map(c => c.name));
+
+    // Calcular score
+    const sim = Math.max(
+      stringSimilarity(local.title, details.title),
+      stringSimilarity(local.title, details.original_title)
+    );
+    console.log("\nSimilitud título:", sim + "%");
+
+    let score = 0;
+    if (sim >= 95) score += 40;
+    else if (sim >= 80) score += 30;
+    else if (sim >= 60) score += 15;
+
+    const tmdbYear = parseInt(details.release_date?.split('-')[0] || '0');
+    if (local.year === tmdbYear) {
+      score += 25;
+      console.log("Año exacto: +25");
+    } else if (Math.abs(local.year - tmdbYear) === 1) {
+      score += 15;
+      console.log("Año ±1: +15");
+    }
+
+    if (details.production_countries?.some(c => c.iso_3166_1 === 'AR')) {
+      score += config.matching.movie.argentinaCountryBonus;
+      console.log("Argentina: +" + config.matching.movie.argentinaCountryBonus);
+    }
+
+    console.log("\nScore total:", score);
+    console.log("autoAcceptScore:", config.matching.movie.autoAcceptScore);
+  }
+}
+
+main().catch(console.error);
+
+
+// ==================================================
+// test-residencia2.ts
+// ==================================================
+import { getMovieDetails } from './scripts/tmdb/tmdb-client';
+import { stringSimilarity } from './scripts/tmdb/utils';
+import config from './scripts/tmdb/config';
+
+async function main() {
+  const local = {
+    title: "La residencia",
+    year: 2022,
+  };
+
+  // Analizar las películas con título exacto
+  const ids = [64624, 1395377, 976740];
+
+  for (const id of ids) {
+    console.log(`\n=== TMDB ID ${id} ===`);
+    const details = await getMovieDetails(id);
+    console.log("Título:", details.title);
+    console.log("Original:", details.original_title);
+    console.log("Año:", details.release_date?.slice(0, 4) || 'sin fecha');
+    console.log("Países:", details.production_countries?.map(c => c.iso_3166_1));
+    console.log("IMDB:", details.imdb_id);
+
+    const sim = Math.max(
+      stringSimilarity(local.title, details.title),
+      stringSimilarity(local.title, details.original_title)
+    );
+
+    let score = 0;
+    const reasons: string[] = [];
+
+    // Título
+    if (sim >= 95) {
+      score += 40;
+      reasons.push(`Título exacto (${sim}%): +40`);
+    } else if (sim >= 80) {
+      score += 30;
+      reasons.push(`Título similar (${sim}%): +30`);
+    } else if (sim >= 60) {
+      score += 15;
+      reasons.push(`Título parcial (${sim}%): +15`);
+    } else {
+      reasons.push(`Título bajo (${sim}%): +0`);
+    }
+
+    // Año
+    const tmdbYear = parseInt(details.release_date?.split('-')[0] || '0');
+    if (local.year === tmdbYear) {
+      score += 25;
+      reasons.push("Año exacto: +25");
+    } else if (tmdbYear && Math.abs(local.year - tmdbYear) === 1) {
+      score += 15;
+      reasons.push("Año ±1: +15");
+    } else {
+      reasons.push(`Año diferente (${tmdbYear || 'N/A'}): +0`);
+    }
+
+    // Argentina
+    if (details.production_countries?.some(c => c.iso_3166_1 === 'AR')) {
+      score += config.matching.movie.argentinaCountryBonus;
+      reasons.push("Argentina: +20");
+    }
+
+    console.log("\nCálculo:");
+    reasons.forEach(r => console.log("  " + r));
+    console.log("  TOTAL:", score);
+    console.log("  ¿Auto-accept?", score >= config.matching.movie.autoAcceptScore ? "SÍ" : "NO");
+  }
+}
+
+main().catch(console.error);
