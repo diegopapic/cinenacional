@@ -803,10 +803,15 @@ export async function DELETE(
       { message: 'Película eliminada exitosamente' },
       { status: 200 }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting movie:', error)
+
+    const detail = error?.code === 'P2003'
+      ? 'La película tiene registros asociados que impiden su eliminación'
+      : error?.message || 'Error desconocido'
+
     return NextResponse.json(
-      { error: 'Error al eliminar la película' },
+      { error: 'Error al eliminar la película', detail },
       { status: 500 }
     )
   }
