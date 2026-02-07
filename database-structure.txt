@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2026-01-26T06:07:14.445Z
+# Generado automáticamente el: 2026-02-07T23:22:49.872Z
 # ================================================
 
 ## Schema Prisma
@@ -727,7 +727,7 @@ model Image {
   createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamp(6)
   updatedAt          DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
   people             ImagePerson[]
-  movie              Movie?        @relation(fields: [movieId], references: [id], onUpdate: NoAction)
+  movie              Movie?        @relation(fields: [movieId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([photoDate], map: "idx_images_photo_date")
   @@map("images")
@@ -757,8 +757,8 @@ model PageView {
   userAgent String?   @map("user_agent") @db.VarChar(500)
   referrer  String?   @db.VarChar(500)
   createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
-  movie     Movie?    @relation(fields: [movieId], references: [id], onUpdate: NoAction)
-  person    Person?   @relation(fields: [personId], references: [id], onUpdate: NoAction)
+  movie     Movie?    @relation(fields: [movieId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  person    Person?   @relation(fields: [personId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([pageType, createdAt], map: "idx_page_views_type_date")
   @@map("page_views")
