@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 5149f32b2e09359bb0a50bfb1ed433b5b730d5b9
-// Fecha: 2026-01-26T06:07:14.012Z
+// Commit: 5b6f5f713a8b6c43895a6a7f991dea988b806747
+// Fecha: 2026-02-07T23:22:48.873Z
 // ============================================
 
 
@@ -2491,33 +2491,52 @@ main().catch(error => {
 // scripts/tmdb/enrich-people.ts
 // ==================================================
 /**
- * Script para enriquecer personas con IMDB ID desde TMDB
- * 
+ * Script para enriquecer personas con TMDB ID e IMDB ID desde TMDB
+ *
  * Uso:
- *   npx ts-node enrich-people.ts --dry-run          # Solo genera CSV
- *   npx ts-node enrich-people.ts --apply            # Aplica cambios a la BD
- *   npx ts-node enrich-people.ts --apply-csv        # Aplica desde CSV revisado
- *   npx ts-node enrich-people.ts --limit 100        # Procesar solo 100 personas
- *   npx ts-node enrich-people.ts --offset 500       # Empezar desde la 501
- *   npx ts-node enrich-people.ts --min-movies 3     # Solo personas con 3+ películas
+ *   npx tsx enrich-people.ts --dry-run          # Solo genera CSV
+ *   npx tsx enrich-people.ts --apply            # Aplica cambios a la BD
+ *   npx tsx enrich-people.ts --apply-csv        # Aplica desde CSV revisado
+ *   npx tsx enrich-people.ts --limit 100        # Procesar solo 100 personas
+ *   npx tsx enrich-people.ts --offset 500       # Empezar desde la 501
+ *   npx tsx enrich-people.ts --min-movies 3     # Solo personas con 3+ películas
+ *   npx tsx enrich-people.ts --append           # Retomar desde CSV existente
+ *
+ * Mejoras respecto a la versión anterior:
+ *   - Usa comparePersonNames (inteligente) en lugar de Levenshtein puro
+ *   - Graba imdb_id además de tmdb_id
+ *   - Compara known_for_department de TMDB con los roles locales
+ *   - Detecta duplicados (dos personas locales mapeadas al mismo tmdb_id)
+ *   - CSV incremental: escribe registro a registro, --append para retomar
+ *   - Bonus argentino aumentado (15 → 25 puntos)
+ *   - Búsqueda fallback por apellido si el nombre completo no da resultados
+ *   - Pre-filtra candidatos por nombre antes de pedir detalles (ahorra API calls)
+ *   - Prioriza candidatos por dept/known_for para nombres comunes (pre-score)
+ *   - Búsqueda por créditos de película para nombres comunes (fallback preciso)
+ *   - Auto-accept: nombre exacto + película + departamento (sin necesitar score 80)
  */
 
-import { searchPeople, getPersonDetails, testConnection, TMDBPersonDetails } from './tmdb-client';
-import { 
-  getPool, 
-  closePool, 
-  normalizeText, 
+import { searchPeople, getPersonDetails, getMovieDetails, testConnection, TMDBPerson, TMDBPersonDetails } from './tmdb-client';
+import {
+  getPool,
+  closePool,
+  normalizeText,
   stringSimilarity,
+  comparePersonNames,
+  compareTitles,
   parseTMDBDate,
   compareDates,
   isArgentineLocation,
-  saveToCSV, 
+  saveToCSV,
   loadFromCSV,
   formatDuration,
   progressBar,
-  log 
+  log
 } from './utils';
+import { DEPARTMENT_MAP } from './lib/config';
 import config from './config';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Tipos
 interface LocalPerson {
@@ -2533,7 +2552,8 @@ interface LocalPerson {
   death_day: number | null;
   imdb_id: string | null;
   movie_count: number;
-  movie_titles: string | null; // "Película1, Película2"
+  movie_titles: string | null; // "Pelicula1, Pelicula2"
+  primary_department: string | null; // Departamento principal de la persona en nuestra BD
 }
 
 interface MatchResult {
@@ -2542,30 +2562,100 @@ interface MatchResult {
   local_birth: string | null;
   local_death: string | null;
   local_movies: number;
+  local_department: string | null;
   tmdb_id: number | null;
   tmdb_name: string | null;
   tmdb_birth: string | null;
   tmdb_death: string | null;
   tmdb_place: string | null;
+  tmdb_department: string | null;
   imdb_id: string | null;
   match_score: number;
-  match_status: 'auto_accept' | 'review' | 'no_match' | 'multiple';
+  match_status: 'auto_accept' | 'review' | 'no_match' | 'multiple' | 'duplicate';
   match_reason: string;
 }
 
+// CSV incremental: escribe registro a registro para no perder progreso
+const CSV_OUTPUT_FILE = path.join(__dirname, 'reports', 'people-matches.csv');
+
+function escapeCSV(value: any): string {
+  if (value === null || value === undefined) return '';
+  const str = String(value);
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
 /**
- * Obtener personas sin IMDB ID de la base de datos
+ * Escribir una fila al CSV. Si el archivo no existe, crea el header primero.
  */
-async function getPeopleWithoutImdbId(
-  limit?: number, 
+function appendRowToCSV(row: MatchResult): void {
+  const dir = path.dirname(CSV_OUTPUT_FILE);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  const fileExists = fs.existsSync(CSV_OUTPUT_FILE) && fs.statSync(CSV_OUTPUT_FILE).size > 0;
+
+  if (!fileExists) {
+    fs.writeFileSync(CSV_OUTPUT_FILE, CSV_HEADERS.join(',') + '\n', 'utf-8');
+  }
+
+  const line = CSV_HEADERS.map(h => escapeCSV((row as any)[h])).join(',') + '\n';
+  fs.appendFileSync(CSV_OUTPUT_FILE, line, 'utf-8');
+}
+
+/**
+ * Leer el CSV existente para --append.
+ * Devuelve los IDs a saltear (score > 0) y los IDs a reintentar (score == 0).
+ * Las filas con score 0 se eliminan del CSV para que el append las reescriba.
+ */
+function loadCSVForAppend(): { skipIds: Set<number>; retryIds: Set<number>; skipCount: number; retryCount: number } {
+  const skipIds = new Set<number>();
+  const retryIds = new Set<number>();
+
+  if (!fs.existsSync(CSV_OUTPUT_FILE)) return { skipIds, retryIds, skipCount: 0, retryCount: 0 };
+
+  const rows = loadFromCSV('people-matches.csv');
+  const goodRows: Record<string, any>[] = [];
+
+  for (const row of rows) {
+    const id = parseInt(row.local_id);
+    if (isNaN(id)) continue;
+
+    const score = parseInt(row.match_score) || 0;
+    if (score > 0) {
+      skipIds.add(id);
+      goodRows.push(row);
+    } else {
+      retryIds.add(id);
+      // No incluir en goodRows → se elimina del CSV
+    }
+  }
+
+  // Reescribir el CSV sin las filas de score 0
+  if (retryIds.size > 0) {
+    saveToCSV(goodRows, 'people-matches.csv', CSV_HEADERS);
+  }
+
+  return { skipIds, retryIds, skipCount: skipIds.size, retryCount: retryIds.size };
+}
+
+/**
+ * Obtener personas sin TMDB ID de la base de datos.
+ * Ahora incluye el departamento principal de cada persona.
+ */
+async function getPeopleWithoutTmdbId(
+  limit?: number,
   offset?: number,
   minMovies: number = 1
 ): Promise<LocalPerson[]> {
   const pool = getPool();
-  
+
   const query = `
     WITH person_movies AS (
-      SELECT 
+      SELECT
         person_id,
         COUNT(DISTINCT movie_id) as movie_count,
         STRING_AGG(DISTINCT m.title, ', ' ORDER BY m.title) as movie_titles
@@ -2576,8 +2666,23 @@ async function getPeopleWithoutImdbId(
       ) all_roles
       JOIN movies m ON all_roles.movie_id = m.id
       GROUP BY person_id
+    ),
+    person_department AS (
+      SELECT
+        mc.person_id,
+        r.department,
+        COUNT(*) as role_count
+      FROM movie_crew mc
+      JOIN roles r ON mc.role_id = r.id
+      GROUP BY mc.person_id, r.department
+      ORDER BY role_count DESC
+    ),
+    primary_department AS (
+      SELECT DISTINCT ON (person_id) person_id, department
+      FROM person_department
+      ORDER BY person_id, role_count DESC
     )
-    SELECT 
+    SELECT
       p.id,
       p.first_name,
       p.last_name,
@@ -2590,26 +2695,28 @@ async function getPeopleWithoutImdbId(
       p.death_day,
       p.imdb_id,
       COALESCE(pm.movie_count, 0) as movie_count,
-      pm.movie_titles
+      pm.movie_titles,
+      pd.department as primary_department
     FROM people p
     LEFT JOIN person_movies pm ON p.id = pm.person_id
+    LEFT JOIN primary_department pd ON p.id = pd.person_id
     WHERE (p.tmdb_id IS NULL OR p.tmdb_id = 0)
       AND COALESCE(pm.movie_count, 0) >= $1
     ORDER BY COALESCE(pm.movie_count, 0) DESC, p.id
     ${limit ? `LIMIT ${limit}` : ''}
     ${offset ? `OFFSET ${offset}` : ''}
   `;
-  
+
   const result = await pool.query(query, [minMovies]);
   return result.rows;
 }
 
 /**
- * Obtener títulos de películas de una persona en nuestra BD
+ * Obtener titulos de peliculas de una persona en nuestra BD
  */
 async function getPersonMovieTitles(personId: number): Promise<string[]> {
   const pool = getPool();
-  
+
   const query = `
     SELECT DISTINCT m.title, m.year
     FROM movies m
@@ -2621,13 +2728,156 @@ async function getPersonMovieTitles(personId: number): Promise<string[]> {
     ORDER BY m.year DESC NULLS LAST
     LIMIT 20
   `;
-  
+
   const result = await pool.query(query, [personId]);
   return result.rows.map(r => r.title);
 }
 
 /**
- * Calcular score de match entre persona local y TMDB
+ * Obtener peliculas de una persona que ya tienen tmdb_id en nuestra BD.
+ * Se usa para la estrategia de busqueda por creditos de pelicula.
+ */
+async function getPersonMoviesWithTmdbId(personId: number): Promise<Array<{ tmdb_id: number; title: string }>> {
+  const pool = getPool();
+
+  const query = `
+    SELECT DISTINCT m.tmdb_id, m.title
+    FROM movies m
+    JOIN (
+      SELECT movie_id FROM movie_cast WHERE person_id = $1
+      UNION
+      SELECT movie_id FROM movie_crew WHERE person_id = $1
+    ) roles ON m.id = roles.movie_id
+    WHERE m.tmdb_id IS NOT NULL AND m.tmdb_id != 0
+    ORDER BY m.title
+    LIMIT 5
+  `;
+
+  const result = await pool.query(query, [personId]);
+  return result.rows.map(r => ({ tmdb_id: r.tmdb_id, title: r.title }));
+}
+
+/**
+ * Estrategia alternativa: buscar a la persona en los creditos de sus peliculas.
+ *
+ * Para nombres comunes ("Miguel Perez") la busqueda por nombre en TMDB devuelve
+ * cientos de resultados y el correcto puede estar enterrado. En cambio, si la
+ * persona trabajo en una pelicula que ya tiene tmdb_id, podemos pedir los creditos
+ * de esa pelicula y buscar ahi a alguien con nombre similar.
+ *
+ * Costo: 1 API call por pelicula (credits) + 1 por persona encontrada (details).
+ * Mucho mas eficiente que paginar decenas de resultados de busqueda.
+ */
+async function findPersonViaMovieCredits(
+  person: LocalPerson,
+  localMovieTitles: string[]
+): Promise<Array<{ tmdb: TMDBPersonDetails; score: number; reasons: string[] }>> {
+  const candidates: Array<{ tmdb: TMDBPersonDetails; score: number; reasons: string[] }> = [];
+  const seenTmdbIds = new Set<number>();
+
+  const moviesWithTmdbId = await getPersonMoviesWithTmdbId(person.id);
+  if (moviesWithTmdbId.length === 0) return candidates;
+
+  // Mapeo de departamento local a departamentos TMDB para filtrar creditos
+  const expectedTmdbDepts = person.primary_department
+    ? LOCAL_TO_TMDB_DEPARTMENT[person.primary_department] || []
+    : [];
+
+  for (const movie of moviesWithTmdbId) {
+    try {
+      const movieDetails = await getMovieDetails(movie.tmdb_id);
+      if (!movieDetails.credits) continue;
+
+      // Buscar en cast y crew a alguien con nombre similar
+      const creditPeople: Array<{ id: number; name: string; department?: string }> = [];
+
+      for (const cast of movieDetails.credits.cast) {
+        creditPeople.push({ id: cast.id, name: cast.name, department: 'Acting' });
+      }
+      for (const crew of movieDetails.credits.crew) {
+        creditPeople.push({ id: crew.id, name: crew.name, department: crew.department });
+      }
+
+      for (const creditPerson of creditPeople) {
+        if (seenTmdbIds.has(creditPerson.id)) continue;
+
+        const nameResult = comparePersonNames(person.full_name.trim(), creditPerson.name);
+        if (!nameResult.isMatch) continue;
+
+        // Si tenemos departamento, filtrar para no traer homonimos de otro area
+        if (expectedTmdbDepts.length > 0 && creditPerson.department) {
+          if (!expectedTmdbDepts.includes(creditPerson.department)) continue;
+        }
+
+        seenTmdbIds.add(creditPerson.id);
+
+        // Pedir detalles completos para calcular score
+        const details = await getPersonDetails(creditPerson.id);
+        const { score, reasons } = calculateMatchScore(person, details, localMovieTitles);
+
+        if (score > 0) {
+          reasons.push(`[Via creditos de "${movie.title}"]`);
+          candidates.push({ tmdb: details, score, reasons });
+
+          // Si ya encontramos un candidato fuerte, no seguir con mas peliculas
+          if (wouldBeAutoAccepted({ tmdb: details, score, reasons })) {
+            return candidates;
+          }
+        }
+      }
+    } catch (error) {
+      // Si falla una pelicula, seguir con la siguiente
+      continue;
+    }
+
+    // Si ya tenemos candidatos suficientes, no gastar mas API calls
+    if (candidates.length >= 3) break;
+  }
+
+  return candidates;
+}
+
+/**
+ * Mapeo inverso: departamento local -> known_for_department de TMDB
+ */
+const LOCAL_TO_TMDB_DEPARTMENT: Record<string, string[]> = {
+  'DIRECCION': ['Directing'],
+  'PRODUCCION': ['Production'],
+  'GUION': ['Writing'],
+  'FOTOGRAFIA': ['Camera', 'Lighting'],
+  'MONTAJE': ['Editing'],
+  'SONIDO': ['Sound'],
+  'ARTE': ['Art'],
+  'VESTUARIO': ['Costume & Make-Up'],
+  'POSTPRODUCCION': ['Visual Effects'],
+  'ACTUACION': ['Acting'],
+};
+
+/**
+ * Verificar si un candidato TMDB tiene nombre suficientemente similar
+ * para justificar pedir sus detalles (ahorra API calls).
+ * Usa comparePersonNames para ser inteligente con variaciones.
+ */
+function isWorthFetchingDetails(localName: string, tmdbCandidate: TMDBPerson): boolean {
+  // Primero: similitud de string cruda >= 50% → vale la pena
+  const rawSimilarity = stringSimilarity(localName, tmdbCandidate.name);
+  if (rawSimilarity >= 50) return true;
+
+  // Segundo: comparePersonNames detecta variaciones inteligentes
+  const nameComparison = comparePersonNames(localName, tmdbCandidate.name);
+  if (nameComparison.isMatch) return true;
+
+  return false;
+}
+
+/**
+ * Calcular score de match entre persona local y TMDB.
+ *
+ * Mejoras:
+ *   - Usa comparePersonNames (maneja "Polo"/"Leopoldo", tokens extra, etc.)
+ *   - Compara known_for_department
+ *   - Bonus argentino aumentado
+ *   - Usa compareTitles para filmografia (maneja subtitulos)
  */
 function calculateMatchScore(
   local: LocalPerson,
@@ -2636,33 +2886,51 @@ function calculateMatchScore(
 ): { score: number; reasons: string[] } {
   let score = 0;
   const reasons: string[] = [];
-  
-  // 1. Comparar nombres
-  const nameSimilarity = stringSimilarity(local.full_name, tmdb.name);
-  
-  if (nameSimilarity >= 95) {
-    score += 30;
-    reasons.push(`Nombre exacto (${nameSimilarity}%)`);
-  } else if (nameSimilarity >= 80) {
-    score += 20;
-    reasons.push(`Nombre similar (${nameSimilarity}%)`);
-  } else if (nameSimilarity >= 60) {
-    score += 10;
-    reasons.push(`Nombre parcial (${nameSimilarity}%)`);
+
+  // 1. Comparar nombres con comparePersonNames (inteligente)
+  const nameResult = comparePersonNames(local.full_name, tmdb.name);
+
+  if (nameResult.isMatch) {
+    if (nameResult.confidence === 'high') {
+      score += 30;
+      reasons.push(`Nombre exacto [${nameResult.reason}]`);
+    } else if (nameResult.confidence === 'medium') {
+      score += 20;
+      reasons.push(`Nombre similar [${nameResult.reason}]`);
+    }
+  } else {
+    // Fallback: similitud de Levenshtein pura para scores bajos
+    const rawSimilarity = stringSimilarity(local.full_name, tmdb.name);
+    if (rawSimilarity >= 60) {
+      score += 10;
+      reasons.push(`Nombre parcial (${rawSimilarity}%)`);
+    }
   }
-  
-  // También verificar nombres alternativos de TMDB
+
+  // Tambien verificar nombres alternativos de TMDB
   if (tmdb.also_known_as) {
+    let bestAltMatch = false;
     for (const altName of tmdb.also_known_as) {
-      const altSimilarity = stringSimilarity(local.full_name, altName);
-      if (altSimilarity >= 90 && altSimilarity > nameSimilarity) {
+      const altResult = comparePersonNames(local.full_name, altName);
+      if (altResult.isMatch && altResult.confidence !== 'low') {
         score += 10;
-        reasons.push(`Nombre alternativo match`);
+        reasons.push(`Nombre alternativo match (${altName})`);
+        bestAltMatch = true;
         break;
+      }
+      // Fallback Levenshtein para nombres alternativos
+      if (!bestAltMatch) {
+        const altSimilarity = stringSimilarity(local.full_name, altName);
+        if (altSimilarity >= 90) {
+          score += 10;
+          reasons.push(`Nombre alternativo match (${altName})`);
+          bestAltMatch = true;
+          break;
+        }
       }
     }
   }
-  
+
   // 2. Comparar fecha de nacimiento
   if (local.birth_year && tmdb.birthday) {
     const tmdbBirth = parseTMDBDate(tmdb.birthday);
@@ -2671,14 +2939,14 @@ function calculateMatchScore(
       month: local.birth_month,
       day: local.birth_day,
     };
-    
+
     const birthScore = compareDates(localBirth, tmdbBirth);
     if (birthScore >= 50) {
       score += birthScore / 2; // Max 50 puntos
       reasons.push(`Nacimiento coincide (${birthScore}%)`);
     }
   }
-  
+
   // 3. Comparar fecha de muerte
   if (local.death_year && tmdb.deathday) {
     const tmdbDeath = parseTMDBDate(tmdb.deathday);
@@ -2687,177 +2955,472 @@ function calculateMatchScore(
       month: local.death_month,
       day: local.death_day,
     };
-    
+
     const deathScore = compareDates(localDeath, tmdbDeath);
     if (deathScore >= 50) {
       score += deathScore / 2; // Max 50 puntos
       reasons.push(`Fallecimiento coincide (${deathScore}%)`);
     }
   }
-  
-  // 4. Verificar si es argentino
+
+  // 4. Verificar si es argentino (bonus aumentado: 15 → 25)
   if (isArgentineLocation(tmdb.place_of_birth)) {
-    score += 15;
+    score += 25;
     reasons.push('Origen argentino');
   }
-  
-  // 5. Comparar filmografía (muy importante para homónimos)
-  if (tmdb.movie_credits && localMovieTitles.length > 0) {
-    const tmdbMovies = [
-      ...tmdb.movie_credits.cast.map(m => normalizeText(m.title)),
-      ...tmdb.movie_credits.crew.map(m => normalizeText(m.title)),
-    ];
-    
-    let movieMatches = 0;
-    for (const localTitle of localMovieTitles) {
-      const normalizedLocal = normalizeText(localTitle);
-      if (tmdbMovies.some(tm => stringSimilarity(normalizedLocal, tm) >= 80)) {
-        movieMatches++;
-      }
+
+  // 5. Comparar departamento/area profesional
+  if (local.primary_department && tmdb.known_for_department) {
+    const expectedTmdbDepts = LOCAL_TO_TMDB_DEPARTMENT[local.primary_department];
+
+    if (expectedTmdbDepts && expectedTmdbDepts.includes(tmdb.known_for_department)) {
+      score += 10;
+      reasons.push(`Departamento coincide (${tmdb.known_for_department})`);
     }
-    
-    if (movieMatches > 0) {
-      const movieScore = Math.min(movieMatches * 10, 30); // Max 30 puntos
-      score += movieScore;
-      reasons.push(`${movieMatches} película(s) en común`);
+
+    // Si la persona local es actor (tiene registros en movie_cast pero no crew principal),
+    // y TMDB dice Acting, tambien matchear
+    if (!local.primary_department && tmdb.known_for_department === 'Acting') {
+      // La persona no tiene crew → probablemente es actor
+      score += 10;
+      reasons.push('Departamento coincide (Acting)');
     }
   }
-  
+  // Caso especial: persona sin department en crew = probablemente actor
+  if (!local.primary_department && tmdb.known_for_department === 'Acting') {
+    score += 10;
+    reasons.push('Departamento coincide (Acting, sin crew)');
+  }
+
+  // 6. Comparar filmografia (usa compareTitles para manejar subtitulos)
+  if (tmdb.movie_credits && localMovieTitles.length > 0) {
+    const tmdbMovies = [
+      ...tmdb.movie_credits.cast.map(m => m.title),
+      ...tmdb.movie_credits.crew.map(m => m.title),
+    ];
+
+    let movieMatches = 0;
+    const matchedTitles: string[] = [];
+    for (const localTitle of localMovieTitles) {
+      const match = tmdbMovies.find(tm => compareTitles(localTitle, tm) >= 85);
+      if (match) {
+        movieMatches++;
+        matchedTitles.push(localTitle);
+      }
+    }
+
+    if (movieMatches > 0) {
+      const movieScore = Math.min(movieMatches * 10, 40); // Max 40 puntos (era 30)
+      score += movieScore;
+      reasons.push(`${movieMatches} pelicula(s) en comun (${matchedTitles.slice(0, 3).join(', ')}${matchedTitles.length > 3 ? '...' : ''})`);
+    }
+  }
+
   return { score, reasons };
 }
 
 /**
- * Buscar y matchear una persona
+ * Calcular un score de prioridad usando solo datos del resultado de busqueda
+ * (sin pedir detalles a la API). Sirve para priorizar a quién pedirle detalles
+ * cuando hay muchos homonimos.
+ */
+function preScoreCandidate(
+  person: LocalPerson,
+  tmdbCandidate: TMDBPerson,
+  localMovieTitles: string[]
+): number {
+  let priority = 0;
+
+  // Departamento coincide (disponible en search result)
+  if (person.primary_department && tmdbCandidate.known_for_department) {
+    const expectedTmdbDepts = LOCAL_TO_TMDB_DEPARTMENT[person.primary_department];
+    if (expectedTmdbDepts && expectedTmdbDepts.includes(tmdbCandidate.known_for_department)) {
+      priority += 20;
+    }
+  }
+  if (!person.primary_department && tmdbCandidate.known_for_department === 'Acting') {
+    priority += 20;
+  }
+
+  // Peliculas en known_for coinciden con filmografia local
+  if (tmdbCandidate.known_for && localMovieTitles.length > 0) {
+    const knownForTitles = tmdbCandidate.known_for.map(m => m.title).filter(Boolean);
+    for (const localTitle of localMovieTitles) {
+      if (knownForTitles.some(kt => compareTitles(localTitle, kt) >= 85)) {
+        priority += 30; // Una pelicula coincide en known_for = muy buen indicio
+        break; // Con una alcanza para priorizar
+      }
+    }
+  }
+
+  return priority;
+}
+
+/**
+ * Evaluar una pagina de resultados de TMDB contra una persona local.
+ * Retorna los candidatos encontrados con su score.
+ *
+ * Para nombres comunes (muchos homonimos), prioriza candidatos cuyo
+ * departamento o known_for coincide con la persona local, antes de
+ * gastar API calls en pedir detalles.
+ */
+async function evaluateCandidatesFromPage(
+  person: LocalPerson,
+  tmdbResults: TMDBPerson[],
+  localMovieTitles: string[]
+): Promise<Array<{ tmdb: TMDBPersonDetails; score: number; reasons: string[] }>> {
+  const candidates: Array<{ tmdb: TMDBPersonDetails; score: number; reasons: string[] }> = [];
+
+  // Pre-filtrar: solo pedir detalles de candidatos con nombre razonablemente similar
+  const worthyResults = tmdbResults
+    .filter(tmdbPerson => isWorthFetchingDetails(person.full_name.trim(), tmdbPerson));
+
+  // Priorizar: ordenar por pre-score (dept + known_for) descendente
+  // para que los candidatos mas prometedores se evaluen primero
+  const prioritized = worthyResults
+    .map(tmdbPerson => ({
+      tmdbPerson,
+      priority: preScoreCandidate(person, tmdbPerson, localMovieTitles),
+    }))
+    .sort((a, b) => b.priority - a.priority);
+
+  // Limitar a 5 detalles por pagina para no abusar de la API
+  for (const { tmdbPerson } of prioritized.slice(0, 5)) {
+    const details = await getPersonDetails(tmdbPerson.id);
+    const { score, reasons } = calculateMatchScore(person, details, localMovieTitles);
+
+    if (score > 0) {
+      candidates.push({ tmdb: details, score, reasons });
+    }
+  }
+
+  return candidates;
+}
+
+// Tope de seguridad: maximo de paginas a recorrer por persona
+const MAX_SEARCH_PAGES = 10;
+
+/**
+ * Verificar si un candidato seria auto_accept por las reglas especiales
+ * (nombre exacto + peliculas, nombre + pelicula + argentino, nombre + pelicula + departamento).
+ * Se usa para cortar la paginacion apenas encontramos un candidato suficientemente bueno,
+ * sin esperar a que llegue a 80 puntos.
+ */
+function wouldBeAutoAccepted(
+  candidate: { tmdb: TMDBPersonDetails; score: number; reasons: string[] }
+): boolean {
+  if (candidate.score >= config.matching.person.autoAcceptScore) return true;
+  if (candidate.score < config.matching.person.reviewScore) return false;
+
+  const hasHighNameMatch = candidate.reasons.some(r => r.includes('Nombre exacto'));
+  const hasMovieMatches = candidate.reasons.some(r => r.includes('pelicula(s) en comun'));
+  const hasDepartmentMatch = candidate.reasons.some(r => r.includes('Departamento coincide'));
+  const movieMatchReason = candidate.reasons.find(r => r.includes('pelicula(s) en comun'));
+  const movieMatchCount = movieMatchReason ? parseInt(movieMatchReason.match(/(\d+)/)?.[1] || '0') : 0;
+
+  if (hasHighNameMatch && movieMatchCount >= 2) return true;
+  if (hasHighNameMatch && hasMovieMatches && isArgentineLocation(candidate.tmdb.place_of_birth)) return true;
+  if (hasHighNameMatch && hasMovieMatches && hasDepartmentMatch) return true;
+
+  return false;
+}
+
+/**
+ * Buscar y matchear una persona.
+ *
+ * Estrategia de busqueda en capas:
+ *   1. Busqueda por nombre en TMDB (paginada, con pre-score para priorizar)
+ *   2. Si el nombre es comun (muchos resultados) y no se encontro auto_accept,
+ *      busqueda alternativa por creditos de peliculas con tmdb_id conocido
+ *   3. Fallback por apellido si el nombre completo no da resultados
+ *
+ * - Tope de seguridad: 10 paginas (200 resultados) en busqueda por nombre
+ * - Pre-filtra y prioriza candidatos por departamento/known_for antes de pedir detalles
+ * - Corta apenas encuentra un candidato que seria auto_accept
  */
 async function findMatchForPerson(person: LocalPerson): Promise<MatchResult> {
   const result: MatchResult = {
     local_id: person.id,
     local_name: person.full_name.trim(),
-    local_birth: person.birth_year ? 
-      `${person.birth_year}${person.birth_month ? '-' + String(person.birth_month).padStart(2, '0') : ''}${person.birth_day ? '-' + String(person.birth_day).padStart(2, '0') : ''}` 
+    local_birth: person.birth_year ?
+      `${person.birth_year}${person.birth_month ? '-' + String(person.birth_month).padStart(2, '0') : ''}${person.birth_day ? '-' + String(person.birth_day).padStart(2, '0') : ''}`
       : null,
     local_death: person.death_year ?
       `${person.death_year}${person.death_month ? '-' + String(person.death_month).padStart(2, '0') : ''}${person.death_day ? '-' + String(person.death_day).padStart(2, '0') : ''}`
       : null,
     local_movies: person.movie_count,
+    local_department: person.primary_department,
     tmdb_id: null,
     tmdb_name: null,
     tmdb_birth: null,
     tmdb_death: null,
     tmdb_place: null,
+    tmdb_department: null,
     imdb_id: null,
     match_score: 0,
     match_status: 'no_match',
     match_reason: '',
   };
-  
-  // Nombre vacío
+
+  // Nombre vacio
   if (!person.full_name.trim()) {
-    result.match_reason = 'Nombre vacío';
+    result.match_reason = 'Nombre vacio';
     return result;
   }
-  
+
   try {
-    // Obtener películas de la persona para comparar filmografía
+    // Obtener peliculas de la persona para comparar filmografia
     const localMovieTitles = await getPersonMovieTitles(person.id);
-    
-    // Buscar en TMDB
-    const searchResult = await searchPeople(person.full_name.trim());
-    
-    if (searchResult.total_results === 0) {
-      result.match_reason = 'Sin resultados en TMDB';
-      return result;
-    }
-    
-    // Evaluar cada candidato
-    const candidates: Array<{
-      tmdb: TMDBPersonDetails;
-      score: number;
-      reasons: string[];
-    }> = [];
-    
-    // Limitar a los primeros 5 resultados
-    for (const tmdbPerson of searchResult.results.slice(0, 5)) {
-      const details = await getPersonDetails(tmdbPerson.id);
-      const { score, reasons } = calculateMatchScore(person, details, localMovieTitles);
-      
-      if (score > 0) {
-        candidates.push({ tmdb: details, score, reasons });
+
+    // Buscar en TMDB por nombre completo
+    let searchQuery = person.full_name.trim();
+    let searchResult = await searchPeople(searchQuery);
+    let usedFallback = false;
+
+    // Fallback: si no hay resultados y tiene apellido, buscar solo por apellido
+    if (searchResult.total_results === 0 && person.last_name && person.last_name.trim().length > 2) {
+      searchQuery = person.last_name.trim();
+      searchResult = await searchPeople(searchQuery);
+      if (searchResult.total_results > 0) {
+        usedFallback = true;
+        result.match_reason = '[Fallback: busqueda por apellido] ';
       }
     }
-    
-    if (candidates.length === 0) {
-      result.match_reason = 'Ningún candidato supera umbral mínimo';
+
+    if (searchResult.total_results === 0) {
+      result.match_reason += 'Sin resultados en TMDB';
       return result;
     }
-    
+
+    // Recorrer paginas hasta encontrar un buen match o agotar resultados
+    const allCandidates: Array<{ tmdb: TMDBPersonDetails; score: number; reasons: string[] }> = [];
+    let currentPage = 1;
+    let totalPages = searchResult.total_pages;
+
+    while (currentPage <= Math.min(totalPages, MAX_SEARCH_PAGES)) {
+      // Para pagina 1 ya tenemos los resultados; para las siguientes, pedir
+      if (currentPage > 1) {
+        searchResult = await searchPeople(searchQuery, currentPage);
+      }
+
+      const pageCandidates = await evaluateCandidatesFromPage(
+        person, searchResult.results, localMovieTitles
+      );
+
+      allCandidates.push(...pageCandidates);
+
+      // Si encontramos un candidato que seria auto_accept (por score o reglas especiales), no buscar mas
+      if (allCandidates.some(c => wouldBeAutoAccepted(c))) {
+        break;
+      }
+
+      // Si no hay mas paginas, salir
+      if (currentPage >= totalPages) break;
+
+      currentPage++;
+    }
+
+    if (currentPage > 1) {
+      result.match_reason += `[Busco ${currentPage} pagina(s)] `;
+    }
+    if (usedFallback) {
+      result.match_reason = `[Fallback: busqueda por apellido, ${currentPage} pag(s)] `;
+    }
+
+    // Estrategia alternativa: buscar por creditos de pelicula
+    // Se activa cuando:
+    //   - No encontramos un auto_accept por busqueda de nombre
+    //   - Hay muchos resultados (nombre comun) O no hay candidatos
+    const hasAutoAccept = allCandidates.some(c => wouldBeAutoAccepted(c));
+    const isCommonName = searchResult.total_results > 20; // Mas de 1 pagina de resultados
+
+    if (!hasAutoAccept && (isCommonName || allCandidates.length === 0)) {
+      const creditCandidates = await findPersonViaMovieCredits(person, localMovieTitles);
+      if (creditCandidates.length > 0) {
+        // Agregar candidatos de creditos, evitando duplicados por tmdb_id
+        const existingIds = new Set(allCandidates.map(c => c.tmdb.id));
+        for (const cc of creditCandidates) {
+          if (!existingIds.has(cc.tmdb.id)) {
+            allCandidates.push(cc);
+          }
+        }
+      }
+    }
+
+    if (allCandidates.length === 0) {
+      result.match_reason += 'Ningun candidato supera umbral minimo';
+      return result;
+    }
+
     // Ordenar por score descendente
-    candidates.sort((a, b) => b.score - a.score);
-    const best = candidates[0];
-    
+    allCandidates.sort((a, b) => b.score - a.score);
+    const best = allCandidates[0];
+
     result.tmdb_id = best.tmdb.id;
     result.tmdb_name = best.tmdb.name;
     result.tmdb_birth = best.tmdb.birthday;
     result.tmdb_death = best.tmdb.deathday;
     result.tmdb_place = best.tmdb.place_of_birth;
+    result.tmdb_department = best.tmdb.known_for_department;
     result.imdb_id = best.tmdb.imdb_id;
     result.match_score = best.score;
-    result.match_reason = best.reasons.join('; ');
-    
+    result.match_reason += best.reasons.join('; ');
+
     // Determinar status
-    // Regla especial: nombre exacto + 2 películas en común = auto_accept
-    const hasExactName = best.reasons.some(r => r.includes('Nombre exacto'));
-    const movieMatchReason = best.reasons.find(r => r.includes('película(s) en común'));
+    const hasHighNameMatch = best.reasons.some(r => r.includes('Nombre exacto'));
+    const hasMovieMatches = best.reasons.some(r => r.includes('pelicula(s) en comun'));
+    const hasDepartmentMatch = best.reasons.some(r => r.includes('Departamento coincide'));
+    const movieMatchReason = best.reasons.find(r => r.includes('pelicula(s) en comun'));
     const movieMatchCount = movieMatchReason ? parseInt(movieMatchReason.match(/(\d+)/)?.[1] || '0') : 0;
-    
+
     if (best.score >= config.matching.person.autoAcceptScore) {
       result.match_status = 'auto_accept';
-    } else if (hasExactName && movieMatchCount >= 2) {
-      // Nombre exacto + 2 películas = suficiente confianza
+    } else if (hasHighNameMatch && movieMatchCount >= 2) {
+      // Nombre exacto + 2 peliculas = suficiente confianza
       result.match_status = 'auto_accept';
-      result.match_reason += ' [Auto: nombre exacto + películas]';
+      result.match_reason += ' [Auto: nombre exacto + peliculas]';
+    } else if (hasHighNameMatch && hasMovieMatches && isArgentineLocation(best.tmdb.place_of_birth)) {
+      // Nombre exacto + 1 pelicula + argentino = auto_accept
+      result.match_status = 'auto_accept';
+      result.match_reason += ' [Auto: nombre + pelicula + argentino]';
+    } else if (hasHighNameMatch && hasMovieMatches && hasDepartmentMatch) {
+      // Nombre exacto + 1 pelicula + departamento coincide = auto_accept
+      result.match_status = 'auto_accept';
+      result.match_reason += ' [Auto: nombre + pelicula + departamento]';
     } else if (best.score >= config.matching.person.reviewScore) {
-      // Verificar si hay múltiples candidatos con score similar
-      if (candidates.length > 1 && candidates[1].score >= config.matching.person.reviewScore) {
+      // Verificar si hay multiples candidatos con score similar
+      if (allCandidates.length > 1 && allCandidates[1].score >= config.matching.person.reviewScore) {
         result.match_status = 'multiple';
-        result.match_reason += ` [Alternativas: ${candidates.slice(1, 3).map(c => `${c.tmdb.name} (${c.score})`).join(', ')}]`;
+        result.match_reason += ` [Alternativas: ${allCandidates.slice(1, 3).map(c => `${c.tmdb.name} (${c.score})`).join(', ')}]`;
       } else {
         result.match_status = 'review';
       }
     }
-    
+
   } catch (error) {
     result.match_reason = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
-  
+
   return result;
 }
 
 /**
- * Aplicar cambios a la base de datos
+ * Detectar duplicados: dos personas locales distintas mapeadas al mismo tmdb_id.
+ * Marca la de menor score como 'duplicate' para revision manual.
  */
-async function applyChanges(matches: MatchResult[]): Promise<{ updated: number; errors: number }> {
+function detectDuplicates(results: MatchResult[]): number {
+  const tmdbIdMap = new Map<number, MatchResult[]>();
+  let duplicatesFound = 0;
+
+  for (const result of results) {
+    if (!result.tmdb_id || result.match_status === 'no_match') continue;
+
+    const existing = tmdbIdMap.get(result.tmdb_id) || [];
+    existing.push(result);
+    tmdbIdMap.set(result.tmdb_id, existing);
+  }
+
+  tmdbIdMap.forEach((matches, tmdbId) => {
+    if (matches.length <= 1) return;
+
+    // Ordenar por score descendente, dejar el mejor como esta
+    matches.sort((a, b) => b.match_score - a.match_score);
+
+    for (let i = 1; i < matches.length; i++) {
+      matches[i].match_status = 'duplicate';
+      matches[i].match_reason += ` [DUPLICADO: tmdb_id=${tmdbId} ya asignado a local_id=${matches[0].local_id} "${matches[0].local_name}" con score ${matches[0].match_score}]`;
+      duplicatesFound++;
+    }
+  });
+
+  return duplicatesFound;
+}
+
+/**
+ * Detectar duplicados contra tmdb_ids que ya existen en la BD
+ */
+async function detectExistingDuplicates(results: MatchResult[]): Promise<number> {
+  const pool = getPool();
+  let duplicatesFound = 0;
+
+  // Obtener todos los tmdb_ids candidatos a aplicar
+  const tmdbIds = results
+    .filter(r => r.tmdb_id && r.match_status !== 'no_match')
+    .map(r => r.tmdb_id!);
+
+  if (tmdbIds.length === 0) return 0;
+
+  // Buscar cuales ya existen en la BD
+  const existingResult = await pool.query(
+    `SELECT tmdb_id, id, CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')) as full_name
+     FROM people
+     WHERE tmdb_id = ANY($1) AND tmdb_id IS NOT NULL AND tmdb_id != 0`,
+    [tmdbIds]
+  );
+
+  const existingMap = new Map<number, { id: number; name: string }>();
+  for (const row of existingResult.rows) {
+    existingMap.set(row.tmdb_id, { id: row.id, name: row.full_name.trim() });
+  }
+
+  for (const result of results) {
+    if (!result.tmdb_id || result.match_status === 'no_match') continue;
+
+    const existing = existingMap.get(result.tmdb_id);
+    if (existing) {
+      result.match_status = 'duplicate';
+      result.match_reason += ` [DUPLICADO BD: tmdb_id=${result.tmdb_id} ya asignado a person_id=${existing.id} "${existing.name}"]`;
+      duplicatesFound++;
+    }
+  }
+
+  return duplicatesFound;
+}
+
+/**
+ * Aplicar cambios a la base de datos.
+ * Ahora graba tanto tmdb_id como imdb_id.
+ */
+async function applyChanges(matches: MatchResult[]): Promise<{ updated: number; errors: number; skippedDuplicates: number }> {
   const pool = getPool();
   let updated = 0;
   let errors = 0;
-  
+  let skippedDuplicates = 0;
+
   for (const match of matches) {
-    if (!match.tmdb_id || match.match_status === 'no_match') continue;
-    
+    if (!match.tmdb_id || match.match_status === 'no_match' || match.match_status === 'duplicate') {
+      if (match.match_status === 'duplicate') skippedDuplicates++;
+      continue;
+    }
+
     try {
-      await pool.query(
-        'UPDATE people SET tmdb_id = $1 WHERE id = $2',
-        [match.tmdb_id, match.local_id]
-      );
+      // Grabar tmdb_id + imdb_id en una sola query
+      if (match.imdb_id) {
+        await pool.query(
+          'UPDATE people SET tmdb_id = $1, imdb_id = $2, updated_at = NOW() WHERE id = $3',
+          [match.tmdb_id, match.imdb_id, match.local_id]
+        );
+      } else {
+        await pool.query(
+          'UPDATE people SET tmdb_id = $1, updated_at = NOW() WHERE id = $2',
+          [match.tmdb_id, match.local_id]
+        );
+      }
       updated++;
     } catch (error) {
       log(`Error actualizando persona ${match.local_id}: ${error}`, 'error');
       errors++;
     }
   }
-  
-  return { updated, errors };
+
+  return { updated, errors, skippedDuplicates };
 }
+
+const CSV_HEADERS = [
+  'local_id', 'local_name', 'local_birth', 'local_death', 'local_movies', 'local_department',
+  'tmdb_id', 'tmdb_name', 'tmdb_birth', 'tmdb_death', 'tmdb_place', 'tmdb_department',
+  'imdb_id', 'match_score', 'match_status', 'match_reason'
+];
 
 /**
  * Main function
@@ -2866,76 +3429,107 @@ async function main() {
   const args = process.argv.slice(2);
   const isDryRun = args.includes('--dry-run') || !args.includes('--apply');
   const applyFromCSV = args.includes('--apply-csv');
-  
+  const shouldAppend = args.includes('--append');
+
   const limitArg = args.find(a => a.startsWith('--limit'));
   const limit = limitArg ? parseInt(limitArg.split('=')[1] || args[args.indexOf('--limit') + 1]) : undefined;
-  
+
   const offsetArg = args.find(a => a.startsWith('--offset'));
   const offset = offsetArg ? parseInt(offsetArg.split('=')[1] || args[args.indexOf('--offset') + 1]) : undefined;
-  
+
   const minMoviesArg = args.find(a => a.startsWith('--min-movies'));
   const minMovies = minMoviesArg ? parseInt(minMoviesArg.split('=')[1] || args[args.indexOf('--min-movies') + 1]) : 1;
-  
-  console.log('\n👤 TMDB People Enrichment Script');
-  console.log('=================================\n');
-  
-  // Test conexión a TMDB
-  log('Probando conexión a TMDB...', 'info');
+
+  console.log('\n👤 TMDB People Enrichment Script (v2)');
+  console.log('======================================\n');
+
+  // Test conexion a TMDB
+  log('Probando conexion a TMDB...', 'info');
   const connected = await testConnection();
   if (!connected) {
     log('No se pudo conectar a TMDB', 'error');
     process.exit(1);
   }
-  log('Conexión a TMDB exitosa', 'success');
-  
+  log('Conexion a TMDB exitosa', 'success');
+
   if (applyFromCSV) {
     // Modo: Aplicar desde CSV revisado
     log('Cargando matches desde CSV...', 'info');
-    const matches = loadFromCSV('people-matches.csv') as MatchResult[];
-    
+    const matches = loadFromCSV('people-matches.csv') as unknown as MatchResult[];
+
     if (matches.length === 0) {
-      log('No se encontró el archivo people-matches.csv', 'error');
+      log('No se encontro el archivo people-matches.csv', 'error');
       process.exit(1);
     }
-    
-    const toApply = matches.filter(m => 
+
+    const toApply = matches.filter(m =>
       m.match_status === 'auto_accept' || m.match_status === 'review'
     );
-    
+
     log(`Aplicando ${toApply.length} matches a la base de datos...`, 'info');
-    const { updated, errors } = await applyChanges(toApply);
-    
-    log(`Actualizadas: ${updated} | Errores: ${errors}`, updated > 0 ? 'success' : 'warn');
-    
+    const { updated, errors, skippedDuplicates } = await applyChanges(toApply);
+
+    log(`Actualizadas: ${updated} | Errores: ${errors} | Duplicados omitidos: ${skippedDuplicates}`, updated > 0 ? 'success' : 'warn');
+
   } else {
     // Modo: Procesar personas
-    log(`Obteniendo personas sin IMDB ID (min ${minMovies} película(s))...`, 'info');
-    const people = await getPeopleWithoutImdbId(limit, offset, minMovies);
+    log(`Obteniendo personas sin TMDB ID (min ${minMovies} pelicula(s))...`, 'info');
+    const people = await getPeopleWithoutTmdbId(limit, offset, minMovies);
     log(`Encontradas ${people.length} personas para procesar`, 'info');
-    
+
     if (people.length === 0) {
       log('No hay personas para procesar', 'success');
       await closePool();
       return;
     }
-    
+
+    // --append: retomar desde CSV existente
+    let processedIds = new Set<number>();
+    let retryCount = 0;
+
+    if (shouldAppend) {
+      const loaded = loadCSVForAppend();
+      if (loaded.skipCount > 0 || loaded.retryCount > 0) {
+        processedIds = loaded.skipIds;
+        retryCount = loaded.retryCount;
+        log(`Retomando: ${loaded.skipCount} ya procesadas, ${loaded.retryCount} a reintentar (score 0)`, 'info');
+      } else {
+        log('No se encontro CSV previo o esta vacio, comenzando desde cero', 'warn');
+      }
+    } else {
+      // Sin --append: empezar CSV limpio (borrar si existia)
+      if (fs.existsSync(CSV_OUTPUT_FILE)) {
+        fs.unlinkSync(CSV_OUTPUT_FILE);
+      }
+    }
+
     const startTime = Date.now();
     const results: MatchResult[] = [];
-    
-    // Stats
-    let processed = 0;
+
+    // Stats de esta corrida
+    let processedThisRun = 0;
     let autoAccepted = 0;
     let needsReview = 0;
     let noMatch = 0;
     let multiple = 0;
-    
+
+    const totalToProcess = people.length;
+    const skippedFromAppend = processedIds.size;
+
     for (const person of people) {
-      processed++;
-      process.stdout.write(`\r${progressBar(processed, people.length)} - ${person.full_name.slice(0, 25)}...`);
-      
+      // Skip si ya fue procesada (--append)
+      if (processedIds.has(person.id)) continue;
+
+      processedThisRun++;
+      const totalProcessed = skippedFromAppend + processedThisRun;
+      process.stdout.write(`\r${progressBar(totalProcessed, totalToProcess)} - ${person.full_name.slice(0, 25).padEnd(25)}  `);
+
       const match = await findMatchForPerson(person);
       results.push(match);
-      
+
+      // Escribir al CSV inmediatamente (no se pierde nada si se corta)
+      appendRowToCSV(match);
+
       switch (match.match_status) {
         case 'auto_accept': autoAccepted++; break;
         case 'review': needsReview++; break;
@@ -2943,55 +3537,78 @@ async function main() {
         case 'multiple': multiple++; break;
       }
     }
-    
+
     console.log('\n');
-    
-    const elapsed = Date.now() - startTime;
-    
-    // Guardar CSV
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
-    saveToCSV(results, `people-matches-${timestamp}.csv`, [
-      'local_id', 'local_name', 'local_birth', 'local_death', 'local_movies',
-      'tmdb_id', 'tmdb_name', 'tmdb_birth', 'tmdb_death', 'tmdb_place',
-      'imdb_id', 'match_score', 'match_status', 'match_reason'
-    ]);
-    
-    // También guardar versión "latest" para aplicar después
-    saveToCSV(results, 'people-matches.csv', [
-      'local_id', 'local_name', 'local_birth', 'local_death', 'local_movies',
-      'tmdb_id', 'tmdb_name', 'tmdb_birth', 'tmdb_death', 'tmdb_place',
-      'imdb_id', 'match_score', 'match_status', 'match_reason'
-    ]);
-    
-    // Resumen
-    console.log('\n📊 Resumen:');
-    console.log(`   Procesadas:      ${processed}`);
-    console.log(`   Auto-aceptadas:  ${autoAccepted} (score >= ${config.matching.person.autoAcceptScore})`);
-    console.log(`   Para revisar:    ${needsReview} (score ${config.matching.person.reviewScore}-${config.matching.person.autoAcceptScore - 1})`);
-    console.log(`   Múltiples:       ${multiple}`);
-    console.log(`   Sin match:       ${noMatch}`);
-    console.log(`   Tiempo:          ${formatDuration(elapsed)}`);
-    
-    // Estimación para todo el dataset
-    if (limit && processed > 0) {
-      const avgTimePerPerson = elapsed / processed;
-      const totalPeople = 63950; // De los datos que me diste
-      const estimatedTotal = avgTimePerPerson * totalPeople;
-      console.log(`\n⏱️  Tiempo estimado para ${totalPeople} personas: ${formatDuration(estimatedTotal)}`);
+
+    // Detectar duplicados sobre todo el CSV (incluyendo corridas previas si es --append)
+    const allResults = shouldAppend
+      ? loadFromCSV('people-matches.csv') as unknown as MatchResult[]
+      : results;
+
+    const batchDuplicates = detectDuplicates(allResults);
+    if (batchDuplicates > 0) {
+      log(`Detectados ${batchDuplicates} duplicados dentro del CSV`, 'warn');
     }
-    
+
+    const dbDuplicates = await detectExistingDuplicates(allResults);
+    if (dbDuplicates > 0) {
+      log(`Detectados ${dbDuplicates} duplicados contra la BD existente`, 'warn');
+    }
+
+    // Si hubo duplicados detectados, reescribir el CSV con los status actualizados
+    const totalDuplicates = allResults.filter(r => r.match_status === 'duplicate').length;
+    if (totalDuplicates > 0) {
+      saveToCSV(allResults, 'people-matches.csv', CSV_HEADERS);
+    }
+
+    const elapsed = Date.now() - startTime;
+
+    // Copia con timestamp
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+    fs.copyFileSync(CSV_OUTPUT_FILE, path.join(path.dirname(CSV_OUTPUT_FILE), `people-matches-${timestamp}.csv`));
+
+    // Resumen
+    const totalInCSV = allResults.length;
+    console.log('\n📊 Resumen:');
+    if (shouldAppend && skippedFromAppend > 0) {
+      console.log(`   Previas (CSV):   ${skippedFromAppend}`);
+    }
+    if (retryCount > 0) {
+      console.log(`   Reintentadas:    ${retryCount} (tenian score 0)`);
+    }
+    console.log(`   Procesadas:      ${processedThisRun}`);
+    console.log(`   Auto-aceptadas:  ${autoAccepted} (score >= ${config.matching.person.autoAcceptScore} o reglas especiales)`);
+    console.log(`   Para revisar:    ${needsReview}`);
+    console.log(`   Multiples:       ${multiple}`);
+    console.log(`   Sin match:       ${noMatch}`);
+    if (totalDuplicates > 0) {
+      console.log(`   Duplicados:      ${totalDuplicates}`);
+    }
+    console.log(`   Total en CSV:    ${totalInCSV}`);
+    console.log(`   Tiempo:          ${formatDuration(elapsed)}`);
+
+    // Estimacion para todo el dataset
+    if (processedThisRun > 0) {
+      const avgTimePerPerson = elapsed / processedThisRun;
+      const remaining = totalToProcess - skippedFromAppend - processedThisRun;
+      if (remaining > 0) {
+        console.log(`\n⏱️  Tiempo estimado para ${remaining} restantes: ${formatDuration(avgTimePerPerson * remaining)}`);
+      }
+    }
+
     if (!isDryRun) {
       const toApply = results.filter(r => r.match_status === 'auto_accept');
-      log(`\nAplicando ${toApply.length} matches automáticos a la BD...`, 'info');
-      const { updated, errors } = await applyChanges(toApply);
-      log(`Actualizadas: ${updated} | Errores: ${errors}`, 'success');
+      log(`\nAplicando ${toApply.length} matches automaticos a la BD...`, 'info');
+      const { updated, errors, skippedDuplicates } = await applyChanges(toApply);
+      log(`Actualizadas: ${updated} (tmdb_id + imdb_id) | Errores: ${errors} | Duplicados omitidos: ${skippedDuplicates}`, 'success');
     } else {
       console.log('\n💡 Modo dry-run: No se aplicaron cambios.');
-      console.log('   Para aplicar auto-aceptados: npx ts-node enrich-people.ts --apply');
-      console.log('   Para aplicar desde CSV:      npx ts-node enrich-people.ts --apply-csv');
+      console.log('   Para aplicar auto-aceptados: npx tsx enrich-people.ts --apply');
+      console.log('   Para aplicar desde CSV:      npx tsx enrich-people.ts --apply-csv');
+      console.log('   Para retomar si se corto:    npx tsx enrich-people.ts --append --dry-run');
     }
   }
-  
+
   await closePool();
   console.log('\n✨ Proceso completado\n');
 }
@@ -3000,6 +3617,7 @@ main().catch(error => {
   console.error('Error fatal:', error);
   process.exit(1);
 });
+
 
 // ==================================================
 // scripts/tmdb/generate-synopses.ts
@@ -4126,6 +4744,488 @@ async function main(): Promise<void> {
 main().catch(error => {
     console.error('Error fatal:', error);
     process.exit(1);
+});
+
+
+// ==================================================
+// scripts/tmdb/interactive-tmdb-from-imdb.ts
+// ==================================================
+/**
+ * Script interactivo para sincronizar tmdb_id desde IMDB ID
+ *
+ * Busca peliculas que tienen imdb_id pero no tienen tmdb_id,
+ * consulta TMDB y muestra la comparacion para que el usuario confirme.
+ *
+ * Uso:
+ *   npx tsx scripts/tmdb/interactive-tmdb-from-imdb.ts
+ *   npx tsx scripts/tmdb/interactive-tmdb-from-imdb.ts --limit 50
+ *   npx tsx scripts/tmdb/interactive-tmdb-from-imdb.ts --reset    # Reiniciar progreso
+ */
+
+import { PrismaClient } from '@prisma/client';
+import * as readline from 'readline';
+import * as fs from 'fs';
+import * as path from 'path';
+import { testConnection, getMovieDetails } from './tmdb-client';
+import { log, formatDuration, saveToCSV } from './utils';
+import config from './config';
+
+// Cargar dotenv solo si esta disponible
+try {
+  const pathModule = require('path');
+  const dotenv = require('dotenv');
+  dotenv.config({ path: pathModule.resolve(__dirname, '../../.env') });
+} catch {
+  // dotenv no disponible
+}
+
+const prisma = new PrismaClient();
+
+// ============================================================================
+// PROGRESO
+// ============================================================================
+
+const PROGRESS_FILE = path.join(__dirname, 'reports', '.interactive-tmdb-progress.json');
+
+interface ProgressData {
+  /** IDs de peliculas ya revisadas (aplicadas, saltadas o no encontradas) */
+  processedIds: number[];
+  lastRun: string;
+}
+
+function loadProgress(): Set<number> {
+  try {
+    if (fs.existsSync(PROGRESS_FILE)) {
+      const data: ProgressData = JSON.parse(fs.readFileSync(PROGRESS_FILE, 'utf-8'));
+      return new Set(data.processedIds);
+    }
+  } catch {
+    // Si hay error leyendo, empezar de cero
+  }
+  return new Set();
+}
+
+function saveProgress(processedIds: Set<number>): void {
+  const data: ProgressData = {
+    processedIds: Array.from(processedIds),
+    lastRun: new Date().toISOString(),
+  };
+  const reportsDir = path.join(__dirname, 'reports');
+  if (!fs.existsSync(reportsDir)) {
+    fs.mkdirSync(reportsDir, { recursive: true });
+  }
+  fs.writeFileSync(PROGRESS_FILE, JSON.stringify(data, null, 2));
+}
+
+function resetProgress(): void {
+  if (fs.existsSync(PROGRESS_FILE)) {
+    fs.unlinkSync(PROGRESS_FILE);
+    log('Progreso reiniciado', 'success');
+  } else {
+    log('No habia progreso guardado', 'info');
+  }
+}
+
+// ============================================================================
+// TIPOS
+// ============================================================================
+
+interface MovieWithDirector {
+  id: number;
+  title: string;
+  year: number | null;
+  imdbId: string;
+  directorName: string | null;
+}
+
+interface TMDBFindResult {
+  tmdbId: number;
+  title: string;
+  originalTitle: string;
+  year: number | null;
+  directorName: string | null;
+}
+
+interface ProcessResult {
+  local_id: number;
+  local_title: string;
+  local_year: number | null;
+  local_director: string | null;
+  imdb_id: string;
+  tmdb_id: number | null;
+  tmdb_title: string | null;
+  tmdb_year: number | null;
+  tmdb_director: string | null;
+  action: 'applied' | 'skipped' | 'not_found' | 'error';
+  message: string;
+}
+
+// ============================================================================
+// FUNCIONES DE TMDB API
+// ============================================================================
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+interface TMDBFindResponse {
+  movie_results: Array<{
+    id: number;
+    title: string;
+    original_title: string;
+    release_date: string;
+  }>;
+}
+
+/**
+ * Buscar en TMDB por IMDB ID usando el endpoint /find
+ */
+async function findByImdbId(imdbId: string): Promise<TMDBFindResponse> {
+  const url = `${config.tmdbBaseUrl}/find/${imdbId}?external_source=imdb_id`;
+
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${config.tmdbAccessToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Obtener el director de una pelicula en TMDB
+ */
+async function getTMDBDirector(tmdbId: number): Promise<string | null> {
+  try {
+    const details = await getMovieDetails(tmdbId);
+    if (details.credits?.crew) {
+      const director = details.credits.crew.find(c => c.job === 'Director');
+      return director?.name || null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// ============================================================================
+// FUNCIONES DE BASE DE DATOS
+// ============================================================================
+
+/**
+ * Obtener peliculas con imdb_id pero sin tmdb_id, junto con su director
+ */
+async function getMoviesWithImdbNoTmdb(limit?: number): Promise<MovieWithDirector[]> {
+  const movies = await prisma.movie.findMany({
+    where: {
+      imdbId: { not: null },
+      OR: [
+        { tmdbId: null },
+        { tmdbId: 0 },
+      ],
+    },
+    select: {
+      id: true,
+      title: true,
+      year: true,
+      imdbId: true,
+      crew: {
+        where: {
+          roleId: config.roles.director,
+        },
+        select: {
+          person: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+        take: 1,
+      },
+    },
+    orderBy: { year: 'desc' },
+    take: limit,
+  });
+
+  return movies
+    .filter(m => m.imdbId && m.imdbId.trim() !== '')
+    .map(m => {
+      const director = m.crew[0]?.person;
+      const directorName = director
+        ? `${director.firstName || ''} ${director.lastName || ''}`.trim()
+        : null;
+
+      return {
+        id: m.id,
+        title: m.title,
+        year: m.year,
+        imdbId: m.imdbId!,
+        directorName: directorName || null,
+      };
+    });
+}
+
+// ============================================================================
+// FUNCIONES DE UI
+// ============================================================================
+
+function createReadlineInterface(): readline.Interface {
+  return readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+}
+
+async function askQuestion(rl: readline.Interface, question: string): Promise<string> {
+  return new Promise(resolve => {
+    rl.question(question, answer => {
+      resolve(answer.trim().toLowerCase());
+    });
+  });
+}
+
+function printSeparator(): void {
+  console.log('\n' + '='.repeat(70));
+}
+
+function printComparison(
+  movie: MovieWithDirector,
+  tmdb: TMDBFindResult | null,
+  index: number,
+  total: number
+): void {
+  printSeparator();
+  console.log(`  PELICULA ${index}/${total}`);
+  console.log(`  IMDB ID: ${movie.imdbId}`);
+  printSeparator();
+
+  console.log('\n  LOCAL (tu base de datos):');
+  console.log(`    Titulo:   ${movie.title}`);
+  console.log(`    Anio:     ${movie.year || '(sin dato)'}`);
+  console.log(`    Director: ${movie.directorName || '(sin dato)'}`);
+
+  if (tmdb) {
+    console.log('\n  TMDB (encontrado):');
+    console.log(`    Titulo:   ${tmdb.title}`);
+    if (tmdb.originalTitle && tmdb.originalTitle !== tmdb.title) {
+      console.log(`    Original: ${tmdb.originalTitle}`);
+    }
+    console.log(`    Anio:     ${tmdb.year || '(sin dato)'}`);
+    console.log(`    Director: ${tmdb.directorName || '(sin dato)'}`);
+    console.log(`    TMDB ID:  ${tmdb.tmdbId}`);
+  } else {
+    console.log('\n  TMDB: NO ENCONTRADA');
+  }
+
+  console.log('');
+}
+
+// ============================================================================
+// FUNCION PRINCIPAL
+// ============================================================================
+
+async function main(): Promise<void> {
+  // Parsear argumentos
+  const args = process.argv.slice(2);
+  let limit: number | undefined;
+  const shouldReset = args.includes('--reset');
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--limit') {
+      limit = parseInt(args[++i], 10);
+    }
+  }
+
+  console.log('='.repeat(70));
+  console.log('  SINCRONIZACION INTERACTIVA DE TMDB ID DESDE IMDB ID');
+  console.log('='.repeat(70));
+
+  // Reset de progreso si se pide
+  if (shouldReset) {
+    resetProgress();
+    await prisma.$disconnect();
+    return;
+  }
+
+  // Cargar progreso previo
+  const processedIds = loadProgress();
+  if (processedIds.size > 0) {
+    log(`Progreso cargado: ${processedIds.size} peliculas ya revisadas (usar --reset para reiniciar)`, 'info');
+  }
+
+  // Test conexion TMDB
+  log('Probando conexion a TMDB...', 'info');
+  const connected = await testConnection();
+  if (!connected) {
+    log('No se pudo conectar a TMDB', 'error');
+    process.exit(1);
+  }
+  log('Conexion a TMDB exitosa', 'success');
+
+  // Obtener peliculas
+  log('Obteniendo peliculas con IMDB ID pero sin TMDB ID...', 'info');
+  const allMovies = await getMoviesWithImdbNoTmdb(limit);
+  const movies = allMovies.filter(m => !processedIds.has(m.id));
+  const skippedCount = allMovies.length - movies.length;
+
+  if (skippedCount > 0) {
+    log(`Saltando ${skippedCount} peliculas ya revisadas`, 'info');
+  }
+  log(`Peliculas a procesar: ${movies.length}`, 'info');
+
+  if (movies.length === 0) {
+    log('No hay peliculas para procesar', 'success');
+    await prisma.$disconnect();
+    return;
+  }
+
+  const rl = createReadlineInterface();
+  const results: ProcessResult[] = [];
+  const startTime = Date.now();
+
+  let applied = 0;
+  let skipped = 0;
+  let notFound = 0;
+  let errors = 0;
+
+  console.log('\nResponde: s/si/y = aplicar, n/no = saltar, q/salir = terminar\n');
+
+  for (let i = 0; i < movies.length; i++) {
+    const movie = movies[i];
+
+    const result: ProcessResult = {
+      local_id: movie.id,
+      local_title: movie.title,
+      local_year: movie.year,
+      local_director: movie.directorName,
+      imdb_id: movie.imdbId,
+      tmdb_id: null,
+      tmdb_title: null,
+      tmdb_year: null,
+      tmdb_director: null,
+      action: 'not_found',
+      message: '',
+    };
+
+    try {
+      // Buscar en TMDB por IMDB ID
+      const findResult = await findByImdbId(movie.imdbId);
+      await sleep(config.delayBetweenRequests);
+
+      if (findResult.movie_results && findResult.movie_results.length > 0) {
+        const tmdbMovie = findResult.movie_results[0];
+        const tmdbYear = tmdbMovie.release_date
+          ? parseInt(tmdbMovie.release_date.split('-')[0])
+          : null;
+
+        // Obtener director de TMDB
+        const tmdbDirector = await getTMDBDirector(tmdbMovie.id);
+        await sleep(config.delayBetweenRequests);
+
+        const tmdbResult: TMDBFindResult = {
+          tmdbId: tmdbMovie.id,
+          title: tmdbMovie.title,
+          originalTitle: tmdbMovie.original_title,
+          year: tmdbYear,
+          directorName: tmdbDirector,
+        };
+
+        result.tmdb_id = tmdbResult.tmdbId;
+        result.tmdb_title = tmdbResult.title;
+        result.tmdb_year = tmdbResult.year;
+        result.tmdb_director = tmdbResult.directorName;
+
+        // Mostrar comparacion
+        printComparison(movie, tmdbResult, i + 1, movies.length);
+
+        // Preguntar al usuario
+        const answer = await askQuestion(rl, '  Aplicar tmdb_id? (s/n/q): ');
+
+        if (answer === 'q' || answer === 'salir' || answer === 'quit') {
+          console.log('\nSaliendo...');
+          result.action = 'skipped';
+          result.message = 'Usuario salio';
+          results.push(result);
+          break;
+        }
+
+        if (answer === 's' || answer === 'si' || answer === 'y' || answer === 'yes') {
+          // Aplicar cambio
+          await prisma.movie.update({
+            where: { id: movie.id },
+            data: { tmdbId: tmdbResult.tmdbId },
+          });
+          result.action = 'applied';
+          result.message = 'Aplicado';
+          applied++;
+          console.log('  >> APLICADO');
+        } else {
+          result.action = 'skipped';
+          result.message = 'Saltado por usuario';
+          skipped++;
+          console.log('  >> SALTADO');
+        }
+      } else {
+        // No encontrada en TMDB
+        printComparison(movie, null, i + 1, movies.length);
+        result.action = 'not_found';
+        result.message = 'No existe en TMDB';
+        notFound++;
+        console.log('  >> No encontrada en TMDB, continuando...');
+        await sleep(500); // Pausa breve para que se vea el mensaje
+      }
+    } catch (error) {
+      result.action = 'error';
+      result.message = error instanceof Error ? error.message : 'Error desconocido';
+      errors++;
+      console.log(`  >> ERROR: ${result.message}`);
+    }
+
+    results.push(result);
+
+    // Guardar progreso despues de cada pelicula
+    processedIds.add(movie.id);
+    saveProgress(processedIds);
+  }
+
+  rl.close();
+
+  const elapsed = Date.now() - startTime;
+
+  // Guardar CSV con resultados
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+  saveToCSV(results, `interactive-tmdb-sync-${timestamp}.csv`, [
+    'local_id', 'local_title', 'local_year', 'local_director', 'imdb_id',
+    'tmdb_id', 'tmdb_title', 'tmdb_year', 'tmdb_director', 'action', 'message'
+  ]);
+
+  // Resumen
+  printSeparator();
+  console.log('  RESUMEN');
+  printSeparator();
+  console.log(`   Procesadas:     ${results.length}`);
+  console.log(`   Aplicadas:      ${applied}`);
+  console.log(`   Saltadas:       ${skipped}`);
+  console.log(`   No en TMDB:     ${notFound}`);
+  console.log(`   Errores:        ${errors}`);
+  console.log(`   Tiempo:         ${formatDuration(elapsed)}`);
+  console.log(`   Progreso total: ${processedIds.size} peliculas revisadas`);
+  console.log(`   Para reiniciar: npx tsx scripts/tmdb/interactive-tmdb-from-imdb.ts --reset`);
+  printSeparator();
+
+  await prisma.$disconnect();
+  console.log('\nProceso completado\n');
+}
+
+main().catch(error => {
+  console.error('Error fatal:', error);
+  process.exit(1);
 });
 
 
@@ -5836,6 +6936,748 @@ export function splitNameSimple(fullName: string): { firstName: string; lastName
 
 
 // ==================================================
+// scripts/tmdb/migrate-omdb-posters.ts
+// ==================================================
+/**
+ * Script para migrar afiches desde OMDB/IMDb a Cloudinary
+ *
+ * Busca películas en la base de datos que:
+ * 1. Tienen imdb_id
+ * 2. No tienen poster_url (o está vacío)
+ * Para cada una, obtiene la URL del poster desde OMDB y lo sube a Cloudinary
+ * en resolución original (sin el sufijo de redimensionamiento de Amazon).
+ *
+ * Flujo recomendado:
+ *   1. npx tsx scripts/tmdb/migrate-omdb-posters.ts --preview
+ *      Genera un HTML para revisar los afiches visualmente
+ *   2. Abrí el HTML, marcá los que están bien, hacé click en "Exportar"
+ *   3. npx tsx scripts/tmdb/migrate-omdb-posters.ts --approved-from=reports/omdb-approved.json
+ *      Procesa solo los aprobados
+ *
+ * Opciones:
+ *   --preview              Genera HTML de review (no hace cambios)
+ *   --approved-from=FILE   Procesa solo los IDs aprobados del archivo JSON
+ *   --dry-run              Ver qué películas se procesarían sin hacer cambios
+ *   --limit=N              Procesar solo N películas
+ *   --movie-id=N           Procesar solo la película con ID específico
+ */
+
+import { PrismaClient } from '@prisma/client';
+import { v2 as cloudinary } from 'cloudinary';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Cargar dotenv solo si está disponible
+try {
+    const pathModule = require('path');
+    const dotenv = require('dotenv');
+    dotenv.config({ path: pathModule.resolve(__dirname, '../../.env') });
+} catch {
+    // dotenv no disponible
+}
+
+// Configurar Cloudinary
+cloudinary.config({
+    cloud_name: 'dzndglyjr',
+    api_key: process.env.CLOUDINARY_API_KEY || '916999397279161',
+    api_secret: process.env.CLOUDINARY_API_SECRET || '6K7EQkELG4dgl4RgdA5wsTwSPpI'
+});
+
+const prisma = new PrismaClient();
+
+const OMDB_API_KEY = process.env.OMDB_API_KEY || 'trilogy';
+
+interface OMDBResponse {
+    Response: string;
+    Poster?: string;
+    Title?: string;
+    Error?: string;
+}
+
+interface MigrationResult {
+    movieId: number;
+    title: string;
+    imdbId: string;
+    success: boolean;
+    posterUrl?: string;
+    publicId?: string;
+    error?: string;
+}
+
+interface MigrationStats {
+    total: number;
+    success: number;
+    failed: number;
+    skipped: number;
+    results: MigrationResult[];
+}
+
+function delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Llama a OMDB API para obtener datos de la película
+ */
+async function fetchOMDB(imdbId: string): Promise<OMDBResponse> {
+    const url = `http://www.omdbapi.com/?i=${imdbId}&apikey=${OMDB_API_KEY}`;
+    const response = await fetch(url);
+    return response.json();
+}
+
+/**
+ * Transforma la URL del poster de OMDB para obtener resolución original.
+ * OMDB devuelve URLs como:
+ *   https://m.media-amazon.com/images/M/MV5B...@@._V1_SX300.jpg
+ * Reemplazamos el sufijo de tamaño para obtener la imagen completa:
+ *   https://m.media-amazon.com/images/M/MV5B...@@._V1_.jpg
+ */
+function getFullResolutionUrl(omdbPosterUrl: string): string {
+    return omdbPosterUrl.replace(/_V1_.*\.jpg$/i, '_V1_.jpg');
+}
+
+/**
+ * Sube una imagen desde URL a Cloudinary
+ */
+async function uploadToCloudinary(
+    imageUrl: string,
+    movieId: number
+): Promise<{ url: string; publicId: string }> {
+    const result = await cloudinary.uploader.upload(imageUrl, {
+        folder: `cinenacional/posters/${movieId}`,
+        public_id: 'poster',
+        overwrite: true,
+        resource_type: 'image',
+        timeout: 120000, // 2 minutos
+        transformation: [
+            { quality: 'auto:best' },
+            { fetch_format: 'auto' }
+        ]
+    });
+
+    return {
+        url: result.secure_url,
+        publicId: result.public_id
+    };
+}
+
+/**
+ * Procesa una película: obtiene poster de OMDB y lo sube a Cloudinary
+ */
+async function processMovie(
+    movie: { id: number; title: string; imdbId: string },
+    dryRun: boolean
+): Promise<MigrationResult> {
+    const result: MigrationResult = {
+        movieId: movie.id,
+        title: movie.title,
+        imdbId: movie.imdbId,
+        success: false
+    };
+
+    try {
+        const omdbData = await fetchOMDB(movie.imdbId);
+
+        if (omdbData.Response === 'False') {
+            result.error = `No encontrado en OMDB: ${omdbData.Error || 'desconocido'}`;
+            return result;
+        }
+
+        if (!omdbData.Poster || omdbData.Poster === 'N/A') {
+            result.error = 'No tiene poster en OMDB';
+            return result;
+        }
+
+        // Verificar que la imagen realmente existe en el CDN
+        const headRes = await fetch(omdbData.Poster, { method: 'HEAD' });
+        if (!headRes.ok) {
+            result.error = `Poster roto en CDN (HTTP ${headRes.status})`;
+            return result;
+        }
+
+        const fullResUrl = getFullResolutionUrl(omdbData.Poster);
+
+        if (dryRun) {
+            result.success = true;
+            result.posterUrl = fullResUrl;
+            result.error = `[DRY RUN] Se subiría este poster (OMDB: ${omdbData.Poster})`;
+            return result;
+        }
+
+        // Subir a Cloudinary
+        const cloudinaryResult = await uploadToCloudinary(fullResUrl, movie.id);
+
+        // Actualizar base de datos
+        await prisma.movie.update({
+            where: { id: movie.id },
+            data: {
+                posterUrl: cloudinaryResult.url,
+                posterPublicId: cloudinaryResult.publicId
+            }
+        });
+
+        result.success = true;
+        result.posterUrl = cloudinaryResult.url;
+        result.publicId = cloudinaryResult.publicId;
+
+    } catch (error) {
+        result.error = error instanceof Error ? error.message : String(error);
+    }
+
+    return result;
+}
+
+/**
+ * Guarda el reporte de migración en CSV
+ */
+async function saveReport(stats: MigrationStats, dryRun: boolean): Promise<string> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const prefix = dryRun ? 'dry-run-' : '';
+    const filename = `${prefix}omdb-poster-migration-${timestamp}.csv`;
+    const filepath = path.join(__dirname, 'reports', filename);
+
+    const reportsDir = path.join(__dirname, 'reports');
+    if (!fs.existsSync(reportsDir)) {
+        fs.mkdirSync(reportsDir, { recursive: true });
+    }
+
+    const csvLines = [
+        'movie_id,title,imdb_id,success,poster_url,public_id,error'
+    ];
+
+    for (const r of stats.results) {
+        const title = r.title.replace(/"/g, '""');
+        const error = (r.error || '').replace(/"/g, '""');
+        csvLines.push(
+            `${r.movieId},"${title}",${r.imdbId},${r.success},"${r.posterUrl || ''}","${r.publicId || ''}","${error}"`
+        );
+    }
+
+    fs.writeFileSync(filepath, csvLines.join('\n'), 'utf8');
+    return filepath;
+}
+
+/**
+ * Genera un HTML de preview para revisar los afiches visualmente
+ */
+async function generatePreview(options: { limit?: number; movieId?: number }): Promise<void> {
+    console.log('='.repeat(60));
+    console.log('PREVIEW DE POSTERS OMDB/IMDb');
+    console.log('='.repeat(60));
+
+    const whereClause: any = {
+        imdbId: { not: null },
+        OR: [
+            { posterUrl: null },
+            { posterUrl: '' }
+        ]
+    };
+
+    if (options.movieId) {
+        whereClause.id = options.movieId;
+    }
+
+    const movies = await prisma.movie.findMany({
+        where: whereClause,
+        select: {
+            id: true,
+            title: true,
+            imdbId: true,
+            year: true
+        },
+        orderBy: { id: 'asc' },
+        take: options.limit
+    });
+
+    console.log(`Encontradas ${movies.length} películas sin poster con imdb_id\n`);
+    console.log('Consultando OMDB para obtener URLs de posters...\n');
+
+    interface PreviewItem {
+        movieId: number;
+        title: string;
+        year: number | null;
+        imdbId: string;
+        posterUrl: string;
+        fullResUrl: string;
+    }
+
+    const items: PreviewItem[] = [];
+    let skipped = 0;
+
+    for (let i = 0; i < movies.length; i++) {
+        const movie = movies[i];
+        console.log(`[${i + 1}/${movies.length}] ${movie.title}...`);
+
+        try {
+            const omdbData = await fetchOMDB(movie.imdbId!);
+
+            if (omdbData.Response === 'False' || !omdbData.Poster || omdbData.Poster === 'N/A') {
+                skipped++;
+                continue;
+            }
+
+            // Verificar que la imagen realmente existe en el CDN
+            const headRes = await fetch(omdbData.Poster, { method: 'HEAD' });
+            if (!headRes.ok) {
+                skipped++;
+                console.log(`  Poster roto (HTTP ${headRes.status})`);
+                continue;
+            }
+
+            items.push({
+                movieId: movie.id,
+                title: movie.title,
+                year: movie.year,
+                imdbId: movie.imdbId!,
+                posterUrl: omdbData.Poster,
+                fullResUrl: getFullResolutionUrl(omdbData.Poster)
+            });
+        } catch (error) {
+            console.log(`  Error: ${error instanceof Error ? error.message : error}`);
+        }
+
+        if (i < movies.length - 1) {
+            await delay(150);
+        }
+    }
+
+    console.log(`\nCon poster: ${items.length} | Sin poster: ${skipped}\n`);
+
+    if (items.length === 0) {
+        console.log('No hay películas con poster para revisar.');
+        return;
+    }
+
+    // Generar HTML
+    const reportsDir = path.join(__dirname, 'reports');
+    if (!fs.existsSync(reportsDir)) {
+        fs.mkdirSync(reportsDir, { recursive: true });
+    }
+
+    const htmlPath = path.join(reportsDir, 'omdb-poster-review.html');
+    const jsonDataPath = 'omdb-approved.json';
+
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Review de Posters OMDB</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #1a1a2e; color: #eee; padding: 20px; }
+  h1 { text-align: center; margin-bottom: 10px; }
+  .toolbar { text-align: center; margin-bottom: 20px; padding: 15px; background: #16213e; border-radius: 8px; }
+  .toolbar button { padding: 8px 20px; margin: 0 5px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
+  .btn-approve { background: #4ecca3; color: #1a1a2e; }
+  .btn-reject { background: #e84545; color: white; }
+  .btn-export { background: #ffd369; color: #1a1a2e; }
+  .btn-export:disabled { opacity: 0.5; cursor: not-allowed; }
+  .stats { font-size: 14px; margin-top: 10px; color: #aaa; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
+  .card { background: #16213e; border-radius: 8px; overflow: hidden; transition: all 0.2s; position: relative; }
+  .card.approved { outline: 3px solid #4ecca3; }
+  .card.rejected { outline: 3px solid #e84545; opacity: 0.4; }
+  .card img { width: 100%; height: 330px; object-fit: cover; cursor: pointer; }
+  .card img.errored { height: 330px; display: flex; align-items: center; justify-content: center; background: #333; }
+  .card-info { padding: 10px; }
+  .card-title { font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-meta { font-size: 11px; color: #888; margin-top: 3px; }
+  .card-actions { display: flex; gap: 5px; padding: 0 10px 10px; }
+  .card-actions button { flex: 1; padding: 5px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+  .badge { position: absolute; top: 8px; right: 8px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+  .badge-approved { background: #4ecca3; color: #1a1a2e; }
+  .badge-rejected { background: #e84545; color: white; }
+  .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; }
+  .modal.active { display: flex; }
+  .modal img { max-height: 90vh; max-width: 90vw; }
+  .modal-close { position: absolute; top: 20px; right: 30px; color: white; font-size: 30px; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>Review de Posters OMDB</h1>
+<div class="toolbar">
+  <button class="btn-approve" onclick="approveAll()">Aprobar todos</button>
+  <button class="btn-reject" onclick="rejectAll()">Rechazar todos</button>
+  <button class="btn-export" id="exportBtn" onclick="exportApproved()">Exportar aprobados (0)</button>
+  <div class="stats">Total: ${items.length} posters encontrados</div>
+</div>
+<div class="grid" id="grid"></div>
+<div class="modal" id="modal" onclick="closeModal()">
+  <span class="modal-close">&times;</span>
+  <img id="modal-img" src="">
+</div>
+
+<script>
+const items = ${JSON.stringify(items)};
+const state = {};
+
+function render() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  items.forEach(item => {
+    const status = state[item.movieId] || 'pending';
+    const card = document.createElement('div');
+    card.className = 'card ' + status;
+    card.innerHTML = \`
+      <img src="\${item.posterUrl}" alt="\${item.title}"
+           onclick="openModal('\${item.fullResUrl}')"
+           onerror="this.style.background='#333';this.style.height='330px';this.alt='Sin imagen';">
+      \${status === 'approved' ? '<span class="badge badge-approved">OK</span>' : ''}
+      \${status === 'rejected' ? '<span class="badge badge-rejected">NO</span>' : ''}
+      <div class="card-info">
+        <div class="card-title" title="\${item.title}">\${item.title}</div>
+        <div class="card-meta">ID: \${item.movieId} | IMDb: \${item.imdbId}\${item.year ? ' | ' + item.year : ''}</div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-approve" onclick="setState(\${item.movieId}, 'approved')">OK</button>
+        <button class="btn-reject" onclick="setState(\${item.movieId}, 'rejected')">No</button>
+      </div>
+    \`;
+    grid.appendChild(card);
+  });
+  updateExportBtn();
+}
+
+function setState(movieId, status) {
+  state[movieId] = state[movieId] === status ? 'pending' : status;
+  render();
+}
+
+function approveAll() {
+  items.forEach(item => { state[item.movieId] = 'approved'; });
+  render();
+}
+
+function rejectAll() {
+  items.forEach(item => { state[item.movieId] = 'rejected'; });
+  render();
+}
+
+function updateExportBtn() {
+  const approved = items.filter(i => state[i.movieId] === 'approved');
+  document.getElementById('exportBtn').textContent = 'Exportar aprobados (' + approved.length + ')';
+  document.getElementById('exportBtn').disabled = approved.length === 0;
+}
+
+function exportApproved() {
+  const approved = items.filter(i => state[i.movieId] === 'approved').map(i => ({
+    movieId: i.movieId,
+    imdbId: i.imdbId,
+    title: i.title,
+    fullResUrl: i.fullResUrl
+  }));
+  const blob = new Blob([JSON.stringify(approved, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '${jsonDataPath}';
+  a.click();
+}
+
+function openModal(url) {
+  document.getElementById('modal-img').src = url;
+  document.getElementById('modal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+render();
+</script>
+</body>
+</html>`;
+
+    fs.writeFileSync(htmlPath, html, 'utf8');
+    console.log(`HTML de review generado: ${htmlPath}`);
+    console.log(`\nAbrilo en el navegador, revisá los afiches, y hacé click en "Exportar aprobados".`);
+    console.log(`Después corré:\n  npx tsx scripts/tmdb/migrate-omdb-posters.ts --approved-from=reports/omdb-approved.json`);
+}
+
+/**
+ * Procesa solo las películas aprobadas desde un archivo JSON
+ */
+async function migrateApproved(approvedFile: string, dryRun: boolean): Promise<void> {
+    console.log('='.repeat(60));
+    console.log('MIGRACIÓN DE POSTERS APROBADOS OMDB/IMDb -> CLOUDINARY');
+    console.log('='.repeat(60));
+
+    if (dryRun) {
+        console.log('\n[DRY RUN] No se realizarán cambios en la base de datos\n');
+    }
+
+    // Resolver path relativo al directorio de reportes si no es absoluto
+    let filePath = approvedFile;
+    if (!path.isAbsolute(filePath)) {
+        filePath = path.join(__dirname, filePath);
+    }
+
+    if (!fs.existsSync(filePath)) {
+        console.error(`Archivo no encontrado: ${filePath}`);
+        process.exit(1);
+    }
+
+    const approved: Array<{ movieId: number; imdbId: string; title: string; fullResUrl: string }> =
+        JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+    console.log(`Películas aprobadas: ${approved.length}\n`);
+
+    if (approved.length === 0) {
+        console.log('No hay películas para procesar.');
+        return;
+    }
+
+    const stats: MigrationStats = {
+        total: approved.length,
+        success: 0,
+        failed: 0,
+        skipped: 0,
+        results: []
+    };
+
+    for (let i = 0; i < approved.length; i++) {
+        const item = approved[i];
+        const progress = `[${i + 1}/${approved.length}]`;
+
+        console.log(`${progress} Procesando: ${item.title} (ID: ${item.movieId}, IMDb: ${item.imdbId})`);
+
+        const result: MigrationResult = {
+            movieId: item.movieId,
+            title: item.title,
+            imdbId: item.imdbId,
+            success: false
+        };
+
+        try {
+            if (dryRun) {
+                result.success = true;
+                result.posterUrl = item.fullResUrl;
+                result.error = '[DRY RUN] Se subiría este poster';
+            } else {
+                const cloudinaryResult = await uploadToCloudinary(item.fullResUrl, item.movieId);
+
+                await prisma.movie.update({
+                    where: { id: item.movieId },
+                    data: {
+                        posterUrl: cloudinaryResult.url,
+                        posterPublicId: cloudinaryResult.publicId
+                    }
+                });
+
+                result.success = true;
+                result.posterUrl = cloudinaryResult.url;
+                result.publicId = cloudinaryResult.publicId;
+            }
+        } catch (error) {
+            result.error = error instanceof Error ? error.message : String(error);
+        }
+
+        stats.results.push(result);
+
+        if (result.success) {
+            stats.success++;
+            console.log(`  ✓ ${result.posterUrl}`);
+        } else {
+            stats.failed++;
+            console.log(`  ✗ Error: ${result.error}`);
+        }
+
+        if (i < approved.length - 1) {
+            await delay(200);
+        }
+    }
+
+    const reportPath = await saveReport(stats, dryRun);
+
+    console.log('\n' + '='.repeat(60));
+    console.log('RESUMEN DE MIGRACIÓN');
+    console.log('='.repeat(60));
+    console.log(`Total procesado:  ${stats.total}`);
+    console.log(`✓ Exitosos:       ${stats.success}`);
+    console.log(`✗ Errores:        ${stats.failed}`);
+    if (stats.total > 0) {
+        console.log(`Tasa de éxito:    ${((stats.success / stats.total) * 100).toFixed(2)}%`);
+    }
+    console.log(`\nReporte guardado: ${reportPath}`);
+    console.log('='.repeat(60));
+}
+
+/**
+ * Función principal de migración (sin review)
+ */
+async function migratePosters(options: {
+    dryRun: boolean;
+    limit?: number;
+    movieId?: number;
+}): Promise<void> {
+    console.log('='.repeat(60));
+    console.log('MIGRACIÓN DE POSTERS OMDB/IMDb -> CLOUDINARY');
+    console.log('='.repeat(60));
+
+    if (options.dryRun) {
+        console.log('\n[DRY RUN] No se realizarán cambios en la base de datos\n');
+    }
+
+    // Buscar películas que tienen imdb_id pero no tienen poster
+    const whereClause: any = {
+        imdbId: { not: null },
+        OR: [
+            { posterUrl: null },
+            { posterUrl: '' }
+        ]
+    };
+
+    if (options.movieId) {
+        whereClause.id = options.movieId;
+    }
+
+    const movies = await prisma.movie.findMany({
+        where: whereClause,
+        select: {
+            id: true,
+            title: true,
+            imdbId: true
+        },
+        orderBy: { id: 'asc' },
+        take: options.limit
+    });
+
+    console.log(`Encontradas ${movies.length} películas sin poster con imdb_id\n`);
+
+    if (movies.length === 0) {
+        console.log('No hay películas para procesar.');
+        return;
+    }
+
+    const stats: MigrationStats = {
+        total: movies.length,
+        success: 0,
+        failed: 0,
+        skipped: 0,
+        results: []
+    };
+
+    for (let i = 0; i < movies.length; i++) {
+        const movie = movies[i];
+        const progress = `[${i + 1}/${movies.length}]`;
+
+        console.log(`${progress} Procesando: ${movie.title} (ID: ${movie.id}, IMDb: ${movie.imdbId})`);
+
+        const result = await processMovie(
+            { id: movie.id, title: movie.title, imdbId: movie.imdbId! },
+            options.dryRun
+        );
+
+        stats.results.push(result);
+
+        if (result.success) {
+            stats.success++;
+            console.log(`  ✓ ${result.posterUrl}`);
+        } else if (result.error?.includes('No tiene poster') || result.error?.includes('No encontrado')) {
+            stats.skipped++;
+            console.log(`  - Saltado: ${result.error}`);
+        } else {
+            stats.failed++;
+            console.log(`  ✗ Error: ${result.error}`);
+        }
+
+        // Rate limiting: OMDB tiene rate limit más estricto
+        if (i < movies.length - 1) {
+            await delay(150);
+        }
+
+        // Mostrar progreso cada 50 películas
+        if ((i + 1) % 50 === 0) {
+            console.log(`\n--- Progreso: ${i + 1}/${movies.length} | OK: ${stats.success} | Saltados: ${stats.skipped} | Errores: ${stats.failed} ---\n`);
+        }
+    }
+
+    // Guardar reporte
+    const reportPath = await saveReport(stats, options.dryRun);
+
+    // Resumen final
+    console.log('\n' + '='.repeat(60));
+    console.log('RESUMEN DE MIGRACIÓN');
+    console.log('='.repeat(60));
+    console.log(`Total procesado:  ${stats.total}`);
+    console.log(`✓ Exitosos:       ${stats.success}`);
+    console.log(`- Saltados:       ${stats.skipped} (sin poster en OMDB)`);
+    console.log(`✗ Errores:        ${stats.failed}`);
+    if (stats.total - stats.skipped > 0) {
+        console.log(`Tasa de éxito:    ${((stats.success / (stats.total - stats.skipped)) * 100).toFixed(2)}%`);
+    }
+    console.log(`\nReporte guardado: ${reportPath}`);
+    console.log('='.repeat(60));
+}
+
+// Parsear argumentos de línea de comandos
+function parseArgs(): {
+    mode: 'preview' | 'approved' | 'migrate';
+    dryRun: boolean;
+    limit?: number;
+    movieId?: number;
+    approvedFrom?: string;
+} {
+    const args = process.argv.slice(2);
+    const options = {
+        mode: 'migrate' as 'preview' | 'approved' | 'migrate',
+        dryRun: false,
+        limit: undefined as number | undefined,
+        movieId: undefined as number | undefined,
+        approvedFrom: undefined as string | undefined
+    };
+
+    for (const arg of args) {
+        if (arg === '--preview') {
+            options.mode = 'preview';
+        } else if (arg.startsWith('--approved-from=')) {
+            options.mode = 'approved';
+            options.approvedFrom = arg.split('=')[1];
+        } else if (arg === '--dry-run') {
+            options.dryRun = true;
+        } else if (arg.startsWith('--limit=')) {
+            options.limit = parseInt(arg.split('=')[1], 10);
+        } else if (arg.startsWith('--movie-id=')) {
+            options.movieId = parseInt(arg.split('=')[1], 10);
+        }
+    }
+
+    return options;
+}
+
+// Ejecutar
+const parsedOptions = parseArgs();
+
+let mainPromise: Promise<void>;
+
+if (parsedOptions.mode === 'preview') {
+    mainPromise = generatePreview({ limit: parsedOptions.limit, movieId: parsedOptions.movieId });
+} else if (parsedOptions.mode === 'approved') {
+    mainPromise = migrateApproved(parsedOptions.approvedFrom!, parsedOptions.dryRun);
+} else {
+    mainPromise = migratePosters({
+        dryRun: parsedOptions.dryRun,
+        limit: parsedOptions.limit,
+        movieId: parsedOptions.movieId
+    });
+}
+
+mainPromise
+    .then(() => {
+        console.log('\n✅ Completado');
+        process.exit(0);
+    })
+    .catch((error) => {
+        console.error('\n❌ Error fatal:', error);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });
+
+
+// ==================================================
 // scripts/tmdb/migrate-tmdb-portraits.ts
 // ==================================================
 /**
@@ -6626,671 +8468,889 @@ migratePosters(options)
 /**
  * Script para buscar imdb_id en OMDB para películas que no tienen tmdb_id
  *
- * Las películas con tmdb_id ya tienen el imdb_id correcto (migrado de TMDB).
- * Este script busca en OMDB para las que no tienen tmdb_id, validando con:
- * - Título fuzzy (Levenshtein distance)
- * - Año ±1
- * - Director coincidente
- *
- * Solo acepta matches que cumplan los tres criterios.
+ * Usa la misma lógica de matching de enrich-movies.ts:
+ * - compareTitles: maneja subtítulos (separados por , : - .)
+ * - comparePersonNames: comparación inteligente de nombres
+ * - Sistema de scores con auto_accept, review, multiple, no_match
+ * - Caché de progreso para continuar si se interrumpe
  *
  * Uso:
- *   npx tsx scripts/tmdb/search-imdb-ids.ts [opciones]
- *
- * Opciones:
- *   --limit N                 Límite de registros a procesar (default: sin límite)
- *   --dry-run                 Modo prueba, no escribe en DB
- *   --batch-size N            Tamaño del batch (default: 100)
- *   --delay N                 Delay entre requests en ms (default: 150)
- *   --min-title-score N       Score mínimo de similitud de título (default: 70)
- *   --apply-csv FILE          Aplicar imdb_ids desde un CSV (aplica todos los que tienen imdb_id)
+ *   npx tsx scripts/tmdb/search-imdb-ids.ts --dry-run          # Solo genera CSV
+ *   npx tsx scripts/tmdb/search-imdb-ids.ts --apply            # Aplica cambios a la BD
+ *   npx tsx scripts/tmdb/search-imdb-ids.ts --apply-csv        # Aplica desde CSV revisado
+ *   npx tsx scripts/tmdb/search-imdb-ids.ts --reprocess-csv    # Reprocesa review/multiple
+ *   npx tsx scripts/tmdb/search-imdb-ids.ts --limit 100        # Procesar solo 100 películas
+ *   npx tsx scripts/tmdb/search-imdb-ids.ts --reset            # Reiniciar progreso
  */
 
 import { PrismaClient, Department } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
-import { stringSimilarity, normalizeText, loadFromCSV } from './utils';
+import {
+  compareTitles,
+  comparePersonNames,
+  saveToCSV,
+  loadFromCSV,
+  formatDuration,
+  log
+} from './utils';
 
 // Cargar dotenv solo si está disponible
 try {
-    const pathModule = require('path');
-    const dotenv = require('dotenv');
-    dotenv.config({ path: pathModule.resolve(__dirname, '../../.env') });
+  const pathModule = require('path');
+  const dotenv = require('dotenv');
+  dotenv.config({ path: pathModule.resolve(__dirname, '../../.env') });
 } catch {
-    // dotenv no disponible
+  // dotenv no disponible
 }
 
 const prisma = new PrismaClient();
 
 const OMDB_API_KEY = process.env.OMDB_API_KEY || 'trilogy';
 
+// ============================================================================
+// TIPOS
+// ============================================================================
+
 interface SyncOptions {
-    limit?: number;
-    dryRun: boolean;
-    batchSize: number;
-    delay: number;
-    minTitleScore: number;
-    applyCsv?: string;
+  limit?: number;
+  dryRun: boolean;
+  apply: boolean;
+  applyCSV: boolean;
+  reprocessCSV: boolean;
+  batchSize: number;
+  delay: number;
+  reset: boolean;
 }
 
 interface LocalMovie {
-    id: number;
-    title: string;
-    year: number | null;
-    imdbId: string | null;
-    directors: string[];
+  id: number;
+  title: string;
+  year: number | null;
+  imdb_id: string | null;
+  director_names: string | null;
 }
 
 interface OMDBSearchResult {
-    Title: string;
-    Year: string;
-    imdbID: string;
-    Type: string;
-    Poster: string;
+  Title: string;
+  Year: string;
+  imdbID: string;
+  Type: string;
+  Poster: string;
 }
 
 interface OMDBSearchResponse {
-    Search?: OMDBSearchResult[];
-    totalResults?: string;
-    Response: string;
-    Error?: string;
+  Search?: OMDBSearchResult[];
+  totalResults?: string;
+  Response: string;
+  Error?: string;
 }
 
 interface OMDBMovieDetails {
-    Title: string;
-    Year: string;
-    imdbID: string;
-    Director: string;
-    Response: string;
-    Error?: string;
+  Title: string;
+  Year: string;
+  imdbID: string;
+  Director: string;
+  Runtime: string;
+  Country: string;
+  Response: string;
+  Error?: string;
 }
 
 interface MatchResult {
-    id: number;
-    title: string;
-    year: number | null;
-    localDirectors: string;
-    imdbId: string | null;
-    previousImdbId: string | null;
-    omdbTitle: string | null;
-    omdbYear: number | null;
-    omdbDirectors: string | null;
-    titleScore: number;
-    yearMatch: string;
-    directorMatch: string;
-    status: 'matched' | 'no_match' | 'error' | 'cleared';
-    reason: string;
+  local_id: number;
+  local_title: string;
+  local_year: number | null;
+  local_director: string | null;
+  imdb_id: string | null;
+  omdb_title: string | null;
+  omdb_year: number | null;
+  omdb_director: string | null;
+  match_score: number;
+  match_status: 'auto_accept' | 'review' | 'no_match' | 'multiple';
+  match_reason: string;
 }
+
+// Archivo para guardar progreso
+const PROGRESS_FILE = path.join(__dirname, 'reports', '.search-imdb-progress.json');
+const CSV_FILENAME = 'omdb-matches.csv';
+
+interface ProgressData {
+  processedIds: number[];
+  lastRun: string;
+}
+
+// Configuración de matching (mismos valores que enrich-movies)
+const MATCHING_CONFIG = {
+  autoAcceptScore: 55,
+  reviewScore: 40,
+  directorMatchBonus: 30,
+  argentinaCountryBonus: 20,
+};
+
+// ============================================================================
+// FUNCIONES DE PROGRESO
+// ============================================================================
+
+function loadProgress(): Set<number> {
+  try {
+    if (fs.existsSync(PROGRESS_FILE)) {
+      const data: ProgressData = JSON.parse(fs.readFileSync(PROGRESS_FILE, 'utf-8'));
+      return new Set(data.processedIds);
+    }
+  } catch (error) {
+    // Si hay error leyendo, empezar de cero
+  }
+  return new Set();
+}
+
+function saveProgress(processedIds: Set<number>): void {
+  const data: ProgressData = {
+    processedIds: Array.from(processedIds),
+    lastRun: new Date().toISOString(),
+  };
+  fs.writeFileSync(PROGRESS_FILE, JSON.stringify(data, null, 2));
+}
+
+function resetProgress(): void {
+  if (fs.existsSync(PROGRESS_FILE)) {
+    fs.unlinkSync(PROGRESS_FILE);
+    log('Progreso reiniciado', 'success');
+  } else {
+    log('No había progreso guardado', 'info');
+  }
+}
+
+// ============================================================================
+// FUNCIONES DE OMDB API
+// ============================================================================
 
 function sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function parseArgs(): SyncOptions {
-    const args = process.argv.slice(2);
-    const options: SyncOptions = {
-        dryRun: false,
-        batchSize: 100,
-        delay: 150, // OMDB tiene rate limit
-        minTitleScore: 70,
-    };
-
-    for (let i = 0; i < args.length; i++) {
-        switch (args[i]) {
-            case '--limit':
-                options.limit = parseInt(args[++i], 10);
-                break;
-            case '--dry-run':
-                options.dryRun = true;
-                break;
-            case '--batch-size':
-                options.batchSize = parseInt(args[++i], 10);
-                break;
-            case '--delay':
-                options.delay = parseInt(args[++i], 10);
-                break;
-            case '--min-title-score':
-                options.minTitleScore = parseInt(args[++i], 10);
-                break;
-            case '--apply-csv':
-                options.applyCsv = args[++i];
-                break;
-        }
-    }
-
-    return options;
-}
-
-/**
- * Buscar películas en OMDB por título
- */
 async function searchOMDB(title: string, year?: number): Promise<OMDBSearchResponse> {
-    let url = `http://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(title)}&type=movie`;
-    if (year) {
-        url += `&y=${year}`;
-    }
-    const response = await fetch(url);
-    return response.json();
+  let url = `http://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(title)}&type=movie`;
+  if (year) {
+    url += `&y=${year}`;
+  }
+  const response = await fetch(url);
+  return response.json();
 }
 
-/**
- * Obtener detalles de una película de OMDB por imdbID
- */
 async function getOMDBDetails(imdbId: string): Promise<OMDBMovieDetails> {
-    const url = `http://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${imdbId}`;
-    const response = await fetch(url);
-    return response.json();
+  const url = `http://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${imdbId}`;
+  const response = await fetch(url);
+  return response.json();
 }
 
-/**
- * Parsear directores de OMDB (vienen separados por coma)
- */
 function parseOMDBDirectors(directorString: string | undefined): string[] {
-    if (!directorString || directorString === 'N/A') {
-        return [];
-    }
-    return directorString.split(',').map(d => d.trim()).filter(d => d.length > 0);
+  if (!directorString || directorString === 'N/A') {
+    return [];
+  }
+  return directorString.split(',').map(d => d.trim()).filter(d => d.length > 0);
 }
 
+function parseOMDBYear(yearStr: string | null): number | null {
+  if (!yearStr || yearStr === 'N/A') return null;
+  // OMDB a veces devuelve rangos como "2019-2021", tomar el primero
+  const year = yearStr.split('–')[0].split('-')[0].trim();
+  const parsed = parseInt(year);
+  return isNaN(parsed) ? null : parsed;
+}
+
+// ============================================================================
+// FUNCIONES DE MATCHING (adaptadas de enrich-movies.ts)
+// ============================================================================
+
 /**
- * Verificar si hay al menos un director coincidente
+ * Calcular score de match entre película local y OMDB
  */
-function hasMatchingDirector(localDirectors: string[], omdbDirectors: string[]): { matches: boolean; matchedPair?: string } {
-    if (localDirectors.length === 0 || omdbDirectors.length === 0) {
-        return { matches: false };
+function calculateMatchScore(
+  local: LocalMovie,
+  omdb: OMDBMovieDetails
+): { score: number; reasons: string[] } {
+  let score = 0;
+  const reasons: string[] = [];
+
+  // 1. Comparar títulos (usando compareTitles que maneja subtítulos)
+  const titleSimilarity = compareTitles(local.title, omdb.Title);
+
+  if (titleSimilarity >= 95) {
+    score += 40;
+    reasons.push(`Título exacto (${titleSimilarity}%)`);
+  } else if (titleSimilarity >= 80) {
+    score += 30;
+    reasons.push(`Título similar (${titleSimilarity}%)`);
+  } else if (titleSimilarity >= 60) {
+    score += 15;
+    reasons.push(`Título parcial (${titleSimilarity}%)`);
+  }
+
+  // 2. Comparar año
+  const omdbYear = parseOMDBYear(omdb.Year);
+  if (local.year && omdbYear) {
+    if (local.year === omdbYear) {
+      score += 25;
+      reasons.push('Año exacto');
+    } else if (Math.abs(local.year - omdbYear) === 1) {
+      score += 15;
+      reasons.push('Año ±1');
     }
+  }
 
-    for (const local of localDirectors) {
-        const localNorm = normalizeText(local);
-        for (const omdb of omdbDirectors) {
-            const omdbNorm = normalizeText(omdb);
+  // 3. Comparar director (usando comparePersonNames)
+  const omdbDirectors = parseOMDBDirectors(omdb.Director);
+  if (local.director_names && omdbDirectors.length > 0) {
+    const localDirectors = local.director_names.split(',').map(d => d.trim());
 
-            // Verificar similitud alta (>= 80%)
-            const similarity = stringSimilarity(local, omdb);
-            if (similarity >= 80) {
-                return { matches: true, matchedPair: `${local} ≈ ${omdb} (${similarity}%)` };
-            }
+    let directorMatch: { isMatch: boolean; confidence: string; reason: string } | null = null;
 
-            // También verificar si los apellidos coinciden con misma inicial
-            const localParts = localNorm.split(' ').filter(p => p.length > 0);
-            const omdbParts = omdbNorm.split(' ').filter(p => p.length > 0);
-
-            if (localParts.length >= 2 && omdbParts.length >= 2) {
-                const localLastName = localParts[localParts.length - 1];
-                const omdbLastName = omdbParts[omdbParts.length - 1];
-
-                if (localLastName.length >= 3 && omdbLastName.length >= 3 && localLastName === omdbLastName) {
-                    const localFirstInitial = localParts[0][0];
-                    const omdbFirstInitial = omdbParts[0][0];
-                    if (localFirstInitial === omdbFirstInitial) {
-                        return { matches: true, matchedPair: `${local} ≈ ${omdb} (apellido+inicial)` };
-                    }
-                }
-            }
+    for (const ld of localDirectors) {
+      for (const od of omdbDirectors) {
+        const comparison = comparePersonNames(ld, od);
+        if (comparison.isMatch) {
+          directorMatch = comparison;
+          break;
         }
+      }
+      if (directorMatch) break;
     }
 
-    return { matches: false };
+    if (directorMatch) {
+      score += MATCHING_CONFIG.directorMatchBonus;
+      reasons.push(`Director coincide (${directorMatch.confidence}: ${directorMatch.reason})`);
+    } else if (omdbDirectors.length > 0 && localDirectors.length > 0) {
+      reasons.push(`Director NO coincide (${localDirectors[0]} vs ${omdbDirectors[0]})`);
+    }
+  }
+
+  // 4. País Argentina
+  if (omdb.Country && omdb.Country.toLowerCase().includes('argentina')) {
+    score += MATCHING_CONFIG.argentinaCountryBonus;
+    reasons.push('Producción Argentina');
+  }
+
+  return { score, reasons };
 }
 
 /**
- * Verificar si el año coincide (exacto o ±1)
+ * Buscar y matchear una película en OMDB
  */
-function yearMatches(localYear: number | null, omdbYear: string | null): { matches: boolean; description: string } {
-    if (!localYear) {
-        return { matches: false, description: 'Sin año local' };
-    }
-    if (!omdbYear || omdbYear === 'N/A') {
-        return { matches: false, description: 'Sin año OMDB' };
-    }
+async function findMatchForMovie(movie: LocalMovie, delay: number): Promise<MatchResult> {
+  const result: MatchResult = {
+    local_id: movie.id,
+    local_title: movie.title,
+    local_year: movie.year,
+    local_director: movie.director_names,
+    imdb_id: null,
+    omdb_title: null,
+    omdb_year: null,
+    omdb_director: null,
+    match_score: 0,
+    match_status: 'no_match',
+    match_reason: '',
+  };
 
-    // OMDB a veces devuelve rangos como "2019-2021", tomar el primero
-    const yearStr = omdbYear.split('–')[0].split('-')[0].trim();
-    const parsedYear = parseInt(yearStr);
+  try {
+    // Buscar por título CON año y SIN año, combinar resultados únicos
+    const allResults: OMDBSearchResult[] = [];
+    const seenIds = new Set<string>();
 
-    if (isNaN(parsedYear)) {
-        return { matches: false, description: 'Año OMDB inválido' };
-    }
-
-    const diff = Math.abs(localYear - parsedYear);
-    if (diff === 0) {
-        return { matches: true, description: 'Año exacto' };
-    }
-    if (diff === 1) {
-        return { matches: true, description: `Año ±1 (local: ${localYear}, OMDB: ${parsedYear})` };
-    }
-
-    return { matches: false, description: `Años diferentes (local: ${localYear}, OMDB: ${parsedYear})` };
-}
-
-/**
- * Buscar mejor match en OMDB para una película
- */
-async function findMatchForMovie(movie: LocalMovie, options: SyncOptions): Promise<MatchResult> {
-    const result: MatchResult = {
-        id: movie.id,
-        title: movie.title,
-        year: movie.year,
-        localDirectors: movie.directors.join(', '),
-        imdbId: null,
-        previousImdbId: movie.imdbId,
-        omdbTitle: null,
-        omdbYear: null,
-        omdbDirectors: null,
-        titleScore: 0,
-        yearMatch: '',
-        directorMatch: '',
-        status: 'no_match',
-        reason: '',
+    const addResults = (results: OMDBSearchResult[] | undefined) => {
+      if (!results) return;
+      for (const r of results) {
+        if (!seenIds.has(r.imdbID)) {
+          seenIds.add(r.imdbID);
+          allResults.push(r);
+        }
+      }
     };
+
+    // 1. Buscar con título original + año
+    if (movie.year) {
+      const searchWithYear = await searchOMDB(movie.title, movie.year);
+      addResults(searchWithYear.Search);
+      await sleep(delay);
+    }
+
+    // 2. Buscar con título original sin año
+    const searchWithoutYear = await searchOMDB(movie.title);
+    addResults(searchWithoutYear.Search);
+
+    // 3. Si no hay resultados, intentar con título limpio (sin números de secuela)
+    if (allResults.length === 0) {
+      const cleanTitle = movie.title
+        .replace(/\b[IVX]{2,}\b\s*[:.-]?\s*/g, ' ')
+        .replace(/\b\d+\s*[:.-]\s*/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (cleanTitle !== movie.title && cleanTitle.length > 3) {
+        await sleep(delay);
+        const searchClean = await searchOMDB(cleanTitle);
+        addResults(searchClean.Search);
+      }
+    }
+
+    // 4. Si no hay resultados y el título tiene coma, buscar solo la parte antes
+    if (allResults.length === 0 && movie.title.includes(',')) {
+      const firstPart = movie.title.split(',')[0].trim();
+      if (firstPart.length >= 3) {
+        await sleep(delay);
+        const searchFirstPart = await searchOMDB(firstPart);
+        addResults(searchFirstPart.Search);
+      }
+    }
+
+    // 5. Si no hay resultados y el título tiene ":", buscar solo la parte antes
+    if (allResults.length === 0 && movie.title.includes(':')) {
+      const firstPart = movie.title.split(':')[0].trim();
+      if (firstPart.length >= 3) {
+        await sleep(delay);
+        const searchFirstPart = await searchOMDB(firstPart);
+        addResults(searchFirstPart.Search);
+      }
+    }
+
+    // 6. Si no hay resultados y el título tiene ".", buscar solo la parte antes
+    if (allResults.length === 0 && movie.title.includes('. ')) {
+      const firstPart = movie.title.split('. ')[0].trim();
+      if (firstPart.length >= 3) {
+        await sleep(delay);
+        const searchFirstPart = await searchOMDB(firstPart);
+        addResults(searchFirstPart.Search);
+      }
+    }
+
+    if (allResults.length === 0) {
+      result.match_reason = 'Sin resultados en OMDB';
+      return result;
+    }
+
+    // Evaluar cada candidato
+    const candidates: Array<{
+      omdb: OMDBMovieDetails;
+      score: number;
+      reasons: string[];
+    }> = [];
+
+    // Limitar a los primeros 5 resultados
+    for (const omdbResult of allResults.slice(0, 5)) {
+      await sleep(delay);
+      const details = await getOMDBDetails(omdbResult.imdbID);
+
+      if (details.Response === 'False') continue;
+
+      const { score, reasons } = calculateMatchScore(movie, details);
+
+      if (score > 0) {
+        candidates.push({ omdb: details, score, reasons });
+      }
+    }
+
+    if (candidates.length === 0) {
+      result.match_reason = 'Ningún candidato supera umbral mínimo';
+      return result;
+    }
+
+    // Ordenar por score descendente
+    candidates.sort((a, b) => b.score - a.score);
+    const best = candidates[0];
+
+    result.imdb_id = best.omdb.imdbID;
+    result.omdb_title = best.omdb.Title;
+    result.omdb_year = parseOMDBYear(best.omdb.Year);
+    result.omdb_director = best.omdb.Director !== 'N/A' ? best.omdb.Director : null;
+    result.match_score = best.score;
+    result.match_reason = best.reasons.join('; ');
+
+    // Determinar status (misma lógica que enrich-movies.ts)
+    const hasExactTitle = best.reasons.some(r => r.includes('Título exacto'));
+    const hasSimilarTitle = best.reasons.some(r => r.includes('Título similar'));
+    const hasPartialTitle = best.reasons.some(r => r.includes('Título parcial'));
+    const hasAnyTitleMatch = hasExactTitle || hasSimilarTitle || hasPartialTitle;
+    const hasDirectorMatch = best.reasons.some(r => r.includes('Director coincide'));
+    const hasDirectorMismatch = best.reasons.some(r => r.includes('Director NO coincide'));
+
+    // REGLA DE SEGURIDAD 1: Si el director local existe y NO coincide,
+    // marcar como no_match (director diferente = película diferente)
+    if (hasDirectorMismatch) {
+      result.match_status = 'no_match';
+      result.match_reason += ' [No match: director no coincide]';
+    // REGLA DE SEGURIDAD 2: Si el título no tiene al menos similitud parcial (60%+),
+    // marcar como no_match
+    } else if (!hasAnyTitleMatch) {
+      result.match_status = 'no_match';
+      result.match_reason += ' [No match: título muy diferente]';
+    } else if (best.score >= MATCHING_CONFIG.autoAcceptScore) {
+      result.match_status = 'auto_accept';
+    } else if (hasExactTitle && hasDirectorMatch) {
+      // Título exacto + director = suficiente confianza
+      result.match_status = 'auto_accept';
+      result.match_reason += ' [Auto: título exacto + director]';
+    } else if (best.score >= MATCHING_CONFIG.reviewScore) {
+      if (candidates.length > 1 && candidates[1].score >= MATCHING_CONFIG.reviewScore) {
+        result.match_status = 'multiple';
+        result.match_reason += ` [Alternativas: ${candidates.slice(1, 3).map(c => c.omdb.Title).join(', ')}]`;
+      } else {
+        result.match_status = 'review';
+      }
+    }
+
+  } catch (error) {
+    result.match_reason = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
+
+  return result;
+}
+
+// ============================================================================
+// FUNCIONES DE OBTENCIÓN DE PELÍCULAS
+// ============================================================================
+
+async function getMoviesWithoutImdbId(limit?: number): Promise<LocalMovie[]> {
+  const movies = await prisma.movie.findMany({
+    where: {
+      OR: [
+        { imdbId: null },
+        { imdbId: '' },
+      ],
+    },
+    select: {
+      id: true,
+      title: true,
+      year: true,
+      imdbId: true,
+      crew: {
+        where: {
+          role: {
+            department: Department.DIRECCION,
+          },
+        },
+        select: {
+          person: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { year: 'desc' },
+    take: limit,
+  });
+
+  return movies.map(m => ({
+    id: m.id,
+    title: m.title,
+    year: m.year,
+    imdb_id: m.imdbId,
+    director_names: m.crew.map(c => {
+      const parts = [c.person.firstName, c.person.lastName].filter(Boolean);
+      return parts.join(' ');
+    }).filter(d => d.length > 0).join(', ') || null,
+  }));
+}
+
+// ============================================================================
+// FUNCIONES PRINCIPALES
+// ============================================================================
+
+async function searchAndMatch(options: SyncOptions): Promise<void> {
+  log('Obteniendo películas sin TMDB ID ni IMDB ID...', 'info');
+  const allMovies = await getMoviesWithoutImdbId(options.limit);
+
+  // Cargar progreso y filtrar películas ya procesadas
+  const processedIds = loadProgress();
+  const movies = allMovies.filter(m => !processedIds.has(m.id));
+
+  const skipped = allMovies.length - movies.length;
+  if (skipped > 0) {
+    log(`Saltando ${skipped} películas ya procesadas (usar --reset para reiniciar)`, 'info');
+  }
+
+  log(`Películas a procesar: ${movies.length}`, 'info');
+  log(`Modo: ${options.apply ? 'apply (aplica cambios en tiempo real)' : 'dry-run (solo genera CSV)'}`, 'info');
+
+  if (movies.length === 0) {
+    log('No hay películas nuevas para procesar', 'success');
+    return;
+  }
+
+  const startTime = Date.now();
+  const results: MatchResult[] = [];
+
+  // Stats
+  let processed = 0;
+  let autoAccepted = 0;
+  let applied = 0;
+  let needsReview = 0;
+  let noMatch = 0;
+  let multiple = 0;
+  let errors = 0;
+
+  console.log('');
+
+  for (const movie of movies) {
+    processed++;
+
+    const match = await findMatchForMovie(movie, options.delay);
+    results.push(match);
+
+    processedIds.add(movie.id);
+
+    let icon = '➖';
+    switch (match.match_status) {
+      case 'auto_accept':
+        autoAccepted++;
+        icon = '✅';
+        if (options.apply && match.imdb_id) {
+          try {
+            await prisma.movie.update({
+              where: { id: match.local_id },
+              data: { imdbId: match.imdb_id },
+            });
+            applied++;
+          } catch (err) {
+            errors++;
+            icon = '❌';
+          }
+        }
+        break;
+      case 'review':
+        needsReview++;
+        icon = '🔍';
+        break;
+      case 'no_match':
+        noMatch++;
+        icon = '➖';
+        break;
+      case 'multiple':
+        multiple++;
+        icon = '🔄';
+        break;
+    }
+
+    // Mostrar progreso
+    let omdbInfo: string;
+    if (match.match_status === 'no_match') {
+      omdbInfo = match.match_reason || 'Sin match';
+    } else if (match.imdb_id) {
+      omdbInfo = `→ ${match.omdb_title} (${match.omdb_year}) [${match.imdb_id}]`;
+    } else {
+      omdbInfo = match.match_reason;
+    }
+    console.log(`${icon} [${processed}/${movies.length}] ${movie.title} (${movie.year || '?'}) ${omdbInfo}`);
+
+    // Guardar progreso cada 10 películas
+    if (processed % 10 === 0) {
+      saveProgress(processedIds);
+    }
+
+    await sleep(options.delay);
+  }
+
+  // Guardar progreso final
+  saveProgress(processedIds);
+
+  const elapsed = Date.now() - startTime;
+
+  // Guardar CSV
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+  const prefix = options.apply ? '' : 'dry-run-';
+  saveToCSV(results, `${prefix}omdb-matches-${timestamp}.csv`, [
+    'local_id', 'local_title', 'local_year', 'local_director',
+    'imdb_id', 'omdb_title', 'omdb_year', 'omdb_director',
+    'match_score', 'match_status', 'match_reason'
+  ]);
+
+  // También guardar versión "latest"
+  saveToCSV(results, CSV_FILENAME, [
+    'local_id', 'local_title', 'local_year', 'local_director',
+    'imdb_id', 'omdb_title', 'omdb_year', 'omdb_director',
+    'match_score', 'match_status', 'match_reason'
+  ]);
+
+  // Resumen
+  console.log('\n' + '='.repeat(60));
+  console.log('📊 RESUMEN');
+  console.log('='.repeat(60));
+  console.log(`   Procesadas:      ${processed}`);
+  console.log(`   ✅ Auto-accept:  ${autoAccepted}`);
+  if (options.apply) {
+    console.log(`   💾 Aplicadas:    ${applied}`);
+    if (errors > 0) console.log(`   ❌ Errores:      ${errors}`);
+  }
+  console.log(`   🔍 Para revisar: ${needsReview}`);
+  console.log(`   🔄 Múltiples:    ${multiple}`);
+  console.log(`   ➖ Sin match:    ${noMatch}`);
+  console.log(`   ⏱️  Tiempo:       ${formatDuration(elapsed)}`);
+  console.log(`   📁 Progreso:     ${processedIds.size} películas en cache`);
+  console.log('='.repeat(60));
+
+  if (!options.apply) {
+    console.log('\n💡 Modo dry-run: No se aplicaron cambios.');
+    console.log('   Para aplicar: npx tsx scripts/tmdb/search-imdb-ids.ts --apply');
+  }
+  console.log('   Para reiniciar: npx tsx scripts/tmdb/search-imdb-ids.ts --reset');
+}
+
+async function applyFromCSV(): Promise<void> {
+  log('Cargando matches desde CSV...', 'info');
+  const matches = loadFromCSV(CSV_FILENAME) as MatchResult[];
+
+  if (matches.length === 0) {
+    log(`No se encontró el archivo ${CSV_FILENAME}`, 'error');
+    process.exit(1);
+  }
+
+  const toApply = matches.filter(m =>
+    m.match_status === 'auto_accept' || m.match_status === 'review'
+  );
+
+  log(`Aplicando ${toApply.length} matches a la base de datos...`, 'info');
+
+  let updated = 0;
+  let errors = 0;
+
+  for (const match of toApply) {
+    if (!match.imdb_id || match.match_status === 'no_match') continue;
 
     try {
-        if (movie.directors.length === 0) {
-            result.reason = 'Sin director en la base local';
-            return result;
-        }
-
-        // Buscar con año primero
-        let searchResult = await searchOMDB(movie.title, movie.year || undefined);
-
-        if (searchResult.Response === 'False' || !searchResult.Search?.length) {
-            // Intentar sin año
-            await sleep(options.delay);
-            searchResult = await searchOMDB(movie.title);
-
-            if (searchResult.Response === 'False' || !searchResult.Search?.length) {
-                result.reason = searchResult.Error || 'Sin resultados en OMDB';
-                return result;
-            }
-        }
-
-        // Evaluar cada candidato (máximo 5)
-        for (const candidate of searchResult.Search.slice(0, 5)) {
-            // 1. Verificar título
-            const titleSimilarity = stringSimilarity(movie.title, candidate.Title);
-
-            if (titleSimilarity < options.minTitleScore) {
-                continue;
-            }
-
-            // 2. Verificar año (preliminar, con el año del search)
-            const yearCheck = yearMatches(movie.year, candidate.Year);
-            if (!yearCheck.matches) {
-                continue;
-            }
-
-            // 3. Obtener detalles para verificar director
-            await sleep(options.delay);
-            const details = await getOMDBDetails(candidate.imdbID);
-
-            if (details.Response === 'False') {
-                continue;
-            }
-
-            const omdbDirectors = parseOMDBDirectors(details.Director);
-            const directorCheck = hasMatchingDirector(movie.directors, omdbDirectors);
-
-            if (!directorCheck.matches) {
-                continue;
-            }
-
-            // ¡Match completo!
-            result.imdbId = candidate.imdbID;
-            result.omdbTitle = details.Title;
-            result.omdbYear = parseInt(details.Year) || null;
-            result.omdbDirectors = omdbDirectors.join(', ');
-            result.titleScore = titleSimilarity;
-            result.yearMatch = yearCheck.description;
-            result.directorMatch = directorCheck.matchedPair || 'Coincide';
-            result.status = 'matched';
-            result.reason = `Título: ${titleSimilarity}%, ${yearCheck.description}, ${directorCheck.matchedPair}`;
-            return result;
-        }
-
-        // No se encontró match
-        result.reason = 'Ningún candidato cumple los tres criterios (título + año + director)';
-
-    } catch (error: any) {
-        result.status = 'error';
-        result.reason = error.message;
+      await prisma.movie.update({
+        where: { id: Number(match.local_id) },
+        data: { imdbId: String(match.imdb_id) },
+      });
+      updated++;
+    } catch (error) {
+      log(`Error actualizando película ${match.local_id}: ${error}`, 'error');
+      errors++;
     }
+  }
 
-    return result;
+  log(`Actualizadas: ${updated} | Errores: ${errors}`, updated > 0 ? 'success' : 'warn');
 }
 
-async function searchImdbIds(options: SyncOptions): Promise<MatchResult[]> {
-    const results: MatchResult[] = [];
+async function reprocessCSV(options: SyncOptions): Promise<void> {
+  log('Cargando matches desde CSV para reprocesar...', 'info');
+  const allMatches = loadFromCSV(CSV_FILENAME) as MatchResult[];
 
-    // Películas sin tmdb_id (las que tienen tmdb_id ya tienen imdb_id correcto)
-    const whereClause = {
-        tmdbId: null,
+  if (allMatches.length === 0) {
+    log(`No se encontró el archivo ${CSV_FILENAME}`, 'error');
+    process.exit(1);
+  }
+
+  // Filtrar solo los que necesitan revisión
+  const toReprocess = allMatches.filter(m =>
+    m.match_status === 'review' || m.match_status === 'multiple'
+  );
+
+  const alreadyGood = allMatches.filter(m =>
+    m.match_status === 'auto_accept' || m.match_status === 'no_match'
+  );
+
+  log(`Total en CSV: ${allMatches.length}`, 'info');
+  log(`Ya resueltos (auto_accept/no_match): ${alreadyGood.length}`, 'info');
+  log(`Para reprocesar (review/multiple): ${toReprocess.length}`, 'info');
+
+  if (toReprocess.length === 0) {
+    log('No hay películas para reprocesar', 'success');
+    return;
+  }
+
+  const startTime = Date.now();
+  const newResults: MatchResult[] = [...alreadyGood];
+
+  // Stats
+  let processed = 0;
+  let nowAutoAccept = 0;
+  let stillReview = 0;
+  let stillMultiple = 0;
+
+  console.log('');
+  console.log('Reprocesando con nueva lógica de comparación...');
+  console.log('');
+
+  for (const oldMatch of toReprocess) {
+    processed++;
+
+    const movie: LocalMovie = {
+      id: Number(oldMatch.local_id),
+      title: String(oldMatch.local_title),
+      year: oldMatch.local_year ? Number(oldMatch.local_year) : null,
+      imdb_id: null,
+      director_names: oldMatch.local_director ? String(oldMatch.local_director) : null,
     };
 
-    const totalCount = await prisma.movie.count({ where: whereClause });
-    const limit = options.limit || totalCount;
+    const newMatch = await findMatchForMovie(movie, options.delay);
+    newResults.push(newMatch);
 
-    console.log(`\n📽️  Buscando IMDB IDs en OMDB...`);
-    console.log(`   Total sin tmdb_id: ${totalCount}`);
-    console.log(`   A procesar: ${Math.min(limit, totalCount)}`);
-    console.log(`   Score mínimo de título: ${options.minTitleScore}%`);
-    console.log(`   Criterios: Título fuzzy + Año ±1 + Director coincidente`);
+    const oldStatus = oldMatch.match_status;
+    const newStatus = newMatch.match_status;
 
-    if (totalCount === 0) {
-        console.log('   ✅ No hay películas pendientes');
-        return results;
+    let icon = '🔍';
+    let statusChange = '';
+
+    if (newStatus === 'auto_accept') {
+      nowAutoAccept++;
+      icon = '✅';
+      if (oldStatus !== 'auto_accept') {
+        statusChange = ` (era ${oldStatus})`;
+      }
+    } else if (newStatus === 'review') {
+      stillReview++;
+      icon = '🔍';
+    } else if (newStatus === 'multiple') {
+      stillMultiple++;
+      icon = '🔄';
     }
 
-    let processed = 0;
-    let offset = 0;
-    let matched = 0;
-    let noMatch = 0;
-    let cleared = 0;
-    let errors = 0;
+    console.log(`${icon} [${processed}/${toReprocess.length}] ${movie.title} (${movie.year || '?'}) → ${newStatus}${statusChange}`);
 
-    while (processed < limit) {
-        const batchLimit = Math.min(options.batchSize, limit - processed);
+    await sleep(options.delay);
+  }
 
-        const movies = await prisma.movie.findMany({
-            where: whereClause,
-            select: {
-                id: true,
-                title: true,
-                year: true,
-                imdbId: true,
-                crew: {
-                    where: {
-                        role: {
-                            department: Department.DIRECCION,
-                        },
-                    },
-                    select: {
-                        person: {
-                            select: {
-                                firstName: true,
-                                lastName: true,
-                            },
-                        },
-                    },
-                },
-            },
-            orderBy: { id: 'asc' },
-            skip: offset,
-            take: batchLimit,
-        });
+  const elapsed = Date.now() - startTime;
 
-        if (movies.length === 0) break;
+  // Guardar nuevo CSV
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+  saveToCSV(newResults, `omdb-matches-reprocessed-${timestamp}.csv`, [
+    'local_id', 'local_title', 'local_year', 'local_director',
+    'imdb_id', 'omdb_title', 'omdb_year', 'omdb_director',
+    'match_score', 'match_status', 'match_reason'
+  ]);
 
-        for (const movie of movies) {
-            // Construir nombres de directores
-            const directors = movie.crew.map(c => {
-                const parts = [c.person.firstName, c.person.lastName].filter(Boolean);
-                return parts.join(' ');
-            }).filter(d => d.length > 0);
+  // También actualizar el "latest"
+  saveToCSV(newResults, CSV_FILENAME, [
+    'local_id', 'local_title', 'local_year', 'local_director',
+    'imdb_id', 'omdb_title', 'omdb_year', 'omdb_director',
+    'match_score', 'match_status', 'match_reason'
+  ]);
 
-            const localMovie: LocalMovie = {
-                id: movie.id,
-                title: movie.title,
-                year: movie.year,
-                imdbId: movie.imdbId,
-                directors,
-            };
+  // Resumen
+  console.log('\n' + '='.repeat(60));
+  console.log('📊 RESUMEN REPROCESAMIENTO');
+  console.log('='.repeat(60));
+  console.log(`   Reprocesadas:        ${processed}`);
+  console.log(`   ✅ Ahora auto_accept: ${nowAutoAccept}`);
+  console.log(`   🔍 Siguen en review:  ${stillReview}`);
+  console.log(`   🔄 Siguen multiple:   ${stillMultiple}`);
+  console.log(`   ⏱️  Tiempo:            ${formatDuration(elapsed)}`);
+  console.log('='.repeat(60));
 
-            const result = await findMatchForMovie(localMovie, options);
-
-            // Aplicar cambio
-            if (!options.dryRun) {
-                if (result.status === 'matched' && result.imdbId) {
-                    await prisma.movie.update({
-                        where: { id: movie.id },
-                        data: { imdbId: result.imdbId },
-                    });
-                    matched++;
-                } else if (result.status === 'no_match' && movie.imdbId !== null) {
-                    // Limpiar imdb_id si no hay match y antes tenía uno
-                    await prisma.movie.update({
-                        where: { id: movie.id },
-                        data: { imdbId: null },
-                    });
-                    result.status = 'cleared';
-                    cleared++;
-                } else if (result.status === 'no_match') {
-                    noMatch++;
-                } else if (result.status === 'error') {
-                    errors++;
-                }
-            } else {
-                if (result.status === 'matched') {
-                    matched++;
-                } else if (result.status === 'no_match' && movie.imdbId !== null) {
-                    result.status = 'cleared';
-                    cleared++;
-                } else if (result.status === 'no_match') {
-                    noMatch++;
-                } else if (result.status === 'error') {
-                    errors++;
-                }
-            }
-
-            results.push(result);
-            processed++;
-
-            const statusIcon = result.status === 'matched' ? '✅' :
-                              result.status === 'cleared' ? '🧹' :
-                              result.status === 'no_match' ? '➖' : '❌';
-            const imdbDisplay = result.imdbId ? result.imdbId :
-                               result.status === 'cleared' ? `(limpiado: ${result.previousImdbId})` : 'sin match';
-            console.log(`   ${statusIcon} [${processed}/${Math.min(limit, totalCount)}] ${movie.title} (${movie.year || '?'}): ${imdbDisplay}`);
-
-            await sleep(options.delay);
-        }
-
-        offset += batchLimit;
-    }
-
-    console.log('\n' + '─'.repeat(50));
-    console.log('PARCIAL:');
-    console.log(`   ✅ Con match:    ${matched}`);
-    console.log(`   🧹 Limpiados:    ${cleared}`);
-    console.log(`   ➖ Sin match:    ${noMatch}`);
-    console.log(`   ❌ Errores:      ${errors}`);
-
-    return results;
-}
-
-function generateReport(results: MatchResult[], options: SyncOptions): void {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const prefix = options.dryRun ? 'dry-run-' : '';
-    const reportsDir = path.join(__dirname, 'reports');
-
-    if (!fs.existsSync(reportsDir)) {
-        fs.mkdirSync(reportsDir, { recursive: true });
-    }
-
-    const csvPath = path.join(reportsDir, `${prefix}imdb-search-${timestamp}.csv`);
-    const csvHeader = 'id,title,year,local_directors,previous_imdb_id,imdb_id,omdb_title,omdb_year,omdb_directors,title_score,year_match,director_match,status,reason\n';
-    const csvRows = results.map(r =>
-        `${r.id},"${r.title.replace(/"/g, '""')}",${r.year ?? ''},"${r.localDirectors.replace(/"/g, '""')}",${r.previousImdbId || ''},${r.imdbId || ''},"${(r.omdbTitle || '').replace(/"/g, '""')}",${r.omdbYear ?? ''},"${(r.omdbDirectors || '').replace(/"/g, '""')}",${r.titleScore},"${r.yearMatch}","${r.directorMatch}",${r.status},"${r.reason.replace(/"/g, '""')}"`
-    ).join('\n');
-
-    fs.writeFileSync(csvPath, csvHeader + csvRows);
-    console.log(`\n📄 Reporte guardado en: ${csvPath}`);
-
-    // Guardar también los que fueron limpiados o con match
-    const needsReview = results.filter(r => r.status === 'cleared' || r.status === 'matched');
-    if (needsReview.length > 0) {
-        const reviewPath = path.join(reportsDir, `${prefix}imdb-search-review-${timestamp}.csv`);
-        const reviewRows = needsReview.map(r =>
-            `${r.id},"${r.title.replace(/"/g, '""')}",${r.year ?? ''},"${r.localDirectors.replace(/"/g, '""')}",${r.previousImdbId || ''},${r.imdbId || ''},"${(r.omdbTitle || '').replace(/"/g, '""')}",${r.omdbYear ?? ''},"${(r.omdbDirectors || '').replace(/"/g, '""')}",${r.titleScore},"${r.yearMatch}","${r.directorMatch}",${r.status},"${r.reason.replace(/"/g, '""')}"`
-        ).join('\n');
-        fs.writeFileSync(reviewPath, csvHeader + reviewRows);
-        console.log(`📄 Review guardado en: ${reviewPath}`);
-    }
-}
-
-function printSummary(results: MatchResult[], startTime: Date, endTime: Date): void {
-    const stats = {
-        matched: results.filter(r => r.status === 'matched').length,
-        cleared: results.filter(r => r.status === 'cleared').length,
-        noMatch: results.filter(r => r.status === 'no_match').length,
-        errors: results.filter(r => r.status === 'error').length,
-    };
-
-    const duration = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
-
-    console.log('\n' + '='.repeat(50));
-    console.log('RESUMEN DE BÚSQUEDA');
-    console.log('='.repeat(50));
-
-    console.log(`\n📽️  PELÍCULAS (${results.length} procesadas)`);
-    console.log(`   ✅ Con match:    ${stats.matched}`);
-    console.log(`   🧹 Limpiadas:    ${stats.cleared}`);
-    console.log(`   ➖ Sin match:    ${stats.noMatch}`);
-    console.log(`   ❌ Errores:      ${stats.errors}`);
-
-    console.log(`\n⏱️  Duración: ${Math.floor(duration / 60)}m ${duration % 60}s`);
-    console.log('='.repeat(50));
+  if (nowAutoAccept > 0) {
+    log(`¡${nowAutoAccept} películas ahora pasan automáticamente!`, 'success');
+  }
 }
 
 async function showStats(): Promise<void> {
-    const total = await prisma.movie.count();
-    const withTmdbId = await prisma.movie.count({ where: { tmdbId: { not: null } } });
-    const withoutTmdbId = await prisma.movie.count({ where: { tmdbId: null } });
-    const withImdbId = await prisma.movie.count({ where: { imdbId: { not: null } } });
-    const withoutImdbId = await prisma.movie.count({ where: { imdbId: null } });
+  const total = await prisma.movie.count();
+  const withTmdbId = await prisma.movie.count({ where: { tmdbId: { not: null } } });
+  const withoutTmdbId = await prisma.movie.count({ where: { tmdbId: null } });
+  const withImdbId = await prisma.movie.count({ where: { imdbId: { not: null } } });
+  const withoutImdbId = await prisma.movie.count({ where: { imdbId: null } });
+  const withoutBoth = await prisma.movie.count({ where: { tmdbId: null, imdbId: null } });
 
-    console.log('\n📊 ESTADO ACTUAL DE LA BASE DE DATOS:');
-    console.log(`   Total películas:   ${total}`);
-    console.log(`   Con tmdb_id:       ${withTmdbId} (ya tienen imdb_id correcto)`);
-    console.log(`   Sin tmdb_id:       ${withoutTmdbId} (a procesar)`);
-    console.log(`   Con imdb_id:       ${withImdbId}`);
-    console.log(`   Sin imdb_id:       ${withoutImdbId}`);
+  console.log('\n📊 ESTADO ACTUAL DE LA BASE DE DATOS:');
+  console.log(`   Total películas:   ${total}`);
+  console.log(`   Con tmdb_id:       ${withTmdbId}`);
+  console.log(`   Sin tmdb_id:       ${withoutTmdbId}`);
+  console.log(`   Con imdb_id:       ${withImdbId}`);
+  console.log(`   Sin imdb_id:       ${withoutImdbId}`);
+  console.log(`   Sin ninguno:       ${withoutBoth}`);
 }
 
-/**
- * Aplicar imdb_ids desde un CSV
- */
-async function applyFromCsv(csvFile: string): Promise<void> {
-    const reportsDir = path.join(__dirname, 'reports');
-    const csvPath = csvFile.includes('/') || csvFile.includes('\\')
-        ? csvFile
-        : path.join(reportsDir, csvFile);
+// ============================================================================
+// PARSEO DE ARGUMENTOS
+// ============================================================================
 
-    if (!fs.existsSync(csvPath)) {
-        console.error(`❌ No se encontró el archivo: ${csvPath}`);
-        process.exit(1);
+function parseArgs(): SyncOptions {
+  const args = process.argv.slice(2);
+  const options: SyncOptions = {
+    dryRun: true,
+    apply: false,
+    applyCSV: false,
+    reprocessCSV: false,
+    batchSize: 100,
+    delay: 150, // OMDB tiene rate limit
+    reset: false,
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case '--limit':
+        options.limit = parseInt(args[++i], 10);
+        break;
+      case '--dry-run':
+        options.dryRun = true;
+        options.apply = false;
+        break;
+      case '--apply':
+        options.apply = true;
+        options.dryRun = false;
+        break;
+      case '--apply-csv':
+        options.applyCSV = true;
+        break;
+      case '--reprocess-csv':
+        options.reprocessCSV = true;
+        break;
+      case '--batch-size':
+        options.batchSize = parseInt(args[++i], 10);
+        break;
+      case '--delay':
+        options.delay = parseInt(args[++i], 10);
+        break;
+      case '--reset':
+        options.reset = true;
+        break;
     }
+  }
 
-    console.log(`\n📄 Cargando CSV: ${csvPath}`);
-
-    // Si es ruta relativa, usar loadFromCSV que busca en reports/
-    const rows = csvFile.includes('/') || csvFile.includes('\\')
-        ? (() => {
-            const content = fs.readFileSync(csvPath, 'utf-8');
-            const lines = content.split('\n').filter(l => l.trim());
-            if (lines.length < 2) return [];
-            const headers = lines[0].split(',');
-            return lines.slice(1).map(line => {
-                const values = line.match(/(".*?"|[^,]+)(?=,|$)/g) || [];
-                const row: Record<string, string> = {};
-                headers.forEach((h, i) => {
-                    row[h.trim()] = (values[i] || '').replace(/^"|"$/g, '').replace(/""/g, '"');
-                });
-                return row;
-            });
-        })()
-        : loadFromCSV(csvFile);
-
-    const toApply = rows.filter(r => r.imdb_id && r.imdb_id.trim() !== '');
-
-    console.log(`   Total filas: ${rows.length}`);
-    console.log(`   Con imdb_id: ${toApply.length}`);
-
-    if (toApply.length === 0) {
-        console.log('   ⚠️ No hay registros para aplicar');
-        return;
-    }
-
-    let applied = 0;
-    let errors = 0;
-
-    for (const row of toApply) {
-        const id = parseInt(row.id, 10);
-        const imdbId = row.imdb_id.trim();
-
-        try {
-            await prisma.movie.update({
-                where: { id },
-                data: { imdbId },
-            });
-            applied++;
-            console.log(`   ✅ [${applied}/${toApply.length}] ID ${id}: ${imdbId}`);
-        } catch (error: any) {
-            errors++;
-            console.log(`   ❌ [${applied + errors}/${toApply.length}] ID ${id}: ${error.message}`);
-        }
-    }
-
-    console.log('\n' + '='.repeat(50));
-    console.log('RESUMEN DE APLICACIÓN');
-    console.log('='.repeat(50));
-    console.log(`   ✅ Aplicados: ${applied}`);
-    console.log(`   ❌ Errores:   ${errors}`);
-    console.log('='.repeat(50));
+  return options;
 }
+
+// ============================================================================
+// MAIN
+// ============================================================================
 
 async function main() {
-    const options = parseArgs();
-    const startTime = new Date();
+  const options = parseArgs();
 
-    // Modo aplicar desde CSV
-    if (options.applyCsv) {
-        console.log('='.repeat(50));
-        console.log('APLICAR IMDB IDs DESDE CSV');
-        console.log('='.repeat(50));
+  console.log('='.repeat(50));
+  console.log('BÚSQUEDA DE IMDB IDs EN OMDB');
+  console.log('='.repeat(50));
 
-        try {
-            await showStats();
-            await applyFromCsv(options.applyCsv);
-            await showStats();
-        } catch (error) {
-            console.error('Error aplicando CSV:', error);
-            process.exit(1);
-        } finally {
-            await prisma.$disconnect();
-        }
-        return;
+  // Modo reset
+  if (options.reset) {
+    resetProgress();
+    await prisma.$disconnect();
+    return;
+  }
+
+  try {
+    await showStats();
+
+    if (options.applyCSV) {
+      await applyFromCSV();
+    } else if (options.reprocessCSV) {
+      await reprocessCSV(options);
+    } else {
+      await searchAndMatch(options);
     }
 
-    // Modo búsqueda normal
-    console.log('='.repeat(50));
-    console.log('BÚSQUEDA DE IMDB IDs EN OMDB');
-    console.log('='.repeat(50));
-    console.log(`Límite: ${options.limit || 'sin límite'}`);
-    console.log(`Dry-run: ${options.dryRun ? 'SÍ' : 'NO'}`);
-    console.log(`Batch size: ${options.batchSize}`);
-    console.log(`Delay: ${options.delay}ms`);
-    console.log(`Min title score: ${options.minTitleScore}%`);
-    console.log(`Criterios: Título fuzzy (>=${options.minTitleScore}%) + Año ±1 + Director`);
+    await showStats();
 
-    try {
-        await showStats();
+  } catch (error) {
+    console.error('Error durante la búsqueda:', error);
+    process.exit(1);
+  } finally {
+    await prisma.$disconnect();
+  }
 
-        const results = await searchImdbIds(options);
-        const endTime = new Date();
-
-        if (results.length > 0) {
-            generateReport(results, options);
-            printSummary(results, startTime, endTime);
-        }
-
-        await showStats();
-
-    } catch (error) {
-        console.error('Error durante la búsqueda:', error);
-        process.exit(1);
-    } finally {
-        await prisma.$disconnect();
-    }
+  console.log('\n✨ Proceso completado\n');
 }
 
 main();
@@ -7302,256 +9362,876 @@ main();
 /**
  * Script para sincronizar imdb_id desde TMDB API
  *
- * Completa los imdb_id faltantes leyendo de TMDB para las películas
- * que tienen tmdb_id pero no tienen imdb_id.
+ * Dos modos de operación:
+ * 1. Para películas CON tmdb_id: obtiene imdb_id directamente de TMDB
+ * 2. Para películas SIN tmdb_id: busca en TMDB usando matching inteligente
  *
  * Uso:
  *   npx tsx scripts/tmdb/sync-imdb-ids.ts [opciones]
  *
  * Opciones:
  *   --limit N                 Límite de registros a procesar (default: sin límite)
- *   --dry-run                 Modo prueba, no escribe en DB
+ *   --dry-run                 Modo prueba, no escribe en DB (default)
+ *   --apply                   Aplica cambios a la BD en tiempo real
+ *   --apply-csv               Aplica desde CSV revisado
+ *   --search                  Busca películas SIN tmdb_id usando matching
  *   --batch-size N            Tamaño del batch (default: 100)
- *   --delay N                 Delay entre requests en ms (default: 250)
+ *   --delay N                 Delay entre requests en ms (default: 30)
+ *   --reset                   Reiniciar progreso (borrar cache)
  */
 
 import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
-import { getMovieDetails } from './tmdb-client';
+import { searchMovies, getMovieDetails, testConnection, TMDBMovie, TMDBMovieDetails } from './tmdb-client';
+import {
+  getPool,
+  closePool,
+  compareTitles,
+  comparePersonNames,
+  saveToCSV,
+  loadFromCSV,
+  formatDuration,
+  log
+} from './utils';
+import config from './config';
 
 // Cargar dotenv solo si está disponible
 try {
-    const pathModule = require('path');
-    const dotenv = require('dotenv');
-    dotenv.config({ path: pathModule.resolve(__dirname, '../../.env') });
+  const pathModule = require('path');
+  const dotenv = require('dotenv');
+  dotenv.config({ path: pathModule.resolve(__dirname, '../../.env') });
 } catch {
-    // dotenv no disponible
+  // dotenv no disponible
 }
 
 const prisma = new PrismaClient();
 
+// ============================================================================
+// TIPOS
+// ============================================================================
+
 interface SyncOptions {
-    limit?: number;
-    dryRun: boolean;
-    batchSize: number;
-    delay: number;
+  limit?: number;
+  dryRun: boolean;
+  apply: boolean;
+  applyCSV: boolean;
+  search: boolean;
+  batchSize: number;
+  delay: number;
+  reset: boolean;
 }
 
 interface SyncResult {
-    id: number;
-    tmdbId: number;
-    title: string;
-    imdbId: string | null;
-    status: 'updated' | 'no_imdb_id' | 'error';
-    error?: string;
+  id: number;
+  tmdbId: number;
+  title: string;
+  imdbId: string | null;
+  status: 'updated' | 'no_imdb_id' | 'error';
+  error?: string;
 }
+
+interface LocalMovie {
+  id: number;
+  title: string;
+  year: number | null;
+  duration: number | null;
+  imdb_id: string | null;
+  director_names: string | null;
+}
+
+interface MatchResult {
+  local_id: number;
+  local_title: string;
+  local_year: number | null;
+  local_director: string | null;
+  tmdb_id: number | null;
+  tmdb_title: string | null;
+  tmdb_year: number | null;
+  tmdb_director: string | null;
+  imdb_id: string | null;
+  match_score: number;
+  match_status: 'auto_accept' | 'review' | 'no_match' | 'multiple';
+  match_reason: string;
+}
+
+// Archivo para guardar progreso
+const PROGRESS_FILE = path.join(__dirname, 'reports', '.sync-imdb-progress.json');
+
+interface ProgressData {
+  processedIds: number[];
+  lastRun: string;
+}
+
+// ============================================================================
+// FUNCIONES DE PROGRESO
+// ============================================================================
+
+function loadProgress(): Set<number> {
+  try {
+    if (fs.existsSync(PROGRESS_FILE)) {
+      const data: ProgressData = JSON.parse(fs.readFileSync(PROGRESS_FILE, 'utf-8'));
+      return new Set(data.processedIds);
+    }
+  } catch (error) {
+    // Si hay error leyendo, empezar de cero
+  }
+  return new Set();
+}
+
+function saveProgress(processedIds: Set<number>): void {
+  const data: ProgressData = {
+    processedIds: Array.from(processedIds),
+    lastRun: new Date().toISOString(),
+  };
+  fs.writeFileSync(PROGRESS_FILE, JSON.stringify(data, null, 2));
+}
+
+function resetProgress(): void {
+  if (fs.existsSync(PROGRESS_FILE)) {
+    fs.unlinkSync(PROGRESS_FILE);
+    log('Progreso reiniciado', 'success');
+  } else {
+    log('No había progreso guardado', 'info');
+  }
+}
+
+// ============================================================================
+// FUNCIONES DE MATCHING (copiadas de enrich-movies.ts)
+// ============================================================================
+
+/**
+ * Calcular score de match entre película local y TMDB
+ */
+function calculateMatchScore(
+  local: LocalMovie,
+  tmdb: TMDBMovieDetails
+): { score: number; reasons: string[] } {
+  let score = 0;
+  const reasons: string[] = [];
+
+  // 1. Comparar títulos (usando compareTitles que maneja subtítulos)
+  const titleSimilarity = Math.max(
+    compareTitles(local.title, tmdb.title),
+    compareTitles(local.title, tmdb.original_title)
+  );
+
+  if (titleSimilarity >= 95) {
+    score += 40;
+    reasons.push(`Título exacto (${titleSimilarity}%)`);
+  } else if (titleSimilarity >= 80) {
+    score += 30;
+    reasons.push(`Título similar (${titleSimilarity}%)`);
+  } else if (titleSimilarity >= 60) {
+    score += 15;
+    reasons.push(`Título parcial (${titleSimilarity}%)`);
+  }
+
+  // 2. Comparar año
+  if (local.year && tmdb.release_date) {
+    const tmdbYear = parseInt(tmdb.release_date.split('-')[0]);
+    if (local.year === tmdbYear) {
+      score += 25;
+      reasons.push('Año exacto');
+    } else if (Math.abs(local.year - tmdbYear) === 1) {
+      score += 15;
+      reasons.push('Año ±1');
+    }
+  }
+
+  // 3. Comparar director (usando la función inteligente)
+  if (local.director_names && tmdb.credits?.crew) {
+    const tmdbDirectors = tmdb.credits.crew
+      .filter(c => c.job === 'Director')
+      .map(c => c.name);
+
+    const localDirectors = local.director_names
+      .split(',')
+      .map(d => d.trim());
+
+    let directorMatch: { isMatch: boolean; confidence: string; reason: string } | null = null;
+
+    for (const ld of localDirectors) {
+      for (const td of tmdbDirectors) {
+        const comparison = comparePersonNames(ld, td);
+        if (comparison.isMatch) {
+          directorMatch = comparison;
+          break;
+        }
+      }
+      if (directorMatch) break;
+    }
+
+    if (directorMatch) {
+      score += config.matching.movie.directorMatchBonus;
+      reasons.push(`Director coincide (${directorMatch.confidence}: ${directorMatch.reason})`);
+    } else if (tmdbDirectors.length > 0 && localDirectors.length > 0) {
+      reasons.push(`Director NO coincide (${localDirectors[0]} vs ${tmdbDirectors[0]})`);
+    }
+  }
+
+  // 4. País Argentina
+  if (tmdb.production_countries?.some(c => c.iso_3166_1 === 'AR')) {
+    score += config.matching.movie.argentinaCountryBonus;
+    reasons.push('Producción Argentina');
+  }
+
+  // 5. Comparar duración
+  if (local.duration && tmdb.runtime) {
+    const diff = Math.abs(local.duration - tmdb.runtime);
+    if (diff <= config.matching.movie.durationToleranceMinutes) {
+      score += config.matching.movie.durationMatchBonus;
+      reasons.push(`Duración similar (±${diff}min)`);
+    }
+  }
+
+  return { score, reasons };
+}
+
+/**
+ * Buscar y matchear una película
+ */
+async function findMatchForMovie(movie: LocalMovie): Promise<MatchResult> {
+  const result: MatchResult = {
+    local_id: movie.id,
+    local_title: movie.title,
+    local_year: movie.year,
+    local_director: movie.director_names,
+    tmdb_id: null,
+    tmdb_title: null,
+    tmdb_year: null,
+    tmdb_director: null,
+    imdb_id: null,
+    match_score: 0,
+    match_status: 'no_match',
+    match_reason: '',
+  };
+
+  try {
+    // Buscar por título CON año y SIN año, combinar resultados únicos
+    const allResults: TMDBMovie[] = [];
+    const seenIds = new Set<number>();
+
+    const addResults = (results: TMDBMovie[]) => {
+      for (const r of results) {
+        if (!seenIds.has(r.id)) {
+          seenIds.add(r.id);
+          allResults.push(r);
+        }
+      }
+    };
+
+    // 1. Buscar con título original + año
+    if (movie.year) {
+      const searchWithYear = await searchMovies(movie.title, movie.year);
+      addResults(searchWithYear.results);
+    }
+
+    // 2. Buscar con título original sin año
+    const searchWithoutYear = await searchMovies(movie.title);
+    addResults(searchWithoutYear.results);
+
+    // 3. Si no hay resultados, intentar con título limpio
+    if (allResults.length === 0) {
+      const cleanTitle = movie.title
+        .replace(/\b[IVX]{2,}\b\s*[:.-]?\s*/g, ' ')
+        .replace(/\b\d+\s*[:.-]\s*/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (cleanTitle !== movie.title && cleanTitle.length > 3) {
+        const searchClean = await searchMovies(cleanTitle);
+        addResults(searchClean.results);
+      }
+    }
+
+    // 4. Si no hay resultados y el título tiene coma, buscar solo la parte antes
+    if (allResults.length === 0 && movie.title.includes(',')) {
+      const firstPart = movie.title.split(',')[0].trim();
+      if (firstPart.length >= 3) {
+        const searchFirstPart = await searchMovies(firstPart);
+        addResults(searchFirstPart.results);
+      }
+    }
+
+    // 5. Si no hay resultados y el título tiene ":", buscar solo la parte antes
+    if (allResults.length === 0 && movie.title.includes(':')) {
+      const firstPart = movie.title.split(':')[0].trim();
+      if (firstPart.length >= 3) {
+        const searchFirstPart = await searchMovies(firstPart);
+        addResults(searchFirstPart.results);
+      }
+    }
+
+    if (allResults.length === 0) {
+      result.match_reason = 'Sin resultados en TMDB';
+      return result;
+    }
+
+    // Evaluar cada candidato
+    const candidates: Array<{
+      tmdb: TMDBMovieDetails;
+      score: number;
+      reasons: string[];
+    }> = [];
+
+    for (const tmdbMovie of allResults.slice(0, 5)) {
+      const details = await getMovieDetails(tmdbMovie.id);
+      const { score, reasons } = calculateMatchScore(movie, details);
+
+      if (score > 0) {
+        candidates.push({ tmdb: details, score, reasons });
+      }
+    }
+
+    if (candidates.length === 0) {
+      result.match_reason = 'Ningún candidato supera umbral mínimo';
+      return result;
+    }
+
+    // Ordenar por score descendente
+    candidates.sort((a, b) => b.score - a.score);
+    const best = candidates[0];
+
+    // Obtener director de TMDB
+    const tmdbDirector = best.tmdb.credits?.crew
+      ?.filter(c => c.job === 'Director')
+      .map(c => c.name)
+      .join(', ') || null;
+
+    result.tmdb_id = best.tmdb.id;
+    result.tmdb_title = best.tmdb.title;
+    result.tmdb_year = best.tmdb.release_date ? parseInt(best.tmdb.release_date.split('-')[0]) : null;
+    result.tmdb_director = tmdbDirector;
+    result.imdb_id = best.tmdb.imdb_id;
+    result.match_score = best.score;
+    result.match_reason = best.reasons.join('; ');
+
+    // Determinar status
+    const hasExactTitle = best.reasons.some(r => r.includes('Título exacto'));
+    const hasSimilarTitle = best.reasons.some(r => r.includes('Título similar'));
+    const hasPartialTitle = best.reasons.some(r => r.includes('Título parcial'));
+    const hasAnyTitleMatch = hasExactTitle || hasSimilarTitle || hasPartialTitle;
+    const hasDirectorMatch = best.reasons.some(r => r.includes('Director coincide'));
+    const hasDirectorMismatch = best.reasons.some(r => r.includes('Director NO coincide'));
+
+    if (hasDirectorMismatch) {
+      if (best.score >= config.matching.movie.reviewScore) {
+        result.match_status = 'review';
+        result.match_reason += ' [Review: director no coincide]';
+      }
+    } else if (!hasAnyTitleMatch) {
+      if (best.score >= config.matching.movie.reviewScore) {
+        result.match_status = 'review';
+        result.match_reason += ' [Review: título muy diferente]';
+      }
+    } else if (best.score >= config.matching.movie.autoAcceptScore) {
+      result.match_status = 'auto_accept';
+    } else if (hasExactTitle && hasDirectorMatch) {
+      result.match_status = 'auto_accept';
+      result.match_reason += ' [Auto: título exacto + director]';
+    } else if (best.score >= config.matching.movie.reviewScore) {
+      if (candidates.length > 1 && candidates[1].score >= config.matching.movie.reviewScore) {
+        result.match_status = 'multiple';
+        result.match_reason += ` [Alternativas: ${candidates.slice(1, 3).map(c => c.tmdb.title).join(', ')}]`;
+      } else {
+        result.match_status = 'review';
+      }
+    }
+
+  } catch (error) {
+    result.match_reason = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
+
+  return result;
+}
+
+// ============================================================================
+// FUNCIONES DE SYNC DIRECTO (películas con tmdb_id)
+// ============================================================================
 
 function sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function parseArgs(): SyncOptions {
-    const args = process.argv.slice(2);
-    const options: SyncOptions = {
-        dryRun: false,
-        batchSize: 100,
-        delay: 250, // TMDB tiene rate limit de 40 req/10s
-    };
+async function syncFromTmdbId(options: SyncOptions): Promise<SyncResult[]> {
+  const results: SyncResult[] = [];
 
-    for (let i = 0; i < args.length; i++) {
-        switch (args[i]) {
-            case '--limit':
-                options.limit = parseInt(args[++i], 10);
-                break;
-            case '--dry-run':
-                options.dryRun = true;
-                break;
-            case '--batch-size':
-                options.batchSize = parseInt(args[++i], 10);
-                break;
-            case '--delay':
-                options.delay = parseInt(args[++i], 10);
-                break;
-        }
-    }
+  const whereClause = {
+    tmdbId: { not: null },
+    imdbId: null,
+  };
 
-    return options;
-}
+  const totalCount = await prisma.movie.count({ where: whereClause });
+  const limit = options.limit || totalCount;
 
-async function syncImdbIds(options: SyncOptions): Promise<SyncResult[]> {
-    const results: SyncResult[] = [];
+  console.log(`\n📽️  Sincronizando IMDB IDs desde TMDB (películas con tmdb_id)...`);
+  console.log(`   Total con tmdb_id y sin imdb_id: ${totalCount}`);
+  console.log(`   A procesar: ${Math.min(limit, totalCount)}`);
 
-    // Películas con tmdb_id pero sin imdb_id
-    const whereClause = {
-        tmdbId: { not: null },
-        imdbId: null,
-    };
-
-    const totalCount = await prisma.movie.count({ where: whereClause });
-    const limit = options.limit || totalCount;
-
-    console.log(`\n📽️  Sincronizando IMDB IDs desde TMDB...`);
-    console.log(`   Total con tmdb_id y sin imdb_id: ${totalCount}`);
-    console.log(`   A procesar: ${Math.min(limit, totalCount)}`);
-
-    if (totalCount === 0) {
-        console.log('   ✅ No hay películas pendientes de sincronización');
-        return results;
-    }
-
-    let processed = 0;
-    let offset = 0;
-
-    while (processed < limit) {
-        const batchLimit = Math.min(options.batchSize, limit - processed);
-
-        const movies = await prisma.movie.findMany({
-            where: whereClause,
-            select: {
-                id: true,
-                tmdbId: true,
-                title: true,
-            },
-            orderBy: { id: 'asc' },
-            skip: offset,
-            take: batchLimit,
-        });
-
-        if (movies.length === 0) break;
-
-        for (const movie of movies) {
-            const result: SyncResult = {
-                id: movie.id,
-                tmdbId: movie.tmdbId!,
-                title: movie.title,
-                imdbId: null,
-                status: 'no_imdb_id',
-            };
-
-            try {
-                const tmdbDetails = await getMovieDetails(movie.tmdbId!);
-
-                if (tmdbDetails.imdb_id) {
-                    result.imdbId = tmdbDetails.imdb_id;
-                    result.status = 'updated';
-
-                    if (!options.dryRun) {
-                        await prisma.movie.update({
-                            where: { id: movie.id },
-                            data: { imdbId: tmdbDetails.imdb_id },
-                        });
-                    }
-                } else {
-                    result.status = 'no_imdb_id';
-                }
-            } catch (error: any) {
-                result.status = 'error';
-                result.error = error.message;
-            }
-
-            results.push(result);
-            processed++;
-
-            const statusIcon = result.status === 'updated' ? '✅' :
-                              result.status === 'no_imdb_id' ? '➖' : '❌';
-            const imdbDisplay = result.imdbId || 'sin IMDB ID';
-            console.log(`   ${statusIcon} [${processed}/${Math.min(limit, totalCount)}] ${movie.title}: ${imdbDisplay}`);
-
-            await sleep(options.delay);
-        }
-
-        offset += batchLimit;
-    }
-
+  if (totalCount === 0) {
+    console.log('   ✅ No hay películas pendientes de sincronización');
     return results;
+  }
+
+  let processed = 0;
+  let offset = 0;
+
+  while (processed < limit) {
+    const batchLimit = Math.min(options.batchSize, limit - processed);
+
+    const movies = await prisma.movie.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        tmdbId: true,
+        title: true,
+      },
+      orderBy: { id: 'asc' },
+      skip: offset,
+      take: batchLimit,
+    });
+
+    if (movies.length === 0) break;
+
+    for (const movie of movies) {
+      const result: SyncResult = {
+        id: movie.id,
+        tmdbId: movie.tmdbId!,
+        title: movie.title,
+        imdbId: null,
+        status: 'no_imdb_id',
+      };
+
+      try {
+        const tmdbDetails = await getMovieDetails(movie.tmdbId!);
+
+        if (tmdbDetails.imdb_id) {
+          result.imdbId = tmdbDetails.imdb_id;
+          result.status = 'updated';
+
+          if (options.apply) {
+            await prisma.movie.update({
+              where: { id: movie.id },
+              data: { imdbId: tmdbDetails.imdb_id },
+            });
+          }
+        } else {
+          result.status = 'no_imdb_id';
+        }
+      } catch (error: any) {
+        result.status = 'error';
+        result.error = error.message;
+      }
+
+      results.push(result);
+      processed++;
+
+      const statusIcon = result.status === 'updated' ? '✅' :
+        result.status === 'no_imdb_id' ? '➖' : '❌';
+      const imdbDisplay = result.imdbId || 'sin IMDB ID';
+      console.log(`   ${statusIcon} [${processed}/${Math.min(limit, totalCount)}] ${movie.title}: ${imdbDisplay}`);
+
+      await sleep(options.delay);
+    }
+
+    offset += batchLimit;
+  }
+
+  return results;
 }
+
+// ============================================================================
+// FUNCIONES DE BÚSQUEDA CON MATCHING (películas sin tmdb_id)
+// ============================================================================
+
+async function getMoviesWithoutIds(limit?: number, offset?: number): Promise<LocalMovie[]> {
+  const pool = getPool();
+
+  const query = `
+    SELECT
+      m.id,
+      m.title,
+      m.year,
+      m.duration,
+      m.imdb_id,
+      STRING_AGG(CONCAT(p.first_name, ' ', p.last_name), ', ') as director_names
+    FROM movies m
+    LEFT JOIN movie_crew mc ON m.id = mc.movie_id AND mc.role_id = $1
+    LEFT JOIN people p ON mc.person_id = p.id
+    WHERE (m.tmdb_id IS NULL OR m.tmdb_id = 0)
+      AND (m.imdb_id IS NULL OR m.imdb_id = '')
+    GROUP BY m.id, m.title, m.year, m.duration, m.imdb_id
+    ORDER BY m.year DESC NULLS LAST, m.id
+    ${limit ? `LIMIT ${limit}` : ''}
+    ${offset ? `OFFSET ${offset}` : ''}
+  `;
+
+  const result = await pool.query(query, [config.roles.director]);
+  return result.rows;
+}
+
+async function searchAndMatch(options: SyncOptions): Promise<void> {
+  log('Obteniendo películas sin TMDB ID ni IMDB ID...', 'info');
+  const allMovies = await getMoviesWithoutIds(options.limit);
+
+  // Cargar progreso y filtrar películas ya procesadas
+  const processedIds = loadProgress();
+  const movies = allMovies.filter(m => !processedIds.has(m.id));
+
+  const skipped = allMovies.length - movies.length;
+  if (skipped > 0) {
+    log(`Saltando ${skipped} películas ya procesadas (usar --reset para reiniciar)`, 'info');
+  }
+
+  log(`Películas a procesar: ${movies.length}`, 'info');
+  log(`Modo: ${options.apply ? 'apply (aplica cambios en tiempo real)' : 'dry-run (solo genera CSV)'}`, 'info');
+
+  if (movies.length === 0) {
+    log('No hay películas nuevas para procesar', 'success');
+    await closePool();
+    return;
+  }
+
+  const startTime = Date.now();
+  const results: MatchResult[] = [];
+  const pool = getPool();
+
+  // Stats
+  let processed = 0;
+  let autoAccepted = 0;
+  let applied = 0;
+  let needsReview = 0;
+  let noMatch = 0;
+  let multiple = 0;
+  let errors = 0;
+
+  console.log('');
+
+  for (const movie of movies) {
+    processed++;
+
+    const match = await findMatchForMovie(movie);
+    results.push(match);
+
+    processedIds.add(movie.id);
+
+    let icon = '➖';
+    switch (match.match_status) {
+      case 'auto_accept':
+        autoAccepted++;
+        icon = '✅';
+        if (options.apply && match.tmdb_id) {
+          try {
+            const updateData: any = { tmdbId: match.tmdb_id };
+            if (match.imdb_id) {
+              updateData.imdbId = match.imdb_id;
+            }
+            await pool.query(
+              'UPDATE movies SET tmdb_id = $1, imdb_id = $2 WHERE id = $3',
+              [match.tmdb_id, match.imdb_id, match.local_id]
+            );
+            applied++;
+          } catch (err) {
+            errors++;
+            icon = '❌';
+          }
+        }
+        break;
+      case 'review':
+        needsReview++;
+        icon = '🔍';
+        break;
+      case 'no_match':
+        noMatch++;
+        icon = '➖';
+        break;
+      case 'multiple':
+        multiple++;
+        icon = '🔄';
+        break;
+    }
+
+    // Mostrar progreso
+    let tmdbInfo: string;
+    if (match.match_status === 'no_match') {
+      tmdbInfo = match.match_reason || 'Sin match';
+    } else if (match.tmdb_id) {
+      tmdbInfo = `→ ${match.tmdb_title} (${match.tmdb_year}) [${match.imdb_id || 'sin imdb'}]`;
+    } else {
+      tmdbInfo = match.match_reason;
+    }
+    console.log(`${icon} [${processed}/${movies.length}] ${movie.title} (${movie.year || '?'}) ${tmdbInfo}`);
+
+    // Guardar progreso cada 10 películas
+    if (processed % 10 === 0) {
+      saveProgress(processedIds);
+    }
+  }
+
+  // Guardar progreso final
+  saveProgress(processedIds);
+
+  const elapsed = Date.now() - startTime;
+
+  // Guardar CSV
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+  const prefix = options.apply ? '' : 'dry-run-';
+  saveToCSV(results, `${prefix}imdb-search-${timestamp}.csv`, [
+    'local_id', 'local_title', 'local_year', 'local_director',
+    'tmdb_id', 'tmdb_title', 'tmdb_year', 'tmdb_director',
+    'imdb_id', 'match_score', 'match_status', 'match_reason'
+  ]);
+
+  // También guardar versión "latest"
+  saveToCSV(results, 'imdb-search-matches.csv', [
+    'local_id', 'local_title', 'local_year', 'local_director',
+    'tmdb_id', 'tmdb_title', 'tmdb_year', 'tmdb_director',
+    'imdb_id', 'match_score', 'match_status', 'match_reason'
+  ]);
+
+  // Resumen
+  console.log('\n' + '='.repeat(60));
+  console.log('📊 RESUMEN');
+  console.log('='.repeat(60));
+  console.log(`   Procesadas:      ${processed}`);
+  console.log(`   ✅ Auto-accept:  ${autoAccepted}`);
+  if (options.apply) {
+    console.log(`   💾 Aplicadas:    ${applied}`);
+    if (errors > 0) console.log(`   ❌ Errores:      ${errors}`);
+  }
+  console.log(`   🔍 Para revisar: ${needsReview}`);
+  console.log(`   🔄 Múltiples:    ${multiple}`);
+  console.log(`   ➖ Sin match:    ${noMatch}`);
+  console.log(`   ⏱️  Tiempo:       ${formatDuration(elapsed)}`);
+  console.log(`   📁 Progreso:     ${processedIds.size} películas en cache`);
+  console.log('='.repeat(60));
+
+  if (!options.apply) {
+    console.log('\n💡 Modo dry-run: No se aplicaron cambios.');
+    console.log('   Para aplicar: npx tsx scripts/tmdb/sync-imdb-ids.ts --search --apply');
+  }
+  console.log('   Para reiniciar: npx tsx scripts/tmdb/sync-imdb-ids.ts --reset');
+
+  await closePool();
+}
+
+async function applyFromCSV(): Promise<void> {
+  log('Cargando matches desde CSV...', 'info');
+  const matches = loadFromCSV('imdb-search-matches.csv') as MatchResult[];
+
+  if (matches.length === 0) {
+    log('No se encontró el archivo imdb-search-matches.csv', 'error');
+    process.exit(1);
+  }
+
+  const toApply = matches.filter(m =>
+    m.match_status === 'auto_accept' || m.match_status === 'review'
+  );
+
+  log(`Aplicando ${toApply.length} matches a la base de datos...`, 'info');
+
+  const pool = getPool();
+  let updated = 0;
+  let errors = 0;
+
+  for (const match of toApply) {
+    if (!match.tmdb_id || match.match_status === 'no_match') continue;
+
+    try {
+      if (match.imdb_id) {
+        await pool.query(
+          'UPDATE movies SET tmdb_id = $1, imdb_id = $2 WHERE id = $3',
+          [match.tmdb_id, match.imdb_id, match.local_id]
+        );
+      } else {
+        await pool.query(
+          'UPDATE movies SET tmdb_id = $1 WHERE id = $2',
+          [match.tmdb_id, match.local_id]
+        );
+      }
+      updated++;
+    } catch (error) {
+      log(`Error actualizando película ${match.local_id}: ${error}`, 'error');
+      errors++;
+    }
+  }
+
+  log(`Actualizadas: ${updated} | Errores: ${errors}`, updated > 0 ? 'success' : 'warn');
+  await closePool();
+}
+
+// ============================================================================
+// FUNCIONES DE REPORTE Y STATS
+// ============================================================================
 
 function generateReport(results: SyncResult[], options: SyncOptions): void {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const prefix = options.dryRun ? 'dry-run-' : '';
-    const reportsDir = path.join(__dirname, 'reports');
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const prefix = options.dryRun ? 'dry-run-' : '';
+  const reportsDir = path.join(__dirname, 'reports');
 
-    if (!fs.existsSync(reportsDir)) {
-        fs.mkdirSync(reportsDir, { recursive: true });
-    }
+  if (!fs.existsSync(reportsDir)) {
+    fs.mkdirSync(reportsDir, { recursive: true });
+  }
 
-    const csvPath = path.join(reportsDir, `${prefix}imdb-ids-sync-${timestamp}.csv`);
-    const csvHeader = 'id,tmdb_id,title,imdb_id,status,error\n';
-    const csvRows = results.map(r =>
-        `${r.id},${r.tmdbId},"${r.title.replace(/"/g, '""')}",${r.imdbId || ''},${r.status},"${r.error || ''}"`
-    ).join('\n');
+  const csvPath = path.join(reportsDir, `${prefix}imdb-ids-sync-${timestamp}.csv`);
+  const csvHeader = 'id,tmdb_id,title,imdb_id,status,error\n';
+  const csvRows = results.map(r =>
+    `${r.id},${r.tmdbId},"${r.title.replace(/"/g, '""')}",${r.imdbId || ''},${r.status},"${r.error || ''}"`
+  ).join('\n');
 
-    fs.writeFileSync(csvPath, csvHeader + csvRows);
-    console.log(`\n📄 Reporte guardado en: ${csvPath}`);
+  fs.writeFileSync(csvPath, csvHeader + csvRows);
+  console.log(`\n📄 Reporte guardado en: ${csvPath}`);
 }
 
 function printSummary(results: SyncResult[], startTime: Date, endTime: Date): void {
-    const stats = {
-        updated: results.filter(r => r.status === 'updated').length,
-        noImdbId: results.filter(r => r.status === 'no_imdb_id').length,
-        errors: results.filter(r => r.status === 'error').length,
-    };
+  const stats = {
+    updated: results.filter(r => r.status === 'updated').length,
+    noImdbId: results.filter(r => r.status === 'no_imdb_id').length,
+    errors: results.filter(r => r.status === 'error').length,
+  };
 
-    const duration = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
+  const duration = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
 
-    console.log('\n' + '='.repeat(50));
-    console.log('RESUMEN DE SINCRONIZACIÓN');
-    console.log('='.repeat(50));
+  console.log('\n' + '='.repeat(50));
+  console.log('RESUMEN DE SINCRONIZACIÓN');
+  console.log('='.repeat(50));
 
-    console.log(`\n📽️  PELÍCULAS (${results.length} procesadas)`);
-    console.log(`   ✅ Actualizadas: ${stats.updated}`);
-    console.log(`   ➖ Sin IMDB ID en TMDB: ${stats.noImdbId}`);
-    console.log(`   ❌ Errores: ${stats.errors}`);
+  console.log(`\n📽️  PELÍCULAS (${results.length} procesadas)`);
+  console.log(`   ✅ Actualizadas: ${stats.updated}`);
+  console.log(`   ➖ Sin IMDB ID en TMDB: ${stats.noImdbId}`);
+  console.log(`   ❌ Errores: ${stats.errors}`);
 
-    console.log(`\n⏱️  Duración: ${duration} segundos`);
-    console.log('='.repeat(50));
+  console.log(`\n⏱️  Duración: ${duration} segundos`);
+  console.log('='.repeat(50));
 }
 
 async function showStats(): Promise<void> {
-    const withTmdbId = await prisma.movie.count({ where: { tmdbId: { not: null } } });
-    const withImdbId = await prisma.movie.count({ where: { imdbId: { not: null } } });
-    const withBoth = await prisma.movie.count({ where: { tmdbId: { not: null }, imdbId: { not: null } } });
-    const withTmdbNoImdb = await prisma.movie.count({ where: { tmdbId: { not: null }, imdbId: null } });
+  const withTmdbId = await prisma.movie.count({ where: { tmdbId: { not: null } } });
+  const withImdbId = await prisma.movie.count({ where: { imdbId: { not: null } } });
+  const withBoth = await prisma.movie.count({ where: { tmdbId: { not: null }, imdbId: { not: null } } });
+  const withTmdbNoImdb = await prisma.movie.count({ where: { tmdbId: { not: null }, imdbId: null } });
+  const withoutBoth = await prisma.movie.count({ where: { tmdbId: null, imdbId: null } });
 
-    console.log('\n📊 ESTADO ACTUAL DE LA BASE DE DATOS:');
-    console.log(`   Con tmdb_id: ${withTmdbId}`);
-    console.log(`   Con imdb_id: ${withImdbId}`);
-    console.log(`   Con ambos:   ${withBoth}`);
-    console.log(`   Con tmdb_id sin imdb_id: ${withTmdbNoImdb}`);
+  console.log('\n📊 ESTADO ACTUAL DE LA BASE DE DATOS:');
+  console.log(`   Con tmdb_id: ${withTmdbId}`);
+  console.log(`   Con imdb_id: ${withImdbId}`);
+  console.log(`   Con ambos:   ${withBoth}`);
+  console.log(`   Con tmdb_id sin imdb_id: ${withTmdbNoImdb}`);
+  console.log(`   Sin ninguno: ${withoutBoth}`);
 }
 
-async function main() {
-    const options = parseArgs();
-    const startTime = new Date();
+// ============================================================================
+// PARSEO DE ARGUMENTOS
+// ============================================================================
 
-    console.log('='.repeat(50));
-    console.log('SINCRONIZACIÓN DE IMDB IDs DESDE TMDB');
-    console.log('='.repeat(50));
-    console.log(`Límite: ${options.limit || 'sin límite'}`);
-    console.log(`Dry-run: ${options.dryRun ? 'SÍ' : 'NO'}`);
-    console.log(`Batch size: ${options.batchSize}`);
-    console.log(`Delay: ${options.delay}ms`);
+function parseArgs(): SyncOptions {
+  const args = process.argv.slice(2);
+  const options: SyncOptions = {
+    dryRun: true,
+    apply: false,
+    applyCSV: false,
+    search: false,
+    batchSize: 100,
+    delay: 30,
+    reset: false,
+  };
 
-    try {
-        await showStats();
-
-        const results = await syncImdbIds(options);
-        const endTime = new Date();
-
-        if (results.length > 0) {
-            generateReport(results, options);
-            printSummary(results, startTime, endTime);
-        }
-
-        await showStats();
-
-    } catch (error) {
-        console.error('Error durante la sincronización:', error);
-        process.exit(1);
-    } finally {
-        await prisma.$disconnect();
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case '--limit':
+        options.limit = parseInt(args[++i], 10);
+        break;
+      case '--dry-run':
+        options.dryRun = true;
+        options.apply = false;
+        break;
+      case '--apply':
+        options.apply = true;
+        options.dryRun = false;
+        break;
+      case '--apply-csv':
+        options.applyCSV = true;
+        break;
+      case '--search':
+        options.search = true;
+        break;
+      case '--batch-size':
+        options.batchSize = parseInt(args[++i], 10);
+        break;
+      case '--delay':
+        options.delay = parseInt(args[++i], 10);
+        break;
+      case '--reset':
+        options.reset = true;
+        break;
     }
+  }
+
+  return options;
+}
+
+// ============================================================================
+// MAIN
+// ============================================================================
+
+async function main() {
+  const options = parseArgs();
+  const startTime = new Date();
+
+  console.log('='.repeat(50));
+  console.log('SINCRONIZACIÓN DE IMDB IDs');
+  console.log('='.repeat(50));
+
+  // Modo reset
+  if (options.reset) {
+    resetProgress();
+    await prisma.$disconnect();
+    return;
+  }
+
+  // Test conexión a TMDB
+  log('Probando conexión a TMDB...', 'info');
+  const connected = await testConnection();
+  if (!connected) {
+    log('No se pudo conectar a TMDB', 'error');
+    process.exit(1);
+  }
+  log('Conexión a TMDB exitosa', 'success');
+
+  try {
+    await showStats();
+
+    if (options.applyCSV) {
+      // Modo: Aplicar desde CSV revisado
+      await applyFromCSV();
+    } else if (options.search) {
+      // Modo: Buscar películas sin tmdb_id usando matching
+      await searchAndMatch(options);
+    } else {
+      // Modo por defecto: Sincronizar para películas con tmdb_id
+      console.log(`Modo: ${options.apply ? 'apply' : 'dry-run'}`);
+      console.log(`Límite: ${options.limit || 'sin límite'}`);
+
+      const results = await syncFromTmdbId(options);
+      const endTime = new Date();
+
+      if (results.length > 0) {
+        generateReport(results, options);
+        printSummary(results, startTime, endTime);
+      }
+    }
+
+    await showStats();
+
+  } catch (error) {
+    console.error('Error durante la sincronización:', error);
+    process.exit(1);
+  } finally {
+    await prisma.$disconnect();
+  }
+
+  console.log('\n✨ Proceso completado\n');
 }
 
 main();
@@ -7843,6 +10523,414 @@ async function main() {
     } finally {
         await prisma.$disconnect();
     }
+}
+
+main();
+
+
+// ==================================================
+// scripts/tmdb/sync-tmdb-from-imdb.ts
+// ==================================================
+/**
+ * Script para sincronizar tmdb_id desde IMDB ID
+ *
+ * Busca películas que tienen imdb_id pero no tienen tmdb_id,
+ * y consulta TMDB para obtener el tmdb_id correspondiente.
+ *
+ * Uso:
+ *   npx tsx scripts/tmdb/sync-tmdb-from-imdb.ts --dry-run    # Solo genera CSV
+ *   npx tsx scripts/tmdb/sync-tmdb-from-imdb.ts --apply      # Aplica cambios a la BD
+ *   npx tsx scripts/tmdb/sync-tmdb-from-imdb.ts --limit 100  # Procesar solo 100 películas
+ *   npx tsx scripts/tmdb/sync-tmdb-from-imdb.ts --reset      # Reiniciar progreso
+ */
+
+import { PrismaClient } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
+import { testConnection } from './tmdb-client';
+import {
+  saveToCSV,
+  formatDuration,
+  log
+} from './utils';
+import config from './config';
+
+// Cargar dotenv solo si está disponible
+try {
+  const pathModule = require('path');
+  const dotenv = require('dotenv');
+  dotenv.config({ path: pathModule.resolve(__dirname, '../../.env') });
+} catch {
+  // dotenv no disponible
+}
+
+const prisma = new PrismaClient();
+
+// ============================================================================
+// TIPOS
+// ============================================================================
+
+interface SyncOptions {
+  limit?: number;
+  dryRun: boolean;
+  apply: boolean;
+  delay: number;
+  reset: boolean;
+}
+
+interface SyncResult {
+  local_id: number;
+  local_title: string;
+  local_year: number | null;
+  imdb_id: string;
+  tmdb_id: number | null;
+  tmdb_title: string | null;
+  tmdb_year: number | null;
+  status: 'found' | 'not_found' | 'error';
+  message: string;
+}
+
+// Archivo para guardar progreso
+const PROGRESS_FILE = path.join(__dirname, 'reports', '.sync-tmdb-from-imdb-progress.json');
+const CSV_FILENAME = 'tmdb-from-imdb-sync.csv';
+
+interface ProgressData {
+  processedIds: number[];
+  lastRun: string;
+}
+
+// ============================================================================
+// FUNCIONES DE PROGRESO
+// ============================================================================
+
+function loadProgress(): Set<number> {
+  try {
+    if (fs.existsSync(PROGRESS_FILE)) {
+      const data: ProgressData = JSON.parse(fs.readFileSync(PROGRESS_FILE, 'utf-8'));
+      return new Set(data.processedIds);
+    }
+  } catch (error) {
+    // Si hay error leyendo, empezar de cero
+  }
+  return new Set();
+}
+
+function saveProgress(processedIds: Set<number>): void {
+  const data: ProgressData = {
+    processedIds: Array.from(processedIds),
+    lastRun: new Date().toISOString(),
+  };
+  fs.writeFileSync(PROGRESS_FILE, JSON.stringify(data, null, 2));
+}
+
+function resetProgress(): void {
+  if (fs.existsSync(PROGRESS_FILE)) {
+    fs.unlinkSync(PROGRESS_FILE);
+    log('Progreso reiniciado', 'success');
+  } else {
+    log('No había progreso guardado', 'info');
+  }
+}
+
+// ============================================================================
+// FUNCIONES DE TMDB API
+// ============================================================================
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+interface TMDBFindResponse {
+  movie_results: Array<{
+    id: number;
+    title: string;
+    original_title: string;
+    release_date: string;
+  }>;
+}
+
+/**
+ * Buscar en TMDB por IMDB ID usando el endpoint /find
+ */
+async function findByImdbId(imdbId: string): Promise<TMDBFindResponse> {
+  const url = `${config.tmdbBaseUrl}/find/${imdbId}?external_source=imdb_id`;
+
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${config.tmdbAccessToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// ============================================================================
+// FUNCIÓN PRINCIPAL
+// ============================================================================
+
+async function syncTmdbFromImdb(options: SyncOptions): Promise<void> {
+  log('Obteniendo películas con IMDB ID pero sin TMDB ID...', 'info');
+
+  // Obtener películas con imdb_id pero sin tmdb_id
+  const allMovies = await prisma.movie.findMany({
+    where: {
+      imdbId: { not: null },
+      OR: [
+        { tmdbId: null },
+        { tmdbId: 0 },
+      ],
+    },
+    select: {
+      id: true,
+      title: true,
+      year: true,
+      imdbId: true,
+    },
+    orderBy: { year: 'desc' },
+    take: options.limit,
+  });
+
+  // Filtrar imdbId vacíos
+  const moviesWithImdb = allMovies.filter(m => m.imdbId && m.imdbId.trim() !== '');
+
+  // Cargar progreso y filtrar películas ya procesadas
+  const processedIds = loadProgress();
+  const movies = moviesWithImdb.filter(m => !processedIds.has(m.id));
+
+  const skipped = moviesWithImdb.length - movies.length;
+  if (skipped > 0) {
+    log(`Saltando ${skipped} películas ya procesadas (usar --reset para reiniciar)`, 'info');
+  }
+
+  log(`Películas a procesar: ${movies.length}`, 'info');
+  log(`Modo: ${options.apply ? 'apply (aplica cambios en tiempo real)' : 'dry-run (solo genera CSV)'}`, 'info');
+
+  if (movies.length === 0) {
+    log('No hay películas nuevas para procesar', 'success');
+    return;
+  }
+
+  const startTime = Date.now();
+  const results: SyncResult[] = [];
+
+  // Stats
+  let processed = 0;
+  let found = 0;
+  let applied = 0;
+  let notFound = 0;
+  let errors = 0;
+
+  console.log('');
+
+  for (const movie of movies) {
+    processed++;
+
+    const result: SyncResult = {
+      local_id: movie.id,
+      local_title: movie.title,
+      local_year: movie.year,
+      imdb_id: movie.imdbId!,
+      tmdb_id: null,
+      tmdb_title: null,
+      tmdb_year: null,
+      status: 'not_found',
+      message: '',
+    };
+
+    try {
+      const tmdbResult = await findByImdbId(movie.imdbId!);
+
+      if (tmdbResult.movie_results && tmdbResult.movie_results.length > 0) {
+        const tmdbMovie = tmdbResult.movie_results[0];
+
+        result.tmdb_id = tmdbMovie.id;
+        result.tmdb_title = tmdbMovie.title;
+        result.tmdb_year = tmdbMovie.release_date
+          ? parseInt(tmdbMovie.release_date.split('-')[0])
+          : null;
+        result.status = 'found';
+        result.message = `TMDB: ${tmdbMovie.title} (${result.tmdb_year})`;
+        found++;
+
+        if (options.apply) {
+          await prisma.movie.update({
+            where: { id: movie.id },
+            data: { tmdbId: tmdbMovie.id },
+          });
+          applied++;
+        }
+      } else {
+        result.status = 'not_found';
+        result.message = 'No existe en TMDB';
+        notFound++;
+      }
+    } catch (error) {
+      result.status = 'error';
+      result.message = error instanceof Error ? error.message : 'Unknown error';
+      errors++;
+    }
+
+    results.push(result);
+    processedIds.add(movie.id);
+
+    // Mostrar progreso
+    const icon = result.status === 'found' ? '✅' :
+                 result.status === 'not_found' ? '➖' : '❌';
+    console.log(`${icon} [${processed}/${movies.length}] ${movie.title} (${movie.year || '?'}) [${movie.imdbId}] ${result.message}`);
+
+    // Guardar progreso cada 10 películas
+    if (processed % 10 === 0) {
+      saveProgress(processedIds);
+    }
+
+    await sleep(options.delay);
+  }
+
+  // Guardar progreso final
+  saveProgress(processedIds);
+
+  const elapsed = Date.now() - startTime;
+
+  // Guardar CSV
+  const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+  const prefix = options.apply ? '' : 'dry-run-';
+  saveToCSV(results, `${prefix}tmdb-from-imdb-${timestamp}.csv`, [
+    'local_id', 'local_title', 'local_year', 'imdb_id',
+    'tmdb_id', 'tmdb_title', 'tmdb_year', 'status', 'message'
+  ]);
+
+  // También guardar versión "latest"
+  saveToCSV(results, CSV_FILENAME, [
+    'local_id', 'local_title', 'local_year', 'imdb_id',
+    'tmdb_id', 'tmdb_title', 'tmdb_year', 'status', 'message'
+  ]);
+
+  // Resumen
+  console.log('\n' + '='.repeat(60));
+  console.log('📊 RESUMEN');
+  console.log('='.repeat(60));
+  console.log(`   Procesadas:      ${processed}`);
+  console.log(`   ✅ Encontradas:  ${found}`);
+  if (options.apply) {
+    console.log(`   💾 Aplicadas:    ${applied}`);
+  }
+  console.log(`   ➖ No en TMDB:   ${notFound}`);
+  console.log(`   ❌ Errores:      ${errors}`);
+  console.log(`   ⏱️  Tiempo:       ${formatDuration(elapsed)}`);
+  console.log(`   📁 Progreso:     ${processedIds.size} películas en cache`);
+  console.log('='.repeat(60));
+
+  if (!options.apply) {
+    console.log('\n💡 Modo dry-run: No se aplicaron cambios.');
+    console.log('   Para aplicar: npx tsx scripts/tmdb/sync-tmdb-from-imdb.ts --apply');
+  }
+  console.log('   Para reiniciar: npx tsx scripts/tmdb/sync-tmdb-from-imdb.ts --reset');
+}
+
+async function showStats(): Promise<void> {
+  const total = await prisma.movie.count();
+  const withTmdbId = await prisma.movie.count({ where: { tmdbId: { not: null } } });
+  const withImdbId = await prisma.movie.count({ where: { imdbId: { not: null } } });
+  const withImdbNoTmdb = await prisma.movie.count({
+    where: {
+      imdbId: { not: null },
+      OR: [
+        { tmdbId: null },
+        { tmdbId: 0 },
+      ],
+    }
+  });
+
+  console.log('\n📊 ESTADO ACTUAL DE LA BASE DE DATOS:');
+  console.log(`   Total películas:        ${total}`);
+  console.log(`   Con tmdb_id:            ${withTmdbId}`);
+  console.log(`   Con imdb_id:            ${withImdbId}`);
+  console.log(`   Con imdb_id sin tmdb_id: ${withImdbNoTmdb}`);
+}
+
+// ============================================================================
+// PARSEO DE ARGUMENTOS
+// ============================================================================
+
+function parseArgs(): SyncOptions {
+  const args = process.argv.slice(2);
+  const options: SyncOptions = {
+    dryRun: true,
+    apply: false,
+    delay: 30, // TMDB permite ~40 req/s
+    reset: false,
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case '--limit':
+        options.limit = parseInt(args[++i], 10);
+        break;
+      case '--dry-run':
+        options.dryRun = true;
+        options.apply = false;
+        break;
+      case '--apply':
+        options.apply = true;
+        options.dryRun = false;
+        break;
+      case '--delay':
+        options.delay = parseInt(args[++i], 10);
+        break;
+      case '--reset':
+        options.reset = true;
+        break;
+    }
+  }
+
+  return options;
+}
+
+// ============================================================================
+// MAIN
+// ============================================================================
+
+async function main() {
+  const options = parseArgs();
+
+  console.log('='.repeat(50));
+  console.log('SINCRONIZACIÓN DE TMDB ID DESDE IMDB ID');
+  console.log('='.repeat(50));
+
+  // Modo reset
+  if (options.reset) {
+    resetProgress();
+    await prisma.$disconnect();
+    return;
+  }
+
+  // Test conexión a TMDB
+  log('Probando conexión a TMDB...', 'info');
+  const connected = await testConnection();
+  if (!connected) {
+    log('No se pudo conectar a TMDB', 'error');
+    process.exit(1);
+  }
+  log('Conexión a TMDB exitosa', 'success');
+
+  try {
+    await showStats();
+    await syncTmdbFromImdb(options);
+    await showStats();
+
+  } catch (error) {
+    console.error('Error durante la sincronización:', error);
+    process.exit(1);
+  } finally {
+    await prisma.$disconnect();
+  }
+
+  console.log('\n✨ Proceso completado\n');
 }
 
 main();
@@ -8305,13 +11393,26 @@ export function compareTitles(title1: string, title2: string): number {
   // Caso 1: Exactamente iguales después de normalizar
   if (t1 === t2) return 100;
   
-  // Caso 2: Uno es prefijo del otro (antes de separadores como , : -)
+  // Caso 2: Uno es prefijo del otro (antes de separadores como , : - .)
   // IMPORTANTE: Hacer el split ANTES de normalizar para no perder los separadores
   const separators = /[,:\-–—]/;
-  
+
+  // Extraer la parte base de un título (antes del primer separador)
+  // Incluye ". " (punto+espacio) como separador de subtítulo,
+  // pero no "." solo para no romper abreviaciones como "Dr." o "Sr."
+  const getBaseParts = (title: string): string[] => {
+    // Primero intentar con separadores estándar (, : - –)
+    const parts = title.split(separators);
+    if (parts.length > 1) return parts;
+    // Luego intentar con ". " (punto seguido de espacio = subtítulo)
+    const dotParts = title.split(/\.\s+/);
+    if (dotParts.length > 1) return dotParts;
+    return [title];
+  };
+
   // Verificar si title1 es el título base de title2 (title2 tiene subtítulo)
   if (title2.length > title1.length) {
-    const t2Parts = title2.split(separators);
+    const t2Parts = getBaseParts(title2);
     if (t2Parts.length > 1) {
       const t2Base = normalizeText(t2Parts[0].trim());
       if (stringSimilarity(t1, t2Base) >= 95) {
@@ -8319,10 +11420,10 @@ export function compareTitles(title1: string, title2: string): number {
       }
     }
   }
-  
+
   // Verificar si title2 es el título base de title1 (title1 tiene subtítulo)
   if (title1.length > title2.length) {
-    const t1Parts = title1.split(separators);
+    const t1Parts = getBaseParts(title1);
     if (t1Parts.length > 1) {
       const t1Base = normalizeText(t1Parts[0].trim());
       if (stringSimilarity(t2, t1Base) >= 95) {
@@ -8618,16 +11719,18 @@ export function saveToCSV(
 
 /**
  * Parsear una línea CSV respetando comillas
+ * @param line La línea a parsear
+ * @param separator El separador de campos (',' o ';')
  */
-function parseCSVLine(line: string): string[] {
+function parseCSVLine(line: string, separator: string = ','): string[] {
   const values: string[] = [];
   let current = '';
   let inQuotes = false;
-  
+
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
     const nextChar = line[i + 1];
-    
+
     if (inQuotes) {
       if (char === '"' && nextChar === '"') {
         // Comilla escapada
@@ -8643,7 +11746,7 @@ function parseCSVLine(line: string): string[] {
       if (char === '"') {
         // Inicio de campo entrecomillado
         inQuotes = true;
-      } else if (char === ',') {
+      } else if (char === separator) {
         // Fin de campo
         values.push(current);
         current = '';
@@ -8652,40 +11755,63 @@ function parseCSVLine(line: string): string[] {
       }
     }
   }
-  
+
   // Último campo
   values.push(current);
-  
+
   return values;
 }
 
 /**
+ * Detectar el separador usado en un CSV (coma o punto y coma)
+ */
+function detectCSVSeparator(headerLine: string): string {
+  // Contar ocurrencias de cada separador en la primera línea
+  const commas = (headerLine.match(/,/g) || []).length;
+  const semicolons = (headerLine.match(/;/g) || []).length;
+
+  // El que tenga más ocurrencias es probablemente el separador
+  return semicolons > commas ? ';' : ',';
+}
+
+/**
  * Cargar CSV existente
+ * Detecta automáticamente si usa coma o punto y coma como separador
+ * y elimina BOM si existe
  */
 export function loadFromCSV(filename: string): Record<string, any>[] {
   const filepath = path.join(__dirname, 'reports', filename);
-  
+
   if (!fs.existsSync(filepath)) {
     return [];
   }
-  
-  const content = fs.readFileSync(filepath, 'utf-8');
+
+  let content = fs.readFileSync(filepath, 'utf-8');
+
+  // Eliminar BOM (Byte Order Mark) si existe
+  if (content.charCodeAt(0) === 0xFEFF) {
+    content = content.slice(1);
+  }
+
   const lines = content.split('\n').filter(l => l.trim());
-  
+
   if (lines.length < 2) return [];
-  
-  const headers = parseCSVLine(lines[0]);
+
+  // Detectar separador automáticamente
+  const separator = detectCSVSeparator(lines[0]);
+
+  const headers = parseCSVLine(lines[0], separator);
   const data: Record<string, any>[] = [];
-  
+
   for (let i = 1; i < lines.length; i++) {
-    const values = parseCSVLine(lines[i]);
+    const values = parseCSVLine(lines[i], separator);
     const row: Record<string, any> = {};
     headers.forEach((h, idx) => {
       row[h] = values[idx] || '';
     });
     data.push(row);
   }
-  
+
   return data;
 }
 
@@ -28605,10 +31731,15 @@ export async function DELETE(
       { message: 'Película eliminada exitosamente' },
       { status: 200 }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting movie:', error)
+
+    const detail = error?.code === 'P2003'
+      ? 'La película tiene registros asociados que impiden su eliminación'
+      : error?.message || 'Error desconocido'
+
     return NextResponse.json(
-      { error: 'Error al eliminar la película' },
+      { error: 'Error al eliminar la película', detail },
       { status: 500 }
     )
   }
@@ -57628,7 +60759,8 @@ export const moviesService = {
     })
 
     if (!response.ok) {
-      throw new Error('Error al eliminar la película')
+      const data = await response.json().catch(() => ({}))
+      throw new Error(data.detail || data.error || 'Error al eliminar la película')
     }
   },
 

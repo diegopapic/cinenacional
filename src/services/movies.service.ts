@@ -364,7 +364,8 @@ export const moviesService = {
     })
 
     if (!response.ok) {
-      throw new Error('Error al eliminar la película')
+      const data = await response.json().catch(() => ({}))
+      throw new Error(data.detail || data.error || 'Error al eliminar la película')
     }
   },
 
