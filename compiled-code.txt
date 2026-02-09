@@ -1,6 +1,6 @@
 // Código compilado del proyecto: diegopapic/cinenacional
-// Commit: 5b6f5f713a8b6c43895a6a7f991dea988b806747
-// Fecha: 2026-02-07T23:22:48.873Z
+// Commit: ad64e1e8c098029bbfedb18817dc2a01659a0779
+// Fecha: 2026-02-09T20:05:50.247Z
 // ============================================
 
 
@@ -3423,6 +3423,26 @@ const CSV_HEADERS = [
 ];
 
 /**
+ * Verificar que la conexión a PostgreSQL sigue viva.
+ * Si no, cierra el pool y lo recrea (getPool() crea uno nuevo si no existe).
+ */
+async function ensurePoolAlive(): Promise<void> {
+  try {
+    const pool = getPool();
+    await pool.query('SELECT 1');
+  } catch (err) {
+    log('Conexión a PostgreSQL perdida, reconectando...', 'warn');
+    try {
+      await closePool();
+    } catch { /* ignorar errores al cerrar pool muerto */ }
+    // getPool() en la próxima llamada creará un pool nuevo
+    const pool = getPool();
+    await pool.query('SELECT 1');
+    log('Reconexión a PostgreSQL exitosa', 'success');
+  }
+}
+
+/**
  * Main function
  */
 async function main() {
@@ -3516,9 +3536,25 @@ async function main() {
     const totalToProcess = people.length;
     const skippedFromAppend = processedIds.size;
 
+    // Heartbeat: mantener el túnel SSH / conexión a PG viva durante el loop
+    const DB_HEARTBEAT_INTERVAL_MS = 2 * 60 * 1000; // cada 2 minutos
+    let lastHeartbeat = Date.now();
+
     for (const person of people) {
       // Skip si ya fue procesada (--append)
       if (processedIds.has(person.id)) continue;
+
+      // Heartbeat periódico para que el túnel SSH no se cierre por inactividad
+      if (Date.now() - lastHeartbeat > DB_HEARTBEAT_INTERVAL_MS) {
+        try {
+          await getPool().query('SELECT 1');
+        } catch {
+          // Si falla, intentar reconectar silenciosamente
+          try { await closePool(); } catch { /* ignorar */ }
+          try { await getPool().query('SELECT 1'); } catch { /* seguir igual, el CSV se guarda */ }
+        }
+        lastHeartbeat = Date.now();
+      }
 
       processedThisRun++;
       const totalProcessed = skippedFromAppend + processedThisRun;
@@ -3549,6 +3585,9 @@ async function main() {
     if (batchDuplicates > 0) {
       log(`Detectados ${batchDuplicates} duplicados dentro del CSV`, 'warn');
     }
+
+    // Reconectar a PostgreSQL después del procesamiento largo contra TMDB
+    await ensurePoolAlive();
 
     const dbDuplicates = await detectExistingDuplicates(allResults);
     if (dbDuplicates > 0) {
@@ -3599,6 +3638,7 @@ async function main() {
     if (!isDryRun) {
       const toApply = results.filter(r => r.match_status === 'auto_accept');
       log(`\nAplicando ${toApply.length} matches automaticos a la BD...`, 'info');
+      await ensurePoolAlive();
       const { updated, errors, skippedDuplicates } = await applyChanges(toApply);
       log(`Actualizadas: ${updated} (tmdb_id + imdb_id) | Errores: ${errors} | Duplicados omitidos: ${skippedDuplicates}`, 'success');
     } else {
@@ -3617,7 +3657,6 @@ main().catch(error => {
   console.error('Error fatal:', error);
   process.exit(1);
 });
-
 
 // ==================================================
 // scripts/tmdb/generate-synopses.ts

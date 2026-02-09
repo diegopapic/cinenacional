@@ -114,6 +114,7 @@ services:
       - cinenacional-network
     volumes:
       - ./public/uploads:/app/public/uploads
+      - ./public/images:/app/public/images
       - ./scripts:/app/scripts
     deploy:
       resources:
