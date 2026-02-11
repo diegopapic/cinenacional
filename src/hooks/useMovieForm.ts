@@ -275,7 +275,7 @@ export function useMovieForm({
     // Función para cargar datos de película existente
     const loadMovieData = useCallback(async (movie: Movie) => {
         try {
-            const fullMovie = await moviesService.getById(movie.id)
+            const fullMovie = await moviesService.getById(movie.id, true)
 
             // LIMPIAR VALORES NULL DE CAMPOS STRING
             const cleanedMovie = {

@@ -21,10 +21,12 @@ export async function GET(
   try {
     const idOrSlug = params.id
     const isId = /^\d+$/.test(idOrSlug)
+    const skipCache = request.nextUrl.searchParams.get('fresh') === 'true'
 
     // Generar clave de caché única
     const cacheKey = `movie:${isId ? 'id' : 'slug'}:${idOrSlug}:v1`;
 
+    if (!skipCache) {
     // 1. Intentar obtener de Redis
     try {
       const redisCached = await RedisClient.get(cacheKey);
@@ -68,7 +70,9 @@ export async function GET(
       });
     }
 
-    // 3. No hay caché, consultar base de datos
+    } // fin skipCache
+
+    // 3. No hay caché (o skipCache), consultar base de datos
     console.log(`📄 Cache MISS - Consultando BD para película: ${idOrSlug}`);
 
     const movie = await prisma.movie.findUnique({
