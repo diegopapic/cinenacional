@@ -35,7 +35,7 @@ export const prepareMovieData = (data: MovieFormData) => {
       prepared[key] = undefined
     }
     // Si es un campo numérico y tiene valor
-    else if (['year', 'duration', 'durationSeconds', 'rating', 'colorTypeId', 'ratingId'].includes(key) && value !== '') {
+    else if (['year', 'duration', 'durationSeconds', 'rating', 'colorTypeId', 'ratingId', 'tmdbId'].includes(key) && value !== '') {
       const num = Number(value)
       prepared[key] = isNaN(num) ? undefined : num
     }
