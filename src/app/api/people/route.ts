@@ -290,15 +290,61 @@ export async function GET(request: NextRequest) {
           ]
         });
 
+        // Obtener estadísticas de filmografía (años activos + departamentos) para los resultados
+        const filmographyStats = await prisma.$queryRaw<{
+          person_id: number
+          min_year: number | null
+          max_year: number | null
+          departments: string[]
+        }[]>`
+          SELECT
+            person_id,
+            MIN(year) as min_year,
+            MAX(year) as max_year,
+            ARRAY_AGG(DISTINCT department ORDER BY department) FILTER (WHERE department IS NOT NULL) as departments
+          FROM (
+            -- Años y departamentos desde movie_crew
+            SELECT mc.person_id, m.year, r.department
+            FROM movie_crew mc
+            INNER JOIN movies m ON mc.movie_id = m.id
+            INNER JOIN roles r ON mc.role_id = r.id
+            WHERE mc.person_id = ANY(${peopleIds})
+              AND m.year IS NOT NULL
+
+            UNION ALL
+
+            -- Años desde movie_cast (departamento = 'Actuación')
+            SELECT mca.person_id, m.year, 'ACTUACION' as department
+            FROM movie_cast mca
+            INNER JOIN movies m ON mca.movie_id = m.id
+            WHERE mca.person_id = ANY(${peopleIds})
+              AND m.year IS NOT NULL
+          ) combined
+          GROUP BY person_id
+        `;
+
+        const filmographyMap = new Map<number, { activeYears: { from: number; to: number } | null; departments: string[] }>(
+          filmographyStats.map(s => [s.person_id, {
+            activeYears: s.min_year && s.max_year
+              ? { from: s.min_year, to: s.max_year }
+              : null,
+            departments: s.departments || []
+          }])
+        );
+
         // IMPORTANTE: Agregar el campo 'name' formateado y info de match alternativo
         const peopleWithName = people.map(person => {
           const altMatch = alternativeMatchMap.get(person.id);
+          const filmography = filmographyMap.get(person.id);
           return {
             ...person,
             name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre',
             // Info del match alternativo (si aplica)
             matchedAlternativeName: altMatch?.name || null,
-            matchedAlternativeNameId: altMatch?.id || null
+            matchedAlternativeNameId: altMatch?.id || null,
+            // Estadísticas de filmografía
+            activeYears: filmography?.activeYears || null,
+            departments: filmography?.departments || []
           };
         });
 
@@ -437,20 +483,61 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(totalCount / limit);
 
+    // Obtener estadísticas de filmografía si es búsqueda
+    let filmographyMap2 = new Map<number, { activeYears: { from: number; to: number } | null; departments: string[] }>();
+    if (search && search.trim().length >= 2 && people.length > 0) {
+      const pIds = people.map(p => p.id);
+      const filmographyStats2 = await prisma.$queryRaw<{
+        person_id: number
+        min_year: number | null
+        max_year: number | null
+        departments: string[]
+      }[]>`
+        SELECT
+          person_id,
+          MIN(year) as min_year,
+          MAX(year) as max_year,
+          ARRAY_AGG(DISTINCT department ORDER BY department) FILTER (WHERE department IS NOT NULL) as departments
+        FROM (
+          SELECT mc.person_id, m.year, r.department
+          FROM movie_crew mc
+          INNER JOIN movies m ON mc.movie_id = m.id
+          INNER JOIN roles r ON mc.role_id = r.id
+          WHERE mc.person_id = ANY(${pIds})
+            AND m.year IS NOT NULL
+          UNION ALL
+          SELECT mca.person_id, m.year, 'ACTUACION' as department
+          FROM movie_cast mca
+          INNER JOIN movies m ON mca.movie_id = m.id
+          WHERE mca.person_id = ANY(${pIds})
+            AND m.year IS NOT NULL
+        ) combined
+        GROUP BY person_id
+      `;
+      filmographyMap2 = new Map(
+        filmographyStats2.map(s => [s.person_id, {
+          activeYears: s.min_year && s.max_year
+            ? { from: s.min_year, to: s.max_year }
+            : null,
+          departments: s.departments || []
+        }])
+      );
+    }
+
     // IMPORTANTE: Agregar el campo 'name' formateado a cada persona
     // También identificar si algún nombre alternativo hizo match (para Prisma fallback)
     const peopleWithName = people.map(person => {
       let matchedAlternativeName: string | null = null;
       let matchedAlternativeNameId: number | null = null;
-      
+
       // Si hay búsqueda, verificar si el match fue en un nombre alternativo
       if (search && search.trim().length >= 2 && person.alternativeNames?.length) {
         const searchLower = search.toLowerCase().trim();
         const mainName = `${person.firstName || ''} ${person.lastName || ''}`.toLowerCase().trim();
-        
+
         // Si el nombre principal no contiene el término de búsqueda,
         // buscar cuál nombre alternativo hizo match
-        if (!mainName.includes(searchLower) && 
+        if (!mainName.includes(searchLower) &&
             !(person.firstName?.toLowerCase().includes(searchLower)) &&
             !(person.lastName?.toLowerCase().includes(searchLower))) {
           for (const alt of person.alternativeNames) {
@@ -462,12 +549,15 @@ export async function GET(request: NextRequest) {
           }
         }
       }
-      
+
+      const filmography = filmographyMap2.get(person.id);
       return {
         ...person,
         name: `${person.firstName || ''} ${person.lastName || ''}`.trim() || person.realName || 'Sin nombre',
         matchedAlternativeName,
-        matchedAlternativeNameId
+        matchedAlternativeNameId,
+        activeYears: filmography?.activeYears || null,
+        departments: filmography?.departments || []
       };
     });
 
