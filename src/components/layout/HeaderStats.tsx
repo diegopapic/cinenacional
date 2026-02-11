@@ -35,11 +35,11 @@ export default function HeaderStats() {
     { label: 'filmografías', value: formatNumber(stats.personas) },
     { label: 'efemérides', value: formatNumber(stats.efemerides) },
     { label: 'afiches', value: formatNumber(stats.afiches) },
-    { label: 'fotos', value: formatNumber(stats.fotos) },
+    { label: 'retratos', value: formatNumber(stats.fotos) },
   ]
 
   return (
-    <div className="bg-zinc-800/50 border-b border-zinc-700/50 relative z-30">
+    <div className="bg-zinc-800/50 border-b border-zinc-700/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
         <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm">
           {statsDisplay.map((stat, index) => (
