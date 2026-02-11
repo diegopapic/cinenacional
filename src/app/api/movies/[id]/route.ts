@@ -26,51 +26,51 @@ export async function GET(
     // Generar clave de caché única
     const cacheKey = `movie:${isId ? 'id' : 'slug'}:${idOrSlug}:v1`;
 
-    if (!skipCache) {
-    // 1. Intentar obtener de Redis
-    try {
-      const redisCached = await RedisClient.get(cacheKey);
-
-      if (redisCached) {
-        console.log(`✅ Cache HIT desde Redis para película: ${idOrSlug}`);
-        return NextResponse.json(
-          JSON.parse(redisCached),
-          {
-            headers: {
-              'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
-              'X-Cache': 'HIT',
-              'X-Cache-Source': 'redis',
-              'X-Movie-Id': idOrSlug
-            }
-          }
-        );
-      }
-    } catch (redisError) {
-      console.error('Redis error (non-fatal):', redisError);
-    }
-
-    // 2. Verificar caché en memoria como fallback
     const now = Date.now();
-    const memoryCached = memoryCache.get(cacheKey);
 
-    if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
-      console.log(`✅ Cache HIT desde memoria para película: ${idOrSlug}`);
+    if (!skipCache) {
+      // 1. Intentar obtener de Redis
+      try {
+        const redisCached = await RedisClient.get(cacheKey);
 
-      // Intentar guardar en Redis para próximas requests
-      RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), REDIS_CACHE_TTL)
-        .catch(err => console.error('Error guardando en Redis:', err));
-
-      return NextResponse.json(memoryCached.data, {
-        headers: {
-          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
-          'X-Cache': 'HIT',
-          'X-Cache-Source': 'memory',
-          'X-Movie-Id': idOrSlug
+        if (redisCached) {
+          console.log(`✅ Cache HIT desde Redis para película: ${idOrSlug}`);
+          return NextResponse.json(
+            JSON.parse(redisCached),
+            {
+              headers: {
+                'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+                'X-Cache': 'HIT',
+                'X-Cache-Source': 'redis',
+                'X-Movie-Id': idOrSlug
+              }
+            }
+          );
         }
-      });
-    }
+      } catch (redisError) {
+        console.error('Redis error (non-fatal):', redisError);
+      }
 
-    } // fin skipCache
+      // 2. Verificar caché en memoria como fallback
+      const memoryCached = memoryCache.get(cacheKey);
+
+      if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
+        console.log(`✅ Cache HIT desde memoria para película: ${idOrSlug}`);
+
+        // Intentar guardar en Redis para próximas requests
+        RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), REDIS_CACHE_TTL)
+          .catch(err => console.error('Error guardando en Redis:', err));
+
+        return NextResponse.json(memoryCached.data, {
+          headers: {
+            'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
+            'X-Cache': 'HIT',
+            'X-Cache-Source': 'memory',
+            'X-Movie-Id': idOrSlug
+          }
+        });
+      }
+    }
 
     // 3. No hay caché (o skipCache), consultar base de datos
     console.log(`📄 Cache MISS - Consultando BD para película: ${idOrSlug}`);
