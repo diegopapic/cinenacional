@@ -474,6 +474,9 @@ export async function POST(request: NextRequest) {
     const cleanedData = {
       ...body,
       ratingId: body.ratingId === 0 ? null : body.ratingId,
+      tmdbId: (body.tmdbId === '' || body.tmdbId === null || body.tmdbId === undefined || isNaN(Number(body.tmdbId)))
+        ? null
+        : Number(body.tmdbId),
       // Asegurar que metaKeywords sea un array
       metaKeywords: body.metaKeywords
         ? Array.isArray(body.metaKeywords)

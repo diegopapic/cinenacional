@@ -43,6 +43,14 @@ export const movieSchema = z.object({
 
   // IDs externos
   imdbId: z.string().optional(),
+  tmdbId: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined) return null;
+      const num = Number(val);
+      return isNaN(num) ? null : num;
+    },
+    z.number().int().positive().nullable().optional()
+  ),
 
   // Información técnica
   aspectRatio: z.string().optional(),

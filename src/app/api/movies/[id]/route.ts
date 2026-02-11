@@ -91,6 +91,7 @@ export async function GET(
         posterUrl: true,
         trailerUrl: true,
         imdbId: true,
+        tmdbId: true,
         stage: true,
         dataCompleteness: true,
         tipoDuracion: true,
@@ -361,6 +362,9 @@ export async function PUT(
     const cleanedData = {
       ...body,
       ratingId: body.ratingId === 0 ? null : body.ratingId,
+      tmdbId: (body.tmdbId === '' || body.tmdbId === null || body.tmdbId === undefined || isNaN(Number(body.tmdbId)))
+        ? null
+        : Number(body.tmdbId),
       genres: Array.isArray(body.genres)
         ? body.genres.filter((g: any) => g != null && g !== 0 && !isNaN(Number(g)))
         : [],
