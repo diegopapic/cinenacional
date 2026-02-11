@@ -1,6 +1,6 @@
 // src/components/admin/shared/PersonSearchInput.tsx
 import { useState, useEffect, useRef } from 'react'
-import { Search, User, X, Plus, ArrowRight } from 'lucide-react'
+import { User, X, Plus, ArrowRight } from 'lucide-react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { peopleService } from '@/services/people.service'
 import toast from 'react-hot-toast'
@@ -21,6 +21,8 @@ interface Person {
   alternativeNames?: PersonAlternativeName[]
   matchedAlternativeName?: string | null
   matchedAlternativeNameId?: number | null
+  activeYears?: { from: number; to: number } | null
+  departments?: string[]
 }
 
 interface PersonSearchInputProps {
@@ -146,6 +148,25 @@ function tokenizeName(fullName: string): string[] {
 function hasNicknameOrInitial(fullName: string): boolean {
   const tokens = tokenizeName(fullName)
   return tokens.some(t => isNickname(t) || isInitial(t))
+}
+
+// Abreviaciones cortas para departamentos en resultados de búsqueda
+const DEPT_SHORT: Record<string, { label: string; color: string }> = {
+  'ACTUACION': { label: 'Act', color: '#b91c1c' },
+  'DIRECCION': { label: 'Dir', color: '#dc2626' },
+  'PRODUCCION': { label: 'Prod', color: '#059669' },
+  'GUION': { label: 'Guión', color: '#7c3aed' },
+  'FOTOGRAFIA': { label: 'Fot', color: '#2563eb' },
+  'ARTE': { label: 'Arte', color: '#ea580c' },
+  'MONTAJE': { label: 'Mont', color: '#be185d' },
+  'SONIDO': { label: 'Son', color: '#0891b2' },
+  'MUSICA': { label: 'Mús', color: '#7c2d12' },
+  'VESTUARIO': { label: 'Vest', color: '#9333ea' },
+  'MAQUILLAJE': { label: 'Maq', color: '#c2410c' },
+  'EFECTOS': { label: 'VFX', color: '#0369a1' },
+  'ANIMACION': { label: 'Anim', color: '#ca8a04' },
+  'POSTPRODUCCION': { label: 'Post', color: '#4f46e5' },
+  'OTROS': { label: 'Otros', color: '#6b7280' },
 }
 
 export default function PersonSearchInput({
@@ -514,7 +535,7 @@ export default function PersonSearchInput({
   const renderPersonResult = (person: Person) => {
     const mainName = formatPersonName(person)
     const hasMatchedAlternative = person.matchedAlternativeName && person.matchedAlternativeNameId
-    
+
     return (
       <div key={person.id} className="border-b border-gray-100 last:border-b-0">
         {/* Nombre principal */}
@@ -530,9 +551,35 @@ export default function PersonSearchInput({
             <div className="font-medium text-gray-900 truncate">
               {mainName}
             </div>
-            <div className="text-xs text-gray-500">
-              ID: {person.id} • {person.slug}
+            <div className="text-xs text-gray-500 flex items-center gap-1.5 flex-wrap">
+              <span>ID: {person.id} • {person.slug}</span>
+              {person.activeYears && (
+                <>
+                  <span className="text-gray-300">|</span>
+                  <span className="text-gray-600 font-medium tabular-nums">
+                    {person.activeYears.from === person.activeYears.to
+                      ? person.activeYears.from
+                      : `${person.activeYears.from}–${person.activeYears.to}`}
+                  </span>
+                </>
+              )}
             </div>
+            {person.departments && person.departments.length > 0 && (
+              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                {person.departments.map(dept => {
+                  const info = DEPT_SHORT[dept] || { label: dept, color: '#6b7280' }
+                  return (
+                    <span
+                      key={dept}
+                      className="inline-block px-1.5 py-0 text-[10px] leading-4 font-medium rounded-sm text-white"
+                      style={{ backgroundColor: info.color }}
+                    >
+                      {info.label}
+                    </span>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </button>
         
