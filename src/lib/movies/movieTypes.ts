@@ -27,6 +27,14 @@ export const movieFormFieldsSchema = z.object({
   notes: z.string().optional(),
   tagline: z.string().optional(),
   imdbId: z.string().optional(),
+  tmdbId: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined) return null;
+      const num = Number(val);
+      return isNaN(num) ? null : num;
+    },
+    z.number().int().positive().nullable().optional()
+  ),
   aspectRatio: z.string().optional(),
   soundType: z.string().optional(),
   filmFormat: z.string().optional(),
