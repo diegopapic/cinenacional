@@ -193,6 +193,7 @@ export default function CrewTab() {
   } = useMovieModalContext()
 
   const [crew, setCrew] = useState<CrewMember[]>([])
+  const [initialized, setInitialized] = useState(false)
 
   // Configurar sensores para drag and drop
   const sensors = useSensors(
@@ -267,17 +268,19 @@ export default function CrewTab() {
       // Ordenar por billingOrder
       formattedCrew.sort((a: any, b: any) => (a.billingOrder || 0) - (b.billingOrder || 0))
       setCrew(formattedCrew)
+      setInitialized(true)
     } else {
       setCrew([])
+      setInitialized(true)
     }
   }, [movieFormInitialData?.crew])
 
-  // Notificar cambios al contexto
+  // Notificar cambios al contexto (solo después de inicializado para evitar
+  // que el effect dispare handleCrewChange([]) antes de cargar los datos)
   useEffect(() => {
-    if (crew.length > 0 || movieFormInitialData?.crew?.length > 0) {
-      handleCrewChange(crew)
-    }
-  }, [crew])
+    if (!initialized) return
+    handleCrewChange(crew)
+  }, [crew, initialized])
 
   // Manejar el fin del drag
   const handleDragEnd = (event: DragEndEvent) => {

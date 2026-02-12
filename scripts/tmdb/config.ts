@@ -41,6 +41,8 @@ export const config = {
     },
     // Para películas
     movie: {
+      autoAcceptScore: 55,       // Score >= 55: aceptar automáticamente
+      reviewScore: 40,           // Score 40-54: marcar para revisión
       exactTitleYearBonus: 50,
       directorMatchBonus: 30,
       argentinaCountryBonus: 20,

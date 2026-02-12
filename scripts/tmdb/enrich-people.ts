@@ -8,8 +8,11 @@
  *   npx ts-node enrich-people.ts --limit 100        # Procesar solo 100 personas
  *   npx ts-node enrich-people.ts --offset 500       # Empezar desde la 501
  *   npx ts-node enrich-people.ts --min-movies 3     # Solo personas con 3+ películas
+ *   npx ts-node enrich-people.ts --reset-apply-progress  # Borrar progreso de apply
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { searchPeople, getPersonDetails, testConnection, TMDBPersonDetails } from './tmdb-client';
 import { 
   getPool, 
@@ -59,6 +62,52 @@ interface MatchResult {
   match_score: number;
   match_status: 'auto_accept' | 'review' | 'no_match' | 'multiple';
   match_reason: string;
+}
+
+// Archivo para guardar progreso de apply
+const APPLY_PROGRESS_FILE = path.join(__dirname, 'reports', '.enrich-people-apply-progress.json');
+
+interface ApplyProgressData {
+  appliedIds: number[];
+  lastRun: string;
+}
+
+/**
+ * Cargar progreso de apply guardado
+ */
+function loadApplyProgress(): Set<number> {
+  try {
+    if (fs.existsSync(APPLY_PROGRESS_FILE)) {
+      const data: ApplyProgressData = JSON.parse(fs.readFileSync(APPLY_PROGRESS_FILE, 'utf-8'));
+      return new Set(data.appliedIds);
+    }
+  } catch (error) {
+    // Si hay error leyendo, empezar de cero
+  }
+  return new Set();
+}
+
+/**
+ * Guardar progreso de apply
+ */
+function saveApplyProgress(appliedIds: Set<number>): void {
+  const data: ApplyProgressData = {
+    appliedIds: Array.from(appliedIds),
+    lastRun: new Date().toISOString(),
+  };
+  fs.writeFileSync(APPLY_PROGRESS_FILE, JSON.stringify(data, null, 2));
+}
+
+/**
+ * Borrar progreso de apply
+ */
+function resetApplyProgress(): void {
+  if (fs.existsSync(APPLY_PROGRESS_FILE)) {
+    fs.unlinkSync(APPLY_PROGRESS_FILE);
+    log('Progreso de apply reiniciado', 'success');
+  } else {
+    log('No había progreso de apply guardado', 'info');
+  }
 }
 
 /**
@@ -344,27 +393,54 @@ async function findMatchForPerson(person: LocalPerson): Promise<MatchResult> {
 /**
  * Aplicar cambios a la base de datos
  */
-async function applyChanges(matches: MatchResult[]): Promise<{ updated: number; errors: number }> {
+async function applyChanges(matches: MatchResult[]): Promise<{ updated: number; errors: number; skipped: number }> {
   const pool = getPool();
   let updated = 0;
   let errors = 0;
-  
+  let skipped = 0;
+
+  const appliedIds = loadApplyProgress();
+  if (appliedIds.size > 0) {
+    log(`Retomando: ${appliedIds.size} registros ya aplicados anteriormente`, 'info');
+  }
+
+  const total = matches.length;
+  let processed = 0;
+
   for (const match of matches) {
+    processed++;
     if (!match.tmdb_id || match.match_status === 'no_match') continue;
-    
+
+    if (appliedIds.has(match.local_id)) {
+      skipped++;
+      continue;
+    }
+
+    process.stdout.write(`\r${progressBar(processed, total)} - ${match.local_name.slice(0, 25)}...`);
+
     try {
       await pool.query(
-        'UPDATE people SET tmdb_id = $1 WHERE id = $2',
-        [match.tmdb_id, match.local_id]
+        'UPDATE people SET tmdb_id = $1, imdb_id = COALESCE($3, imdb_id) WHERE id = $2',
+        [match.tmdb_id, match.local_id, match.imdb_id || null]
       );
       updated++;
+      appliedIds.add(match.local_id);
+
+      // Guardar progreso cada 10 registros
+      if (updated % 10 === 0) {
+        saveApplyProgress(appliedIds);
+      }
     } catch (error) {
-      log(`Error actualizando persona ${match.local_id}: ${error}`, 'error');
+      log(`\nError actualizando persona ${match.local_id}: ${error}`, 'error');
       errors++;
     }
   }
-  
-  return { updated, errors };
+
+  // Guardar progreso final
+  saveApplyProgress(appliedIds);
+  process.stdout.write('\n');
+
+  return { updated, errors, skipped };
 }
 
 /**
@@ -383,7 +459,11 @@ async function main() {
   
   const minMoviesArg = args.find(a => a.startsWith('--min-movies'));
   const minMovies = minMoviesArg ? parseInt(minMoviesArg.split('=')[1] || args[args.indexOf('--min-movies') + 1]) : 1;
-  
+
+  if (args.includes('--reset-apply-progress')) {
+    resetApplyProgress();
+  }
+
   console.log('\n👤 TMDB People Enrichment Script');
   console.log('=================================\n');
   
@@ -406,14 +486,14 @@ async function main() {
       process.exit(1);
     }
     
-    const toApply = matches.filter(m => 
-      m.match_status === 'auto_accept' || m.match_status === 'review'
+    const toApply = matches.filter(m =>
+      m.match_status === 'auto_accept'
     );
     
     log(`Aplicando ${toApply.length} matches a la base de datos...`, 'info');
-    const { updated, errors } = await applyChanges(toApply);
-    
-    log(`Actualizadas: ${updated} | Errores: ${errors}`, updated > 0 ? 'success' : 'warn');
+    const { updated, errors, skipped } = await applyChanges(toApply);
+
+    log(`Actualizadas: ${updated} | Salteadas: ${skipped} | Errores: ${errors}`, updated > 0 ? 'success' : 'warn');
     
   } else {
     // Modo: Procesar personas
@@ -491,8 +571,8 @@ async function main() {
     if (!isDryRun) {
       const toApply = results.filter(r => r.match_status === 'auto_accept');
       log(`\nAplicando ${toApply.length} matches automáticos a la BD...`, 'info');
-      const { updated, errors } = await applyChanges(toApply);
-      log(`Actualizadas: ${updated} | Errores: ${errors}`, 'success');
+      const { updated, errors, skipped } = await applyChanges(toApply);
+      log(`Actualizadas: ${updated} | Salteadas: ${skipped} | Errores: ${errors}`, 'success');
     } else {
       console.log('\n💡 Modo dry-run: No se aplicaron cambios.');
       console.log('   Para aplicar auto-aceptados: npx ts-node enrich-people.ts --apply');
