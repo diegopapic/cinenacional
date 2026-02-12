@@ -119,31 +119,39 @@ async function syncImdbVotes(options: SyncOptions): Promise<SyncResult[]> {
     console.log(`   Total con imdbId: ${totalCount}`);
     console.log(`   A procesar: ${Math.min(limit, totalCount)}`);
 
-    let processed = 0;
-    let offset = 0;
+    // Obtener todos los IDs primero para evitar problemas de paginación
+    // cuando se actualiza imdbVotesUpdatedAt (cambia el orden durante el proceso)
+    const movieIds = await prisma.movie.findMany({
+        where: whereClause,
+        select: { id: true },
+        orderBy: [
+            { imdbVotesUpdatedAt: { sort: 'asc', nulls: 'first' } },
+            { id: 'asc' }
+        ],
+        take: limit,
+    });
 
-    while (processed < limit) {
-        const batchLimit = Math.min(options.batchSize, limit - processed);
+    console.log(`   IDs obtenidos: ${movieIds.length}`);
+
+    let processed = 0;
+
+    for (let i = 0; i < movieIds.length; i += options.batchSize) {
+        const batchIds = movieIds.slice(i, i + options.batchSize).map(m => m.id);
 
         const movies = await prisma.movie.findMany({
-            where: whereClause,
+            where: { id: { in: batchIds } },
             select: {
                 id: true,
                 imdbId: true,
                 title: true,
                 imdbVotes: true,
             },
-            orderBy: [
-                { imdbVotesUpdatedAt: { sort: 'asc', nulls: 'first' } },
-                { id: 'asc' }
-            ],
-            skip: offset,
-            take: batchLimit,
         });
 
-        if (movies.length === 0) break;
+        // Ordenar por el orden original de IDs
+        const orderedMovies = batchIds.map(id => movies.find(m => m.id === id)!).filter(Boolean);
 
-        for (const movie of movies) {
+        for (const movie of orderedMovies) {
             const result: SyncResult = {
                 id: movie.id,
                 imdbId: movie.imdbId!,
@@ -159,21 +167,28 @@ async function syncImdbVotes(options: SyncOptions): Promise<SyncResult[]> {
                 if (omdbData.Response === 'False') {
                     result.status = 'not_found';
                     result.error = omdbData.Error || 'No encontrado en OMDB';
+                    // Marcar como procesado aunque no se encuentre
+                    if (!options.dryRun) {
+                        await prisma.movie.update({
+                            where: { id: movie.id },
+                            data: { imdbVotesUpdatedAt: new Date() },
+                        });
+                    }
                 } else {
                     result.newVotes = parseVotes(omdbData.imdbVotes);
 
                     if (result.oldVotes !== result.newVotes) {
                         result.status = 'updated';
-
-                        if (!options.dryRun) {
-                            await prisma.movie.update({
-                                where: { id: movie.id },
-                                data: {
-                                    imdbVotes: result.newVotes,
-                                    imdbVotesUpdatedAt: new Date(),
-                                },
-                            });
-                        }
+                    }
+                    // Siempre actualizar imdbVotesUpdatedAt para marcar como procesado
+                    if (!options.dryRun) {
+                        await prisma.movie.update({
+                            where: { id: movie.id },
+                            data: {
+                                imdbVotes: result.newVotes,
+                                imdbVotesUpdatedAt: new Date(),
+                            },
+                        });
                     }
                 }
             } catch (error: any) {
@@ -188,12 +203,10 @@ async function syncImdbVotes(options: SyncOptions): Promise<SyncResult[]> {
                               result.status === 'unchanged' ? '➖' :
                               result.status === 'not_found' ? '🔍' : '❌';
             const votesDisplay = result.newVotes !== null ? result.newVotes.toLocaleString() : 'N/A';
-            console.log(`   ${statusIcon} [${processed}/${Math.min(limit, totalCount)}] ${movie.title}: ${votesDisplay} votes`);
+            console.log(`   ${statusIcon} [${processed}/${movieIds.length}] ${movie.title}: ${votesDisplay} votes`);
 
             await sleep(options.delay);
         }
-
-        offset += batchLimit;
     }
 
     return results;

@@ -12,6 +12,11 @@
  */
 
 import { Pool } from 'pg';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Cargar variables de entorno desde .env (desde el directorio de trabajo actual)
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 // ============================================================================
 // CONFIGURACIÓN
@@ -85,11 +90,10 @@ interface PendingMovie {
     tmdb_title: string;
     tmdb_original_title: string | null;
     tmdb_year: number | null;
-    tmdb_release_date: string | null;
     tmdb_overview: string | null;
     tmdb_runtime: number | null;
     tmdb_popularity: number | null;
-    tmdb_status: string | null;
+    tmdb_premiere_info: string | null;
     tmdb_director_name: string | null;
     tmdb_director_id: number | null;
     local_movie_id: number | null;
@@ -237,6 +241,56 @@ function isArgentineMovie(movie: TMDBMovieDetails): boolean {
 function getDirector(movie: TMDBMovieDetails): { name: string; id: number } | null {
     const director = movie.credits?.crew?.find(c => c.job === 'Director');
     return director ? { name: director.name, id: director.id } : null;
+}
+
+interface TMDBReleaseDate {
+    certification: string;
+    descriptors: string[];
+    iso_639_1: string;
+    note: string;
+    release_date: string;
+    type: number; // 1=Premiere, 2=Theatrical (limited), 3=Theatrical, 4=Digital, 5=Physical, 6=TV
+}
+
+interface TMDBReleaseDatesResponse {
+    results: Array<{
+        iso_3166_1: string;
+        release_dates: TMDBReleaseDate[];
+    }>;
+}
+
+/**
+ * Obtiene info de premiere/festival de una película
+ * Prioriza: premiere (type=1) con nota, luego theatrical en AR
+ */
+async function getPremiereInfo(tmdbId: number): Promise<string | null> {
+    try {
+        const response = await fetchTMDB<TMDBReleaseDatesResponse>(`/movie/${tmdbId}/release_dates`);
+
+        // Buscar premiere (type=1) con nota en cualquier país
+        for (const country of response.results) {
+            for (const release of country.release_dates) {
+                if (release.type === 1 && release.note) {
+                    const date = release.release_date.split('T')[0];
+                    return `${release.note} (${date})`;
+                }
+            }
+        }
+
+        // Si no hay premiere con nota, buscar estreno en Argentina
+        const arRelease = response.results.find(r => r.iso_3166_1 === 'AR');
+        if (arRelease) {
+            const theatrical = arRelease.release_dates.find(r => r.type === 3 || r.type === 2);
+            if (theatrical) {
+                const date = theatrical.release_date.split('T')[0];
+                return `Estreno Argentina: ${date}`;
+            }
+        }
+
+        return null;
+    } catch {
+        return null;
+    }
 }
 
 // ============================================================================
@@ -476,50 +530,30 @@ async function sendTelegramMessage(
     }
 }
 
-/**
- * Traduce el status de TMDB a español
- */
-function translateStatus(status: string | null): string {
-    if (!status) return '';
-    const translations: Record<string, string> = {
-        'Released': 'Estrenada',
-        'Post Production': 'En postproducción',
-        'In Production': 'En rodaje',
-        'Planned': 'En desarrollo',
-        'Canceled': 'Cancelada',
-        'Rumored': 'Rumor',
-    };
-    return translations[status] || status;
-}
-
 function formatMovieMessage(pending: PendingMovie): string {
     let message = `🎬 <b>Nueva película argentina en TMDB</b>\n\n`;
     message += `<b>Título:</b> ${pending.tmdb_title}\n`;
-    
+
     if (pending.tmdb_original_title && pending.tmdb_original_title !== pending.tmdb_title) {
         message += `<b>Título original:</b> ${pending.tmdb_original_title}\n`;
     }
-    
+
     if (pending.tmdb_year) {
         message += `<b>Año:</b> ${pending.tmdb_year}\n`;
     }
-    
-    if (pending.tmdb_release_date) {
-        message += `<b>Estreno:</b> ${pending.tmdb_release_date}\n`;
+
+    if (pending.tmdb_premiere_info) {
+        message += `<b>Premiere:</b> ${pending.tmdb_premiere_info}\n`;
     }
-    
+
     if (pending.tmdb_director_name) {
         message += `<b>Director:</b> ${pending.tmdb_director_name}\n`;
     }
-    
+
     if (pending.tmdb_runtime) {
         message += `<b>Duración:</b> ${pending.tmdb_runtime} min\n`;
     }
-    
-    if (pending.tmdb_status && pending.tmdb_status !== 'Released') {
-        message += `<b>Estado:</b> ${translateStatus(pending.tmdb_status)}\n`;
-    }
-    
+
     if (pending.tmdb_popularity) {
         message += `<b>Popularidad:</b> ${pending.tmdb_popularity.toFixed(1)}\n`;
     }
@@ -579,20 +613,19 @@ function getMessageButtons(pending: PendingMovie): Array<Array<{ text: string; c
 
 async function savePendingMovie(pending: PendingMovie): Promise<number> {
     const pool = getPool();
-    
+
     const result = await pool.query(`
         INSERT INTO tmdb_pending_movies (
-            tmdb_id, tmdb_title, tmdb_original_title, tmdb_year, tmdb_release_date,
-            tmdb_overview, tmdb_runtime, tmdb_popularity, tmdb_status,
+            tmdb_id, tmdb_title, tmdb_original_title, tmdb_year,
+            tmdb_overview, tmdb_runtime, tmdb_popularity, tmdb_premiere_info,
             tmdb_director_name, tmdb_director_id,
             local_movie_id, local_movie_title, local_movie_year, local_director_name,
             action_type, match_score, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'pending')
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'pending')
         ON CONFLICT (tmdb_id) DO UPDATE SET
             tmdb_title = EXCLUDED.tmdb_title,
-            tmdb_release_date = EXCLUDED.tmdb_release_date,
             tmdb_popularity = EXCLUDED.tmdb_popularity,
-            tmdb_status = EXCLUDED.tmdb_status,
+            tmdb_premiere_info = EXCLUDED.tmdb_premiere_info,
             local_movie_id = EXCLUDED.local_movie_id,
             match_score = EXCLUDED.match_score,
             action_type = EXCLUDED.action_type,
@@ -603,11 +636,10 @@ async function savePendingMovie(pending: PendingMovie): Promise<number> {
         pending.tmdb_title,
         pending.tmdb_original_title,
         pending.tmdb_year,
-        pending.tmdb_release_date,
         pending.tmdb_overview,
         pending.tmdb_runtime,
         pending.tmdb_popularity,
-        pending.tmdb_status,
+        pending.tmdb_premiere_info,
         pending.tmdb_director_name,
         pending.tmdb_director_id,
         pending.local_movie_id,
@@ -617,7 +649,7 @@ async function savePendingMovie(pending: PendingMovie): Promise<number> {
         pending.action_type,
         pending.match_score,
     ]);
-    
+
     return result.rows[0].id;
 }
 
@@ -720,16 +752,18 @@ async function processMovie(tmdbId: number, dryRun: boolean): Promise<'skipped' 
     
     // Si no es match exacto, guardar para confirmación
     if (actionType !== 'match_exact') {
+        // Obtener info de premiere/festival
+        const premiereInfo = await getPremiereInfo(tmdbId);
+
         const pending: PendingMovie = {
             tmdb_id: tmdbId,
             tmdb_title: movie.title,
             tmdb_original_title: movie.original_title !== movie.title ? movie.original_title : null,
             tmdb_year: year,
-            tmdb_release_date: movie.release_date || null,
             tmdb_overview: movie.overview || null,
             tmdb_runtime: movie.runtime,
             tmdb_popularity: movie.popularity || null,
-            tmdb_status: movie.status || null,
+            tmdb_premiere_info: premiereInfo,
             tmdb_director_name: director?.name || null,
             tmdb_director_id: director?.id || null,
             local_movie_id: bestMatch?.id || null,
@@ -739,7 +773,7 @@ async function processMovie(tmdbId: number, dryRun: boolean): Promise<'skipped' 
             action_type: actionType,
             match_score: bestMatch ? bestScore : null,
         };
-        
+
         if (!dryRun) {
             // Guardar en BD
             const pendingId = await savePendingMovie(pending);

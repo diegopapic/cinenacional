@@ -177,6 +177,7 @@ export default function CastTab() {
   } = useMovieModalContext()
 
   const [cast, setCast] = useState<CastMember[]>([])
+  const [initialized, setInitialized] = useState(false)
 
   // Detectar si la película es documental basándose en los géneros
   // El slug del género documental es 'documental' (ajustar si es diferente)
@@ -253,17 +254,19 @@ export default function CastTab() {
       // Ordenar por billingOrder
       formattedCast.sort((a: CastMember, b: CastMember) => (a.billingOrder || 0) - (b.billingOrder || 0))
       setCast(formattedCast)
+      setInitialized(true)
     } else {
       setCast([])
+      setInitialized(true)
     }
   }, [movieFormInitialData?.cast])
 
-  // Notificar cambios al contexto
+  // Notificar cambios al contexto (solo después de inicializado para evitar
+  // que el effect dispare handleCastChange([]) antes de cargar los datos)
   useEffect(() => {
-    if (cast.length > 0 || movieFormInitialData?.cast?.length > 0) {
-      handleCastChange(cast)
-    }
-  }, [cast])
+    if (!initialized) return
+    handleCastChange(cast)
+  }, [cast, initialized])
 
   // Manejar el fin del drag
   const handleDragEnd = (event: DragEndEvent) => {
