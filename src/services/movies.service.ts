@@ -248,7 +248,7 @@ export const moviesService = {
    * Obtiene una película por ID con todas sus relaciones
    */
   async getById(id: number, fresh = false): Promise<any> {
-    const response = await fetch(`/api/movies/${id}${fresh ? '?fresh=true' : ''}`)
+    const response = await fetch(`/api/movies/${id}${fresh ? '?fresh=true' : ''}`, fresh ? { cache: 'no-store' } : undefined)
 
     if (!response.ok) {
       throw new Error('Error al cargar los datos de la película')

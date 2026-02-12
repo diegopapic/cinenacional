@@ -1,5 +1,5 @@
 // src/components/admin/movies/MovieModal/tabs/CastTab.tsx
-import { useState, useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import { Trash2, Plus, GripVertical } from 'lucide-react'
 import PersonSearchInput from '@/components/admin/shared/PersonSearchInput'
@@ -15,7 +15,6 @@ import {
   DragEndEvent,
 } from '@dnd-kit/core'
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
@@ -26,12 +25,12 @@ import { CSS } from '@dnd-kit/utilities'
 interface CastMember {
   personId: number
   personName?: string
-  alternativeNameId?: number | null  // 🆕 ID del nombre alternativo
-  alternativeName?: string | null     // 🆕 Nombre alternativo (para display)
+  alternativeNameId?: number | null
+  alternativeName?: string | null
   characterName?: string
   billingOrder?: number
   isPrincipal?: boolean
-  isActor?: boolean  // true = actor interpretando personaje, false = aparece como sí mismo
+  isActor?: boolean
   person?: any
 }
 
@@ -115,14 +114,14 @@ function SortableCastMember({
           <input
             type="checkbox"
             id={`isActor-${index}`}
-            checked={member.isActor !== false}  // default true si undefined
+            checked={member.isActor !== false}
             onChange={(e) => updateCastMember(index, { isActor: e.target.checked })}
             className="rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
           />
           <label
             htmlFor={`isActor-${index}`}
             className="text-xs text-gray-700 cursor-pointer select-none whitespace-nowrap"
-            title="Desmarcar si aparece como sí mismo (entrevistado, documental)"
+            title="Desmarcar si aparece como si mismo (entrevistado, documental)"
           >
             Actor
           </label>
@@ -156,7 +155,7 @@ function SortableCastMember({
           />
         </div>
 
-        {/* Botón eliminar */}
+        {/* Boton eliminar */}
         <button
           type="button"
           onClick={() => removeCastMember(index)}
@@ -172,23 +171,24 @@ function SortableCastMember({
 
 export default function CastTab() {
   const {
+    movieRelations,
     movieFormInitialData,
-    handleCastChange
+    addCastMember,
+    removeCastMember,
+    updateCastMember,
+    reorderCast,
   } = useMovieModalContext()
 
-  const [cast, setCast] = useState<CastMember[]>([])
-  const [initialized, setInitialized] = useState(false)
+  // Leer cast directamente de movieRelations (fuente unica de verdad)
+  const cast = movieRelations.cast
 
-  // Detectar si la película es documental basándose en los géneros
-  // El slug del género documental es 'documental' (ajustar si es diferente)
+  // Detectar si la pelicula es documental basandose en los generos
   const isDocumental = useMemo(() => {
     const genres = movieFormInitialData?.genres || []
-    
-    // Buscar si algún género tiene slug o name que contenga 'documental'
     return genres.some((g: any) => {
       const slug = g.slug || g.genre?.slug || ''
       const name = g.name || g.genre?.name || ''
-      return slug.toLowerCase().includes('documental') || 
+      return slug.toLowerCase().includes('documental') ||
              name.toLowerCase().includes('documental')
     })
   }, [movieFormInitialData?.genres])
@@ -205,128 +205,25 @@ export default function CastTab() {
     })
   )
 
-  // Cargar datos del cast desde movieFormInitialData
-  useEffect(() => {
-    console.log('🎬 CastTab - movieFormInitialData:', movieFormInitialData)
-    console.log('🎬 CastTab - isDocumental:', isDocumental)
-
-    if (movieFormInitialData?.cast && movieFormInitialData.cast.length > 0) {
-      console.log('🎬 CastTab - Cargando cast:', movieFormInitialData.cast)
-
-      const formattedCast = movieFormInitialData.cast.map((member: any) => {
-        console.log('🎬 Procesando miembro:', member)
-
-        let personName = ''
-        if (member.person) {
-          personName = member.person.name || `${member.person.firstName || ''} ${member.person.lastName || ''}`.trim()
-        }
-
-        // 🆕 Obtener nombre alternativo si existe
-        let alternativeName: string | null = null
-        if (member.alternativeNameId && member.alternativeName) {
-          alternativeName = member.alternativeName.fullName || member.alternativeName
-        } else if (member.alternativeNameId && member.person?.alternativeNames) {
-          // Buscar en los nombres alternativos de la persona
-          const altName = member.person.alternativeNames.find(
-            (an: any) => an.id === member.alternativeNameId
-          )
-          if (altName) {
-            alternativeName = altName.fullName
-          }
-        }
-
-        const formatted = {
-          personId: member.personId || member.person?.id || 0,
-          personName: personName,
-          alternativeNameId: member.alternativeNameId || null,
-          alternativeName: alternativeName,
-          characterName: member.characterName || '',
-          billingOrder: member.billingOrder || 0,
-          isPrincipal: member.isPrincipal || false,
-          isActor: member.isActor !== undefined ? member.isActor : true,  // Leer de BD, default true
-          person: member.person
-        }
-
-        console.log('🎬 Miembro formateado:', formatted)
-        return formatted
-      })
-
-      // Ordenar por billingOrder
-      formattedCast.sort((a: CastMember, b: CastMember) => (a.billingOrder || 0) - (b.billingOrder || 0))
-      setCast(formattedCast)
-      setInitialized(true)
-    } else {
-      setCast([])
-      setInitialized(true)
-    }
-  }, [movieFormInitialData?.cast])
-
-  // Notificar cambios al contexto (solo después de inicializado para evitar
-  // que el effect dispare handleCastChange([]) antes de cargar los datos)
-  useEffect(() => {
-    if (!initialized) return
-    handleCastChange(cast)
-  }, [cast, initialized])
-
   // Manejar el fin del drag
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
 
     if (over && active.id !== over.id) {
-      const oldIndex = cast.findIndex((_, i) => `cast-${i}` === active.id)
-      const newIndex = cast.findIndex((_, i) => `cast-${i}` === over.id)
-
-      const reorderedCast = arrayMove(cast, oldIndex, newIndex)
-
-      // Actualizar billingOrder para todos los miembros
-      const updatedCast = reorderedCast.map((member, index) => ({
-        ...member,
-        billingOrder: index + 1
-      }))
-
-      setCast(updatedCast)
-      console.log('🔄 Cast reordenado:', updatedCast)
+      const oldIndex = cast.findIndex((_: any, i: number) => `cast-${i}` === active.id)
+      const newIndex = cast.findIndex((_: any, i: number) => `cast-${i}` === over.id)
+      reorderCast(oldIndex, newIndex)
     }
   }
 
-  const updateCastMember = (index: number, updates: Partial<CastMember>) => {
-    console.log('🔄 Actualizando miembro:', index, updates)
-    const updatedCast = [...cast]
-    updatedCast[index] = {
-      ...updatedCast[index],
-      ...updates,
-      personId: updates.personId || updatedCast[index].personId || 0
-    }
-    setCast(updatedCast)
-  }
-
-  const addCastMember = () => {
-    const newMember: CastMember = {
-      personId: 0,
-      personName: '',
-      alternativeNameId: null,
-      alternativeName: null,
-      characterName: '',
-      billingOrder: cast.length + 1,
-      isPrincipal: cast.length < 5,  // Primeros 5 son principales por defecto
-      isActor: !isDocumental  // Si es documental, default false; sino true
-    }
-    setCast([...cast, newMember])
-    console.log('➕ Nuevo miembro agregado, isActor:', !isDocumental)
-  }
-
-  const removeCastMember = (index: number) => {
-    const updatedCast = cast.filter((_, i) => i !== index)
-    // Reajustar billingOrder después de eliminar
-    updatedCast.forEach((member, i) => {
-      member.billingOrder = i + 1
-    })
-    setCast(updatedCast)
+  // Wrapper para agregar miembro con override de isActor para documentales
+  const handleAddCastMember = () => {
+    addCastMember({ isActor: !isDocumental })
   }
 
   // Contadores para el resumen
-  const actoresCount = cast.filter(c => c.isActor !== false).length
-  const siMismosCount = cast.filter(c => c.isActor === false).length
+  const actoresCount = cast.filter((c: any) => c.isActor !== false).length
+  const siMismosCount = cast.filter((c: any) => c.isActor === false).length
 
   return (
     <div className="space-y-4">
@@ -335,7 +232,7 @@ export default function CastTab() {
           <h3 className="text-lg font-medium text-gray-900">Reparto</h3>
           {isDocumental && (
             <p className="text-xs text-amber-600 mt-1">
-              🎞️ Película documental - Las personas se agregan como "sí mismos" por defecto
+              Pelicula documental - Las personas se agregan como "si mismos" por defecto
             </p>
           )}
         </div>
@@ -349,7 +246,7 @@ export default function CastTab() {
           <p className="text-gray-500">No hay personas en el reparto</p>
           <button
             type="button"
-            onClick={addCastMember}
+            onClick={handleAddCastMember}
             className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
           >
             Agregar la primera persona
@@ -374,11 +271,11 @@ export default function CastTab() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={cast.map((_, i) => `cast-${i}`)}
+              items={cast.map((_: any, i: number) => `cast-${i}`)}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-3">
-                {cast.map((member, index) => (
+                {cast.map((member: any, index: number) => (
                   <SortableCastMember
                     key={`cast-${index}`}
                     member={member}
@@ -391,10 +288,10 @@ export default function CastTab() {
             </SortableContext>
           </DndContext>
 
-          {/* Botón agregar después de la lista */}
+          {/* Boton agregar despues de la lista */}
           <button
             type="button"
-            onClick={addCastMember}
+            onClick={handleAddCastMember}
             className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <Plus className="h-4 w-4 mr-1" />
@@ -415,12 +312,12 @@ export default function CastTab() {
             )}
             {siMismosCount > 0 && (
               <span className="ml-2">
-                • {siMismosCount} como sí mismo{siMismosCount !== 1 ? 's' : ''}
+                • {siMismosCount} como si mismo{siMismosCount !== 1 ? 's' : ''}
               </span>
             )}
-            {cast.filter(c => c.isPrincipal).length > 0 && (
+            {cast.filter((c: any) => c.isPrincipal).length > 0 && (
               <span className="ml-2">
-                • {cast.filter(c => c.isPrincipal).length} principal{cast.filter(c => c.isPrincipal).length !== 1 ? 'es' : ''}
+                • {cast.filter((c: any) => c.isPrincipal).length} principal{cast.filter((c: any) => c.isPrincipal).length !== 1 ? 'es' : ''}
               </span>
             )}
           </p>
@@ -430,7 +327,7 @@ export default function CastTab() {
       {/* Leyenda explicativa */}
       <div className="text-xs text-gray-500 border-t pt-3 mt-3">
         <p><strong>Actor:</strong> Marca si la persona interpreta un personaje ficticio.</p>
-        <p>Desmarca si aparece como sí misma (entrevistado, documental, cameo real).</p>
+        <p>Desmarca si aparece como si misma (entrevistado, documental, cameo real).</p>
       </div>
     </div>
   )
