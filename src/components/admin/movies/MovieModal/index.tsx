@@ -58,14 +58,11 @@ export default function MovieModal({ isOpen, onClose }: MovieModalProps) {
                 <MediaTab />
               </Tabs.Content>
 
-              {/* forceMount en cast y crew para evitar que se desmonten al cambiar de tab,
-                  lo que causaba pérdida de datos en movieRelations por la race condition
-                  entre los useEffects de inicialización y notificación */}
-              <Tabs.Content value="cast" forceMount className={activeTab !== 'cast' ? 'hidden' : ''}>
+              <Tabs.Content value="cast">
                 <CastTab />
               </Tabs.Content>
 
-              <Tabs.Content value="crew" forceMount className={activeTab !== 'crew' ? 'hidden' : ''}>
+              <Tabs.Content value="crew">
                 <CrewTab />
               </Tabs.Content>
 

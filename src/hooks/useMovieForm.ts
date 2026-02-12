@@ -15,6 +15,7 @@ import {
     prepareMovieData
 } from '@/lib/movies/movieUtils'
 import { moviesService } from '@/services'
+import { arrayMove } from '@dnd-kit/sortable'
 
 
 
@@ -69,6 +70,30 @@ interface UseMovieFormReturn {
     handleDistributionCompaniesChange: (companies: number[]) => void
     handleThemesChange: (themes: number[]) => void
     handleScreeningVenuesChange: (venues: number[]) => void
+
+    // Estado de relaciones (fuente única de verdad para cast/crew)
+    movieRelations: {
+        genres: number[]
+        cast: any[]
+        crew: any[]
+        countries: number[]
+        productionCompanies: number[]
+        distributionCompanies: number[]
+        themes: number[]
+        screeningVenues: number[]
+    }
+
+    // Mutaciones granulares para cast
+    addCastMember: (overrides?: Partial<any>) => void
+    removeCastMember: (index: number) => void
+    updateCastMember: (index: number, updates: Partial<any>) => void
+    reorderCast: (oldIndex: number, newIndex: number) => void
+
+    // Mutaciones granulares para crew
+    addCrewMember: (overrides?: Partial<any>) => void
+    removeCrewMember: (index: number) => void
+    updateCrewMember: (index: number, updates: Partial<any>) => void
+    reorderCrew: (oldIndex: number, newIndex: number) => void
 
     // Funciones principales
     loadMovieData: (movie: Movie) => Promise<void>
@@ -272,6 +297,105 @@ export function useMovieForm({
         setMovieRelations(prev => ({ ...prev, distributionCompanies: companies }))
     }, [])
 
+    // ========== MUTACIONES GRANULARES PARA CAST ==========
+    const addCastMember = useCallback((overrides?: Partial<any>) => {
+        setMovieRelations(prev => ({
+            ...prev,
+            cast: [...prev.cast, {
+                personId: 0,
+                personName: '',
+                alternativeNameId: null,
+                alternativeName: null,
+                characterName: '',
+                billingOrder: prev.cast.length + 1,
+                isPrincipal: prev.cast.length < 5,
+                isActor: true,
+                person: null,
+                ...overrides
+            }]
+        }))
+    }, [])
+
+    const removeCastMember = useCallback((index: number) => {
+        setMovieRelations(prev => ({
+            ...prev,
+            cast: prev.cast
+                .filter((_: any, i: number) => i !== index)
+                .map((member: any, i: number) => ({ ...member, billingOrder: i + 1 }))
+        }))
+    }, [])
+
+    const updateCastMember = useCallback((index: number, updates: Partial<any>) => {
+        setMovieRelations(prev => ({
+            ...prev,
+            cast: prev.cast.map((member: any, i: number) =>
+                i === index
+                    ? { ...member, ...updates, personId: updates.personId || member.personId || 0 }
+                    : member
+            )
+        }))
+    }, [])
+
+    const reorderCast = useCallback((oldIndex: number, newIndex: number) => {
+        setMovieRelations(prev => {
+            const reordered = arrayMove(prev.cast, oldIndex, newIndex)
+            return {
+                ...prev,
+                cast: reordered.map((member: any, i: number) => ({ ...member, billingOrder: i + 1 }))
+            }
+        })
+    }, [])
+
+    // ========== MUTACIONES GRANULARES PARA CREW ==========
+    const addCrewMember = useCallback((overrides?: Partial<any>) => {
+        setMovieRelations(prev => ({
+            ...prev,
+            crew: [...prev.crew, {
+                personId: 0,
+                personName: '',
+                alternativeNameId: null,
+                alternativeName: null,
+                roleId: null,
+                role: '',
+                department: '',
+                billingOrder: prev.crew.length,
+                notes: '',
+                person: null,
+                ...overrides
+            }]
+        }))
+    }, [])
+
+    const removeCrewMember = useCallback((index: number) => {
+        setMovieRelations(prev => ({
+            ...prev,
+            crew: prev.crew
+                .filter((_: any, i: number) => i !== index)
+                .map((member: any, i: number) => ({ ...member, billingOrder: i }))
+        }))
+    }, [])
+
+    const updateCrewMember = useCallback((index: number, updates: Partial<any>) => {
+        setMovieRelations(prev => ({
+            ...prev,
+            crew: prev.crew.map((member: any, i: number) =>
+                i === index
+                    ? { ...member, ...updates, personId: updates.personId || member.personId || 0 }
+                    : member
+            )
+        }))
+    }, [])
+
+    const reorderCrew = useCallback((oldIndex: number, newIndex: number) => {
+        setMovieRelations(prev => {
+            const reordered = arrayMove(prev.crew, oldIndex, newIndex)
+            return {
+                ...prev,
+                crew: reordered.map((member: any, i: number) => ({ ...member, billingOrder: i }))
+            }
+        })
+    }, [])
+
     // Función para cargar datos de película existente
     const loadMovieData = useCallback(async (movie: Movie) => {
         try {
@@ -399,11 +523,9 @@ export function useMovieForm({
                 setValue('ratingId', cleanedMovie.ratingId)
             }
 
-            // Configurar datos iniciales y relaciones
+            // Configurar datos iniciales (sin cast/crew, que se manejan solo en movieRelations)
             setMovieFormInitialData({
                 genres: cleanedMovie.genres || [],
-                cast: cleanedMovie.cast || [],
-                crew: cleanedMovie.crew || [],
                 countries: cleanedMovie.movieCountries || [],
                 productionCompanies: cleanedMovie.productionCompanies || [],
                 distributionCompanies: cleanedMovie.distributionCompanies || [],
@@ -420,44 +542,63 @@ export function useMovieForm({
                 genres: (cleanedMovie.genres?.map((g: any) => g.genre?.id || g.id) || [])
                     .filter((g: number) => g != null && g !== 0 && !isNaN(g)),
 
-                // ✅ PROCESAMIENTO MEJORADO DEL CAST - CON alternativeNameId
-                cast: cleanedMovie.cast?.map((c: any) => {
-                    console.log('🎬 Procesando cast item desde DB:', c)
-                    const mapped = {
-                        personId: c.personId || c.person?.id,
-                        person: c.person, // Mantener el objeto person completo
-                        characterName: c.characterName,
-                        billingOrder: c.billingOrder,
-                        isPrincipal: c.isPrincipal,
-                        isActor: c.isActor,
-                        notes: c.notes,
-                        alternativeNameId: c.alternativeNameId || null,  // ✅ AGREGADO
-                        alternativeName: c.alternativeName || null       // ✅ AGREGADO
+                // CAST - Enriquecido con campos de display
+                cast: (cleanedMovie.cast?.map((c: any) => {
+                    let personName = ''
+                    if (c.person) {
+                        personName = c.person.name || `${c.person.firstName || ''} ${c.person.lastName || ''}`.trim()
                     }
-                    console.log('🎬 Cast item mapeado:', mapped)
-                    return mapped
-                }) || [],
+                    let alternativeName: string | null = null
+                    if (c.alternativeNameId && c.alternativeName) {
+                        alternativeName = c.alternativeName.fullName || c.alternativeName
+                    } else if (c.alternativeNameId && c.person?.alternativeNames) {
+                        const altName = c.person.alternativeNames.find((an: any) => an.id === c.alternativeNameId)
+                        if (altName) alternativeName = altName.fullName
+                    }
+                    return {
+                        personId: c.personId || c.person?.id,
+                        personName,
+                        alternativeNameId: c.alternativeNameId || null,
+                        alternativeName,
+                        characterName: c.characterName || '',
+                        billingOrder: c.billingOrder || 0,
+                        isPrincipal: c.isPrincipal || false,
+                        isActor: c.isActor !== undefined ? c.isActor : true,
+                        person: c.person
+                    }
+                }) || []).sort((a: any, b: any) => (a.billingOrder || 0) - (b.billingOrder || 0)),
 
-                // ✅ PROCESAMIENTO DEL CREW - CON alternativeNameId y notes
-                crew: (() => {
-                    const crewData = cleanedMovie.crew?.map((c: any) => {
-                        console.log('📌 Crew item desde DB:', c)
-                        const mapped = {
-                            personId: c.personId || c.person?.id,
-                            roleId: c.roleId,
-                            billingOrder: c.billingOrder,
-                            person: c.person,
-                            role: c.role,
-                            notes: c.notes || '',                          // ✅ AGREGADO
-                            alternativeNameId: c.alternativeNameId || null, // ✅ AGREGADO
-                            alternativeName: c.alternativeName || null      // ✅ AGREGADO
-                        }
-                        console.log('📌 Crew item mapeado:', mapped)
-                        return mapped
-                    }) || []
-                    console.log('📌 Crew final cargado:', crewData)
-                    return crewData
-                })(),
+                // CREW - Enriquecido con campos de display
+                crew: (cleanedMovie.crew?.map((c: any) => {
+                    let personName = ''
+                    if (c.person) {
+                        personName = `${c.person.firstName || ''} ${c.person.lastName || ''}`.trim()
+                    }
+                    let roleId = c.roleId
+                    if (!roleId && c.role && typeof c.role === 'object') roleId = c.role.id
+                    let roleName = ''
+                    if (typeof c.role === 'string') roleName = c.role
+                    else if (c.role && typeof c.role === 'object') roleName = c.role.name || ''
+                    let alternativeName: string | null = null
+                    if (c.alternativeNameId && c.alternativeName) {
+                        alternativeName = c.alternativeName.fullName || c.alternativeName
+                    } else if (c.alternativeNameId && c.person?.alternativeNames) {
+                        const altName = c.person.alternativeNames.find((an: any) => an.id === c.alternativeNameId)
+                        if (altName) alternativeName = altName.fullName
+                    }
+                    return {
+                        personId: c.personId || c.person?.id,
+                        personName,
+                        alternativeNameId: c.alternativeNameId || null,
+                        alternativeName,
+                        roleId: roleId || null,
+                        role: roleName,
+                        department: c.department || c.role?.department || '',
+                        billingOrder: c.billingOrder || 0,
+                        notes: c.notes || '',
+                        person: c.person
+                    }
+                }) || []).sort((a: any, b: any) => (a.billingOrder || 0) - (b.billingOrder || 0)),
 
                 countries: cleanedMovie.movieCountries?.map((c: any) => c.countryId) || [],
                 productionCompanies: cleanedMovie.productionCompanies?.map((c: any) => c.companyId) || [],
@@ -831,6 +972,21 @@ export function useMovieForm({
         handleDistributionCompaniesChange,
         handleThemesChange,
         handleScreeningVenuesChange,
+
+        // Estado de relaciones (fuente única de verdad para cast/crew)
+        movieRelations,
+
+        // Mutaciones granulares para cast
+        addCastMember,
+        removeCastMember,
+        updateCastMember,
+        reorderCast,
+
+        // Mutaciones granulares para crew
+        addCrewMember,
+        removeCrewMember,
+        updateCrewMember,
+        reorderCrew,
 
         // Funciones principales
         loadMovieData,
