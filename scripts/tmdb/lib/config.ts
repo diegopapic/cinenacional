@@ -201,6 +201,7 @@ export interface TMDBMovieDetails {
     release_date: string;
     runtime: number | null;
     status: string;
+    poster_path: string | null;
     genres: Array<{ id: number; name: string }>;
     production_countries: Array<{ iso_3166_1: string; name: string }>;
     credits: {
