@@ -38,6 +38,7 @@ prisma/migrations/dev/
 
 # Scripts
 scripts/assign-genders.js
+scripts/tmdb/state/
 
 # Dumps de la base de datos de Wordpress
 dumps/
@@ -49,3 +50,7 @@ pgsql/
 # Directorio uploads de Wordpress
 
 /uploads
+
+# Claude Code
+.claude/worktrees/
+tmpclaude-*
