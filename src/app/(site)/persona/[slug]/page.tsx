@@ -683,11 +683,11 @@ export default function PersonPage({ params }: PersonPageProps) {
       {/* Person Header Section */}
       <section className="relative bg-gradient-to-b from-gray-800 to-gray-900 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row gap-8 items-start">
+          <div className="flex flex-col md:flex-row gap-8 md:items-start">
             {/* Portrait */}
-            <div className="flex-shrink-0">
+            <div className="md:flex-shrink-0">
               <div className="relative">
-                <div className="w-48 h-64 md:w-64 md:h-80 rounded-lg overflow-hidden shadow-2xl">
+                <div className="w-full aspect-[3/4] md:w-64 md:h-80 md:aspect-auto rounded-lg overflow-hidden shadow-2xl">
                   {person.photoUrl ? (
                     <img
                       src={person.photoUrl}
@@ -707,8 +707,8 @@ export default function PersonPage({ params }: PersonPageProps) {
             </div>
 
             {/* Person Info */}
-            <div className="flex-grow">
-              <h1 className="text-5xl md:text-6xl font-bold mb-4">{fullName}</h1>
+            <div className="flex-grow min-w-0">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">{fullName}</h1>
 
               {person.realName && person.realName !== fullName && (
                 <p className="text-gray-400 mb-2">
@@ -971,7 +971,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                     >
                       ?
                     </button>
-                    <div className="absolute left-0 top-full mt-2 w-72 p-3 bg-gray-800 border border-gray-700 rounded-lg shadow-xl text-sm text-gray-300 font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="absolute right-0 md:left-0 md:right-auto top-full mt-2 w-72 p-3 bg-gray-800 border border-gray-700 rounded-lg shadow-xl text-sm text-gray-300 font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                       Esta filmografía incluye únicamente películas argentinas o coproducciones con participación de Argentina. Los trabajos realizados exclusivamente en el exterior no están incluidos.
                     </div>
                   </div>
@@ -1015,7 +1015,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                     >
                       ?
                     </button>
-                    <div className="absolute left-0 top-full mt-2 w-72 p-3 bg-gray-800 border border-gray-700 rounded-lg shadow-xl text-sm text-gray-300 font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="absolute right-0 md:left-0 md:right-auto top-full mt-2 w-72 p-3 bg-gray-800 border border-gray-700 rounded-lg shadow-xl text-sm text-gray-300 font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                       Esta filmografía incluye únicamente películas argentinas o coproducciones con participación de Argentina. Los trabajos realizados exclusivamente en el exterior no están incluidos.
                     </div>
                   </div>

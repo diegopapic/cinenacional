@@ -110,7 +110,7 @@ export default function SiteLayout({
         )}
         
         <Header />
-        <AdBanner />
+        {/* <AdBanner /> */}
         <main className="flex-grow">
           {children}
         </main>

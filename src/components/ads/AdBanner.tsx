@@ -100,7 +100,7 @@ export default function AdBanner({
 
   return (
     <div className={`${config.containerClass} ${className}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
         <ins
           ref={adRef}
           className="adsbygoogle"
