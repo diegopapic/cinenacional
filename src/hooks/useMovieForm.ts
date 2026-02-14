@@ -1,5 +1,5 @@
 // src/hooks/useMovieForm.ts
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'react-hot-toast'
@@ -27,6 +27,7 @@ interface UseMovieFormProps {
 
 interface UseMovieFormReturn {
     onSubmit: (data: MovieFormData) => Promise<void>
+    setShouldClose: (value: boolean) => void
 
     // Estados de UI
     activeTab: string
@@ -621,9 +622,20 @@ export function useMovieForm({
         }
     }, [setValue, onError])
 
+    // Ref para controlar si cerrar después de guardar
+    const shouldCloseRef = useRef(true)
+
+    const setShouldClose = useCallback((value: boolean) => {
+        shouldCloseRef.current = value
+    }, [])
+
     // Función submit modificada para usar callbacks
     const onSubmit = async (data: MovieFormData) => {
         if (isSubmitting) return; // Prevenir double submit
+
+        const shouldClose = shouldCloseRef.current
+        // Resetear para la próxima vez
+        shouldCloseRef.current = true
 
         setIsSubmitting(true)
 
@@ -872,12 +884,18 @@ export function useMovieForm({
                 result = await moviesService.create(movieData)
             }
 
-            // Limpiar formulario
-            reset()
+            if (shouldClose) {
+                // Limpiar formulario y cerrar
+                reset()
 
-            // Ejecutar callback de éxito con la película creada/actualizada
-            if (onSuccess) {
-                onSuccess(result)
+                // Ejecutar callback de éxito con la película creada/actualizada
+                if (onSuccess) {
+                    onSuccess(result)
+                }
+            } else {
+                // Guardar sin cerrar: recargar datos de la película actualizada
+                toast.success('Película actualizada correctamente')
+                await loadMovieData(result)
             }
 
         } catch (error) {
@@ -929,6 +947,7 @@ export function useMovieForm({
 
     return {
         onSubmit,
+        setShouldClose,
 
         // Estados de UI
         activeTab,

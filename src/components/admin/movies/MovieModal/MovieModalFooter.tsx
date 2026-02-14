@@ -8,12 +8,13 @@ interface MovieModalFooterProps {
 
 export default function MovieModalFooter({ onCancel }: MovieModalFooterProps) {
   // Obtener todos los datos necesarios del context
-  const { 
-    isSubmitting, 
-    editingMovie, 
-    formState 
+  const {
+    isSubmitting,
+    editingMovie,
+    formState,
+    setShouldClose
   } = useMovieModalContext()
-  
+
   const isEditing = !!editingMovie
   const errors = formState?.errors || {}
 
@@ -40,9 +41,31 @@ export default function MovieModalFooter({ onCancel }: MovieModalFooterProps) {
         </div>
       )}
 
+      {isEditing && (
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          onClick={() => setShouldClose(false)}
+          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Guardando...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4" />
+              Actualizar
+            </>
+          )}
+        </button>
+      )}
+
       <button
         type="submit"
         disabled={isSubmitting}
+        onClick={() => setShouldClose(true)}
         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
       >
         {isSubmitting ? (
@@ -53,7 +76,7 @@ export default function MovieModalFooter({ onCancel }: MovieModalFooterProps) {
         ) : (
           <>
             <Save className="w-4 h-4" />
-            {isEditing ? 'Actualizar' : 'Crear'} Película
+            {isEditing ? 'Actualizar y cerrar' : 'Crear'} Película
           </>
         )}
       </button>

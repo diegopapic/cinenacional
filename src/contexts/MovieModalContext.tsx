@@ -21,6 +21,7 @@ interface MovieModalContextValue {
   
   // Submit handler
   onSubmit: (data: any) => Promise<void>;
+  setShouldClose: (value: boolean) => void;
   
   // Date handling
   isPartialDate: boolean;
