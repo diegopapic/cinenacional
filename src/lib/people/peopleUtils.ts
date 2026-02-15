@@ -111,6 +111,8 @@ export function formatPersonDataForForm(person?: PersonWithRelations | null): Pe
        gender: person.gender || '',
        hideAge: person.hideAge || false,
        isActive: person.isActive ?? true,
+       imdbId: person.imdbId || '',
+       tmdbId: person.tmdbId || null,
        links: person.links || [], // Cargar los links directamente si vienen
        nationalities: []
    };

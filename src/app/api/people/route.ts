@@ -669,6 +669,49 @@ export async function POST(request: NextRequest) {
       counter++;
     }
 
+    // Verificar duplicados de imdbId y tmdbId
+    const conflicts: Array<{ field: string; value: string; personId: number; personName: string }> = [];
+
+    if (data.imdbId) {
+      const existing = await prisma.person.findFirst({
+        where: { imdbId: data.imdbId },
+        select: { id: true, firstName: true, lastName: true },
+      });
+      if (existing) {
+        conflicts.push({
+          field: 'imdbId',
+          value: data.imdbId,
+          personId: existing.id,
+          personName: [existing.firstName, existing.lastName].filter(Boolean).join(' '),
+        });
+      }
+    }
+
+    if (data.tmdbId) {
+      const tmdbIdInt = typeof data.tmdbId === 'string' ? parseInt(data.tmdbId) : data.tmdbId;
+      if (tmdbIdInt) {
+        const existing = await prisma.person.findFirst({
+          where: { tmdbId: tmdbIdInt },
+          select: { id: true, firstName: true, lastName: true },
+        });
+        if (existing) {
+          conflicts.push({
+            field: 'tmdbId',
+            value: String(tmdbIdInt),
+            personId: existing.id,
+            personName: [existing.firstName, existing.lastName].filter(Boolean).join(' '),
+          });
+        }
+      }
+    }
+
+    if (conflicts.length > 0 && !data.forceReassign) {
+      return NextResponse.json(
+        { message: 'ID duplicado', conflicts },
+        { status: 409 }
+      );
+    }
+
     const personData: any = {
       slug,
       firstName: data.firstName || null,
@@ -689,9 +732,21 @@ export async function POST(request: NextRequest) {
       hideAge: data.hideAge || false,
       isActive: data.isActive ?? true,
       hasLinks: data.links && data.links.length > 0,
+      imdbId: data.imdbId || null,
+      tmdbId: data.tmdbId ? parseInt(data.tmdbId) : null,
     };
 
     const person = await prisma.$transaction(async (tx) => {
+      // Si forceReassign, desasignar IDs de las otras personas
+      if (data.forceReassign && conflicts.length > 0) {
+        for (const conflict of conflicts) {
+          await tx.person.update({
+            where: { id: conflict.personId },
+            data: { [conflict.field]: null },
+          });
+        }
+      }
+
       const newPerson = await tx.person.create({
         data: personData,
       });
