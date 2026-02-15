@@ -26,6 +26,8 @@ export interface Person {
   hideAge: boolean;
   hasLinks: boolean;
   isActive: boolean;
+  imdbId?: string | null;
+  tmdbId?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -144,6 +146,8 @@ export interface PersonFormData {
   gender?: string;
   hideAge?: boolean;
   isActive?: boolean;
+  imdbId?: string;
+  tmdbId?: number | null;
   links: PersonLink[];
   alternativeNames?: PersonAlternativeName[];
   nationalities?: number[];

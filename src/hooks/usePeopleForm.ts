@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { peopleService } from '@/services/people.service';
+import { peopleService, ExternalIdConflictError } from '@/services/people.service';
 import {
     PersonFormData,
     PersonWithRelations,
@@ -154,33 +154,22 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
         return validationErrors.length === 0;
     }, [formData]);
 
-    // Guardar persona
-    const save = useCallback(async () => {
-        console.log('FormData before save:', formData);
-        console.log('Birth Location ID:', formData.birthLocationId);
-        console.log('Death Location ID:', formData.deathLocationId);
-        console.log('Nationalities:', formData.nationalities); // Log de nacionalidades
-
-        if (!validate()) {
-            toast.error('Por favor corrige los errores en el formulario');
-            return false;
-        }
-
+    // Guardar persona (con soporte para reasignación de IDs externos)
+    const saveWithForceReassign = useCallback(async (forceReassign: boolean) => {
         try {
             setSaving(true);
             let savedPerson: PersonWithRelations;
 
-            // Preparar datos para enviar
             const dataToSave = {
                 ...formData,
                 nationalities: formData.nationalities || []
             };
 
             if (personId) {
-                savedPerson = await peopleService.update(personId, dataToSave);
+                savedPerson = await peopleService.update(personId, dataToSave, forceReassign);
                 toast.success(PERSON_SUCCESS_MESSAGES.UPDATED);
             } else {
-                savedPerson = await peopleService.create(dataToSave);
+                savedPerson = await peopleService.create(dataToSave, forceReassign);
                 toast.success(PERSON_SUCCESS_MESSAGES.CREATED);
             }
 
@@ -194,19 +183,38 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
 
             return true;
         } catch (error) {
-            console.error('Error saving person:', error);
+            if (error instanceof ExternalIdConflictError) {
+                const lines = error.conflicts.map(c => {
+                    const label = c.field === 'imdbId' ? 'IMDb ID' : 'TMDB ID';
+                    return `${label} "${c.value}" ya está asignado a ${c.personName} (ID ${c.personId})`;
+                });
+                const confirmed = window.confirm(
+                    `${lines.join('\n')}\n\n¿Desasignar de la otra persona y asignar a esta?`
+                );
+                if (confirmed) {
+                    return saveWithForceReassign(true);
+                }
+                return false;
+            }
 
+            console.error('Error saving person:', error);
             const errorMessage = error instanceof Error
                 ? error.message
                 : personId ? PERSON_ERROR_MESSAGES.UPDATE_ERROR : PERSON_ERROR_MESSAGES.CREATE_ERROR;
-
             toast.error(errorMessage);
-
             return false;
         } finally {
             setSaving(false);
         }
-    }, [formData, personId, validate, router, onSuccess]);
+    }, [formData, personId, router, onSuccess]);
+
+    const save = useCallback(async () => {
+        if (!validate()) {
+            toast.error('Por favor corrige los errores en el formulario');
+            return false;
+        }
+        return saveWithForceReassign(false);
+    }, [validate, saveWithForceReassign]);
 
     // Resetear formulario
     const reset = useCallback(() => {
