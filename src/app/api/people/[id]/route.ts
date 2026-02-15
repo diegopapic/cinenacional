@@ -231,6 +231,49 @@ export async function PUT(
             }
         }
 
+        // Verificar duplicados de imdbId y tmdbId
+        const conflicts: Array<{ field: string; value: string; personId: number; personName: string }> = [];
+
+        if (data.imdbId) {
+            const existing = await prisma.person.findFirst({
+                where: { imdbId: data.imdbId, id: { not: personId } },
+                select: { id: true, firstName: true, lastName: true },
+            });
+            if (existing) {
+                conflicts.push({
+                    field: 'imdbId',
+                    value: data.imdbId,
+                    personId: existing.id,
+                    personName: [existing.firstName, existing.lastName].filter(Boolean).join(' '),
+                });
+            }
+        }
+
+        if (data.tmdbId) {
+            const tmdbIdInt = typeof data.tmdbId === 'string' ? parseInt(data.tmdbId) : data.tmdbId;
+            if (tmdbIdInt) {
+                const existing = await prisma.person.findFirst({
+                    where: { tmdbId: tmdbIdInt, id: { not: personId } },
+                    select: { id: true, firstName: true, lastName: true },
+                });
+                if (existing) {
+                    conflicts.push({
+                        field: 'tmdbId',
+                        value: String(tmdbIdInt),
+                        personId: existing.id,
+                        personName: [existing.firstName, existing.lastName].filter(Boolean).join(' '),
+                    });
+                }
+            }
+        }
+
+        if (conflicts.length > 0 && !data.forceReassign) {
+            return NextResponse.json(
+                { message: 'ID duplicado', conflicts },
+                { status: 409 }
+            );
+        }
+
         // Preparar datos de actualización con campos de fecha parciales
         const updateData: any = {
             ...(slug && { slug }),
@@ -256,12 +299,24 @@ export async function PUT(
             hideAge: data.hideAge || false,
             isActive: data.isActive ?? true,
             hasLinks: data.links && data.links.length > 0,
+            imdbId: data.imdbId || null,
+            tmdbId: data.tmdbId ? parseInt(data.tmdbId) : null,
         };
 
         console.log('Update data prepared:', updateData);
 
         // Actualizar persona, links y nacionalidades en una transacción
         const person = await prisma.$transaction(async (tx) => {
+            // Si forceReassign, desasignar IDs de las otras personas
+            if (data.forceReassign && conflicts.length > 0) {
+                for (const conflict of conflicts) {
+                    await tx.person.update({
+                        where: { id: conflict.personId },
+                        data: { [conflict.field]: null },
+                    });
+                }
+            }
+
             // Actualizar la persona
             const updatedPerson = await tx.person.update({
                 where: { id: personId },

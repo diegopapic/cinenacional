@@ -104,6 +104,8 @@ export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
   gender: '',
   hideAge: false,
   isActive: true,
+  imdbId: '',
+  tmdbId: null,
   links: [],
   alternativeNames: [],
   nationalities: []

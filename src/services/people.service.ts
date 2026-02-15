@@ -10,6 +10,22 @@ import {
 } from '@/lib/people/peopleTypes';
 import { dateToPartialFields, partialFieldsToDate } from '@/lib/shared/dateUtils';
 
+export interface ExternalIdConflict {
+  field: string;
+  value: string;
+  personId: number;
+  personName: string;
+}
+
+export class ExternalIdConflictError extends Error {
+  conflicts: ExternalIdConflict[];
+  constructor(conflicts: ExternalIdConflict[]) {
+    super('ID duplicado');
+    this.name = 'ExternalIdConflictError';
+    this.conflicts = conflicts;
+  }
+}
+
 interface PersonSearchResult {
   id: number;
   name: string;
@@ -32,6 +48,8 @@ function formatPersonDataForAPI(data: PersonFormData): any {
     deathLocationId: data.deathLocationId,
     biography: data.biography || null,
     photoUrl: data.photoUrl || null,
+    imdbId: data.imdbId || null,
+    tmdbId: data.tmdbId || null,
   };
 
   // Procesar fecha de nacimiento
@@ -107,6 +125,8 @@ function formatPersonFromAPI(person: any): PersonFormData {
     deathLocationId: person.deathLocationId || null,
     biography: person.biography || '',
     photoUrl: person.photoUrl || '',
+    imdbId: person.imdbId || '',
+    tmdbId: person.tmdbId || null,
     links: person.links || [],
     alternativeNames: person.alternativeNames || [],
     nationalities: []
@@ -273,9 +293,23 @@ export const peopleService = {
   /**
    * Crea una nueva persona
    */
-  async create(data: PersonFormData): Promise<PersonWithRelations> {
+  async create(data: PersonFormData, forceReassign = false): Promise<PersonWithRelations> {
     const formattedData = formatPersonDataForAPI(data);
-    return apiClient.post<PersonWithRelations>('/people', formattedData);
+    if (forceReassign) formattedData.forceReassign = true;
+    const response = await fetch('/api/people', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formattedData),
+    });
+    if (response.status === 409) {
+      const body = await response.json();
+      throw new ExternalIdConflictError(body.conflicts);
+    }
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.error || body.message || 'Error al crear la persona');
+    }
+    return response.json();
   },
 
   /**
@@ -292,9 +326,23 @@ export const peopleService = {
   /**
    * Actualiza una persona
    */
-  async update(id: number, data: PersonFormData): Promise<PersonWithRelations> {
+  async update(id: number, data: PersonFormData, forceReassign = false): Promise<PersonWithRelations> {
     const formattedData = formatPersonDataForAPI(data);
-    return apiClient.put<PersonWithRelations>(`/people/${id}`, formattedData);
+    if (forceReassign) formattedData.forceReassign = true;
+    const response = await fetch(`/api/people/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formattedData),
+    });
+    if (response.status === 409) {
+      const body = await response.json();
+      throw new ExternalIdConflictError(body.conflicts);
+    }
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.error || body.message || 'Error al actualizar la persona');
+    }
+    return response.json();
   },
 
   /**

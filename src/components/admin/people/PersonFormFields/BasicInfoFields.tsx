@@ -178,6 +178,32 @@ export function BasicInfoFields({
                         <option value="OTHER">Otro</option>
                     </select>
                 </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        IMDb ID
+                    </label>
+                    <input
+                        type="text"
+                        value={formData.imdbId || ''}
+                        onChange={(e) => updateField('imdbId', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Ej: nm0000123"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        TMDB ID
+                    </label>
+                    <input
+                        type="number"
+                        value={formData.tmdbId ?? ''}
+                        onChange={(e) => updateField('tmdbId', e.target.value ? parseInt(e.target.value) : null)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Ej: 12345"
+                    />
+                </div>
             </div>
 
             {/* Nombres Alternativos */}
