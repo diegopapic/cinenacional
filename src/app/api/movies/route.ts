@@ -145,7 +145,9 @@ export async function GET(request: NextRequest) {
             release_day as "releaseDay",
             duration,
             poster_url as "posterUrl",
-            stage
+            stage,
+            tmdb_id as "tmdbId",
+            imdb_id as "imdbId"
           FROM movies
           WHERE
             unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
@@ -198,6 +200,8 @@ export async function GET(request: NextRequest) {
               duration: movie.duration,
               posterUrl: movie.posterUrl,
               stage: movie.stage,
+              tmdbId: movie.tmdbId,
+              imdbId: movie.imdbId,
               genres: movieGenres.map(g => ({
                 id: g.genre.id,
                 name: g.genre.name
@@ -384,6 +388,8 @@ export async function GET(request: NextRequest) {
       duration: movie.duration,
       posterUrl: movie.posterUrl,
       stage: movie.stage,
+      tmdbId: movie.tmdbId,
+      imdbId: movie.imdbId,
       genres: movie.genres.map(g => ({
         id: g.genre.id,
         name: g.genre.name
