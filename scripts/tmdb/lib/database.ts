@@ -26,6 +26,21 @@ export async function closePool(): Promise<void> {
     }
 }
 
+/**
+ * Destruye el pool actual sin esperar que termine gracefully.
+ * Útil para reconectar después de un corte de conexión.
+ */
+export async function resetPool(): Promise<void> {
+    if (pool) {
+        try {
+            await pool.end();
+        } catch {
+            // Ignorar errores al cerrar un pool roto
+        }
+        pool = null;
+    }
+}
+
 export async function movieExistsByTmdbId(tmdbId: number): Promise<number | null> {
     const pool = getPool();
     const result = await pool.query(
