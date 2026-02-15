@@ -228,6 +228,8 @@ export interface Movie {
   filmingStartDate: string
   filmingEndDate: string
   dataCompleteness?: string
+  tmdbId?: number | null
+  imdbId?: string | null
   genres: Array<{ id: number; name: string }>
   directors: Array<{ id: number; name: string }>
   mainCast: Array<{

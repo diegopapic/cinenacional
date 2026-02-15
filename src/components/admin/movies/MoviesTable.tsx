@@ -124,8 +124,30 @@ function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
             )}
           </div>
           <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900">
+            <div className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
               {movie.title}
+              {movie.tmdbId && (
+                <a
+                  href={`https://www.themoviedb.org/movie/${movie.tmdbId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
+                  title="Ver en TMDB"
+                >
+                  TMDB
+                </a>
+              )}
+              {movie.imdbId && (
+                <a
+                  href={`https://www.imdb.com/title/${movie.imdbId}/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors"
+                  title="Ver en IMDb"
+                >
+                  IMDb
+                </a>
+              )}
             </div>
             {movie.originalTitle && (
               <div className="text-sm text-gray-500">
