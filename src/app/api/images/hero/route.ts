@@ -8,27 +8,20 @@ export const dynamic = 'force-dynamic';
 // GET /api/images/hero - Obtener imágenes para el hero (una por película)
 export async function GET(request: NextRequest) {
   try {
-    // Primero: obtener las últimas 5 películas que tienen imágenes
-    const moviesWithImages = await prisma.movie.findMany({
-      where: {
-        images: {
-          some: {} // Películas que tienen al menos una imagen
-        }
-      },
-      orderBy: {
-        updatedAt: 'desc'
-      },
-      take: 5,
-      select: {
-        id: true
-      }
-    })
+    // Primero: obtener las 5 películas cuya imagen más reciente es la más nueva
+    const moviesWithLatestImage = await prisma.$queryRaw<{ movie_id: number }[]>`
+      SELECT movie_id FROM images
+      WHERE movie_id IS NOT NULL
+      GROUP BY movie_id
+      ORDER BY MAX(created_at) DESC
+      LIMIT 5
+    `
 
-    if (moviesWithImages.length === 0) {
+    if (moviesWithLatestImage.length === 0) {
       return NextResponse.json({ images: [] })
     }
 
-    const movieIds = moviesWithImages.map(m => m.id)
+    const movieIds = moviesWithLatestImage.map(m => m.movie_id)
 
     // Segundo: obtener todas las imágenes de esas películas
     const images = await prisma.image.findMany({
