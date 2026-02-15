@@ -94,6 +94,23 @@ export interface TMDBSearchResult<T> {
   results: T[];
 }
 
+export interface TMDBImageInfo {
+  file_path: string;
+  width: number;
+  height: number;
+  aspect_ratio: number;
+  vote_average: number;
+  vote_count: number;
+  iso_639_1: string | null;
+}
+
+export interface TMDBImagesResponse {
+  id: number;
+  backdrops: TMDBImageInfo[];
+  posters: TMDBImageInfo[];
+  logos: TMDBImageInfo[];
+}
+
 // Rate limiting
 let lastRequestTime = 0;
 
@@ -226,6 +243,25 @@ export async function getPersonDetails(tmdbId: number): Promise<TMDBPersonDetail
 }
 
 /**
+ * Obtener imágenes de una película (backdrops, posters, logos)
+ * NO usa filtro de idioma para obtener TODAS las imágenes disponibles
+ */
+export async function getMovieImages(tmdbId: number): Promise<TMDBImagesResponse> {
+  const url = `${config.tmdbBaseUrl}/movie/${tmdbId}/images`;
+
+  const response = await rateLimitedFetch(url, {
+    method: 'GET',
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`TMDB API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
  * Test de conexión a la API
  */
 export async function testConnection(): Promise<boolean> {
@@ -245,6 +281,7 @@ export async function testConnection(): Promise<boolean> {
 export default {
   searchMovies,
   getMovieDetails,
+  getMovieImages,
   searchPeople,
   getPersonDetails,
   testConnection,
