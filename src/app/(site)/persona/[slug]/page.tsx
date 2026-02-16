@@ -892,7 +892,7 @@ export default function PersonPage({ params }: PersonPageProps) {
             {/* Biography below the row */}
             {person.biography && (
               <div
-                className="mt-5 text-[13px] leading-relaxed text-muted-foreground/70 serif-body"
+                className="mt-5 text-[13px] leading-relaxed text-muted-foreground/70"
                 dangerouslySetInnerHTML={{
                   __html: DOMPurify.sanitize(person.biography, {
                     ALLOWED_TAGS: ['p', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'b', 'i', 'span'],
@@ -1113,7 +1113,7 @@ export default function PersonPage({ params }: PersonPageProps) {
 
               {person.biography && (
                 <div
-                  className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground/70 serif-body"
+                  className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground/80"
                   dangerouslySetInnerHTML={{
                     __html: DOMPurify.sanitize(person.biography, {
                       ALLOWED_TAGS: ['p', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'b', 'i', 'span'],
