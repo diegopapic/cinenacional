@@ -148,6 +148,17 @@ function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
                   IMDb
                 </a>
               )}
+              {movie.slug && (
+                <a
+                  href={`/pelicula/${movie.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium bg-cyan-100 text-cyan-700 hover:bg-cyan-200 transition-colors"
+                  title="Ver en el sitio"
+                >
+                  Web
+                </a>
+              )}
             </div>
             {movie.originalTitle && (
               <div className="text-sm text-gray-500">
