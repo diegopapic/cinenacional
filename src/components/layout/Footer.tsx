@@ -28,7 +28,7 @@ export default function Footer() {
   // }
 
   return (
-    <footer className="bg-zinc-900 border-t border-zinc-800 mt-auto">
+    <footer className="bg-nav border-t border-[oklch(0.28_0.005_250)] mt-auto">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand Section */}
@@ -103,7 +103,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-zinc-800 mt-8 pt-8 text-center">
+        <div className="border-t border-[oklch(0.28_0.005_250)] mt-8 pt-8 text-center">
           <p className="text-gray-400 text-sm">
             © {currentYear} cinenacional.com. Todos los derechos reservados.
           </p>

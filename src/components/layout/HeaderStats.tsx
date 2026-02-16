@@ -39,16 +39,56 @@ export default function HeaderStats() {
   ]
 
   return (
-    <div className="bg-zinc-800/50 border-b border-zinc-700/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm">
-          {statsDisplay.map((stat, index) => (
-            <div key={stat.label} className="flex items-baseline gap-1">
-              <span className="font-semibold text-white">{stat.value}</span>
-              <span className="text-zinc-400">{stat.label}</span>
-              {index < statsDisplay.length - 1 && (
-                <span className="hidden sm:inline ml-6 text-zinc-700">|</span>
-              )}
+    <div className="overflow-hidden bg-stats">
+      {/* Desktop: static centered row (lg+) */}
+      <div className="mx-auto hidden max-w-7xl items-center justify-center px-4 py-2 lg:flex lg:px-6">
+        {statsDisplay.map((stat, index) => (
+          <span key={stat.label} className="flex shrink-0 items-center whitespace-nowrap">
+            <span className="flex items-baseline gap-1.5">
+              <span className="text-xs font-medium tabular-nums tracking-tight text-stats-foreground/90">
+                {stat.value}
+              </span>
+              <span className="text-[11px] tracking-wide text-stats-foreground/60">
+                {stat.label}
+              </span>
+            </span>
+            {index < statsDisplay.length - 1 && (
+              <span className="mx-3 text-[10px] text-stats-foreground/30" aria-hidden="true">
+                |
+              </span>
+            )}
+          </span>
+        ))}
+      </div>
+
+      {/* Mobile + tablet: continuous marquee ticker */}
+      <div className="relative overflow-hidden py-2 lg:hidden" aria-label="Estadísticas del archivo">
+        {/* Fade gradients */}
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-stats to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-stats to-transparent" />
+
+        <div className="stats-marquee inline-flex w-max">
+          {[0, 1].map((copy) => (
+            <div
+              key={copy}
+              className="flex shrink-0 items-center"
+              {...(copy === 1 ? { 'aria-hidden': 'true' } : {})}
+            >
+              {statsDisplay.map((stat) => (
+                <span key={`${copy}-${stat.label}`} className="flex shrink-0 items-center whitespace-nowrap">
+                  <span className="mx-4 text-[10px] text-stats-foreground/30" aria-hidden="true">
+                    {'\u00b7'}
+                  </span>
+                  <span className="flex items-baseline gap-1.5">
+                    <span className="text-xs font-medium tabular-nums tracking-tight text-stats-foreground/90">
+                      {stat.value}
+                    </span>
+                    <span className="text-[11px] tracking-wide text-stats-foreground/60">
+                      {stat.label}
+                    </span>
+                  </span>
+                </span>
+              ))}
             </div>
           ))}
         </div>

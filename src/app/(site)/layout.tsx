@@ -1,6 +1,6 @@
 // /src/app/(site)/layout.tsx
 import type { Metadata } from 'next'
-import { Inter, Crimson_Text } from 'next/font/google'
+import { Libre_Franklin, Libre_Caslon_Display } from 'next/font/google'
 import Script from 'next/script'
 import '../globals.css'
 import Header from '@/components/layout/Header'
@@ -9,18 +9,17 @@ import AdBanner from '@/components/ads/AdBanner'
 import { Toaster } from 'react-hot-toast'
 
 // Configurar las fuentes
-const inter = Inter({ 
+const libreFranklin = Libre_Franklin({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600'],
-  variable: '--font-inter',
+  variable: '--font-libre-franklin',
   display: 'swap',
 })
 
-const crimsonText = Crimson_Text({ 
+const libreCaslonDisplay = Libre_Caslon_Display({
   subsets: ['latin'],
-  weight: ['400', '600'],
-  style: ['normal', 'italic'],
-  variable: '--font-crimson',
+  weight: ['400'],
+  variable: '--font-libre-caslon',
   display: 'swap',
 })
 
@@ -80,7 +79,7 @@ export default function SiteLayout({
   const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-5SGTLPHYYX'
   
   return (
-    <html lang="es" className={`h-full ${inter.variable} ${crimsonText.variable}`}>
+    <html lang="es" className={`h-full ${libreFranklin.variable} ${libreCaslonDisplay.variable}`}>
       <head>
         <script
           async
@@ -88,7 +87,7 @@ export default function SiteLayout({
           crossOrigin="anonymous"
         />
       </head>
-      <body className={`${inter.className} min-h-full flex flex-col bg-zinc-950 text-white`}>
+      <body className={`${libreFranklin.className} min-h-full flex flex-col bg-[oklch(0.16_0.005_250)] text-[oklch(0.92_0.01_80)]`}>
         {/* Google Analytics */}
         {GA_MEASUREMENT_ID && (
           <>
