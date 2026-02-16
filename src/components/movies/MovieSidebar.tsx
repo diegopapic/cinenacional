@@ -128,12 +128,13 @@ export function MovieSidebar({
           <h3 className="text-lg font-medium mb-4 text-cine-accent">Géneros</h3>
           <div className="flex flex-wrap gap-2">
             {genres.map((genre) => (
-              <span
+              <Link
                 key={genre.id}
+                href={`/listados/peliculas?genreId=${genre.id}`}
                 className="bg-cine-gray px-3 py-1 rounded-full text-sm text-white hover:bg-cine-accent/20 transition-colors cursor-pointer"
               >
                 {genre.name}
-              </span>
+              </Link>
             ))}
           </div>
         </div>

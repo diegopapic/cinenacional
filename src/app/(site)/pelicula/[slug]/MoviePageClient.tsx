@@ -126,7 +126,7 @@ export function MoviePageClient({
                 title={movie.title}
                 year={displayYear}
                 duration={totalDuration}
-                genres={genres.map(g => g.name)}
+                genres={genres}
                 posterUrl={movie.posterUrl}
                 releaseDate={releaseDate}
                 premiereVenues={premiereVenues}
