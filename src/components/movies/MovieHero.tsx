@@ -175,22 +175,34 @@ export function MovieHero({
     </div>
   );
 
-  // Render genre badges
+  // Render genre badges inline
   const renderGenres = (mobile = false) => {
     if (genres.length === 0) return null;
-    return (
-      <div className={`flex flex-wrap ${mobile ? 'gap-1.5' : 'gap-2'}`}>
-        {genres.map((g) => (
-          <Link
-            key={g.id}
-            href={`/listados/peliculas?genreId=${g.id}`}
-            className="border border-border/40 px-2.5 py-1 text-[11px] uppercase tracking-widest text-muted-foreground/60 hover:border-accent/40 hover:text-accent transition-colors"
-          >
-            {g.name}
-          </Link>
-        ))}
-      </div>
-    );
+    return genres.map((g) => (
+      <Link
+        key={g.id}
+        href={`/listados/peliculas?genreId=${g.id}`}
+        className="border border-border/40 px-2.5 py-1 text-[11px] uppercase tracking-widest text-muted-foreground/60 hover:border-accent/40 hover:text-accent transition-colors"
+      >
+        {g.name}
+      </Link>
+    ));
+  };
+
+  // Format country list with proper separators: "A", "A y B", "A, B y C"
+  const formatCountryList = (countryList: Array<{ id: number; name: string }>) => {
+    return countryList.map((c, i) => (
+      <span key={c.id}>
+        {i > 0 && (
+          <span className="text-muted-foreground/40">
+            {i === countryList.length - 1 ? ' y ' : ', '}
+          </span>
+        )}
+        <Link href={`/listados/peliculas?countryId=${c.id}`} className="text-foreground/80 transition-colors hover:text-accent">
+          {c.name}
+        </Link>
+      </span>
+    ));
   };
 
   // Render production type / status badges
@@ -234,16 +246,9 @@ export function MovieHero({
   const renderCoproduction = () => {
     if (countries.length === 0) return null;
     return (
-      <p className="flex items-center gap-1.5 text-sm text-muted-foreground/60 md:text-sm">
-        <span className="text-muted-foreground/40">Coproducción con</span>
-        {countries.map((c, i) => (
-          <span key={c.id}>
-            {i > 0 && <span className="text-muted-foreground/20">, </span>}
-            <Link href={`/listados/peliculas?countryId=${c.id}`} className="text-foreground/80 transition-colors hover:text-accent">
-              {c.name}
-            </Link>
-          </span>
-        ))}
+      <p className="text-sm text-muted-foreground/60 md:text-sm">
+        <span className="text-muted-foreground/40">Coproducción con </span>
+        {formatCountryList(countries)}
       </p>
     );
   };
@@ -323,15 +328,12 @@ export function MovieHero({
                   </p>
                 )}
 
-                {/* Runtime + Rating */}
-                <div className="flex items-center gap-2 text-[13px] text-muted-foreground/50">
+                {/* Runtime + Rating + Genres */}
+                <div className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted-foreground/50">
                   {duration > 0 && <span>{duration} min</span>}
-                  {duration > 0 && ratingAbbreviation && <span className="text-muted-foreground/20">/</span>}
+                  {duration > 0 && ratingAbbreviation && <span className="text-muted-foreground/20">|</span>}
                   {ratingAbbreviation && <span title={rating?.name}>{ratingAbbreviation}</span>}
-                </div>
-
-                {/* Genres mobile */}
-                <div className="mt-1">
+                  {(duration > 0 || ratingAbbreviation) && genres.length > 0 && <span className="text-muted-foreground/20">|</span>}
                   {renderGenres(true)}
                 </div>
 
@@ -374,8 +376,8 @@ export function MovieHero({
                   {title}{displayYear ? ` (${displayYear})` : ''}
                 </h1>
 
-                {/* Metadata inline */}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground/70">
+                {/* Metadata inline + Genres */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted-foreground/70">
                   {directors.length > 0 && (
                     <span>
                       Dirigida por{' '}
@@ -393,16 +395,15 @@ export function MovieHero({
                   {duration > 0 && <span>{duration} min</span>}
                   {duration > 0 && ratingAbbreviation && <span className="text-muted-foreground/30" aria-hidden="true">|</span>}
                   {ratingAbbreviation && <span title={rating?.name}>{ratingAbbreviation}</span>}
+                  {(duration > 0 || ratingAbbreviation) && genres.length > 0 && <span className="text-muted-foreground/30" aria-hidden="true">|</span>}
+                  {renderGenres()}
                 </div>
-
-                {/* Genres desktop */}
-                {renderGenres()}
-
-                {/* Coproducción */}
-                {renderCoproduction()}
 
                 {/* Estreno */}
                 {renderEstreno()}
+
+                {/* Coproducción */}
+                {renderCoproduction()}
               </div>
 
               {/* Synopsis desktop */}
