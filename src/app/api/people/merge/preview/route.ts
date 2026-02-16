@@ -2,6 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+/** Strip diacritics (tildes, dieresis, etc.) for name comparison */
+function normalizeForComparison(str: string): string {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { personAId, personBId } = await request.json();
@@ -154,7 +159,7 @@ export async function POST(request: NextRequest) {
     const fieldComparisons: FieldComparison[] = [];
 
     // Name
-    if (nameA.toLowerCase() !== nameB.toLowerCase()) {
+    if (normalizeForComparison(nameA) !== normalizeForComparison(nameB)) {
       fieldComparisons.push({
         field: 'name',
         label: 'Nombre',

@@ -4,6 +4,11 @@ import { prisma } from '@/lib/prisma';
 import { generatePersonSlug } from '@/lib/people/peopleUtils';
 import RedisClient from '@/lib/redis';
 
+/** Strip diacritics (tildes, dieresis, etc.) for name comparison */
+function normalizeForComparison(str: string): string {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
 interface MergeResolutions {
   [field: string]: 'A' | 'B';
 }
@@ -104,7 +109,7 @@ export async function POST(request: NextRequest) {
         updateData.firstName = chosenPerson.firstName;
         updateData.lastName = chosenPerson.lastName;
         losingName = [losingPerson.firstName, losingPerson.lastName].filter(Boolean).join(' ');
-      } else if (nameA.toLowerCase() !== nameB.toLowerCase()) {
+      } else if (normalizeForComparison(nameA) !== normalizeForComparison(nameB)) {
         // Names differ but no resolution provided, keep survivor's name
         losingName = survivor.id === personA.id
           ? [personB.firstName, personB.lastName].filter(Boolean).join(' ')
@@ -204,13 +209,13 @@ export async function POST(request: NextRequest) {
         where: { personId: survivor.id }
       });
       const survivorAltNameMap = new Map(
-        survivorAltNames.map(a => [a.fullName.toLowerCase(), a.id])
+        survivorAltNames.map(a => [normalizeForComparison(a.fullName), a.id])
       );
 
       const altNameIdMap: Record<number, number> = {};
 
       for (const altName of absorbedAltNames) {
-        const existingId = survivorAltNameMap.get(altName.fullName.toLowerCase());
+        const existingId = survivorAltNameMap.get(normalizeForComparison(altName.fullName));
         if (existingId) {
           // Duplicate - map old to existing, then update references and delete
           altNameIdMap[altName.id] = existingId;
@@ -233,12 +238,12 @@ export async function POST(request: NextRequest) {
             data: { personId: survivor.id }
           });
           altNameIdMap[altName.id] = altName.id;
-          survivorAltNameMap.set(altName.fullName.toLowerCase(), altName.id);
+          survivorAltNameMap.set(normalizeForComparison(altName.fullName), altName.id);
         }
       }
 
       // Add losing name as alt name if not already present
-      if (losingName && losingName.trim() && !survivorAltNameMap.has(losingName.toLowerCase())) {
+      if (losingName && losingName.trim() && !survivorAltNameMap.has(normalizeForComparison(losingName))) {
         // Also check it's not the same as survivor's current name
         const survivorName = [survivor.firstName, survivor.lastName].filter(Boolean).join(' ');
         // After name resolution, the survivor's name might have changed
@@ -246,7 +251,7 @@ export async function POST(request: NextRequest) {
           ? [updateData.firstName, updateData.lastName].filter(Boolean).join(' ')
           : survivorName;
 
-        if (losingName.toLowerCase() !== finalSurvivorName.toLowerCase()) {
+        if (normalizeForComparison(losingName) !== normalizeForComparison(finalSurvivorName)) {
           await tx.personAlternativeName.create({
             data: { personId: survivor.id, fullName: losingName.trim() }
           });
