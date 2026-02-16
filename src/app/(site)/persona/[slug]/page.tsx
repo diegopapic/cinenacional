@@ -1191,7 +1191,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                     >
                       ?
                     </button>
-                    <div className="absolute right-0 md:left-0 md:right-auto top-full mt-2 w-72 p-3 bg-muted border border-border/30 rounded-lg shadow-xl text-sm text-muted-foreground font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="absolute right-0 md:left-0 md:right-auto top-full mt-2 w-72 p-3 bg-muted border border-border/30 rounded-lg shadow-xl text-xs leading-relaxed text-muted-foreground/80 font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                       Esta filmografía incluye únicamente películas argentinas o coproducciones con participación de Argentina. Los trabajos realizados exclusivamente en el exterior no están incluidos.
                     </div>
                   </div>
@@ -1234,7 +1234,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                     >
                       ?
                     </button>
-                    <div className="absolute right-0 md:left-0 md:right-auto top-full mt-2 w-72 p-3 bg-muted border border-border/30 rounded-lg shadow-xl text-sm text-muted-foreground font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="absolute right-0 md:left-0 md:right-auto top-full mt-2 w-72 p-3 bg-muted border border-border/30 rounded-lg shadow-xl text-xs leading-relaxed text-muted-foreground/80 font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                       Esta filmografía incluye únicamente películas argentinas o coproducciones con participación de Argentina. Los trabajos realizados exclusivamente en el exterior no están incluidos.
                     </div>
                   </div>
