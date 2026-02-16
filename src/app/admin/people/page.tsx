@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { Metadata } from 'next';
 import { PeopleTable } from '@/components/admin/people/PeopleTable';
 import Link from 'next/link';
-import { Plus, Users, Loader2 } from 'lucide-react';
+import { Plus, Users, Loader2, Merge } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Gestión de Personas | Admin',
@@ -28,8 +28,15 @@ export default function PeoplePage() {
               </p>
             </div>
             
-            <div className="mt-4 sm:mt-0">
-              <Link 
+            <div className="mt-4 sm:mt-0 flex gap-2">
+              <Link
+                href="/admin/people/merge"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <Merge className="w-5 h-5" />
+                Merge
+              </Link>
+              <Link
                 href="/admin/people/new"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
