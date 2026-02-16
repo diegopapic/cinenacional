@@ -8,7 +8,7 @@ interface MovieHeroProps {
   title: string;
   year: number | null;
   duration: number;
-  genres: string[];
+  genres: Array<{ id: number; name: string }>;
   posterUrl?: string | null;
   premiereVenues: string;
   releaseDate?: {
@@ -177,7 +177,19 @@ export function MovieHero({
             {genres.length > 0 && (
               <>
                 <span>•</span>
-                <span>{genres.join(', ')}</span>
+                <span>
+                  {genres.map((g, i) => (
+                    <span key={g.id}>
+                      {i > 0 && ', '}
+                      <Link
+                        href={`/listados/peliculas?genreId=${g.id}`}
+                        className="hover:text-cine-accent transition-colors"
+                      >
+                        {g.name}
+                      </Link>
+                    </span>
+                  ))}
+                </span>
               </>
             )}
             {ratingAbbreviation && (
