@@ -128,7 +128,11 @@ export function FilmTechnical({
             <>
               {coproductionCountries.map((c, i) => (
                 <span key={c.id}>
-                  {i > 0 && <span className="text-muted-foreground/20">, </span>}
+                  {i > 0 && (
+                    <span className="text-muted-foreground/40">
+                      {i === coproductionCountries.length - 1 ? ' y ' : ', '}
+                    </span>
+                  )}
                   <Link
                     href={`/listados/peliculas?countryId=${c.id}`}
                     className="text-foreground/80 transition-colors hover:text-accent"
