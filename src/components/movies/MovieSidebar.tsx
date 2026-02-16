@@ -1,6 +1,8 @@
 // src/components/movies/MovieSidebar.tsx
 'use client';
 
+import Link from 'next/link';
+
 interface MovieSidebarProps {
   year: number | null;
   releaseYear?: number | null;
@@ -88,7 +90,17 @@ export function MovieSidebar({
                 Coproducción con:
               </span>
               <span className="ml-2 text-white">
-                {countries.map(c => c.name).join(', ')}
+                {countries.map((c, i) => (
+                  <span key={c.id}>
+                    {i > 0 && ', '}
+                    <Link
+                      href={`/listados/peliculas?countryId=${c.id}`}
+                      className="text-cine-accent hover:underline"
+                    >
+                      {c.name}
+                    </Link>
+                  </span>
+                ))}
               </span>
             </div>
           )}
