@@ -17,6 +17,11 @@ module.exports = {
         'cine-gray': '#1a2332',
         'cine-accent': '#3b82f6',
         'cine-gold': '#60a5fa',
+        background: oklchWithAlpha('0.14 0.005 260'),
+        foreground: oklchWithAlpha('0.95 0.005 260'),
+        'muted-foreground': oklchWithAlpha('0.65 0.01 260'),
+        muted: oklchWithAlpha('0.25 0.005 260'),
+        border: oklchWithAlpha('0.40 0.005 260'),
         nav: {
           DEFAULT: oklchWithAlpha('0.18 0.005 250'),
           foreground: oklchWithAlpha('0.88 0.005 80'),

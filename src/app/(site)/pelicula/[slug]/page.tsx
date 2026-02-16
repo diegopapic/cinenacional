@@ -48,6 +48,7 @@ async function getMovieData(slug: string) {
         trailerUrl: true,
         soundType: true,
         stage: true,
+        tipoDuracion: true,
         dataCompleteness: true,
         notes: true,
         tagline: true,
@@ -428,7 +429,8 @@ export default async function MoviePage({ params }: PageProps) {
   // Procesar temas con estructura correcta
   const themes = movie.themes?.map((t: any) => ({
     id: t.theme.id,
-    name: t.theme.name
+    name: t.theme.name,
+    slug: t.theme.slug
   })).filter(Boolean) || [];
 
   // Procesar países coproductores (excluyendo Argentina si es el único)
@@ -595,6 +597,15 @@ export default async function MoviePage({ params }: PageProps) {
       });
     });
 
+  // Extraer directores para el hero
+  const directors = allCrew
+    .filter((c: any) => c.roleId === 2)
+    .map((c: any) => ({
+      id: c.personId,
+      name: c.name,
+      slug: c.personSlug || '',
+    }));
+
   if (process.env.NODE_ENV === 'development') {
     console.log('Departamentos en crew principal:', Object.keys(basicCrewByDepartment));
     console.log('Departamentos en crew completo:', Object.keys(fullCrewByDepartment));
@@ -614,7 +625,6 @@ export default async function MoviePage({ params }: PageProps) {
       }}
       displayYear={displayYear}
       totalDuration={totalDuration}
-      durationSeconds={movie.durationSeconds}
       genres={genres}
       themes={themes}
       countries={countries}
@@ -637,6 +647,8 @@ export default async function MoviePage({ params }: PageProps) {
       }
       heroBackgroundImage={heroBackgroundImage}
       galleryImages={galleryImages}
+      directors={directors}
+      productionType={movie.tipoDuracion}
     />
   );
 }

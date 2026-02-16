@@ -315,6 +315,15 @@ body {
   100% { transform: translateX(100%); }
 }
 
+/* Ocultar scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Fix para las páginas de admin */
 /* Sobrescribe el color blanco global para el admin */
 [data-admin="true"] {
