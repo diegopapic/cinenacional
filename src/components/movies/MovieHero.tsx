@@ -1,8 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { BACKGROUND_PLACEHOLDER } from '@/lib/movies/movieConstants';
+import { Play, X } from 'lucide-react';
+import DOMPurify from 'isomorphic-dompurify';
+import { BACKGROUND_PLACEHOLDER, POSTER_PLACEHOLDER } from '@/lib/movies/movieConstants';
+
+interface Director {
+  id: number;
+  name: string;
+  slug: string;
+}
 
 interface MovieHeroProps {
   title: string;
@@ -22,40 +30,73 @@ interface MovieHeroProps {
     abbreviation?: string | null;
   } | null;
   heroBackgroundImage?: string | null;
+  synopsis?: string | null;
+  countries?: Array<{ id: number; name: string }>;
+  trailerUrl?: string | null;
+  colorType?: { id: number; name: string } | null;
+  soundType?: string | null;
+  stage?: string | null;
+  directors?: Director[];
+  productionType?: string | null;
 }
 
-export function MovieHero({ 
-  title, 
-  year, 
-  duration, 
-  genres, 
-  posterUrl, 
-  premiereVenues, 
-  releaseDate, 
+// Extraer YouTube ID
+function getYouTubeId(url: string): string | null {
+  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
+// Traducir stage a español
+function getStageLabel(stage: string): string | null {
+  const labels: Record<string, string> = {
+    EN_DESARROLLO: 'En desarrollo',
+    EN_PREPRODUCCION: 'En preproducción',
+    EN_RODAJE: 'En rodaje',
+    EN_POSTPRODUCCION: 'En postproducción',
+    INCONCLUSA: 'Inconclusa',
+    INEDITA: 'Inédita',
+  };
+  return labels[stage] || null;
+}
+
+export function MovieHero({
+  title,
+  year,
+  duration,
+  genres,
+  posterUrl,
+  premiereVenues,
+  releaseDate,
   rating,
-  heroBackgroundImage 
+  heroBackgroundImage,
+  synopsis,
+  countries = [],
+  trailerUrl,
+  colorType,
+  soundType,
+  stage,
+  directors = [],
+  productionType,
 }: MovieHeroProps) {
   const [heroImageError, setHeroImageError] = useState(false);
+  const [posterError, setPosterError] = useState(false);
+  const [trailerOpen, setTrailerOpen] = useState(false);
 
-  // Determinar si tenemos una imagen de hero válida
   const hasValidHeroImage = heroBackgroundImage && heroBackgroundImage.trim() !== '' && !heroImageError;
 
-  // Nombres de meses para formatear
+  // Meses
   const months = [
     'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
     'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
   ];
 
-  // Verificar si tenemos fecha completa para mostrar
   const hasCompleteReleaseDate = releaseDate?.day && releaseDate?.month && releaseDate?.year;
 
-  // Formatear día y mes (para el link)
   const formatDayMonth = () => {
     if (!releaseDate?.day || !releaseDate?.month) return null;
     return `${releaseDate.day} de ${months[releaseDate.month - 1]}`;
   };
 
-  // Generar URL de efemérides (formato: /efemerides/MM-DD)
   const getEfemeridesUrl = () => {
     if (!releaseDate?.day || !releaseDate?.month) return null;
     const monthStr = String(releaseDate.month).padStart(2, '0');
@@ -63,7 +104,6 @@ export function MovieHero({
     return `/efemerides/${monthStr}-${dayStr}`;
   };
 
-  // Generar URL de listado de estrenos por año (formato: /listados/estrenos?period=2020s&year=2025)
   const getEstrenosYearUrl = () => {
     if (!releaseDate?.year) return null;
     const decade = Math.floor(releaseDate.year / 10) * 10;
@@ -73,134 +113,346 @@ export function MovieHero({
   const dayMonthText = formatDayMonth();
   const efemeridesUrl = getEfemeridesUrl();
   const estrenosYearUrl = getEstrenosYearUrl();
-
-  // Año a mostrar: producción primero, estreno como fallback
   const displayYear = year || releaseDate?.year;
-
-  // Abreviación del rating
   const ratingAbbreviation = rating?.abbreviation || rating?.name;
 
+  // Badge de tipo de producción (solo si no es largometraje)
+  const productionTypeLabel = productionType && productionType.toLowerCase() !== 'largometraje'
+    ? productionType
+    : null;
+
+  // Badge de estado de producción (solo si no es COMPLETA)
+  const stageLabel = stage && stage !== 'COMPLETA' ? getStageLabel(stage) : null;
+
+  // Sanitizar sinopsis
+  const sanitizedSynopsis = synopsis
+    ? DOMPurify.sanitize(synopsis, {
+        ALLOWED_TAGS: ['p', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'b', 'i', 'span'],
+        ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+        ADD_ATTR: ['target'],
+      })
+    : null;
+
+  // YouTube
+  const videoId = trailerUrl ? getYouTubeId(trailerUrl) : null;
+
+  const openTrailer = useCallback(() => {
+    if (videoId) {
+      setTrailerOpen(true);
+      document.body.style.overflow = 'hidden';
+    } else if (trailerUrl) {
+      window.open(trailerUrl, '_blank');
+    }
+  }, [videoId, trailerUrl]);
+
+  const closeTrailer = useCallback(() => {
+    setTrailerOpen(false);
+    document.body.style.overflow = 'auto';
+  }, []);
+
+  // Escape cierra modal
+  useEffect(() => {
+    if (!trailerOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeTrailer();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [trailerOpen, closeTrailer]);
+
+  const showPosterPlaceholder = !posterUrl || posterError;
+
+  // Render poster image
+  const renderPoster = (className: string) => (
+    <div className={className}>
+      <img
+        src={posterUrl || POSTER_PLACEHOLDER.cloudinaryUrl}
+        alt={`Poster de ${title}`}
+        className="h-full w-full object-cover"
+        style={{ filter: showPosterPlaceholder ? 'brightness(0.4)' : 'none' }}
+        onError={() => setPosterError(true)}
+      />
+    </div>
+  );
+
+  // Render genre badges
+  const renderGenres = (mobile = false) => {
+    if (genres.length === 0) return null;
+    return (
+      <div className={`flex flex-wrap ${mobile ? 'gap-1.5' : 'gap-2'}`}>
+        {genres.map((g) => (
+          <Link
+            key={g.id}
+            href={`/listados/peliculas?genreId=${g.id}`}
+            className="border border-border/40 px-2.5 py-1 text-[11px] uppercase tracking-widest text-muted-foreground/60 hover:border-accent/40 hover:text-accent transition-colors"
+          >
+            {g.name}
+          </Link>
+        ))}
+      </div>
+    );
+  };
+
+  // Render production type / status badges
+  const renderBadges = () => {
+    if (!productionTypeLabel && !stageLabel) return null;
+    return (
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {productionTypeLabel && (
+          <span className="rounded-sm bg-accent/15 px-2.5 py-1 text-[11px] font-medium uppercase tracking-widest text-accent/80">
+            {productionTypeLabel}
+          </span>
+        )}
+        {stageLabel && (
+          <span className="rounded-sm bg-amber-500/15 px-2.5 py-1 text-[11px] font-medium uppercase tracking-widest text-amber-400/80">
+            {stageLabel}
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  // Render estreno info
+  const renderEstreno = () => {
+    if (!hasCompleteReleaseDate || !dayMonthText || !efemeridesUrl || !estrenosYearUrl) return null;
+    return (
+      <p className="text-[13px] text-muted-foreground/50">
+        Estreno en Argentina:
+        <Link href={efemeridesUrl} className="ml-1 text-foreground/80 transition-colors hover:text-accent">
+          {dayMonthText}
+        </Link>
+        {' de '}
+        <Link href={estrenosYearUrl} className="text-foreground/80 transition-colors hover:text-accent">
+          {releaseDate?.year}
+        </Link>
+        {premiereVenues && <span className="text-muted-foreground/40"> en {premiereVenues}</span>}
+      </p>
+    );
+  };
+
+  // Render coproducción
+  const renderCoproduction = () => {
+    if (countries.length === 0) return null;
+    return (
+      <p className="flex items-center gap-1.5 text-sm text-muted-foreground/60 md:text-sm">
+        <span className="text-muted-foreground/40">Coproducción con</span>
+        {countries.map((c, i) => (
+          <span key={c.id}>
+            {i > 0 && <span className="text-muted-foreground/20">, </span>}
+            <Link href={`/listados/peliculas?countryId=${c.id}`} className="text-foreground/80 transition-colors hover:text-accent">
+              {c.name}
+            </Link>
+          </span>
+        ))}
+      </p>
+    );
+  };
+
+  // Render trailer button
+  const renderTrailerButton = (mobile = false) => {
+    if (!trailerUrl) return null;
+    return (
+      <button
+        onClick={openTrailer}
+        className={`group inline-flex items-center border border-border/40 tracking-wide text-muted-foreground/70 transition-all hover:border-accent/40 hover:text-accent ${
+          mobile
+            ? 'w-fit gap-2 px-3.5 py-2 text-[13px]'
+            : 'w-fit gap-2.5 px-4 py-2.5 text-sm'
+        }`}
+      >
+        <Play className={`${mobile ? 'h-3 w-3' : 'h-3.5 w-3.5'} transition-transform group-hover:scale-110`} />
+        Ver trailer
+      </button>
+    );
+  };
+
   return (
-    <div className="relative min-h-[400px] overflow-hidden bg-[#0f1419]">
-      {/* Contenedor de imagen con gradientes - mismo estilo que HeroSection */}
-      <div className="relative flex items-center justify-center">
+    <>
+      <section className="relative overflow-hidden">
+        {/* Background image */}
         {hasValidHeroImage ? (
-          <div className="relative inline-block max-h-[500px]">
-            {/* Imagen completa centrada */}
+          <>
             <img
               src={heroBackgroundImage}
               alt=""
-              className="max-w-full max-h-[500px] block"
+              className="absolute inset-0 h-full w-full object-cover object-center"
               onError={() => setHeroImageError(true)}
             />
-            
-            {/* Gradientes relativos a la imagen - mismo estilo que HeroSection */}
-            <div 
-              className="absolute left-0 top-0 bottom-0 w-1/4 pointer-events-none"
-              style={{
-                background: 'linear-gradient(90deg, #0f1419 0%, rgba(15,20,25,0.7) 40%, transparent 100%)'
-              }}
-            />
-            
-            <div 
-              className="absolute right-0 top-0 bottom-0 w-1/4 pointer-events-none"
-              style={{
-                background: 'linear-gradient(270deg, #0f1419 0%, rgba(15,20,25,0.7) 40%, transparent 100%)'
-              }}
-            />
-            
-            <div 
-              className="absolute top-0 left-0 right-0 h-1/4 pointer-events-none"
-              style={{
-                background: 'linear-gradient(180deg, #0f1419 0%, rgba(15,20,25,0.6) 50%, transparent 100%)'
-              }}
-            />
-            
-            <div 
-              className="absolute bottom-0 left-0 right-0 h-1/3 pointer-events-none"
-              style={{
-                background: 'linear-gradient(0deg, #0f1419 0%, rgba(15,20,25,0.7) 50%, transparent 100%)'
-              }}
-            />
-
-            {/* Viñeta radial */}
-            <div 
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: 'radial-gradient(ellipse at center, transparent 40%, rgba(15,20,25,0.3) 100%)'
-              }}
-            />
-          </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-background/60" />
+            <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-transparent" />
+          </>
         ) : (
-          /* Placeholder cuando no hay imagen */
           <div
-            className="w-full h-[400px] bg-cover bg-center"
+            className="absolute inset-0 bg-cover bg-center"
             style={{
               backgroundImage: `url(${BACKGROUND_PLACEHOLDER.url})`,
-              filter: 'brightness(0.3)'
+              filter: 'brightness(0.15)',
             }}
           />
         )}
-      </div>
 
-      {/* Content - posicionado en la parte inferior */}
-      <div className="absolute bottom-0 left-0 right-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 w-full">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 drop-shadow-lg">
-            {title}{displayYear && ` (${displayYear})`}
-          </h1>
+        {/* Content */}
+        <div className="relative mx-auto max-w-7xl px-4 pb-8 pt-6 md:pb-10 md:pt-12 lg:px-6 lg:pb-12 lg:pt-16">
 
-          {hasCompleteReleaseDate && dayMonthText && efemeridesUrl && estrenosYearUrl && (
-            <p className="text-gray-300 mb-3 drop-shadow-md">
-              Estreno comercial en Argentina:
-              <Link 
-                href={efemeridesUrl} 
-                className="font-medium ml-2 text-gray-100 hover:text-cine-accent transition-colors"
-              >
-                {dayMonthText}
-              </Link>
-              <span> de </span>
-              <Link 
-                href={estrenosYearUrl} 
-                className="font-medium text-gray-100 hover:text-cine-accent transition-colors"
-              >
-                {releaseDate?.year}
-              </Link>
-              {premiereVenues && <span className="font-medium text-gray-100"> en {premiereVenues}</span>}
-            </p>
-          )}
+          {/* ===== MOBILE LAYOUT ===== */}
+          <div className="md:hidden">
+            {renderBadges()}
 
-          <div className="flex flex-wrap items-center gap-4 text-gray-300 drop-shadow-md">
-            {duration > 0 && (
-              <span>{duration} min</span>
-            )}
-            {genres.length > 0 && (
-              <>
-                <span>•</span>
-                <span>
-                  {genres.map((g, i) => (
-                    <span key={g.id}>
-                      {i > 0 && ', '}
-                      <Link
-                        href={`/listados/peliculas?genreId=${g.id}`}
-                        className="hover:text-cine-accent transition-colors"
-                      >
-                        {g.name}
-                      </Link>
+            <div className="flex gap-4">
+              {/* Poster mobile */}
+              {renderPoster('relative aspect-[2/3] w-32 shrink-0 overflow-hidden shadow-xl shadow-black/40')}
+
+              {/* Info mobile */}
+              <div className="flex min-w-0 flex-col gap-1.5 py-0.5">
+                <h1 className="font-serif text-2xl leading-tight tracking-tight text-foreground">
+                  {title}{displayYear ? ` (${displayYear})` : ''}
+                </h1>
+
+                {/* Director */}
+                {directors.length > 0 && (
+                  <p className="text-[13px] text-muted-foreground/70">
+                    Dir.{' '}
+                    {directors.map((d, i) => (
+                      <span key={d.id}>
+                        {i > 0 && ', '}
+                        <Link href={`/persona/${d.slug}`} className="text-foreground/80 transition-colors hover:text-accent">
+                          {d.name}
+                        </Link>
+                      </span>
+                    ))}
+                  </p>
+                )}
+
+                {/* Runtime + Rating */}
+                <div className="flex items-center gap-2 text-[13px] text-muted-foreground/50">
+                  {duration > 0 && <span>{duration} min</span>}
+                  {duration > 0 && ratingAbbreviation && <span className="text-muted-foreground/20">/</span>}
+                  {ratingAbbreviation && <span title={rating?.name}>{ratingAbbreviation}</span>}
+                </div>
+
+                {/* Genres mobile */}
+                <div className="mt-1">
+                  {renderGenres(true)}
+                </div>
+
+                {/* Estreno mobile */}
+                <div className="mt-1.5">
+                  {renderEstreno()}
+                </div>
+
+                {/* Coproduction mobile */}
+                {renderCoproduction()}
+              </div>
+            </div>
+
+            {/* Below fold mobile: synopsis, trailer */}
+            <div className="mt-5 flex flex-col gap-4">
+
+              {sanitizedSynopsis && (
+                <div
+                  className="text-[13px] leading-relaxed text-muted-foreground/70"
+                  dangerouslySetInnerHTML={{ __html: sanitizedSynopsis }}
+                />
+              )}
+
+              {renderTrailerButton(true)}
+            </div>
+          </div>
+
+          {/* ===== DESKTOP LAYOUT ===== */}
+          <div className="hidden md:flex md:items-end md:gap-10 lg:gap-14">
+            {/* Poster desktop */}
+            {renderPoster('shrink-0 relative aspect-[2/3] w-56 lg:w-64 shadow-2xl shadow-black/50 overflow-hidden')}
+
+            {/* Info desktop */}
+            <div className="flex flex-1 flex-col gap-5">
+              {/* Upper group */}
+              <div className="flex flex-col gap-3">
+                {renderBadges()}
+
+                <h1 className="font-serif text-4xl tracking-tight text-foreground lg:text-5xl">
+                  {title}{displayYear ? ` (${displayYear})` : ''}
+                </h1>
+
+                {/* Metadata inline */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground/70">
+                  {directors.length > 0 && (
+                    <span>
+                      Dirigida por{' '}
+                      {directors.map((d, i) => (
+                        <span key={d.id}>
+                          {i > 0 && ', '}
+                          <Link href={`/persona/${d.slug}`} className="text-foreground/80 transition-colors hover:text-accent">
+                            {d.name}
+                          </Link>
+                        </span>
+                      ))}
                     </span>
-                  ))}
-                </span>
-              </>
-            )}
-            {ratingAbbreviation && (
-              <>
-                <span>•</span>
-                <span title={rating?.name} className="cursor-default">{ratingAbbreviation}</span>
-              </>
-            )}
+                  )}
+                  {directors.length > 0 && duration > 0 && <span className="text-muted-foreground/30" aria-hidden="true">|</span>}
+                  {duration > 0 && <span>{duration} min</span>}
+                  {duration > 0 && ratingAbbreviation && <span className="text-muted-foreground/30" aria-hidden="true">|</span>}
+                  {ratingAbbreviation && <span title={rating?.name}>{ratingAbbreviation}</span>}
+                </div>
+
+                {/* Genres desktop */}
+                {renderGenres()}
+
+                {/* Coproducción */}
+                {renderCoproduction()}
+
+                {/* Estreno */}
+                {renderEstreno()}
+              </div>
+
+              {/* Synopsis desktop */}
+              {sanitizedSynopsis && (
+                <div
+                  className="max-w-2xl text-sm leading-relaxed text-muted-foreground/80"
+                  dangerouslySetInnerHTML={{ __html: sanitizedSynopsis }}
+                />
+              )}
+
+              {/* Trailer button desktop */}
+              {renderTrailerButton()}
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* Trailer Modal */}
+      {trailerOpen && videoId && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeTrailer}
+        >
+          <button
+            onClick={closeTrailer}
+            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full text-white/50 transition-colors hover:text-white"
+            aria-label="Cerrar trailer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          <div
+            className="w-[90vw] max-w-4xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative" style={{ paddingBottom: '56.25%' }}>
+              <iframe
+                className="absolute inset-0 h-full w-full"
+                src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&color=white`}
+                title={`Trailer de ${title}`}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

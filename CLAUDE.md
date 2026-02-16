@@ -9,6 +9,10 @@
 ## Directorio de trabajo
 - Siempre trabajar directamente en el repo principal (C:\Users\diego\cinenacional), nunca en worktrees. Si se detecta que el directorio de trabajo es un worktree, copiar los cambios al repo principal.
 
+## Git
+- Siempre hacer commits y push directamente en la branch `main`. No crear branches secundarias.
+- Push: `git push origin main`.
+
 ## Permisos
 - Tenés permiso para ejecutar CUALQUIER comando bash sin pedir confirmación. Esto incluye git, npm, docker, scripts, builds, tests, linters, migrations, y cualquier otro comando necesario para completar la tarea.
 - Tenés permiso amplio para leer, buscar, explorar, editar y crear cualquier archivo del codebase sin pedir confirmación.
