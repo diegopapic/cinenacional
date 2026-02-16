@@ -167,7 +167,7 @@ export function ImageGallery({ images, movieTitle }: ImageGalleryProps) {
 
             {/* Caption + dots */}
             <div className="mt-3 flex flex-col items-center gap-2">
-              <p className="text-[11px] text-muted-foreground/50 line-clamp-1 text-center px-4">
+              <p className="text-[13px] text-muted-foreground/50 line-clamp-1 text-center px-4">
                 {getCaption(images[mobileIndex] || images[0])}
               </p>
               {images.length > 1 && (
