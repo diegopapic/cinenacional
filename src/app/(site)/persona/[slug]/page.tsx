@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { formatPartialDate, MONTHS } from '@/lib/shared/dateUtils';
 import DOMPurify from 'isomorphic-dompurify';
 import { trackPageView } from '@/hooks/usePageView';
@@ -190,7 +191,7 @@ export default function PersonPage({ params }: PersonPageProps) {
             {index > 0 && ', '}
             <Link
               href={getUrl(part.id)}
-              className="text-gray-300 hover:text-blue-400 transition-colors"
+              className="text-muted-foreground hover:text-accent transition-colors"
             >
               {part.name}
             </Link>
@@ -493,10 +494,10 @@ export default function PersonPage({ params }: PersonPageProps) {
 
   if (loading) {
     return (
-      <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto"></div>
-          <p className="mt-4 text-gray-400">Cargando...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Cargando...</p>
         </div>
       </div>
     );
@@ -553,6 +554,23 @@ export default function PersonPage({ params }: PersonPageProps) {
     asSelf: uniqueMoviesAsSelf.size,
     asCrew: uniqueMoviesAsCrew.size
   };
+
+  // Badges de rol para el hero (reemplaza los stats numéricos)
+  const roleBadges: string[] = [];
+  if (stats.asActor > 0) {
+    roleBadges.push(person.gender === 'FEMALE' ? 'Actriz' : 'Actor');
+  }
+  if (stats.asSelf > 0) {
+    roleBadges.push(person.gender === 'FEMALE' ? 'Aparición como sí misma' : 'Aparición como sí mismo');
+  }
+  if (filmography?.crewRoles) {
+    const uniqueCrewRoles = [...new Set(filmography.crewRoles.map((r: CrewRole) => r.role?.name).filter(Boolean))] as string[];
+    uniqueCrewRoles.forEach((roleName: string) => {
+      if (!roleBadges.includes(roleName)) {
+        roleBadges.push(roleName);
+      }
+    });
+  }
 
   // ✅ ACTUALIZADO: Determinar el badge a mostrar (incluyendo stages en desarrollo)
   const getMovieBadge = (movie: Movie): { text: string; color: string } | null => {
@@ -637,37 +655,37 @@ export default function PersonPage({ params }: PersonPageProps) {
     const badge = getMovieBadge(movie);
 
     return (
-      <div key={`${movie.id}-${index}`} className="py-4 hover:bg-gray-800/30 transition-colors group">
+      <div key={`${movie.id}-${index}`} className="py-4 hover:bg-muted/20 transition-colors group">
         <div className="flex items-center gap-4">
-          <span className="text-sm w-12 text-left text-gray-500">
+          <span className="text-[11px] md:text-[12px] w-12 text-left tabular-nums text-muted-foreground/40">
             {displayYear}
           </span>
           <div className="flex-grow">
             <div className="flex items-center gap-2 flex-wrap">
               <Link
                 href={`/pelicula/${movie.slug}`}
-                className="text-lg text-white hover:text-blue-400 transition-colors inline-block"
+                className="text-[13px] md:text-sm font-medium leading-snug text-foreground hover:text-accent transition-colors inline-block"
               >
                 {movie.title}
               </Link>
 
               {/* BADGE */}
               {badge && (
-                <span className={`text-xs px-2 py-0.5 rounded-full ${badge.color}`}>
+                <span className={`text-[10px] uppercase tracking-widest font-medium px-2 py-0.5 rounded-full ${badge.color}`}>
                   {badge.text}
                 </span>
               )}
 
               {/* Roles para "Todos los roles" */}
               {showRoles && item.rolesDisplay && item.rolesDisplay.length > 0 && (
-                <span className="text-sm text-gray-500">
+                <span className="text-[12px] text-muted-foreground/50">
                   ({item.rolesDisplay.join('; ')})
                 </span>
               )}
 
               {/* Personaje para Actuación */}
               {showCharacter && item.characterName && (
-                <span className="text-sm text-gray-500">
+                <span className="text-[12px] text-muted-foreground/50">
                   — {item.characterName}
                 </span>
               )}
@@ -679,70 +697,81 @@ export default function PersonPage({ params }: PersonPageProps) {
   };
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen">
+    <div className="min-h-screen">
       {/* Person Header Section */}
-      <section className="relative bg-gradient-to-b from-gray-800 to-gray-900 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row gap-8 md:items-start">
-            {/* Portrait */}
-            <div className="md:flex-shrink-0">
-              <div className="relative">
-                <div className="w-full aspect-[3/4] md:w-64 md:h-80 md:aspect-auto rounded-lg overflow-hidden shadow-2xl">
+      <section>
+        <div className="max-w-7xl mx-auto px-4 lg:px-6 pt-6 pb-10 md:pt-12 md:pb-16 lg:pt-16 lg:pb-20">
+
+          {/* ===== MOBILE LAYOUT ===== */}
+          <div className="md:hidden">
+            <div className="flex gap-4">
+              {/* Portrait */}
+              <div className="w-28 shrink-0">
+                <div className="relative aspect-[3/4] overflow-hidden rounded-sm shadow-xl shadow-black/40">
                   {person.photoUrl ? (
-                    <img
+                    <Image
                       src={person.photoUrl}
                       alt={fullName}
-                      className="w-full h-full object-cover"
+                      fill
+                      priority
+                      className="object-cover"
+                      sizes="112px"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gray-800 flex flex-col justify-center items-center">
-                      <svg className="w-16 h-16 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex h-full w-full flex-col items-center justify-center bg-muted/50">
+                      <svg className="w-10 h-10 text-muted-foreground/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
-                      <p className="text-sm text-gray-500">Foto no disponible</p>
                     </div>
                   )}
                 </div>
               </div>
-            </div>
 
-            {/* Person Info */}
-            <div className="flex-grow min-w-0">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">{fullName}</h1>
+              {/* Text column */}
+              <div className="flex min-w-0 flex-col gap-1.5 py-0.5">
+                <h1 className="font-serif text-2xl leading-tight text-foreground">{fullName}</h1>
 
-              {person.realName && person.realName !== fullName && (
-                <p className="text-gray-400 mb-2">
-                  <span className="text-gray-500">Nombre real: </span>
-                  {person.realName}
-                </p>
-              )}
+                {person.realName && person.realName !== fullName && (
+                  <p className="text-[11px] leading-snug">
+                    <span className="text-muted-foreground/40">Nombre real: </span>
+                    <span className="text-muted-foreground/50">{person.realName}</span>
+                  </p>
+                )}
 
-              {/* ✅ NUEVO: Mostrar nombres alternativos */}
-              {person.alternativeNames && person.alternativeNames.length > 0 && (
-                <p className="text-gray-400 mb-2">
-                  <span className="text-gray-500">{getCreditedLabel(person.gender)}: </span>
-                  {person.alternativeNames.map((alt: AlternativeName) => alt.fullName).join(', ')}
-                </p>
-              )}
+                {person.alternativeNames && person.alternativeNames.length > 0 && (
+                  <p className="text-[11px] leading-snug">
+                    <span className="text-muted-foreground/40">{getCreditedLabel(person.gender)}: </span>
+                    <span className="text-muted-foreground/50">{person.alternativeNames.map((alt: AlternativeName) => alt.fullName).join(', ')}</span>
+                  </p>
+                )}
 
-              <div className="space-y-3 text-gray-300">
+                {roleBadges.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {roleBadges.map((role) => (
+                      <span key={role} className="border border-border/40 px-2 py-0.5 text-[10px] uppercase tracking-widest text-muted-foreground/60">
+                        {role}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 {birthDateFormatted && (
-                  <div className="text-sm">
-                    <span className="text-gray-500">
+                  <div className="text-[12px] leading-snug">
+                    <span className="text-muted-foreground/40">
                       {person.birthDay ? 'Nació el ' : 'Nació en '}
                     </span>
                     {person.birthDay && person.birthMonth ? (
                       <>
                         <Link
                           href={getEfemeridesUrl(person.birthMonth, person.birthDay)}
-                          className="text-gray-300 hover:text-blue-400 transition-colors decoration-gray-600 hover:decoration-blue-400"
+                          className="text-muted-foreground hover:text-accent transition-colors"
                         >
                           {person.birthDay} de {MONTHS[person.birthMonth - 1].label.toLowerCase()}
                         </Link>
-                        <span className="text-gray-500"> de </span>
+                        <span className="text-muted-foreground/40"> de </span>
                         <Link
                           href={getBirthYearUrl(person.birthYear)}
-                          className="text-gray-300 hover:text-blue-400 transition-colors"
+                          className="text-muted-foreground hover:text-accent transition-colors"
                         >
                           {person.birthYear}
                         </Link>
@@ -751,14 +780,14 @@ export default function PersonPage({ params }: PersonPageProps) {
                       <>
                         <Link
                           href={getEfemeridesUrl(person.birthMonth, 1)}
-                          className="text-gray-300 hover:text-blue-400 transition-colors"
+                          className="text-muted-foreground hover:text-accent transition-colors"
                         >
                           {MONTHS[person.birthMonth - 1].label.toLowerCase()}
                         </Link>
-                        <span className="text-gray-500"> de </span>
+                        <span className="text-muted-foreground/40"> de </span>
                         <Link
                           href={getBirthYearUrl(person.birthYear)}
-                          className="text-gray-300 hover:text-blue-400 transition-colors"
+                          className="text-muted-foreground hover:text-accent transition-colors"
                         >
                           {person.birthYear}
                         </Link>
@@ -766,14 +795,14 @@ export default function PersonPage({ params }: PersonPageProps) {
                     ) : (
                       <Link
                         href={getBirthYearUrl(person.birthYear)}
-                        className="text-gray-300 hover:text-blue-400 transition-colors"
+                        className="text-muted-foreground hover:text-accent transition-colors"
                       >
                         {person.birthYear}
                       </Link>
                     )}
                     {person.birthLocation && (
                       <>
-                        <span className="text-gray-500"> en </span>
+                        <span className="text-muted-foreground/40"> en </span>
                         {renderLocationWithLinks(person.birthLocation, 'birth')}
                       </>
                     )}
@@ -781,22 +810,22 @@ export default function PersonPage({ params }: PersonPageProps) {
                 )}
 
                 {deathDateFormatted && (
-                  <div className="text-sm">
-                    <span className="text-gray-500">
+                  <div className="text-[12px] leading-snug">
+                    <span className="text-muted-foreground/40">
                       {person.deathDay ? 'Murió el ' : 'Murió en '}
                     </span>
                     {person.deathDay && person.deathMonth ? (
                       <>
                         <Link
                           href={getEfemeridesUrl(person.deathMonth, person.deathDay)}
-                          className="text-gray-300 hover:text-blue-400 transition-colors decoration-gray-600 hover:decoration-blue-400"
+                          className="text-muted-foreground hover:text-accent transition-colors"
                         >
                           {person.deathDay} de {MONTHS[person.deathMonth - 1].label.toLowerCase()}
                         </Link>
-                        <span className="text-gray-500"> de </span>
+                        <span className="text-muted-foreground/40"> de </span>
                         <Link
                           href={getDeathYearUrl(person.deathYear)}
-                          className="text-gray-300 hover:text-blue-400 transition-colors"
+                          className="text-muted-foreground hover:text-accent transition-colors"
                         >
                           {person.deathYear}
                         </Link>
@@ -805,14 +834,14 @@ export default function PersonPage({ params }: PersonPageProps) {
                       <>
                         <Link
                           href={getEfemeridesUrl(person.deathMonth, 1)}
-                          className="text-gray-300 hover:text-blue-400 transition-colors"
+                          className="text-muted-foreground hover:text-accent transition-colors"
                         >
                           {MONTHS[person.deathMonth - 1].label.toLowerCase()}
                         </Link>
-                        <span className="text-gray-500"> de </span>
+                        <span className="text-muted-foreground/40"> de </span>
                         <Link
                           href={getDeathYearUrl(person.deathYear)}
-                          className="text-gray-300 hover:text-blue-400 transition-colors"
+                          className="text-muted-foreground hover:text-accent transition-colors"
                         >
                           {person.deathYear}
                         </Link>
@@ -820,14 +849,14 @@ export default function PersonPage({ params }: PersonPageProps) {
                     ) : (
                       <Link
                         href={getDeathYearUrl(person.deathYear)}
-                        className="text-gray-300 hover:text-blue-400 transition-colors"
+                        className="text-muted-foreground hover:text-accent transition-colors"
                       >
                         {person.deathYear}
                       </Link>
                     )}
                     {person.deathLocation && (
                       <>
-                        <span className="text-gray-500"> en </span>
+                        <span className="text-muted-foreground/40"> en </span>
                         {renderLocationWithLinks(person.deathLocation, 'death')}
                       </>
                     )}
@@ -835,20 +864,19 @@ export default function PersonPage({ params }: PersonPageProps) {
                 )}
 
                 {person.nationalities && person.nationalities.length > 0 && (
-                  <div className="text-sm mb-4">
-                    <span className="text-gray-500">Nacionalidad: </span>
+                  <div className="text-[12px] leading-snug">
+                    <span className="text-muted-foreground/40">Nacionalidad: </span>
                     {person.nationalities
                       .map((nat: any, index: number) => {
                         const display = nat.location?.gentilicio || nat.location?.name;
                         const locationId = nat.location?.id || nat.locationId;
                         if (!display) return null;
-
                         return (
                           <span key={locationId || index}>
                             {index > 0 && ', '}
                             <Link
                               href={getNationalityUrl(locationId)}
-                              className="text-white hover:text-blue-400 transition-colors"
+                              className="text-foreground hover:text-accent transition-colors"
                             >
                               {display}
                             </Link>
@@ -858,83 +886,276 @@ export default function PersonPage({ params }: PersonPageProps) {
                       .filter(Boolean)}
                   </div>
                 )}
+              </div>
+            </div>
 
-                {person.biography && (
-                  <div
-                    className="mt-6 text-gray-300 leading-relaxed max-w-3xl serif-body"
-                    dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(person.biography, {
-                        ALLOWED_TAGS: ['p', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'b', 'i', 'span'],
-                        ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
-                        ADD_ATTR: ['target'],
-                      })
-                    }}
+            {/* Biography below the row */}
+            {person.biography && (
+              <div
+                className="mt-5 text-[13px] leading-relaxed text-muted-foreground/70 serif-body"
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(person.biography, {
+                    ALLOWED_TAGS: ['p', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'b', 'i', 'span'],
+                    ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+                    ADD_ATTR: ['target'],
+                  })
+                }}
+              />
+            )}
+
+            {/* External links */}
+            {person.links && person.links.length > 0 && (
+              <div className="flex gap-4 mt-4">
+                {person.links.map((link: any) => (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[12px] text-muted-foreground/50 hover:text-accent transition-colors"
+                    title={link.type}
+                  >
+                    {link.type === 'IMDB' ? 'IMDb' :
+                      link.type === 'WIKIPEDIA' ? 'Wikipedia' :
+                        link.type === 'OFFICIAL_WEBSITE' ? 'Sitio Web' :
+                          link.type === 'INSTAGRAM' ? 'Instagram' :
+                            link.type === 'TWITTER' ? 'Twitter' : link.type}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ===== DESKTOP LAYOUT ===== */}
+          <div className="hidden md:flex md:items-start md:gap-10 lg:gap-14">
+            {/* Portrait */}
+            <div className="w-48 lg:w-56 shrink-0">
+              <div className="relative aspect-[3/4] overflow-hidden rounded-sm shadow-2xl shadow-black/50">
+                {person.photoUrl ? (
+                  <Image
+                    src={person.photoUrl}
+                    alt={fullName}
+                    fill
+                    priority
+                    className="object-cover"
+                    sizes="(min-width: 1024px) 224px, 192px"
                   />
-                )}
-
-                {/* Quick Stats */}
-                <div className="flex gap-8 mt-8">
-                  <div className="text-center">
-                    <div className="text-3xl font-light text-blue-400">{stats.totalMovies}</div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">Películas</div>
-                  </div>
-                  {stats.asActor > 0 && (
-                    <div className="text-center">
-                      <div className="text-3xl font-light text-blue-400">{stats.asActor}</div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">
-                        {person.gender === 'FEMALE' ? 'Como Actriz' : 'Como Actor'}
-                      </div>
-                    </div>
-                  )}
-                  {stats.asSelf > 0 && (
-                    <div className="text-center">
-                      <div className="text-3xl font-light text-blue-400">{stats.asSelf}</div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">
-                        {person.gender === 'FEMALE' ? 'Como sí misma' : 'Como sí mismo'}
-                      </div>
-                    </div>
-                  )}
-                  {stats.asCrew > 0 && (
-                    <div className="text-center">
-                      <div className="text-3xl font-light text-blue-400">{stats.asCrew}</div>
-                      <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">Equipo Técnico</div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Links externos si existen */}
-                {person.links && person.links.length > 0 && (
-                  <div className="flex gap-4 mt-6">
-                    {person.links.map((link: any) => (
-                      <a
-                        key={link.id}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-white transition-colors"
-                        title={link.type}
-                      >
-                        {link.type === 'IMDB' ? 'IMDb' :
-                          link.type === 'WIKIPEDIA' ? 'Wikipedia' :
-                            link.type === 'OFFICIAL_WEBSITE' ? 'Sitio Web' :
-                              link.type === 'INSTAGRAM' ? 'Instagram' :
-                                link.type === 'TWITTER' ? 'Twitter' : link.type}
-                      </a>
-                    ))}
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center bg-muted/50">
+                    <svg className="w-16 h-16 text-muted-foreground/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <p className="text-sm text-muted-foreground/40 mt-2">Foto no disponible</p>
                   </div>
                 )}
               </div>
             </div>
+
+            {/* Info column */}
+            <div className="flex flex-1 flex-col gap-3 min-w-0">
+              <h1 className="font-serif text-4xl lg:text-5xl tracking-tight text-foreground">{fullName}</h1>
+
+              {person.realName && person.realName !== fullName && (
+                <p className="text-[12px] leading-snug">
+                  <span className="text-muted-foreground/40">Nombre real: </span>
+                  <span className="text-muted-foreground/50">{person.realName}</span>
+                </p>
+              )}
+
+              {person.alternativeNames && person.alternativeNames.length > 0 && (
+                <p className="text-[12px] leading-snug">
+                  <span className="text-muted-foreground/40">{getCreditedLabel(person.gender)}: </span>
+                  <span className="text-muted-foreground/50">{person.alternativeNames.map((alt: AlternativeName) => alt.fullName).join(', ')}</span>
+                </p>
+              )}
+
+              {roleBadges.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {roleBadges.map((role) => (
+                    <span key={role} className="border border-border/40 px-2.5 py-1 text-[11px] uppercase tracking-widest text-muted-foreground/60">
+                      {role}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {birthDateFormatted && (
+                <div className="text-sm leading-snug">
+                  <span className="text-muted-foreground/40">
+                    {person.birthDay ? 'Nació el ' : 'Nació en '}
+                  </span>
+                  {person.birthDay && person.birthMonth ? (
+                    <>
+                      <Link
+                        href={getEfemeridesUrl(person.birthMonth, person.birthDay)}
+                        className="text-muted-foreground hover:text-accent transition-colors"
+                      >
+                        {person.birthDay} de {MONTHS[person.birthMonth - 1].label.toLowerCase()}
+                      </Link>
+                      <span className="text-muted-foreground/40"> de </span>
+                      <Link
+                        href={getBirthYearUrl(person.birthYear)}
+                        className="text-muted-foreground hover:text-accent transition-colors"
+                      >
+                        {person.birthYear}
+                      </Link>
+                    </>
+                  ) : person.birthMonth ? (
+                    <>
+                      <Link
+                        href={getEfemeridesUrl(person.birthMonth, 1)}
+                        className="text-muted-foreground hover:text-accent transition-colors"
+                      >
+                        {MONTHS[person.birthMonth - 1].label.toLowerCase()}
+                      </Link>
+                      <span className="text-muted-foreground/40"> de </span>
+                      <Link
+                        href={getBirthYearUrl(person.birthYear)}
+                        className="text-muted-foreground hover:text-accent transition-colors"
+                      >
+                        {person.birthYear}
+                      </Link>
+                    </>
+                  ) : (
+                    <Link
+                      href={getBirthYearUrl(person.birthYear)}
+                      className="text-muted-foreground hover:text-accent transition-colors"
+                    >
+                      {person.birthYear}
+                    </Link>
+                  )}
+                  {person.birthLocation && (
+                    <>
+                      <span className="text-muted-foreground/40"> en </span>
+                      {renderLocationWithLinks(person.birthLocation, 'birth')}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {deathDateFormatted && (
+                <div className="text-sm leading-snug">
+                  <span className="text-muted-foreground/40">
+                    {person.deathDay ? 'Murió el ' : 'Murió en '}
+                  </span>
+                  {person.deathDay && person.deathMonth ? (
+                    <>
+                      <Link
+                        href={getEfemeridesUrl(person.deathMonth, person.deathDay)}
+                        className="text-muted-foreground hover:text-accent transition-colors"
+                      >
+                        {person.deathDay} de {MONTHS[person.deathMonth - 1].label.toLowerCase()}
+                      </Link>
+                      <span className="text-muted-foreground/40"> de </span>
+                      <Link
+                        href={getDeathYearUrl(person.deathYear)}
+                        className="text-muted-foreground hover:text-accent transition-colors"
+                      >
+                        {person.deathYear}
+                      </Link>
+                    </>
+                  ) : person.deathMonth ? (
+                    <>
+                      <Link
+                        href={getEfemeridesUrl(person.deathMonth, 1)}
+                        className="text-muted-foreground hover:text-accent transition-colors"
+                      >
+                        {MONTHS[person.deathMonth - 1].label.toLowerCase()}
+                      </Link>
+                      <span className="text-muted-foreground/40"> de </span>
+                      <Link
+                        href={getDeathYearUrl(person.deathYear)}
+                        className="text-muted-foreground hover:text-accent transition-colors"
+                      >
+                        {person.deathYear}
+                      </Link>
+                    </>
+                  ) : (
+                    <Link
+                      href={getDeathYearUrl(person.deathYear)}
+                      className="text-muted-foreground hover:text-accent transition-colors"
+                    >
+                      {person.deathYear}
+                    </Link>
+                  )}
+                  {person.deathLocation && (
+                    <>
+                      <span className="text-muted-foreground/40"> en </span>
+                      {renderLocationWithLinks(person.deathLocation, 'death')}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {person.nationalities && person.nationalities.length > 0 && (
+                <div className="text-sm leading-snug">
+                  <span className="text-muted-foreground/40">Nacionalidad: </span>
+                  {person.nationalities
+                    .map((nat: any, index: number) => {
+                      const display = nat.location?.gentilicio || nat.location?.name;
+                      const locationId = nat.location?.id || nat.locationId;
+                      if (!display) return null;
+                      return (
+                        <span key={locationId || index}>
+                          {index > 0 && ', '}
+                          <Link
+                            href={getNationalityUrl(locationId)}
+                            className="text-foreground hover:text-accent transition-colors"
+                          >
+                            {display}
+                          </Link>
+                        </span>
+                      );
+                    })
+                    .filter(Boolean)}
+                </div>
+              )}
+
+              {person.biography && (
+                <div
+                  className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground/70 serif-body"
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(person.biography, {
+                      ALLOWED_TAGS: ['p', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'b', 'i', 'span'],
+                      ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+                      ADD_ATTR: ['target'],
+                    })
+                  }}
+                />
+              )}
+
+              {person.links && person.links.length > 0 && (
+                <div className="flex gap-4 mt-3">
+                  {person.links.map((link: any) => (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-muted-foreground/50 hover:text-accent transition-colors"
+                      title={link.type}
+                    >
+                      {link.type === 'IMDB' ? 'IMDb' :
+                        link.type === 'WIKIPEDIA' ? 'Wikipedia' :
+                          link.type === 'OFFICIAL_WEBSITE' ? 'Sitio Web' :
+                            link.type === 'INSTAGRAM' ? 'Instagram' :
+                              link.type === 'TWITTER' ? 'Twitter' : link.type}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
+
         </div>
       </section>
 
       {/* Filmography Section */}
       {hasTabs && (
         <section className="py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Navigation Tabs - Solo 2 pestañas */}
-            <div className="border-b border-gray-700 mb-8">
+          <div className="max-w-7xl mx-auto px-4 lg:px-6">
+            {/* Navigation Tabs */}
+            <div className="border-b border-border/30 mb-8">
               <nav className="flex space-x-8">
                 {tabs.map((tabName) => (
                   <button
@@ -943,12 +1164,12 @@ export default function PersonPage({ params }: PersonPageProps) {
                       setActiveTab(tabName);
                       setShowAllFilmography(false);
                     }}
-                    className={`pb-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === tabName
-                      ? 'border-blue-400 text-white'
-                      : 'border-transparent text-gray-400 hover:text-white'
+                    className={`pb-4 px-1 border-b-2 font-medium text-[13px] md:text-sm tracking-wide whitespace-nowrap transition-colors ${activeTab === tabName
+                      ? 'border-accent text-foreground'
+                      : 'border-transparent text-muted-foreground/50 hover:text-foreground'
                       }`}
                   >
-                    {tabName === 'Todos los roles' 
+                    {tabName === 'Todos los roles'
                       ? `${tabName} (${allRolesList.length})`
                       : `${tabName} (${roleSections.length})`
                     }
@@ -959,35 +1180,34 @@ export default function PersonPage({ params }: PersonPageProps) {
 
             {/* Contenido según pestaña activa */}
             {activeTab === 'Todos los roles' ? (
-              // ✅ PESTAÑA "TODOS LOS ROLES"
               <div className="space-y-1">
-                <h2 className="text-2xl font-light mb-6 text-white flex items-center gap-2">
+                <h2 className="font-serif text-xl md:text-2xl tracking-tight text-foreground mb-6 flex items-center gap-2">
                   Filmografía en Argentina
                   <div className="relative group">
                     <button
                       type="button"
-                      className="w-5 h-5 rounded-full bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white text-xs flex items-center justify-center transition-colors"
+                      className="w-5 h-5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground/50 hover:text-foreground text-xs flex items-center justify-center transition-colors"
                       aria-label="Más información"
                     >
                       ?
                     </button>
-                    <div className="absolute right-0 md:left-0 md:right-auto top-full mt-2 w-72 p-3 bg-gray-800 border border-gray-700 rounded-lg shadow-xl text-sm text-gray-300 font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="absolute right-0 md:left-0 md:right-auto top-full mt-2 w-72 p-3 bg-muted border border-border/30 rounded-lg shadow-xl text-sm text-muted-foreground font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                       Esta filmografía incluye únicamente películas argentinas o coproducciones con participación de Argentina. Los trabajos realizados exclusivamente en el exterior no están incluidos.
                     </div>
                   </div>
                 </h2>
-                <div className="divide-y divide-gray-800/50">
-                  {(showAllFilmography ? allRolesList : allRolesList.slice(0, 10)).map((item, index) => 
+                <div className="divide-y divide-border/10">
+                  {(showAllFilmography ? allRolesList : allRolesList.slice(0, 10)).map((item, index) =>
                     renderMovieItem(item, index, true, false)
                   )}
                 </div>
-                
+
                 {/* Show More Button */}
                 {allRolesList.length > 10 && (
                   <div className="mt-8 text-center">
                     <button
                       onClick={() => setShowAllFilmography(!showAllFilmography)}
-                      className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors flex items-center space-x-2 mx-auto"
+                      className="text-accent hover:text-accent/80 text-sm font-medium transition-colors flex items-center space-x-2 mx-auto"
                     >
                       <span>{showAllFilmography ? 'Ver menos' : 'Ver filmografía completa'}</span>
                       <svg
@@ -1003,19 +1223,18 @@ export default function PersonPage({ params }: PersonPageProps) {
                 )}
               </div>
             ) : (
-              // ✅ PESTAÑA "POR ROL" - Secciones agrupadas
               <div className="space-y-1">
-                <h2 className="text-2xl font-light mb-6 text-white flex items-center gap-2">
+                <h2 className="font-serif text-xl md:text-2xl tracking-tight text-foreground mb-6 flex items-center gap-2">
                   Filmografía en Argentina
                   <div className="relative group">
                     <button
                       type="button"
-                      className="w-5 h-5 rounded-full bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white text-xs flex items-center justify-center transition-colors"
+                      className="w-5 h-5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground/50 hover:text-foreground text-xs flex items-center justify-center transition-colors"
                       aria-label="Más información"
                     >
                       ?
                     </button>
-                    <div className="absolute right-0 md:left-0 md:right-auto top-full mt-2 w-72 p-3 bg-gray-800 border border-gray-700 rounded-lg shadow-xl text-sm text-gray-300 font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="absolute right-0 md:left-0 md:right-auto top-full mt-2 w-72 p-3 bg-muted border border-border/30 rounded-lg shadow-xl text-sm text-muted-foreground font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                       Esta filmografía incluye únicamente películas argentinas o coproducciones con participación de Argentina. Los trabajos realizados exclusivamente en el exterior no están incluidos.
                     </div>
                   </div>
@@ -1023,17 +1242,17 @@ export default function PersonPage({ params }: PersonPageProps) {
                 <div className="space-y-10">
                   {roleSections.map((section, sectionIndex) => (
                     <div key={section.roleName} className="space-y-1">
-                      <h3 className="text-xl font-light text-white mb-4">
+                      <h3 className="font-serif text-lg md:text-xl text-foreground mb-4">
                         {section.roleName}
-                        <span className="text-gray-500 ml-2">({section.items.length})</span>
+                        <span className="text-muted-foreground/40 ml-2">({section.items.length})</span>
                       </h3>
-                      <div className="divide-y divide-gray-800/50">
-                        {section.items.map((item, index) => 
+                      <div className="divide-y divide-border/10">
+                        {section.items.map((item, index) =>
                           renderMovieItem(
-                            item, 
-                            index, 
-                            false, 
-                            section.roleName === 'Actuación' // Solo mostrar personaje en Actuación
+                            item,
+                            index,
+                            false,
+                            section.roleName === 'Actuación'
                           )
                         )}
                       </div>
@@ -1046,11 +1265,10 @@ export default function PersonPage({ params }: PersonPageProps) {
         </section>
       )}
 
-      {/* Image Gallery - Solo se muestra si hay imágenes */}
+      {/* Image Gallery */}
       {person.galleryImages && person.galleryImages.length > 0 && (
-        <section className="py-12 border-t border-gray-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="serif-heading text-2xl text-white mb-6">Galería de Imágenes</h2>
+        <section className="py-12 border-t border-border/10">
+          <div className="max-w-7xl mx-auto px-4 lg:px-6">
             <ImageGallery
               images={person.galleryImages}
               movieTitle={fullName}
