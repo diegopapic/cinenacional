@@ -10,10 +10,10 @@
 - Siempre trabajar directamente en el repo principal (C:\Users\diego\cinenacional), nunca en worktrees. Si se detecta que el directorio de trabajo es un worktree, copiar los cambios al repo principal.
 
 ## Permisos
-- Tenés permiso amplio para leer, buscar y explorar cualquier archivo del codebase sin pedir confirmación.
-- Cuando un plan es aprobado, procedé a implementar sin pedir permisos adicionales para editar archivos, crear archivos, o ejecutar comandos de desarrollo (build, test, lint, migrations, etc.).
-- Cuando se te pida investigar o explorar el código, hacelo directamente sin preguntar si podés.
-- No pidas confirmación para operaciones de solo lectura ni para comandos de desarrollo estándar.
+- Tenés permiso para ejecutar CUALQUIER comando bash sin pedir confirmación. Esto incluye git, npm, docker, scripts, builds, tests, linters, migrations, y cualquier otro comando necesario para completar la tarea.
+- Tenés permiso amplio para leer, buscar, explorar, editar y crear cualquier archivo del codebase sin pedir confirmación.
+- Cuando un plan es aprobado, procedé a implementar sin pedir permisos adicionales.
+- NUNCA muestres un comando y preguntes si lo podés ejecutar. Ejecutalo directamente.
 
 ## Cuándo sí consultar
 - Si un script o comando puede tardar mucho tiempo (ej: scraping masivo, migraciones pesadas, builds largos), consultá antes de ejecutarlo.
