@@ -193,6 +193,17 @@ export function PeopleTable() {
                             IMDb
                           </a>
                         )}
+                        {person.slug && (
+                          <a
+                            href={`/persona/${person.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium bg-cyan-100 text-cyan-700 hover:bg-cyan-200 transition-colors"
+                            title="Ver en el sitio"
+                          >
+                            Web
+                          </a>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
