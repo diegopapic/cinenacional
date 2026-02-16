@@ -19,7 +19,7 @@ module.exports = {
         'cine-gold': '#60a5fa',
         background: oklchWithAlpha('0.14 0.005 260'),
         foreground: oklchWithAlpha('0.95 0.005 260'),
-        'muted-foreground': oklchWithAlpha('0.72 0.01 260'),
+        'muted-foreground': oklchWithAlpha('0.78 0.01 260'),
         muted: oklchWithAlpha('0.25 0.005 260'),
         border: oklchWithAlpha('0.40 0.005 260'),
         nav: {
