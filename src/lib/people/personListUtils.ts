@@ -1,6 +1,6 @@
 // src/lib/people/personListUtils.ts
 
-import { PersonListFilters, DEFAULT_PERSON_FILTERS, PersonWithMovie, LocationFilterOption } from './personListTypes';
+import { PersonListFilters, DEFAULT_PERSON_FILTERS, PersonWithMovie, LocationFilterOption, FiltersDataResponse, SORT_OPTIONS } from './personListTypes';
 
 /**
  * Convierte los filtros del estado a parámetros de URL
@@ -237,4 +237,161 @@ export function clearFilters(filters: PersonListFilters): PersonListFilters {
     sortOrder: filters.sortOrder,
     limit: filters.limit
   };
+}
+
+/**
+ * Formatea una ubicación para el título: "Ciudad (Provincia, País)"
+ */
+function formatLocationForTitle(loc: LocationFilterOption): string {
+  if (loc.fullPath) {
+    const idx = loc.fullPath.indexOf(', ');
+    if (idx !== -1) {
+      return `${loc.fullPath.substring(0, idx)} (${loc.fullPath.substring(idx + 2)})`;
+    }
+  }
+  return loc.name;
+}
+
+/**
+ * Genera el título dinámico del listado según los filtros activos
+ */
+export function buildTitle(
+  filters: PersonListFilters,
+  filtersData: FiltersDataResponse | null
+): string {
+  let base = 'Listado de personas';
+
+  // Género cambia la palabra base directamente
+  if (filters.gender === 'FEMALE') {
+    base = 'Listado de mujeres';
+  } else if (filters.gender === 'MALE') {
+    base = 'Listado de varones';
+  }
+
+  // Sufijo de género: masculino "os", femenino y genérico "as"
+  const sfx = filters.gender === 'MALE' ? 'os' : 'as';
+
+  const parts: string[] = [];
+
+  if (filters.nationalityId && filtersData) {
+    const nat = filtersData.nationalities.find(n => n.id === filters.nationalityId);
+    if (nat) parts.push(`de nacionalidad ${nat.gentilicio || nat.name}`);
+  }
+
+  if (filters.birthLocationId && filtersData) {
+    const loc = filtersData.birthLocations.find(l => l.id === filters.birthLocationId);
+    if (loc) parts.push(`nacid${sfx} en ${formatLocationForTitle(loc)}`);
+  }
+
+  if (filters.birthYearFrom && filters.birthYearTo) {
+    parts.push(`nacid${sfx} entre ${filters.birthYearFrom} y ${filters.birthYearTo}`);
+  } else if (filters.birthYearFrom) {
+    parts.push(`nacid${sfx} desde ${filters.birthYearFrom}`);
+  } else if (filters.birthYearTo) {
+    parts.push(`nacid${sfx} hasta ${filters.birthYearTo}`);
+  }
+
+  if (filters.deathLocationId && filtersData) {
+    const loc = filtersData.deathLocations.find(l => l.id === filters.deathLocationId);
+    if (loc) parts.push(`fallecid${sfx} en ${formatLocationForTitle(loc)}`);
+  }
+
+  if (filters.deathYearFrom && filters.deathYearTo) {
+    parts.push(`fallecid${sfx} entre ${filters.deathYearFrom} y ${filters.deathYearTo}`);
+  } else if (filters.deathYearFrom) {
+    parts.push(`fallecid${sfx} desde ${filters.deathYearFrom}`);
+  } else if (filters.deathYearTo) {
+    parts.push(`fallecid${sfx} hasta ${filters.deathYearTo}`);
+  }
+
+  if (filters.roleId && filtersData) {
+    if (filters.roleId === 'ACTOR') {
+      if (filters.gender === 'FEMALE') {
+        parts.push('que trabajaron como actrices');
+      } else if (filters.gender === 'MALE') {
+        parts.push('que trabajaron como actores');
+      } else {
+        parts.push('que trabajaron como actores/actrices');
+      }
+    } else if (filters.roleId === 'SELF') {
+      parts.push(filters.gender === 'MALE' ? 'que aparecen como sí mismos' : 'que aparecen como sí mismas');
+    } else {
+      const role = filtersData.roles.find(r => String(r.id) === String(filters.roleId));
+      if (role) parts.push(`que trabajaron en ${role.name.toLowerCase()}`);
+    }
+  }
+
+  if (parts.length > 0) {
+    return `${base}, ${parts.join(', ')}`;
+  }
+
+  return base;
+}
+
+/**
+ * Genera el subtítulo con el criterio de orden actual
+ */
+export function buildSubtitle(filters: PersonListFilters): string {
+  const sortBy = filters.sortBy || DEFAULT_PERSON_FILTERS.sortBy;
+  const sortOrder = filters.sortOrder || DEFAULT_PERSON_FILTERS.sortOrder;
+  const isAsc = sortOrder === 'asc';
+
+  switch (sortBy) {
+    case 'id':
+      return isAsc
+        ? 'Ordenado por ingreso a la base de datos, de más antiguo a más nuevo'
+        : 'Ordenado por ingreso a la base de datos, de más nuevo a más antiguo';
+    case 'lastName':
+      return isAsc
+        ? 'Ordenado alfabéticamente, de la A a la Z'
+        : 'Ordenado alfabéticamente, de la Z a la A';
+    case 'birthDate':
+      return isAsc
+        ? 'Ordenado por fecha de nacimiento, de más antigua a más reciente'
+        : 'Ordenado por fecha de nacimiento, de más reciente a más antigua';
+    case 'deathDate':
+      return isAsc
+        ? 'Ordenado por fecha de muerte, de más antigua a más reciente'
+        : 'Ordenado por fecha de muerte, de más reciente a más antigua';
+    case 'movieCount':
+      return isAsc
+        ? 'Ordenado por cantidad de películas, de menor a mayor'
+        : 'Ordenado por cantidad de películas, de mayor a menor';
+    default: {
+      const option = SORT_OPTIONS.find(o => o.value === sortBy);
+      const label = option ? option.label.toLowerCase() : sortBy;
+      return `Ordenado por ${label}, ${isAsc ? 'ascendente' : 'descendente'}`;
+    }
+  }
+}
+
+/**
+ * Genera array de números de página con ellipsis
+ */
+export function buildPageNumbers(current: number, total: number): (number | '...')[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  const pages: (number | '...')[] = [];
+
+  if (current <= 3) {
+    for (let i = 1; i <= 4; i++) pages.push(i);
+    pages.push('...');
+    pages.push(total);
+  } else if (current >= total - 2) {
+    pages.push(1);
+    pages.push('...');
+    for (let i = total - 3; i <= total; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    pages.push('...');
+    pages.push(current - 1);
+    pages.push(current);
+    pages.push(current + 1);
+    pages.push('...');
+    pages.push(total);
+  }
+
+  return pages;
 }

@@ -61,6 +61,7 @@ export interface FilterOption {
 export interface LocationFilterOption extends FilterOption {
   parentName?: string;  // Ej: "Argentina" para "Buenos Aires"
   fullPath?: string;    // Ej: "Buenos Aires, Argentina"
+  gentilicio?: string;  // Ej: "argentina" para "Argentina"
 }
 
 // Opciones de rol

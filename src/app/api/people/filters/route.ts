@@ -149,14 +149,15 @@ export async function GET(request: NextRequest) {
       `,
       
       // Nacionalidades (países con personas)
-      prisma.$queryRaw<Array<{ id: number; name: string; count: number }>>`
-        SELECT 
+      prisma.$queryRaw<Array<{ id: number; name: string; gentilicio: string | null; count: number }>>`
+        SELECT
           l.id,
           l.name,
+          l.gentilicio,
           COUNT(DISTINCT pn.person_id)::int as count
         FROM locations l
         INNER JOIN person_nationalities pn ON pn.location_id = l.id
-        GROUP BY l.id, l.name
+        GROUP BY l.id, l.name, l.gentilicio
         ORDER BY LOWER(unaccent(l.name)) ASC
       `,
       
@@ -225,6 +226,7 @@ export async function GET(request: NextRequest) {
       nationalities: nationalities.map(nat => ({
         id: nat.id,
         name: nat.name,
+        gentilicio: nat.gentilicio || undefined,
         count: nat.count
       })),
       
