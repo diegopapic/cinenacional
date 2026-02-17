@@ -1,7 +1,7 @@
 // src/components/home/HeroSection.tsx
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 interface HeroImage {
@@ -11,8 +11,8 @@ interface HeroImage {
   movie: {
     id: number;
     title: string;
-    year: number | null;        // Año de producción (prioridad)
-    releaseYear: number | null; // Año de estreno (fallback)
+    year: number | null;
+    releaseYear: number | null;
     slug: string;
   } | null;
   people: Array<{
@@ -29,37 +29,15 @@ interface HeroSectionProps {
   images: HeroImage[];
 }
 
-interface ImageBounds {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-}
-
 function getHeroImageUrl(publicId: string): string {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   return `https://res.cloudinary.com/${cloudName}/image/upload/w_1920,q_auto,f_auto/${publicId}`;
 }
 
-/**
- * Obtiene el año a mostrar para una película.
- * Prioridad: año de producción (year) > año de estreno (releaseYear)
- * Retorna null si ambos están vacíos o son 0
- */
 function getDisplayYear(movie: HeroImage['movie']): number | null {
   if (!movie) return null;
-
-  // Prioridad 1: año de producción
-  if (movie.year && movie.year > 0) {
-    return movie.year;
-  }
-
-  // Prioridad 2: año de estreno
-  if (movie.releaseYear && movie.releaseYear > 0) {
-    return movie.releaseYear;
-  }
-
-  // Ninguno disponible
+  if (movie.year && movie.year > 0) return movie.year;
+  if (movie.releaseYear && movie.releaseYear > 0) return movie.releaseYear;
   return null;
 }
 
@@ -102,83 +80,27 @@ function generateCaption(image: HeroImage): string {
 }
 
 /**
- * Calcula el rect real de una imagen con object-fit: contain
- * dentro de su contenedor.
+ * Estilo de máscara CSS que funde los 4 bordes de la imagen con el fondo.
+ * Usa mask-image con dos gradientes (horizontal + vertical) intersectados.
+ * Así la máscara siempre se aplica al bounding box real de la imagen,
+ * sin importar su tamaño o proporción.
  */
-function getContainedImageBounds(
-  containerWidth: number,
-  containerHeight: number,
-  naturalWidth: number,
-  naturalHeight: number
-): ImageBounds {
-  const containerRatio = containerWidth / containerHeight;
-  const imageRatio = naturalWidth / naturalHeight;
-
-  let renderWidth: number;
-  let renderHeight: number;
-
-  if (imageRatio > containerRatio) {
-    // Imagen más ancha proporcionalmente → limitada por ancho
-    renderWidth = containerWidth;
-    renderHeight = containerWidth / imageRatio;
-  } else {
-    // Imagen más alta proporcionalmente → limitada por alto
-    renderHeight = containerHeight;
-    renderWidth = containerHeight * imageRatio;
-  }
-
-  // No agrandar más allá del tamaño natural
-  if (renderWidth > naturalWidth) {
-    renderWidth = naturalWidth;
-    renderHeight = naturalWidth / imageRatio;
-  }
-
-  const left = (containerWidth - renderWidth) / 2;
-  const top = (containerHeight - renderHeight) / 2;
-
-  return { top, left, width: renderWidth, height: renderHeight };
-}
-
-const GRADIENT_LEFT = 'linear-gradient(to right, #0a0f14 0%, #0a0f14 5%, rgba(10,15,20,0.98) 15%, rgba(10,15,20,0.93) 25%, rgba(10,15,20,0.85) 35%, rgba(10,15,20,0.72) 50%, rgba(10,15,20,0.50) 65%, rgba(10,15,20,0.25) 80%, rgba(10,15,20,0.08) 92%, transparent 100%)';
-const GRADIENT_RIGHT = 'linear-gradient(to left, #0a0f14 0%, #0a0f14 5%, rgba(10,15,20,0.98) 15%, rgba(10,15,20,0.93) 25%, rgba(10,15,20,0.85) 35%, rgba(10,15,20,0.72) 50%, rgba(10,15,20,0.50) 65%, rgba(10,15,20,0.25) 80%, rgba(10,15,20,0.08) 92%, transparent 100%)';
-const GRADIENT_TOP = 'linear-gradient(to bottom, #0a0f14 0%, #0a0f14 5%, rgba(10,15,20,0.95) 15%, rgba(10,15,20,0.85) 30%, rgba(10,15,20,0.65) 50%, rgba(10,15,20,0.35) 70%, rgba(10,15,20,0.10) 88%, transparent 100%)';
-const GRADIENT_BOTTOM = 'linear-gradient(to top, #0a0f14 0%, #0a0f14 5%, rgba(10,15,20,0.98) 15%, rgba(10,15,20,0.92) 28%, rgba(10,15,20,0.78) 42%, rgba(10,15,20,0.55) 58%, rgba(10,15,20,0.28) 75%, rgba(10,15,20,0.08) 90%, transparent 100%)';
+const fadeMaskStyle: React.CSSProperties = {
+  maskImage: [
+    'linear-gradient(to right, transparent, black 18%, black 82%, transparent)',
+    'linear-gradient(to bottom, transparent, black 12%, black 88%, transparent)',
+  ].join(', '),
+  WebkitMaskImage: [
+    'linear-gradient(to right, transparent, black 18%, black 82%, transparent)',
+    'linear-gradient(to bottom, transparent, black 12%, black 88%, transparent)',
+  ].join(', '),
+  maskComposite: 'intersect' as const,
+  WebkitMaskComposite: 'source-in' as const,
+};
 
 export default function HeroSection({ images }: HeroSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [bounds, setBounds] = useState<ImageBounds | null>(null);
-  const containerRef = useRef<HTMLElement>(null);
-  const imgRefs = useRef<Map<number, HTMLImageElement>>(new Map());
 
-  const recalcBounds = useCallback(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const img = imgRefs.current.get(currentIndex);
-    if (!img || !img.naturalWidth) return;
-
-    const newBounds = getContainedImageBounds(
-      container.clientWidth,
-      container.clientHeight,
-      img.naturalWidth,
-      img.naturalHeight
-    );
-    setBounds(newBounds);
-  }, [currentIndex]);
-
-  // Recalcular cuando cambia la imagen activa
-  useEffect(() => {
-    recalcBounds();
-  }, [recalcBounds]);
-
-  // Recalcular en resize
-  useEffect(() => {
-    const onResize = () => recalcBounds();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [recalcBounds]);
-
-  // Auto-rotate
   useEffect(() => {
     if (images.length <= 1) return;
 
@@ -193,15 +115,8 @@ export default function HeroSection({ images }: HeroSectionProps) {
 
   const currentImage = images[currentIndex];
 
-  // Cuánto se meten los gradientes dentro de la imagen
-  const insetX = bounds ? Math.max(bounds.width * 0.18, 80) : 0;
-  const insetY = bounds ? Math.max(bounds.height * 0.25, 60) : 0;
-
   return (
-    <section
-      ref={containerRef}
-      className="relative h-[50vh] md:h-[60vh] lg:h-[70vh] w-full overflow-hidden bg-background"
-    >
+    <section className="relative h-[50vh] md:h-[60vh] lg:h-[70vh] w-full overflow-hidden bg-background">
       {/* Slides */}
       {images.map((image, idx) => (
         <div
@@ -211,69 +126,17 @@ export default function HeroSection({ images }: HeroSectionProps) {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            ref={(el) => {
-              if (el) imgRefs.current.set(idx, el);
-            }}
             src={getHeroImageUrl(image.cloudinaryPublicId)}
             alt={generateCaption(image)}
-            onLoad={() => {
-              if (idx === currentIndex) recalcBounds();
-            }}
             className="max-w-full max-h-full w-auto h-auto object-contain"
-            {...(idx === 0 ? { fetchPriority: 'high' } : {})}
+            style={fadeMaskStyle}
+            {...(idx === 0 ? { fetchPriority: 'high' as const } : {})}
           />
         </div>
       ))}
 
-      {/* Gradientes: van desde el borde del contenedor y se meten dentro de la imagen */}
-      {bounds && (
-        <>
-          {/* Izquierda: desde x=0 hasta adentro de la imagen */}
-          <div
-            className="absolute z-[2] pointer-events-none"
-            style={{
-              top: bounds.top,
-              left: 0,
-              width: bounds.left + insetX,
-              height: bounds.height,
-              background: GRADIENT_LEFT,
-            }}
-          />
-          {/* Derecha: desde adentro de la imagen hasta el borde derecho */}
-          <div
-            className="absolute z-[2] pointer-events-none"
-            style={{
-              top: bounds.top,
-              right: 0,
-              width: (containerRef.current ? containerRef.current.clientWidth - bounds.left - bounds.width : 0) + insetX,
-              height: bounds.height,
-              background: GRADIENT_RIGHT,
-            }}
-          />
-          {/* Arriba: desde y=0 hasta adentro de la imagen */}
-          <div
-            className="absolute z-[2] pointer-events-none"
-            style={{
-              top: 0,
-              left: bounds.left,
-              width: bounds.width,
-              height: bounds.top + insetY,
-              background: GRADIENT_TOP,
-            }}
-          />
-          {/* Abajo: desde adentro de la imagen hasta el borde inferior */}
-          <div
-            className="absolute z-[2] pointer-events-none"
-            style={{
-              bottom: 0,
-              left: bounds.left,
-              width: bounds.width,
-              height: (containerRef.current ? containerRef.current.clientHeight - bounds.top - bounds.height : 0) + insetY,
-              background: GRADIENT_BOTTOM,
-            }}
-          />
-        </>
-      )}
+      {/* Gradiente inferior global para el caption */}
+      <div className="absolute inset-0 z-[2] bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
 
       {/* Caption + dots */}
       <div className="absolute inset-x-0 bottom-0 z-10">
