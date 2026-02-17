@@ -9,6 +9,7 @@ import { formatPartialDate, MONTHS } from '@/lib/shared/dateUtils';
 import DOMPurify from 'isomorphic-dompurify';
 import { trackPageView } from '@/hooks/usePageView';
 import { ImageGallery } from '@/components/movies/ImageGallery';
+import { POSTER_PLACEHOLDER } from '@/lib/movies/movieConstants';
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -48,6 +49,7 @@ interface Movie {
   releaseYear?: number;
   releaseMonth?: number;
   releaseDay?: number;
+  posterUrl?: string;
   tipoDuracion?: 'largometraje' | 'mediometraje' | 'cortometraje';
   stage?: string;
 }
@@ -651,16 +653,27 @@ export default function PersonPage({ params }: PersonPageProps) {
   const renderMovieItem = (item: any, index: number, showRoles: boolean = false, showCharacter: boolean = false) => {
     const movie = item.movie;
     const year = getEffectiveYear(movie);
-    const displayYear = year > 0 ? year : '—';
+    const displayYear = year > 0 ? year : null;
     const badge = getMovieBadge(movie);
 
     return (
-      <div key={`${movie.id}-${index}`} className="py-4 hover:bg-muted/20 transition-colors group">
-        <div className="flex items-center gap-4">
-          <span className="text-[11px] md:text-[12px] w-12 text-left tabular-nums text-muted-foreground/40">
-            {displayYear}
-          </span>
-          <div className="flex-grow">
+      <div key={`${movie.id}-${index}`} className="py-3 hover:bg-muted/20 transition-colors group">
+        <div className="flex items-center gap-3">
+          {/* Poster thumbnail */}
+          <Link href={`/pelicula/${movie.slug}`} className="shrink-0">
+            <div className="w-10 md:w-11 aspect-[2/3] rounded-sm overflow-hidden bg-muted/50">
+              <img
+                src={movie.posterUrl || POSTER_PLACEHOLDER.cloudinaryUrl}
+                alt={movie.title}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                style={{
+                  filter: !movie.posterUrl ? 'brightness(0.4)' : undefined
+                }}
+              />
+            </div>
+          </Link>
+          <div className="flex-grow min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <Link
                 href={`/pelicula/${movie.slug}`}
@@ -668,6 +681,13 @@ export default function PersonPage({ params }: PersonPageProps) {
               >
                 {movie.title}
               </Link>
+
+              {/* Año entre paréntesis */}
+              {displayYear && (
+                <span className="text-[11px] md:text-[12px] tabular-nums text-muted-foreground/40">
+                  ({displayYear})
+                </span>
+              )}
 
               {/* BADGE */}
               {badge && (
