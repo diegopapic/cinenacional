@@ -34,7 +34,7 @@ export default function HomePage() {
   const [loadingObituarios, setLoadingObituarios] = useState(true);
   const [efemerides, setEfemerides] = useState<Efemeride[]>([]);
   const [loadingEfemerides, setLoadingEfemerides] = useState(true);
-  
+
   // Estado para imágenes del hero
   const [heroImages, setHeroImages] = useState<any[]>([]);
   const [loadingHero, setLoadingHero] = useState(true);
@@ -55,11 +55,11 @@ export default function HomePage() {
       try {
         setLoadingHero(true);
         const response = await fetch('/api/images/hero');
-        
+
         if (!response.ok) {
           throw new Error('Error al cargar imágenes del hero');
         }
-        
+
         const data = await response.json();
         setHeroImages(data.images || []);
       } catch (error) {
@@ -102,7 +102,7 @@ export default function HomePage() {
           return dateB.getTime() - dateA.getTime();
         });
 
-        setObituarios(personasOrdenadas.slice(0, 2));
+        setObituarios(personasOrdenadas.slice(0, 3));
       } catch (error) {
         console.error('Error fetching obituarios:', error);
         setObituarios([]);
@@ -131,7 +131,7 @@ export default function HomePage() {
         const data = await response.json();
 
         if (data.efemerides && data.efemerides.length > 0) {
-          if (data.efemerides.length <= 2) {
+          if (data.efemerides.length <= 3) {
             setEfemerides(data.efemerides);
           } else {
             const shuffled = [...data.efemerides];
@@ -140,8 +140,8 @@ export default function HomePage() {
               [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
             }
 
-            const dosAleatorias = shuffled.slice(0, 2);
-            setEfemerides(dosAleatorias);
+            const tresAleatorias = shuffled.slice(0, 3);
+            setEfemerides(tresAleatorias);
           }
         } else {
           setEfemerides([]);
@@ -179,18 +179,19 @@ export default function HomePage() {
   };
 
   return (
-    <div className="bg-cine-dark text-white min-h-screen">
-      {/* Hero Section con imágenes dinámicas */}
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Hero Section */}
       {!loadingHero && heroImages.length > 0 && (
         <HeroSection images={heroImages} />
       )}
-      
-      <div className="bg-cine-dark">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+      {/* Contenido principal */}
+      <div className="mx-auto w-full max-w-7xl px-4 lg:px-6">
+        <div className="flex flex-col gap-12 py-12">
 
           {error && <ErrorMessage message={error} onRetry={retry} />}
 
-          {/* Sección de Últimos Estrenos */}
+          {/* Últimos Estrenos */}
           <MoviesGrid
             title="Últimos estrenos"
             movies={ultimosEstrenos}
@@ -203,7 +204,7 @@ export default function HomePage() {
             ctaHref="/listados/estrenos"
           />
 
-          {/* Sección de Próximos Estrenos */}
+          {/* Próximos Estrenos */}
           <MoviesGrid
             title="Próximos estrenos"
             movies={proximosEstrenos}
@@ -217,7 +218,7 @@ export default function HomePage() {
           />
 
           {/* Grid de Obituarios y Efemérides */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <ObituariosSection
               obituarios={obituarios}
               loading={loadingObituarios}
@@ -225,14 +226,15 @@ export default function HomePage() {
             <EfemeridesSection efemerides={efemerides} />
           </div>
 
-          <HomeMiddleBanner />
+          {/* <HomeMiddleBanner /> */}
 
-          <div className="w-full flex justify-center py-4 bg-cine-dark">
+          {/* Banner UCINE */}
+          <div className="flex justify-center">
             <Link
               href="https://www.ucine.edu.ar"
               target="_blank"
               rel="noopener noreferrer"
-              className="block max-w-[601px] w-full px-4"
+              className="block max-w-[601px] w-full"
             >
               <Image
                 src="/fuc.png"
@@ -244,15 +246,15 @@ export default function HomePage() {
               />
             </Link>
           </div>
-          
+
           {/* Últimas Películas Ingresadas */}
           <RecentMoviesSection
             movies={ultimasPeliculas}
             loading={loadingRecientes}
           />
-          
-          <HomeBottomBanner />
-          
+
+          {/* <HomeBottomBanner /> */}
+
           {/* Últimas Personas Ingresadas */}
           <RecentPeopleSection
             people={ultimasPersonas}

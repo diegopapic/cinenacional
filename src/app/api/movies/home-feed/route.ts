@@ -204,7 +204,7 @@ export async function GET() {
           posterUrl: true
         },
         orderBy: { createdAt: 'desc' },
-        take: 8
+        take: 6
       }),
 
       // Últimas personas - con género y roles de última película
@@ -243,7 +243,7 @@ export async function GET() {
           }
         },
         orderBy: { createdAt: 'desc' },
-        take: 6
+        take: 10
       })
     ]);
 

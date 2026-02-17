@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 interface HeroImage {
@@ -31,7 +32,7 @@ interface HeroSectionProps {
 
 function getHeroImageUrl(publicId: string): string {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  return `https://res.cloudinary.com/${cloudName}/image/upload/w_1280,q_auto,f_auto/${publicId}`;
+  return `https://res.cloudinary.com/${cloudName}/image/upload/w_1920,q_auto,f_auto/${publicId}`;
 }
 
 /**
@@ -41,17 +42,17 @@ function getHeroImageUrl(publicId: string): string {
  */
 function getDisplayYear(movie: HeroImage['movie']): number | null {
   if (!movie) return null;
-  
+
   // Prioridad 1: año de producción
   if (movie.year && movie.year > 0) {
     return movie.year;
   }
-  
+
   // Prioridad 2: año de estreno
   if (movie.releaseYear && movie.releaseYear > 0) {
     return movie.releaseYear;
   }
-  
+
   // Ninguno disponible
   return null;
 }
@@ -80,10 +81,10 @@ function generateCaption(image: HeroImage): string {
 
   if (image.movie) {
     const displayYear = getDisplayYear(image.movie);
-    const movieRef = displayYear 
+    const movieRef = displayYear
       ? `${image.movie.title} (${displayYear})`
       : image.movie.title;
-    
+
     if (parts.length > 0) {
       parts.push(`en ${movieRef}`);
     } else {
@@ -94,67 +95,6 @@ function generateCaption(image: HeroImage): string {
   return parts.join(' ') || '';
 }
 
-function HeroImageWithGradients({ 
-  image, 
-  isVisible 
-}: { 
-  image: HeroImage; 
-  isVisible: boolean;
-}) {
-  return (
-    <div 
-      className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${
-        isVisible ? 'opacity-100' : 'opacity-0'
-      }`}
-    >
-      {/* Wrapper relativo a la imagen */}
-      <div className="relative inline-block max-h-[500px]">
-        <img
-          src={getHeroImageUrl(image.cloudinaryPublicId)}
-          alt={generateCaption(image)}
-          className="max-w-full max-h-[500px] block"
-        />
-        
-        {/* Gradientes relativos a la imagen */}
-        <div 
-          className="absolute left-0 top-0 bottom-0 w-1/4 pointer-events-none"
-          style={{
-            background: 'linear-gradient(90deg, #0f1419 0%, rgba(15,20,25,0.7) 40%, transparent 100%)'
-          }}
-        />
-        
-        <div 
-          className="absolute right-0 top-0 bottom-0 w-1/4 pointer-events-none"
-          style={{
-            background: 'linear-gradient(270deg, #0f1419 0%, rgba(15,20,25,0.7) 40%, transparent 100%)'
-          }}
-        />
-        
-        <div 
-          className="absolute top-0 left-0 right-0 h-1/4 pointer-events-none"
-          style={{
-            background: 'linear-gradient(180deg, #0f1419 0%, rgba(15,20,25,0.6) 50%, transparent 100%)'
-          }}
-        />
-        
-        <div 
-          className="absolute bottom-0 left-0 right-0 h-1/3 pointer-events-none"
-          style={{
-            background: 'linear-gradient(0deg, #0f1419 0%, rgba(15,20,25,0.7) 50%, transparent 100%)'
-          }}
-        />
-
-        <div 
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(ellipse at center, transparent 40%, rgba(15,20,25,0.3) 100%)'
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
 export default function HeroSection({ images }: HeroSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -163,7 +103,7 @@ export default function HeroSection({ images }: HeroSectionProps) {
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % images.length);
-    }, 15000);
+    }, 6000);
 
     return () => clearInterval(interval);
   }, [images.length]);
@@ -173,56 +113,68 @@ export default function HeroSection({ images }: HeroSectionProps) {
   const currentImage = images[currentIndex];
 
   return (
-    <div className="relative bg-cine-dark -mt-16 pt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative">
-          {/* Contenedor con fondo negro */}
-          <div className="relative h-[500px] overflow-hidden rounded-lg bg-[#0f1419]">
-            {images.map((image, idx) => (
-              <HeroImageWithGradients
-                key={image.id}
-                image={image}
-                isVisible={idx === currentIndex}
-              />
-            ))}
-          </div>
+    <section className="relative h-[50vh] md:h-[60vh] lg:h-[70vh] w-full overflow-hidden">
+      {/* Slides */}
+      {images.map((image, idx) => (
+        <div
+          key={image.id}
+          className="absolute inset-0 transition-opacity duration-1000"
+          style={{ opacity: idx === currentIndex ? 1 : 0 }}
+        >
+          <Image
+            src={getHeroImageUrl(image.cloudinaryPublicId)}
+            alt={generateCaption(image)}
+            fill
+            className="object-cover"
+            sizes="100vw"
+            priority={idx === 0}
+          />
+        </div>
+      ))}
 
-          {/* Caption y controles */}
-          <div className="flex items-center justify-between mt-2">
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+
+      {/* Caption + dots */}
+      <div className="absolute inset-x-0 bottom-0 z-10">
+        <div className="mx-auto w-full max-w-7xl px-4 lg:px-6 pb-6 md:pb-8">
+          <div className="flex items-end justify-between gap-4">
+            {/* Caption */}
+            <div>
+              {currentImage.movie ? (
+                <Link
+                  href={`/pelicula/${currentImage.movie.slug}`}
+                  className="text-[13px] md:text-sm leading-snug text-muted-foreground/50 transition-colors hover:text-accent"
+                >
+                  {generateCaption(currentImage)}
+                </Link>
+              ) : (
+                <p className="text-[13px] md:text-sm leading-snug text-muted-foreground/50">
+                  {generateCaption(currentImage)}
+                </p>
+              )}
+            </div>
+
+            {/* Dots */}
             {images.length > 1 && (
               <div className="flex gap-2">
                 {images.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setCurrentIndex(idx)}
-                    className={`h-1.5 rounded-full transition-all ${
-                      idx === currentIndex 
-                        ? 'bg-white w-6' 
-                        : 'bg-white/40 hover:bg-white/60 w-1.5'
+                    className={`transition-all ${
+                      idx === currentIndex
+                        ? 'h-1.5 w-5 rounded-full bg-accent/70'
+                        : 'h-1.5 w-1.5 rounded-full bg-foreground/20 hover:bg-foreground/40'
                     }`}
                     aria-label={`Ir a imagen ${idx + 1}`}
                   />
                 ))}
               </div>
             )}
-
-            <div className="text-right">
-              {currentImage.movie ? (
-                <Link 
-                  href={`/pelicula/${currentImage.movie.slug}`}
-                  className="text-xs text-gray-400 hover:text-white transition-colors"
-                >
-                  {generateCaption(currentImage)}
-                </Link>
-              ) : (
-                <p className="text-xs text-gray-400">
-                  {generateCaption(currentImage)}
-                </p>
-              )}
-            </div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

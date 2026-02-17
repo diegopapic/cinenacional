@@ -28,42 +28,74 @@ export default function MoviesGrid({
   ctaHref
 }: MoviesGridProps) {
   return (
-    <section className="mb-12">
-      <h2 className="serif-heading text-3xl mb-6 text-white">{title}</h2>
-
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {[...Array(6)].map((_, index) => (
-            <SkeletonLoader key={index} type="movie" />
-          ))}
-        </div>
-      ) : movies.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-400">{emptyMessage}</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {movies.map((movie) => (
-            <MovieCard
-              key={movie.id}
-              movie={movie}
-              showDate={showDate}
-              dateFormatter={dateFormatter}
-              dateType={dateType}
-            />
-          ))}
-        </div>
-      )}
-      {ctaText && ctaHref && (
-        <div className="mt-6 text-center">
+    <section>
+      {/* Encabezado de sección */}
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="font-serif text-xl md:text-2xl tracking-tight text-foreground">
+          {title}
+        </h2>
+        {ctaText && ctaHref && (
           <Link
             href={ctaHref}
-            className="inline-block border border-cine-accent text-cine-accent hover:bg-cine-accent hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
+            className="shrink-0 text-[12px] md:text-[13px] tracking-wide text-muted-foreground/40 transition-colors hover:text-accent"
           >
-            {ctaText}
+            Ver más
           </Link>
-        </div>
-      ) }
+        )}
+      </div>
+
+      {/* Separador */}
+      <div className="mt-5 md:mt-6 border-t border-border/30 pt-5 md:pt-6">
+        {loading ? (
+          <>
+            {/* Mobile skeleton */}
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide md:hidden">
+              {[...Array(4)].map((_, index) => (
+                <div key={index} className="shrink-0 w-28">
+                  <SkeletonLoader type="movie" />
+                </div>
+              ))}
+            </div>
+            {/* Desktop skeleton */}
+            <div className="hidden md:grid grid-cols-5 lg:grid-cols-6 gap-4 lg:gap-5">
+              {[...Array(6)].map((_, index) => (
+                <SkeletonLoader key={index} type="movie" />
+              ))}
+            </div>
+          </>
+        ) : movies.length === 0 ? (
+          <p className="text-[13px] text-muted-foreground/40">{emptyMessage}</p>
+        ) : (
+          <>
+            {/* Mobile: scroll horizontal */}
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide md:hidden">
+              {movies.map((movie) => (
+                <div key={movie.id} className="shrink-0 w-28">
+                  <MovieCard
+                    movie={movie}
+                    showDate={showDate}
+                    dateFormatter={dateFormatter}
+                    dateType={dateType}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: grid */}
+            <div className="hidden md:grid grid-cols-5 lg:grid-cols-6 gap-4 lg:gap-5">
+              {movies.map((movie) => (
+                <MovieCard
+                  key={movie.id}
+                  movie={movie}
+                  showDate={showDate}
+                  dateFormatter={dateFormatter}
+                  dateType={dateType}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </section>
   );
 }
