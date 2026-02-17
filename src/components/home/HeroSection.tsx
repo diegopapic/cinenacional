@@ -113,27 +113,29 @@ export default function HeroSection({ images }: HeroSectionProps) {
   const currentImage = images[currentIndex];
 
   return (
-    <section className="relative h-[50vh] md:h-[60vh] lg:h-[70vh] w-full overflow-hidden">
+    <section className="relative h-[50vh] md:h-[60vh] lg:h-[70vh] w-full overflow-hidden bg-background">
       {/* Slides */}
       {images.map((image, idx) => (
         <div
           key={image.id}
-          className="absolute inset-0 transition-opacity duration-1000"
+          className="absolute inset-0 flex items-center justify-center transition-opacity duration-1000"
           style={{ opacity: idx === currentIndex ? 1 : 0 }}
         >
           <Image
             src={getHeroImageUrl(image.cloudinaryPublicId)}
             alt={generateCaption(image)}
             fill
-            className="object-cover"
+            className="object-contain"
             sizes="100vw"
             priority={idx === 0}
           />
         </div>
       ))}
 
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+      {/* Gradient overlays - left, right, and bottom */}
+      <div className="absolute inset-y-0 left-0 z-[1] w-[45%] bg-gradient-to-r from-background via-background/60 to-transparent pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 z-[1] w-[45%] bg-gradient-to-l from-background via-background/60 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
 
       {/* Caption + dots */}
       <div className="absolute inset-x-0 bottom-0 z-10">
