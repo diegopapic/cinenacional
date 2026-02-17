@@ -139,10 +139,10 @@ function getContainedImageBounds(
   return { top, left, width: renderWidth, height: renderHeight };
 }
 
-const GRADIENT_LEFT = 'linear-gradient(to right, #0a0f14 0%, rgba(10,15,20,0.95) 10%, rgba(10,15,20,0.82) 25%, rgba(10,15,20,0.6) 45%, rgba(10,15,20,0.35) 65%, rgba(10,15,20,0.12) 82%, transparent 100%)';
-const GRADIENT_RIGHT = 'linear-gradient(to left, #0a0f14 0%, rgba(10,15,20,0.95) 10%, rgba(10,15,20,0.82) 25%, rgba(10,15,20,0.6) 45%, rgba(10,15,20,0.35) 65%, rgba(10,15,20,0.12) 82%, transparent 100%)';
-const GRADIENT_TOP = 'linear-gradient(to bottom, #0a0f14 0%, rgba(10,15,20,0.85) 20%, rgba(10,15,20,0.5) 50%, rgba(10,15,20,0.15) 75%, transparent 100%)';
-const GRADIENT_BOTTOM = 'linear-gradient(to top, #0a0f14 0%, rgba(10,15,20,0.95) 15%, rgba(10,15,20,0.75) 35%, rgba(10,15,20,0.45) 55%, rgba(10,15,20,0.15) 75%, transparent 100%)';
+const GRADIENT_LEFT = 'linear-gradient(to right, #0a0f14 0%, #0a0f14 5%, rgba(10,15,20,0.98) 15%, rgba(10,15,20,0.93) 25%, rgba(10,15,20,0.85) 35%, rgba(10,15,20,0.72) 50%, rgba(10,15,20,0.50) 65%, rgba(10,15,20,0.25) 80%, rgba(10,15,20,0.08) 92%, transparent 100%)';
+const GRADIENT_RIGHT = 'linear-gradient(to left, #0a0f14 0%, #0a0f14 5%, rgba(10,15,20,0.98) 15%, rgba(10,15,20,0.93) 25%, rgba(10,15,20,0.85) 35%, rgba(10,15,20,0.72) 50%, rgba(10,15,20,0.50) 65%, rgba(10,15,20,0.25) 80%, rgba(10,15,20,0.08) 92%, transparent 100%)';
+const GRADIENT_TOP = 'linear-gradient(to bottom, #0a0f14 0%, #0a0f14 5%, rgba(10,15,20,0.95) 15%, rgba(10,15,20,0.85) 30%, rgba(10,15,20,0.65) 50%, rgba(10,15,20,0.35) 70%, rgba(10,15,20,0.10) 88%, transparent 100%)';
+const GRADIENT_BOTTOM = 'linear-gradient(to top, #0a0f14 0%, #0a0f14 5%, rgba(10,15,20,0.98) 15%, rgba(10,15,20,0.92) 28%, rgba(10,15,20,0.78) 42%, rgba(10,15,20,0.55) 58%, rgba(10,15,20,0.28) 75%, rgba(10,15,20,0.08) 90%, transparent 100%)';
 
 export default function HeroSection({ images }: HeroSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -194,8 +194,10 @@ export default function HeroSection({ images }: HeroSectionProps) {
   const currentImage = images[currentIndex];
 
   // Ancho del gradiente lateral: 25% del ancho de la imagen, mínimo 80px
-  const gradientW = bounds ? Math.max(bounds.width * 0.25, 80) : 0;
-  const gradientH = bounds ? Math.max(bounds.height * 0.35, 60) : 0;
+  // Gradientes laterales: 40% del ancho de la imagen, mínimo 120px
+  const gradientW = bounds ? Math.max(bounds.width * 0.40, 120) : 0;
+  // Gradientes verticales: 45% del alto de la imagen, mínimo 80px
+  const gradientH = bounds ? Math.max(bounds.height * 0.45, 80) : 0;
 
   return (
     <section
