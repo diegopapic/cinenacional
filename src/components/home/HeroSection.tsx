@@ -1,8 +1,7 @@
 // src/components/home/HeroSection.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 interface HeroImage {
@@ -28,6 +27,13 @@ interface HeroImage {
 
 interface HeroSectionProps {
   images: HeroImage[];
+}
+
+interface ImageBounds {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
 }
 
 function getHeroImageUrl(publicId: string): string {
@@ -95,9 +101,84 @@ function generateCaption(image: HeroImage): string {
   return parts.join(' ') || '';
 }
 
+/**
+ * Calcula el rect real de una imagen con object-fit: contain
+ * dentro de su contenedor.
+ */
+function getContainedImageBounds(
+  containerWidth: number,
+  containerHeight: number,
+  naturalWidth: number,
+  naturalHeight: number
+): ImageBounds {
+  const containerRatio = containerWidth / containerHeight;
+  const imageRatio = naturalWidth / naturalHeight;
+
+  let renderWidth: number;
+  let renderHeight: number;
+
+  if (imageRatio > containerRatio) {
+    // Imagen más ancha proporcionalmente → limitada por ancho
+    renderWidth = containerWidth;
+    renderHeight = containerWidth / imageRatio;
+  } else {
+    // Imagen más alta proporcionalmente → limitada por alto
+    renderHeight = containerHeight;
+    renderWidth = containerHeight * imageRatio;
+  }
+
+  // No agrandar más allá del tamaño natural
+  if (renderWidth > naturalWidth) {
+    renderWidth = naturalWidth;
+    renderHeight = naturalWidth / imageRatio;
+  }
+
+  const left = (containerWidth - renderWidth) / 2;
+  const top = (containerHeight - renderHeight) / 2;
+
+  return { top, left, width: renderWidth, height: renderHeight };
+}
+
+const GRADIENT_LEFT = 'linear-gradient(to right, #0a0f14 0%, rgba(10,15,20,0.95) 10%, rgba(10,15,20,0.82) 25%, rgba(10,15,20,0.6) 45%, rgba(10,15,20,0.35) 65%, rgba(10,15,20,0.12) 82%, transparent 100%)';
+const GRADIENT_RIGHT = 'linear-gradient(to left, #0a0f14 0%, rgba(10,15,20,0.95) 10%, rgba(10,15,20,0.82) 25%, rgba(10,15,20,0.6) 45%, rgba(10,15,20,0.35) 65%, rgba(10,15,20,0.12) 82%, transparent 100%)';
+const GRADIENT_TOP = 'linear-gradient(to bottom, #0a0f14 0%, rgba(10,15,20,0.85) 20%, rgba(10,15,20,0.5) 50%, rgba(10,15,20,0.15) 75%, transparent 100%)';
+const GRADIENT_BOTTOM = 'linear-gradient(to top, #0a0f14 0%, rgba(10,15,20,0.95) 15%, rgba(10,15,20,0.75) 35%, rgba(10,15,20,0.45) 55%, rgba(10,15,20,0.15) 75%, transparent 100%)';
+
 export default function HeroSection({ images }: HeroSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [bounds, setBounds] = useState<ImageBounds | null>(null);
+  const containerRef = useRef<HTMLElement>(null);
+  const imgRefs = useRef<Map<number, HTMLImageElement>>(new Map());
 
+  const recalcBounds = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const img = imgRefs.current.get(currentIndex);
+    if (!img || !img.naturalWidth) return;
+
+    const newBounds = getContainedImageBounds(
+      container.clientWidth,
+      container.clientHeight,
+      img.naturalWidth,
+      img.naturalHeight
+    );
+    setBounds(newBounds);
+  }, [currentIndex]);
+
+  // Recalcular cuando cambia la imagen activa
+  useEffect(() => {
+    recalcBounds();
+  }, [recalcBounds]);
+
+  // Recalcular en resize
+  useEffect(() => {
+    const onResize = () => recalcBounds();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [recalcBounds]);
+
+  // Auto-rotate
   useEffect(() => {
     if (images.length <= 1) return;
 
@@ -112,8 +193,15 @@ export default function HeroSection({ images }: HeroSectionProps) {
 
   const currentImage = images[currentIndex];
 
+  // Ancho del gradiente lateral: 25% del ancho de la imagen, mínimo 80px
+  const gradientW = bounds ? Math.max(bounds.width * 0.25, 80) : 0;
+  const gradientH = bounds ? Math.max(bounds.height * 0.35, 60) : 0;
+
   return (
-    <section className="relative h-[50vh] md:h-[60vh] lg:h-[70vh] w-full overflow-hidden bg-background">
+    <section
+      ref={containerRef}
+      className="relative h-[50vh] md:h-[60vh] lg:h-[70vh] w-full overflow-hidden bg-background"
+    >
       {/* Slides */}
       {images.map((image, idx) => (
         <div
@@ -121,31 +209,55 @@ export default function HeroSection({ images }: HeroSectionProps) {
           className="absolute inset-0 flex items-center justify-center transition-opacity duration-1000"
           style={{ opacity: idx === currentIndex ? 1 : 0 }}
         >
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            ref={(el) => {
+              if (el) imgRefs.current.set(idx, el);
+            }}
             src={getHeroImageUrl(image.cloudinaryPublicId)}
             alt={generateCaption(image)}
-            fill
-            className="object-contain"
-            sizes="100vw"
-            priority={idx === 0}
+            onLoad={() => {
+              if (idx === currentIndex) recalcBounds();
+            }}
+            className="max-w-full max-h-full w-auto h-auto object-contain"
+            {...(idx === 0 ? { fetchPriority: 'high' } : {})}
           />
         </div>
       ))}
 
-      {/* Gradient overlays - left, right, and bottom */}
-      <div
-        className="absolute inset-y-0 left-0 z-[2] w-[35%] pointer-events-none"
-        style={{
-          background: 'linear-gradient(to right, #0a0f14 0%, rgba(10,15,20,0.92) 15%, rgba(10,15,20,0.75) 35%, rgba(10,15,20,0.50) 55%, rgba(10,15,20,0.25) 75%, rgba(10,15,20,0.08) 90%, transparent 100%)'
-        }}
-      />
-      <div
-        className="absolute inset-y-0 right-0 z-[2] w-[35%] pointer-events-none"
-        style={{
-          background: 'linear-gradient(to left, #0a0f14 0%, rgba(10,15,20,0.92) 15%, rgba(10,15,20,0.75) 35%, rgba(10,15,20,0.50) 55%, rgba(10,15,20,0.25) 75%, rgba(10,15,20,0.08) 90%, transparent 100%)'
-        }}
-      />
-      <div className="absolute inset-0 z-[2] bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
+      {/* Gradientes pegados a los bordes reales de la imagen */}
+      {bounds && (
+        <div
+          className="absolute z-[2] pointer-events-none"
+          style={{
+            top: bounds.top,
+            left: bounds.left,
+            width: bounds.width,
+            height: bounds.height,
+          }}
+        >
+          {/* Izquierda */}
+          <div
+            className="absolute top-0 left-0 h-full"
+            style={{ width: gradientW, background: GRADIENT_LEFT }}
+          />
+          {/* Derecha */}
+          <div
+            className="absolute top-0 right-0 h-full"
+            style={{ width: gradientW, background: GRADIENT_RIGHT }}
+          />
+          {/* Arriba */}
+          <div
+            className="absolute top-0 left-0 w-full"
+            style={{ height: gradientH, background: GRADIENT_TOP }}
+          />
+          {/* Abajo */}
+          <div
+            className="absolute bottom-0 left-0 w-full"
+            style={{ height: gradientH, background: GRADIENT_BOTTOM }}
+          />
+        </div>
+      )}
 
       {/* Caption + dots */}
       <div className="absolute inset-x-0 bottom-0 z-10">
