@@ -1,13 +1,12 @@
 // src/app/(site)/listados/personas/PersonasFilters.tsx
 'use client';
 
-import { useMemo } from 'react';
-import { 
-  PersonListFilters, 
+import { ChevronDown } from 'lucide-react';
+import {
+  PersonListFilters,
   FiltersDataResponse,
   GENDER_OPTIONS
 } from '@/lib/people/personListTypes';
-import { generateYearOptions } from '@/lib/people/personListUtils';
 
 interface PersonasFiltersProps {
   filters: PersonListFilters;
@@ -17,30 +16,84 @@ interface PersonasFiltersProps {
   onClearFilters: () => void;
 }
 
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string | number;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-[10px] uppercase tracking-widest text-muted-foreground/40">
+        {label}
+      </label>
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 w-full appearance-none border border-border/30 bg-transparent px-2 pr-7 text-[12px] text-muted-foreground/60 outline-none transition-colors focus:border-accent/40 [&>option]:bg-[#0c0d0f] [&>option]:text-[#9a9da2]"
+        >
+          {children}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/40" />
+      </div>
+    </div>
+  );
+}
+
+function FilterInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  min,
+  max,
+}: {
+  label: string;
+  value: string | number;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-[10px] uppercase tracking-widest text-muted-foreground/40">
+        {label}
+      </label>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder || 'Año'}
+        min={min}
+        max={max}
+        className="h-8 w-full border border-border/30 bg-transparent px-2 text-[12px] text-muted-foreground/60 outline-none transition-colors placeholder:text-muted-foreground/30 focus:border-accent/40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      />
+    </div>
+  );
+}
+
 export default function PersonasFilters({
   filters,
   filtersData,
   isLoading,
   onFilterChange,
-  onClearFilters
 }: PersonasFiltersProps) {
-  // Generar arrays de años para los selectores
-  const birthYears = useMemo(() => {
-    if (!filtersData?.years.birthYearMin || !filtersData?.years.birthYearMax) return [];
-    return generateYearOptions(filtersData.years.birthYearMin, filtersData.years.birthYearMax);
-  }, [filtersData?.years]);
-
-  const deathYears = useMemo(() => {
-    if (!filtersData?.years.deathYearMin || !filtersData?.years.deathYearMax) return [];
-    return generateYearOptions(filtersData.years.deathYearMin, filtersData.years.deathYearMax);
-  }, [filtersData?.years]);
-
   if (isLoading) {
     return (
-      <div className="animate-pulse space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="h-16 bg-gray-800 rounded-lg" />
+      <div className="animate-pulse border-b border-border/20 py-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <div key={i}>
+              <div className="mb-1 h-3 w-16 rounded bg-muted/30" />
+              <div className="h-8 rounded bg-muted/30" />
+            </div>
           ))}
         </div>
       </div>
@@ -48,176 +101,121 @@ export default function PersonasFilters({
   }
 
   return (
-    <div className="space-y-4 py-4 border-t border-gray-800">
-      {/* Fila 1: Filtros principales */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+    <div className="border-b border-border/20 py-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         {/* Género */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Género</label>
-          <select
-            value={filters.gender || ''}
-            onChange={(e) => onFilterChange('gender', e.target.value as PersonListFilters['gender'])}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value=""></option>
-            {GENDER_OPTIONS.filter(o => o.value !== '').map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FilterSelect
+          label="Género"
+          value={filters.gender || ''}
+          onChange={(v) => onFilterChange('gender', v as PersonListFilters['gender'])}
+        >
+          <option value="">Todos</option>
+          {GENDER_OPTIONS.filter(o => o.value !== '').map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </FilterSelect>
 
         {/* Nacionalidad */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Nacionalidad</label>
-          <select
-            value={filters.nationalityId || ''}
-            onChange={(e) => onFilterChange('nationalityId', e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value=""></option>
-            {filtersData?.nationalities.map(nat => (
-              <option key={nat.id} value={nat.id}>
-                {nat.name} ({nat.count})
-              </option>
-            ))}
-          </select>
-        </div>
+        <FilterSelect
+          label="Nacionalidad"
+          value={filters.nationalityId || ''}
+          onChange={(v) => onFilterChange('nationalityId', v ? parseInt(v) : '')}
+        >
+          <option value="">Todos</option>
+          {filtersData?.nationalities.map(nat => (
+            <option key={nat.id} value={nat.id}>
+              {nat.name} ({nat.count})
+            </option>
+          ))}
+        </FilterSelect>
 
         {/* Lugar de nacimiento */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Lugar de nacimiento</label>
-          <select
-            value={filters.birthLocationId || ''}
-            onChange={(e) => onFilterChange('birthLocationId', e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value=""></option>
-            {filtersData?.birthLocations.map(loc => (
-              <option key={loc.id} value={loc.id}>
-                {loc.fullPath} ({loc.count})
-              </option>
-            ))}
-          </select>
-        </div>
+        <FilterSelect
+          label="Lugar de nacimiento"
+          value={filters.birthLocationId || ''}
+          onChange={(v) => onFilterChange('birthLocationId', v ? parseInt(v) : '')}
+        >
+          <option value="">Todos</option>
+          {filtersData?.birthLocations.map(loc => (
+            <option key={loc.id} value={loc.id}>
+              {loc.fullPath} ({loc.count})
+            </option>
+          ))}
+        </FilterSelect>
 
         {/* Lugar de muerte */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Lugar de muerte</label>
-          <select
-            value={filters.deathLocationId || ''}
-            onChange={(e) => onFilterChange('deathLocationId', e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value=""></option>
-            {filtersData?.deathLocations.map(loc => (
-              <option key={loc.id} value={loc.id}>
-                {loc.fullPath} ({loc.count})
-              </option>
-            ))}
-          </select>
-        </div>
+        <FilterSelect
+          label="Lugar de muerte"
+          value={filters.deathLocationId || ''}
+          onChange={(v) => onFilterChange('deathLocationId', v ? parseInt(v) : '')}
+        >
+          <option value="">Todos</option>
+          {filtersData?.deathLocations.map(loc => (
+            <option key={loc.id} value={loc.id}>
+              {loc.fullPath} ({loc.count})
+            </option>
+          ))}
+        </FilterSelect>
 
         {/* Rol */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Rol</label>
-          <select
-            value={filters.roleId || ''}
-            onChange={(e) => {
-              const value = e.target.value;
-              // ACTOR y SELF son strings especiales, el resto son IDs numéricos
-              if (value === 'ACTOR' || value === 'SELF') {
-                onFilterChange('roleId', value);
-              } else if (value) {
-                onFilterChange('roleId', parseInt(value));
-              } else {
-                onFilterChange('roleId', '');
-              }
-            }}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value=""></option>
-            {filtersData?.roles.map(role => (
-              <option key={role.id} value={role.id}>
-                {role.name} ({role.count})
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Fila 2: Rangos de años */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {/* Año de nacimiento desde */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Nació desde el año</label>
-          <select
-            value={filters.birthYearFrom || ''}
-            onChange={(e) => onFilterChange('birthYearFrom', e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value=""></option>
-            {birthYears.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Año de nacimiento hasta */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Nació hasta el año</label>
-          <select
-            value={filters.birthYearTo || ''}
-            onChange={(e) => onFilterChange('birthYearTo', e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value=""></option>
-            {birthYears.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Año de muerte desde */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Murió desde el año</label>
-          <select
-            value={filters.deathYearFrom || ''}
-            onChange={(e) => onFilterChange('deathYearFrom', e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value=""></option>
-            {deathYears.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Año de muerte hasta */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Murió hasta el año</label>
-          <select
-            value={filters.deathYearTo || ''}
-            onChange={(e) => onFilterChange('deathYearTo', e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value=""></option>
-            {deathYears.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Botón limpiar filtros */}
-      <div className="flex justify-end">
-        <button
-          onClick={onClearFilters}
-          className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+        <FilterSelect
+          label="Rol"
+          value={filters.roleId || ''}
+          onChange={(v) => {
+            if (v === 'ACTOR' || v === 'SELF') {
+              onFilterChange('roleId', v);
+            } else if (v) {
+              onFilterChange('roleId', parseInt(v));
+            } else {
+              onFilterChange('roleId', '');
+            }
+          }}
         >
-          Limpiar filtros
-        </button>
+          <option value="">Todos</option>
+          {filtersData?.roles.map(role => (
+            <option key={role.id} value={role.id}>
+              {role.name} ({role.count})
+            </option>
+          ))}
+        </FilterSelect>
+
+        {/* Nació desde */}
+        <FilterInput
+          label="Nació desde"
+          value={filters.birthYearFrom || ''}
+          onChange={(v) => onFilterChange('birthYearFrom', v ? parseInt(v) : '')}
+          min={filtersData?.years.birthYearMin || undefined}
+          max={filtersData?.years.birthYearMax || undefined}
+        />
+
+        {/* Nació hasta */}
+        <FilterInput
+          label="Nació hasta"
+          value={filters.birthYearTo || ''}
+          onChange={(v) => onFilterChange('birthYearTo', v ? parseInt(v) : '')}
+          min={filtersData?.years.birthYearMin || undefined}
+          max={filtersData?.years.birthYearMax || undefined}
+        />
+
+        {/* Murió desde */}
+        <FilterInput
+          label="Murió desde"
+          value={filters.deathYearFrom || ''}
+          onChange={(v) => onFilterChange('deathYearFrom', v ? parseInt(v) : '')}
+          min={filtersData?.years.deathYearMin || undefined}
+          max={filtersData?.years.deathYearMax || undefined}
+        />
+
+        {/* Murió hasta */}
+        <FilterInput
+          label="Murió hasta"
+          value={filters.deathYearTo || ''}
+          onChange={(v) => onFilterChange('deathYearTo', v ? parseInt(v) : '')}
+          min={filtersData?.years.deathYearMin || undefined}
+          max={filtersData?.years.deathYearMax || undefined}
+        />
       </div>
     </div>
   );

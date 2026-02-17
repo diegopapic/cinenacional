@@ -12,30 +12,29 @@ interface PersonasGridProps {
 }
 
 export default function PersonasGrid({ people, isLoading, viewMode }: PersonasGridProps) {
-  
   if (isLoading) {
+    const skeletonCount = viewMode === 'compact' ? 24 : 12;
     return (
       <div className={
         viewMode === 'compact'
-          ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6"
-          : "grid grid-cols-1 lg:grid-cols-2 gap-4"
+          ? 'mt-6 grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-4 lg:grid-cols-6'
+          : 'mt-6 grid grid-cols-1 gap-6 md:grid-cols-2'
       }>
-        {Array.from({ length: 12 }).map((_, i) => (
+        {Array.from({ length: skeletonCount }).map((_, i) => (
           <div key={i} className="animate-pulse">
             {viewMode === 'compact' ? (
-              <>
-                <div className="aspect-[3/4] bg-gray-800 rounded-lg mb-2" />
-                <div className="h-4 bg-gray-800 rounded mb-1" />
-                <div className="h-3 bg-gray-800 rounded w-2/3" />
-              </>
+              <div className="flex flex-col items-center">
+                <div className="h-20 w-20 rounded-full bg-muted/30 md:h-24 md:w-24" />
+                <div className="mx-auto mt-3 h-4 w-20 rounded bg-muted/30" />
+                <div className="mx-auto mt-1 h-3 w-14 rounded bg-muted/30" />
+              </div>
             ) : (
-              <div className="flex gap-4 p-4 bg-gray-900 rounded-lg">
-                <div className="w-28 h-36 bg-gray-800 rounded-lg flex-shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-5 bg-gray-800 rounded w-3/4" />
-                  <div className="h-4 bg-gray-800 rounded w-1/2" />
-                  <div className="h-4 bg-gray-800 rounded w-2/3" />
-                  <div className="h-4 bg-gray-800 rounded w-1/3" />
+              <div className="flex gap-4 py-4 md:gap-5">
+                <div className="h-28 w-20 shrink-0 rounded-sm bg-muted/30 md:h-32 md:w-24" />
+                <div className="flex flex-1 flex-col justify-center gap-2">
+                  <div className="h-5 w-3/4 rounded bg-muted/30" />
+                  <div className="h-4 w-1/2 rounded bg-muted/30" />
+                  <div className="h-4 w-2/3 rounded bg-muted/30" />
                 </div>
               </div>
             )}
@@ -44,23 +43,18 @@ export default function PersonasGrid({ people, isLoading, viewMode }: PersonasGr
       </div>
     );
   }
-  
+
   if (people.length === 0) {
     return (
-      <div className="text-center py-16">
-        <div className="text-gray-400 text-lg mb-2">
-          No se encontraron personas con los filtros seleccionados
-        </div>
-        <p className="text-gray-500 text-sm">
-          Intenta ajustar los filtros o limpiarlos para ver más resultados
-        </p>
+      <div className="py-20 text-center text-sm text-muted-foreground/40">
+        No se encontraron personas con los filtros seleccionados.
       </div>
     );
   }
-  
+
   if (viewMode === 'compact') {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+      <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-4 lg:grid-cols-6">
         {people.map((person) => (
           <PersonCardCompact key={person.id} person={person} />
         ))}
@@ -69,7 +63,7 @@ export default function PersonasGrid({ people, isLoading, viewMode }: PersonasGr
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
       {people.map((person) => (
         <PersonCardDetailed key={person.id} person={person} />
       ))}
