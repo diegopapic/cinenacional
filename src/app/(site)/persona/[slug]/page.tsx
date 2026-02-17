@@ -537,9 +537,10 @@ export default function PersonPage({ params }: PersonPageProps) {
     person.gender
   );
 
-  // ✅ Solo 2 pestañas
-  const hasTabs = allRolesList.length > 0;
-  const tabs = hasTabs ? ['Todos los roles', 'Por rol'] : [];
+  // ✅ Pestañas: solo mostrar si hay más de 1 rol distinto
+  const hasFilmography = allRolesList.length > 0;
+  const hasSingleRole = roleSections.length === 1;
+  const tabs = hasFilmography && !hasSingleRole ? ['Todos los roles', 'Por rol'] : [];
 
   // Calcular stats separando actuaciones de apariciones como sí mismo
   const actingRolesForStats = filmography?.castRoles?.filter((r: CastRole) => r.isActor !== false) || [];
@@ -1171,35 +1172,85 @@ export default function PersonPage({ params }: PersonPageProps) {
       </section>
 
       {/* Filmography Section */}
-      {hasTabs && (
+      {hasFilmography && (
         <section className="py-12">
           <div className="max-w-7xl mx-auto px-4 lg:px-6">
-            {/* Navigation Tabs */}
-            <div className="border-b border-border/30 mb-8">
-              <nav className="flex space-x-8">
-                {tabs.map((tabName) => (
-                  <button
-                    key={tabName}
-                    onClick={() => {
-                      setActiveTab(tabName);
-                      setShowAllFilmography(false);
-                    }}
-                    className={`pb-4 px-1 border-b-2 font-medium text-[13px] md:text-sm tracking-wide whitespace-nowrap transition-colors ${activeTab === tabName
-                      ? 'border-accent text-foreground'
-                      : 'border-transparent text-muted-foreground/50 hover:text-foreground'
-                      }`}
-                  >
-                    {tabName === 'Todos los roles'
-                      ? `${tabName} (${allRolesList.length})`
-                      : `${tabName} (${roleSections.length})`
-                    }
-                  </button>
-                ))}
-              </nav>
-            </div>
+            {/* Navigation Tabs - solo si hay más de 1 rol */}
+            {tabs.length > 0 && (
+              <div className="border-b border-border/30 mb-8">
+                <nav className="flex space-x-8">
+                  {tabs.map((tabName) => (
+                    <button
+                      key={tabName}
+                      onClick={() => {
+                        setActiveTab(tabName);
+                        setShowAllFilmography(false);
+                      }}
+                      className={`pb-4 px-1 border-b-2 font-medium text-[13px] md:text-sm tracking-wide whitespace-nowrap transition-colors ${activeTab === tabName
+                        ? 'border-accent text-foreground'
+                        : 'border-transparent text-muted-foreground/50 hover:text-foreground'
+                        }`}
+                    >
+                      {tabName === 'Todos los roles'
+                        ? `${tabName} (${allRolesList.length})`
+                        : `${tabName} (${roleSections.length})`
+                      }
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            )}
 
-            {/* Contenido según pestaña activa */}
-            {activeTab === 'Todos los roles' ? (
+            {/* Contenido: un solo rol sin pestañas, o según pestaña activa */}
+            {hasSingleRole ? (
+              <div className="space-y-1">
+                <h2 className="font-serif text-xl md:text-2xl tracking-tight text-foreground mb-6 flex items-center gap-2">
+                  Filmografía en Argentina — {roleSections[0].roleName}
+                  <div className="relative group">
+                    <button
+                      type="button"
+                      className="w-5 h-5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground/50 hover:text-foreground text-xs flex items-center justify-center transition-colors"
+                      aria-label="Más información"
+                    >
+                      ?
+                    </button>
+                    <div className="absolute right-0 md:left-0 md:right-auto top-full mt-2 w-72 p-3 bg-muted border border-border/30 rounded-lg shadow-xl font-sans text-xs leading-relaxed text-muted-foreground/80 font-normal opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                      Esta filmografía incluye únicamente películas argentinas o coproducciones con participación de Argentina. Los trabajos realizados exclusivamente en el exterior no están incluidos.
+                    </div>
+                  </div>
+                </h2>
+                <div className="divide-y divide-border/10">
+                  {(showAllFilmography ? roleSections[0].items : roleSections[0].items.slice(0, 10)).map((item, index) =>
+                    renderMovieItem(
+                      item,
+                      index,
+                      false,
+                      roleSections[0].roleName === 'Actuación'
+                    )
+                  )}
+                </div>
+
+                {/* Show More Button */}
+                {roleSections[0].items.length > 10 && (
+                  <div className="mt-8 text-center">
+                    <button
+                      onClick={() => setShowAllFilmography(!showAllFilmography)}
+                      className="text-accent hover:text-accent/80 text-sm font-medium transition-colors flex items-center space-x-2 mx-auto"
+                    >
+                      <span>{showAllFilmography ? 'Ver menos' : 'Ver filmografía completa'}</span>
+                      <svg
+                        className={`w-4 h-4 transition-transform duration-200 ${showAllFilmography ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : activeTab === 'Todos los roles' ? (
               <div className="space-y-1">
                 <h2 className="font-serif text-xl md:text-2xl tracking-tight text-foreground mb-6 flex items-center gap-2">
                   Filmografía en Argentina
