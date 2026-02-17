@@ -4,6 +4,7 @@ import { Efemeride, DirectorInfo } from '@/types/home.types';
 
 interface EfemeridesSectionProps {
   efemerides: Efemeride[];
+  noPadding?: boolean;
 }
 
 /**
@@ -12,14 +13,14 @@ interface EfemeridesSectionProps {
  */
 function renderDirectorLinks(item: Efemeride) {
   const directors = item.directors;
-  
+
   // Si hay array de directores, usarlo
   if (directors && directors.length > 0) {
     if (directors.length === 1) {
       return (
-        <Link 
+        <Link
           href={`/persona/${directors[0].slug}`}
-          className="text-white hover:text-cine-accent transition-colors"
+          className="transition-colors hover:text-accent"
         >
           {directors[0].name}
         </Link>
@@ -29,16 +30,16 @@ function renderDirectorLinks(item: Efemeride) {
     if (directors.length === 2) {
       return (
         <>
-          <Link 
+          <Link
             href={`/persona/${directors[0].slug}`}
-            className="text-white hover:text-cine-accent transition-colors"
+            className="transition-colors hover:text-accent"
           >
             {directors[0].name}
           </Link>
           {' y '}
-          <Link 
+          <Link
             href={`/persona/${directors[1].slug}`}
-            className="text-white hover:text-cine-accent transition-colors"
+            className="transition-colors hover:text-accent"
           >
             {directors[1].name}
           </Link>
@@ -51,9 +52,9 @@ function renderDirectorLinks(item: Efemeride) {
       <>
         {directors.slice(0, -1).map((director, index) => (
           <span key={director.slug}>
-            <Link 
+            <Link
               href={`/persona/${director.slug}`}
-              className="text-white hover:text-cine-accent transition-colors"
+              className="transition-colors hover:text-accent"
             >
               {director.name}
             </Link>
@@ -61,51 +62,51 @@ function renderDirectorLinks(item: Efemeride) {
           </span>
         ))}
         {'y '}
-        <Link 
+        <Link
           href={`/persona/${directors[directors.length - 1].slug}`}
-          className="text-white hover:text-cine-accent transition-colors"
+          className="transition-colors hover:text-accent"
         >
           {directors[directors.length - 1].name}
         </Link>
       </>
     );
   }
-  
+
   // Fallback al campo director/directorSlug único (compatibilidad)
   if (item.director && item.directorSlug) {
     return (
-      <Link 
+      <Link
         href={`/persona/${item.directorSlug}`}
-        className="text-white hover:text-cine-accent transition-colors"
+        className="transition-colors hover:text-accent"
       >
         {item.director}
       </Link>
     );
   }
-  
+
   // Si solo hay nombre pero no slug
   if (item.director) {
     return <span>{item.director}</span>;
   }
-  
+
   return null;
 }
 
-export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps) {
+export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesSectionProps) {
   const renderEvento = (item: Efemeride) => {
     const directorLinks = renderDirectorLinks(item);
     const hasDirector = item.directors?.length || item.director;
-    
+
     if (item.tipo === 'pelicula') {
       switch (item.tipoEvento) {
         case 'estreno':
           return (
             <>
-              se estrenaba{' '}
+              Se estrenó{' '}
               {item.slug ? (
-                <Link 
+                <Link
                   href={`/pelicula/${item.slug}`}
-                  className="text-white hover:text-cine-accent transition-colors"
+                  className="transition-colors hover:text-accent"
                 >
                   {item.titulo}
                 </Link>
@@ -122,11 +123,11 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
         case 'inicio_rodaje':
           return (
             <>
-              empezaba el rodaje de{' '}
+              Empezó el rodaje de{' '}
               {item.slug ? (
-                <Link 
+                <Link
                   href={`/pelicula/${item.slug}`}
-                  className="text-white hover:text-cine-accent transition-colors"
+                  className="transition-colors hover:text-accent"
                 >
                   {item.titulo}
                 </Link>
@@ -143,11 +144,11 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
         case 'fin_rodaje':
           return (
             <>
-              terminaba el rodaje de{' '}
+              Terminó el rodaje de{' '}
               {item.slug ? (
-                <Link 
+                <Link
                   href={`/pelicula/${item.slug}`}
-                  className="text-white hover:text-cine-accent transition-colors"
+                  className="transition-colors hover:text-accent"
                 >
                   {item.titulo}
                 </Link>
@@ -169,11 +170,11 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
         case 'nacimiento':
           return (
             <>
-              nacía{' '}
+              Nació{' '}
               {item.slug ? (
-                <Link 
+                <Link
                   href={`/persona/${item.slug}`}
-                  className="text-white hover:text-cine-accent transition-colors"
+                  className="transition-colors hover:text-accent"
                 >
                   {item.titulo}
                 </Link>
@@ -185,11 +186,11 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
         case 'muerte':
           return (
             <>
-              moría{' '}
+              Murió{' '}
               {item.slug ? (
-                <Link 
+                <Link
                   href={`/persona/${item.slug}`}
-                  className="text-white hover:text-cine-accent transition-colors"
+                  className="transition-colors hover:text-accent"
                 >
                   {item.titulo}
                 </Link>
@@ -202,135 +203,151 @@ export default function EfemeridesSection({ efemerides }: EfemeridesSectionProps
           return <span>{item.evento}</span>;
       }
     }
-    
+
     // Fallback al texto original si no hay tipoEvento
     return <span>{item.evento}</span>;
   };
 
-  const renderImage = (item: Efemeride) => {
-    if (item.tipo === "pelicula") {
-      // Para películas
-      if (item.posterUrl) {
-        // Si tiene poster, mostrarlo
-        return item.slug ? (
-          <Link 
-            href={`/pelicula/${item.slug}`}
-            className="block w-16 h-24 rounded overflow-hidden hover:opacity-80 transition-opacity"
-          >
-            <img 
-              src={item.posterUrl} 
-              alt={item.titulo || 'Película'}
-              className="w-full h-full object-cover"
-            />
-          </Link>
-        ) : (
-          <div className="w-16 h-24 rounded overflow-hidden">
-            <img 
-              src={item.posterUrl} 
-              alt={item.titulo || 'Película'}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        );
-      } else {
-        // Si no tiene poster, mostrar placeholder
-        return item.slug ? (
-          <Link 
-            href={`/pelicula/${item.slug}`}
-            className="w-16 h-24 rounded movie-placeholder flex items-center justify-center hover:opacity-80 transition-opacity"
-          >
-            <svg className="w-8 h-8 text-cine-accent opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
-            </svg>
-          </Link>
-        ) : (
-          <div className="w-16 h-24 rounded movie-placeholder flex items-center justify-center">
-            <svg className="w-8 h-8 text-cine-accent opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
-            </svg>
-          </div>
-        );
-      }
-    } else {
-      // Para personas
-      if (item.photoUrl) {
-        // Si tiene foto, mostrarla
-        return item.slug ? (
-          <Link 
-            href={`/persona/${item.slug}`}
-            className="block w-24 h-24 rounded-full overflow-hidden hover:opacity-80 transition-opacity"
-          >
-            <img 
-              src={item.photoUrl} 
-              alt={item.titulo || 'Persona'}
-              className="w-full h-full object-cover"
-            />
-          </Link>
-        ) : (
-          <div className="w-24 h-24 rounded-full overflow-hidden">
-            <img 
-              src={item.photoUrl} 
-              alt={item.titulo || 'Persona'}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        );
-      } else {
-        // Si no tiene foto, mostrar placeholder
-        return item.slug ? (
-          <Link 
-            href={`/persona/${item.slug}`}
-            className="w-24 h-24 rounded-full person-placeholder flex items-center justify-center hover:opacity-80 transition-opacity"
-          >
-            <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </Link>
-        ) : (
-          <div className="w-24 h-24 rounded-full person-placeholder flex items-center justify-center">
-            <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-        );
+  // Calcular el año del evento a partir de "Hace X años"
+  const getYear = (item: Efemeride): string => {
+    if (item.fecha) {
+      const fecha = new Date(item.fecha);
+      if (!isNaN(fecha.getTime())) {
+        return fecha.getFullYear().toString();
       }
     }
+    const match = item.hace?.match(/\d+/);
+    if (match) {
+      const yearsAgo = parseInt(match[0], 10);
+      const currentYear = new Date().getFullYear();
+      return (currentYear - yearsAgo).toString();
+    }
+    return '';
   };
+
+  const today = new Date();
+  const dateString = today.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
+
+  const content = (
+    <>
+      {/* Encabezado de sección */}
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="font-serif text-xl md:text-2xl tracking-tight text-foreground">
+          Efemérides
+          <span className="ml-2 font-sans text-sm md:text-base font-normal text-muted-foreground/40">
+            {dateString}
+          </span>
+        </h2>
+        <Link
+          href="/efemerides"
+          className="shrink-0 text-[12px] md:text-[13px] tracking-wide text-muted-foreground/40 transition-colors hover:text-accent"
+        >
+          Ver más
+        </Link>
+      </div>
+
+      {/* Separador */}
+      <div className="mt-5 md:mt-6 border-t border-border/30 pt-5 md:pt-6">
+        {efemerides.length > 0 ? (
+          <div className="flex flex-col gap-0">
+            {efemerides.map((item, index) => {
+              const imageUrl = item.tipo === 'pelicula' ? item.posterUrl : item.photoUrl;
+              const isRound = item.tipo === 'persona';
+              const linkHref = item.slug
+                ? item.tipo === 'pelicula' ? `/pelicula/${item.slug}` : `/persona/${item.slug}`
+                : null;
+
+              return (
+                <div
+                  key={item.id}
+                  className={`flex items-center gap-3 md:gap-4 border-b border-border/10 py-3 ${
+                    index === efemerides.length - 1 ? 'border-b-0' : ''
+                  }`}
+                >
+                  {/* Imagen: afiche (aspect 2:3, centrado) o retrato (circular) */}
+                  {linkHref ? (
+                    <Link href={linkHref} className="shrink-0 flex items-center justify-center w-16 md:w-20">
+                      <div className={`relative overflow-hidden ${
+                        isRound
+                          ? 'h-16 w-16 md:h-20 md:w-20 rounded-full'
+                          : 'h-16 md:h-20 aspect-[2/3] rounded-sm'
+                      }`}>
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={item.titulo || ''}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-muted/20">
+                            {isRound ? (
+                              <svg className="h-6 w-6 text-muted-foreground/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            ) : (
+                              <svg className="h-6 w-6 text-muted-foreground/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                              </svg>
+                            )}
+                          </div>
+                        )}
+                        <div className={`absolute inset-0 ${isRound ? 'rounded-full' : 'rounded-sm'} border border-foreground/[0.04]`} />
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="shrink-0 flex items-center justify-center w-16 md:w-20">
+                      <div className={`relative overflow-hidden ${
+                        isRound
+                          ? 'h-16 w-16 md:h-20 md:w-20 rounded-full'
+                          : 'h-16 md:h-20 aspect-[2/3] rounded-sm'
+                      }`}>
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={item.titulo || ''}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-muted/20">
+                            <svg className="h-6 w-6 text-muted-foreground/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                            </svg>
+                          </div>
+                        )}
+                        <div className={`absolute inset-0 ${isRound ? 'rounded-full' : 'rounded-sm'} border border-foreground/[0.04]`} />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Año + texto */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] md:text-[12px] tabular-nums text-muted-foreground/35">
+                      {getYear(item)}
+                    </p>
+                    <p className="text-[13px] md:text-sm leading-snug text-foreground/70">
+                      {renderEvento(item)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-[13px] text-muted-foreground/40">
+            No hay efemérides para la fecha
+          </p>
+        )}
+      </div>
+    </>
+  );
+
+  if (noPadding) {
+    return <section>{content}</section>;
+  }
 
   return (
     <section>
-      <h2 className="serif-heading text-3xl mb-6 text-white">Efemérides</h2>
-      <div className="glass-effect rounded-lg p-6">
-        {efemerides.length > 0 ? (
-          <div className="space-y-4">
-            {efemerides.map((item) => (
-              <div key={item.id} className="flex items-center space-x-4 pb-4 border-b border-gray-700 last:border-0 last:pb-0">
-                <div className="w-24 h-24 flex items-center justify-center flex-shrink-0">
-                  {renderImage(item)}
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-medium text-cine-accent text-lg">{item.hace}</h3>
-                  <p className="text-sm mt-1 text-gray-300">
-                    ... {renderEvento(item)}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-400">No hay efemérides para la fecha</p>
-          </div>
-        )}
-      </div>
-      <div className="mt-6 text-center">
-        <Link
-          href="/efemerides"
-          className="inline-block border border-cine-accent text-cine-accent hover:bg-cine-accent hover:text-white px-6 py-2 rounded-lg font-medium transition-colors"
-        >
-          Ver más efemérides
-        </Link>
-      </div>
+      {content}
     </section>
   );
 }
