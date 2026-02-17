@@ -193,11 +193,9 @@ export default function HeroSection({ images }: HeroSectionProps) {
 
   const currentImage = images[currentIndex];
 
-  // Ancho del gradiente lateral: 25% del ancho de la imagen, mínimo 80px
-  // Gradientes laterales: 40% del ancho de la imagen, mínimo 120px
-  const gradientW = bounds ? Math.max(bounds.width * 0.40, 120) : 0;
-  // Gradientes verticales: 45% del alto de la imagen, mínimo 80px
-  const gradientH = bounds ? Math.max(bounds.height * 0.45, 80) : 0;
+  // Cuánto se meten los gradientes dentro de la imagen
+  const insetX = bounds ? Math.max(bounds.width * 0.18, 80) : 0;
+  const insetY = bounds ? Math.max(bounds.height * 0.25, 60) : 0;
 
   return (
     <section
@@ -227,38 +225,54 @@ export default function HeroSection({ images }: HeroSectionProps) {
         </div>
       ))}
 
-      {/* Gradientes pegados a los bordes reales de la imagen */}
+      {/* Gradientes: van desde el borde del contenedor y se meten dentro de la imagen */}
       {bounds && (
-        <div
-          className="absolute z-[2] pointer-events-none"
-          style={{
-            top: bounds.top,
-            left: bounds.left,
-            width: bounds.width,
-            height: bounds.height,
-          }}
-        >
-          {/* Izquierda */}
+        <>
+          {/* Izquierda: desde x=0 hasta adentro de la imagen */}
           <div
-            className="absolute top-0 left-0 h-full"
-            style={{ width: gradientW, background: GRADIENT_LEFT }}
+            className="absolute z-[2] pointer-events-none"
+            style={{
+              top: bounds.top,
+              left: 0,
+              width: bounds.left + insetX,
+              height: bounds.height,
+              background: GRADIENT_LEFT,
+            }}
           />
-          {/* Derecha */}
+          {/* Derecha: desde adentro de la imagen hasta el borde derecho */}
           <div
-            className="absolute top-0 right-0 h-full"
-            style={{ width: gradientW, background: GRADIENT_RIGHT }}
+            className="absolute z-[2] pointer-events-none"
+            style={{
+              top: bounds.top,
+              right: 0,
+              width: (containerRef.current ? containerRef.current.clientWidth - bounds.left - bounds.width : 0) + insetX,
+              height: bounds.height,
+              background: GRADIENT_RIGHT,
+            }}
           />
-          {/* Arriba */}
+          {/* Arriba: desde y=0 hasta adentro de la imagen */}
           <div
-            className="absolute top-0 left-0 w-full"
-            style={{ height: gradientH, background: GRADIENT_TOP }}
+            className="absolute z-[2] pointer-events-none"
+            style={{
+              top: 0,
+              left: bounds.left,
+              width: bounds.width,
+              height: bounds.top + insetY,
+              background: GRADIENT_TOP,
+            }}
           />
-          {/* Abajo */}
+          {/* Abajo: desde adentro de la imagen hasta el borde inferior */}
           <div
-            className="absolute bottom-0 left-0 w-full"
-            style={{ height: gradientH, background: GRADIENT_BOTTOM }}
+            className="absolute z-[2] pointer-events-none"
+            style={{
+              bottom: 0,
+              left: bounds.left,
+              width: bounds.width,
+              height: (containerRef.current ? containerRef.current.clientHeight - bounds.top - bounds.height : 0) + insetY,
+              background: GRADIENT_BOTTOM,
+            }}
           />
-        </div>
+        </>
       )}
 
       {/* Caption + dots */}
