@@ -133,9 +133,19 @@ export default function HeroSection({ images }: HeroSectionProps) {
       ))}
 
       {/* Gradient overlays - left, right, and bottom */}
-      <div className="absolute inset-y-0 left-0 z-[1] w-[45%] bg-gradient-to-r from-background via-background/60 to-transparent pointer-events-none" />
-      <div className="absolute inset-y-0 right-0 z-[1] w-[45%] bg-gradient-to-l from-background via-background/60 to-transparent pointer-events-none" />
-      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
+      <div
+        className="absolute inset-y-0 left-0 z-[2] w-[35%] pointer-events-none"
+        style={{
+          background: 'linear-gradient(to right, #0a0f14 0%, rgba(10,15,20,0.92) 15%, rgba(10,15,20,0.75) 35%, rgba(10,15,20,0.50) 55%, rgba(10,15,20,0.25) 75%, rgba(10,15,20,0.08) 90%, transparent 100%)'
+        }}
+      />
+      <div
+        className="absolute inset-y-0 right-0 z-[2] w-[35%] pointer-events-none"
+        style={{
+          background: 'linear-gradient(to left, #0a0f14 0%, rgba(10,15,20,0.92) 15%, rgba(10,15,20,0.75) 35%, rgba(10,15,20,0.50) 55%, rgba(10,15,20,0.25) 75%, rgba(10,15,20,0.08) 90%, transparent 100%)'
+        }}
+      />
+      <div className="absolute inset-0 z-[2] bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
 
       {/* Caption + dots */}
       <div className="absolute inset-x-0 bottom-0 z-10">
