@@ -3,7 +3,8 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ChevronLeft, ChevronRight, CalendarClock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -88,9 +89,32 @@ function buildPageNumbers(current: number, total: number): (number | '...')[] {
 
 interface FilmReleasesByYearProps {
   entries: ReleaseEntry[]
+  initialUpcoming?: boolean
 }
 
-export function FilmReleasesByYear({ entries }: FilmReleasesByYearProps) {
+function isEntryFuture(entry: ReleaseEntry): boolean {
+  if (!entry.year) return false
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth() + 1
+  const currentDay = now.getDate()
+
+  if (entry.year > currentYear) return true
+  if (entry.year < currentYear) return false
+
+  // Mismo año: comparar mes y día
+  const month = entry.releaseMonth ?? 0
+  const day = entry.releaseDay ?? 0
+  if (month === 0) return true // solo tiene año actual, considerarlo futuro
+  if (month > currentMonth) return true
+  if (month < currentMonth) return false
+  if (day === 0) return true // mismo mes sin día, considerarlo futuro
+  return day >= currentDay
+}
+
+export function FilmReleasesByYear({ entries, initialUpcoming = false }: FilmReleasesByYearProps) {
+  const router = useRouter()
+
   // La década activa inicial es la que contiene CURRENT_YEAR
   const initialDecadeIdx = DECADES.findIndex(
     (d) => CURRENT_YEAR >= d.start && CURRENT_YEAR <= d.end,
@@ -99,6 +123,7 @@ export function FilmReleasesByYear({ entries }: FilmReleasesByYearProps) {
     initialDecadeIdx >= 0 ? initialDecadeIdx : DECADES.length - 1,
   )
   const [selectedYear, setSelectedYear] = useState<number | null>(CURRENT_YEAR)
+  const [upcomingMode, setUpcomingMode] = useState(initialUpcoming)
   const [page, setPage] = useState(1)
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -120,10 +145,12 @@ export function FilmReleasesByYear({ entries }: FilmReleasesByYearProps) {
     })
   }, [selectedYear, decadeIndex])
 
-  // Filtrar entries por década o año, ordenar de más antiguo a más reciente
+  // Filtrar entries por década, año o upcoming, ordenar de más antiguo a más reciente
   const filtered = useMemo(() => {
     let result: ReleaseEntry[]
-    if (selectedYear !== null) {
+    if (upcomingMode) {
+      result = entries.filter(isEntryFuture)
+    } else if (selectedYear !== null) {
       result = entries.filter((e) => e.year === selectedYear)
     } else {
       result = entries.filter(
@@ -138,16 +165,18 @@ export function FilmReleasesByYear({ entries }: FilmReleasesByYearProps) {
       const isoB = b.releaseDateISO ?? ''
       return isoA.localeCompare(isoB)
     })
-  }, [entries, decade, selectedYear])
+  }, [entries, decade, selectedYear, upcomingMode])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
   const pageNumbers = buildPageNumbers(page, totalPages)
 
   // Title
-  const title = selectedYear
-    ? `Estrenos de ${selectedYear}`
-    : `Estrenos de la década de ${decade.start}`
+  const title = upcomingMode
+    ? 'Próximos estrenos'
+    : selectedYear
+      ? `Estrenos de ${selectedYear}`
+      : `Estrenos de la década de ${decade.start}`
 
   // Handlers
   const handleDecadeChange = (dir: -1 | 1) => {
@@ -163,6 +192,22 @@ export function FilmReleasesByYear({ entries }: FilmReleasesByYearProps) {
     setPage(1)
   }
 
+  const toggleUpcoming = () => {
+    const next = !upcomingMode
+    setUpcomingMode(next)
+    setPage(1)
+    router.replace(
+      next ? '/listados/estrenos?period=upcoming' : '/listados/estrenos',
+      { scroll: false },
+    )
+  }
+
+  const exitUpcoming = () => {
+    setUpcomingMode(false)
+    setPage(1)
+    router.replace('/listados/estrenos', { scroll: false })
+  }
+
   const handlePageChange = (p: number) => {
     setPage(p)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -172,16 +217,32 @@ export function FilmReleasesByYear({ entries }: FilmReleasesByYearProps) {
     <div>
       {/* ── Header ── */}
       <div className="mx-auto w-full max-w-7xl px-4 pt-10 md:pt-14 lg:px-6">
-        <h1 className="font-serif text-2xl tracking-tight text-foreground md:text-3xl lg:text-4xl">
-          {title}
-        </h1>
-        <p className="mt-1 text-[12px] text-muted-foreground/40 md:text-[13px]">
-          {filtered.length} {filtered.length === 1 ? 'pelicula' : 'peliculas'}
-        </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-serif text-2xl tracking-tight text-foreground md:text-3xl lg:text-4xl">
+              {title}
+            </h1>
+            <p className="mt-1 text-[12px] text-muted-foreground/40 md:text-[13px]">
+              {filtered.length} {filtered.length === 1 ? 'pelicula' : 'peliculas'}
+            </p>
+          </div>
+          <button
+            onClick={upcomingMode ? exitUpcoming : toggleUpcoming}
+            className={cn(
+              'mt-1 flex shrink-0 items-center gap-1.5 rounded-sm px-3 py-1.5 text-[12px] transition-colors md:text-[13px]',
+              upcomingMode
+                ? 'bg-accent/15 text-accent'
+                : 'text-muted-foreground/50 hover:text-foreground/70',
+            )}
+          >
+            <CalendarClock className="h-3.5 w-3.5" />
+            {upcomingMode ? 'Ver todos' : 'Próximos estrenos'}
+          </button>
+        </div>
       </div>
 
-      {/* ── Year bar ── */}
-      <div className="mx-auto mt-6 w-full max-w-7xl border-b border-border/10 lg:px-6">
+      {/* ── Year bar (oculta en modo upcoming) ── */}
+      {!upcomingMode && <div className="mx-auto mt-6 w-full max-w-7xl border-b border-border/10 lg:px-6">
         <div className="flex items-center">
           {/* Prev decade arrow */}
           <button
@@ -244,7 +305,7 @@ export function FilmReleasesByYear({ entries }: FilmReleasesByYearProps) {
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-      </div>
+      </div>}
 
       {/* ── Grid ── */}
       <div className="mx-auto w-full max-w-7xl px-4 pb-10 md:pb-14 lg:px-6">
@@ -255,7 +316,7 @@ export function FilmReleasesByYear({ entries }: FilmReleasesByYearProps) {
       ) : (
         <div className="mt-6 grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
           {paginated.map((film, i) => (
-            <CompactCard key={`${film.href}-${i}`} film={film} showYear={selectedYear === null} />
+            <CompactCard key={`${film.href}-${i}`} film={film} showYear={upcomingMode || selectedYear === null} />
           ))}
         </div>
       )}

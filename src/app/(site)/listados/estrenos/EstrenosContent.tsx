@@ -2,11 +2,14 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { FilmReleasesByYear, ReleaseEntry } from '@/components/FilmReleasesByYear';
 import { MovieWithRelease } from '@/types/home.types';
 import { POSTER_PLACEHOLDER } from '@/lib/movies/movieConstants';
 
 export default function EstrenosContent() {
+    const searchParams = useSearchParams();
+    const initialUpcoming = searchParams.get('period') === 'upcoming';
     const [movies, setMovies] = useState<MovieWithRelease[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -101,5 +104,5 @@ export default function EstrenosContent() {
         );
     }
 
-    return <FilmReleasesByYear entries={entries} />;
+    return <FilmReleasesByYear entries={entries} initialUpcoming={initialUpcoming} />;
 }
