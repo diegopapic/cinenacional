@@ -17,25 +17,24 @@ export default function PeliculasGrid({ movies, isLoading, viewMode }: Peliculas
     return (
       <div className={
         viewMode === 'compact'
-          ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6"
-          : "grid grid-cols-1 lg:grid-cols-2 gap-4"
+          ? "mt-6 grid grid-cols-3 gap-x-4 gap-y-6 md:grid-cols-4 lg:grid-cols-6"
+          : "mt-6 grid grid-cols-1 gap-6 md:grid-cols-2"
       }>
-        {Array.from({ length: 12 }).map((_, i) => (
+        {Array.from({ length: viewMode === 'compact' ? 12 : 6 }).map((_, i) => (
           <div key={i} className="animate-pulse">
             {viewMode === 'compact' ? (
               <>
-                <div className="aspect-[2/3] bg-gray-800 rounded-lg mb-2" />
-                <div className="h-4 bg-gray-800 rounded mb-1" />
-                <div className="h-3 bg-gray-800 rounded w-2/3" />
+                <div className="aspect-[2/3] rounded-sm bg-muted/30" />
+                <div className="mt-2 h-3 rounded bg-muted/20" />
+                <div className="mt-1 h-2.5 w-2/3 rounded bg-muted/15" />
               </>
             ) : (
-              <div className="flex gap-4 p-4 bg-gray-900 rounded-lg">
-                <div className="w-24 h-36 bg-gray-800 rounded-lg flex-shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-5 bg-gray-800 rounded w-3/4" />
-                  <div className="h-4 bg-gray-800 rounded w-1/2" />
-                  <div className="h-4 bg-gray-800 rounded w-2/3" />
-                  <div className="h-4 bg-gray-800 rounded w-1/3" />
+              <div className="flex gap-4 py-4 md:gap-5">
+                <div className="aspect-[2/3] w-20 shrink-0 rounded-sm bg-muted/30 md:w-24" />
+                <div className="flex flex-1 flex-col justify-center gap-2">
+                  <div className="h-4 w-3/4 rounded bg-muted/20" />
+                  <div className="h-3 w-1/2 rounded bg-muted/15" />
+                  <div className="h-3 w-2/3 rounded bg-muted/15" />
                 </div>
               </div>
             )}
@@ -47,20 +46,15 @@ export default function PeliculasGrid({ movies, isLoading, viewMode }: Peliculas
 
   if (movies.length === 0) {
     return (
-      <div className="text-center py-16">
-        <div className="text-gray-400 text-lg mb-2">
-          No se encontraron películas con los filtros seleccionados
-        </div>
-        <p className="text-gray-500 text-sm">
-          Intenta ajustar los filtros o limpiarlos para ver más resultados
-        </p>
+      <div className="py-20 text-center text-sm text-muted-foreground/40">
+        No se encontraron películas con los filtros seleccionados.
       </div>
     );
   }
 
   if (viewMode === 'compact') {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+      <div className="mt-6 grid grid-cols-3 gap-x-4 gap-y-6 md:grid-cols-4 lg:grid-cols-6">
         {movies.map((movie) => (
           <MovieCardCompact key={movie.id} movie={movie} />
         ))}
@@ -69,7 +63,7 @@ export default function PeliculasGrid({ movies, isLoading, viewMode }: Peliculas
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
       {movies.map((movie) => (
         <MovieCardDetailed key={movie.id} movie={movie} />
       ))}

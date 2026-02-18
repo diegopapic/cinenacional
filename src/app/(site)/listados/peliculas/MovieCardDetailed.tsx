@@ -2,6 +2,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { MovieListItem } from '@/lib/movies/movieListTypes';
 import {
   formatDuration,
@@ -15,6 +16,20 @@ interface MovieCardDetailedProps {
   movie: MovieListItem;
 }
 
+/**
+ * Formatea la lista de países coproductores (excluyendo Argentina)
+ * con "y" entre los últimos dos.
+ */
+function formatCoproduction(countries: Array<{ id: number; name: string }>): string | null {
+  const others = countries.filter(c => c.name.toLowerCase() !== 'argentina');
+  if (others.length === 0) return null;
+  if (others.length === 1) return others[0].name;
+  if (others.length === 2) return `${others[0].name} y ${others[1].name}`;
+  const last = others[others.length - 1].name;
+  const rest = others.slice(0, -1).map(c => c.name).join(', ');
+  return `${rest} y ${last}`;
+}
+
 export default function MovieCardDetailed({ movie }: MovieCardDetailedProps) {
   const displayYear = getDisplayYear(movie);
   const releaseDateFormatted = formatReleaseDate(
@@ -23,120 +38,103 @@ export default function MovieCardDetailed({ movie }: MovieCardDetailedProps) {
     movie.releaseDay
   );
   const durationFormatted = formatDuration(movie.duration);
-  const durationTypeLabel = getDurationTypeLabel(movie.tipoDuracion);
+  // Solo mostrar tipo de duración si no hay duración numérica
+  const durationTypeLabel = !movie.duration ? getDurationTypeLabel(movie.tipoDuracion) : '';
+  const stageLabel = movie.stage && movie.stage !== 'COMPLETA' ? getStageLabel(movie.stage) : null;
+  const coproductionText = movie.countries.length > 1 ? formatCoproduction(movie.countries) : null;
 
   return (
     <Link
       href={`/pelicula/${movie.slug}`}
-      className="group block"
+      className="group flex gap-4 border-b border-border/10 py-4 last:border-b-0 md:gap-5"
     >
-      <div className="flex gap-4 p-4 bg-gray-900/50 rounded-lg border border-gray-800 hover:border-gray-700 transition-all hover:bg-gray-900">
-        {/* Poster */}
-        <div className="relative w-24 h-36 flex-shrink-0 rounded-lg overflow-hidden bg-gray-800">
-          {movie.posterUrl ? (
-            <img
-              src={movie.posterUrl}
-              alt={movie.title}
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <svg
-                className="w-10 h-10 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"
-                />
-              </svg>
-            </div>
-          )}
-        </div>
+      {/* Poster */}
+      <div className="relative aspect-[2/3] w-20 shrink-0 overflow-hidden rounded-sm md:w-24">
+        {movie.posterUrl ? (
+          <Image
+            fill
+            src={movie.posterUrl}
+            alt={movie.title}
+            sizes="96px"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-muted/30">
+            <svg
+              className="h-8 w-8 text-muted-foreground/20"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
+                d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"
+              />
+            </svg>
+          </div>
+        )}
+        <div className="absolute inset-0 border border-foreground/[0.04]" />
+      </div>
 
-        {/* Información */}
-        <div className="flex-1 min-w-0">
-          {/* Título y año */}
-          <h3 className="font-semibold text-white group-hover:text-orange-400 transition-colors text-lg">
+      {/* Content */}
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+        {/* Title + Year + Stage badge */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <p className="text-[14px] font-medium leading-snug text-foreground/80 transition-colors group-hover:text-accent md:text-[15px]">
             {movie.title}
             {displayYear && (
-              <span className="font-normal text-gray-400 ml-2">({displayYear})</span>
+              <span className="ml-1.5 text-[12px] font-normal tabular-nums text-muted-foreground/40">
+                ({displayYear})
+              </span>
             )}
-          </h3>
-
-          {/* Directores */}
-          {movie.directors.length > 0 && (
-            <p className="text-sm text-gray-400 mt-1">
-              Dir. {movie.directors.map(d => d.name).join(', ')}
-            </p>
+          </p>
+          {stageLabel && (
+            <span className="rounded-sm bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-widest text-amber-400/80">
+              {stageLabel}
+            </span>
           )}
+        </div>
 
-          {/* Fecha de estreno */}
-          {releaseDateFormatted && movie.releaseYear !== displayYear && (
-            <p className="text-sm text-gray-500 mt-0.5">
-              Estrenada: {releaseDateFormatted}
-            </p>
-          )}
+        {/* Directors */}
+        {movie.directors.length > 0 && (
+          <p className="text-[12px] text-muted-foreground/50">
+            Dir: {movie.directors.map(d => d.name).join(', ')}
+          </p>
+        )}
 
-          {/* Sinopsis */}
-          {movie.synopsis && (
-            <p className="text-sm text-gray-400 mt-2 line-clamp-2">
-              {movie.synopsis}
-            </p>
-          )}
-
-          {/* Géneros */}
-          {movie.genres.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {movie.genres.map(genre => (
-                <span
-                  key={genre.id}
-                  className="px-2 py-0.5 bg-gray-800 text-gray-300 text-xs rounded"
-                >
-                  {genre.name}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Metadatos: Duración, tipo, sonido, color */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
-            {durationFormatted && (
-              <span>{durationFormatted}</span>
+        {/* Metadata row: genres, duration, duration type (only if no duration) */}
+        {(movie.genres.length > 0 || durationFormatted || durationTypeLabel) && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground/40">
+            {movie.genres.length > 0 && (
+              <span>{movie.genres.map(g => g.name).join(', ')}</span>
             )}
-            {durationTypeLabel && (
-              <span>{durationTypeLabel}</span>
-            )}
-            {movie.soundType && (
-              <span>{movie.soundType.charAt(0).toUpperCase() + movie.soundType.slice(1).toLowerCase()}</span>
-            )}
-            {movie.colorType && (
-              <span>{movie.colorType.name}</span>
-            )}
-            {movie.stage && movie.stage !== 'COMPLETA' && (
-              <span className="text-orange-400/80">{getStageLabel(movie.stage)}</span>
-            )}
+            {durationFormatted && <span>{durationFormatted}</span>}
+            {durationTypeLabel && <span>{durationTypeLabel}</span>}
           </div>
+        )}
 
-          {/* Países coproductores */}
-          {movie.countries.length > 1 && (
-            <p className="text-xs text-gray-600 mt-1">
-              Coproducción: {movie.countries.map(c => c.name).join(', ')}
-            </p>
-          )}
-        </div>
+        {/* Release date */}
+        {releaseDateFormatted && (
+          <p className="text-[11px] text-muted-foreground/40">
+            Estreno en Argentina: {releaseDateFormatted}
+          </p>
+        )}
 
-        {/* Flecha de navegación */}
-        <div className="flex items-center text-gray-600 group-hover:text-orange-400 transition-colors">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </div>
+        {/* Co-production */}
+        {coproductionText && (
+          <p className="text-[11px] text-muted-foreground/35">
+            Coproducción con {coproductionText}
+          </p>
+        )}
+
+        {/* Synopsis */}
+        {movie.synopsis && (
+          <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground/45">
+            {movie.synopsis}
+          </p>
+        )}
       </div>
     </Link>
   );
