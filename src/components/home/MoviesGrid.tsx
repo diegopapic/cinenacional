@@ -12,6 +12,7 @@ interface MoviesGridProps {
   showDate?: boolean;
   dateFormatter?: (movie: MovieWithRelease) => string;
   dateType?: 'past' | 'future';
+  showFutureBadge?: boolean;
   ctaText?: string;
   ctaHref?: string;
 }
@@ -24,6 +25,7 @@ export default function MoviesGrid({
   showDate = false,
   dateFormatter,
   dateType = 'past',
+  showFutureBadge = true,
   ctaText,
   ctaHref
 }: MoviesGridProps) {
@@ -76,6 +78,7 @@ export default function MoviesGrid({
                     showDate={showDate}
                     dateFormatter={dateFormatter}
                     dateType={dateType}
+                    showFutureBadge={showFutureBadge}
                   />
                 </div>
               ))}
@@ -90,6 +93,7 @@ export default function MoviesGrid({
                   showDate={showDate}
                   dateFormatter={dateFormatter}
                   dateType={dateType}
+                  showFutureBadge={showFutureBadge}
                 />
               ))}
             </div>
