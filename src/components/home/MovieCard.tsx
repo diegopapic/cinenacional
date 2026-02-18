@@ -66,11 +66,8 @@ export default function MovieCard({
   const formatDate = dateFormatter || defaultDateFormatter;
   const director = obtenerDirectores(movie);
   const year = movie.releaseYear;
-  const subtitulo = director && year
-    ? `${director} (${year})`
-    : year
-      ? `${year}`
-      : director || '';
+  const tituloConAnio = year ? `${movie.title} (${year})` : movie.title;
+  const subtitulo = director ? `Dir: ${director}` : '';
 
   return (
     <Link
@@ -109,12 +106,12 @@ export default function MovieCard({
         )}
       </div>
 
-      {/* Título */}
+      {/* Título (Año) */}
       <h3 className="mt-2.5 truncate text-[13px] font-medium leading-snug text-foreground/80 transition-colors group-hover:text-accent">
-        {movie.title}
+        {tituloConAnio}
       </h3>
 
-      {/* Subtítulo: Director (Año) */}
+      {/* Subtítulo: Dir: Director */}
       {subtitulo && (
         <p className="truncate text-[12px] text-muted-foreground/40">
           {subtitulo}
