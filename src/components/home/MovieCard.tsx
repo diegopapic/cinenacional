@@ -9,13 +9,15 @@ interface MovieCardProps {
   showDate?: boolean;
   dateFormatter?: (movie: MovieWithRelease) => string;
   dateType?: 'past' | 'future';
+  showFutureBadge?: boolean;
 }
 
 export default function MovieCard({
   movie,
   showDate,
   dateFormatter,
-  dateType = 'past'
+  dateType = 'past',
+  showFutureBadge = true
 }: MovieCardProps) {
 
   const obtenerDirectores = (movie: MovieWithRelease): string => {
@@ -100,7 +102,7 @@ export default function MovieCard({
         )}
 
         {/* Badge formato */}
-        {showDate && dateType === 'future' && (
+        {showDate && dateType === 'future' && showFutureBadge && (
           <div className="absolute right-1.5 top-1.5 rounded-sm bg-black/60 px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-foreground/70 backdrop-blur-sm">
             Próx.
           </div>

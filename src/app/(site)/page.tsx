@@ -158,7 +158,7 @@ export default function HomePage() {
   }, []);
 
 
-  // Formateador para fechas futuras (próximos estrenos)
+  // Formateador para fechas de estrenos (sin año, solo para la home)
   const formatearFechaEstreno = (movie: any): string => {
     if (!movie.releaseYear) return 'Fecha por confirmar';
 
@@ -172,10 +172,10 @@ export default function HomePage() {
     ];
 
     if (!movie.releaseDay) {
-      return `${meses[movie.releaseMonth - 1]} ${movie.releaseYear}`;
+      return meses[movie.releaseMonth - 1];
     }
 
-    return `${movie.releaseDay} de ${meses[movie.releaseMonth - 1].toLowerCase()} de ${movie.releaseYear}`;
+    return `${movie.releaseDay} de ${meses[movie.releaseMonth - 1].toLowerCase()}`;
   };
 
   return (
@@ -213,6 +213,7 @@ export default function HomePage() {
             showDate={true}
             dateType="future"
             dateFormatter={formatearFechaEstreno}
+            showFutureBadge={false}
             ctaText="Ver más próximos estrenos"
             ctaHref="/listados/estrenos?period=upcoming"
           />
