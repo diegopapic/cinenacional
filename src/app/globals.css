@@ -328,6 +328,9 @@ body {
 /* Sobrescribe el color blanco global para el admin */
 [data-admin="true"] {
   color: rgb(17 24 39); /* text-gray-900 */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, Helvetica, sans-serif;
+  font-weight: 400;
+  letter-spacing: normal;
 }
 
 [data-admin="true"] input,
