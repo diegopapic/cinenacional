@@ -178,11 +178,11 @@ export default function SearchPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="text-center">
-          <Search className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-2">
+          <Search className="w-16 h-16 text-muted-foreground/40 mx-auto mb-4" />
+          <h1 className="font-serif text-2xl tracking-tight text-foreground md:text-3xl">
             Ingresa un término de búsqueda
           </h1>
-          <p className="text-zinc-400">
+          <p className="text-muted-foreground mt-2">
             Busca películas y personas del cine argentino
           </p>
         </div>
@@ -194,14 +194,14 @@ export default function SearchPage() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header de búsqueda */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">
+        <h1 className="font-serif text-2xl tracking-tight text-foreground md:text-3xl lg:text-4xl">
           Resultados de búsqueda
         </h1>
-        <p className="text-zinc-400">
-          Buscando: <span className="font-medium text-white">"{query}"</span>
+        <p className="text-muted-foreground mt-2">
+          Buscando: <span className="font-medium text-foreground">"{query}"</span>
         </p>
         {results && (
-          <p className="text-sm text-zinc-500 mt-1">
+          <p className="text-sm text-muted-foreground/60 mt-1">
             {results.totalMovies + results.totalPeople} resultados encontrados
             ({results.totalMovies} películas, {results.totalPeople} personas)
           </p>
@@ -209,14 +209,14 @@ export default function SearchPage() {
       </div>
 
       {/* Tabs de filtrado */}
-      <div className="border-b border-zinc-800 mb-6">
+      <div className="border-b border-border/40 mb-6">
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab('all')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'all'
-                ? 'border-zinc-400 text-white'
-                : 'border-transparent text-zinc-400 hover:text-white hover:border-zinc-600'
+                ? 'border-foreground/60 text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
             }`}
           >
             Todos
@@ -230,8 +230,8 @@ export default function SearchPage() {
             onClick={() => setActiveTab('movies')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'movies'
-                ? 'border-zinc-400 text-white'
-                : 'border-transparent text-zinc-400 hover:text-white hover:border-zinc-600'
+                ? 'border-foreground/60 text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
             }`}
           >
             Películas
@@ -243,8 +243,8 @@ export default function SearchPage() {
             onClick={() => setActiveTab('people')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'people'
-                ? 'border-zinc-400 text-white'
-                : 'border-transparent text-zinc-400 hover:text-white hover:border-zinc-600'
+                ? 'border-foreground/60 text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
             }`}
           >
             Personas
@@ -258,8 +258,8 @@ export default function SearchPage() {
       {/* Contenido */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-zinc-600 mr-3" />
-          <span className="text-zinc-400">Buscando...</span>
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground/40 mr-3" />
+          <span className="text-muted-foreground">Buscando...</span>
         </div>
       ) : error ? (
         <div className="text-center py-12">
@@ -271,7 +271,7 @@ export default function SearchPage() {
           {showMovies && filteredMovies.length > 0 && (
             <div>
               {activeTab === 'all' && (
-                <h2 className="text-xl font-bold text-white mb-4">
+                <h2 className="font-serif text-xl md:text-2xl tracking-tight text-foreground mb-4">
                   Películas ({filteredMovies.length})
                 </h2>
               )}
@@ -283,9 +283,9 @@ export default function SearchPage() {
                     <Link
                       key={movie.id}
                       href={`/pelicula/${movie.slug}`}
-                      className="bg-zinc-900 rounded-lg hover:bg-zinc-800 transition-colors p-4 flex gap-4 group"
+                      className="bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors p-4 flex gap-4 group"
                     >
-                      <div className="flex-shrink-0 w-20 h-28 bg-zinc-800 rounded overflow-hidden">
+                      <div className="flex-shrink-0 w-20 h-28 bg-muted/50 rounded overflow-hidden">
                         {movie.posterUrl ? (
                           <Image
                             src={movie.posterUrl}
@@ -296,15 +296,15 @@ export default function SearchPage() {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Film className="w-8 h-8 text-zinc-600" />
+                            <Film className="w-8 h-8 text-muted-foreground/40" />
                           </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-zinc-300 transition-colors">
+                        <h3 className="text-lg font-medium text-foreground mb-1 group-hover:text-foreground/80 transition-colors">
                           {movie.title}
                         </h3>
-                        <div className="flex items-center gap-4 text-sm text-zinc-400 mb-2">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                           {displayYear && (
                             <span className="flex items-center gap-1">
                               <Calendar className="w-4 h-4" />
@@ -316,8 +316,8 @@ export default function SearchPage() {
                           )}
                         </div>
                         {movie.synopsis && (
-                          <p 
-                            className="text-sm text-zinc-400 line-clamp-2"
+                          <p
+                            className="text-sm text-muted-foreground line-clamp-2"
                             dangerouslySetInnerHTML={{ __html: sanitizeHtml(movie.synopsis) }}
                           />
                         )}
@@ -333,7 +333,7 @@ export default function SearchPage() {
           {showPeople && filteredPeople.length > 0 && (
             <div>
               {activeTab === 'all' && (
-                <h2 className="text-xl font-bold text-white mb-4">
+                <h2 className="font-serif text-xl md:text-2xl tracking-tight text-foreground mb-4">
                   Personas ({filteredPeople.length})
                 </h2>
               )}
@@ -342,9 +342,9 @@ export default function SearchPage() {
                   <Link
                     key={person.id}
                     href={`/persona/${person.slug}`}
-                    className="bg-zinc-900 rounded-lg hover:bg-zinc-800 transition-colors p-4 flex gap-4 group"
+                    className="bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors p-4 flex gap-4 group"
                   >
-                    <div className="flex-shrink-0 w-20 h-20 bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="flex-shrink-0 w-20 h-20 bg-muted/50 rounded-full overflow-hidden">
                       {person.photoUrl ? (
                         <Image
                           src={person.photoUrl}
@@ -355,29 +355,29 @@ export default function SearchPage() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <User className="w-8 h-8 text-zinc-600" />
+                          <User className="w-8 h-8 text-muted-foreground/40" />
                         </div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-zinc-300 transition-colors">
+                      <h3 className="text-lg font-medium text-foreground mb-1 group-hover:text-foreground/80 transition-colors">
                         {getPersonName(person)}
                       </h3>
                       {getLifeDates(person) && (
-                        <p className="text-sm text-zinc-400 mb-1">
+                        <p className="text-sm text-muted-foreground mb-1">
                           {getLifeDates(person)}
                         </p>
                       )}
                       {person._count && (
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-muted-foreground/60">
                           {person._count.castRoles > 0 && `${person._count.castRoles} actuaciones`}
                           {person._count.castRoles > 0 && person._count.crewRoles > 0 && ' • '}
                           {person._count.crewRoles > 0 && `${person._count.crewRoles} trabajos técnicos`}
                         </p>
                       )}
                       {person.biography && (
-                        <p 
-                          className="text-sm text-zinc-400 line-clamp-2 mt-2"
+                        <p
+                          className="text-sm text-muted-foreground line-clamp-2 mt-2"
                           dangerouslySetInnerHTML={{ __html: sanitizeHtml(person.biography) }}
                         />
                       )}
@@ -390,11 +390,11 @@ export default function SearchPage() {
         </div>
       ) : (
         <div className="text-center py-12">
-          <Search className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-white mb-2">
+          <Search className="w-16 h-16 text-muted-foreground/40 mx-auto mb-4" />
+          <h2 className="font-serif text-xl md:text-2xl tracking-tight text-foreground mb-2">
             No se encontraron resultados
           </h2>
-          <p className="text-zinc-400">
+          <p className="text-muted-foreground">
             No se encontraron películas ni personas que coincidan con "{query}"
           </p>
         </div>
