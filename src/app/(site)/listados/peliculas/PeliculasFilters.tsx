@@ -1,12 +1,12 @@
 // src/app/(site)/listados/peliculas/PeliculasFilters.tsx
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
+import { ChevronDown, CalendarDays } from 'lucide-react';
 import {
   MovieListFilters,
   MovieFiltersDataResponse
 } from '@/lib/movies/movieListTypes';
-import { generateYearOptions } from '@/lib/movies/movieListUtils';
 
 interface PeliculasFiltersProps {
   filters: MovieListFilters;
@@ -16,6 +16,157 @@ interface PeliculasFiltersProps {
   onClearFilters: () => void;
 }
 
+/* ── FilterSelect ─────────────────────────────────────── */
+function FilterSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string | number | '';
+  options: Array<{ id: number | string; name: string; count?: number }>;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="block text-[10px] uppercase tracking-widest text-muted-foreground/40">
+        {label}
+      </label>
+      <div className="relative">
+        <select
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 w-full appearance-none border border-border/30 bg-transparent px-2 pr-7 text-[12px] text-muted-foreground/60 outline-none cursor-pointer [&>option]:bg-[#0c0d0f] [&>option]:text-[#9a9da2]"
+        >
+          <option value="">Todos</option>
+          {options.map(opt => (
+            <option key={opt.id} value={opt.id}>
+              {opt.name} {opt.count !== undefined && `(${opt.count})`}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/40" />
+      </div>
+    </div>
+  );
+}
+
+/* ── DateInput ────────────────────────────────────────── */
+function DateInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string; // "YYYY-MM-DD" or ""
+  onChange: (v: string) => void;
+}) {
+  const [draft, setDraft] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  const dateRef = useRef<HTMLInputElement>(null);
+
+  function isoToDisplay(iso: string): string {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    if (!y || !m || !d) return '';
+    return `${d}/${m}/${y}`;
+  }
+
+  function handleFocus() {
+    setDraft(isoToDisplay(value));
+    setIsFocused(true);
+  }
+
+  function handleBlur() {
+    setIsFocused(false);
+    if (!draft) {
+      onChange('');
+      return;
+    }
+    const match = draft.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (match) {
+      const [, d, m, y] = match;
+      onChange(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`);
+    }
+  }
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    let v = e.target.value;
+    // Auto-insert slashes
+    const digits = v.replace(/\D/g, '');
+    if (digits.length >= 2 && v.length === 2 && !v.includes('/')) {
+      v = digits.slice(0, 2) + '/';
+    } else if (digits.length >= 4 && v.length === 5 && v.charAt(2) === '/' && !v.slice(3).includes('/')) {
+      v = v.slice(0, 3) + digits.slice(2, 4) + '/';
+    }
+    setDraft(v);
+  }
+
+  function handleDatePicker(e: React.ChangeEvent<HTMLInputElement>) {
+    onChange(e.target.value);
+  }
+
+  const displayValue = isFocused ? draft : isoToDisplay(value);
+
+  return (
+    <div className="space-y-1">
+      <label className="block text-[10px] uppercase tracking-widest text-muted-foreground/40">
+        {label}
+      </label>
+      <div className="relative flex h-8 items-center border border-border/30 bg-transparent">
+        <input
+          type="text"
+          placeholder="dd/mm/aaaa"
+          value={displayValue}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onChange={handleChange}
+          className="w-full bg-transparent px-2 text-[12px] text-muted-foreground/60 outline-none placeholder:text-muted-foreground/25"
+        />
+        <div className="relative mr-2 h-3.5 w-3.5 shrink-0">
+          <CalendarDays className="h-3.5 w-3.5 text-muted-foreground/40" />
+          <input
+            ref={dateRef}
+            type="date"
+            value={value}
+            onChange={handleDatePicker}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            tabIndex={-1}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── FilterInput (year) ───────────────────────────────── */
+function FilterInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | '';
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="block text-[10px] uppercase tracking-widest text-muted-foreground/40">
+        {label}
+      </label>
+      <input
+        type="number"
+        placeholder="Año"
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-8 w-full border border-border/30 bg-transparent px-2 text-[12px] text-muted-foreground/60 outline-none placeholder:text-muted-foreground/25"
+      />
+    </div>
+  );
+}
+
+/* ── Main Component ───────────────────────────────────── */
 export default function PeliculasFilters({
   filters,
   filtersData,
@@ -23,21 +174,16 @@ export default function PeliculasFilters({
   onFilterChange,
   onClearFilters
 }: PeliculasFiltersProps) {
-  // Generar arrays de años para los selectores de producción
-  // Usar releaseYear como fallback si productionYear es null
-  const productionYears = useMemo(() => {
-    const min = filtersData?.years.productionYearMin || filtersData?.years.releaseYearMin;
-    const max = filtersData?.years.productionYearMax || filtersData?.years.releaseYearMax;
-    if (!min || !max) return [];
-    return generateYearOptions(min, max);
-  }, [filtersData?.years]);
 
   if (isLoading) {
     return (
-      <div className="animate-pulse space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="h-16 bg-gray-800 rounded-lg" />
+      <div className="border-b border-border/20 py-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <div key={i} className="animate-pulse space-y-1">
+              <div className="h-2.5 w-16 rounded bg-muted/20" />
+              <div className="h-8 rounded bg-muted/15" />
+            </div>
           ))}
         </div>
       </div>
@@ -45,158 +191,75 @@ export default function PeliculasFilters({
   }
 
   return (
-    <div className="space-y-4 py-4 border-t border-gray-800">
-      {/* Fila 1: Filtros principales */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+    <div className="border-b border-border/20 py-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         {/* Sonido */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Sonido</label>
-          <select
-            value={filters.soundType || ''}
-            onChange={(e) => onFilterChange('soundType', e.target.value)}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value="">Todos</option>
-            {filtersData?.soundTypes.map(opt => (
-              <option key={opt.id} value={opt.id}>
-                {opt.name} {opt.count !== undefined && `(${opt.count})`}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FilterSelect
+          label="Sonido"
+          value={filters.soundType || ''}
+          options={filtersData?.soundTypes || []}
+          onChange={(v) => onFilterChange('soundType', v)}
+        />
 
         {/* Color */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Color</label>
-          <select
-            value={filters.colorTypeId || ''}
-            onChange={(e) => onFilterChange('colorTypeId', e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value="">Todos</option>
-            {filtersData?.colorTypes.map(opt => (
-              <option key={opt.id} value={opt.id}>
-                {opt.name} {opt.count !== undefined && `(${opt.count})`}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FilterSelect
+          label="Color"
+          value={filters.colorTypeId || ''}
+          options={filtersData?.colorTypes || []}
+          onChange={(v) => onFilterChange('colorTypeId', v ? parseInt(v) : '')}
+        />
 
         {/* Tipo de duración */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Tipo de duración</label>
-          <select
-            value={filters.tipoDuracion || ''}
-            onChange={(e) => onFilterChange('tipoDuracion', e.target.value)}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value="">Todos</option>
-            {filtersData?.durationTypes.map(opt => (
-              <option key={opt.id} value={opt.id}>
-                {opt.name} {opt.count !== undefined && `(${opt.count})`}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FilterSelect
+          label="Tipo de duración"
+          value={filters.tipoDuracion || ''}
+          options={filtersData?.durationTypes || []}
+          onChange={(v) => onFilterChange('tipoDuracion', v)}
+        />
 
         {/* País coproductor */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Países coproductores</label>
-          <select
-            value={filters.countryId || ''}
-            onChange={(e) => onFilterChange('countryId', e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value="">Todos</option>
-            {filtersData?.countries.map(opt => (
-              <option key={opt.id} value={opt.id}>
-                {opt.name} {opt.count !== undefined && `(${opt.count})`}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FilterSelect
+          label="Países coproductores"
+          value={filters.countryId || ''}
+          options={filtersData?.countries || []}
+          onChange={(v) => onFilterChange('countryId', v ? parseInt(v) : '')}
+        />
 
         {/* Género */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Género</label>
-          <select
-            value={filters.genreId || ''}
-            onChange={(e) => onFilterChange('genreId', e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value="">Todos</option>
-            {filtersData?.genres.map(opt => (
-              <option key={opt.id} value={opt.id}>
-                {opt.name} {opt.count !== undefined && `(${opt.count})`}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+        <FilterSelect
+          label="Género"
+          value={filters.genreId || ''}
+          options={filtersData?.genres || []}
+          onChange={(v) => onFilterChange('genreId', v ? parseInt(v) : '')}
+        />
 
-      {/* Fila 2: Fechas de estreno (date pickers) y años de producción */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {/* Fecha de estreno desde */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Estrenada desde</label>
-          <input
-            type="date"
-            value={filters.releaseDateFrom || ''}
-            onChange={(e) => onFilterChange('releaseDateFrom', e.target.value)}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent [color-scheme:dark]"
-          />
-        </div>
+        {/* Estrenada desde */}
+        <DateInput
+          label="Estrenada desde"
+          value={filters.releaseDateFrom || ''}
+          onChange={(v) => onFilterChange('releaseDateFrom', v)}
+        />
 
-        {/* Fecha de estreno hasta */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Estrenada hasta</label>
-          <input
-            type="date"
-            value={filters.releaseDateTo || ''}
-            onChange={(e) => onFilterChange('releaseDateTo', e.target.value)}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent [color-scheme:dark]"
-          />
-        </div>
+        {/* Estrenada hasta */}
+        <DateInput
+          label="Estrenada hasta"
+          value={filters.releaseDateTo || ''}
+          onChange={(v) => onFilterChange('releaseDateTo', v)}
+        />
 
-        {/* Año de producción desde */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Producida desde</label>
-          <select
-            value={filters.productionYearFrom || ''}
-            onChange={(e) => onFilterChange('productionYearFrom', e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value="">Todos</option>
-            {productionYears.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-        </div>
+        {/* Producida desde */}
+        <FilterInput
+          label="Producida desde"
+          value={filters.productionYearFrom || ''}
+          onChange={(v) => onFilterChange('productionYearFrom', v ? parseInt(v) : '')}
+        />
 
-        {/* Año de producción hasta */}
-        <div className="space-y-1">
-          <label className="block text-xs text-gray-400 font-medium">Producida hasta</label>
-          <select
-            value={filters.productionYearTo || ''}
-            onChange={(e) => onFilterChange('productionYearTo', e.target.value ? parseInt(e.target.value) : '')}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          >
-            <option value="">Todos</option>
-            {productionYears.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Botón limpiar filtros */}
-      <div className="flex justify-end">
-        <button
-          onClick={onClearFilters}
-          className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
-        >
-          Limpiar filtros
-        </button>
+        {/* Producida hasta */}
+        <FilterInput
+          label="Producida hasta"
+          value={filters.productionYearTo || ''}
+          onChange={(v) => onFilterChange('productionYearTo', v ? parseInt(v) : '')}
+        />
       </div>
     </div>
   );
