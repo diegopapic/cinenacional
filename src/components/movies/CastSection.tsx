@@ -26,19 +26,17 @@ function getCreditedLabel(gender?: string | null): string {
   return gender === 'FEMALE' ? 'Acreditada' : 'Acreditado';
 }
 
-const INITIAL_COUNT = 6;
-
 export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
   const [expanded, setExpanded] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  // Combinar cast en una sola lista
-  const cast = [...mainCast, ...fullCast];
+  const allCast = [...mainCast, ...fullCast];
 
-  if (cast.length === 0) return null;
+  if (allCast.length === 0) return null;
 
-  const hasMore = cast.length > INITIAL_COUNT;
-  const visible = expanded ? cast : cast.slice(0, INITIAL_COUNT);
+  // Colapsado: solo actores principales. Expandido: todo el cast.
+  const hasMore = fullCast.length > 0;
+  const visible = expanded ? allCast : mainCast;
 
   const toggle = () => {
     setIsAnimating(true);
