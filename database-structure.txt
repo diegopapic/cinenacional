@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2026-02-19T00:53:22.972Z
+# Generado automáticamente el: 2026-02-19T02:47:22.669Z
 # ================================================
 
 ## Schema Prisma
@@ -180,7 +180,6 @@ model MovieLink {
   movieId   Int      @map("movie_id")
   type      LinkType
   url       String
-  title     String?  @db.VarChar(255)
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1353,7 +1352,6 @@ CREATE TABLE "movie_links" (
     "movie_id" INTEGER NOT NULL,
     "type" "link_type" NOT NULL,
     "url" TEXT NOT NULL,
-    "title" VARCHAR(255),
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
