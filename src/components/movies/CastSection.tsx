@@ -103,7 +103,7 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
 
     const itemClasses = {
       'mobile': 'group flex flex-col items-center gap-2',
-      'desktop-collapsed': 'group flex w-28 shrink-0 flex-col items-center gap-3',
+      'desktop-collapsed': 'group flex w-28 flex-col items-center gap-3',
       'desktop-expanded': 'group flex flex-col items-center gap-3',
     }[variant];
 
@@ -164,7 +164,7 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
 
           {/* DESKTOP collapsed */}
           {!expanded && (
-            <div className="hidden md:flex md:gap-8">
+            <div className="hidden md:flex md:flex-wrap md:gap-8">
               {visible.map((actor, i) => renderActorItem(actor, i, 'desktop-collapsed'))}
             </div>
           )}
