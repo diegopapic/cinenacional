@@ -2,8 +2,8 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json* ./
-COPY prisma ./prisma
-RUN npm ci
+# Ignorar postinstall (prisma generate) - se hace en el builder stage
+RUN npm ci --ignore-scripts
 
 FROM node:20-alpine AS builder
 RUN apk add --no-cache libc6-compat

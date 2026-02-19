@@ -14,3 +14,11 @@ Dockerfile
 .eslintrc*
 .prettierrc*
 tsconfig.tsbuildinfo
+
+# Archivos generados grandes (scripts de documentación)
+compiled-code.txt
+admin-code.txt
+project-structure.json
+raw_urls_detailed.json
+raw_urls.md
+database-structure.txt
