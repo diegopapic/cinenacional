@@ -67,7 +67,6 @@ export function formatPersonFormDataForAPI(data: PersonFormData) {
        links: data.links.map((link, index) => ({
            ...link,
            displayOrder: index,
-           title: link.title || null,
        })),
    };
 }

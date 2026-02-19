@@ -203,7 +203,7 @@ export default function PersonDetailPage() {
                         className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
                       >
                         <ExternalLink className="h-3 w-3" />
-                        {link.title || PERSON_LINK_TYPES[link.type] || link.type}
+                        {PERSON_LINK_TYPES[link.type] || link.type}
                         {link.isVerified && (
                           <span className="ml-auto px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">
                             Verificado

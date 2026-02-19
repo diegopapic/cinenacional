@@ -69,44 +69,29 @@ export function LinksSection({
                   </button>
                 </div>
 
-                {/* Tipo y Título */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Tipo de enlace
-                    </label>
-                    <select
-                      value={link.type}
-                      onChange={(e) => onUpdateLink(index, { type: e.target.value as any })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                    >
-                      {Object.entries(LINK_CATEGORIES).map(([key, category]) => (
-                        <optgroup key={key} label={category.label}>
-                          {category.types.map((type) => {
-                            const option = PERSON_LINK_TYPE_OPTIONS.find(opt => opt.value === type);
-                            return (
-                              <option key={type} value={type}>
-                                {option?.label || type}
-                              </option>
-                            );
-                          })}
-                        </optgroup>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Título <span className="text-gray-400">(opcional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={link.title || ''}
-                      onChange={(e) => onUpdateLink(index, { title: e.target.value })}
-                      placeholder="Ej: Perfil oficial"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                    />
-                  </div>
+                {/* Tipo */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo de enlace
+                  </label>
+                  <select
+                    value={link.type}
+                    onChange={(e) => onUpdateLink(index, { type: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  >
+                    {Object.entries(LINK_CATEGORIES).map(([key, category]) => (
+                      <optgroup key={key} label={category.label}>
+                        {category.types.map((type) => {
+                          const option = PERSON_LINK_TYPE_OPTIONS.find(opt => opt.value === type);
+                          return (
+                            <option key={type} value={type}>
+                              {option?.label || type}
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    ))}
+                  </select>
                 </div>
 
                 {/* URL */}
