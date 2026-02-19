@@ -245,6 +245,15 @@ async function getMovieData(slug: string) {
           }
         },
         
+        // Links externos de la película
+        links: {
+          where: { isActive: true },
+          select: {
+            type: true,
+            url: true
+          }
+        },
+
         _count: {
           select: {
             images: true,
@@ -649,6 +658,7 @@ export default async function MoviePage({ params }: PageProps) {
       galleryImages={galleryImages}
       directors={directors}
       productionType={movie.tipoDuracion}
+      externalLinks={movie.links || []}
     />
   );
 }
