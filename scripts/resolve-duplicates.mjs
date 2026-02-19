@@ -132,6 +132,7 @@ async function main() {
       keepMovie1: 0,
       keepMovie2: 0,
       keepBoth: 0,
+      deleteFromBoth: 0,
       skipped: 0,
     };
 
@@ -155,11 +156,12 @@ async function main() {
       console.log(`  ${BOLD}1${RESET} → Quedarse en película 1 (${row.movie1_year || "s/a"}) — borrar de película 2`);
       console.log(`  ${BOLD}2${RESET} → Quedarse en película 2 (${row.movie2_year || "s/a"}) — borrar de película 1`);
       console.log(`  ${BOLD}3${RESET} → Quedarse en ambas — no hacer nada`);
-      console.log(`  ${BOLD}4${RESET} → Saltar`);
+      console.log(`  ${BOLD}4${RESET} → Borrar de ambas películas`);
+      console.log(`  ${BOLD}5${RESET} → Saltar`);
       console.log(`  ${BOLD}q${RESET} → Salir\n`);
 
       let choice = "";
-      while (!["1", "2", "3", "4", "q"].includes(choice)) {
+      while (!["1", "2", "3", "4", "5", "q"].includes(choice)) {
         choice = (await ask(`  Opción: `)).trim().toLowerCase();
       }
 
@@ -186,6 +188,17 @@ async function main() {
         console.log(`  ${DIM}→ Se mantiene en ambas.${RESET}`);
         stats.keepBoth++;
       } else if (choice === "4") {
+        // Borrar de ambas películas
+        const deleted1 = await deleteFromMovie(client, row.movie1_id, row.person_id, row.source);
+        const deleted2 = await deleteFromMovie(client, row.movie2_id, row.person_id, row.source);
+        console.log(
+          `  ${RED}✓ Borrado de película 1 (${row.movie1_year || "s/a"}): ${deleted1.join(", ")}${RESET}`
+        );
+        console.log(
+          `  ${RED}✓ Borrado de película 2 (${row.movie2_year || "s/a"}): ${deleted2.join(", ")}${RESET}`
+        );
+        stats.deleteFromBoth++;
+      } else if (choice === "5") {
         console.log(`  ${DIM}→ Saltado.${RESET}`);
         stats.skipped++;
       }
@@ -194,7 +207,7 @@ async function main() {
     }
 
     // Resumen final
-    const total = stats.keepMovie1 + stats.keepMovie2 + stats.keepBoth + stats.skipped;
+    const total = stats.keepMovie1 + stats.keepMovie2 + stats.keepBoth + stats.deleteFromBoth + stats.skipped;
     console.log(`${BOLD}═══════════════════════════════════════════════════${RESET}`);
     console.log(`${BOLD}                    RESUMEN${RESET}`);
     console.log(`${BOLD}═══════════════════════════════════════════════════${RESET}`);
@@ -202,9 +215,10 @@ async function main() {
     console.log(`  ${GREEN}Quedó en película 1:    ${stats.keepMovie1}${RESET}`);
     console.log(`  ${GREEN}Quedó en película 2:    ${stats.keepMovie2}${RESET}`);
     console.log(`  Quedó en ambas:         ${stats.keepBoth}`);
+    console.log(`  ${RED}Borrado de ambas:       ${stats.deleteFromBoth}${RESET}`);
     console.log(`  Saltados:               ${stats.skipped}`);
     console.log(
-      `  ${RED}Filas eliminadas (aprox): ${stats.keepMovie1 + stats.keepMovie2} acciones de borrado${RESET}`
+      `  ${RED}Filas eliminadas (aprox): ${stats.keepMovie1 + stats.keepMovie2 + stats.deleteFromBoth * 2} acciones de borrado${RESET}`
     );
     console.log(`${BOLD}═══════════════════════════════════════════════════${RESET}\n`);
   } finally {
