@@ -31,7 +31,7 @@ export const prepareMovieData = (data: MovieFormData) => {
 
   // Campos de media que deben enviarse como null (no undefined) cuando están vacíos,
   // para que la API efectivamente borre el valor en la base de datos
-  const mediaFields = ['posterUrl', 'posterPublicId', 'backdropUrl', 'backdropPublicId']
+  const mediaFields = ['posterUrl', 'posterPublicId']
 
   Object.entries(data).forEach(([key, value]) => {
     // Campos de media vacíos → null (para que se envíen en el JSON y se borren en la BD)
