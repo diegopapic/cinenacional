@@ -417,8 +417,6 @@ export function useMovieForm({
                 imdbId: fullMovie.imdbId || '',
                 posterUrl: fullMovie.posterUrl || '',
                 posterPublicId: fullMovie.posterPublicId || '',
-                backdropUrl: fullMovie.backdropUrl || '',
-                backdropPublicId: fullMovie.backdropPublicId || '',
                 trailerUrl: fullMovie.trailerUrl || '',
                 originalTitle: fullMovie.originalTitle || '',
                 synopsis: fullMovie.synopsis || '',

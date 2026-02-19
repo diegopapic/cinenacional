@@ -94,8 +94,6 @@ export async function GET(
         notes: true,
         posterUrl: true,
         posterPublicId: true,
-        backdropUrl: true,
-        backdropPublicId: true,
         trailerUrl: true,
         imdbId: true,
         tmdbId: true,
