@@ -6,6 +6,7 @@ import { MovieHero } from "@/components/movies/MovieHero";
 import { CastSection } from "@/components/movies/CastSection";
 import { CrewSection } from "@/components/movies/CrewSection";
 import { FilmTechnical } from "@/components/movies/FilmTechnical";
+import { FilmExternalLinks } from "@/components/movies/FilmExternalLinks";
 import { ImageGallery } from "@/components/movies/ImageGallery";
 import { usePageView } from '@/hooks/usePageView';
 
@@ -85,6 +86,7 @@ interface MoviePageClientProps {
     galleryImages?: GalleryImage[];
     directors?: Director[];
     productionType?: string | null;
+    externalLinks?: Array<{ type: string; url: string }>;
 }
 
 // Slots de AdSense
@@ -115,7 +117,8 @@ export function MoviePageClient({
     heroBackgroundImage,
     galleryImages = [],
     directors = [],
-    productionType
+    productionType,
+    externalLinks = []
 }: MoviePageClientProps) {
     usePageView({ pageType: 'MOVIE', movieId: movie.id });
 
@@ -173,6 +176,13 @@ export function MoviePageClient({
                     />
                 </div>
 
+                {/* External Links */}
+                {externalLinks.length > 0 && (
+                    <div className="mt-12">
+                        <FilmExternalLinks links={externalLinks} />
+                    </div>
+                )}
+
                 {/* Image Gallery */}
                 {galleryImages.length > 0 && (
                     <div className="mt-12">
@@ -182,6 +192,7 @@ export function MoviePageClient({
                         />
                     </div>
                 )}
+
             </div>
 
             {/* Multiplex ad */}
