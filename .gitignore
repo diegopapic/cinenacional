@@ -62,3 +62,12 @@ database-structure-meta.json
 # Claude Code
 .claude/worktrees/
 tmpclaude-*
+
+# Basura (archivos muertos archivados)
+_basura/
+
+# Entorno virtual Python
+venv/
+
+# Logs
+*.log
