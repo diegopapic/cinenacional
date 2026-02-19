@@ -29,7 +29,16 @@ export const calcularTipoDuracion = (
 export const prepareMovieData = (data: MovieFormData) => {
   const prepared: any = {}
 
+  // Campos de media que deben enviarse como null (no undefined) cuando están vacíos,
+  // para que la API efectivamente borre el valor en la base de datos
+  const mediaFields = ['posterUrl', 'posterPublicId', 'backdropUrl', 'backdropPublicId']
+
   Object.entries(data).forEach(([key, value]) => {
+    // Campos de media vacíos → null (para que se envíen en el JSON y se borren en la BD)
+    if (mediaFields.includes(key) && (value === '' || value === null || value === undefined)) {
+      prepared[key] = null
+      return
+    }
     // Si es string vacío, null o undefined, lo dejamos como undefined
     if (value === '' || value === null || value === undefined) {
       prepared[key] = undefined

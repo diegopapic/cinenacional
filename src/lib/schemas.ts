@@ -43,11 +43,11 @@ export const movieSchema = z.object({
   tagline: z.string().optional(),
 
   // Media
-  posterUrl: z.string().optional(),
-  posterPublicId: z.string().optional(),
-  backdropUrl: z.string().optional(),
-  backdropPublicId: z.string().optional(),
-  trailerUrl: z.string().optional(),
+  posterUrl: z.string().nullable().optional(),
+  posterPublicId: z.string().nullable().optional(),
+  backdropUrl: z.string().nullable().optional(),
+  backdropPublicId: z.string().nullable().optional(),
+  trailerUrl: z.string().nullable().optional(),
 
   // IDs externos
   imdbId: z.string().optional(),
