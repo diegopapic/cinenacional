@@ -190,6 +190,7 @@ export function useMovieForm({
         defaultValues: {
             stage: 'COMPLETA',
             dataCompleteness: 'BASIC_PRESS_KIT',
+            soundType: 'Sonora',
             metaDescription: '',
             metaKeywords: []
         }
@@ -214,6 +215,13 @@ export function useMovieForm({
                 if (colorTypesRes.ok) {
                     const colorTypes = await colorTypesRes.json()
                     setAvailableColorTypes(colorTypes)
+                    // Setear "Color" como valor por defecto para películas nuevas
+                    if (!editingMovie) {
+                        const colorDefault = colorTypes.find((ct: any) => ct.name === 'Color')
+                        if (colorDefault) {
+                            setValue('colorTypeId', colorDefault.id)
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Error loading metadata:', error)
@@ -758,9 +766,12 @@ export function useMovieForm({
                 ...releaseDateData,
                 ...filmingStartDateData,
                 ...filmingEndDateData,
-                // AGREGAR: Convertir 0 a null para duración
+                // Convertir 0/NaN a null para campos numéricos opcionales
+                year: (!preparedData.year || preparedData.year === 0 || isNaN(preparedData.year)) ? null : preparedData.year,
                 duration: preparedData.duration === 0 ? null : preparedData.duration,
                 durationSeconds: preparedData.durationSeconds === 0 ? null : preparedData.durationSeconds,
+                colorTypeId: (!preparedData.colorTypeId || preparedData.colorTypeId === 0 || isNaN(preparedData.colorTypeId)) ? null : preparedData.colorTypeId,
+                soundType: preparedData.soundType || null,
                 stage: data.stage || 'COMPLETA',
                 ratingId: preparedData.ratingId === '' || preparedData.ratingId === undefined ? null : preparedData.ratingId,
                 metaKeywords: preparedData.metaKeywords
@@ -914,9 +925,13 @@ export function useMovieForm({
 
     // Reset para nueva película
     const resetForNewMovie = useCallback(() => {
+        // Encontrar el ID de "Color" para setear como default
+        const colorDefault = availableColorTypes.find((ct: any) => ct.name === 'Color')
         reset({
             stage: 'COMPLETA',
             dataCompleteness: 'BASIC_PRESS_KIT',
+            soundType: 'Sonora',
+            ...(colorDefault ? { colorTypeId: colorDefault.id } : {}),
             synopsisLocked: false,
             metaDescription: '',
             metaKeywords: []
@@ -943,7 +958,7 @@ export function useMovieForm({
         setActiveTab('basic')
         setMovieFormInitialData(null)
         setIsSubmitting(false)
-    }, [reset])
+    }, [reset, availableColorTypes])
 
     return {
         onSubmit,
