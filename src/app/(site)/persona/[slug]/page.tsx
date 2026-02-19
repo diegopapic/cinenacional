@@ -10,6 +10,7 @@ import DOMPurify from 'isomorphic-dompurify';
 import { trackPageView } from '@/hooks/usePageView';
 import { ImageGallery } from '@/components/movies/ImageGallery';
 import { POSTER_PLACEHOLDER } from '@/lib/movies/movieConstants';
+import { PersonExternalLinks } from '@/components/people/PersonExternalLinks';
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -924,27 +925,6 @@ export default function PersonPage({ params }: PersonPageProps) {
               />
             )}
 
-            {/* External links */}
-            {person.links && person.links.length > 0 && (
-              <div className="flex gap-4 mt-4">
-                {person.links.map((link: any) => (
-                  <a
-                    key={link.id}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[12px] text-muted-foreground/50 hover:text-accent transition-colors"
-                    title={link.type}
-                  >
-                    {link.type === 'IMDB' ? 'IMDb' :
-                      link.type === 'WIKIPEDIA' ? 'Wikipedia' :
-                        link.type === 'OFFICIAL_WEBSITE' ? 'Sitio Web' :
-                          link.type === 'INSTAGRAM' ? 'Instagram' :
-                            link.type === 'TWITTER' ? 'Twitter' : link.type}
-                  </a>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* ===== DESKTOP LAYOUT ===== */}
@@ -1145,26 +1125,6 @@ export default function PersonPage({ params }: PersonPageProps) {
                 />
               )}
 
-              {person.links && person.links.length > 0 && (
-                <div className="flex gap-4 mt-3">
-                  {person.links.map((link: any) => (
-                    <a
-                      key={link.id}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-muted-foreground/50 hover:text-accent transition-colors"
-                      title={link.type}
-                    >
-                      {link.type === 'IMDB' ? 'IMDb' :
-                        link.type === 'WIKIPEDIA' ? 'Wikipedia' :
-                          link.type === 'OFFICIAL_WEBSITE' ? 'Sitio Web' :
-                            link.type === 'INSTAGRAM' ? 'Instagram' :
-                              link.type === 'TWITTER' ? 'Twitter' : link.type}
-                    </a>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
@@ -1332,6 +1292,15 @@ export default function PersonPage({ params }: PersonPageProps) {
                 </div>
               </div>
             )}
+          </div>
+        </section>
+      )}
+
+      {/* Redes / External Links */}
+      {person.links && person.links.length > 0 && (
+        <section className="py-12 border-t border-border/10">
+          <div className="max-w-7xl mx-auto px-4 lg:px-6">
+            <PersonExternalLinks links={person.links} />
           </div>
         </section>
       )}
