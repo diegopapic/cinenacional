@@ -56,12 +56,23 @@ export async function GET() {
       }
     })
 
+    const totalImagenes = await prisma.image.count()
+
+    const totalTrailers = await prisma.movie.count({
+      where: {
+        trailerUrl: { not: null },
+        NOT: { trailerUrl: '' }
+      }
+    })
+
     return NextResponse.json({
       peliculas: totalPeliculas,
       personas: totalPersonas,
       efemerides: totalEfemerides,
       afiches: totalAfiches,
       fotos: totalFotos,
+      imagenes: totalImagenes,
+      trailers: totalTrailers,
     })
   } catch (error) {
     console.error('Error fetching stats:', error)
@@ -71,6 +82,8 @@ export async function GET() {
       efemerides: 0,
       afiches: 0,
       fotos: 0,
+      imagenes: 0,
+      trailers: 0,
     })
   }
 }

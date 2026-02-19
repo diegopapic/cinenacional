@@ -8,6 +8,8 @@ interface Stats {
   efemerides: number
   afiches: number
   fotos: number
+  imagenes: number
+  trailers: number
 }
 
 function formatNumber(num: number): string {
@@ -21,6 +23,8 @@ export default function HeaderStats() {
     efemerides: 0,
     afiches: 0,
     fotos: 0,
+    imagenes: 0,
+    trailers: 0,
   })
 
   useEffect(() => {
@@ -36,6 +40,8 @@ export default function HeaderStats() {
     { label: 'efemérides', value: formatNumber(stats.efemerides) },
     { label: 'afiches', value: formatNumber(stats.afiches) },
     { label: 'retratos', value: formatNumber(stats.fotos) },
+    { label: 'imágenes', value: formatNumber(stats.imagenes) },
+    { label: 'trailers', value: formatNumber(stats.trailers) },
   ]
 
   return (
