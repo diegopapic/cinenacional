@@ -187,7 +187,6 @@ export const movieRelationsSchema = z.object({
   links: z.array(z.object({
     type: z.string(),
     url: z.string(),
-    title: z.string().optional(),
     isActive: z.boolean().optional()
   })).optional(),
   screeningVenues: z.array(z.union([
@@ -262,7 +261,6 @@ export interface MovieLink {
   id?: number
   type: string
   url: string
-  description?: string
 }
 
 export interface AlternativeTitle {

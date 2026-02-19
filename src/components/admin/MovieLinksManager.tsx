@@ -5,7 +5,6 @@ interface MovieLink {
   id?: number;
   type: string;
   url: string;
-  title?: string;
   isActive?: boolean;
 }
 
@@ -23,16 +22,15 @@ const LINK_TYPES = [
   { value: 'WEBSITE', label: 'Sitio Web Oficial', icon: '🌐' }
 ];
 
-export default function MovieLinksManager({ 
-  initialLinks = [], 
-  onLinksChange 
+export default function MovieLinksManager({
+  initialLinks = [],
+  onLinksChange
 }: MovieLinksManagerProps) {
   const [links, setLinks] = useState<MovieLink[]>(initialLinks);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newLink, setNewLink] = useState<MovieLink>({
     type: 'WEBSITE',
-    url: '',
-    title: ''
+    url: ''
   });
 
   const handleAddLink = () => {
@@ -43,7 +41,7 @@ export default function MovieLinksManager({
     onLinksChange(updatedLinks);
 
     // Reset form
-    setNewLink({ type: 'WEBSITE', url: '', title: '' });
+    setNewLink({ type: 'WEBSITE', url: '' });
     setShowAddForm(false);
   };
 
@@ -88,21 +86,16 @@ export default function MovieLinksManager({
           {links.map((link, index) => {
             const typeInfo = getLinkTypeInfo(link.type);
             return (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <span className="text-2xl">{typeInfo.icon}</span>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">{typeInfo.label}</span>
-                    {link.title && (
-                      <span className="text-sm text-gray-500">- {link.title}</span>
-                    )}
-                  </div>
-                  <a 
-                    href={link.url} 
-                    target="_blank" 
+                  <span className="font-medium text-gray-900">{typeInfo.label}</span>
+                  <a
+                    href={link.url}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                   >
@@ -126,36 +119,21 @@ export default function MovieLinksManager({
       {/* Formulario para agregar nuevo link */}
       {showAddForm ? (
         <div className="border border-gray-300 rounded-lg p-4 space-y-4 bg-gray-50">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tipo de Link
-              </label>
-              <select
-                value={newLink.type}
-                onChange={(e) => setNewLink({ ...newLink, type: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              >
-                {LINK_TYPES.map(type => (
-                  <option key={type.value} value={type.value}>
-                    {type.icon} {type.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Título/Descripción (opcional)
-              </label>
-              <input
-                type="text"
-                value={newLink.title || ''}
-                onChange={(e) => setNewLink({ ...newLink, title: e.target.value })}
-                placeholder="Ej: Cuenta oficial"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tipo de Link
+            </label>
+            <select
+              value={newLink.type}
+              onChange={(e) => setNewLink({ ...newLink, type: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            >
+              {LINK_TYPES.map(type => (
+                <option key={type.value} value={type.value}>
+                  {type.icon} {type.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -177,7 +155,7 @@ export default function MovieLinksManager({
               type="button"
               onClick={() => {
                 setShowAddForm(false);
-                setNewLink({ type: 'WEBSITE', url: '', title: '' });
+                setNewLink({ type: 'WEBSITE', url: '' });
               }}
               className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >

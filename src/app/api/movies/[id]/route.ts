@@ -616,7 +616,6 @@ export async function PUT(
               movieId: id,
               type: link.type,
               url: link.url,
-              title: link.title || null,
               isActive: link.isActive !== false
             }))
           })

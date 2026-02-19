@@ -642,7 +642,6 @@ const slug = await generateUniqueSlug(validatedData.title, 'movie', prisma)
             create: links.map((link: any) => ({
               type: link.type,
               url: link.url,
-              title: link.title || null,
               isActive: link.isActive !== false
             }))
           }
