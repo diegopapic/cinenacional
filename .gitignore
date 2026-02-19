@@ -50,6 +50,15 @@ pgsql/
 
 /uploads
 
+# Archivos generados (obsoletos)
+compiled-code.txt
+admin-code.txt
+project-structure.json
+raw_urls_detailed.json
+raw_urls.md
+database-structure.txt
+database-structure-meta.json
+
 # Claude Code
 .claude/worktrees/
 tmpclaude-*
