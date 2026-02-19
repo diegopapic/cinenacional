@@ -479,6 +479,9 @@ export async function POST(request: NextRequest) {
     // Limpiar datos antes de validar
     const cleanedData = {
       ...body,
+      year: (body.year === 0 || body.year === '' || body.year === null || (typeof body.year === 'number' && isNaN(body.year))) ? null : body.year,
+      colorTypeId: (body.colorTypeId === 0 || body.colorTypeId === '' || body.colorTypeId === null || (typeof body.colorTypeId === 'number' && isNaN(body.colorTypeId))) ? null : body.colorTypeId,
+      soundType: body.soundType || null,
       ratingId: body.ratingId === 0 ? null : body.ratingId,
       tmdbId: (body.tmdbId === '' || body.tmdbId === null || body.tmdbId === undefined || isNaN(Number(body.tmdbId)))
         ? null

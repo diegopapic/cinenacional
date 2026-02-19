@@ -5,7 +5,15 @@ export const movieSchema = z.object({
   // Información básica
   title: z.string().min(1, 'El título es requerido'),
   originalTitle: z.string().optional(),
-  year: z.number().optional(),
+  year: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined || val === 0 || (typeof val === 'number' && isNaN(val))) {
+        return null;
+      }
+      return Number(val);
+    },
+    z.number().positive().nullable().optional()
+  ),
 
   // Fechas como campos separados Y fechas completas para el formulario
   releaseDate: z.string().optional(),
@@ -54,8 +62,19 @@ export const movieSchema = z.object({
 
   // Información técnica
   aspectRatio: z.string().optional(),
-  colorTypeId: z.number().optional(),
-  soundType: z.string().optional(),
+  colorTypeId: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined || val === 0 || (typeof val === 'number' && isNaN(val))) {
+        return null;
+      }
+      return Number(val);
+    },
+    z.number().positive().nullable().optional()
+  ),
+  soundType: z.preprocess(
+    (val) => (val === '' ? null : val),
+    z.string().nullable().optional()
+  ),
   filmFormat: z.string().optional(),
 
   // AGREGAR ESTOS CAMPOS DE METADATA

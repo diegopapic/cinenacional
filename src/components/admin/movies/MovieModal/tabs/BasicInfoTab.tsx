@@ -72,7 +72,13 @@ export default function BasicInfoTab() {
               </label>
               <input
                 type="number"
-                {...register('year', { valueAsNumber: true })}
+                {...register('year', {
+                  setValueAs: (v: string | number) => {
+                    if (v === '' || v === null || v === undefined) return null;
+                    const num = Number(v);
+                    return isNaN(num) || num === 0 ? null : num;
+                  }
+                })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               />
               {errors.year && (
@@ -209,7 +215,12 @@ export default function BasicInfoTab() {
                   Color
                 </label>
                 <select
-                  {...register('colorTypeId', { valueAsNumber: true })}
+                  {...register('colorTypeId', {
+                    setValueAs: (v: string | number) => {
+                      if (v === '' || v === '0' || v === 0) return null;
+                      return Number(v);
+                    }
+                  })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 >
                   <option value="">Seleccionar...</option>

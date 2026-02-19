@@ -36,13 +36,24 @@ export const movieFormFieldsSchema = z.object({
     z.number().int().positive().nullable().optional()
   ),
   aspectRatio: z.string().optional(),
-  soundType: z.string().optional(),
+  soundType: z.preprocess(
+    (val) => (val === '' ? null : val),
+    z.string().nullable().optional()
+  ),
   filmFormat: z.string().optional(),
   certificateNumber: z.string().optional(),
   tipoDuracion: z.string().optional(),
 
   // Campos numéricos
-  year: z.number().nullable().optional(),
+  year: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined || val === 0 || (typeof val === 'number' && isNaN(val))) {
+        return null;
+      }
+      return Number(val);
+    },
+    z.number().positive().nullable().optional()
+  ),
   duration: z.preprocess(
     (val) => {
       if (val === '' || val === null || val === undefined || val === 0|| isNaN(Number(val))) {
@@ -62,7 +73,15 @@ export const movieFormFieldsSchema = z.object({
     },
     z.number().min(1).max(59).nullable().optional()
   ),
-  colorTypeId: z.number().nullable().optional(),
+  colorTypeId: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined || val === 0 || (typeof val === 'number' && isNaN(val))) {
+        return null;
+      }
+      return Number(val);
+    },
+    z.number().positive().nullable().optional()
+  ),
   ratingId: z.union([
     z.number().positive(),
     z.null(),
