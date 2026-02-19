@@ -34,10 +34,10 @@ jobs:
           echo "♻️ Restarting app..."
           docker compose up -d --no-deps app
 
-          # Esperar healthcheck en vez de sleep fijo
+          # Esperar healthcheck usando curl desde el host
           echo "⏳ Waiting for app to be healthy..."
           for i in $(seq 1 30); do
-            if docker compose exec -T app wget -q --spider http://localhost:3000/api/health 2>/dev/null; then
+            if curl -sf http://127.0.0.1:3000/api/health > /dev/null 2>&1; then
               echo "✅ App is healthy after ${i}s"
               break
             fi
