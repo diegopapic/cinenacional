@@ -30,10 +30,12 @@ RUN npx prisma generate
 RUN npm run build
 
 FROM node:20-alpine AS runner
+RUN apk add --no-cache tzdata
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV TZ=America/Argentina/Buenos_Aires
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
