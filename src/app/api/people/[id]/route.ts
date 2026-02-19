@@ -335,7 +335,6 @@ export async function PUT(
                         personId,
                         type: link.type,
                         url: link.url,
-                        title: link.title || null,
                         displayOrder: link.displayOrder ?? index,
                         isVerified: link.isVerified || false,
                         isActive: link.isActive ?? true,

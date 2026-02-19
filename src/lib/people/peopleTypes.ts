@@ -41,7 +41,6 @@ export interface PersonLink {
   personId?: number;
   type: PersonLinkType;
   url: string;
-  title?: string | null;
   displayOrder: number;
   isVerified: boolean;
   isActive: boolean;

@@ -287,7 +287,6 @@ model PersonLink {
   personId     Int            @map("person_id")
   type         PersonLinkType
   url          String         @db.VarChar(500)
-  title        String?        @db.VarChar(255)
   displayOrder Int            @default(0) @map("display_order")
   isVerified   Boolean        @default(false) @map("is_verified")
   isActive     Boolean        @default(true) @map("is_active")

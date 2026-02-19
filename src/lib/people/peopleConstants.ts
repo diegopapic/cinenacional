@@ -119,7 +119,6 @@ export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
 export const DEFAULT_PERSON_LINK = {
   type: 'OTHER' as PersonLinkType,
   url: '',
-  title: '',
   displayOrder: 0,
   isVerified: false,
   isActive: true,

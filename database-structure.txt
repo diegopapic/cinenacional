@@ -1,5 +1,5 @@
 # Estructura de Base de Datos - CineNacional
-# Generado automáticamente el: 2026-02-19T03:49:24.246Z
+# Generado automáticamente el: 2026-02-19T04:02:17.414Z
 # ================================================
 
 ## Schema Prisma
@@ -294,7 +294,6 @@ model PersonLink {
   personId     Int            @map("person_id")
   type         PersonLinkType
   url          String         @db.VarChar(500)
-  title        String?        @db.VarChar(255)
   displayOrder Int            @default(0) @map("display_order")
   isVerified   Boolean        @default(false) @map("is_verified")
   isActive     Boolean        @default(true) @map("is_active")
@@ -1429,7 +1428,6 @@ CREATE TABLE "person_links" (
     "person_id" INTEGER NOT NULL,
     "type" "person_link_type" NOT NULL,
     "url" VARCHAR(500) NOT NULL,
-    "title" VARCHAR(255),
     "display_order" INTEGER NOT NULL DEFAULT 0,
     "is_verified" BOOLEAN NOT NULL DEFAULT false,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
