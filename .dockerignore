@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.github
+.claude
+.husky
+.vscode
+*.md
+.env*
+!.env.example
+docker-compose*.yml
+Dockerfile
+.gitignore
+.eslintrc*
+.prettierrc*
+tsconfig.tsbuildinfo
