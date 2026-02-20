@@ -3,7 +3,8 @@
 
 import MovieCardCompact from './MovieCardCompact';
 import MovieCardDetailed from './MovieCardDetailed';
-import { MovieListItem, ViewMode } from '@/lib/movies/movieListTypes';
+import { MovieListItem } from '@/lib/movies/movieListTypes';
+import { ViewMode } from '@/components/shared/ViewToggle';
 
 interface PeliculasGridProps {
   movies: MovieListItem[];

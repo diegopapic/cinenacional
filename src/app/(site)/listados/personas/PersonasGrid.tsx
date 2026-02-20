@@ -3,7 +3,8 @@
 
 import PersonCardCompact from './PersonCardCompact';
 import PersonCardDetailed from './PersonCardDetailed';
-import { PersonWithMovie, ViewMode } from '@/lib/people/personListTypes';
+import { PersonWithMovie } from '@/lib/people/personListTypes';
+import { ViewMode } from '@/components/shared/ViewToggle';
 
 interface PersonasGridProps {
   people: PersonWithMovie[];

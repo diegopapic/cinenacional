@@ -1,8 +1,8 @@
-// src/app/(site)/listados/peliculas/ViewToggle.tsx
 'use client';
 
 import { LayoutGrid, List } from 'lucide-react';
-import { ViewMode } from '@/lib/movies/movieListTypes';
+
+export type ViewMode = 'compact' | 'detailed';
 
 interface ViewToggleProps {
   viewMode: ViewMode;
