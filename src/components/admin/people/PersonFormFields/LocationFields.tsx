@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { PersonFormData } from '@/lib/people/peopleTypes';
 import { MapPin, Search, X, Loader2 } from 'lucide-react';
-import debounce from 'lodash/debounce';
 
 interface LocationFieldsProps {
   formData: PersonFormData;
@@ -90,14 +89,15 @@ function LocationAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Buscar ubicaciones
-  const searchLocations = useCallback(
-    debounce(async (query: string) => {
-      if (!query || query.length < 2) {
-        setLocations([]);
-        return;
-      }
-
+  // Buscar ubicaciones (debounce manual)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchLocations = useCallback((query: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!query || query.length < 2) {
+      setLocations([]);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
         const response = await fetch(`/api/locations/search?q=${encodeURIComponent(query)}`);
@@ -110,9 +110,8 @@ function LocationAutocomplete({
       } finally {
         setLoading(false);
       }
-    }, 300),
-    []
-  );
+    }, 300);
+  }, []);
 
   // Formatear la ubicación para mostrar (con jerarquía)
   const formatLocationDisplay = (location: Location): string => {
