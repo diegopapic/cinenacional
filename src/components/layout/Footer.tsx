@@ -1,8 +1,7 @@
 // src/app/components/layout/Footer.tsx
 import Link from 'next/link'
-import { X, Mail } from 'lucide-react'
+import { X, Mail, Instagram } from 'lucide-react'
 import Image from 'next/image'
-import { FaInstagram, FaFacebook, FaYoutube } from 'react-icons/fa'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -51,7 +50,7 @@ export default function Footer() {
                 <X className="w-5 h-5" />
               </a>
               <a href="https://instagram.com/cinenacional" className="text-gray-400 hover:text-white transition-colors">
-                <FaInstagram className="w-5 h-5" />
+                <Instagram className="w-5 h-5" />
               </a>
               <a href="mailto:info@cinenacional.com" className="text-gray-400 hover:text-white transition-colors">
                 <Mail className="w-5 h-5" />
