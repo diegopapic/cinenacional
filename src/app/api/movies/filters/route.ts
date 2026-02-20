@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { MOVIE_STAGES, SOUND_TYPES, TIPOS_DURACION } from '@/lib/movies/movieConstants';
 
 // Esta ruta debe ser dinámica
 export const dynamic = 'force-dynamic';
@@ -154,38 +155,18 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Funciones de formateo usando las constantes centralizadas de movieConstants.ts
 function formatSoundType(type: string): string {
-  switch (type) {
-    case 'SONORA': return 'Sonora';
-    case 'MUDA': return 'Muda';
-    case 'SONORIZADA': return 'Sonorizada';
-    default: return type;
-  }
+  const found = SOUND_TYPES.find(s => s.value.toLowerCase() === type.toLowerCase())
+  return found ? found.label : type
 }
 
 function formatDurationType(type: string): string {
-  const lower = type.toLowerCase();
-  switch (lower) {
-    case 'largo':
-    case 'largometraje': return 'Largometraje';
-    case 'medio':
-    case 'mediometraje': return 'Mediometraje';
-    case 'corto':
-    case 'cortometraje': return 'Cortometraje';
-    default: return type;
-  }
+  const found = TIPOS_DURACION.find(d => d.value.toLowerCase() === type.toLowerCase())
+  return found ? found.label : type
 }
 
 function formatStage(stage: string): string {
-  switch (stage) {
-    case 'COMPLETA': return 'Completa';
-    case 'EN_PRODUCCION': return 'En producción';
-    case 'EN_RODAJE': return 'En rodaje';
-    case 'EN_POSTPRODUCCION': return 'En postproducción';
-    case 'EN_PREPRODUCCION': return 'En preproducción';
-    case 'EN_DESARROLLO': return 'En desarrollo';
-    case 'INCONCLUSA': return 'Inconclusa';
-    case 'NO_ESTRENADA': return 'No estrenada';
-    default: return stage;
-  }
+  const found = MOVIE_STAGES.find(s => s.value === stage)
+  return found ? found.label : stage
 }

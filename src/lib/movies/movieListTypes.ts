@@ -116,27 +116,6 @@ export const MOVIE_SORT_OPTIONS = [
   { value: 'duration', label: 'Duración' },
 ] as const;
 
-// Opciones de sonido
-export const SOUND_TYPE_OPTIONS = [
-  { value: '', label: 'Todos' },
-  { value: 'SONORA', label: 'Sonora' },
-  { value: 'MUDA', label: 'Muda' },
-  { value: 'SONORIZADA', label: 'Sonorizada' },
-] as const;
-
-// Opciones de duración
-export const DURATION_TYPE_OPTIONS = [
-  { value: '', label: 'Todas las duraciones' },
-  { value: 'LARGO', label: 'Largometraje' },
-  { value: 'MEDIO', label: 'Mediometraje' },
-  { value: 'CORTO', label: 'Cortometraje' },
-] as const;
-
-// Opciones de estado
-export const STAGE_OPTIONS = [
-  { value: '', label: 'Todos los estados' },
-  { value: 'COMPLETA', label: 'Completa' },
-  { value: 'EN_PRODUCCION', label: 'En producción' },
-  { value: 'INCONCLUSA', label: 'Inconclusa' },
-  { value: 'NO_ESTRENADA', label: 'No estrenada' },
-] as const;
+// Las constantes de opciones (sound types, duration types, stages) están centralizadas
+// en movieConstants.ts como fuente de verdad única. Los filtros del listado público
+// se construyen dinámicamente desde la API (/api/movies/filters).
