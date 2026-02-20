@@ -147,21 +147,48 @@ export async function middleware(request: NextRequest) {
     })
   }
   
-  // ============ CORS PARA API ============
+  // ============ PROTECCIÓN CSRF + CORS PARA API ============
   if (path.startsWith('/api/')) {
-    const allowedOrigins = process.env.NODE_ENV === 'production' 
+    const allowedOrigins = process.env.NODE_ENV === 'production'
       ? ['https://cinenacional.com', 'https://www.cinenacional.com', 'https://5.161.58.106:3000']
       : ['http://localhost:3000', 'http://5.161.58.106:3000']
-    
+
+    // CSRF: rechazar mutaciones (POST/PUT/DELETE) de orígenes no permitidos
+    // NextAuth callback (/api/auth/) se excluye porque maneja su propia validación
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method) && !path.startsWith('/api/auth/')) {
+      const origin = request.headers.get('origin')
+      const referer = request.headers.get('referer')
+
+      // Verificar que el Origin o Referer sea de nuestro dominio
+      const isValidOrigin = origin && allowedOrigins.includes(origin)
+      const isValidReferer = referer && allowedOrigins.some(o => referer.startsWith(o))
+
+      // Si hay Origin header y no es válido, rechazar
+      // Si no hay Origin (requests sin browser), verificar Referer
+      if (origin && !isValidOrigin) {
+        return new NextResponse(JSON.stringify({ error: 'Origen no permitido' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+      if (!origin && referer && !isValidReferer) {
+        return new NextResponse(JSON.stringify({ error: 'Origen no permitido' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+    }
+
+    // CORS headers
     const origin = request.headers.get('origin')
     if (origin && allowedOrigins.includes(origin)) {
       response.headers.set('Access-Control-Allow-Origin', origin)
     }
-    
+
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     response.headers.set('Access-Control-Max-Age', '86400')
-    
+
     if (request.method === 'OPTIONS') {
       return new NextResponse(null, { status: 200, headers: response.headers })
     }
