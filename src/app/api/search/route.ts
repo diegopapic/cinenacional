@@ -1,6 +1,7 @@
 // src/app/api/search/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
@@ -70,7 +71,10 @@ export async function GET(request: NextRequest) {
         `
       } else {
         // Multi-term: cada palabra debe aparecer en el título
-        const termPatterns = searchTerms.map(t => `%${t}%`)
+        const termConditions = searchTerms.map(t =>
+          Prisma.sql`unaccent(LOWER(title)) LIKE unaccent(${`%${t}%`})`
+        )
+        const whereClause = Prisma.join(termConditions, ' AND ')
         movies = await prisma.$queryRaw`
           SELECT
             id,
@@ -80,10 +84,7 @@ export async function GET(request: NextRequest) {
             release_year as "releaseYear",
             poster_url as "posterUrl"
           FROM movies
-          WHERE
-            unaccent(LOWER(title)) LIKE ALL(
-              SELECT unaccent(unnest(${termPatterns}::text[]))
-            )
+          WHERE ${whereClause}
           ORDER BY
             CASE
               WHEN unaccent(LOWER(title)) = unaccent(${searchQuery}) THEN 1
@@ -119,7 +120,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Búsqueda de personas con normalización de acentos
-    const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0)
     let people: any[] = []
     
     try {

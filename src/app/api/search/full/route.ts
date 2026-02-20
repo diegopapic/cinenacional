@@ -1,6 +1,7 @@
 // src/app/api/search/full/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
@@ -49,7 +50,10 @@ export async function GET(request: NextRequest) {
           LIMIT 50
         `
       } else {
-        const termPatterns = searchTerms.map(t => `%${t}%`)
+        const termConditions = searchTerms.map(t =>
+          Prisma.sql`unaccent(LOWER(title)) LIKE unaccent(${`%${t}%`})`
+        )
+        const whereClause = Prisma.join(termConditions, ' AND ')
         movies = await prisma.$queryRaw<any[]>`
           SELECT
             id,
@@ -62,10 +66,7 @@ export async function GET(request: NextRequest) {
             poster_url as "posterUrl",
             synopsis
           FROM movies
-          WHERE
-            unaccent(LOWER(title)) LIKE ALL(
-              SELECT unaccent(unnest(${termPatterns}::text[]))
-            )
+          WHERE ${whereClause}
           ORDER BY
             CASE
               WHEN unaccent(LOWER(title)) LIKE unaccent(${searchPattern}) THEN 1
