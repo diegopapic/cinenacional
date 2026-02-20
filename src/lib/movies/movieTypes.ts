@@ -134,9 +134,9 @@ export const movieFormFieldsSchema = z.object({
     'EN_DESARROLLO',
     'EN_POSTPRODUCCION',
     'EN_PREPRODUCCION',
+    'EN_PRODUCCION',
     'EN_RODAJE',
-    'INCONCLUSA',
-    'INEDITA'
+    'INCONCLUSA'
   ]).optional(),
 })
 
@@ -291,9 +291,9 @@ export type MovieStage =
   | 'EN_DESARROLLO'
   | 'EN_POSTPRODUCCION'
   | 'EN_PREPRODUCCION'
+  | 'EN_PRODUCCION'
   | 'EN_RODAJE'
   | 'INCONCLUSA'
-  | 'INEDITA'
 
 export type DataCompleteness =
   | 'BASIC_PRESS_KIT'

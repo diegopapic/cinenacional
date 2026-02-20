@@ -98,9 +98,9 @@ export const movieSchema = z.object({
     'EN_DESARROLLO',
     'EN_POSTPRODUCCION',
     'EN_PREPRODUCCION',
+    'EN_PRODUCCION',
     'EN_RODAJE',
-    'INCONCLUSA',
-    'INEDITA'
+    'INCONCLUSA'
   ]).optional(),
   dataCompleteness: z.enum([
     'BASIC_PRESS_KIT',
