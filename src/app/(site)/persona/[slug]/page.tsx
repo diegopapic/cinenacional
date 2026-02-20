@@ -777,108 +777,112 @@ export default function PersonPage({ params }: PersonPageProps) {
                   </div>
                 )}
 
-                {birthDateFormatted && (
+                {(birthDateFormatted || person.birthLocation) && (
                   <div className="text-[12px] leading-snug">
                     <span className="text-muted-foreground/40">
-                      {person.birthDay ? 'Nació el ' : 'Nació en '}
+                      {birthDateFormatted ? (person.birthDay ? 'Nació el ' : 'Nació en ') : 'Nació en '}
                     </span>
-                    {person.birthDay && person.birthMonth ? (
-                      <>
-                        <Link
-                          href={getEfemeridesUrl(person.birthMonth, person.birthDay)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
-                        >
-                          {person.birthDay} de {MONTHS[person.birthMonth - 1].label.toLowerCase()}
-                        </Link>
-                        <span className="text-muted-foreground/40"> de </span>
+                    {birthDateFormatted && (
+                      person.birthDay && person.birthMonth ? (
+                        <>
+                          <Link
+                            href={getEfemeridesUrl(person.birthMonth, person.birthDay)}
+                            className="text-muted-foreground hover:text-accent transition-colors"
+                          >
+                            {person.birthDay} de {MONTHS[person.birthMonth - 1].label.toLowerCase()}
+                          </Link>
+                          <span className="text-muted-foreground/40"> de </span>
+                          <Link
+                            href={getBirthYearUrl(person.birthYear)}
+                            className="text-muted-foreground hover:text-accent transition-colors"
+                          >
+                            {person.birthYear}
+                          </Link>
+                        </>
+                      ) : person.birthMonth ? (
+                        <>
+                          <Link
+                            href={getEfemeridesUrl(person.birthMonth, 1)}
+                            className="text-muted-foreground hover:text-accent transition-colors"
+                          >
+                            {MONTHS[person.birthMonth - 1].label.toLowerCase()}
+                          </Link>
+                          <span className="text-muted-foreground/40"> de </span>
+                          <Link
+                            href={getBirthYearUrl(person.birthYear)}
+                            className="text-muted-foreground hover:text-accent transition-colors"
+                          >
+                            {person.birthYear}
+                          </Link>
+                        </>
+                      ) : (
                         <Link
                           href={getBirthYearUrl(person.birthYear)}
                           className="text-muted-foreground hover:text-accent transition-colors"
                         >
                           {person.birthYear}
                         </Link>
-                      </>
-                    ) : person.birthMonth ? (
-                      <>
-                        <Link
-                          href={getEfemeridesUrl(person.birthMonth, 1)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
-                        >
-                          {MONTHS[person.birthMonth - 1].label.toLowerCase()}
-                        </Link>
-                        <span className="text-muted-foreground/40"> de </span>
-                        <Link
-                          href={getBirthYearUrl(person.birthYear)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
-                        >
-                          {person.birthYear}
-                        </Link>
-                      </>
-                    ) : (
-                      <Link
-                        href={getBirthYearUrl(person.birthYear)}
-                        className="text-muted-foreground hover:text-accent transition-colors"
-                      >
-                        {person.birthYear}
-                      </Link>
+                      )
                     )}
                     {person.birthLocation && (
                       <>
-                        <span className="text-muted-foreground/40"> en </span>
+                        {birthDateFormatted && <span className="text-muted-foreground/40"> en </span>}
                         {renderLocationWithLinks(person.birthLocation, 'birth')}
                       </>
                     )}
                   </div>
                 )}
 
-                {deathDateFormatted && (
+                {(deathDateFormatted || person.deathLocation) && (
                   <div className="text-[12px] leading-snug">
                     <span className="text-muted-foreground/40">
-                      {person.deathDay ? 'Murió el ' : 'Murió en '}
+                      {deathDateFormatted ? (person.deathDay ? 'Murió el ' : 'Murió en ') : 'Murió en '}
                     </span>
-                    {person.deathDay && person.deathMonth ? (
-                      <>
-                        <Link
-                          href={getEfemeridesUrl(person.deathMonth, person.deathDay)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
-                        >
-                          {person.deathDay} de {MONTHS[person.deathMonth - 1].label.toLowerCase()}
-                        </Link>
-                        <span className="text-muted-foreground/40"> de </span>
+                    {deathDateFormatted && (
+                      person.deathDay && person.deathMonth ? (
+                        <>
+                          <Link
+                            href={getEfemeridesUrl(person.deathMonth, person.deathDay)}
+                            className="text-muted-foreground hover:text-accent transition-colors"
+                          >
+                            {person.deathDay} de {MONTHS[person.deathMonth - 1].label.toLowerCase()}
+                          </Link>
+                          <span className="text-muted-foreground/40"> de </span>
+                          <Link
+                            href={getDeathYearUrl(person.deathYear)}
+                            className="text-muted-foreground hover:text-accent transition-colors"
+                          >
+                            {person.deathYear}
+                          </Link>
+                        </>
+                      ) : person.deathMonth ? (
+                        <>
+                          <Link
+                            href={getEfemeridesUrl(person.deathMonth, 1)}
+                            className="text-muted-foreground hover:text-accent transition-colors"
+                          >
+                            {MONTHS[person.deathMonth - 1].label.toLowerCase()}
+                          </Link>
+                          <span className="text-muted-foreground/40"> de </span>
+                          <Link
+                            href={getDeathYearUrl(person.deathYear)}
+                            className="text-muted-foreground hover:text-accent transition-colors"
+                          >
+                            {person.deathYear}
+                          </Link>
+                        </>
+                      ) : (
                         <Link
                           href={getDeathYearUrl(person.deathYear)}
                           className="text-muted-foreground hover:text-accent transition-colors"
                         >
                           {person.deathYear}
                         </Link>
-                      </>
-                    ) : person.deathMonth ? (
-                      <>
-                        <Link
-                          href={getEfemeridesUrl(person.deathMonth, 1)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
-                        >
-                          {MONTHS[person.deathMonth - 1].label.toLowerCase()}
-                        </Link>
-                        <span className="text-muted-foreground/40"> de </span>
-                        <Link
-                          href={getDeathYearUrl(person.deathYear)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
-                        >
-                          {person.deathYear}
-                        </Link>
-                      </>
-                    ) : (
-                      <Link
-                        href={getDeathYearUrl(person.deathYear)}
-                        className="text-muted-foreground hover:text-accent transition-colors"
-                      >
-                        {person.deathYear}
-                      </Link>
+                      )
                     )}
                     {person.deathLocation && (
                       <>
-                        <span className="text-muted-foreground/40"> en </span>
+                        {deathDateFormatted && <span className="text-muted-foreground/40"> en </span>}
                         {renderLocationWithLinks(person.deathLocation, 'death')}
                       </>
                     )}
@@ -980,108 +984,112 @@ export default function PersonPage({ params }: PersonPageProps) {
                 </div>
               )}
 
-              {birthDateFormatted && (
+              {(birthDateFormatted || person.birthLocation) && (
                 <div className="text-sm leading-snug">
                   <span className="text-muted-foreground/40">
-                    {person.birthDay ? 'Nació el ' : 'Nació en '}
+                    {birthDateFormatted ? (person.birthDay ? 'Nació el ' : 'Nació en ') : 'Nació en '}
                   </span>
-                  {person.birthDay && person.birthMonth ? (
-                    <>
-                      <Link
-                        href={getEfemeridesUrl(person.birthMonth, person.birthDay)}
-                        className="text-muted-foreground hover:text-accent transition-colors"
-                      >
-                        {person.birthDay} de {MONTHS[person.birthMonth - 1].label.toLowerCase()}
-                      </Link>
-                      <span className="text-muted-foreground/40"> de </span>
+                  {birthDateFormatted && (
+                    person.birthDay && person.birthMonth ? (
+                      <>
+                        <Link
+                          href={getEfemeridesUrl(person.birthMonth, person.birthDay)}
+                          className="text-muted-foreground hover:text-accent transition-colors"
+                        >
+                          {person.birthDay} de {MONTHS[person.birthMonth - 1].label.toLowerCase()}
+                        </Link>
+                        <span className="text-muted-foreground/40"> de </span>
+                        <Link
+                          href={getBirthYearUrl(person.birthYear)}
+                          className="text-muted-foreground hover:text-accent transition-colors"
+                        >
+                          {person.birthYear}
+                        </Link>
+                      </>
+                    ) : person.birthMonth ? (
+                      <>
+                        <Link
+                          href={getEfemeridesUrl(person.birthMonth, 1)}
+                          className="text-muted-foreground hover:text-accent transition-colors"
+                        >
+                          {MONTHS[person.birthMonth - 1].label.toLowerCase()}
+                        </Link>
+                        <span className="text-muted-foreground/40"> de </span>
+                        <Link
+                          href={getBirthYearUrl(person.birthYear)}
+                          className="text-muted-foreground hover:text-accent transition-colors"
+                        >
+                          {person.birthYear}
+                        </Link>
+                      </>
+                    ) : (
                       <Link
                         href={getBirthYearUrl(person.birthYear)}
                         className="text-muted-foreground hover:text-accent transition-colors"
                       >
                         {person.birthYear}
                       </Link>
-                    </>
-                  ) : person.birthMonth ? (
-                    <>
-                      <Link
-                        href={getEfemeridesUrl(person.birthMonth, 1)}
-                        className="text-muted-foreground hover:text-accent transition-colors"
-                      >
-                        {MONTHS[person.birthMonth - 1].label.toLowerCase()}
-                      </Link>
-                      <span className="text-muted-foreground/40"> de </span>
-                      <Link
-                        href={getBirthYearUrl(person.birthYear)}
-                        className="text-muted-foreground hover:text-accent transition-colors"
-                      >
-                        {person.birthYear}
-                      </Link>
-                    </>
-                  ) : (
-                    <Link
-                      href={getBirthYearUrl(person.birthYear)}
-                      className="text-muted-foreground hover:text-accent transition-colors"
-                    >
-                      {person.birthYear}
-                    </Link>
+                    )
                   )}
                   {person.birthLocation && (
                     <>
-                      <span className="text-muted-foreground/40"> en </span>
+                      {birthDateFormatted && <span className="text-muted-foreground/40"> en </span>}
                       {renderLocationWithLinks(person.birthLocation, 'birth')}
                     </>
                   )}
                 </div>
               )}
 
-              {deathDateFormatted && (
+              {(deathDateFormatted || person.deathLocation) && (
                 <div className="text-sm leading-snug">
                   <span className="text-muted-foreground/40">
-                    {person.deathDay ? 'Murió el ' : 'Murió en '}
+                    {deathDateFormatted ? (person.deathDay ? 'Murió el ' : 'Murió en ') : 'Murió en '}
                   </span>
-                  {person.deathDay && person.deathMonth ? (
-                    <>
-                      <Link
-                        href={getEfemeridesUrl(person.deathMonth, person.deathDay)}
-                        className="text-muted-foreground hover:text-accent transition-colors"
-                      >
-                        {person.deathDay} de {MONTHS[person.deathMonth - 1].label.toLowerCase()}
-                      </Link>
-                      <span className="text-muted-foreground/40"> de </span>
+                  {deathDateFormatted && (
+                    person.deathDay && person.deathMonth ? (
+                      <>
+                        <Link
+                          href={getEfemeridesUrl(person.deathMonth, person.deathDay)}
+                          className="text-muted-foreground hover:text-accent transition-colors"
+                        >
+                          {person.deathDay} de {MONTHS[person.deathMonth - 1].label.toLowerCase()}
+                        </Link>
+                        <span className="text-muted-foreground/40"> de </span>
+                        <Link
+                          href={getDeathYearUrl(person.deathYear)}
+                          className="text-muted-foreground hover:text-accent transition-colors"
+                        >
+                          {person.deathYear}
+                        </Link>
+                      </>
+                    ) : person.deathMonth ? (
+                      <>
+                        <Link
+                          href={getEfemeridesUrl(person.deathMonth, 1)}
+                          className="text-muted-foreground hover:text-accent transition-colors"
+                        >
+                          {MONTHS[person.deathMonth - 1].label.toLowerCase()}
+                        </Link>
+                        <span className="text-muted-foreground/40"> de </span>
+                        <Link
+                          href={getDeathYearUrl(person.deathYear)}
+                          className="text-muted-foreground hover:text-accent transition-colors"
+                        >
+                          {person.deathYear}
+                        </Link>
+                      </>
+                    ) : (
                       <Link
                         href={getDeathYearUrl(person.deathYear)}
                         className="text-muted-foreground hover:text-accent transition-colors"
                       >
                         {person.deathYear}
                       </Link>
-                    </>
-                  ) : person.deathMonth ? (
-                    <>
-                      <Link
-                        href={getEfemeridesUrl(person.deathMonth, 1)}
-                        className="text-muted-foreground hover:text-accent transition-colors"
-                      >
-                        {MONTHS[person.deathMonth - 1].label.toLowerCase()}
-                      </Link>
-                      <span className="text-muted-foreground/40"> de </span>
-                      <Link
-                        href={getDeathYearUrl(person.deathYear)}
-                        className="text-muted-foreground hover:text-accent transition-colors"
-                      >
-                        {person.deathYear}
-                      </Link>
-                    </>
-                  ) : (
-                    <Link
-                      href={getDeathYearUrl(person.deathYear)}
-                      className="text-muted-foreground hover:text-accent transition-colors"
-                    >
-                      {person.deathYear}
-                    </Link>
+                    )
                   )}
                   {person.deathLocation && (
                     <>
-                      <span className="text-muted-foreground/40"> en </span>
+                      {deathDateFormatted && <span className="text-muted-foreground/40"> en </span>}
                       {renderLocationWithLinks(person.deathLocation, 'death')}
                     </>
                   )}
