@@ -391,17 +391,17 @@ Se eliminaron 9 dependencias (las 8 previstas + `@types/lodash`), resultando en 
 
 ---
 
-## 6. Endpoints de debug/test en producción
+## 6. Endpoints de debug/test en producción ✅ HECHO
 
-### 6.1 Archivos que NO deberían estar en producción
+### 6.1 Archivos que NO deberían estar en producción ✅
 
-| Archivo | Problema |
-|---|---|
-| `src/app/api/search/test/route.ts` | Endpoint de test que expone conteos y samples de la DB. No tiene auth. |
-| `src/app/api/project-structure/route.ts` | Escanea el filesystem del servidor y devuelve la estructura completa del proyecto. Tiene auth pero es un riesgo de información. |
-| `src/app/test/page.tsx` | Página que solo renderiza `<div>Test</div>`. |
+| Archivo | Problema | Estado |
+|---|---|---|
+| `src/app/api/search/test/route.ts` | Endpoint de test que expone conteos y samples de la DB. No tiene auth. | ✅ Eliminado |
+| `src/app/api/project-structure/route.ts` | Escanea el filesystem del servidor y devuelve la estructura completa del proyecto. Tiene auth pero es un riesgo de información. | ✅ Eliminado |
+| `src/app/test/page.tsx` | Página que solo renderiza `<div>Test</div>`. | ✅ Eliminado |
 
-**Acción:** Eliminar los 3 archivos. Si se necesitan para desarrollo, protegerlos con `process.env.NODE_ENV !== 'production'` guard.
+**Resuelto:** Los 3 archivos fueron eliminados junto con sus directorios.
 
 ---
 
@@ -580,7 +580,7 @@ if (data.isPartialX && data.partialX) {
 | `_basura/` completo | ~90 archivos | Código muerto de migraciones WP |
 | Scripts one-shot | ~10 archivos | Scripts ya ejecutados |
 | Archivos root innecesarios | ~8 archivos | JSONs, TXTs de desarrollo |
-| Endpoints de test | 3 archivos | `/api/search/test`, `/api/project-structure`, `/test` |
+| ~~Endpoints de test~~ | ~~3 archivos~~ | ~~`/api/search/test`, `/api/project-structure`, `/test`~~ ✅ Eliminados |
 | `uploads/` | ~15 archivos | Logs de importación WP |
 | **Total eliminable** | **~126 archivos** | |
 
@@ -622,7 +622,7 @@ if (data.isPartialX && data.partialX) {
 
 1. **Alta prioridad / Fácil:**
    - ~~Eliminar dependencias no usadas de package.json (8 deps)~~ ✅ 9 deps eliminadas
-   - Eliminar endpoints de test (`/api/search/test`, `/api/project-structure`, `/test`)
+   - ~~Eliminar endpoints de test (`/api/search/test`, `/api/project-structure`, `/test`)~~ ✅ Eliminados
    - Eliminar archivos root innecesarios
    - Eliminar console.logs de debug en `useMovieForm.ts`
    - Unificar constantes con valores inconsistentes (SOUND_TYPES, STAGE, DURATION)
