@@ -423,22 +423,10 @@ Contiene dumps de WordPress y archivos de migración. No se necesitan en el repo
 
 **Acción:** Agregar a `.gitignore` si no está, o eliminar del tracking de git.
 
-### 7.4 Archivos root-level innecesarios
+### 7.4 Archivos root-level innecesarios ✅ HECHO
 
-| Archivo | Problema |
-|---|---|
-| `database-structure-meta.json` | Snapshot viejo de la estructura de DB |
-| `project-structure.json` | Generado por el endpoint `/api/project-structure` |
-| `raw_urls_detailed.json` | Datos de desarrollo/scraping |
-| `raw_urls.md` | Lista de URLs de desarrollo |
-| `admin-code.txt` | Código exportado/compilado viejo |
-| `compiled-code.txt` | Código compilado viejo |
-| `database-structure.txt` | Estructura de DB en texto |
-| `PROJECT_DOCS.md` | Docs viejos (hay versiones más nuevas en `docs/`) |
-| `INSTALACION_SERVIDOR_CINENACIONAL.md` | Guía de instalación del servidor |
-| `TODO.md` | Lista de TODOs vieja |
-
-**Acción:** Mover a `_basura/` o eliminar. Mantener solo `README.md`, `CLAUDE.md`, `ANALISIS_REFACTORIZACION.md`.
+**Resuelto:** Los 10 archivos fueron movidos a `_basura/`:
+`database-structure-meta.json`, `project-structure.json`, `raw_urls_detailed.json`, `raw_urls.md`, `admin-code.txt`, `compiled-code.txt`, `database-structure.txt`, `PROJECT_DOCS.md`, `INSTALACION_SERVIDOR_CINENACIONAL.md`, `TODO.md`.
 
 ### 7.5 Scripts one-shot ya ejecutados
 
@@ -572,7 +560,7 @@ if (data.isPartialX && data.partialX) {
 |---|---|---|
 | `_basura/` completo | ~90 archivos | Código muerto de migraciones WP |
 | Scripts one-shot | ~10 archivos | Scripts ya ejecutados |
-| Archivos root innecesarios | ~8 archivos | JSONs, TXTs de desarrollo |
+| ~~Archivos root innecesarios~~ | ~~10 archivos~~ | ~~JSONs, TXTs de desarrollo~~ ✅ Movidos a `_basura/` |
 | ~~Endpoints de test~~ | ~~3 archivos~~ | ~~`/api/search/test`, `/api/project-structure`, `/test`~~ ✅ Eliminados |
 | `uploads/` | ~15 archivos | Logs de importación WP |
 | **Total eliminable** | **~126 archivos** | |
@@ -616,7 +604,7 @@ if (data.isPartialX && data.partialX) {
 1. **Alta prioridad / Fácil:**
    - ~~Eliminar dependencias no usadas de package.json (8 deps)~~ ✅ 9 deps eliminadas
    - ~~Eliminar endpoints de test (`/api/search/test`, `/api/project-structure`, `/test`)~~ ✅ Eliminados
-   - Eliminar archivos root innecesarios
+   - ~~Eliminar archivos root innecesarios~~ ✅ Movidos 10 archivos a `_basura/`
    - ~~Eliminar console.logs de debug en `useMovieForm.ts`~~ ✅ Eliminados (10 console.logs)
    - ~~Unificar constantes con valores inconsistentes (SOUND_TYPES, STAGE, DURATION)~~ ✅ Unificadas en movieConstants.ts
 
