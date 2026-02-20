@@ -926,7 +926,6 @@ enum MovieStage {
   EN_PRODUCCION
   EN_RODAJE
   INCONCLUSA
-  INEDITA
 
   @@map("movie_stage")
 }
