@@ -202,8 +202,8 @@ nano /var/www/cinenacional/.env
 **Contenido del archivo `.env`:**
 ```env
 # Base de datos (conexión interna Docker)
-DATABASE_URL="postgresql://cinenacional:Paganitzu@postgres:5432/cinenacional?schema=public&connection_limit=50&pool_timeout=10"
-DIRECT_URL="postgresql://cinenacional:Paganitzu@postgres:5432/cinenacional?schema=public"
+DATABASE_URL="postgresql://cinenacional:(ver .env)@postgres:5432/cinenacional?schema=public&connection_limit=50&pool_timeout=10"
+DIRECT_URL="postgresql://cinenacional:(ver .env)@postgres:5432/cinenacional?schema=public"
 
 # Cloudinary
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dzndglyjr
@@ -838,7 +838,7 @@ cat /root/.ssh/github_deploy_key
 | `VPS_USER` | `root` |
 | `VPS_SSH_KEY` | Contenido de `/root/.ssh/github_deploy_key` (clave privada completa) |
 | `VPS_PATH` | `/var/www/cinenacional` |
-| `DATABASE_URL` | `postgresql://cinenacional:Paganitzu@postgres:5432/cinenacional` |
+| `DATABASE_URL` | `postgresql://cinenacional:(ver .env)@postgres:5432/cinenacional` |
 | `PAT_TOKEN` | Token de acceso personal de GitHub (opcional, para acceso a repos privados) |
 
 ### 14.3 Crear workflow de deployment
@@ -1226,7 +1226,7 @@ journalctl -f
 
 | Servicio | Usuario | Password |
 |----------|---------|----------|
-| PostgreSQL | cinenacional | Paganitzu |
+| PostgreSQL | cinenacional | (ver .env) |
 | Admin Web | admin | (definido en .env) |
 
 ### URLs

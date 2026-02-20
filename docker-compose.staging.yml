@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: cinenacional
-      POSTGRES_PASSWORD: Paganitzu
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: cinenacional_staging  # Base de datos separada
       POSTGRES_MAX_CONNECTIONS: 100      # Menos conexiones para staging
       POSTGRES_SHARED_BUFFERS: 128MB     # Menos memoria
@@ -100,7 +100,7 @@ services:
       - .env.staging  # Archivo de entorno específico para staging
     environment:
       - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dzndglyjr
-      - DATABASE_URL=postgresql://cinenacional:Paganitzu@postgres-staging:5432/cinenacional_staging?schema=public&connection_limit=25&pool_timeout=10
+      - DATABASE_URL=postgresql://cinenacional:${POSTGRES_PASSWORD}@postgres-staging:5432/cinenacional_staging?schema=public&connection_limit=25&pool_timeout=10
       - REDIS_URL=redis://redis-staging:6379
       - NODE_ENV=staging
     ports:
