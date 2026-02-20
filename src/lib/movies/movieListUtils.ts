@@ -1,6 +1,7 @@
 // src/lib/movies/movieListUtils.ts
 
 import { MovieListFilters, DEFAULT_MOVIE_FILTERS, MovieListItem, MovieFiltersDataResponse, MOVIE_SORT_OPTIONS } from './movieListTypes';
+import { MOVIE_STAGES } from './movieConstants';
 
 /**
  * Convierte los filtros del estado a parámetros de URL
@@ -229,20 +230,11 @@ export function getDurationTypeLabel(tipoDuracion: string | null): string {
 }
 
 /**
- * Obtiene el label del estado
+ * Obtiene el label del estado usando la constante centralizada MOVIE_STAGES
  */
 export function getStageLabel(stage: string): string {
-  switch (stage) {
-    case 'COMPLETA': return 'Completa';
-    case 'EN_PRODUCCION': return 'En producción';
-    case 'EN_RODAJE': return 'En rodaje';
-    case 'EN_POSTPRODUCCION': return 'En postproducción';
-    case 'EN_PREPRODUCCION': return 'En preproducción';
-    case 'EN_DESARROLLO': return 'En desarrollo';
-    case 'INCONCLUSA': return 'Inconclusa';
-    case 'NO_ESTRENADA': return 'No estrenada';
-    default: return stage;
-  }
+  const stageInfo = MOVIE_STAGES.find(s => s.value === stage)
+  return stageInfo ? stageInfo.label : stage
 }
 
 /**

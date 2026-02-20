@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Play, X } from 'lucide-react';
+import { MOVIE_STAGES } from '@/lib/movies/movieConstants';
 import DOMPurify from 'isomorphic-dompurify';
 import { BACKGROUND_PLACEHOLDER, POSTER_PLACEHOLDER } from '@/lib/movies/movieConstants';
 
@@ -46,17 +47,10 @@ function getYouTubeId(url: string): string | null {
   return match ? match[1] : null;
 }
 
-// Traducir stage a español
+// Traducir stage a español usando la constante centralizada
 function getStageLabel(stage: string): string | null {
-  const labels: Record<string, string> = {
-    EN_DESARROLLO: 'En desarrollo',
-    EN_PREPRODUCCION: 'En preproducción',
-    EN_RODAJE: 'En rodaje',
-    EN_POSTPRODUCCION: 'En postproducción',
-    INCONCLUSA: 'Inconclusa',
-    INEDITA: 'Inédita',
-  };
-  return labels[stage] || null;
+  const stageInfo = MOVIE_STAGES.find(s => s.value === stage)
+  return stageInfo ? stageInfo.label : null
 }
 
 export function MovieHero({

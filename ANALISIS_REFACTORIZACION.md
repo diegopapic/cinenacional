@@ -157,19 +157,17 @@ export interface PaginatedResponse<T> { data: T[]; totalCount: number; page: num
 export interface PaginationState { page: number; totalPages: number; totalCount: number }
 ```
 
-### 2.3 Constantes duplicadas con valores inconsistentes
+### 2.3 Constantes duplicadas con valores inconsistentes ✅ HECHO
 
-**Archivos:**
-- `src/lib/movies/movieListTypes.ts` — constantes para UI de listados
-- `src/lib/movies/movieConstants.ts` — constantes para el admin/forms
+**Resuelto:** Se unificaron las constantes en `movieConstants.ts` como fuente de verdad única:
 
-| Constante en listTypes | Constante en movieConstants | Problema |
-|---|---|---|
-| `SOUND_TYPE_OPTIONS` con valores `'SONORA'`, `'MUDA'`, `'SONORIZADA'` | `SOUND_TYPES` con valores `'Sonora'`, `'Muda'`, `'n/d'` | **Casing diferente** (`SONORA` vs `Sonora`), opciones diferentes |
-| `STAGE_OPTIONS` con 5 stages | `MOVIE_STAGES` con 7 stages (incluye `EN_PREPRODUCCION`, `EN_DESARROLLO`, `INEDITA`) | **Lista incompleta** en listTypes |
-| `DURATION_TYPE_OPTIONS` con valores `'LARGO'`, `'MEDIO'`, `'CORTO'` | `TIPOS_DURACION` con valores `'largometraje'`, `'mediometraje'`, `'cortometraje'` | **Valores completamente distintos** para lo mismo |
-
-**Acción:** Unificar cada constante en una sola fuente de verdad en `movieConstants.ts`. Los listados y el admin deben usar los mismos valores.
+- **`SOUND_TYPES`**: Corregido — ahora tiene `'Sonora'`, `'Muda'`, `'Sonorizada'` (se reemplazó `'n/d'` por `'Sonorizada'`).
+- **`MOVIE_STAGES`**: Completado — ahora tiene los 8 valores del enum de Prisma (se agregó `EN_PRODUCCION` que faltaba). Se agregó `EN_PRODUCCION` a `STAGE_COLORS`.
+- **`TIPOS_DURACION`**: Ya estaba correcto con `'largometraje'`, `'mediometraje'`, `'cortometraje'`.
+- Eliminadas las constantes duplicadas `SOUND_TYPE_OPTIONS`, `DURATION_TYPE_OPTIONS` y `STAGE_OPTIONS` de `movieListTypes.ts` (no las usaba nadie).
+- `getStageLabel` en `movieListUtils.ts` y `MovieHero.tsx` ahora usan `MOVIE_STAGES` en vez de switches hardcodeados.
+- `formatStage`, `formatSoundType` y `formatDurationType` en `/api/movies/filters` ahora usan las constantes centralizadas.
+- Eliminada la referencia a `NO_ESTRENADA` (no existe en el enum; el valor correcto es `INEDITA`).
 
 ### 2.4 `formatDuration` triplicada
 
@@ -620,7 +618,7 @@ if (data.isPartialX && data.partialX) {
    - ~~Eliminar endpoints de test (`/api/search/test`, `/api/project-structure`, `/test`)~~ ✅ Eliminados
    - Eliminar archivos root innecesarios
    - ~~Eliminar console.logs de debug en `useMovieForm.ts`~~ ✅ Eliminados (10 console.logs)
-   - Unificar constantes con valores inconsistentes (SOUND_TYPES, STAGE, DURATION)
+   - ~~Unificar constantes con valores inconsistentes (SOUND_TYPES, STAGE, DURATION)~~ ✅ Unificadas en movieConstants.ts
 
 2. **Media prioridad / Medio esfuerzo:**
    - Unificar ViewToggle → un componente shared
