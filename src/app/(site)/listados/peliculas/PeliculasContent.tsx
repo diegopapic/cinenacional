@@ -152,9 +152,11 @@ export default function PeliculasContent() {
   }, [filters]);
 
   const handleSortByChange = useCallback((sortBy: string) => {
+    const defaultOrder = (sortBy === 'title') ? 'asc' : 'desc';
     setFilters(prev => ({
       ...prev,
       sortBy: sortBy as MovieListFilters['sortBy'],
+      sortOrder: defaultOrder,
       page: 1
     }));
   }, []);

@@ -73,6 +73,8 @@ export function searchParamsToFilters(searchParams: URLSearchParams): MovieListF
   const sortOrder = searchParams.get('sortOrder');
   if (sortOrder === 'asc' || sortOrder === 'desc') {
     filters.sortOrder = sortOrder;
+  } else if (filters.sortBy) {
+    filters.sortOrder = (filters.sortBy === 'title') ? 'asc' : 'desc';
   }
 
   const page = searchParams.get('page');
