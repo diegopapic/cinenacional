@@ -21,29 +21,61 @@ export async function GET(request: NextRequest) {
 
     const searchQuery = query.toLowerCase().trim()
     const searchPattern = `%${searchQuery}%`
+    const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0)
 
     // Intentar búsqueda con unaccent primero
     try {
       // Búsqueda de películas con normalización
-      const movies = await prisma.$queryRaw<any[]>`
-        SELECT 
-          id,
-          slug,
-          title,
-          year,
-          release_year as "releaseYear",
-          release_month as "releaseMonth",
-          release_day as "releaseDay",
-          poster_url as "posterUrl",
-          synopsis
-        FROM movies
-        WHERE 
-          unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
-        ORDER BY 
-          COALESCE(year, release_year) DESC NULLS LAST,
-          title ASC
-        LIMIT 50
-      `
+      // Multi-term: cada palabra del query debe aparecer en el título
+      let movies: any[]
+      if (searchTerms.length <= 1) {
+        movies = await prisma.$queryRaw<any[]>`
+          SELECT
+            id,
+            slug,
+            title,
+            year,
+            release_year as "releaseYear",
+            release_month as "releaseMonth",
+            release_day as "releaseDay",
+            poster_url as "posterUrl",
+            synopsis
+          FROM movies
+          WHERE
+            unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
+          ORDER BY
+            COALESCE(year, release_year) DESC NULLS LAST,
+            title ASC
+          LIMIT 50
+        `
+      } else {
+        const termPatterns = searchTerms.map(t => `%${t}%`)
+        movies = await prisma.$queryRaw<any[]>`
+          SELECT
+            id,
+            slug,
+            title,
+            year,
+            release_year as "releaseYear",
+            release_month as "releaseMonth",
+            release_day as "releaseDay",
+            poster_url as "posterUrl",
+            synopsis
+          FROM movies
+          WHERE
+            unaccent(LOWER(title)) LIKE ALL(
+              SELECT unaccent(unnest(${termPatterns}::text[]))
+            )
+          ORDER BY
+            CASE
+              WHEN unaccent(LOWER(title)) LIKE unaccent(${searchPattern}) THEN 1
+              ELSE 2
+            END,
+            COALESCE(year, release_year) DESC NULLS LAST,
+            title ASC
+          LIMIT 50
+        `
+      }
 
       // Búsqueda de personas con normalización
       const people = await prisma.$queryRaw<any[]>`
@@ -103,9 +135,9 @@ export async function GET(request: NextRequest) {
       const [movies, people] = await Promise.all([
         prisma.movie.findMany({
           where: {
-            OR: [
-              { title: { contains: query, mode: 'insensitive' } },
-            ]
+            AND: searchTerms.map(term => ({
+              title: { contains: term, mode: 'insensitive' as const }
+            }))
           },
           select: {
             id: true,
