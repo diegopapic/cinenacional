@@ -63,8 +63,7 @@ export const DATA_COMPLETENESS_LEVELS = [
  */
 export const SOUND_TYPES = [
   { value: 'Sonora', label: 'Sonora' },
-  { value: 'Muda', label: 'Muda' },
-  { value: 'Sonorizada', label: 'Sonorizada' }
+  { value: 'Muda', label: 'Muda' }
 ] as const
 
 // Duraciones en minutos
