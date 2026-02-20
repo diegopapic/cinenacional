@@ -1,6 +1,7 @@
 // src/components/home/ObituariosSection.tsx
 import Link from 'next/link';
 import { formatPartialDate, calculateYearsBetween } from '@/lib/shared/dateUtils';
+import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
 interface ObituariosSectionProps {
   obituarios: any[];
@@ -102,7 +103,7 @@ export default function ObituariosSection({ obituarios, loading = false, noPaddi
                 <div className="relative h-16 w-16 md:h-20 md:w-20 shrink-0 overflow-hidden rounded-full">
                   {persona.photoUrl ? (
                     <img
-                      src={persona.photoUrl}
+                      src={getPersonPhotoUrl(persona.photoUrl, 'sm')!}
                       alt={formatearNombre(persona)}
                       className="h-full w-full object-cover grayscale transition-all duration-500 group-hover:grayscale-0"
                     />

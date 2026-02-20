@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Loader2 } from 'lucide-react'
 import type { SearchResult } from '@/hooks/useGlobalSearch'
+import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
 
 function formatPersonYears(birthYear?: number, deathYear?: number): string | null {
   if (birthYear && deathYear) return `${birthYear}–${deathYear}`
@@ -160,7 +161,7 @@ export default function SearchResults({
                   <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-[oklch(0.22_0.005_250)]">
                     {person.photoUrl ? (
                       <Image
-                        src={person.photoUrl}
+                        src={getPersonPhotoUrl(person.photoUrl, 'sm')!}
                         alt=""
                         width={32}
                         height={32}

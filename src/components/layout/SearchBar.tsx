@@ -8,6 +8,7 @@ import { useGlobalSearch } from '@/hooks/useGlobalSearch'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
 
 /**
  * Formatea los años de nacimiento y muerte de una persona.
@@ -181,7 +182,7 @@ export default function SearchBar() {
                                                 <div className="flex-shrink-0 w-10 h-10 bg-zinc-800 rounded-full overflow-hidden mr-3">
                                                     {person.photoUrl ? (
                                                         <Image
-                                                            src={person.photoUrl}
+                                                            src={getPersonPhotoUrl(person.photoUrl, 'sm')!}
                                                             alt={person.name}
                                                             width={40}
                                                             height={40}

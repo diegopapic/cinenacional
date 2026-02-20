@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { Film, User, Calendar, Search, Loader2 } from 'lucide-react'
 import { formatPartialDate } from '@/lib/shared/dateUtils'
 import DOMPurify from 'dompurify'
+import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
 
 /**
  * Sanitiza HTML permitiendo solo tags de formato básico.
@@ -347,7 +348,7 @@ export default function SearchPage() {
                     <div className="flex-shrink-0 w-20 h-20 bg-muted/50 rounded-full overflow-hidden">
                       {person.photoUrl ? (
                         <Image
-                          src={person.photoUrl}
+                          src={getPersonPhotoUrl(person.photoUrl, 'sm')!}
                           alt={getPersonName(person)}
                           width={80}
                           height={80}

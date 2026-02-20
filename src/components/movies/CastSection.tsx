@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
 interface CastMember {
   name: string;
@@ -56,7 +57,7 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
       <div className={`relative ${sizeClasses} overflow-hidden rounded-full ring-1 ring-border/20 group-hover:ring-accent/40 transition-all`}>
         {actor.image ? (
           <img
-            src={actor.image}
+            src={getPersonPhotoUrl(actor.image, 'sm')!}
             alt={actor.name}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"

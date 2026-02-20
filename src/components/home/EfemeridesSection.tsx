@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Efemeride, DirectorInfo } from '@/types/home.types';
+import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
 interface EfemeridesSectionProps {
   efemerides: Efemeride[];
@@ -251,7 +252,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
         {efemerides.length > 0 ? (
           <div className="flex flex-col gap-0">
             {efemerides.map((item, index) => {
-              const imageUrl = item.tipo === 'pelicula' ? item.posterUrl : item.photoUrl;
+              const imageUrl = item.tipo === 'pelicula' ? item.posterUrl : getPersonPhotoUrl(item.photoUrl, 'sm');
               const isRound = item.tipo === 'persona';
               const linkHref = item.slug
                 ? item.tipo === 'pelicula' ? `/pelicula/${item.slug}` : `/persona/${item.slug}`
