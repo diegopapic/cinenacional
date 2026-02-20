@@ -6,13 +6,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowDownUp, SlidersHorizontal, X, ChevronDown } from 'lucide-react';
 import PersonasFilters from './PersonasFilters';
 import PersonasGrid from './PersonasGrid';
-import ViewToggle from './ViewToggle';
+import ViewToggle, { ViewMode } from '@/components/shared/ViewToggle';
 import {
   PersonListFilters,
   DEFAULT_PERSON_FILTERS,
   FiltersDataResponse,
   PersonWithMovie,
-  ViewMode,
   SORT_OPTIONS
 } from '@/lib/people/personListTypes';
 import {

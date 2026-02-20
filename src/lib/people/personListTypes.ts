@@ -93,9 +93,6 @@ export interface PaginatedPersonListResponse {
   hasMore: boolean;
 }
 
-// Tipo de vista
-export type ViewMode = 'compact' | 'detailed';
-
 // Opciones de ordenamiento para el UI (simplificadas)
 export const SORT_OPTIONS = [
   { value: 'id', label: 'Ingreso a la base de datos' },

@@ -105,9 +105,6 @@ export interface PaginatedMovieListResponse {
   hasMore: boolean;
 }
 
-// Tipo de vista
-export type ViewMode = 'compact' | 'detailed';
-
 // Opciones de ordenamiento para el UI
 export const MOVIE_SORT_OPTIONS = [
   { value: 'id', label: 'Ingreso a la base de datos' },

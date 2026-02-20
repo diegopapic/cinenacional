@@ -6,13 +6,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowDownUp, SlidersHorizontal, X, ChevronDown } from 'lucide-react';
 import PeliculasFilters from './PeliculasFilters';
 import PeliculasGrid from './PeliculasGrid';
-import ViewToggle from './ViewToggle';
+import ViewToggle, { ViewMode } from '@/components/shared/ViewToggle';
 import {
   MovieListFilters,
   DEFAULT_MOVIE_FILTERS,
   MovieFiltersDataResponse,
   MovieListItem,
-  ViewMode,
   MOVIE_SORT_OPTIONS
 } from '@/lib/movies/movieListTypes';
 import {
