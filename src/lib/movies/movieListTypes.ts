@@ -8,6 +8,7 @@ export interface MovieListFilters {
   tipoDuracion?: string;                 // LARGO, MEDIO, CORTO
   countryId?: number | '';               // País coproductor
   genreId?: number | '';                 // Género (Acción, Drama, etc.)
+  ratingId?: number | '';                // Calificación/restricción (ATP, SAM 13, etc.)
   releaseDateFrom?: string;              // Fecha completa YYYY-MM-DD
   releaseDateTo?: string;                // Fecha completa YYYY-MM-DD
   productionYearFrom?: number | '';
@@ -26,6 +27,7 @@ export const DEFAULT_MOVIE_FILTERS: MovieListFilters = {
   tipoDuracion: '',
   countryId: '',
   genreId: '',
+  ratingId: '',
   releaseDateFrom: '',
   releaseDateTo: '',
   productionYearFrom: '',
@@ -84,6 +86,7 @@ export interface MovieFiltersDataResponse {
   durationTypes: FilterOption[];
   countries: FilterOption[];
   genres: FilterOption[];
+  ratings: FilterOption[];
   stages: FilterOption[];
   years: {
     releaseYearMin: number | null;
