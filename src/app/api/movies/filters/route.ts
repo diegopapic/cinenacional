@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
       durationTypes,
       countries,
       genres,
+      ratings,
       stages,
       yearRanges
     ] = await Promise.all([
@@ -63,6 +64,15 @@ export async function GET(request: NextRequest) {
         INNER JOIN movie_genres mg ON mg.genre_id = g.id
         GROUP BY g.id, g.name
         ORDER BY g.name ASC
+      `,
+
+      // Calificaciones/restricciones con conteo
+      prisma.$queryRaw<Array<{ id: number; name: string; abbreviation: string | null; count: bigint }>>`
+        SELECT r.id, r.name, r.abbreviation, COUNT(m.id) as count
+        FROM ratings r
+        INNER JOIN movies m ON m.rating_id = r.id
+        GROUP BY r.id, r.name, r.abbreviation, r."order"
+        ORDER BY r."order" ASC
       `,
 
       // Estados con conteo
@@ -115,6 +125,11 @@ export async function GET(request: NextRequest) {
         id: g.id,
         name: g.name,
         count: Number(g.count)
+      })),
+      ratings: ratings.map(r => ({
+        id: r.id,
+        name: r.abbreviation || r.name,
+        count: Number(r.count)
       })),
       stages: stages.map(s => ({
         id: s.stage,

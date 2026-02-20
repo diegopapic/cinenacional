@@ -179,7 +179,7 @@ export default function PeliculasFilters({
     return (
       <div className="border-b border-border/20 py-4">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-          {Array.from({ length: 9 }).map((_, i) => (
+          {Array.from({ length: 10 }).map((_, i) => (
             <div key={i} className="animate-pulse space-y-1">
               <div className="h-2.5 w-16 rounded bg-muted/20" />
               <div className="h-8 rounded bg-muted/15" />
@@ -231,6 +231,14 @@ export default function PeliculasFilters({
           value={filters.genreId || ''}
           options={filtersData?.genres || []}
           onChange={(v) => onFilterChange('genreId', v ? parseInt(v) : '')}
+        />
+
+        {/* Restricción */}
+        <FilterSelect
+          label="Restricción"
+          value={filters.ratingId || ''}
+          options={filtersData?.ratings || []}
+          onChange={(v) => onFilterChange('ratingId', v ? parseInt(v) : '')}
         />
 
         {/* Estrenada desde */}

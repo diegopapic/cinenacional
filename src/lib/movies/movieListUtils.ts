@@ -14,6 +14,7 @@ export function filtersToSearchParams(filters: MovieListFilters): URLSearchParam
   if (filters.tipoDuracion) params.set('tipoDuracion', filters.tipoDuracion);
   if (filters.countryId) params.set('countryId', String(filters.countryId));
   if (filters.genreId) params.set('genreId', String(filters.genreId));
+  if (filters.ratingId) params.set('ratingId', String(filters.ratingId));
   if (filters.releaseDateFrom) params.set('releaseDateFrom', filters.releaseDateFrom);
   if (filters.releaseDateTo) params.set('releaseDateTo', filters.releaseDateTo);
   if (filters.productionYearFrom) params.set('productionYearFrom', String(filters.productionYearFrom));
@@ -52,6 +53,9 @@ export function searchParamsToFilters(searchParams: URLSearchParams): MovieListF
 
   const genreId = searchParams.get('genreId');
   if (genreId) filters.genreId = parseInt(genreId);
+
+  const ratingId = searchParams.get('ratingId');
+  if (ratingId) filters.ratingId = parseInt(ratingId);
 
   const releaseDateFrom = searchParams.get('releaseDateFrom');
   if (releaseDateFrom) filters.releaseDateFrom = releaseDateFrom;
@@ -95,6 +99,7 @@ export function filtersToApiParams(filters: MovieListFilters): Record<string, st
   if (filters.tipoDuracion) params.tipoDuracion = filters.tipoDuracion;
   if (filters.countryId) params.countryId = String(filters.countryId);
   if (filters.genreId) params.genreId = String(filters.genreId);
+  if (filters.ratingId) params.ratingId = String(filters.ratingId);
   if (filters.releaseDateFrom) params.releaseDateFrom = filters.releaseDateFrom;
   if (filters.releaseDateTo) params.releaseDateTo = filters.releaseDateTo;
   if (filters.productionYearFrom) params.productionYearFrom = String(filters.productionYearFrom);
@@ -179,6 +184,7 @@ export function countActiveFilters(filters: MovieListFilters): number {
   if (filters.tipoDuracion) count++;
   if (filters.countryId) count++;
   if (filters.genreId) count++;
+  if (filters.ratingId) count++;
   if (filters.releaseDateFrom) count++;
   if (filters.releaseDateTo) count++;
   if (filters.productionYearFrom) count++;
@@ -289,6 +295,12 @@ export function buildTitle(
   if (filters.colorTypeId && filtersData) {
     const color = filtersData.colorTypes.find(c => String(c.id) === String(filters.colorTypeId));
     if (color) parts.push(`en ${color.name}`);
+  }
+
+  // Restricción/calificación
+  if (filters.ratingId && filtersData) {
+    const rating = filtersData.ratings.find(r => String(r.id) === String(filters.ratingId));
+    if (rating) parts.push(`calificad${sfx} ${rating.name}`);
   }
 
   // País coproductor

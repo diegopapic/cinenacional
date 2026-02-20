@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const tipoDuracion = searchParams.get('tipoDuracion') || '';
     const countryId = searchParams.get('countryId');
     const genreId = searchParams.get('genreId');
+    const ratingId = searchParams.get('ratingId');
     const releaseDateFrom = searchParams.get('releaseDateFrom');
     const releaseDateTo = searchParams.get('releaseDateTo');
     const productionYearFrom = searchParams.get('productionYearFrom');
@@ -70,6 +71,11 @@ export async function GET(request: NextRequest) {
           genreId: parseInt(genreId)
         }
       };
+    }
+
+    // Filtro de calificación/restricción
+    if (ratingId) {
+      where.ratingId = parseInt(ratingId);
     }
 
     // Filtros de fecha de estreno (fecha completa YYYY-MM-DD)
@@ -350,6 +356,12 @@ async function getMoviesWithAlphabeticSort(
   if (where.genres && 'some' in where.genres) {
     whereClauses.push(`EXISTS (SELECT 1 FROM movie_genres mg WHERE mg.movie_id = m.id AND mg.genre_id = $${paramIndex})`);
     params.push((where.genres.some as any).genreId);
+    paramIndex++;
+  }
+
+  if (where.ratingId) {
+    whereClauses.push(`m.rating_id = $${paramIndex}`);
+    params.push(where.ratingId);
     paramIndex++;
   }
 
