@@ -14,8 +14,7 @@ export const MOVIE_STAGES = [
   { value: 'EN_PREPRODUCCION', label: 'En preproducción', description: 'En preparación para el rodaje' },
   { value: 'EN_PRODUCCION', label: 'En producción', description: 'En proceso de producción general' },
   { value: 'EN_RODAJE', label: 'En rodaje', description: 'Actualmente filmando' },
-  { value: 'INCONCLUSA', label: 'Inconclusa', description: 'Proyecto abandonado o sin terminar' },
-  { value: 'INEDITA', label: 'Inédita', description: 'Completa pero sin estrenar' }
+  { value: 'INCONCLUSA', label: 'Inconclusa', description: 'Proyecto abandonado o sin terminar' }
 ] as const
 
 export const POSTER_PLACEHOLDER = {
@@ -88,8 +87,7 @@ export const STAGE_COLORS = {
   EN_PREPRODUCCION: 'bg-yellow-100 text-yellow-800',
   EN_PRODUCCION: 'bg-cyan-100 text-cyan-800',
   EN_RODAJE: 'bg-orange-100 text-orange-800',
-  INCONCLUSA: 'bg-red-100 text-red-800',
-  INEDITA: 'bg-gray-100 text-gray-800'
+  INCONCLUSA: 'bg-red-100 text-red-800'
 } as const
 
 /**
