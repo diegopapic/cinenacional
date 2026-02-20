@@ -272,21 +272,10 @@ export function useMovieForm({
     }, [])
 
     const handleCastChange = useCallback((cast: any[]) => {
-        console.log('👥 handleCastChange recibió:', cast)
         setMovieRelations(prev => ({ ...prev, cast }))
     }, [])
 
     const handleCrewChange = useCallback((crew: any[]) => {
-        console.log('👥 handleCrewChange recibió:', crew)
-        crew?.forEach((member, index) => {
-            console.log(`👥 Crew[${index}]:`, {
-                personId: member.personId,
-                person: member.person,
-                roleId: member.roleId,
-                alternativeNameId: member.alternativeNameId,  // ✅ AGREGADO LOG
-                notes: member.notes  // ✅ AGREGADO LOG
-            })
-        })
         setMovieRelations(prev => ({ ...prev, crew }))
     }, [])
 
@@ -734,33 +723,6 @@ export function useMovieForm({
             delete preparedData.filmingStartDate;
             delete preparedData.filmingEndDate;
 
-            // DEBUG - Log del cast y crew antes de procesar
-            console.log('🎭 DEBUG - movieRelations.cast antes de procesar:', movieRelations.cast)
-            movieRelations.cast.forEach((member, index) => {
-                console.log(`🎭 Cast member ${index}:`, {
-                    personId: member.personId,
-                    personIdType: typeof member.personId,
-                    hasPersonObject: !!member.person,
-                    personFromObject: member.person?.id,
-                    characterName: member.characterName,
-                    alternativeNameId: member.alternativeNameId  // ✅ AGREGADO LOG
-                })
-            })
-
-            console.log('🎬 DEBUG - movieRelations.crew antes de procesar:', movieRelations.crew)
-            movieRelations.crew.forEach((member, index) => {
-                console.log(`🎬 Crew member ${index}:`, {
-                    personId: member.personId,
-                    personIdType: typeof member.personId,
-                    roleId: member.roleId,
-                    roleIdType: typeof member.roleId,
-                    roleFromObject: member.role?.id,
-                    alternativeNameId: member.alternativeNameId,  // ✅ AGREGADO LOG
-                    notes: member.notes,                          // ✅ AGREGADO LOG
-                    fullMember: member
-                })
-            })
-
             // Construir el objeto completo de datos
             const movieData: any = {
                 ...preparedData,
@@ -795,13 +757,6 @@ export function useMovieForm({
                             personId = member.person.id || member.person.personId
                         }
 
-                        console.log(`📍 Procesando cast member:`, {
-                            original: member,
-                            extractedPersonId: personId,
-                            alternativeNameId: member.alternativeNameId,  // ✅ AGREGADO LOG
-                            willInclude: personId && personId > 0
-                        })
-
                         // Solo incluir si hay un personId válido
                         if (!personId || personId <= 0) {
                             return null
@@ -830,15 +785,6 @@ export function useMovieForm({
                         if (!roleId && member.role && typeof member.role === 'object') {
                             roleId = member.role.id
                         }
-
-                        console.log(`📍 Procesando crew member:`, {
-                            original: member,
-                            extractedPersonId: personId,
-                            extractedRoleId: roleId,
-                            alternativeNameId: member.alternativeNameId,  // ✅ AGREGADO LOG
-                            notes: member.notes,                          // ✅ AGREGADO LOG
-                            willInclude: personId && personId > 0 && roleId && roleId > 0
-                        })
 
                         if (!personId || personId <= 0 || !roleId || roleId <= 0) {
                             return null
@@ -871,12 +817,6 @@ export function useMovieForm({
                 alternativeTitles,
                 links: movieLinks
             }
-
-            // Log final antes de enviar
-            console.log('📤 FINAL movieData to send:', {
-                cast: movieData.cast,
-                crew: movieData.crew
-            })
 
             // Asegurarse de nuevo de que no se envíen campos de fecha incorrectos
             delete movieData.releaseDate;

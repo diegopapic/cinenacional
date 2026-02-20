@@ -522,16 +522,11 @@ Idéntico `{ page, totalPages, totalCount }`.
 
 ---
 
-## 11. Console.logs de debug en producción
+## 11. Console.logs de debug en producción ✅ HECHO
 
-**Archivo:** `src/hooks/useMovieForm.ts` (1047 líneas)
+**Archivo:** `src/hooks/useMovieForm.ts`
 
-Contiene múltiples `console.log` con emojis de debug que no deberían estar en producción:
-- Líneas ~275-289, ~314, ~738-762, ~798-802, ~834-840, ~876-879, ~914
-
-Ejemplo: `console.log('🎬 Saving movie data:', data)`
-
-**Acción:** Eliminar todos los `console.log` de debug de este hook.
+**Resuelto:** Se eliminaron los 10 `console.log` de debug (con emojis 👥🎭🎬📍📤) del hook. No queda ningún console.log en el archivo.
 
 ---
 
@@ -601,7 +596,7 @@ if (data.isPartialX && data.partialX) {
 | calculateAge unificado | 2 → 1 | ~30 líneas |
 | PaginatedResponse genérico | 5 → 1 | ~25 líneas |
 | Procesamiento de fechas en servicios | 5 bloques → 1 helper | ~50 líneas |
-| Console.logs de debug | eliminación directa | ~30 líneas |
+| ~~Console.logs de debug~~ | ~~eliminación directa~~ | ~~~30 líneas~~ ✅ Eliminados |
 | **Total consolidable** | | **~900 líneas** |
 
 ### Dependencias eliminables
@@ -624,7 +619,7 @@ if (data.isPartialX && data.partialX) {
    - ~~Eliminar dependencias no usadas de package.json (8 deps)~~ ✅ 9 deps eliminadas
    - ~~Eliminar endpoints de test (`/api/search/test`, `/api/project-structure`, `/test`)~~ ✅ Eliminados
    - Eliminar archivos root innecesarios
-   - Eliminar console.logs de debug en `useMovieForm.ts`
+   - ~~Eliminar console.logs de debug en `useMovieForm.ts`~~ ✅ Eliminados (10 console.logs)
    - Unificar constantes con valores inconsistentes (SOUND_TYPES, STAGE, DURATION)
 
 2. **Media prioridad / Medio esfuerzo:**
