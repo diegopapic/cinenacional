@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { imageFormSchema } from '@/lib/images/imageTypes'
+import { requireAuth } from '@/lib/auth'
 
 // GET - Listar imágenes (con filtro opcional por movieId)
 export async function GET(request: NextRequest) {
@@ -68,6 +69,9 @@ export async function GET(request: NextRequest) {
 
 // POST - Crear imagen
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const body = await request.json()
     

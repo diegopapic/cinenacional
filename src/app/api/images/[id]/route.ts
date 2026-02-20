@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { imageFormSchema } from '@/lib/images/imageTypes'
+import { requireAuth } from '@/lib/auth'
 
 // GET - Obtener imagen por ID
 export async function GET(
@@ -60,6 +61,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const id = parseInt(params.id)
     const body = await request.json()
@@ -140,6 +144,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const id = parseInt(params.id)
     

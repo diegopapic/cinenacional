@@ -3,9 +3,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateSlug } from '@/lib/utils/slugs'
+import { requireAuth } from '@/lib/auth'
 
 // POST /api/locations/check-slug - Verificar si un slug está disponible
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const body = await request.json()
     const { name, excludeId } = body

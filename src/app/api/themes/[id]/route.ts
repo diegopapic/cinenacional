@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createSlug } from '@/lib/utils'
+import { requireAuth } from '@/lib/auth'
 
 // GET /api/themes/[id] - Obtener theme específico
 export async function GET(
@@ -58,6 +59,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const id = parseInt(params.id)
     const body = await request.json()
@@ -124,6 +128,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const id = parseInt(params.id)
     

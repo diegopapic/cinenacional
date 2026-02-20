@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createSlug } from '@/lib/utils'
 import { z } from 'zod'
+import { requireAuth } from '@/lib/auth'
 
 // Schema de validación
 const screeningVenueSchema = z.object({
@@ -91,6 +92,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/screening-venues - Crear nueva pantalla de estreno
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const body = await request.json()
     

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generatePersonSlug } from '@/lib/people/peopleUtils';
 import RedisClient from '@/lib/redis';
+import { requireAuth } from '@/lib/auth';
 
 // Cache en memoria como fallback
 const memoryCache = new Map<string, { data: any; timestamp: number }>();
@@ -185,6 +186,9 @@ export async function PUT(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const auth = await requireAuth()
+    if (auth.error) return auth.error
+
     try {
         const { id } = await params;
         const data = await request.json();
@@ -465,6 +469,9 @@ export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const auth = await requireAuth()
+    if (auth.error) return auth.error
+
     try {
         const { id } = await params;
         const personId = parseInt(id);

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generatePersonSlug } from '@/lib/people/peopleUtils';
 import RedisClient from '@/lib/redis';
+import { requireAuth } from '@/lib/auth';
 
 /** Strip diacritics (tildes, dieresis, etc.) for name comparison */
 function normalizeForComparison(str: string): string {
@@ -21,6 +22,9 @@ interface MergeRequest {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const body: MergeRequest = await request.json();
     const { personAId, personBId, survivorId, resolutions } = body;

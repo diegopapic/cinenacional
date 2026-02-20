@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createSlug } from '@/lib/utils'
+import { requireAuth } from '@/lib/auth'
 
 // GET /api/companies/production - Listar productoras
 export async function GET(request: NextRequest) {
@@ -32,6 +33,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/companies/production - Crear nueva productora
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const body = await request.json()
     

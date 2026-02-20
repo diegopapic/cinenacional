@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createSlug } from '@/lib/utils'
+import { requireAuth } from '@/lib/auth'
 
 // GET /api/genres - Listar todos los géneros con conteo de películas
 export async function GET() {
@@ -27,6 +28,9 @@ export async function GET() {
 
 // POST /api/genres - Crear nuevo género
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const body = await request.json()
     
