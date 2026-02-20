@@ -24,15 +24,9 @@
 
 ## 1. Componentes duplicados
 
-### 1.1 ViewToggle — 100% idéntico
+### 1.1 ViewToggle — 100% idéntico ✅ HECHO
 
-**Archivos:**
-- `src/app/(site)/listados/peliculas/ViewToggle.tsx`
-- `src/app/(site)/listados/personas/ViewToggle.tsx`
-
-**Problema:** Son exactamente el mismo componente, línea por línea. La única diferencia es el import del tipo `ViewMode`, que es idéntico en ambos módulos.
-
-**Acción:** Crear un único `src/components/shared/ViewToggle.tsx` que acepte un tipo genérico `ViewMode = 'compact' | 'detailed'`. Eliminar ambos archivos actuales y actualizar los imports en `PeliculasContent.tsx` y `PersonasContent.tsx`.
+**Resuelto:** Se creó `src/components/shared/ViewToggle.tsx` con el tipo `ViewMode` exportado. Se eliminaron los dos archivos duplicados de `peliculas/` y `personas/`. Se actualizaron los imports en `PeliculasContent.tsx`, `PersonasContent.tsx`, `PeliculasGrid.tsx` y `PersonasGrid.tsx`. Se eliminó `ViewMode` de `movieListTypes.ts` y `personListTypes.ts`.
 
 ---
 
@@ -569,7 +563,7 @@ if (data.isPartialX && data.partialX) {
 
 | Refactorización | Archivos afectados | Líneas eliminadas aprox |
 |---|---|---|
-| ViewToggle unificado | 2 → 1 | ~45 líneas |
+| ~~ViewToggle unificado~~ | ~~2 → 1~~ | ~~~45 líneas~~ ✅ Unificado |
 | ExternalLinks unificado | 2 → 1 | ~90 líneas (SVGs duplicados) |
 | Pagination compartido | 3 → 1 | ~90 líneas |
 | ListGrid genérico | 2 → 1 | ~40 líneas |
@@ -609,7 +603,7 @@ if (data.isPartialX && data.partialX) {
    - ~~Unificar constantes con valores inconsistentes (SOUND_TYPES, STAGE, DURATION)~~ ✅ Unificadas en movieConstants.ts
 
 2. **Media prioridad / Medio esfuerzo:**
-   - Unificar ViewToggle → un componente shared
+   - ~~Unificar ViewToggle → un componente shared~~ ✅ Unificado en `src/components/shared/ViewToggle.tsx`
    - Unificar ExternalLinks → un componente shared (elimina ~90 líneas de SVGs)
    - Extraer Pagination compartido
    - Extraer tipos compartidos a `src/lib/shared/` (ViewMode, FilterOption, PaginatedResponse)
