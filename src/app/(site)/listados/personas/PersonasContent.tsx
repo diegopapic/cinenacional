@@ -152,9 +152,12 @@ export default function PersonasContent() {
   }, [filters]);
 
   const handleSortByChange = useCallback((sortBy: string) => {
+    // Default lógico: lastName y birthDate → A-Z / más antiguo primero; el resto → desc
+    const defaultOrder = (sortBy === 'lastName' || sortBy === 'birthDate') ? 'asc' : 'desc';
     setFilters(prev => ({
       ...prev,
       sortBy: sortBy as PersonListFilters['sortBy'],
+      sortOrder: defaultOrder,
       page: 1
     }));
   }, []);

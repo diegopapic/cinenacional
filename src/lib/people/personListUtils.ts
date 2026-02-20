@@ -74,10 +74,13 @@ export function searchParamsToFilters(searchParams: URLSearchParams): PersonList
   if (sortBy === 'id' || sortBy === 'lastName' || sortBy === 'birthDate' || sortBy === 'deathDate' || sortBy === 'movieCount') {
     filters.sortBy = sortBy;
   }
-  
+
   const sortOrder = searchParams.get('sortOrder');
   if (sortOrder === 'asc' || sortOrder === 'desc') {
     filters.sortOrder = sortOrder;
+  } else if (filters.sortBy) {
+    // Default lógico cuando no viene sortOrder en la URL
+    filters.sortOrder = (filters.sortBy === 'lastName' || filters.sortBy === 'birthDate') ? 'asc' : 'desc';
   }
   
   const page = searchParams.get('page');
