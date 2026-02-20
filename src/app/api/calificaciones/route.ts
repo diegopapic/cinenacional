@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createSlug } from '@/lib/utils'
+import { requireAuth } from '@/lib/auth'
 
 // GET /api/calificaciones - Listar todas las calificaciones
 export async function GET() {
@@ -26,6 +27,9 @@ export async function GET() {
 
 // POST /api/calificaciones - Crear nueva calificación
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const body = await request.json()
     

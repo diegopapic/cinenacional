@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { movieSchema } from '@/lib/schemas'
 import RedisClient from '@/lib/redis'
 import { revalidatePath, revalidateTag } from 'next/cache'
+import { requireAuth } from '@/lib/auth'
 
 // Cache en memoria como fallback
 const memoryCache = new Map<string, { data: any; timestamp: number }>();
@@ -359,6 +360,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const id = parseInt(params.id)
     const body = await request.json()
@@ -755,6 +759,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const id = parseInt(params.id)
 

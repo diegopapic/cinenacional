@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import RedisClient from '@/lib/redis';
+import { requireAuth } from '@/lib/auth';
 
 // Mantener caché en memoria como fallback si Redis falla
 let memoryCachedData: any = null;
@@ -361,6 +362,9 @@ export async function GET() {
 
 // Endpoint para invalidar caché manualmente (útil para testing)
 export async function DELETE() {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     // Invalidar ambas versiones del caché por si acaso
     const deleted1 = await RedisClient.del('home-feed:movies:v1');

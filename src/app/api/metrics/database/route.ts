@@ -1,28 +1,22 @@
-// src/app/api/metrics/database/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-// Proteger este endpoint en producción
-const METRICS_SECRET = process.env.METRICS_SECRET || 'your-secret-key'
-
 export async function GET(request: NextRequest) {
-  // Verificar autorización
-  const authHeader = request.headers.get('authorization')
-  if (authHeader !== `Bearer ${METRICS_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
 
   try {
     // Obtener métricas de Prisma
     const metrics = (prisma as any).getMetrics()
-    
+
     // Intentar obtener métricas de PostgreSQL
     let pgStats = null
     try {
       const result = await prisma.$queryRaw`
-        SELECT 
+        SELECT
           numbackends as active_connections,
           xact_commit as committed_transactions,
           xact_rollback as rolled_back_transactions,
@@ -33,10 +27,10 @@ export async function GET(request: NextRequest) {
           tup_inserted as rows_inserted,
           tup_updated as rows_updated,
           tup_deleted as rows_deleted
-        FROM pg_stat_database 
+        FROM pg_stat_database
         WHERE datname = current_database()
       ` as any[]
-      
+
       pgStats = result[0]
     } catch (error) {
       console.error('Error fetching PG stats:', error)
@@ -46,7 +40,7 @@ export async function GET(request: NextRequest) {
     let poolStats = null
     try {
       const poolResult = await prisma.$queryRaw`
-        SELECT 
+        SELECT
           count(*) FILTER (WHERE state = 'active') as active,
           count(*) FILTER (WHERE state = 'idle') as idle,
           count(*) FILTER (WHERE state = 'idle in transaction') as idle_in_transaction,
@@ -57,7 +51,7 @@ export async function GET(request: NextRequest) {
         FROM pg_stat_activity
         WHERE datname = current_database()
       ` as any[]
-      
+
       poolStats = poolResult[0]
     } catch (error) {
       console.error('Error fetching pool stats:', error)
@@ -67,7 +61,7 @@ export async function GET(request: NextRequest) {
     let queryStats = null
     try {
       const queryResult = await prisma.$queryRaw`
-        SELECT 
+        SELECT
           calls,
           total_exec_time,
           mean_exec_time,
@@ -79,7 +73,7 @@ export async function GET(request: NextRequest) {
         ORDER BY mean_exec_time DESC
         LIMIT 10
       ` as any[]
-      
+
       queryStats = queryResult
     } catch (error) {
       // pg_stat_statements puede no estar habilitado
@@ -104,10 +98,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching metrics:', error)
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch metrics',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Error al obtener métricas' },
       { status: 500 }
     )
   }

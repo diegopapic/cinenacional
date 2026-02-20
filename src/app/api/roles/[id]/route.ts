@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { roleSchema } from '@/lib/roles/rolesTypes';
 import { generateSlug } from '@/lib/utils/slugs';
+import { requireAuth } from '@/lib/auth';
 
 interface RouteContext {
   params: {
@@ -58,6 +59,9 @@ export async function PUT(
   request: NextRequest,
   { params }: RouteContext
 ) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const id = parseInt(params.id);
 
@@ -140,6 +144,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: RouteContext
 ) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const id = parseInt(params.id);
 

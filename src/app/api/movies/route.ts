@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { movieSchema } from '@/lib/schemas'
 import { generateUniqueSlug } from '@/lib/utils/slugs'
 import RedisClient from '@/lib/redis'
+import { requireAuth } from '@/lib/auth'
 
 // ============================================
 // CACHE CONFIGURATION
@@ -473,6 +474,9 @@ export async function GET(request: NextRequest) {
 // POST /api/movies - Crear nueva película
 // ============================================
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const body = await request.json()
 

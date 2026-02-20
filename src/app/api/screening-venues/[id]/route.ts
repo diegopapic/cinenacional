@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { requireAuth } from '@/lib/auth'
 
 // Schema de validación
 const screeningVenueSchema = z.object({
@@ -60,6 +61,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const id = parseInt(params.id)
     const body = await request.json()
@@ -113,6 +117,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const id = parseInt(params.id)
     

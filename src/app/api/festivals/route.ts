@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { festivalFormSchema } from '@/lib/festivals/festivalTypes'
+import { requireAuth } from '@/lib/auth'
 
 function generateSlug(name: string): string {
   return name
@@ -85,6 +86,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const body = await request.json()
 

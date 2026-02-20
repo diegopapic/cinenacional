@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Department } from '@/lib/roles/rolesTypes';
 import { generateSlug } from '@/lib/utils/slugs';
+import { requireAuth } from '@/lib/auth';
 
 // Roles iniciales por departamento
 const INITIAL_ROLES_BY_DEPARTMENT = {
@@ -147,6 +148,9 @@ const MAIN_ROLES = [
 ];
 
 export async function POST() {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     let created = 0;
     let skipped = 0;

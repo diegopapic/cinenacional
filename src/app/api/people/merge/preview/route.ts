@@ -1,6 +1,7 @@
 // src/app/api/people/merge/preview/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth';
 
 /** Strip diacritics (tildes, dieresis, etc.) for name comparison */
 function normalizeForComparison(str: string): string {
@@ -8,6 +9,9 @@ function normalizeForComparison(str: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const { personAId, personBId } = await request.json();
 

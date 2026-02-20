@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { roleSchema, Department } from '@/lib/roles/rolesTypes';
 import { generateSlug } from '@/lib/utils/slugs';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -279,9 +280,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const body = await request.json();
-    
+
     const validatedData = roleSchema.parse(body);
     
     const baseSlug = generateSlug(validatedData.name);

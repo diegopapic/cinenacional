@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth';
 
 // Esta ruta debe ser dinámica
 export const dynamic = 'force-dynamic';
@@ -67,6 +68,9 @@ export async function GET() {
 
 // PUT: Actualizar nombre de persona
 export async function PUT(request: Request) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const { id, firstName, lastName } = await request.json();
 

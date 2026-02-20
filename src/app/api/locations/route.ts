@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateUniqueSlug } from '@/lib/utils/slugs'
+import { requireAuth } from '@/lib/auth'
 
 // Forzar que esta ruta sea dinámica
 /**
@@ -88,6 +89,9 @@ export async function GET(request: NextRequest) {
  * @TODO Add documentation
  */
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const body = await request.json()
     const { name, parentId, latitude, longitude } = body

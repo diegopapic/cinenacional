@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { generatePersonSlug } from '@/lib/people/peopleUtils';
 import { splitFullName } from '@/lib/people/nameUtils';
 import RedisClient from '@/lib/redis';
+import { requireAuth } from '@/lib/auth';
 
 // ============================================
 // CACHE CONFIGURATION
@@ -649,6 +650,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const data = await request.json();
 

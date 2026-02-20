@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { festivalSectionFormSchema } from '@/lib/festivals/festivalTypes'
+import { requireAuth } from '@/lib/auth'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -91,6 +92,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const { id } = await params
     const sectionId = parseInt(id)
@@ -180,6 +184,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const { id } = await params
     const sectionId = parseInt(id)
