@@ -212,12 +212,13 @@ export default function PersonPage({ params }: PersonPageProps) {
   };
 
   // Función helper para obtener el año efectivo para ordenamiento
+  // Prioridad: año de producción > año de estreno (misma lógica que hero section)
   const getEffectiveYear = (movie: Movie): number => {
-    if (movie.releaseYear) {
-      return movie.releaseYear;
-    }
     if (movie.year) {
       return movie.year;
+    }
+    if (movie.releaseYear) {
+      return movie.releaseYear;
     }
     return 0;
   };
