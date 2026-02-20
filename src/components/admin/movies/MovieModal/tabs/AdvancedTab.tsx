@@ -1,6 +1,7 @@
 // src/components/admin/movies/MovieModal/tabs/AdvancedTab.tsx
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import { MONTHS } from '@/lib/shared/dateUtils'
+import { MOVIE_STAGES } from '@/lib/movies/movieConstants'
 import AlternativeTitlesManager from '@/components/admin/AlternativeTitlesManager'
 import MovieLinksManager from '@/components/admin/MovieLinksManager'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
@@ -235,13 +236,9 @@ export default function AdvancedTab() {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             defaultValue="COMPLETA"
           >
-            <option value="COMPLETA">Completa</option>
-            <option value="EN_DESARROLLO">En desarrollo</option>
-            <option value="EN_POSTPRODUCCION">En postproducción</option>
-            <option value="EN_PREPRODUCCION">En preproducción</option>
-            <option value="EN_RODAJE">En rodaje</option>
-            <option value="INCONCLUSA">Inconclusa</option>
-            <option value="INEDITA">Inédita</option>
+            {MOVIE_STAGES.map(stage => (
+              <option key={stage.value} value={stage.value}>{stage.label}</option>
+            ))}
           </select>
           <p className="mt-1 text-sm text-gray-500">
             Indica el estado actual de producción de la película
