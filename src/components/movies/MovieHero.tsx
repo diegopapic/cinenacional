@@ -332,7 +332,11 @@ export function MovieHero({
                 <div className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted-foreground/50">
                   {duration > 0 && <span>{duration} min</span>}
                   {duration > 0 && ratingAbbreviation && <span className="text-muted-foreground/20">|</span>}
-                  {ratingAbbreviation && <span title={rating?.name}>{ratingAbbreviation}</span>}
+                  {ratingAbbreviation && (
+                    <Link href={`/listados/peliculas?ratingId=${rating?.id}`} className="transition-colors hover:text-accent" title={rating?.name}>
+                      {ratingAbbreviation}
+                    </Link>
+                  )}
                   {(duration > 0 || ratingAbbreviation) && genres.length > 0 && <span className="text-muted-foreground/20">|</span>}
                   {renderGenres(true)}
                 </div>
@@ -394,7 +398,11 @@ export function MovieHero({
                   {directors.length > 0 && duration > 0 && <span className="text-muted-foreground/30" aria-hidden="true">|</span>}
                   {duration > 0 && <span>{duration} min</span>}
                   {duration > 0 && ratingAbbreviation && <span className="text-muted-foreground/30" aria-hidden="true">|</span>}
-                  {ratingAbbreviation && <span title={rating?.name}>{ratingAbbreviation}</span>}
+                  {ratingAbbreviation && (
+                    <Link href={`/listados/peliculas?ratingId=${rating?.id}`} className="transition-colors hover:text-accent" title={rating?.name}>
+                      {ratingAbbreviation}
+                    </Link>
+                  )}
                   {(duration > 0 || ratingAbbreviation) && genres.length > 0 && <span className="text-muted-foreground/30" aria-hidden="true">|</span>}
                   {renderGenres()}
                 </div>
