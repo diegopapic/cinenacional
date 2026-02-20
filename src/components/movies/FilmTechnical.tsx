@@ -120,7 +120,13 @@ export function FilmTechnical({
             : productionType && renderDataItem('Tipo', productionType.charAt(0).toUpperCase() + productionType.slice(1))
           }
           {ratingAbbreviation && renderDataItem('Calificación', (
-            <span title={rating?.name}>{ratingAbbreviation}</span>
+            <Link
+              href={`/listados/peliculas?ratingId=${rating?.id}`}
+              className="text-foreground/80 transition-colors hover:text-accent"
+              title={rating?.name}
+            >
+              {ratingAbbreviation}
+            </Link>
           ))}
 
           {/* Coproducción (conditional) */}
