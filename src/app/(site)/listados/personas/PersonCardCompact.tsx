@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { User } from 'lucide-react';
 import { PersonWithMovie } from '@/lib/people/personListTypes';
 import { formatPersonName, calculateAge } from '@/lib/people/personListUtils';
+import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
 interface PersonCardCompactProps {
   person: PersonWithMovie;
@@ -13,7 +14,7 @@ interface PersonCardCompactProps {
 
 export default function PersonCardCompact({ person }: PersonCardCompactProps) {
   const personName = formatPersonName(person);
-  const photoUrl = person.photoUrl;
+  const photoUrl = getPersonPhotoUrl(person.photoUrl, 'sm');
 
   const age = calculateAge(
     person.birthYear,

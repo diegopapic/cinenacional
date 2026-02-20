@@ -11,6 +11,7 @@ import { trackPageView } from '@/hooks/usePageView';
 import { ImageGallery } from '@/components/movies/ImageGallery';
 import { POSTER_PLACEHOLDER } from '@/lib/movies/movieConstants';
 import { PersonExternalLinks } from '@/components/people/PersonExternalLinks';
+import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -732,7 +733,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                 <div className="relative aspect-[3/4] overflow-hidden rounded-sm shadow-xl shadow-black/40">
                   {person.photoUrl ? (
                     <Image
-                      src={person.photoUrl}
+                      src={getPersonPhotoUrl(person.photoUrl, 'md')!}
                       alt={fullName}
                       fill
                       priority
@@ -938,7 +939,7 @@ export default function PersonPage({ params }: PersonPageProps) {
               <div className="relative aspect-[3/4] overflow-hidden rounded-sm shadow-2xl shadow-black/50">
                 {person.photoUrl ? (
                   <Image
-                    src={person.photoUrl}
+                    src={getPersonPhotoUrl(person.photoUrl, 'lg')!}
                     alt={fullName}
                     fill
                     priority

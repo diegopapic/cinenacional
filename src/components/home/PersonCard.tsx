@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { PersonWithDeath } from '@/lib/obituarios/obituariosTypes';
 import { formatPersonName, calculateAge, formatDeathDate } from '@/lib/obituarios/obituariosUtils';
+import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
 interface PersonCardProps {
   person: PersonWithDeath;
@@ -11,7 +12,7 @@ interface PersonCardProps {
 
 export default function PersonCard({ person }: PersonCardProps) {
   const personName = formatPersonName(person);
-  const photoUrl = person.photoUrl;
+  const photoUrl = getPersonPhotoUrl(person.photoUrl, 'md');
   
   // Calcular edad
   const age = calculateAge(

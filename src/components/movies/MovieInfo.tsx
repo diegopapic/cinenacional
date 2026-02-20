@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
+import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
 interface Person {
   id: number;
@@ -81,9 +82,9 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
       {sanitizedSynopsis && (
         <div className="grid grid-cols-1 gap-6">
           <div>
-            <h3 className="text-lg font-medium mb-3 text-cine-accent">Sinopsis</h3>
+            <h3 className="text-[10px] uppercase tracking-wider text-muted-foreground/40 md:text-[11px] md:tracking-widest mb-3">Sinopsis</h3>
             <div
-              className="serif-body text-lg text-gray-300 leading-relaxed"
+              className="text-sm leading-relaxed text-muted-foreground/80"
               dangerouslySetInnerHTML={{ __html: sanitizedSynopsis }}
             />
           </div>
@@ -94,19 +95,19 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
       {directors.length > 0 && (
         <div className="grid grid-cols-1 gap-6">
           <div>
-            <h3 className="text-lg font-medium mb-3 text-cine-accent">Dirección</h3>
+            <h3 className="text-[10px] uppercase tracking-wider text-muted-foreground/40 md:text-[11px] md:tracking-widest mb-3">Dirección</h3>
             <div className="flex flex-wrap gap-4">
               {directors.map((director) => (
                 <div key={director.id} className="flex items-center space-x-3">
                   <div className="w-12 h-12 rounded-full person-placeholder">
                     {director.photoUrl ? (
                       <img
-                        src={director.photoUrl}
+                        src={getPersonPhotoUrl(director.photoUrl, 'sm')!}
                         alt={director.name}
                         className="w-full h-full object-cover rounded-full"
                       />
                     ) : (
-                      <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 text-muted-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     )}
@@ -114,7 +115,7 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
                   <div>
                     <a
                       href={`/persona/${director.slug}`}
-                      className="font-medium text-white hover:text-cine-accent transition-colors"
+                      className="text-foreground/80 transition-colors hover:text-accent"
                     >
                       {director.name}
                     </a>
@@ -130,7 +131,7 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
       <div className="flex flex-wrap gap-4">
         <button
           onClick={onShareClick}
-          className="border border-gray-600 hover:border-cine-accent px-6 py-3 rounded-lg font-medium transition-colors text-white"
+          className="border border-border/40 px-2.5 py-1 text-[11px] uppercase tracking-widest text-muted-foreground/60 hover:border-accent/40 hover:text-accent transition-colors"
         >
           Compartir
         </button>

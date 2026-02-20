@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { User } from 'lucide-react';
 import { PersonWithMovie } from '@/lib/people/personListTypes';
 import { formatPersonName, formatPartialDate } from '@/lib/people/personListUtils';
+import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
 interface PersonCardDetailedProps {
   person: PersonWithMovie;
@@ -13,7 +14,7 @@ interface PersonCardDetailedProps {
 
 export default function PersonCardDetailed({ person }: PersonCardDetailedProps) {
   const personName = formatPersonName(person);
-  const photoUrl = person.photoUrl;
+  const photoUrl = getPersonPhotoUrl(person.photoUrl, 'sm');
 
   const birthDateFormatted = formatPartialDate(
     person.birthYear,

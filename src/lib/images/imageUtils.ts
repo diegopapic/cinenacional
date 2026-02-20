@@ -117,6 +117,94 @@ export function getCloudinaryUrl(
   return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/${transformString}/${publicId}`
 }
 
+/**
+ * Extrae el public ID de una URL de Cloudinary.
+ * Soporta URLs con o sin transformaciones y con o sin versión.
+ *
+ * Ejemplos:
+ *   ".../image/upload/v123/cinenacional/people/42/foto.jpg" → "cinenacional/people/42/foto"
+ *   ".../image/upload/w_800,c_fill/v123/cinenacional/people/42/foto.jpg" → "cinenacional/people/42/foto"
+ *   ".../image/upload/cinenacional/people/42/foto.jpg" → "cinenacional/people/42/foto"
+ */
+export function extractPublicIdFromUrl(url: string): string | null {
+  if (!url || !url.includes('res.cloudinary.com')) return null
+
+  try {
+    // Obtener todo después de /image/upload/
+    const uploadIndex = url.indexOf('/image/upload/')
+    if (uploadIndex === -1) return null
+
+    let path = url.substring(uploadIndex + '/image/upload/'.length)
+
+    // Remover extensión final (.jpg, .png, .webp, etc.)
+    path = path.replace(/\.\w{3,4}$/, '')
+
+    // Separar en segmentos
+    const segments = path.split('/')
+
+    // Encontrar dónde empieza el publicId:
+    // - Los segmentos de transformación contienen "_" (ej: w_800, c_fill, g_face)
+    // - Los segmentos de versión empiezan con "v" seguido de dígitos (ej: v1234567890)
+    // - El publicId es todo lo que viene después
+    let startIndex = 0
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i]
+      // Segmento de transformación (contiene comas o underscore con formato clave_valor)
+      if (seg.includes(',') || /^[a-z]{1,2}_/.test(seg)) {
+        startIndex = i + 1
+        continue
+      }
+      // Segmento de versión
+      if (/^v\d+$/.test(seg)) {
+        startIndex = i + 1
+        continue
+      }
+      // Este segmento es parte del publicId
+      break
+    }
+
+    const publicId = segments.slice(startIndex).join('/')
+    return publicId || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Genera URL optimizada para retratos de personas (ratio 3:4, gravity: face).
+ * Intenta extraer el publicId de la URL y aplicar transformación on-the-fly.
+ * Si no puede, devuelve la URL original como fallback.
+ *
+ * @param photoUrl - URL original de la foto
+ * @param size - 'sm' (150x200), 'md' (300x400), 'lg' (600x800)
+ */
+export function getPersonPhotoUrl(
+  photoUrl: string | null | undefined,
+  size: 'sm' | 'md' | 'lg' = 'md'
+): string | null {
+  if (!photoUrl) return null
+
+  const publicId = extractPublicIdFromUrl(photoUrl)
+  if (!publicId) return photoUrl // No es Cloudinary, devolver tal cual
+
+  const sizeMap = {
+    sm: { width: 150, height: 200 },
+    md: { width: 300, height: 400 },
+    lg: { width: 600, height: 800 },
+  }
+
+  const { width, height } = sizeMap[size]
+
+  return getCloudinaryUrl(publicId, {
+    width,
+    height,
+    crop: 'fill',
+    gravity: 'face',
+    quality: 'auto',
+    format: 'auto',
+  })
+}
+
 // Presets comunes para imágenes de películas
 export const imagePresets = {
   thumbnail: (publicId: string) => 

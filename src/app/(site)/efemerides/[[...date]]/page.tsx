@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Efemeride } from '@/types/home.types'
+import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
@@ -267,7 +268,7 @@ export default function EfemeridesPage() {
         <div className="mt-2 flex flex-col">
           {paged.map((efemeride) => {
             const isPelicula = efemeride.tipo === 'pelicula'
-            const imageUrl = isPelicula ? efemeride.posterUrl : efemeride.photoUrl
+            const imageUrl = isPelicula ? efemeride.posterUrl : getPersonPhotoUrl(efemeride.photoUrl, 'sm')
             const linkHref = isPelicula
               ? `/pelicula/${efemeride.slug}`
               : `/persona/${efemeride.slug}`
