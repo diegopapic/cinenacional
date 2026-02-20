@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: cinenacional
-      POSTGRES_PASSWORD: Paganitzu
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: cinenacional
       POSTGRES_MAX_CONNECTIONS: 200
       POSTGRES_SHARED_BUFFERS: 256MB
@@ -106,7 +106,7 @@ services:
       - TZ=America/Argentina/Buenos_Aires
       - HOSTNAME=0.0.0.0
       - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dzndglyjr
-      - DATABASE_URL=postgresql://cinenacional:Paganitzu@postgres:5432/cinenacional?schema=public&connection_limit=50&pool_timeout=10
+      - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=redis://redis:6379
       - NODE_ENV=production
     ports:
