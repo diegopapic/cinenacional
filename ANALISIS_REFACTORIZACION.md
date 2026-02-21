@@ -470,19 +470,9 @@ Idéntico `{ page, totalPages, totalCount }`.
 
 ---
 
-## 10. Paginación duplicada
+## 10. Paginación duplicada ✅ HECHO
 
-**Archivos:**
-- `PeliculasContent.tsx:285-329` — componente de paginación
-- `PersonasContent.tsx:285-329` — componente de paginación (idéntico)
-- `ObituariosContent.tsx:174-208` — paginación diferente (estilo distinto, más simple)
-
-**Problema:** El componente de paginación de películas y personas es idéntico (mismo JSX, mismos estilos). Obituarios tiene otra variante con estilo diferente que rompe la consistencia visual.
-
-**Acción:**
-1. Extraer `src/components/shared/Pagination.tsx` con el diseño actual de películas/personas
-2. Reemplazar la paginación inline en ambos Content components
-3. Migrar ObituariosContent a usar el mismo componente `Pagination` para consistencia visual
+**Resuelto:** Se creó `src/components/shared/Pagination.tsx` con `buildPageNumbers` incluido. Se reemplazó la paginación inline en 5 archivos: `PeliculasContent`, `PersonasContent`, `EfemeridesPage`, `FilmReleasesByYear` y `ObituariosContent`. Se eliminó `buildPageNumbers` de `movieListUtils.ts` y `personListUtils.ts`, y las copias locales en `efemerides/page.tsx` y `FilmReleasesByYear.tsx`. ObituariosContent migrado de estilo prev/next simple al estilo unificado con números de página. Resultado: -191 líneas netas.
 
 ---
 
@@ -549,7 +539,7 @@ if (data.isPartialX && data.partialX) {
 |---|---|---|
 | ~~ViewToggle unificado~~ | ~~2 → 1~~ | ~~~45 líneas~~ ✅ Unificado |
 | ~~ExternalLinks unificado~~ | ~~2 → 1~~ | ~~~90 líneas (SVGs duplicados)~~ ✅ Unificado |
-| Pagination compartido | 3 → 1 | ~90 líneas |
+| ~~Pagination compartido~~ | ~~3 → 1~~ | ~~~90 líneas~~ ✅ Unificado en 5 archivos |
 | ListGrid genérico | 2 → 1 | ~40 líneas |
 | Hook useListPage | 2 Content → 1 hook + 2 thin wrappers | ~250 líneas |
 | FilterSelect/FilterInput compartidos | 4 definiciones → 2 componentes | ~60 líneas |
@@ -589,7 +579,7 @@ if (data.isPartialX && data.partialX) {
 2. **Media prioridad / Medio esfuerzo:**
    - ~~Unificar ViewToggle → un componente shared~~ ✅ Unificado en `src/components/shared/ViewToggle.tsx`
    - ~~Unificar ExternalLinks → un componente shared (elimina ~90 líneas de SVGs)~~ ✅ Unificado en `src/components/shared/ExternalLinks.tsx`
-   - Extraer Pagination compartido
+   - ~~Extraer Pagination compartido~~ ✅ Extraído en `src/components/shared/Pagination.tsx`
    - Extraer tipos compartidos a `src/lib/shared/` (ViewMode, FilterOption, PaginatedResponse)
    - Mover funciones duplicadas a shared (buildPageNumbers, generateYearOptions, formatDuration, formatPartialDate, calculateAge)
    - Normalizar inconsistencias de API routes (isNaN check, formato DELETE, validación Zod)
