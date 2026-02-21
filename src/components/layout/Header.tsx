@@ -89,10 +89,10 @@ export default function Header() {
           <div className="flex items-center gap-8">
             <Link href="/" className="flex shrink-0 items-center">
               <Image
-                src="/images/logo.png?v=2"
+                src="/images/logo.png"
                 alt="cinenacional.com"
-                width={158}
-                height={65}
+                width={777}
+                height={163}
                 className="h-10 sm:h-12 w-auto"
                 priority
               />
