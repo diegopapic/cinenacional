@@ -93,7 +93,7 @@ export default function Header() {
                 alt="cinenacional.com"
                 width={777}
                 height={163}
-                className="h-10 sm:h-12 w-auto"
+                className="h-12 sm:h-14 w-auto"
                 priority
               />
             </Link>
