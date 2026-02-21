@@ -7,6 +7,7 @@ import ObituariosYearSelector from '@/components/listados/obituarios/ObituariosY
 import ObituariosGrid from '@/app/(site)/listados/obituarios/ObituariosGrid';
 import { PersonWithDeath, ObituariosPagination } from '@/lib/obituarios/obituariosTypes';
 import { getCurrentYear, filtersToApiParams } from '@/lib/obituarios/obituariosUtils';
+import Pagination from '@/components/shared/Pagination';
 
 export default function ObituariosContent() {
   const router = useRouter();
@@ -121,18 +122,9 @@ export default function ObituariosContent() {
     setSelectedYear(year);
   };
 
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const handleNextPage = () => {
-    if (currentPage < pagination.totalPages) {
-      setCurrentPage(currentPage + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -171,40 +163,12 @@ export default function ObituariosContent() {
         />
 
         {/* Paginación */}
-        {!isLoading && pagination.totalPages > 1 && (
-          <div className="flex items-center justify-center gap-4 mt-8">
-            <button
-              onClick={handlePreviousPage}
-              disabled={currentPage === 1}
-              className={`
-                px-4 py-2 rounded-lg font-medium transition-all
-                ${currentPage === 1
-                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
-                  : 'bg-gray-800 text-white hover:bg-gray-700'
-                }
-              `}
-            >
-              ← Anterior
-            </button>
-
-            <span className="text-gray-400">
-              Página {currentPage} de {pagination.totalPages}
-            </span>
-
-            <button
-              onClick={handleNextPage}
-              disabled={currentPage === pagination.totalPages}
-              className={`
-                px-4 py-2 rounded-lg font-medium transition-all
-                ${currentPage === pagination.totalPages
-                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
-                  : 'bg-gray-800 text-white hover:bg-gray-700'
-                }
-              `}
-            >
-              Siguiente →
-            </button>
-          </div>
+        {!isLoading && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+          />
         )}
       </div>
     </div>

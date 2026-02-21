@@ -14,6 +14,7 @@ import {
   MovieListItem,
   MOVIE_SORT_OPTIONS
 } from '@/lib/movies/movieListTypes';
+import Pagination from '@/components/shared/Pagination';
 import {
   searchParamsToFilters,
   filtersToSearchParams,
@@ -23,7 +24,6 @@ import {
   hasActiveFilters,
   buildTitle,
   buildSubtitle,
-  buildPageNumbers
 } from '@/lib/movies/movieListUtils';
 
 interface PaginationState {
@@ -178,7 +178,6 @@ export default function PeliculasContent() {
 
   const activeFiltersCount = countActiveFilters(filters);
   const subtitle = buildSubtitle(filters);
-  const pageNumbers = buildPageNumbers(pagination.page, pagination.totalPages);
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8 md:py-12 lg:px-12">
@@ -281,50 +280,12 @@ export default function PeliculasContent() {
       />
 
       {/* Paginación */}
-      {!isLoading && pagination.totalPages > 1 && (
-        <nav className="mt-10 flex items-center justify-center gap-1">
-          {/* Prev */}
-          <button
-            onClick={() => handlePageChange(pagination.page - 1)}
-            disabled={pagination.page === 1}
-            className="flex h-8 w-8 items-center justify-center text-[12px] text-muted-foreground/40 transition-colors hover:text-accent disabled:opacity-30"
-          >
-            &#8249;
-          </button>
-
-          {/* Números de página */}
-          {pageNumbers.map((item, i) =>
-            item === '...' ? (
-              <span
-                key={`ellipsis-${i}`}
-                className="flex h-8 w-8 items-center justify-center text-[12px] text-muted-foreground/30"
-              >
-                ...
-              </span>
-            ) : (
-              <button
-                key={item}
-                onClick={() => handlePageChange(item as number)}
-                className={`flex h-8 w-8 items-center justify-center text-[12px] transition-colors ${
-                  item === pagination.page
-                    ? 'border border-accent/40 text-accent'
-                    : 'text-muted-foreground/40 hover:text-accent'
-                }`}
-              >
-                {item}
-              </button>
-            )
-          )}
-
-          {/* Next */}
-          <button
-            onClick={() => handlePageChange(pagination.page + 1)}
-            disabled={pagination.page === pagination.totalPages}
-            className="flex h-8 w-8 items-center justify-center text-[12px] text-muted-foreground/40 transition-colors hover:text-accent disabled:opacity-30"
-          >
-            &#8250;
-          </button>
-        </nav>
+      {!isLoading && (
+        <Pagination
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChange}
+        />
       )}
     </div>
   );
