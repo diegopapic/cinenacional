@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import ObituariosYearSelector from '@/components/listados/obituarios/ObituariosYearSelector';
+import { ChevronDown } from 'lucide-react';
 import ObituariosGrid from '@/app/(site)/listados/obituarios/ObituariosGrid';
 import { PersonWithDeath, ObituariosPagination } from '@/lib/obituarios/obituariosTypes';
 import { getCurrentYear, filtersToApiParams } from '@/lib/obituarios/obituariosUtils';
@@ -74,7 +74,7 @@ export default function ObituariosContent() {
   const loadAvailableYears = async () => {
     try {
       const response = await fetch('/api/people/death-years');
-      
+
       if (!response.ok) {
         throw new Error('Error al cargar años');
       }
@@ -103,7 +103,7 @@ export default function ObituariosContent() {
       const data = await response.json();
 
       setPeople(data.data || []);
-      
+
       setPagination({
         page: data.page || 1,
         totalPages: data.totalPages || 1,
@@ -128,49 +128,54 @@ export default function ObituariosContent() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <div className="bg-gray-900/50 backdrop-blur-sm border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">
-                Obituarios de {selectedYear}
-              </h1>
-              {pagination.total > 0 && (
-                <p className="text-gray-400 text-sm">
-                  {pagination.total} persona{pagination.total !== 1 ? 's' : ''} fallecida{pagination.total !== 1 ? 's' : ''}
-                </p>
-              )}
-            </div>
+    <div className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8 md:py-12 lg:px-12">
+      {/* Título */}
+      <h1 className="font-serif text-2xl tracking-tight md:text-3xl lg:text-4xl">
+        Obituarios de {selectedYear}
+      </h1>
 
-            {availableYears.length > 0 && (
-              <ObituariosYearSelector
-                availableYears={availableYears}
-                selectedYear={selectedYear}
-                onChange={handleYearChange}
-              />
-            )}
+      {/* Contador */}
+      {pagination.total > 0 && (
+        <p className="mt-1 text-[12px] text-muted-foreground/40 md:text-[13px]">
+          {pagination.total.toLocaleString('es-AR')} persona{pagination.total !== 1 ? 's' : ''} fallecida{pagination.total !== 1 ? 's' : ''}
+        </p>
+      )}
+
+      {/* Toolbar */}
+      <div className="mt-6 flex flex-wrap items-center gap-3 border-b border-border/20 pb-4">
+        {/* Select de año */}
+        {availableYears.length > 0 && (
+          <div className="relative">
+            <select
+              value={selectedYear}
+              onChange={(e) => handleYearChange(parseInt(e.target.value))}
+              className="h-8 appearance-none border border-border/30 bg-transparent px-2 pr-7 text-[12px] text-muted-foreground/60 outline-none transition-colors focus:border-accent/40 [&>option]:bg-[#0c0d0f] [&>option]:text-[#9a9da2]"
+            >
+              {availableYears.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/40" />
           </div>
-        </div>
+        )}
       </div>
 
       {/* Grid de personas */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ObituariosGrid
-          people={people}
-          isLoading={isLoading}
-        />
+      <ObituariosGrid
+        people={people}
+        isLoading={isLoading}
+      />
 
-        {/* Paginación */}
-        {!isLoading && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={pagination.totalPages}
-            onPageChange={handlePageChange}
-          />
-        )}
-      </div>
+      {/* Paginación */}
+      {!isLoading && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
     </div>
   );
 }
