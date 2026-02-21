@@ -6,7 +6,7 @@ import { MovieHero } from "@/components/movies/MovieHero";
 import { CastSection } from "@/components/movies/CastSection";
 import { CrewSection } from "@/components/movies/CrewSection";
 import { FilmTechnical } from "@/components/movies/FilmTechnical";
-import { FilmExternalLinks } from "@/components/movies/FilmExternalLinks";
+import { ExternalLinks } from "@/components/shared/ExternalLinks";
 import { ImageGallery } from "@/components/movies/ImageGallery";
 import { usePageView } from '@/hooks/usePageView';
 
@@ -179,7 +179,7 @@ export function MoviePageClient({
                 {/* External Links */}
                 {externalLinks.length > 0 && (
                     <div className="mt-12">
-                        <FilmExternalLinks links={externalLinks} />
+                        <ExternalLinks links={externalLinks} />
                     </div>
                 )}
 
