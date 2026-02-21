@@ -34,11 +34,11 @@ export default function Footer() {
           <div className="col-span-1 md:col-span-4 text-center md:text-left">
             <Link href="/" className="flex items-center space-x-2 text-white mb-4 justify-center md:justify-start">
               <Image
-                src="/images/logo.svg"
+                src="/images/logo.png"
                 alt="cinenacional.com"
-                width={180}
-                height={40}
-                className="h-10 sm:h-12 w-auto"
+                width={777}
+                height={163}
+                className="h-12 sm:h-14 w-auto"
                 priority
               />
             </Link>
