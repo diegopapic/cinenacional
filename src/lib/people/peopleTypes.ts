@@ -1,6 +1,7 @@
 // src/lib/people/peopleTypes.ts
 
 import { PartialDate } from '@/lib/shared/dateUtils';
+import type { PaginatedResponse } from '@/lib/shared/listTypes'
 
 // Tipos base de la base de datos
 export interface Person {
@@ -165,13 +166,7 @@ export interface PersonFilters {
 }
 
 // Tipo para respuesta paginada
-export interface PaginatedPeopleResponse {
-  data: PersonWithRelations[];
-  totalCount: number;
-  page: number;
-  totalPages: number;
-  hasMore: boolean;
-}
+export type PaginatedPeopleResponse = PaginatedResponse<PersonWithRelations>
 
 // Tipo para resultado de búsqueda con info de nombre alternativo
 export interface PersonSearchResult {

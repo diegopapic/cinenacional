@@ -15,6 +15,7 @@ import {
   MOVIE_SORT_OPTIONS
 } from '@/lib/movies/movieListTypes';
 import Pagination from '@/components/shared/Pagination';
+import type { PaginationState } from '@/lib/shared/listTypes';
 import {
   searchParamsToFilters,
   filtersToSearchParams,
@@ -25,12 +26,6 @@ import {
   buildTitle,
   buildSubtitle,
 } from '@/lib/movies/movieListUtils';
-
-interface PaginationState {
-  page: number;
-  totalPages: number;
-  totalCount: number;
-}
 
 export default function PeliculasContent() {
   const router = useRouter();

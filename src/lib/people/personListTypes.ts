@@ -1,6 +1,9 @@
 // src/lib/people/personListTypes.ts
 
 import { PersonWithRelations } from './peopleTypes';
+import type { FilterOption, PaginatedResponse } from '@/lib/shared/listTypes'
+
+export type { FilterOption }
 
 // Filtros disponibles para el listado
 export interface PersonListFilters {
@@ -50,13 +53,6 @@ export interface PersonWithMovie extends PersonWithRelations {
   movieCount?: number;
 }
 
-// Opciones para los dropdowns de filtros
-export interface FilterOption {
-  id: number;
-  name: string;
-  count?: number;  // Cantidad de personas con este valor
-}
-
 // Opciones de ubicación (con jerarquía)
 export interface LocationFilterOption extends FilterOption {
   parentName?: string;  // Ej: "Argentina" para "Buenos Aires"
@@ -85,13 +81,7 @@ export interface FiltersDataResponse {
 }
 
 // Respuesta paginada del listado
-export interface PaginatedPersonListResponse {
-  data: PersonWithMovie[];
-  totalCount: number;
-  page: number;
-  totalPages: number;
-  hasMore: boolean;
-}
+export type PaginatedPersonListResponse = PaginatedResponse<PersonWithMovie>
 
 // Opciones de ordenamiento para el UI (simplificadas)
 export const SORT_OPTIONS = [
