@@ -327,25 +327,9 @@ Además de la duplicación, hay inconsistencias que habría que normalizar:
 
 ## 4. Iconos SVG duplicados
 
-### 4.1 ExternalLinks — copias casi idénticas
+### 4.1 ExternalLinks — copias casi idénticas ✅ HECHO
 
-**Archivos:**
-- `src/components/movies/FilmExternalLinks.tsx` (91 líneas)
-- `src/components/people/PersonExternalLinks.tsx` (141 líneas)
-
-**Problema:**
-- Los SVGs de redes sociales (Instagram, Twitter, Facebook, TikTok, YouTube) son **100% idénticos** en ambos archivos — son copias verbatim de los mismos paths SVG.
-- El componente de renderizado es idéntico: mismo JSX, mismos estilos.
-- `PersonExternalLinks` tiene más tipos (LinkedIn, Vimeo, Letterboxd, Spotify, IMDb, Wikipedia, Podcast) que `FilmExternalLinks` no tiene.
-- Los tipos `ExternalLinkEntry` y `PersonExternalLinkEntry` son idénticos: `{ type: string; url: string }`.
-
-**Acción:** Crear un único componente `src/components/shared/ExternalLinks.tsx` con:
-- Un diccionario unificado de ICONS (superset de ambos)
-- Un diccionario unificado de LABELS
-- Un tipo único `ExternalLinkEntry = { type: string; url: string }`
-- Reutilizar en ambas páginas (película y persona)
-
-Esto elimina ~90 líneas de SVGs duplicados.
+**Resuelto:** Se creó `src/components/shared/ExternalLinks.tsx` con el superset de iconos y labels de ambos componentes. Se eliminaron `FilmExternalLinks.tsx` y `PersonExternalLinks.tsx`. Se actualizaron los imports en `MoviePageClient.tsx` y `persona/[slug]/page.tsx`. Resultado: -85 líneas netas.
 
 ### 4.2 react-icons vs lucide-react ✅ HECHO
 
@@ -564,7 +548,7 @@ if (data.isPartialX && data.partialX) {
 | Refactorización | Archivos afectados | Líneas eliminadas aprox |
 |---|---|---|
 | ~~ViewToggle unificado~~ | ~~2 → 1~~ | ~~~45 líneas~~ ✅ Unificado |
-| ExternalLinks unificado | 2 → 1 | ~90 líneas (SVGs duplicados) |
+| ~~ExternalLinks unificado~~ | ~~2 → 1~~ | ~~~90 líneas (SVGs duplicados)~~ ✅ Unificado |
 | Pagination compartido | 3 → 1 | ~90 líneas |
 | ListGrid genérico | 2 → 1 | ~40 líneas |
 | Hook useListPage | 2 Content → 1 hook + 2 thin wrappers | ~250 líneas |
@@ -604,7 +588,7 @@ if (data.isPartialX && data.partialX) {
 
 2. **Media prioridad / Medio esfuerzo:**
    - ~~Unificar ViewToggle → un componente shared~~ ✅ Unificado en `src/components/shared/ViewToggle.tsx`
-   - Unificar ExternalLinks → un componente shared (elimina ~90 líneas de SVGs)
+   - ~~Unificar ExternalLinks → un componente shared (elimina ~90 líneas de SVGs)~~ ✅ Unificado en `src/components/shared/ExternalLinks.tsx`
    - Extraer Pagination compartido
    - Extraer tipos compartidos a `src/lib/shared/` (ViewMode, FilterOption, PaginatedResponse)
    - Mover funciones duplicadas a shared (buildPageNumbers, generateYearOptions, formatDuration, formatPartialDate, calculateAge)
