@@ -89,7 +89,7 @@ export default function Header() {
           <div className="flex items-center gap-8">
             <Link href="/" className="flex shrink-0 items-center">
               <Image
-                src="/images/logo.svg"
+                src="/images/logo.png"
                 alt="cinenacional.com"
                 width={180}
                 height={40}
