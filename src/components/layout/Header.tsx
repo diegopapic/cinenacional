@@ -91,8 +91,8 @@ export default function Header() {
               <Image
                 src="/images/logo.png"
                 alt="cinenacional.com"
-                width={180}
-                height={40}
+                width={158}
+                height={65}
                 className="h-10 sm:h-12 w-auto"
                 priority
               />
