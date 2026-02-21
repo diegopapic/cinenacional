@@ -131,25 +131,9 @@ Además, `formatPartialDate()` en personListUtils y `formatReleaseDate()` en mov
 2. Mover `formatPartialDate` a `src/lib/shared/dateUtils.ts` (o verificar si ya existe ahí)
 3. Crear funciones genéricas `filtersToSearchParams<T>`, `searchParamsToFilters<T>`, etc., que usen un esquema de filtros configurable en vez de hardcodear cada campo
 
-### 2.2 Types — tipos duplicados
+### 2.2 Types — tipos duplicados ✅ HECHO
 
-**Archivos:**
-- `src/lib/movies/movieListTypes.ts`
-- `src/lib/people/personListTypes.ts`
-
-**Tipos idénticos:**
-- `ViewMode = 'compact' | 'detailed'` — definido en ambos archivos
-- `FilterOption { id, name, count? }` — definido en ambos (con leve diferencia: `id: number | string` vs `id: number`)
-- `PaginatedResponse { data, totalCount, page, totalPages, hasMore }` — misma estructura
-
-**Acción:** Extraer a `src/lib/shared/listTypes.ts`:
-```ts
-export type ViewMode = 'compact' | 'detailed';
-export type SortOrder = 'asc' | 'desc';
-export interface FilterOption { id: number | string; name: string; count?: number }
-export interface PaginatedResponse<T> { data: T[]; totalCount: number; page: number; totalPages: number; hasMore: boolean }
-export interface PaginationState { page: number; totalPages: number; totalCount: number }
-```
+**Resuelto:** Se creó `src/lib/shared/listTypes.ts` con los tipos compartidos: `ViewMode`, `SortOrder`, `FilterOption`, `PaginatedResponse<T>` y `PaginationState`. Se actualizaron `movieListTypes.ts`, `personListTypes.ts`, `peopleTypes.ts`, `rolesTypes.ts` e `imageTypes.ts` para usar `PaginatedResponse<T>` en vez de interfaces duplicadas. `FilterOption` se importa y re-exporta desde los módulos de movies y people. `ViewMode` se define en shared y se re-exporta desde `ViewToggle.tsx`. `PaginationState` inline eliminado de `PeliculasContent.tsx` y `PersonasContent.tsx`. Resultado: 9 archivos modificados, -62 / +45 líneas.
 
 ### 2.3 Constantes duplicadas con valores inconsistentes ✅ HECHO
 
@@ -194,17 +178,9 @@ Misma lógica de ajuste de cumpleaños, API diferente.
 
 **Acción:** Usar solo `calculateYearsBetween` de dateUtils y crear un wrapper si se necesita la API con 6 parámetros.
 
-### 2.7 `PaginatedResponse` definida 5 veces
+### 2.7 `PaginatedResponse` definida 5 veces ✅ HECHO
 
-La misma interfaz `{ data: T[], totalCount, page, totalPages, hasMore }` está definida en:
-
-1. `src/lib/movies/movieListTypes.ts` → `PaginatedMovieListResponse`
-2. `src/lib/people/personListTypes.ts` → `PaginatedPersonListResponse`
-3. `src/lib/people/peopleTypes.ts` → variante
-4. `src/lib/roles/rolesTypes.ts` → variante
-5. `src/lib/images/imageTypes.ts` → variante
-
-**Acción:** Crear un genérico `PaginatedResponse<T>` en `src/lib/shared/listTypes.ts`.
+**Resuelto:** Se creó `PaginatedResponse<T>` en `src/lib/shared/listTypes.ts`. Las 5 interfaces duplicadas ahora son type aliases: `PaginatedMovieListResponse = PaginatedResponse<MovieListItem>`, `PaginatedPersonListResponse = PaginatedResponse<PersonWithMovie>`, `PaginatedPeopleResponse = PaginatedResponse<PersonWithRelations>`, `PaginatedRolesResponse = PaginatedResponse<Role>`, `PaginatedImagesResponse = PaginatedResponse<ImageWithRelations>`. Los nombres existentes se mantienen como re-exports para no romper imports.
 
 ---
 
@@ -442,31 +418,14 @@ Estos componentes no agregan valor. Se podrían usar directamente `<AdBanner slo
 
 ---
 
-## 9. Tipos duplicados entre módulos
+## 9. Tipos duplicados entre módulos ✅ HECHO
 
-### 9.1 `ViewMode` definido 2 veces
-
-- `src/lib/movies/movieListTypes.ts:109` → `export type ViewMode = 'compact' | 'detailed'`
-- `src/lib/people/personListTypes.ts:97` → `export type ViewMode = 'compact' | 'detailed'`
-
-### 9.2 `FilterOption` definido 2 veces
-
-- `movieListTypes.ts:77` → `{ id: number | string; name: string; count?: number }`
-- `personListTypes.ts:54` → `{ id: number; name: string; count?: number }`
-
-### 9.3 `PaginatedResponse` definido 2 veces
-
-- `movieListTypes.ts:100` → `PaginatedMovieListResponse`
-- `personListTypes.ts:88` → `PaginatedPersonListResponse`
-Misma estructura, distinto nombre.
-
-### 9.4 `PaginationState` definido inline 2 veces
-
-- `PeliculasContent.tsx:31-35`
-- `PersonasContent.tsx:31-35`
-Idéntico `{ page, totalPages, totalCount }`.
-
-**Acción:** Mover todos a `src/lib/shared/listTypes.ts` y re-exportar desde los módulos específicos para no romper imports existentes.
+**Resuelto:** Todos los tipos duplicados fueron extraídos a `src/lib/shared/listTypes.ts`:
+- `ViewMode` — ahora definido en shared, re-exportado desde `ViewToggle.tsx`
+- `FilterOption` — definido en shared con `id: number | string`, re-exportado desde `movieListTypes.ts` y `personListTypes.ts`
+- `PaginatedResponse<T>` — genérico en shared, usado por las 5 interfaces de respuesta paginada
+- `PaginationState` — definido en shared, eliminado de `PeliculasContent.tsx` y `PersonasContent.tsx`
+- `SortOrder` — tipo adicional extraído (`'asc' | 'desc'`)
 
 ---
 
@@ -543,12 +502,12 @@ if (data.isPartialX && data.partialX) {
 | ListGrid genérico | 2 → 1 | ~40 líneas |
 | Hook useListPage | 2 Content → 1 hook + 2 thin wrappers | ~250 líneas |
 | FilterSelect/FilterInput compartidos | 4 definiciones → 2 componentes | ~60 líneas |
-| Tipos compartidos (ViewMode, etc) | 4+ archivos → 1 shared | ~30 líneas |
+| ~~Tipos compartidos (ViewMode, etc)~~ | ~~4+ archivos → 1 shared~~ | ~~~30 líneas~~ ✅ Extraídos a `src/lib/shared/listTypes.ts` |
 | Utils compartidos (buildPageNumbers, etc) | 2 → 1 shared + 2 specific | ~50 líneas |
 | formatDuration unificado | 3 → 1 | ~20 líneas |
 | formatPartialDate unificado | 3 → 1 | ~40 líneas |
 | calculateAge unificado | 2 → 1 | ~30 líneas |
-| PaginatedResponse genérico | 5 → 1 | ~25 líneas |
+| ~~PaginatedResponse genérico~~ | ~~5 → 1~~ | ~~~25 líneas~~ ✅ Unificado en `PaginatedResponse<T>` |
 | Procesamiento de fechas en servicios | 5 bloques → 1 helper | ~50 líneas |
 | ~~Console.logs de debug~~ | ~~eliminación directa~~ | ~~~30 líneas~~ ✅ Eliminados |
 | **Total consolidable** | | **~900 líneas** |
@@ -580,7 +539,7 @@ if (data.isPartialX && data.partialX) {
    - ~~Unificar ViewToggle → un componente shared~~ ✅ Unificado en `src/components/shared/ViewToggle.tsx`
    - ~~Unificar ExternalLinks → un componente shared (elimina ~90 líneas de SVGs)~~ ✅ Unificado en `src/components/shared/ExternalLinks.tsx`
    - ~~Extraer Pagination compartido~~ ✅ Extraído en `src/components/shared/Pagination.tsx`
-   - Extraer tipos compartidos a `src/lib/shared/` (ViewMode, FilterOption, PaginatedResponse)
+   - ~~Extraer tipos compartidos a `src/lib/shared/` (ViewMode, FilterOption, PaginatedResponse)~~ ✅ Extraídos a `src/lib/shared/listTypes.ts`
    - Mover funciones duplicadas a shared (buildPageNumbers, generateYearOptions, formatDuration, formatPartialDate, calculateAge)
    - Normalizar inconsistencias de API routes (isNaN check, formato DELETE, validación Zod)
 
