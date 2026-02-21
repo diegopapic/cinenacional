@@ -1,5 +1,6 @@
 // src/lib/images/imageTypes.ts
 import { z } from 'zod'
+import type { PaginatedResponse } from '@/lib/shared/listTypes'
 
 // Enum que coincide con Prisma
 export const ImageType = {
@@ -89,10 +90,4 @@ export const imageFormSchema = z.object({
 })
 
 // Respuesta paginada
-export interface PaginatedImagesResponse {
-  data: ImageWithRelations[]
-  totalCount: number
-  page: number
-  totalPages: number
-  hasMore: boolean
-}
+export type PaginatedImagesResponse = PaginatedResponse<ImageWithRelations>

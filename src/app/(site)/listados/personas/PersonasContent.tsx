@@ -15,6 +15,7 @@ import {
   SORT_OPTIONS
 } from '@/lib/people/personListTypes';
 import Pagination from '@/components/shared/Pagination';
+import type { PaginationState } from '@/lib/shared/listTypes';
 import {
   searchParamsToFilters,
   filtersToSearchParams,
@@ -25,12 +26,6 @@ import {
   buildTitle,
   buildSubtitle,
 } from '@/lib/people/personListUtils';
-
-interface PaginationState {
-  page: number;
-  totalPages: number;
-  totalCount: number;
-}
 
 export default function PersonasContent() {
   const router = useRouter();

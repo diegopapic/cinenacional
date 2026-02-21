@@ -1,5 +1,9 @@
 // src/lib/movies/movieListTypes.ts
 
+import type { FilterOption, PaginatedResponse } from '@/lib/shared/listTypes'
+
+export type { FilterOption }
+
 // Filtros disponibles para el listado de películas
 export interface MovieListFilters {
   search?: string;
@@ -72,13 +76,6 @@ export interface MovieListItem {
   }>;
 }
 
-// Opciones para los dropdowns de filtros
-export interface FilterOption {
-  id: number | string;
-  name: string;
-  count?: number;
-}
-
 // Respuesta de la API de filtros
 export interface MovieFiltersDataResponse {
   soundTypes: FilterOption[];
@@ -97,13 +94,7 @@ export interface MovieFiltersDataResponse {
 }
 
 // Respuesta paginada del listado
-export interface PaginatedMovieListResponse {
-  data: MovieListItem[];
-  totalCount: number;
-  page: number;
-  totalPages: number;
-  hasMore: boolean;
-}
+export type PaginatedMovieListResponse = PaginatedResponse<MovieListItem>
 
 // Opciones de ordenamiento para el UI
 export const MOVIE_SORT_OPTIONS = [

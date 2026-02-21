@@ -1,6 +1,7 @@
 // src/lib/roles/rolesTypes.ts
 
 import { z } from 'zod';
+import type { PaginatedResponse } from '@/lib/shared/listTypes'
 
 // Enum de departamentos
 export enum Department {
@@ -100,13 +101,7 @@ export interface RoleFilters {
 }
 
 // Respuestas paginadas
-export interface PaginatedRolesResponse {
-  data: Role[];
-  totalCount: number;
-  page: number;
-  totalPages: number;
-  hasMore: boolean;
-}
+export type PaginatedRolesResponse = PaginatedResponse<Role>
 
 // Validación con Zod
 /**

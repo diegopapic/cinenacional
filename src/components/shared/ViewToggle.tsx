@@ -1,8 +1,9 @@
 'use client';
 
 import { LayoutGrid, List } from 'lucide-react';
+import type { ViewMode } from '@/lib/shared/listTypes';
 
-export type ViewMode = 'compact' | 'detailed';
+export type { ViewMode };
 
 interface ViewToggleProps {
   viewMode: ViewMode;
