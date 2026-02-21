@@ -10,7 +10,7 @@ import DOMPurify from 'isomorphic-dompurify';
 import { trackPageView } from '@/hooks/usePageView';
 import { ImageGallery } from '@/components/movies/ImageGallery';
 import { POSTER_PLACEHOLDER } from '@/lib/movies/movieConstants';
-import { PersonExternalLinks } from '@/components/people/PersonExternalLinks';
+import { ExternalLinks } from '@/components/shared/ExternalLinks';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
 export const dynamic = 'force-dynamic'
@@ -1310,7 +1310,7 @@ export default function PersonPage({ params }: PersonPageProps) {
       {person.links && person.links.length > 0 && (
         <section className="py-12 border-t border-border/10">
           <div className="max-w-7xl mx-auto px-4 lg:px-6">
-            <PersonExternalLinks links={person.links} />
+            <ExternalLinks links={person.links} />
           </div>
         </section>
       )}
