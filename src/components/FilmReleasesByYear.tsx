@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, CalendarClock } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Pagination from '@/components/shared/Pagination'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -71,18 +72,6 @@ function formatReleaseBadge(
     return `${capitalMonth} de ${entry.year}`
   }
   return capitalMonth
-}
-
-function buildPageNumbers(current: number, total: number): (number | '...')[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-  const pages: (number | '...')[] = [1]
-  if (current > 3) pages.push('...')
-  const start = Math.max(2, current - 1)
-  const end = Math.min(total - 1, current + 1)
-  for (let i = start; i <= end; i++) pages.push(i)
-  if (current < total - 2) pages.push('...')
-  pages.push(total)
-  return pages
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -169,7 +158,6 @@ export function FilmReleasesByYear({ entries, initialUpcoming = false }: FilmRel
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
-  const pageNumbers = buildPageNumbers(page, totalPages)
 
   // Title
   const title = upcomingMode
@@ -322,51 +310,11 @@ export function FilmReleasesByYear({ entries, initialUpcoming = false }: FilmRel
       )}
 
       {/* ── Pagination ── */}
-      {totalPages > 1 && (
-        <nav className="mt-10 flex items-center justify-center gap-1">
-          {/* Prev */}
-          <button
-            disabled={page === 1}
-            onClick={() => handlePageChange(page - 1)}
-            className="flex h-8 w-8 items-center justify-center text-[12px] text-muted-foreground/40 transition-colors hover:text-accent disabled:opacity-30"
-          >
-            ‹
-          </button>
-
-          {pageNumbers.map((p, i) =>
-            p === '...' ? (
-              <span
-                key={`ellipsis-${i}`}
-                className="flex h-8 w-8 items-center justify-center text-[12px] text-muted-foreground/30"
-              >
-                …
-              </span>
-            ) : (
-              <button
-                key={p}
-                onClick={() => handlePageChange(p)}
-                className={cn(
-                  'flex h-8 w-8 items-center justify-center text-[12px] transition-colors',
-                  page === p
-                    ? 'border border-accent/40 text-accent'
-                    : 'text-muted-foreground/40 hover:text-accent',
-                )}
-              >
-                {p}
-              </button>
-            ),
-          )}
-
-          {/* Next */}
-          <button
-            disabled={page === totalPages}
-            onClick={() => handlePageChange(page + 1)}
-            className="flex h-8 w-8 items-center justify-center text-[12px] text-muted-foreground/40 transition-colors hover:text-accent disabled:opacity-30"
-          >
-            ›
-          </button>
-        </nav>
-      )}
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
       </div>
     </div>
   )

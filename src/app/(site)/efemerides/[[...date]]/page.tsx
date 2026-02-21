@@ -5,9 +5,9 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { Efemeride } from '@/types/home.types'
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
+import Pagination from '@/components/shared/Pagination'
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
@@ -27,18 +27,6 @@ const MONTHS = [
 ]
 
 const PER_PAGE = 20
-
-function buildPageNumbers(current: number, total: number): (number | '...')[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-  const pages: (number | '...')[] = [1]
-  if (current > 3) pages.push('...')
-  const start = Math.max(2, current - 1)
-  const end = Math.min(total - 1, current + 1)
-  for (let i = start; i <= end; i++) pages.push(i)
-  if (current < total - 2) pages.push('...')
-  pages.push(total)
-  return pages
-}
 
 // ── Component ───────────────────────────────────────────────────────────────
 
@@ -150,7 +138,6 @@ export default function EfemeridesPage() {
   const totalPages = Math.max(1, Math.ceil(entries.length / PER_PAGE))
   const safePage = Math.min(page, totalPages)
   const paged = entries.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE)
-  const pageNumbers = buildPageNumbers(safePage, totalPages)
 
   const handlePageChange = (p: number) => {
     setPage(p)
@@ -400,52 +387,11 @@ export default function EfemeridesPage() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <nav
-          className="mt-10 flex items-center justify-center gap-1"
-          aria-label="Paginacion"
-        >
-          <button
-            disabled={safePage <= 1}
-            onClick={() => handlePageChange(safePage - 1)}
-            className="flex h-8 w-8 items-center justify-center text-[12px] text-muted-foreground/40 transition-colors hover:text-accent disabled:opacity-30"
-          >
-            &lsaquo;
-          </button>
-
-          {pageNumbers.map((p, i) =>
-            p === '...' ? (
-              <span
-                key={`ellipsis-${i}`}
-                className="flex h-8 w-8 items-center justify-center text-[12px] text-muted-foreground/30"
-              >
-                ...
-              </span>
-            ) : (
-              <button
-                key={p}
-                onClick={() => handlePageChange(p)}
-                className={cn(
-                  'flex h-8 w-8 items-center justify-center text-[12px] transition-colors',
-                  safePage === p
-                    ? 'border border-accent/40 text-accent'
-                    : 'text-muted-foreground/40 hover:text-accent',
-                )}
-              >
-                {p}
-              </button>
-            ),
-          )}
-
-          <button
-            disabled={safePage >= totalPages}
-            onClick={() => handlePageChange(safePage + 1)}
-            className="flex h-8 w-8 items-center justify-center text-[12px] text-muted-foreground/40 transition-colors hover:text-accent disabled:opacity-30"
-          >
-            &rsaquo;
-          </button>
-        </nav>
-      )}
+      <Pagination
+        currentPage={safePage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
     </div>
   )
 }
