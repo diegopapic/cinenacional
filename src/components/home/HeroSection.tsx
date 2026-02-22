@@ -128,11 +128,13 @@ function CaptionContent({ image }: { image: HeroImage }) {
 
   const movieElement = image.movie ? (() => {
     const displayYear = getDisplayYear(image.movie);
-    const yearSuffix = displayYear ? ` (${displayYear})` : '';
     return (
-      <Link href={`/pelicula/${image.movie!.slug}`} className={movieLinkClass}>
-        {image.movie!.title}{yearSuffix}
-      </Link>
+      <>
+        <Link href={`/pelicula/${image.movie!.slug}`} className={movieLinkClass}>
+          {image.movie!.title}
+        </Link>
+        {displayYear && ` (${displayYear})`}
+      </>
     );
   })() : null;
 
