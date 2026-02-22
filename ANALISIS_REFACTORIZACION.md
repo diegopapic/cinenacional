@@ -257,28 +257,41 @@ export function withErrorHandler(handler: Function, context: string) {
 }
 ```
 
-### 3.3 Inconsistencias entre API routes
+### 3.3 Inconsistencias entre API routes ✅ HECHO (parcial)
 
-Además de la duplicación, hay inconsistencias que habría que normalizar:
+**Resuelto (isNaN + DELETE format):** Se normalizaron las dos inconsistencias más críticas en 10 archivos:
 
+**Validación `isNaN(id)` agregada a:**
+- `calificaciones/[id]/route.ts` — GET, PUT, DELETE
+- `images/[id]/route.ts` — GET, PUT, DELETE
+- `screening-venues/[id]/route.ts` — GET, PUT, DELETE
+- `themes/[id]/route.ts` — GET, PUT, DELETE
+- `movies/[id]/route.ts` — PUT, DELETE (GET usa regex `/^\d+$/` para slug/id)
+- `people/[id]/route.ts` — GET, PUT, DELETE
+- `people/[id]/filmography/route.ts` — GET
+- `locations/[id]/route.ts` — PUT, DELETE (GET ya tenía)
+
+**DELETE normalizado a `204 No Content` en:**
+- `calificaciones/[id]`, `genres/[id]`, `movies/[id]`, `screening-venues/[id]`, `themes/[id]`, `locations/[id]`, `people/[id]`
+- Todos usan ahora `return new NextResponse(null, { status: 204 })` (consistente con `roles/[id]`, `festivals/[id]`, etc.)
+
+**Errores normalizados:**
+- `people/[id]` — todos los `{ message: '...' }` cambiados a `{ error: '...' }` para consistencia
+- `locations/[id]` GET — error en inglés `'Invalid ID'` cambiado a `'ID inválido'`
+
+**Frontend actualizado:**
+- `LocationTree.tsx` — `confirmDelete` actualizado para manejar 204 sin llamar `.json()` (que fallaría sin body)
+- `api-client.ts` ya manejaba 204 correctamente (retorna `null`)
+
+**Pendiente:**
 | Problema | Dónde |
 |---|---|
-| **Falta validación `isNaN(id)`** en GET | `themes/[id]/route.ts` — no valida, puede pasar NaN a Prisma |
-| **DELETE responde diferente** | `roles/[id]` usa `204 No Content`; los demás usan `200 + JSON message` |
 | **GET list responde diferente** | `roles` devuelve `{ data, totalCount, page, totalPages, hasMore }`; los demás devuelven array plano |
 | **Validación mixta** | `roles` usa Zod schema; los demás usan `if (!body.name)` manual |
 | **Dos funciones de slug** | `roles` importa `generateSlug` de `@/lib/utils/slugs`; los demás usan `createSlug` de `@/lib/utils` |
 | **Error swallowing** | `stats/route.ts` devuelve zeros con status 200 en vez de 500 en caso de error |
-| **Stack trace leak** | `search/test/route.ts` incluye `errorStack` en la respuesta de error |
 | **themes GET** | Agrega `movieCount` mapeado; genres/calificaciones devuelven `_count` raw de Prisma |
 | **Estilo de código** | roles usa semicolons; genres/themes/calificaciones no — inconsistente |
-
-**Acción:** Al refactorizar las API routes, normalizar:
-- Siempre validar `isNaN(id)` en rutas `[id]`
-- Unificar formato de respuesta DELETE (preferir 204 o 200 con mensaje, pero elegir uno)
-- Usar Zod para validación en todos los endpoints, no solo roles
-- Unificar a una sola función de slug (`createSlug` o `generateSlug`)
-- No devolver stack traces en ningún endpoint
 
 ---
 
@@ -522,7 +535,7 @@ if (data.isPartialX && data.partialX) {
    - ~~Extraer Pagination compartido~~ ✅ Extraído en `src/components/shared/Pagination.tsx`
    - ~~Extraer tipos compartidos a `src/lib/shared/` (ViewMode, FilterOption, PaginatedResponse)~~ ✅ Extraídos a `src/lib/shared/listTypes.ts`
    - ~~Mover funciones duplicadas a shared (buildPageNumbers, generateYearOptions, formatDuration, formatPartialDate, calculateAge)~~ ✅ Movidas a `src/lib/shared/listUtils.ts` y delegadas a `dateUtils.ts`
-   - Normalizar inconsistencias de API routes (isNaN check, formato DELETE, validación Zod)
+   - ~~Normalizar inconsistencias de API routes (isNaN check, formato DELETE)~~ ✅ Normalizado en 10 archivos (validación Zod pendiente)
 
 3. **Baja prioridad / Alto esfuerzo (pero alto impacto):**
    - Crear hook `useListPage` genérico (elimina ~250 líneas duplicadas)
