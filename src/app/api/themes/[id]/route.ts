@@ -11,7 +11,14 @@ export async function GET(
 ) {
   try {
     const id = parseInt(params.id)
-    
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     const theme = await prisma.theme.findUnique({
       where: { id },
       include: {
@@ -64,8 +71,16 @@ export async function PUT(
 
   try {
     const id = parseInt(params.id)
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     const body = await request.json()
-    
+
     // Verificar que existe
     const existingTheme = await prisma.theme.findUnique({
       where: { id }
@@ -133,7 +148,14 @@ export async function DELETE(
 
   try {
     const id = parseInt(params.id)
-    
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     // Verificar que no esté en uso
     const themeWithMovies = await prisma.theme.findUnique({
       where: { id },
@@ -162,10 +184,7 @@ export async function DELETE(
       where: { id }
     })
 
-    return NextResponse.json(
-      { message: 'Theme eliminado exitosamente' },
-      { status: 200 }
-    )
+    return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error('Error deleting theme:', error)
     return NextResponse.json(

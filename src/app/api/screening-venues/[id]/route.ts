@@ -27,7 +27,14 @@ export async function GET(
 ) {
   try {
     const id = parseInt(params.id)
-    
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     const venue = await prisma.screeningVenue.findUnique({
       where: { id },
       include: {
@@ -66,8 +73,16 @@ export async function PUT(
 
   try {
     const id = parseInt(params.id)
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     const body = await request.json()
-    
+
     // Validar datos
     const validatedData = screeningVenueSchema.parse(body)
     
@@ -122,7 +137,14 @@ export async function DELETE(
 
   try {
     const id = parseInt(params.id)
-    
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     // Verificar que existe y obtener conteo de películas asociadas
     const venue = await prisma.screeningVenue.findUnique({
       where: { id },
@@ -158,10 +180,7 @@ export async function DELETE(
       where: { id }
     })
 
-    return NextResponse.json(
-      { message: 'Pantalla de estreno eliminada exitosamente' },
-      { status: 200 }
-    )
+    return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error('Error deleting screening venue:', error)
     return NextResponse.json(

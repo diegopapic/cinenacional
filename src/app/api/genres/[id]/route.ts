@@ -169,10 +169,7 @@ export async function DELETE(
       where: { id }
     })
     
-    return NextResponse.json(
-      { message: 'Género eliminado exitosamente' },
-      { status: 200 }
-    )
+    return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error('Error deleting genre:', error)
     return NextResponse.json(
