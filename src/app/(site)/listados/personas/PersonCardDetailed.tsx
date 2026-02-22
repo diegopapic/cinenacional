@@ -96,7 +96,7 @@ export default function PersonCardDetailed({ person }: PersonCardDetailedProps) 
           <p className="text-[12px] text-muted-foreground/40">
             {getFeaturedRole()}
             {' en '}
-            <Link href={`/pelicula/${person.featuredMovie.slug}`} className="transition-colors hover:text-accent">
+            <Link href={`/pelicula/${person.featuredMovie.slug}`} className="text-foreground/80 transition-colors hover:text-accent">
               {person.featuredMovie.title}
             </Link>
             {person.featuredMovie.year && (
