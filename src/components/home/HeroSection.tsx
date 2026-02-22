@@ -205,7 +205,9 @@ export default function HeroSection({ images }: HeroSectionProps) {
         return (
           <div
             key={image.id}
-            className="absolute inset-0 flex items-center justify-center transition-opacity duration-1000"
+            className={`absolute inset-0 flex items-center justify-center transition-opacity duration-1000 ${
+              idx === currentIndex ? 'pointer-events-auto' : 'pointer-events-none'
+            }`}
             style={{ opacity: idx === currentIndex ? 1 : 0 }}
           >
             {image.movie ? (
