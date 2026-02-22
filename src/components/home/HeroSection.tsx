@@ -21,6 +21,7 @@ interface HeroImage {
       id: number;
       firstName: string | null;
       lastName: string | null;
+      slug: string;
     };
   }>;
 }
@@ -41,7 +42,7 @@ function getDisplayYear(movie: HeroImage['movie']): number | null {
   return null;
 }
 
-function generateCaption(image: HeroImage): string {
+function generateCaptionText(image: HeroImage): string {
   const parts: string[] = [];
 
   if (image.people && image.people.length > 0) {
@@ -77,6 +78,73 @@ function generateCaption(image: HeroImage): string {
   }
 
   return parts.join(' ') || '';
+}
+
+const personLinkClass = "transition-colors hover:text-accent";
+const movieLinkClass = "text-foreground/80 transition-colors hover:text-accent";
+
+function CaptionContent({ image }: { image: HeroImage }) {
+  const sortedPeople = image.people && image.people.length > 0
+    ? [...image.people].sort((a, b) => a.position - b.position)
+        .map(ip => ({
+          slug: ip.person.slug,
+          name: [ip.person.firstName, ip.person.lastName].filter(Boolean).join(' '),
+        }))
+        .filter(p => p.name)
+    : [];
+
+  const peopleElements: React.ReactNode[] = [];
+
+  if (sortedPeople.length === 1) {
+    peopleElements.push(
+      <Link key={sortedPeople[0].slug} href={`/persona/${sortedPeople[0].slug}`} className={personLinkClass}>
+        {sortedPeople[0].name}
+      </Link>
+    );
+  } else if (sortedPeople.length === 2) {
+    peopleElements.push(
+      <Link key={sortedPeople[0].slug} href={`/persona/${sortedPeople[0].slug}`} className={personLinkClass}>
+        {sortedPeople[0].name}
+      </Link>,
+      ' y ',
+      <Link key={sortedPeople[1].slug} href={`/persona/${sortedPeople[1].slug}`} className={personLinkClass}>
+        {sortedPeople[1].name}
+      </Link>
+    );
+  } else if (sortedPeople.length > 2) {
+    sortedPeople.forEach((p, i) => {
+      if (i > 0 && i < sortedPeople.length - 1) {
+        peopleElements.push(', ');
+      } else if (i === sortedPeople.length - 1) {
+        peopleElements.push(' y ');
+      }
+      peopleElements.push(
+        <Link key={p.slug} href={`/persona/${p.slug}`} className={personLinkClass}>
+          {p.name}
+        </Link>
+      );
+    });
+  }
+
+  const movieElement = image.movie ? (() => {
+    const displayYear = getDisplayYear(image.movie);
+    const yearSuffix = displayYear ? ` (${displayYear})` : '';
+    return (
+      <Link href={`/pelicula/${image.movie!.slug}`} className={movieLinkClass}>
+        {image.movie!.title}{yearSuffix}
+      </Link>
+    );
+  })() : null;
+
+  if (peopleElements.length === 0 && !movieElement) return null;
+
+  return (
+    <>
+      {peopleElements.length > 0 && peopleElements}
+      {peopleElements.length > 0 && movieElement && ' en '}
+      {movieElement}
+    </>
+  );
 }
 
 /**
@@ -127,7 +195,7 @@ export default function HeroSection({ images }: HeroSectionProps) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={getHeroImageUrl(image.cloudinaryPublicId)}
-            alt={generateCaption(image)}
+            alt={generateCaptionText(image)}
             className="max-w-full max-h-full w-auto h-auto object-contain"
             style={fadeMaskStyle}
             {...(idx === 0 ? { fetchPriority: 'high' as const } : {})}
@@ -143,20 +211,9 @@ export default function HeroSection({ images }: HeroSectionProps) {
         <div className="mx-auto w-full max-w-7xl px-4 lg:px-6 pb-6 md:pb-8">
           <div className="flex items-end justify-between gap-4">
             {/* Caption */}
-            <div>
-              {currentImage.movie ? (
-                <Link
-                  href={`/pelicula/${currentImage.movie.slug}`}
-                  className="text-[13px] md:text-sm leading-snug text-muted-foreground/50 transition-colors hover:text-accent"
-                >
-                  {generateCaption(currentImage)}
-                </Link>
-              ) : (
-                <p className="text-[13px] md:text-sm leading-snug text-muted-foreground/50">
-                  {generateCaption(currentImage)}
-                </p>
-              )}
-            </div>
+            <p className="text-[13px] md:text-sm leading-snug text-muted-foreground/50">
+              <CaptionContent image={currentImage} />
+            </p>
 
             {/* Dots */}
             {images.length > 1 && (
