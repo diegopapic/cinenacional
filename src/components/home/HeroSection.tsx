@@ -188,22 +188,36 @@ export default function HeroSection({ images }: HeroSectionProps) {
   return (
     <section className="relative h-[50vh] md:h-[60vh] lg:h-[70vh] w-full overflow-hidden bg-background">
       {/* Slides */}
-      {images.map((image, idx) => (
-        <div
-          key={image.id}
-          className="absolute inset-0 flex items-center justify-center transition-opacity duration-1000"
-          style={{ opacity: idx === currentIndex ? 1 : 0 }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={getHeroImageUrl(image.cloudinaryPublicId)}
-            alt={generateCaptionText(image)}
-            className="max-w-full max-h-full w-auto h-auto object-contain"
-            style={fadeMaskStyle}
-            {...(idx === 0 ? { fetchPriority: 'high' as const } : {})}
-          />
-        </div>
-      ))}
+      {images.map((image, idx) => {
+        const imgElement = (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={getHeroImageUrl(image.cloudinaryPublicId)}
+              alt={generateCaptionText(image)}
+              className="max-w-full max-h-full w-auto h-auto object-contain"
+              style={fadeMaskStyle}
+              {...(idx === 0 ? { fetchPriority: 'high' as const } : {})}
+            />
+          </>
+        );
+
+        return (
+          <div
+            key={image.id}
+            className="absolute inset-0 flex items-center justify-center transition-opacity duration-1000"
+            style={{ opacity: idx === currentIndex ? 1 : 0 }}
+          >
+            {image.movie ? (
+              <Link href={`/pelicula/${image.movie.slug}`} className="contents">
+                {imgElement}
+              </Link>
+            ) : (
+              imgElement
+            )}
+          </div>
+        );
+      })}
 
       {/* Gradiente inferior global para el caption */}
       <div className="absolute inset-0 z-[2] bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
