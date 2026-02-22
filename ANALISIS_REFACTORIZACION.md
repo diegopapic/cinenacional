@@ -54,37 +54,9 @@
 
 ---
 
-### 1.3 Content wrappers — ~90% similares
+### 1.3 Content wrappers — ~90% similares ✅ HECHO
 
-**Archivos:**
-- `src/app/(site)/listados/peliculas/PeliculasContent.tsx` (333 líneas)
-- `src/app/(site)/listados/personas/PersonasContent.tsx` (334 líneas)
-
-**Problema:** Son prácticamente copias espejo. Comparten exactamente la misma lógica de:
-- Inicialización de filtros desde URL (`useState`, `useEffect` para searchParams)
-- Sincronización filtros ↔ URL (`router.replace`)
-- Carga de datos con fetch (`loadFiltersData`, `loadMovies`/`loadPeople`)
-- Handlers idénticos: `handleFilterChange`, `handleClearFilters`, `handleSortByChange`, `handleToggleSortOrder`, `handlePageChange`
-- Limit dinámico por viewMode (24 compact / 12 detailed)
-- Toolbar idéntico (sort select, sort direction, filters button, clear filters, spacer, ViewToggle)
-- Paginación idéntica con `buildPageNumbers`
-
-La interfaz `PaginationState` está definida inline e idéntica en ambos archivos:
-```ts
-interface PaginationState {
-  page: number;
-  totalPages: number;
-  totalCount: number;
-}
-```
-
-**Acción:** Extraer un hook `useListPage<TFilters, TItem>` que encapsule toda la lógica compartida:
-- Estado de filtros, paginación, loading, viewMode
-- Sincronización URL ↔ filtros
-- Carga de datos genérica (recibe `apiEndpoint` y `filtersEndpoint`)
-- Todos los handlers
-
-Además, extraer un componente `ListToolbar` para la toolbar compartida y un componente `Pagination` para la paginación.
+**Resuelto:** Se creó `src/hooks/useListPage.ts` (hook genérico con estado de filtros, paginación, viewMode, sincronización URL y todos los handlers) y `src/components/shared/ListToolbar.tsx` (toolbar compartido con sort, filtros y toggle de vista). `PeliculasContent.tsx` y `PersonasContent.tsx` pasaron de ~287 líneas cada uno a ~110 líneas, delegando toda la lógica compartida al hook. La paginación ya estaba extraída previamente en `src/components/shared/Pagination.tsx`.
 
 ---
 
@@ -494,7 +466,7 @@ if (data.isPartialX && data.partialX) {
 | ~~ExternalLinks unificado~~ | ~~2 → 1~~ | ~~~90 líneas (SVGs duplicados)~~ ✅ Unificado |
 | ~~Pagination compartido~~ | ~~3 → 1~~ | ~~~90 líneas~~ ✅ Unificado en 5 archivos |
 | ListGrid genérico | 2 → 1 | ~40 líneas |
-| Hook useListPage | 2 Content → 1 hook + 2 thin wrappers | ~250 líneas |
+| ~~Hook useListPage~~ | ~~2 Content → 1 hook + 2 thin wrappers~~ | ~~~250 líneas~~ ✅ Extraído a `useListPage.ts` + `ListToolbar.tsx` |
 | FilterSelect/FilterInput compartidos | 4 definiciones → 2 componentes | ~60 líneas |
 | ~~Tipos compartidos (ViewMode, etc)~~ | ~~4+ archivos → 1 shared~~ | ~~~30 líneas~~ ✅ Extraídos a `src/lib/shared/listTypes.ts` |
 | ~~Utils compartidos (buildPageNumbers, etc)~~ | ~~2 → 1 shared + 2 specific~~ | ~~~50 líneas~~ ✅ Movidos a `src/lib/shared/listUtils.ts` |
@@ -538,7 +510,7 @@ if (data.isPartialX && data.partialX) {
    - ~~Normalizar inconsistencias de API routes (isNaN check, formato DELETE)~~ ✅ Normalizado en 10 archivos (validación Zod pendiente)
 
 3. **Baja prioridad / Alto esfuerzo (pero alto impacto):**
-   - Crear hook `useListPage` genérico (elimina ~250 líneas duplicadas)
+   - ~~Crear hook `useListPage` genérico (elimina ~250 líneas duplicadas)~~ ✅ Creado `src/hooks/useListPage.ts` + `src/components/shared/ListToolbar.tsx`
    - Crear factory de CRUD API routes
    - Crear ListGrid genérico
    - Unificar FilterSelect/FilterInput
