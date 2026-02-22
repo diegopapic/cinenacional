@@ -17,7 +17,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
           Últimas películas ingresadas
         </h2>
         <Link
-          href="/listados/peliculas"
+          href="/listados/peliculas?sortBy=id"
           className="shrink-0 text-[12px] md:text-[13px] tracking-wide text-muted-foreground/40 transition-colors hover:text-accent"
         >
           Ver más
