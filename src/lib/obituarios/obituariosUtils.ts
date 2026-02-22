@@ -1,6 +1,7 @@
 // src/lib/obituarios/obituariosUtils.ts
 
 import { PersonWithDeath } from './obituariosTypes';
+import { calculateYearsBetween, type PartialDate } from '@/lib/shared/dateUtils';
 
 /**
  * Nombres de los meses en español
@@ -37,6 +38,7 @@ export async function getAvailableYears(): Promise<number[]> {
 
 /**
  * Calcula la edad de una persona
+ * Delega a calculateYearsBetween de dateUtils
  */
 export function calculateAge(
   birthYear: number | null,
@@ -46,22 +48,9 @@ export function calculateAge(
   deathMonth: number | null,
   deathDay: number | null
 ): number | null {
-  if (!birthYear) return null;
-
-  let age = deathYear - birthYear;
-
-  // Ajustar si no ha llegado el cumpleaños
-  if (birthMonth && deathMonth) {
-    if (deathMonth < birthMonth) {
-      age--;
-    } else if (deathMonth === birthMonth && birthDay && deathDay) {
-      if (deathDay < birthDay) {
-        age--;
-      }
-    }
-  }
-
-  return age;
+  const birth: PartialDate = { year: birthYear, month: birthMonth, day: birthDay };
+  const death: PartialDate = { year: deathYear, month: deathMonth, day: deathDay };
+  return calculateYearsBetween(birth, death);
 }
 
 /**

@@ -1,6 +1,11 @@
 // src/lib/people/personListUtils.ts
 
 import { PersonListFilters, DEFAULT_PERSON_FILTERS, PersonWithMovie, LocationFilterOption, FiltersDataResponse, SORT_OPTIONS } from './personListTypes';
+import { formatPartialDate as sharedFormatPartialDate, calculateYearsBetween, type PartialDate } from '@/lib/shared/dateUtils';
+import { generateYearOptions } from '@/lib/shared/listUtils';
+
+// Re-export para mantener compatibilidad con importaciones existentes
+export { generateYearOptions };
 
 /**
  * Convierte los filtros del estado a parámetros de URL
@@ -123,35 +128,22 @@ export function formatPersonName(person: { firstName?: string | null; lastName?:
 
 /**
  * Formatea la fecha de nacimiento/muerte para mostrar
+ * Delega a la versión compartida en dateUtils
  */
 export function formatPartialDate(
   year?: number | null,
   month?: number | null,
   day?: number | null,
-  options?: { includeAge?: boolean; currentYear?: number }
 ): string {
-  if (!year) return '';
-  
-  const months = [
-    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
-  ];
-  
-  let dateStr = '';
-  
-  if (day && month) {
-    dateStr = `${day} de ${months[month - 1]} de ${year}`;
-  } else if (month) {
-    dateStr = `${months[month - 1]} de ${year}`;
-  } else {
-    dateStr = String(year);
-  }
-  
-  return dateStr;
+  return sharedFormatPartialDate(
+    { year: year ?? null, month: month ?? null, day: day ?? null },
+    { fallback: '' }
+  );
 }
 
 /**
  * Calcula la edad entre dos fechas parciales
+ * Delega a calculateYearsBetween de dateUtils
  */
 export function calculateAge(
   birthYear?: number | null,
@@ -161,24 +153,12 @@ export function calculateAge(
   deathMonth?: number | null,
   deathDay?: number | null
 ): number | null {
-  if (!birthYear) return null;
-  
-  const endYear = deathYear || new Date().getFullYear();
-  const endMonth = deathMonth || new Date().getMonth() + 1;
-  const endDay = deathDay || new Date().getDate();
-  
-  let age = endYear - birthYear;
-  
-  // Ajustar si aún no llegó el cumpleaños
-  if (birthMonth && endMonth) {
-    if (endMonth < birthMonth) {
-      age--;
-    } else if (endMonth === birthMonth && birthDay && endDay < birthDay) {
-      age--;
-    }
-  }
-  
-  return age >= 0 ? age : null;
+  const birth: PartialDate = { year: birthYear ?? null, month: birthMonth ?? null, day: birthDay ?? null };
+  const death: PartialDate | undefined = deathYear
+    ? { year: deathYear, month: deathMonth ?? null, day: deathDay ?? null }
+    : undefined;
+  const age = calculateYearsBetween(birth, death);
+  return age !== null && age >= 0 ? age : null;
 }
 
 /**
@@ -190,17 +170,6 @@ export function formatLocation(location: LocationFilterOption | null | undefined
   if (location.fullPath) return location.fullPath;
   if (location.parentName) return `${location.name}, ${location.parentName}`;
   return location.name;
-}
-
-/**
- * Genera un array de años para los selectores
- */
-export function generateYearOptions(min: number, max: number): number[] {
-  const years: number[] = [];
-  for (let year = max; year >= min; year--) {
-    years.push(year);
-  }
-  return years;
 }
 
 /**

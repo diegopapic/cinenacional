@@ -2,6 +2,11 @@
 
 import { MovieListFilters, DEFAULT_MOVIE_FILTERS, MovieListItem, MovieFiltersDataResponse, MOVIE_SORT_OPTIONS } from './movieListTypes';
 import { MOVIE_STAGES } from './movieConstants';
+import { formatPartialDate as sharedFormatPartialDate } from '@/lib/shared/dateUtils';
+import { formatDuration, generateYearOptions } from '@/lib/shared/listUtils';
+
+// Re-export para mantener compatibilidad con importaciones existentes
+export { formatDuration, generateYearOptions };
 
 /**
  * Convierte los filtros del estado a parámetros de URL
@@ -114,24 +119,6 @@ export function filtersToApiParams(filters: MovieListFilters): Record<string, st
 }
 
 /**
- * Formatea la duración en formato legible
- */
-export function formatDuration(minutes: number | null): string {
-  if (!minutes) return '';
-
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-
-  if (hours === 0) {
-    return `${mins} min`;
-  } else if (mins === 0) {
-    return `${hours}h`;
-  } else {
-    return `${hours}h ${mins}min`;
-  }
-}
-
-/**
  * Obtiene el año a mostrar para una película (producción o estreno)
  */
 export function getDisplayYear(movie: MovieListItem): number | null {
@@ -140,37 +127,17 @@ export function getDisplayYear(movie: MovieListItem): number | null {
 
 /**
  * Formatea la fecha de estreno
+ * Delega a la versión compartida en dateUtils
  */
 export function formatReleaseDate(
   year?: number | null,
   month?: number | null,
   day?: number | null
 ): string {
-  if (!year) return '';
-
-  const months = [
-    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
-  ];
-
-  if (day && month) {
-    return `${day} de ${months[month - 1]} de ${year}`;
-  } else if (month) {
-    return `${months[month - 1]} de ${year}`;
-  } else {
-    return String(year);
-  }
-}
-
-/**
- * Genera un array de años para los selectores
- */
-export function generateYearOptions(min: number, max: number): number[] {
-  const years: number[] = [];
-  for (let year = max; year >= min; year--) {
-    years.push(year);
-  }
-  return years;
+  return sharedFormatPartialDate(
+    { year: year ?? null, month: month ?? null, day: day ?? null },
+    { fallback: '' }
+  );
 }
 
 /**
