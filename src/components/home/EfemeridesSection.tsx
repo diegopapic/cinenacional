@@ -21,7 +21,7 @@ function renderDirectorLinks(item: Efemeride) {
       return (
         <Link
           href={`/persona/${directors[0].slug}`}
-          className="transition-colors hover:text-accent"
+          className="text-foreground/80 transition-colors hover:text-accent"
         >
           {directors[0].name}
         </Link>
@@ -33,14 +33,14 @@ function renderDirectorLinks(item: Efemeride) {
         <>
           <Link
             href={`/persona/${directors[0].slug}`}
-            className="transition-colors hover:text-accent"
+            className="text-foreground/80 transition-colors hover:text-accent"
           >
             {directors[0].name}
           </Link>
           {' y '}
           <Link
             href={`/persona/${directors[1].slug}`}
-            className="transition-colors hover:text-accent"
+            className="text-foreground/80 transition-colors hover:text-accent"
           >
             {directors[1].name}
           </Link>
@@ -55,7 +55,7 @@ function renderDirectorLinks(item: Efemeride) {
           <span key={director.slug}>
             <Link
               href={`/persona/${director.slug}`}
-              className="transition-colors hover:text-accent"
+              className="text-foreground/80 transition-colors hover:text-accent"
             >
               {director.name}
             </Link>
@@ -65,7 +65,7 @@ function renderDirectorLinks(item: Efemeride) {
         {'y '}
         <Link
           href={`/persona/${directors[directors.length - 1].slug}`}
-          className="transition-colors hover:text-accent"
+          className="text-foreground/80 transition-colors hover:text-accent"
         >
           {directors[directors.length - 1].name}
         </Link>
@@ -78,7 +78,7 @@ function renderDirectorLinks(item: Efemeride) {
     return (
       <Link
         href={`/persona/${item.directorSlug}`}
-        className="transition-colors hover:text-accent"
+        className="text-foreground/80 transition-colors hover:text-accent"
       >
         {item.director}
       </Link>
@@ -107,7 +107,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
               {item.slug ? (
                 <Link
                   href={`/pelicula/${item.slug}`}
-                  className="transition-colors hover:text-accent"
+                  className="text-foreground/80 transition-colors hover:text-accent"
                 >
                   {item.titulo}
                 </Link>
@@ -128,7 +128,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
               {item.slug ? (
                 <Link
                   href={`/pelicula/${item.slug}`}
-                  className="transition-colors hover:text-accent"
+                  className="text-foreground/80 transition-colors hover:text-accent"
                 >
                   {item.titulo}
                 </Link>
@@ -149,7 +149,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
               {item.slug ? (
                 <Link
                   href={`/pelicula/${item.slug}`}
-                  className="transition-colors hover:text-accent"
+                  className="text-foreground/80 transition-colors hover:text-accent"
                 >
                   {item.titulo}
                 </Link>
@@ -175,7 +175,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
               {item.slug ? (
                 <Link
                   href={`/persona/${item.slug}`}
-                  className="transition-colors hover:text-accent"
+                  className="text-foreground/80 transition-colors hover:text-accent"
                 >
                   {item.titulo}
                 </Link>
@@ -191,7 +191,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
               {item.slug ? (
                 <Link
                   href={`/persona/${item.slug}`}
-                  className="transition-colors hover:text-accent"
+                  className="text-foreground/80 transition-colors hover:text-accent"
                 >
                   {item.titulo}
                 </Link>
@@ -325,7 +325,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
                     <p className="text-[11px] md:text-[12px] tabular-nums text-muted-foreground/35">
                       {getYear(item)}
                     </p>
-                    <p className="text-[13px] md:text-sm leading-snug text-foreground/70">
+                    <p className="text-[13px] md:text-sm leading-snug text-muted-foreground/50">
                       {renderEvento(item)}
                     </p>
                   </div>
