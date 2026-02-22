@@ -17,7 +17,7 @@ export interface MovieListFilters {
   releaseDateTo?: string;                // Fecha completa YYYY-MM-DD
   productionYearFrom?: number | '';
   productionYearTo?: number | '';
-  sortBy?: 'id' | 'title' | 'releaseDate' | 'duration';
+  sortBy?: 'id' | 'title' | 'releaseDate' | 'duration' | 'popularity';
   sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
@@ -36,7 +36,7 @@ export const DEFAULT_MOVIE_FILTERS: MovieListFilters = {
   releaseDateTo: '',
   productionYearFrom: '',
   productionYearTo: '',
-  sortBy: 'id',
+  sortBy: 'popularity',
   sortOrder: 'desc',
   page: 1,
   limit: 60
@@ -98,6 +98,7 @@ export type PaginatedMovieListResponse = PaginatedResponse<MovieListItem>
 
 // Opciones de ordenamiento para el UI
 export const MOVIE_SORT_OPTIONS = [
+  { value: 'popularity', label: 'Popularidad' },
   { value: 'id', label: 'Ingreso a la base de datos' },
   { value: 'title', label: 'Alfabéticamente' },
   { value: 'releaseDate', label: 'Fecha de estreno' },

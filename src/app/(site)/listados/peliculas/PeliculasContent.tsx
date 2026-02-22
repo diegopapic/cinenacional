@@ -81,7 +81,7 @@ export default function PeliculasContent() {
 
       {/* Toolbar */}
       <ListToolbar
-        sortBy={filters.sortBy || 'id'}
+        sortBy={filters.sortBy || 'popularity'}
         sortOrder={filters.sortOrder || 'desc'}
         sortOptions={MOVIE_SORT_OPTIONS}
         activeFiltersCount={activeFiltersCount}

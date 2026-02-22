@@ -76,7 +76,7 @@ export function searchParamsToFilters(searchParams: URLSearchParams): MovieListF
   if (productionYearTo) filters.productionYearTo = parseInt(productionYearTo);
 
   const sortBy = searchParams.get('sortBy');
-  if (sortBy === 'id' || sortBy === 'title' || sortBy === 'releaseDate' || sortBy === 'duration') {
+  if (sortBy === 'id' || sortBy === 'title' || sortBy === 'releaseDate' || sortBy === 'duration' || sortBy === 'popularity') {
     filters.sortBy = sortBy;
   }
 
@@ -302,6 +302,10 @@ export function buildSubtitle(filters: MovieListFilters): string {
   const isAsc = sortOrder === 'asc';
 
   switch (sortBy) {
+    case 'popularity':
+      return isAsc
+        ? 'Ordenadas por popularidad, de menor a mayor'
+        : 'Ordenadas por popularidad, de mayor a menor';
     case 'id':
       return isAsc
         ? 'Ordenadas por ingreso a la base de datos, de más antigua a más nueva'
