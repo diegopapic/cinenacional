@@ -2,7 +2,7 @@
 
 import { Person, PersonWithRelations, PersonFormData, PersonLink, Gender } from './peopleTypes';
 import { DEFAULT_PERSON_FORM_VALUES, DEFAULT_PERSON_LINK } from './peopleConstants';
-import { PartialDate, partialFieldsToDate } from '@/lib/shared/dateUtils';
+import { PartialDate, partialFieldsToDate, calculateYearsBetween } from '@/lib/shared/dateUtils';
 
 /**
 * Genera un slug único para una persona basado en nombre y apellido
@@ -347,17 +347,21 @@ export function formatBirthInfo(person: any): string {
 
 /**
 * Calcula la edad a partir de una fecha de nacimiento
+* Delega a calculateYearsBetween de dateUtils
 */
 export function calculateAge(birthDate: Date, deathDate?: Date): number {
    const endDate = deathDate || new Date();
-   let age = endDate.getFullYear() - birthDate.getFullYear();
-   const monthDiff = endDate.getMonth() - birthDate.getMonth();
-
-   if (monthDiff < 0 || (monthDiff === 0 && endDate.getDate() < birthDate.getDate())) {
-       age--;
-   }
-
-   return age;
+   const birth: PartialDate = {
+     year: birthDate.getFullYear(),
+     month: birthDate.getMonth() + 1,
+     day: birthDate.getDate()
+   };
+   const end: PartialDate = {
+     year: endDate.getFullYear(),
+     month: endDate.getMonth() + 1,
+     day: endDate.getDate()
+   };
+   return calculateYearsBetween(birth, end) ?? 0;
 }
 
 /**

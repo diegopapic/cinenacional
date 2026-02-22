@@ -1,5 +1,9 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { formatDuration } from '@/lib/shared/listUtils'
+
+// Re-export para mantener compatibilidad con importaciones existentes
+export { formatDuration }
 
 /**
  * Combina clases de Tailwind CSS de forma segura
@@ -38,13 +42,3 @@ export function formatDate(date: Date | string | null): string {
   })
 }
 
-/**
- * formatDuration
- * @TODO Add documentation
- */
-export function formatDuration(minutes: number | null): string {
-  if (!minutes) return ''
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  return `${hours}h ${mins}min`
-}
