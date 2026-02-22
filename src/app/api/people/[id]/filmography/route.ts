@@ -14,7 +14,14 @@ export async function GET(
 ) {
   try {
     const personId = parseInt(params.id);
-    
+
+    if (isNaN(personId)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      );
+    }
+
     // Generar clave de caché única - VERSIÓN v2 para invalidar cache anterior
     const cacheKey = `person:filmography:${personId}:v2`;
 

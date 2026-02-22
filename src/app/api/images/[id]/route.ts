@@ -11,7 +11,14 @@ export async function GET(
 ) {
   try {
     const id = parseInt(params.id)
-    
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     const image = await prisma.image.findUnique({
       where: { id },
       include: {
@@ -66,8 +73,16 @@ export async function PUT(
 
   try {
     const id = parseInt(params.id)
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     const body = await request.json()
-    
+
     const validatedData = imageFormSchema.parse(body)
     const { people, ...imageData } = validatedData
 
@@ -149,7 +164,14 @@ export async function DELETE(
 
   try {
     const id = parseInt(params.id)
-    
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     await prisma.image.delete({
       where: { id }
     })

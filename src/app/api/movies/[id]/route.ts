@@ -365,6 +365,14 @@ export async function PUT(
 
   try {
     const id = parseInt(params.id)
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     const body = await request.json()
 
     // Limpiar datos antes de validar
@@ -765,6 +773,13 @@ export async function DELETE(
   try {
     const id = parseInt(params.id)
 
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     // Verificar que la película existe y obtener slug para invalidar caché
     const movie = await prisma.movie.findUnique({
       where: { id },
@@ -819,10 +834,7 @@ export async function DELETE(
 
     console.log(`✅ Todos los cachés invalidados tras eliminar: ${movie.slug}`);
 
-    return NextResponse.json(
-      { message: 'Película eliminada exitosamente' },
-      { status: 200 }
-    )
+    return new NextResponse(null, { status: 204 })
   } catch (error: any) {
     console.error('Error deleting movie:', error)
 

@@ -13,7 +13,14 @@ export async function GET(
 ) {
   try {
     const id = parseInt(params.id)
-    
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     const rating = await prisma.rating.findUnique({
       where: { id },
       include: {
@@ -54,8 +61,16 @@ export async function PUT(
 
   try {
     const id = parseInt(params.id)
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     const body = await request.json()
-    
+
     // Validar datos requeridos
     if (!body.name || !body.name.trim()) {
       return NextResponse.json(
@@ -109,7 +124,14 @@ export async function DELETE(
 
   try {
     const id = parseInt(params.id)
-    
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     // Verificar que la calificación existe
     const rating = await prisma.rating.findUnique({
       where: { id },
@@ -140,10 +162,7 @@ export async function DELETE(
       where: { id }
     })
 
-    return NextResponse.json(
-      { message: 'Calificación eliminada exitosamente' },
-      { status: 200 }
-    )
+    return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error('Error deleting rating:', error)
     return NextResponse.json(

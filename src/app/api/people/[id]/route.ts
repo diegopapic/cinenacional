@@ -18,6 +18,13 @@ export async function GET(
         const { id } = await params;
         const personId = parseInt(id);
 
+        if (isNaN(personId)) {
+            return NextResponse.json(
+                { error: 'ID inválido' },
+                { status: 400 }
+            );
+        }
+
         // Generar clave de caché única
         const cacheKey = `person:id:${personId}:v1`;
 
@@ -119,7 +126,7 @@ export async function GET(
 
         if (!person) {
             return NextResponse.json(
-                { message: 'Persona no encontrada' },
+                { error: 'Persona no encontrada' },
                 { status: 404 }
             );
         }
@@ -176,7 +183,7 @@ export async function GET(
         }
 
         return NextResponse.json(
-            { message: 'Error al obtener persona' },
+            { error: 'Error al obtener persona' },
             { status: 500 }
         );
     }
@@ -191,8 +198,16 @@ export async function PUT(
 
     try {
         const { id } = await params;
-        const data = await request.json();
         const personId = parseInt(id);
+
+        if (isNaN(personId)) {
+            return NextResponse.json(
+                { error: 'ID inválido' },
+                { status: 400 }
+            );
+        }
+
+        const data = await request.json();
 
         console.log('Data received in API:', data);
         console.log('Nationalities received:', data.nationalities);
@@ -206,7 +221,7 @@ export async function PUT(
 
         if (!currentPerson) {
             return NextResponse.json(
-                { message: 'Persona no encontrada' },
+                { error: 'Persona no encontrada' },
                 { status: 404 }
             );
         }
@@ -273,7 +288,7 @@ export async function PUT(
 
         if (conflicts.length > 0 && !data.forceReassign) {
             return NextResponse.json(
-                { message: 'ID duplicado', conflicts },
+                { error: 'ID duplicado', conflicts },
                 { status: 409 }
             );
         }
@@ -459,7 +474,7 @@ export async function PUT(
     } catch (error) {
         console.error('Error updating person:', error);
         return NextResponse.json(
-            { message: 'Error al actualizar persona' },
+            { error: 'Error al actualizar persona' },
             { status: 500 }
         );
     }
@@ -475,6 +490,13 @@ export async function DELETE(
     try {
         const { id } = await params;
         const personId = parseInt(id);
+
+        if (isNaN(personId)) {
+            return NextResponse.json(
+                { error: 'ID inválido' },
+                { status: 400 }
+            );
+        }
 
         // Verificar si la persona tiene películas asociadas
         const person = await prisma.person.findUnique({
@@ -492,7 +514,7 @@ export async function DELETE(
 
         if (!person) {
             return NextResponse.json(
-                { message: 'Persona no encontrada' },
+                { error: 'Persona no encontrada' },
                 { status: 404 }
             );
         }
@@ -501,7 +523,7 @@ export async function DELETE(
         if (totalRoles > 0) {
             return NextResponse.json(
                 {
-                    message: `No se puede eliminar esta persona porque está asociada a ${totalRoles} película(s)`
+                    error: `No se puede eliminar esta persona porque está asociada a ${totalRoles} película(s)`
                 },
                 { status: 400 }
             );
@@ -536,11 +558,11 @@ export async function DELETE(
 
         console.log(`✅ Cachés invalidados tras eliminar: ${cacheKeysToInvalidate.join(', ')}`);
 
-        return NextResponse.json({ message: 'Persona eliminada correctamente' });
+        return new NextResponse(null, { status: 204 });
     } catch (error) {
         console.error('Error deleting person:', error);
         return NextResponse.json(
-            { message: 'Error al eliminar persona' },
+            { error: 'Error al eliminar persona' },
             { status: 500 }
         );
     }

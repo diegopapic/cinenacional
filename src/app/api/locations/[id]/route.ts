@@ -14,7 +14,7 @@ export async function GET(
     const id = parseInt(params.id)
     
     if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 })
+      return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
     }
 
     const location = await prisma.location.findUnique({
@@ -92,6 +92,14 @@ export async function PUT(
 
   try {
     const id = parseInt(params.id)
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     const body = await request.json()
     const { name, parentId, latitude, longitude } = body
 
@@ -174,6 +182,13 @@ export async function DELETE(
   try {
     const id = parseInt(params.id)
 
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'ID inválido' },
+        { status: 400 }
+      )
+    }
+
     // Verificar si tiene hijos
     const location = await prisma.location.findUnique({
       where: { id },
@@ -217,7 +232,7 @@ export async function DELETE(
       where: { id }
     })
 
-    return NextResponse.json({ success: true })
+    return new NextResponse(null, { status: 204 })
   } catch (error) {
     console.error('Error deleting location:', error)
     return NextResponse.json(

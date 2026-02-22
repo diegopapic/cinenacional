@@ -104,9 +104,8 @@ export default function LocationTree() {
         method: 'DELETE'
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
         alert(data.error || 'Error al eliminar el lugar')
         return
       }
