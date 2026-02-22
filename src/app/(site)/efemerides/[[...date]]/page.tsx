@@ -267,13 +267,13 @@ export default function EfemeridesPage() {
             const year = fechaObj.getFullYear()
 
             let verbo = ''
-            if (efemeride.tipoEvento === 'estreno') verbo = 'Se estrenaba'
+            if (efemeride.tipoEvento === 'estreno') verbo = 'Se estrenó'
             else if (efemeride.tipoEvento === 'inicio_rodaje')
-              verbo = 'Empezaba el rodaje de'
+              verbo = 'Empezó el rodaje de'
             else if (efemeride.tipoEvento === 'fin_rodaje')
-              verbo = 'Terminaba el rodaje de'
-            else if (efemeride.tipoEvento === 'nacimiento') verbo = 'Nacía'
-            else if (efemeride.tipoEvento === 'muerte') verbo = 'Moría'
+              verbo = 'Terminó el rodaje de'
+            else if (efemeride.tipoEvento === 'nacimiento') verbo = 'Nació'
+            else if (efemeride.tipoEvento === 'muerte') verbo = 'Murió'
 
             const hasLink = !!efemeride.slug
 
@@ -347,7 +347,7 @@ export default function EfemeridesPage() {
                   <p className="text-[11px] tabular-nums text-muted-foreground/35 md:text-[12px]">
                     {year}
                   </p>
-                  <p className="mt-0.5 text-[13px] leading-snug text-foreground/70 md:text-sm">
+                  <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground/50 md:text-sm">
                     {hasLink ? (
                       <>
                         {verbo && `${verbo} `}
