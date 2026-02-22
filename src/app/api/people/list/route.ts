@@ -487,17 +487,19 @@ async function addFeaturedMovies(people: any[]): Promise<any[]> {
     movie_slug: string;
     movie_title: string;
     movie_year: number | null;
+    letterboxd_watches: number | null;
   }>>`
     SELECT DISTINCT ON (mc.person_id)
       mc.person_id,
       m.id as movie_id,
       m.slug as movie_slug,
       m.title as movie_title,
-      m.year as movie_year
+      m.year as movie_year,
+      m.letterboxd_watches
     FROM movie_cast mc
     INNER JOIN movies m ON m.id = mc.movie_id
     WHERE mc.person_id = ANY(${personIds})
-    ORDER BY mc.person_id, m.year DESC NULLS LAST, m.id DESC
+    ORDER BY mc.person_id, m.letterboxd_watches DESC NULLS LAST, m.year DESC NULLS LAST, m.id DESC
   `;
 
   const crewMovies = await prisma.$queryRaw<Array<{
@@ -507,6 +509,7 @@ async function addFeaturedMovies(people: any[]): Promise<any[]> {
     movie_title: string;
     movie_year: number | null;
     role_name: string;
+    letterboxd_watches: number | null;
   }>>`
     SELECT DISTINCT ON (mcr.person_id)
       mcr.person_id,
@@ -514,12 +517,13 @@ async function addFeaturedMovies(people: any[]): Promise<any[]> {
       m.slug as movie_slug,
       m.title as movie_title,
       m.year as movie_year,
-      r.name as role_name
+      r.name as role_name,
+      m.letterboxd_watches
     FROM movie_crew mcr
     INNER JOIN movies m ON m.id = mcr.movie_id
     INNER JOIN roles r ON r.id = mcr.role_id
     WHERE mcr.person_id = ANY(${personIds})
-    ORDER BY mcr.person_id, m.year DESC NULLS LAST, m.id DESC
+    ORDER BY mcr.person_id, m.letterboxd_watches DESC NULLS LAST, m.year DESC NULLS LAST, m.id DESC
   `;
 
   const movieCounts = await prisma.$queryRaw<Array<{ person_id: number; movie_count: number }>>`
@@ -546,10 +550,10 @@ async function addFeaturedMovies(people: any[]): Promise<any[]> {
     let featuredMovie = null;
 
     if (castMovie && crewMovie) {
-      const castYear = castMovie.movie_year || 0;
-      const crewYear = crewMovie.movie_year || 0;
-      
-      if (castYear >= crewYear) {
+      const castWatches = Number(castMovie.letterboxd_watches) || 0;
+      const crewWatches = Number(crewMovie.letterboxd_watches) || 0;
+
+      if (castWatches >= crewWatches) {
         featuredMovie = {
           id: castMovie.movie_id,
           slug: castMovie.movie_slug,
