@@ -215,7 +215,7 @@ export function FilmTechnical({
                 {i > 0 && <span className="text-muted-foreground/20">, </span>}
                 <Link
                   href={`/listados/peliculas?themeId=${t.id}`}
-                  className="text-[13px] text-foreground/70 transition-colors hover:text-accent md:text-sm"
+                  className="text-[13px] text-foreground/80 transition-colors hover:text-accent md:text-sm"
                 >
                   {t.name}
                 </Link>

@@ -120,7 +120,7 @@ export default function ObituariosSection({ obituarios, loading = false, noPaddi
 
                 {/* Info */}
                 <div className="min-w-0 flex-1">
-                  <p className="text-[13px] md:text-sm font-medium text-foreground/80 transition-colors group-hover:text-accent">
+                  <p className="text-[13px] md:text-sm text-foreground/80 transition-colors group-hover:text-accent">
                     {formatearNombre(persona)}
                     {persona.birthYear && persona.deathYear && (
                       <span className="ml-1.5 font-normal text-muted-foreground/25">

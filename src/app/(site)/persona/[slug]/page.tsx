@@ -195,7 +195,7 @@ export default function PersonPage({ params }: PersonPageProps) {
             {index > 0 && ', '}
             <Link
               href={getUrl(part.id)}
-              className="text-muted-foreground hover:text-accent transition-colors"
+              className="text-foreground/80 hover:text-accent transition-colors"
             >
               {part.name}
             </Link>
@@ -681,7 +681,7 @@ export default function PersonPage({ params }: PersonPageProps) {
             <div className="flex items-center gap-2 flex-wrap">
               <Link
                 href={`/pelicula/${movie.slug}`}
-                className="text-[13px] md:text-sm font-medium leading-snug text-foreground hover:text-accent transition-colors inline-block"
+                className="text-[13px] md:text-sm font-medium leading-snug text-foreground/80 hover:text-accent transition-colors inline-block"
               >
                 {movie.title}
               </Link>
@@ -789,14 +789,14 @@ export default function PersonPage({ params }: PersonPageProps) {
                         <>
                           <Link
                             href={getEfemeridesUrl(person.birthMonth, person.birthDay)}
-                            className="text-muted-foreground hover:text-accent transition-colors"
+                            className="text-foreground/80 hover:text-accent transition-colors"
                           >
                             {person.birthDay} de {MONTHS[person.birthMonth - 1].label.toLowerCase()}
                           </Link>
                           <span className="text-muted-foreground/40"> de </span>
                           <Link
                             href={getBirthYearUrl(person.birthYear)}
-                            className="text-muted-foreground hover:text-accent transition-colors"
+                            className="text-foreground/80 hover:text-accent transition-colors"
                           >
                             {person.birthYear}
                           </Link>
@@ -805,14 +805,14 @@ export default function PersonPage({ params }: PersonPageProps) {
                         <>
                           <Link
                             href={getEfemeridesUrl(person.birthMonth, 1)}
-                            className="text-muted-foreground hover:text-accent transition-colors"
+                            className="text-foreground/80 hover:text-accent transition-colors"
                           >
                             {MONTHS[person.birthMonth - 1].label.toLowerCase()}
                           </Link>
                           <span className="text-muted-foreground/40"> de </span>
                           <Link
                             href={getBirthYearUrl(person.birthYear)}
-                            className="text-muted-foreground hover:text-accent transition-colors"
+                            className="text-foreground/80 hover:text-accent transition-colors"
                           >
                             {person.birthYear}
                           </Link>
@@ -820,7 +820,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                       ) : (
                         <Link
                           href={getBirthYearUrl(person.birthYear)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
+                          className="text-foreground/80 hover:text-accent transition-colors"
                         >
                           {person.birthYear}
                         </Link>
@@ -845,14 +845,14 @@ export default function PersonPage({ params }: PersonPageProps) {
                         <>
                           <Link
                             href={getEfemeridesUrl(person.deathMonth, person.deathDay)}
-                            className="text-muted-foreground hover:text-accent transition-colors"
+                            className="text-foreground/80 hover:text-accent transition-colors"
                           >
                             {person.deathDay} de {MONTHS[person.deathMonth - 1].label.toLowerCase()}
                           </Link>
                           <span className="text-muted-foreground/40"> de </span>
                           <Link
                             href={getDeathYearUrl(person.deathYear)}
-                            className="text-muted-foreground hover:text-accent transition-colors"
+                            className="text-foreground/80 hover:text-accent transition-colors"
                           >
                             {person.deathYear}
                           </Link>
@@ -861,14 +861,14 @@ export default function PersonPage({ params }: PersonPageProps) {
                         <>
                           <Link
                             href={getEfemeridesUrl(person.deathMonth, 1)}
-                            className="text-muted-foreground hover:text-accent transition-colors"
+                            className="text-foreground/80 hover:text-accent transition-colors"
                           >
                             {MONTHS[person.deathMonth - 1].label.toLowerCase()}
                           </Link>
                           <span className="text-muted-foreground/40"> de </span>
                           <Link
                             href={getDeathYearUrl(person.deathYear)}
-                            className="text-muted-foreground hover:text-accent transition-colors"
+                            className="text-foreground/80 hover:text-accent transition-colors"
                           >
                             {person.deathYear}
                           </Link>
@@ -876,7 +876,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                       ) : (
                         <Link
                           href={getDeathYearUrl(person.deathYear)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
+                          className="text-foreground/80 hover:text-accent transition-colors"
                         >
                           {person.deathYear}
                         </Link>
@@ -904,7 +904,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                             {index > 0 && ', '}
                             <Link
                               href={getNationalityUrl(locationId)}
-                              className="text-foreground hover:text-accent transition-colors"
+                              className="text-foreground/80 hover:text-accent transition-colors"
                             >
                               {display}
                             </Link>
@@ -996,14 +996,14 @@ export default function PersonPage({ params }: PersonPageProps) {
                       <>
                         <Link
                           href={getEfemeridesUrl(person.birthMonth, person.birthDay)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
+                          className="text-foreground/80 hover:text-accent transition-colors"
                         >
                           {person.birthDay} de {MONTHS[person.birthMonth - 1].label.toLowerCase()}
                         </Link>
                         <span className="text-muted-foreground/40"> de </span>
                         <Link
                           href={getBirthYearUrl(person.birthYear)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
+                          className="text-foreground/80 hover:text-accent transition-colors"
                         >
                           {person.birthYear}
                         </Link>
@@ -1012,14 +1012,14 @@ export default function PersonPage({ params }: PersonPageProps) {
                       <>
                         <Link
                           href={getEfemeridesUrl(person.birthMonth, 1)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
+                          className="text-foreground/80 hover:text-accent transition-colors"
                         >
                           {MONTHS[person.birthMonth - 1].label.toLowerCase()}
                         </Link>
                         <span className="text-muted-foreground/40"> de </span>
                         <Link
                           href={getBirthYearUrl(person.birthYear)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
+                          className="text-foreground/80 hover:text-accent transition-colors"
                         >
                           {person.birthYear}
                         </Link>
@@ -1027,7 +1027,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                     ) : (
                       <Link
                         href={getBirthYearUrl(person.birthYear)}
-                        className="text-muted-foreground hover:text-accent transition-colors"
+                        className="text-foreground/80 hover:text-accent transition-colors"
                       >
                         {person.birthYear}
                       </Link>
@@ -1052,14 +1052,14 @@ export default function PersonPage({ params }: PersonPageProps) {
                       <>
                         <Link
                           href={getEfemeridesUrl(person.deathMonth, person.deathDay)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
+                          className="text-foreground/80 hover:text-accent transition-colors"
                         >
                           {person.deathDay} de {MONTHS[person.deathMonth - 1].label.toLowerCase()}
                         </Link>
                         <span className="text-muted-foreground/40"> de </span>
                         <Link
                           href={getDeathYearUrl(person.deathYear)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
+                          className="text-foreground/80 hover:text-accent transition-colors"
                         >
                           {person.deathYear}
                         </Link>
@@ -1068,14 +1068,14 @@ export default function PersonPage({ params }: PersonPageProps) {
                       <>
                         <Link
                           href={getEfemeridesUrl(person.deathMonth, 1)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
+                          className="text-foreground/80 hover:text-accent transition-colors"
                         >
                           {MONTHS[person.deathMonth - 1].label.toLowerCase()}
                         </Link>
                         <span className="text-muted-foreground/40"> de </span>
                         <Link
                           href={getDeathYearUrl(person.deathYear)}
-                          className="text-muted-foreground hover:text-accent transition-colors"
+                          className="text-foreground/80 hover:text-accent transition-colors"
                         >
                           {person.deathYear}
                         </Link>
@@ -1083,7 +1083,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                     ) : (
                       <Link
                         href={getDeathYearUrl(person.deathYear)}
-                        className="text-muted-foreground hover:text-accent transition-colors"
+                        className="text-foreground/80 hover:text-accent transition-colors"
                       >
                         {person.deathYear}
                       </Link>
@@ -1111,7 +1111,7 @@ export default function PersonPage({ params }: PersonPageProps) {
                           {index > 0 && ', '}
                           <Link
                             href={getNationalityUrl(locationId)}
-                            className="text-foreground hover:text-accent transition-colors"
+                            className="text-foreground/80 hover:text-accent transition-colors"
                           >
                             {display}
                           </Link>
