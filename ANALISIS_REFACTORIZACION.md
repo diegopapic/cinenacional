@@ -127,8 +127,8 @@ Además, extraer un componente `ListToolbar` para la toolbar compartida y un com
 Además, `formatPartialDate()` en personListUtils y `formatReleaseDate()` en movieListUtils hacen exactamente lo mismo (formatear fecha parcial con meses en español).
 
 **Acción:**
-1. Mover `buildPageNumbers`, `generateYearOptions` a `src/lib/shared/listUtils.ts`
-2. Mover `formatPartialDate` a `src/lib/shared/dateUtils.ts` (o verificar si ya existe ahí)
+1. ~~Mover `buildPageNumbers`, `generateYearOptions` a `src/lib/shared/listUtils.ts`~~ ✅ Movidos
+2. ~~Mover `formatPartialDate` a `src/lib/shared/dateUtils.ts` (o verificar si ya existe ahí)~~ ✅ Ya existía, las duplicadas ahora delegan
 3. Crear funciones genéricas `filtersToSearchParams<T>`, `searchParamsToFilters<T>`, etc., que usen un esquema de filtros configurable en vez de hardcodear cada campo
 
 ### 2.2 Types — tipos duplicados ✅ HECHO
@@ -147,36 +147,17 @@ Además, `formatPartialDate()` en personListUtils y `formatReleaseDate()` en mov
 - `formatStage`, `formatSoundType` y `formatDurationType` en `/api/movies/filters` ahora usan las constantes centralizadas.
 - Eliminada la referencia a `NO_ESTRENADA` (no existe en el enum; el valor correcto es `INEDITA`).
 
-### 2.4 `formatDuration` triplicada
+### 2.4 `formatDuration` triplicada ✅ HECHO
 
-Existen **3 implementaciones** de `formatDuration`:
+**Resuelto:** Se creó `src/lib/shared/listUtils.ts` con la versión mejorada (que maneja `hours===0` y `mins===0`). `movieListUtils.ts` y `utils.ts` ahora importan y re-exportan desde shared. Las versiones inline en componentes (`MovieSidebar`, `FilmTechnical`) se mantienen porque tienen lógica específica del componente (incluyen segundos, etc.).
 
-1. `src/lib/utils.ts:45` — versión simple, siempre muestra `Xh Ymin` (produce `0h 45min` para 45 minutos)
-2. `src/lib/movies/movieListUtils.ts:118` — versión mejorada, maneja `hours===0` y `mins===0`
-3. Posible uso inline en componentes
+### 2.5 `formatPartialDate` triplicada ✅ HECHO
 
-**Acción:** Mantener solo la versión de `movieListUtils` (la más completa) y moverla a `src/lib/shared/formatters.ts`. Eliminar la de `utils.ts`.
+**Resuelto:** `personListUtils.formatPartialDate` y `movieListUtils.formatReleaseDate` ahora delegan a `dateUtils.formatPartialDate` (la versión más completa con `PartialDate` y opciones). Se mantienen las funciones wrapper con la misma firma para compatibilidad de imports existentes.
 
-### 2.5 `formatPartialDate` triplicada
+### 2.6 `calculateAge` duplicada ✅ HECHO
 
-3 implementaciones que producen lo mismo (`"5 de marzo de 2020"`):
-
-1. `src/lib/shared/dateUtils.ts:93` — versión más completa, acepta `PartialDate` con opciones
-2. `src/lib/movies/movieListUtils.ts:143` — `formatReleaseDate(year, month, day)`
-3. `src/lib/people/personListUtils.ts:127` — `formatPartialDate(year, month, day)`
-
-Todas hardcodean el mismo array de meses en español.
-
-**Acción:** Usar solo la versión de `dateUtils.ts` y eliminar las otras dos.
-
-### 2.6 `calculateAge` duplicada
-
-- `src/lib/people/personListUtils.ts:156` — `calculateAge(birthYear, birthMonth, birthDay, deathYear, deathMonth, deathDay)`
-- `src/lib/shared/dateUtils.ts:147` — `calculateYearsBetween(from: PartialDate, to: PartialDate)`
-
-Misma lógica de ajuste de cumpleaños, API diferente.
-
-**Acción:** Usar solo `calculateYearsBetween` de dateUtils y crear un wrapper si se necesita la API con 6 parámetros.
+**Resuelto:** Las 3 implementaciones de `calculateAge` (`personListUtils`, `obituariosUtils`, `peopleUtils`) ahora delegan a `calculateYearsBetween` de `dateUtils.ts`. Se mantienen funciones wrapper con las firmas originales para compatibilidad de imports existentes.
 
 ### 2.7 `PaginatedResponse` definida 5 veces ✅ HECHO
 
@@ -503,10 +484,10 @@ if (data.isPartialX && data.partialX) {
 | Hook useListPage | 2 Content → 1 hook + 2 thin wrappers | ~250 líneas |
 | FilterSelect/FilterInput compartidos | 4 definiciones → 2 componentes | ~60 líneas |
 | ~~Tipos compartidos (ViewMode, etc)~~ | ~~4+ archivos → 1 shared~~ | ~~~30 líneas~~ ✅ Extraídos a `src/lib/shared/listTypes.ts` |
-| Utils compartidos (buildPageNumbers, etc) | 2 → 1 shared + 2 specific | ~50 líneas |
-| formatDuration unificado | 3 → 1 | ~20 líneas |
-| formatPartialDate unificado | 3 → 1 | ~40 líneas |
-| calculateAge unificado | 2 → 1 | ~30 líneas |
+| ~~Utils compartidos (buildPageNumbers, etc)~~ | ~~2 → 1 shared + 2 specific~~ | ~~~50 líneas~~ ✅ Movidos a `src/lib/shared/listUtils.ts` |
+| ~~formatDuration unificado~~ | ~~3 → 1~~ | ~~~20 líneas~~ ✅ Unificado en `listUtils.ts` |
+| ~~formatPartialDate unificado~~ | ~~3 → 1~~ | ~~~40 líneas~~ ✅ Delegado a `dateUtils.ts` |
+| ~~calculateAge unificado~~ | ~~2 → 1~~ | ~~~30 líneas~~ ✅ Delegado a `calculateYearsBetween` de `dateUtils.ts` |
 | ~~PaginatedResponse genérico~~ | ~~5 → 1~~ | ~~~25 líneas~~ ✅ Unificado en `PaginatedResponse<T>` |
 | Procesamiento de fechas en servicios | 5 bloques → 1 helper | ~50 líneas |
 | ~~Console.logs de debug~~ | ~~eliminación directa~~ | ~~~30 líneas~~ ✅ Eliminados |
@@ -540,7 +521,7 @@ if (data.isPartialX && data.partialX) {
    - ~~Unificar ExternalLinks → un componente shared (elimina ~90 líneas de SVGs)~~ ✅ Unificado en `src/components/shared/ExternalLinks.tsx`
    - ~~Extraer Pagination compartido~~ ✅ Extraído en `src/components/shared/Pagination.tsx`
    - ~~Extraer tipos compartidos a `src/lib/shared/` (ViewMode, FilterOption, PaginatedResponse)~~ ✅ Extraídos a `src/lib/shared/listTypes.ts`
-   - Mover funciones duplicadas a shared (buildPageNumbers, generateYearOptions, formatDuration, formatPartialDate, calculateAge)
+   - ~~Mover funciones duplicadas a shared (buildPageNumbers, generateYearOptions, formatDuration, formatPartialDate, calculateAge)~~ ✅ Movidas a `src/lib/shared/listUtils.ts` y delegadas a `dateUtils.ts`
    - Normalizar inconsistencias de API routes (isNaN check, formato DELETE, validación Zod)
 
 3. **Baja prioridad / Alto esfuerzo (pero alto impacto):**
