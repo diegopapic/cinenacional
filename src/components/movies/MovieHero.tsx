@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { Play, X } from 'lucide-react';
 import { MOVIE_STAGES } from '@/lib/movies/movieConstants';
 import DOMPurify from 'isomorphic-dompurify';
-import { BACKGROUND_PLACEHOLDER, POSTER_PLACEHOLDER } from '@/lib/movies/movieConstants';
+import { BACKGROUND_PLACEHOLDER } from '@/lib/movies/movieConstants';
+import { PosterPlaceholder } from '@/components/film/PosterPlaceholder';
 
 interface Director {
   id: number;
@@ -159,13 +160,16 @@ export function MovieHero({
   // Render poster image
   const renderPoster = (className: string) => (
     <div className={className}>
-      <img
-        src={posterUrl || POSTER_PLACEHOLDER.cloudinaryUrl}
-        alt={`Poster de ${title}`}
-        className="h-full w-full object-cover"
-        style={{ filter: showPosterPlaceholder ? 'brightness(0.4)' : 'none' }}
-        onError={() => setPosterError(true)}
-      />
+      {showPosterPlaceholder ? (
+        <PosterPlaceholder className="h-full w-full" />
+      ) : (
+        <img
+          src={posterUrl!}
+          alt={`Poster de ${title}`}
+          className="h-full w-full object-cover"
+          onError={() => setPosterError(true)}
+        />
+      )}
     </div>
   );
 

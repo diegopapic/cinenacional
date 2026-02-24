@@ -17,11 +17,6 @@ export const MOVIE_STAGES = [
   { value: 'INCONCLUSA', label: 'Inconclusa', description: 'Proyecto abandonado o sin terminar' }
 ] as const
 
-export const POSTER_PLACEHOLDER = {
-  default: 'poster-placeholder-dark.jpg',
-  cloudinaryUrl: '/images/poster-placeholder-dark.jpg'  // ← Ruta local desde public
-} as const;
-
 export const BACKGROUND_PLACEHOLDER = {
   url: '/images/background-placeholder.jpg'  // ← Agregar esta nueva constante
 } as const;

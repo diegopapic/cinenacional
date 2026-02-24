@@ -5,7 +5,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { FilmReleasesByYear, ReleaseEntry } from '@/components/FilmReleasesByYear';
 import { MovieWithRelease } from '@/types/home.types';
-import { POSTER_PLACEHOLDER } from '@/lib/movies/movieConstants';
 
 export default function EstrenosContent() {
     const searchParams = useSearchParams();
@@ -81,7 +80,7 @@ export default function EstrenosContent() {
             return {
                 title: m.title,
                 href: `/pelicula/${m.slug}`,
-                posterSrc: m.posterUrl || POSTER_PLACEHOLDER.cloudinaryUrl,
+                posterSrc: m.posterUrl || undefined,
                 year: m.releaseYear,
                 director: director || undefined,
                 releaseMonth: m.releaseMonth,
