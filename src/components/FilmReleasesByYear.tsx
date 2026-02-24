@@ -7,13 +7,14 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, CalendarClock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Pagination from '@/components/shared/Pagination'
+import { PosterPlaceholder } from '@/components/film/PosterPlaceholder'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export interface ReleaseEntry {
   title: string
   href: string
-  posterSrc: string
+  posterSrc?: string
   year: number | null
   director?: string
   releaseMonth?: number | null
@@ -328,13 +329,17 @@ function CompactCard({ film, showYear }: { film: ReleaseEntry; showYear: boolean
     <Link href={film.href} className="group flex flex-col">
       {/* Poster */}
       <div className="relative aspect-[2/3] w-full overflow-hidden rounded-sm">
-        <Image
-          src={film.posterSrc}
-          alt={film.title}
-          fill
-          sizes="(min-width: 1024px) 16vw, (min-width: 768px) 20vw, 33vw"
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-        />
+        {film.posterSrc ? (
+          <Image
+            src={film.posterSrc}
+            alt={film.title}
+            fill
+            sizes="(min-width: 1024px) 16vw, (min-width: 768px) 20vw, 33vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <PosterPlaceholder className="h-full w-full" />
+        )}
 
         {/* Badge de fecha */}
         {badge && (

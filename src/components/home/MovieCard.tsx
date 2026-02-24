@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { MovieWithRelease } from '@/types/home.types';
 import { formatPartialDate } from '@/lib/shared/dateUtils';
-import { POSTER_PLACEHOLDER } from '@/lib/movies/movieConstants';
+import { PosterPlaceholder } from '@/components/film/PosterPlaceholder';
 
 interface MovieCardProps {
   movie: MovieWithRelease;
@@ -77,15 +77,16 @@ export default function MovieCard({
       {/* Poster container */}
       <div className="relative overflow-hidden rounded-sm shadow-lg shadow-black/30">
         <div className="aspect-[2/3] w-full">
-          <img
-            src={movie.posterUrl || POSTER_PLACEHOLDER.cloudinaryUrl}
-            alt={movie.title}
-            className="h-full w-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
-            loading="lazy"
-            style={{
-              filter: !movie.posterUrl ? 'brightness(0.5)' : undefined
-            }}
-          />
+          {movie.posterUrl ? (
+            <img
+              src={movie.posterUrl}
+              alt={movie.title}
+              className="h-full w-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
+              loading="lazy"
+            />
+          ) : (
+            <PosterPlaceholder className="h-full w-full" />
+          )}
         </div>
 
         {/* Borde sutil overlay */}

@@ -9,7 +9,7 @@ import { formatPartialDate, MONTHS } from '@/lib/shared/dateUtils';
 import DOMPurify from 'isomorphic-dompurify';
 import { trackPageView } from '@/hooks/usePageView';
 import { ImageGallery } from '@/components/movies/ImageGallery';
-import { POSTER_PLACEHOLDER } from '@/lib/movies/movieConstants';
+import { PosterPlaceholder } from '@/components/film/PosterPlaceholder';
 import { ExternalLinks } from '@/components/shared/ExternalLinks';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
@@ -665,16 +665,17 @@ export default function PersonPage({ params }: PersonPageProps) {
         <div className="flex items-center gap-3">
           {/* Poster thumbnail */}
           <Link href={`/pelicula/${movie.slug}`} className="shrink-0">
-            <div className="w-10 md:w-11 aspect-[2/3] rounded-sm overflow-hidden bg-muted/50">
-              <img
-                src={movie.posterUrl || POSTER_PLACEHOLDER.cloudinaryUrl}
-                alt={movie.title}
-                className="w-full h-full object-cover"
-                loading="lazy"
-                style={{
-                  filter: !movie.posterUrl ? 'brightness(0.4)' : undefined
-                }}
-              />
+            <div className="w-10 md:w-11 aspect-[2/3] rounded-sm overflow-hidden">
+              {movie.posterUrl ? (
+                <img
+                  src={movie.posterUrl}
+                  alt={movie.title}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <PosterPlaceholder className="w-full h-full" />
+              )}
             </div>
           </Link>
           <div className="flex-grow min-w-0">
