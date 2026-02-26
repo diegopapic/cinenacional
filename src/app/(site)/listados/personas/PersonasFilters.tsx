@@ -1,7 +1,7 @@
 // src/app/(site)/listados/personas/PersonasFilters.tsx
 'use client';
 
-import { ChevronDown } from 'lucide-react';
+import { FilterSelect, FilterInput } from '@/components/shared/filters';
 import {
   PersonListFilters,
   FiltersDataResponse,
@@ -14,69 +14,6 @@ interface PersonasFiltersProps {
   isLoading: boolean;
   onFilterChange: <K extends keyof PersonListFilters>(key: K, value: PersonListFilters[K]) => void;
   onClearFilters: () => void;
-}
-
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  children,
-}: {
-  label: string;
-  value: string | number;
-  onChange: (value: string) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-[10px] uppercase tracking-widest text-muted-foreground/40">
-        {label}
-      </label>
-      <div className="relative">
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-8 w-full appearance-none border border-border/30 bg-transparent px-2 pr-7 text-[12px] text-muted-foreground/60 outline-none transition-colors focus:border-accent/40 [&>option]:bg-[#0c0d0f] [&>option]:text-[#9a9da2]"
-        >
-          {children}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/40" />
-      </div>
-    </div>
-  );
-}
-
-function FilterInput({
-  label,
-  value,
-  onChange,
-  placeholder,
-  min,
-  max,
-}: {
-  label: string;
-  value: string | number;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  min?: number;
-  max?: number;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-[10px] uppercase tracking-widest text-muted-foreground/40">
-        {label}
-      </label>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder || 'Año'}
-        min={min}
-        max={max}
-        className="h-8 w-full border border-border/30 bg-transparent px-2 text-[12px] text-muted-foreground/60 outline-none transition-colors placeholder:text-muted-foreground/30 focus:border-accent/40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-      />
-    </div>
-  );
 }
 
 export default function PersonasFilters({
@@ -109,7 +46,6 @@ export default function PersonasFilters({
           value={filters.gender || ''}
           onChange={(v) => onFilterChange('gender', v as PersonListFilters['gender'])}
         >
-          <option value="">Todos</option>
           {GENDER_OPTIONS.filter(o => o.value !== '').map(option => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -123,7 +59,6 @@ export default function PersonasFilters({
           value={filters.nationalityId || ''}
           onChange={(v) => onFilterChange('nationalityId', v ? parseInt(v) : '')}
         >
-          <option value="">Todos</option>
           {filtersData?.nationalities.map(nat => (
             <option key={nat.id} value={nat.id}>
               {nat.name} ({nat.count})
@@ -137,7 +72,6 @@ export default function PersonasFilters({
           value={filters.birthLocationId || ''}
           onChange={(v) => onFilterChange('birthLocationId', v ? parseInt(v) : '')}
         >
-          <option value="">Todos</option>
           {filtersData?.birthLocations.map(loc => (
             <option key={loc.id} value={loc.id}>
               {loc.fullPath} ({loc.count})
@@ -151,7 +85,6 @@ export default function PersonasFilters({
           value={filters.deathLocationId || ''}
           onChange={(v) => onFilterChange('deathLocationId', v ? parseInt(v) : '')}
         >
-          <option value="">Todos</option>
           {filtersData?.deathLocations.map(loc => (
             <option key={loc.id} value={loc.id}>
               {loc.fullPath} ({loc.count})
@@ -173,7 +106,6 @@ export default function PersonasFilters({
             }
           }}
         >
-          <option value="">Todos</option>
           {filtersData?.roles.map(role => (
             <option key={role.id} value={role.id}>
               {role.name} ({role.count})
