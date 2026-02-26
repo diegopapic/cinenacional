@@ -1,4 +1,5 @@
 // src/services/movies.service.ts
+import { apiClient } from './api-client'
 import { MovieFilters } from '@/components/admin/movies/MoviesFilters'
 import { MovieCompleteData } from '@/lib/movies/movieTypes'
 import { dateToPartialFields, partialFieldsToDate, PartialDate } from '@/lib/shared/dateUtils'
@@ -220,24 +221,17 @@ export const moviesService = {
    * Obtiene la lista de películas con filtros y paginación
    */
   async getAll(filters: MovieFilters): Promise<MoviesResponse> {
-    const params = new URLSearchParams({
+    const params: Record<string, string> = {
       page: filters.currentPage.toString(),
       limit: '20',
       search: filters.searchTerm,
       year: filters.selectedYear,
       sortBy: 'updatedAt',
       sortOrder: 'desc'
-    })
-
-    const response = await fetch(`/api/movies?${params}`)
-
-    if (!response.ok) {
-      throw new Error('Error al cargar las películas')
     }
 
-    const data = await response.json()
+    const data = await apiClient.get<any>('/movies', { params })
 
-    // Las películas ya vienen con los campos de fecha parcial desde la API
     return {
       movies: data.movies || [],
       pagination: data.pagination || { totalPages: 1, currentPage: 1, totalItems: 0 }
@@ -248,29 +242,19 @@ export const moviesService = {
    * Obtiene una película por ID con todas sus relaciones
    */
   async getById(id: number, fresh = false): Promise<any> {
-    const response = await fetch(`/api/movies/${id}${fresh ? '?fresh=true' : ''}`, fresh ? { cache: 'no-store' } : undefined)
-
-    if (!response.ok) {
-      throw new Error('Error al cargar los datos de la película')
+    const options: { params?: Record<string, string>; cache?: RequestCache } = {}
+    if (fresh) {
+      options.params = { fresh: 'true' }
+      options.cache = 'no-store'
     }
-
-    const movie = await response.json()
-
-    // Devolver la película tal cual, con los campos de fecha parcial
-    return movie
+    return apiClient.get<any>(`/movies/${id}`, options)
   },
 
   /**
    * Obtiene una película por ID en formato de formulario para edición
    */
   async getByIdForEdit(id: number): Promise<MovieCompleteData> {
-    const response = await fetch(`/api/movies/${id}`)
-
-    if (!response.ok) {
-      throw new Error('Error al cargar los datos de la película')
-    }
-
-    const movie = await response.json()
+    const movie = await apiClient.get<any>(`/movies/${id}`)
     return formatMovieFromAPI(movie)
   },
 
@@ -278,129 +262,52 @@ export const moviesService = {
    * Crea una nueva película
    */
   async create(data: MovieCompleteData): Promise<any> {
-    // Mismo tratamiento que update
     let formattedData = data;
 
     if (!('releaseYear' in data) && !('filmingStartYear' in data)) {
       formattedData = formatMovieDataForAPI(data);
     }
 
-    const response = await fetch('/api/movies', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(formattedData)
-    })
-
-    if (!response.ok) {
-      let errorMessage = 'Error al crear la película'
-      try {
-        const error = await response.json()
-        errorMessage = error.error || error.message || errorMessage
-      } catch (e) {
-        console.error('Error parsing response:', e)
-      }
-      throw new Error(errorMessage)
-    }
-
-    return response.json()
+    return apiClient.post<any>('/movies', formattedData)
   },
 
   /**
    * Actualiza una película existente
    */
   async update(id: number, data: MovieCompleteData): Promise<any> {
-    console.log('🎬 movies.service.update - Datos recibidos:', {
-      tieneGenres: 'genres' in data,
-      genres: data.genres,
-      tieneLinks: 'links' in data,
-      links: data.links,
-      tieneMetaDescription: 'metaDescription' in data,
-      metaDescription: data.metaDescription,
-      tieneSynopsisLocked: 'synopsisLocked' in data,
-      synopsisLocked: data.synopsisLocked
-    })
-
-    // NO volver a formatear si los datos ya vienen con campos de fecha separados
     let formattedData = data;
 
-    // Solo formatear si vienen campos de fecha completos (releaseDate, etc.)
-    // Si ya vienen releaseYear, releaseMonth, etc., no hacer nada
     if (!('releaseYear' in data) && !('filmingStartYear' in data)) {
-      // Solo formatear si es necesario
       formattedData = formatMovieDataForAPI(data);
     }
 
-    const response = await fetch(`/api/movies/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(formattedData)
-    })
-
-    if (!response.ok) {
-      let errorMessage = 'Error al actualizar la película'
-      try {
-        const error = await response.json()
-        errorMessage = error.error || error.message || errorMessage
-      } catch (e) {
-        console.error('Error completo:', e)
-        console.error('Error parsing response:', e)
-      }
-      throw new Error(errorMessage)
-    }
-
-    return response.json()
+    return apiClient.put<any>(`/movies/${id}`, formattedData)
   },
 
   /**
    * Elimina una película
    */
   async delete(id: number): Promise<void> {
-    const response = await fetch(`/api/movies/${id}`, {
-      method: 'DELETE'
-    })
-
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}))
-      throw new Error(data.detail || data.error || 'Error al eliminar la película')
-    }
+    await apiClient.delete(`/movies/${id}`)
   },
 
   /**
    * Busca películas por término de búsqueda (autocomplete)
    */
   async search(term: string, limit: number = 10): Promise<any[]> {
-    const params = new URLSearchParams({
-      search: term,
-      limit: limit.toString()
+    return apiClient.get<any[]>('/movies/search', {
+      params: { search: term, limit: limit.toString() }
     })
-
-    const response = await fetch(`/api/movies/search?${params}`)
-
-    if (!response.ok) {
-      throw new Error('Error al buscar películas')
-    }
-
-    return response.json()
   },
 
   /**
    * Verifica si un slug está disponible
    */
   async checkSlugAvailability(slug: string, excludeId?: number): Promise<boolean> {
-    const params = new URLSearchParams({ slug })
-    if (excludeId) params.append('excludeId', String(excludeId))
+    const params: Record<string, string> = { slug }
+    if (excludeId) params.excludeId = String(excludeId)
 
-    const response = await fetch(`/api/movies/check-slug?${params}`)
-
-    if (!response.ok) {
-      throw new Error('Error al verificar disponibilidad del slug')
-    }
-
-    const { available } = await response.json()
+    const { available } = await apiClient.get<{ available: boolean }>('/movies/check-slug', { params })
     return available
   },
 
@@ -413,30 +320,18 @@ export const moviesService = {
     byStage: Record<string, number>
     byDataCompleteness: Record<string, number>
   }> {
-    const response = await fetch('/api/movies/stats')
-
-    if (!response.ok) {
-      throw new Error('Error al obtener estadísticas')
-    }
-
-    return response.json()
+    return apiClient.get('/movies/stats')
   },
 
   /**
    * Exporta películas a CSV
    */
   async exportToCSV(filters: MovieFilters): Promise<Blob> {
-    const params = new URLSearchParams({
-      search: filters.searchTerm,
-      year: filters.selectedYear
+    return apiClient.getBlob('/movies/export', {
+      params: {
+        search: filters.searchTerm,
+        year: filters.selectedYear
+      }
     })
-
-    const response = await fetch(`/api/movies/export?${params}`)
-
-    if (!response.ok) {
-      throw new Error('Error al exportar películas')
-    }
-
-    return response.blob()
   }
 }
