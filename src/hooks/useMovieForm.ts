@@ -845,10 +845,7 @@ export function useMovieForm({
                 seenCrewKeys.add(crewKey)
             }
             if (crewDuplicates.length > 0) {
-                toast.error(
-                    'No se puede grabar: crew duplicado. ' + crewDuplicates.join(', '),
-                    { duration: 8000 }
-                )
+                alert('No se puede grabar: crew duplicado.\n\n' + crewDuplicates.join('\n'))
                 setIsSubmitting(false)
                 return
             }
