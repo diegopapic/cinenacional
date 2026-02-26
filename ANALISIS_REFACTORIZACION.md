@@ -139,13 +139,13 @@ Además, `formatPartialDate()` en personListUtils y `formatReleaseDate()` en mov
 
 ## 3. API routes con boilerplate repetido
 
-### 3.1 CRUD idéntico para entidades simples
+### 3.1 CRUD idéntico para entidades simples ✅ HECHO (parcial)
 
 **Archivos afectados:**
-- `src/app/api/genres/route.ts` + `[id]/route.ts`
-- `src/app/api/themes/route.ts` + `[id]/route.ts`
+- `src/app/api/genres/route.ts` + `[id]/route.ts` ✅
+- `src/app/api/themes/route.ts` + `[id]/route.ts` ✅
 - `src/app/api/roles/route.ts` + `[id]/route.ts`
-- `src/app/api/calificaciones/route.ts` + `[id]/route.ts`
+- `src/app/api/calificaciones/route.ts` + `[id]/route.ts` ✅
 - `src/app/api/screening-venues/route.ts` + `[id]/route.ts`
 
 **Problema:** Todos siguen exactamente el mismo patrón:
@@ -185,49 +185,73 @@ export async function POST(request: NextRequest) {
 
 **Patrón de slug único** repetido en: genres, themes, roles (al menos 3 archivos).
 
-**Acción:** Crear una factory de CRUD routes:
-```ts
-// src/lib/api/crud-factory.ts
-export function createCrudHandlers(config: {
-  model: string;
-  entityName: string;
-  include?: object;
-  validateCreate?: (body) => string | null;
-  ...
-})
-```
+**Acción:** Crear una factory de CRUD routes, dividido en 7 subtareas secuenciales:
 
-Alternativamente, al menos extraer:
-1. `generateUniqueSlug(model, name)` → reutilizable
-2. `withAuth(handler)` → wrapper de auth
-3. `withErrorHandler(handler, entityName)` → wrapper try/catch
-4. `parseIdParam(params)` → validación de ID numérico
+#### Subtarea 3.1.1 — Helpers base ✅ HECHO (integrado en factory)
 
-### 3.2 Patrón de error handling repetido
+**Resuelto:** Los helpers se crearon como parte de `src/lib/api/crud-factory.ts` (exportados para uso independiente):
 
-En TODOS los API routes se repite:
-```ts
-try {
-  // lógica
-} catch (error) {
-  console.error('Error ...:', error)
-  return NextResponse.json({ error: 'Error al ...' }, { status: 500 })
-}
-```
+- **`parseId(idStr)`** — parsea y valida ID numérico, retorna `number | null`.
+- **`makeUniqueSlug(name, modelDelegate, excludeId?)`** — genera slug único verificando colisiones con `findFirst`. Acepta `excludeId` para PUT (regenerar slug excluyendo el registro actual).
+- El error handling y auth check están integrados en los handlers generados por la factory.
 
-**Acción:** Crear un wrapper `withErrorHandler`:
-```ts
-export function withErrorHandler(handler: Function, context: string) {
-  return async (...args) => {
-    try {
-      return await handler(...args);
-    } catch (error) {
-      console.error(`Error ${context}:`, error);
-      return NextResponse.json({ error: `Error al ${context}` }, { status: 500 });
-    }
-  }
-}
-```
+#### Subtarea 3.1.2 — Factory CRUD (`src/lib/api/crud-factory.ts`) ✅ HECHO
+
+**Resuelto:** Se creó `src/lib/api/crud-factory.ts` con dos funciones factory:
+
+- **`createListAndCreateHandlers(config)`** — genera `{ GET, POST }` para `route.ts`. Soporta: `orderBy`, `include`, `search` (campos configurables con `?search=`), `sort` (dinámico con `?sortBy=`/`?sortOrder=`), `formatResponse` (para transformar items), `buildCreateData`.
+- **`createItemHandlers(config)`** — genera `{ GET, PUT, DELETE }` para `[id]/route.ts`. Soporta: `include`, `includeOnDetail` (si GET by id necesita include diferente), `buildUpdateData`, `regenerateSlugOnUpdate`, `deleteCheck` (relación, mensaje, status code), `formatResponse`.
+
+Ambas funciones internamente manejan: auth check, validación de nombre, error handling con logging, generación de slug único, parseo de ID, y respuestas consistentes (201 para create, 204 para delete, 400/404/500 para errores).
+
+#### Subtarea 3.1.3 — Migrar `genres` ✅ HECHO
+
+**Resuelto:** `genres/route.ts` pasó de 78 a 15 líneas, `genres/[id]/route.ts` de 180 a 18 líneas. Usa la factory sin search, sin paginación, sin slug regen.
+
+#### Subtarea 3.1.4 — Migrar `calificaciones` ✅ HECHO
+
+**Resuelto:** `calificaciones/route.ts` pasó de 72 a 16 líneas, `calificaciones/[id]/route.ts` de 173 a 17 líneas. Incluye campo extra `abbreviation` en `buildCreateData`/`buildUpdateData`.
+
+#### Subtarea 3.1.5 — Migrar `themes` ✅ HECHO
+
+**Resuelto:** `themes/route.ts` pasó de 93 a 20 líneas, `themes/[id]/route.ts` de 195 a 40 líneas. Usa `search`, `sort`, `formatResponse` (para `movieCount`), `includeOnDetail` (para relación de movies), y `regenerateSlugOnUpdate: true`. Se corrigió de paso que themes POST no hacía `.trim()` del nombre.
+
+#### Subtarea 3.1.6 — Migrar `roles`
+
+Migrar `src/app/api/roles/route.ts` y `[id]/route.ts`.
+
+**Diferencias vs anteriores:**
+- Usa **Zod** para validación (tiene schema definido)
+- GET list es **paginado** con `{ data, totalCount, page, totalPages, hasMore }`
+- GET list tiene **search** con fallback a `unaccent` SQL raw cuando está disponible
+- PUT **regenera slug** si el name cambia
+- Tiene endpoint extra de **CSV export** (`?format=csv`) — esto queda como override custom, no en la factory
+- Usa `generateSlug` en vez de `createSlug` (unificar a `createSlug` de la factory)
+
+**Nota:** El CSV export se puede manejar interceptando el GET antes de delegar a la factory, o como un handler separado.
+
+**Verificación:** Testear paginación, search con acentos, validación Zod, CSV export.
+
+#### Subtarea 3.1.7 — Migrar `screening-venues`
+
+Migrar `src/app/api/screening-venues/route.ts` y `[id]/route.ts`.
+
+**Diferencias vs anteriores:**
+- Usa **Zod** para validación
+- GET list es **paginado** con formato `{ venues, pagination: { page, limit, total, totalPages } }` — normalizar al formato estándar de la factory
+- GET list tiene **search** + filtro por **type** (`?type=`) — usa `extraFilters`
+- DELETE retorna **409 Conflict** (no 400) con campo extra `moviesCount` — usa `deleteErrorStatus: 409` + `deleteExtraResponse`
+- No regenera slug en PUT
+
+**Nota sobre formato de respuesta:** La factory debería usar un formato de paginación consistente. Los consumidores (frontend) que usen el formato viejo de screening-venues necesitarán actualización.
+
+**Verificación:** Testear paginación, search + filtro por tipo, que DELETE retorna 409 con moviesCount.
+
+### 3.2 Patrón de error handling repetido ✅ HECHO (parcial)
+
+**Resuelto para genres, calificaciones, themes:** El error handling está integrado en los handlers generados por `crud-factory.ts`. Cada handler generado incluye try/catch con `console.error` y respuesta 500 consistente.
+
+**Pendiente:** Los routes que no usan la factory (`roles`, `screening-venues`, `movies`, `people`, etc.) siguen teniendo el patrón repetido inline.
 
 ### 3.3 Inconsistencias entre API routes ✅ HECHO (parcial)
 
@@ -474,6 +498,7 @@ if (data.isPartialX && data.partialX) {
 | ~~formatPartialDate unificado~~ | ~~3 → 1~~ | ~~~40 líneas~~ ✅ Delegado a `dateUtils.ts` |
 | ~~calculateAge unificado~~ | ~~2 → 1~~ | ~~~30 líneas~~ ✅ Delegado a `calculateYearsBetween` de `dateUtils.ts` |
 | ~~PaginatedResponse genérico~~ | ~~5 → 1~~ | ~~~25 líneas~~ ✅ Unificado en `PaginatedResponse<T>` |
+| ~~CRUD factory (genres, calificaciones, themes)~~ | ~~6 archivos → factory + 6 thin configs~~ | ~~288 líneas~~ ✅ Creado `src/lib/api/crud-factory.ts` |
 | Procesamiento de fechas en servicios | 5 bloques → 1 helper | ~50 líneas |
 | ~~Console.logs de debug~~ | ~~eliminación directa~~ | ~~~30 líneas~~ ✅ Eliminados |
 | **Total consolidable** | | **~900 líneas** |
@@ -511,7 +536,7 @@ if (data.isPartialX && data.partialX) {
 
 3. **Baja prioridad / Alto esfuerzo (pero alto impacto):**
    - ~~Crear hook `useListPage` genérico (elimina ~250 líneas duplicadas)~~ ✅ Creado `src/hooks/useListPage.ts` + `src/components/shared/ListToolbar.tsx`
-   - Crear factory de CRUD API routes
+   - ~~Crear factory de CRUD API routes (subtareas 3.1.1–3.1.5)~~ ✅ Creado `src/lib/api/crud-factory.ts`, migrados genres, calificaciones, themes (-288 líneas netas). Pendiente: migrar roles (3.1.6) y screening-venues (3.1.7)
    - Crear ListGrid genérico
    - Unificar FilterSelect/FilterInput
    - Completar migración de servicios a `apiClient`
