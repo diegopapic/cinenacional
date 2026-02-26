@@ -1,11 +1,7 @@
 // src/app/api/screening-venues/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { createSlug } from '@/lib/utils'
 import { z } from 'zod'
-import { requireAuth } from '@/lib/auth'
+import { createListAndCreateHandlers } from '@/lib/api/crud-factory'
 
-// Schema de validación
 const screeningVenueSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
   type: z.enum(['CINEMA', 'STREAMING', 'TV_CHANNEL', 'OTHER']),
@@ -21,124 +17,37 @@ const screeningVenueSchema = z.object({
   isActive: z.boolean().optional()
 })
 
-// GET /api/screening-venues - Listar pantallas de estreno
-export async function GET(request: NextRequest) {
-  try {
-    const searchParams = request.nextUrl.searchParams
-    const search = searchParams.get('search') || ''
-    const type = searchParams.get('type') || ''
-    const isActive = searchParams.get('isActive')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+const INCLUDE = { _count: { select: { screenings: true } } }
 
-    const skip = (page - 1) * limit
-
-    // Construir filtros
-    const where: any = {}
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
-      ]
-    }
-
-    if (type) {
-      where.type = type
-    }
-
-    if (isActive !== null && isActive !== '') {
-      where.isActive = isActive === 'true'
-    }
-
-    // Obtener total
-    const total = await prisma.screeningVenue.count({ where })
-
-    // Obtener venues CON el conteo real de películas asociadas
-    const venues = await prisma.screeningVenue.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: [
-        { type: 'asc' },
-        { name: 'asc' }
-      ],
-      include: {
-        _count: {
-          select: {
-            screenings: true  // Conteo real de películas asociadas
-          }
-        }
-      }
-    })
-
-    return NextResponse.json({
-      venues,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
-    })
-  } catch (error) {
-    console.error('Error fetching screening venues:', error)
-    return NextResponse.json(
-      { error: 'Error al obtener las pantallas de estreno' },
-      { status: 500 }
-    )
-  }
-}
-
-// POST /api/screening-venues - Crear nueva pantalla de estreno
-export async function POST(request: NextRequest) {
-  const auth = await requireAuth()
-  if (auth.error) return auth.error
-
-  try {
-    const body = await request.json()
-    
-    // Validar datos
-    const validatedData = screeningVenueSchema.parse(body)
-    
-    // Generar slug único
-    let slug = createSlug(validatedData.name)
-    let slugExists = await prisma.screeningVenue.findUnique({ where: { slug } })
-    let counter = 1
-    
-    while (slugExists) {
-      slug = `${createSlug(validatedData.name)}-${counter}`
-      slugExists = await prisma.screeningVenue.findUnique({ where: { slug } })
-      counter++
-    }
-
-    const venue = await prisma.screeningVenue.create({
-      data: {
-        ...validatedData,
-        slug
-      },
-      include: {
-        _count: {
-          select: {
-            screenings: true
-          }
-        }
-      }
-    })
-
-    return NextResponse.json(venue, { status: 201 })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
-    }
-    
-    console.error('Error creating screening venue:', error)
-    return NextResponse.json(
-      { error: 'Error al crear la pantalla de estreno' },
-      { status: 500 }
-    )
-  }
-}
+export const { GET, POST } = createListAndCreateHandlers({
+  model: 'screeningVenue',
+  entityName: 'las pantallas de estreno',
+  orderBy: [{ type: 'asc' }, { name: 'asc' }],
+  include: INCLUDE,
+  includeOnCreate: INCLUDE,
+  search: { fields: ['name', 'description'] },
+  pagination: { itemsKey: 'venues', defaultLimit: 20 },
+  extraFilters: (params) => {
+    const filters: Record<string, any> = {}
+    const type = params.get('type')
+    if (type) filters.type = type
+    const isActive = params.get('isActive')
+    if (isActive !== null && isActive !== '') filters.isActive = isActive === 'true'
+    return filters
+  },
+  zodSchema: screeningVenueSchema,
+  buildCreateData: (data) => ({
+    name: data.name,
+    type: data.type,
+    description: data.description || undefined,
+    logoUrl: data.logoUrl || undefined,
+    website: data.website || undefined,
+    address: data.address || undefined,
+    city: data.city || undefined,
+    province: data.province || undefined,
+    country: data.country || undefined,
+    latitude: data.latitude,
+    longitude: data.longitude,
+    isActive: data.isActive
+  })
+})

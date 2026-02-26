@@ -67,6 +67,13 @@ interface SortConfig {
   defaultOrder: 'asc' | 'desc'
 }
 
+interface PaginationConfig {
+  /** Key name for the items array in the response (e.g., 'venues') */
+  itemsKey: string
+  /** Default limit per page (default: 20) */
+  defaultLimit?: number
+}
+
 export interface ListCreateConfig {
   /** Nombre del modelo Prisma (e.g., 'genre', 'rating', 'theme') */
   model: string
@@ -80,6 +87,10 @@ export interface ListCreateConfig {
   search?: SearchConfig
   /** Soporte de sort dinámico en GET list (vía ?sortBy= y ?sortOrder=) */
   sort?: SortConfig
+  /** Soporte de paginación en GET list (vía ?page= y ?limit=) */
+  pagination?: PaginationConfig
+  /** Filtros extra construidos desde searchParams (e.g., ?type=, ?isActive=) */
+  extraFilters?: (searchParams: URLSearchParams) => Record<string, any>
   /** Transforma el body del POST en los datos para prisma.create() */
   buildCreateData: (body: any) => Record<string, any>
   /** Include específico para la respuesta del create (default: usa `include`) */
@@ -113,6 +124,8 @@ export interface ItemConfig {
     message: (count: number) => string
     /** Status code del error (default: 400) */
     statusCode?: number
+    /** Extra fields to include in the error response (e.g., { moviesCount: count }) */
+    extraResponse?: (count: number) => Record<string, any>
   }
   /** Transforma el item antes de retornarlo como JSON en GET */
   formatResponse?: (item: any) => any
@@ -151,40 +164,68 @@ export function createListAndCreateHandlers(config: ListCreateConfig) {
 
   async function GET(request: NextRequest) {
     try {
-      // Build where clause (search)
-      let where: any = undefined
+      const searchParams = request.nextUrl.searchParams
+
+      // Build where clause (search + extraFilters)
+      let where: any = {}
       if (config.search) {
-        const searchParams = request.nextUrl.searchParams
         const search = searchParams.get('search') || ''
         if (search) {
-          where = {
-            OR: config.search.fields.map(field => ({
-              [field]: { contains: search, mode: 'insensitive' as const }
-            }))
-          }
+          where.OR = config.search.fields.map(field => ({
+            [field]: { contains: search, mode: 'insensitive' as const }
+          }))
         }
       }
+      if (config.extraFilters) {
+        Object.assign(where, config.extraFilters(searchParams))
+      }
+      const hasWhere = Object.keys(where).length > 0
 
       // Build orderBy (sort)
       let orderBy = config.orderBy
       if (config.sort) {
-        const searchParams = request.nextUrl.searchParams
         const sortBy = searchParams.get('sortBy') || config.sort.defaultField
         const sortOrder = searchParams.get('sortOrder') || config.sort.defaultOrder
         orderBy = { [sortBy]: sortOrder }
       }
 
-      const items = await model.findMany({
-        ...(where && { where }),
-        ...(orderBy && { orderBy }),
-        ...(config.include && { include: config.include })
-      })
-
-      if (config.formatResponse) {
-        return NextResponse.json(config.formatResponse(items))
+      // Pagination
+      let skip: number | undefined
+      let take: number | undefined
+      if (config.pagination) {
+        const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+        const limit = parseInt(searchParams.get('limit') || String(config.pagination.defaultLimit ?? 20))
+        skip = (page - 1) * limit
+        take = limit
       }
 
-      return NextResponse.json(items)
+      const findArgs: any = {
+        ...(hasWhere && { where }),
+        ...(orderBy && { orderBy }),
+        ...(config.include && { include: config.include }),
+        ...(skip !== undefined && { skip }),
+        ...(take !== undefined && { take })
+      }
+
+      const items = await model.findMany(findArgs)
+
+      // Format items if needed
+      const formattedItems = config.formatResponse
+        ? config.formatResponse(items)
+        : items
+
+      // Return paginated or plain response
+      if (config.pagination) {
+        const total = await model.count(hasWhere ? { where } : undefined)
+        const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+        const limit = take!
+        return NextResponse.json({
+          [config.pagination.itemsKey]: formattedItems,
+          pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+        })
+      }
+
+      return NextResponse.json(formattedItems)
     } catch (error) {
       console.error(`Error fetching ${config.model}s:`, error)
       return NextResponse.json(
@@ -378,8 +419,9 @@ export function createItemHandlers(config: ItemConfig) {
       if (config.deleteCheck) {
         const count = item._count?.[config.deleteCheck.relation] ?? 0
         if (count > 0) {
+          const extra = config.deleteCheck.extraResponse?.(count) ?? {}
           return NextResponse.json(
-            { error: config.deleteCheck.message(count) },
+            { error: config.deleteCheck.message(count), ...extra },
             { status: config.deleteCheck.statusCode ?? 400 }
           )
         }
