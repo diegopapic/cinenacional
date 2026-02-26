@@ -1,6 +1,6 @@
 // src/services/people.service.ts
 
-import { apiClient } from './api-client';
+import { apiClient, ApiError } from './api-client';
 import {
   Person,
   PersonWithRelations,
@@ -226,27 +226,7 @@ export const peopleService = {
     if (filters?.sortBy) params.sortBy = filters.sortBy;
     if (filters?.sortOrder) params.sortOrder = filters.sortOrder;
 
-    // Construir URL con parámetros
-    const queryString = new URLSearchParams(params).toString();
-    const url = `/api/people${queryString ? `?${queryString}` : ''}`;
-
-    // Usar fetch directamente con signal
-    const response = await fetch(url, {
-      method: 'GET',
-      signal
-    });
-
-    if (!response.ok) {
-      // Si el request fue abortado, lanzar error específico
-      if (signal?.aborted) {
-        const error = new Error('Request aborted');
-        error.name = 'AbortError';
-        throw error;
-      }
-      throw new Error('Error al obtener personas');
-    }
-
-    return response.json();
+    return apiClient.get<PaginatedPeopleResponse>('/people', { params, signal });
   },
 
   /**
@@ -256,19 +236,9 @@ export const peopleService = {
     if (query.length < 2) return [];
 
     try {
-      // Usar fetch directamente para búsqueda
-      const params = new URLSearchParams({
-        search: query,
-        limit: String(limit)
+      return await apiClient.get<PersonSearchResult[]>('/people', {
+        params: { search: query, limit: String(limit) }
       });
-
-      const response = await fetch(`/api/people?${params}`);
-
-      if (!response.ok) {
-        throw new Error('Error searching people');
-      }
-
-      return response.json();
     } catch (error) {
       console.error('Error searching people:', error);
       return [];
@@ -296,20 +266,14 @@ export const peopleService = {
   async create(data: PersonFormData, forceReassign = false): Promise<PersonWithRelations> {
     const formattedData = formatPersonDataForAPI(data);
     if (forceReassign) formattedData.forceReassign = true;
-    const response = await fetch('/api/people', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formattedData),
-    });
-    if (response.status === 409) {
-      const body = await response.json();
-      throw new ExternalIdConflictError(body.conflicts);
+    try {
+      return await apiClient.post<PersonWithRelations>('/people', formattedData);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409 && error.data?.conflicts) {
+        throw new ExternalIdConflictError(error.data.conflicts);
+      }
+      throw error;
     }
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      throw new Error(body.error || body.message || 'Error al crear la persona');
-    }
-    return response.json();
   },
 
   /**
@@ -329,20 +293,14 @@ export const peopleService = {
   async update(id: number, data: PersonFormData, forceReassign = false): Promise<PersonWithRelations> {
     const formattedData = formatPersonDataForAPI(data);
     if (forceReassign) formattedData.forceReassign = true;
-    const response = await fetch(`/api/people/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formattedData),
-    });
-    if (response.status === 409) {
-      const body = await response.json();
-      throw new ExternalIdConflictError(body.conflicts);
+    try {
+      return await apiClient.put<PersonWithRelations>(`/people/${id}`, formattedData);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409 && error.data?.conflicts) {
+        throw new ExternalIdConflictError(error.data.conflicts);
+      }
+      throw error;
     }
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      throw new Error(body.error || body.message || 'Error al actualizar la persona');
-    }
-    return response.json();
   },
 
   /**
@@ -356,11 +314,11 @@ export const peopleService = {
    * Verifica si un slug está disponible
    */
   async checkSlugAvailability(slug: string, excludeId?: number): Promise<boolean> {
-    const params = new URLSearchParams({ slug });
-    if (excludeId) params.append('excludeId', String(excludeId));
+    const params: Record<string, string> = { slug };
+    if (excludeId) params.excludeId = String(excludeId);
 
     const { available } = await apiClient.get<{ available: boolean }>(
-      `/people/check-slug?${params}`
+      '/people/check-slug', { params }
     );
     return available;
   },
@@ -381,23 +339,13 @@ export const peopleService = {
    * Exporta personas a CSV
    */
   async exportToCSV(filters: PersonFilters = {}): Promise<Blob> {
-    const params = new URLSearchParams();
+    const params: Record<string, string> = {};
 
-    if (filters.search) params.append('search', filters.search);
-    if (filters.gender) params.append('gender', filters.gender);
-    if (filters.hasLinks !== undefined) {
-      params.append('hasLinks', String(filters.hasLinks));
-    }
-    if (filters.isActive !== undefined) {
-      params.append('isActive', String(filters.isActive));
-    }
+    if (filters.search) params.search = filters.search;
+    if (filters.gender) params.gender = filters.gender;
+    if (filters.hasLinks !== undefined) params.hasLinks = String(filters.hasLinks);
+    if (filters.isActive !== undefined) params.isActive = String(filters.isActive);
 
-    const response = await fetch(`/api/people/export?${params}`);
-
-    if (!response.ok) {
-      throw new Error('Error al exportar personas');
-    }
-
-    return response.blob();
+    return apiClient.getBlob('/people/export', { params });
   }
 };

@@ -1,5 +1,17 @@
 // src/services/api-client.ts
 
+export class ApiError extends Error {
+  status: number
+  data: any
+
+  constructor(message: string, status: number, data?: any) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.data = data
+  }
+}
+
 interface RequestOptions extends RequestInit {
   params?: Record<string, string>
 }
@@ -14,15 +26,16 @@ class ApiClient {
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       let errorMessage = `Error: ${response.status} ${response.statusText}`
-      
+      let errorData: any
+
       try {
-        const errorData = await response.json()
+        errorData = await response.json()
         errorMessage = errorData.error || errorData.message || errorMessage
       } catch {
         // Si no se puede parsear el error, usar el mensaje por defecto
       }
-      
-      throw new Error(errorMessage)
+
+      throw new ApiError(errorMessage, response.status, errorData)
     }
 
     // Si la respuesta es 204 No Content, retornar null
@@ -57,6 +70,25 @@ class ApiClient {
     })
     
     return this.handleResponse<T>(response)
+  }
+
+  async getBlob(endpoint: string, options?: RequestOptions): Promise<Blob> {
+    const { params, ...fetchOptions } = options || {}
+    const url = this.buildUrl(endpoint, params)
+
+    const response = await fetch(url, {
+      ...fetchOptions,
+      method: 'GET'
+    })
+
+    if (!response.ok) {
+      throw new ApiError(
+        `Error: ${response.status} ${response.statusText}`,
+        response.status
+      )
+    }
+
+    return response.blob()
   }
 
   async post<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
