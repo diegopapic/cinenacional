@@ -216,21 +216,9 @@ Ambas funciones internamente manejan: auth check, validación de nombre, error h
 
 **Resuelto:** `themes/route.ts` pasó de 93 a 20 líneas, `themes/[id]/route.ts` de 195 a 40 líneas. Usa `search`, `sort`, `formatResponse` (para `movieCount`), `includeOnDetail` (para relación de movies), y `regenerateSlugOnUpdate: true`. Se corrigió de paso que themes POST no hacía `.trim()` del nombre.
 
-#### Subtarea 3.1.6 — Migrar `roles`
+#### Subtarea 3.1.6 — Migrar `roles` ✅ HECHO
 
-Migrar `src/app/api/roles/route.ts` y `[id]/route.ts`.
-
-**Diferencias vs anteriores:**
-- Usa **Zod** para validación (tiene schema definido)
-- GET list es **paginado** con `{ data, totalCount, page, totalPages, hasMore }`
-- GET list tiene **search** con fallback a `unaccent` SQL raw cuando está disponible
-- PUT **regenera slug** si el name cambia
-- Tiene endpoint extra de **CSV export** (`?format=csv`) — esto queda como override custom, no en la factory
-- Usa `generateSlug` en vez de `createSlug` (unificar a `createSlug` de la factory)
-
-**Nota:** El CSV export se puede manejar interceptando el GET antes de delegar a la factory, o como un handler separado.
-
-**Verificación:** Testear paginación, search con acentos, validación Zod, CSV export.
+**Resuelto:** `roles/[id]/route.ts` pasó de 203 a 20 líneas usando la factory con `zodSchema`, `regenerateSlugOnUpdate` y `deleteCheck`. `roles/route.ts` pasó de 333 a 185 líneas: el POST usa `makeUniqueSlug` de la factory + Zod validation; el GET se mantiene custom por su complejidad (unaccent search, CSV export, sort-by-usage) pero fue refactorizado para eliminar duplicación interna (helpers `respondWithRoles` y `buildCsvResponse`). Se reemplazó `generateSlug` por `createSlug` (vía `makeUniqueSlug`). Se agregó soporte para `zodSchema` en la factory (`ListCreateConfig` e `ItemConfig`) con manejo de `ZodError` → 400.
 
 #### Subtarea 3.1.7 — Migrar `screening-venues`
 
@@ -536,7 +524,7 @@ if (data.isPartialX && data.partialX) {
 
 3. **Baja prioridad / Alto esfuerzo (pero alto impacto):**
    - ~~Crear hook `useListPage` genérico (elimina ~250 líneas duplicadas)~~ ✅ Creado `src/hooks/useListPage.ts` + `src/components/shared/ListToolbar.tsx`
-   - ~~Crear factory de CRUD API routes (subtareas 3.1.1–3.1.5)~~ ✅ Creado `src/lib/api/crud-factory.ts`, migrados genres, calificaciones, themes (-288 líneas netas). Pendiente: migrar roles (3.1.6) y screening-venues (3.1.7)
+   - ~~Crear factory de CRUD API routes (subtareas 3.1.1–3.1.6)~~ ✅ Creado `src/lib/api/crud-factory.ts`, migrados genres, calificaciones, themes, roles. Pendiente: migrar screening-venues (3.1.7)
    - Crear ListGrid genérico
    - Unificar FilterSelect/FilterInput
    - Completar migración de servicios a `apiClient`

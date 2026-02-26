@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createSlug } from '@/lib/utils'
 import { requireAuth } from '@/lib/auth'
+import { ZodError, type ZodSchema } from 'zod'
 
 // ---------------------------------------------------------------------------
 // Helpers (exportados para uso independiente fuera del factory)
@@ -85,6 +86,8 @@ export interface ListCreateConfig {
   includeOnCreate?: any
   /** Transforma la lista antes de retornarla como JSON */
   formatResponse?: (items: any[]) => any
+  /** Schema Zod para validar POST body. Cuando se provee, reemplaza validateName. */
+  zodSchema?: ZodSchema
 }
 
 export interface ItemConfig {
@@ -113,6 +116,8 @@ export interface ItemConfig {
   }
   /** Transforma el item antes de retornarlo como JSON en GET */
   formatResponse?: (item: any) => any
+  /** Schema Zod para validar PUT body. Cuando se provee, reemplaza validateName. */
+  zodSchema?: ZodSchema
 }
 
 // ---------------------------------------------------------------------------
@@ -131,6 +136,10 @@ function validateName(body: any): NextResponse | null {
     )
   }
   return null
+}
+
+function formatZodError(error: ZodError): string {
+  return error.errors.map(e => e.message).join(', ')
 }
 
 // ---------------------------------------------------------------------------
@@ -192,15 +201,20 @@ export function createListAndCreateHandlers(config: ListCreateConfig) {
     try {
       const body = await request.json()
 
-      const nameError = validateName(body)
-      if (nameError) return nameError
+      let data: any = body
+      if (config.zodSchema) {
+        data = config.zodSchema.parse(body)
+      } else {
+        const nameError = validateName(body)
+        if (nameError) return nameError
+      }
 
-      const slug = await makeUniqueSlug(body.name, model)
+      const slug = await makeUniqueSlug(data.name, model)
       const includeForCreate = config.includeOnCreate ?? config.include
 
       const item = await model.create({
         data: {
-          ...config.buildCreateData(body),
+          ...config.buildCreateData(data),
           slug
         },
         ...(includeForCreate && { include: includeForCreate })
@@ -208,6 +222,12 @@ export function createListAndCreateHandlers(config: ListCreateConfig) {
 
       return NextResponse.json(item, { status: 201 })
     } catch (error) {
+      if (error instanceof ZodError) {
+        return NextResponse.json(
+          { error: formatZodError(error) },
+          { status: 400 }
+        )
+      }
       console.error(`Error creating ${config.model}:`, error)
       return NextResponse.json(
         { error: `Error al crear ${config.entityName}` },
@@ -279,8 +299,13 @@ export function createItemHandlers(config: ItemConfig) {
 
       const body = await request.json()
 
-      const nameError = validateName(body)
-      if (nameError) return nameError
+      let data: any = body
+      if (config.zodSchema) {
+        data = config.zodSchema.parse(body)
+      } else {
+        const nameError = validateName(body)
+        if (nameError) return nameError
+      }
 
       const existing = await model.findUnique({ where: { id } })
       if (!existing) {
@@ -290,10 +315,10 @@ export function createItemHandlers(config: ItemConfig) {
         )
       }
 
-      let updateData = config.buildUpdateData(body, existing)
+      let updateData = config.buildUpdateData(data, existing)
 
-      if (config.regenerateSlugOnUpdate && body.name && body.name !== existing.name) {
-        const slug = await makeUniqueSlug(body.name, model, id)
+      if (config.regenerateSlugOnUpdate && data.name && data.name !== existing.name) {
+        const slug = await makeUniqueSlug(data.name, model, id)
         updateData = { ...updateData, slug }
       }
 
@@ -307,6 +332,12 @@ export function createItemHandlers(config: ItemConfig) {
 
       return NextResponse.json(item)
     } catch (error) {
+      if (error instanceof ZodError) {
+        return NextResponse.json(
+          { error: formatZodError(error) },
+          { status: 400 }
+        )
+      }
       console.error(`Error updating ${config.model}:`, error)
       return NextResponse.json(
         { error: `Error al actualizar ${config.entityName}` },
