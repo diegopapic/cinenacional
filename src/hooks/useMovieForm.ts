@@ -828,6 +828,32 @@ export function useMovieForm({
                 delete movieData.id;
             }
 
+            // Validar duplicados en crew (misma persona + mismo rol)
+            {
+                const seenCrew = new Set<string>()
+                const crewDuplicates: string[] = []
+                for (const member of movieRelations.crew) {
+                    const pid = member.personId || member.person?.id || member.person?.personId
+                    const rid = member.roleId || (member.role && typeof member.role === 'object' ? member.role.id : null)
+                    if (!pid || pid <= 0 || !rid || rid <= 0) continue
+                    const key = `${pid}-${rid}`
+                    if (seenCrew.has(key)) {
+                        const personName = member.alternativeName || member.personName || `Persona ID ${pid}`
+                        const roleName = typeof member.role === 'string' ? member.role : member.role?.name || `Rol ID ${rid}`
+                        crewDuplicates.push(`"${personName}" con rol "${roleName}"`)
+                    }
+                    seenCrew.add(key)
+                }
+                if (crewDuplicates.length > 0) {
+                    toast.error(
+                        `No se puede grabar: crew duplicado.\n${crewDuplicates.join('\n')}`,
+                        { duration: 8000 }
+                    )
+                    setIsSubmitting(false)
+                    return
+                }
+            }
+
             // Usar el servicio para crear o actualizar
             let result: Movie;
             if (editingMovie) {
