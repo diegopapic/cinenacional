@@ -829,29 +829,28 @@ export function useMovieForm({
             }
 
             // Validar duplicados en crew (misma persona + mismo rol)
-            {
-                const seenCrew = new Set<string>()
-                const crewDuplicates: string[] = []
-                for (const member of movieRelations.crew) {
-                    const pid = member.personId || member.person?.id || member.person?.personId
-                    const rid = member.roleId || (member.role && typeof member.role === 'object' ? member.role.id : null)
-                    if (!pid || pid <= 0 || !rid || rid <= 0) continue
-                    const key = `${pid}-${rid}`
-                    if (seenCrew.has(key)) {
-                        const personName = member.alternativeName || member.personName || `Persona ID ${pid}`
-                        const roleName = typeof member.role === 'string' ? member.role : member.role?.name || `Rol ID ${rid}`
-                        crewDuplicates.push(`"${personName}" con rol "${roleName}"`)
-                    }
-                    seenCrew.add(key)
+            const seenCrewKeys = new Set<string>()
+            const crewDuplicates: string[] = []
+            for (let ci = 0; ci < movieRelations.crew.length; ci++) {
+                const cm = movieRelations.crew[ci]
+                const pid = cm.personId || cm.person?.id || cm.person?.personId
+                const rid = cm.roleId || (cm.role && typeof cm.role === 'object' ? cm.role.id : null)
+                if (!pid || pid <= 0 || !rid || rid <= 0) continue
+                const crewKey = pid + '-' + rid
+                if (seenCrewKeys.has(crewKey)) {
+                    const pName = cm.alternativeName || cm.personName || ('Persona ID ' + pid)
+                    const rName = typeof cm.role === 'string' ? cm.role : (cm.role?.name || ('Rol ID ' + rid))
+                    crewDuplicates.push(pName + ' con rol "' + rName + '"')
                 }
-                if (crewDuplicates.length > 0) {
-                    toast.error(
-                        `No se puede grabar: crew duplicado.\n${crewDuplicates.join('\n')}`,
-                        { duration: 8000 }
-                    )
-                    setIsSubmitting(false)
-                    return
-                }
+                seenCrewKeys.add(crewKey)
+            }
+            if (crewDuplicates.length > 0) {
+                toast.error(
+                    'No se puede grabar: crew duplicado. ' + crewDuplicates.join(', '),
+                    { duration: 8000 }
+                )
+                setIsSubmitting(false)
+                return
             }
 
             // Usar el servicio para crear o actualizar
