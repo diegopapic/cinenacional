@@ -8,6 +8,7 @@ interface HeroImage {
   id: number;
   cloudinaryPublicId: string;
   type: string;
+  eventName: string | null;
   movie: {
     id: number;
     title: string;
@@ -64,17 +65,42 @@ function generateCaptionText(image: HeroImage): string {
     }
   }
 
-  if (image.movie) {
-    const displayYear = getDisplayYear(image.movie);
-    const movieRef = displayYear
-      ? `${image.movie.title} (${displayYear})`
-      : image.movie.title;
+  const hasNames = parts.length > 0;
+  const displayYear = getDisplayYear(image.movie);
+  const movieRef = image.movie
+    ? (displayYear ? `${image.movie.title} (${displayYear})` : image.movie.title)
+    : null;
 
-    if (parts.length > 0) {
-      parts.push(`en ${movieRef}`);
-    } else {
-      parts.push(movieRef);
-    }
+  switch (image.type) {
+    case 'BEHIND_THE_SCENES':
+      if (movieRef) {
+        parts.push(hasNames ? `en el rodaje de ${movieRef}` : `Detrás de escena de ${movieRef}`);
+      }
+      break;
+    case 'PUBLICITY':
+      if (movieRef) {
+        parts.push(hasNames ? `en foto promocional de ${movieRef}` : `Foto promocional de ${movieRef}`);
+      }
+      break;
+    case 'PREMIERE':
+      if (movieRef) {
+        parts.push(hasNames ? `en el estreno de ${movieRef}` : `Estreno de ${movieRef}`);
+      }
+      if (image.eventName) {
+        parts.push(`(${image.eventName})`);
+      }
+      break;
+    case 'EVENT':
+      if (image.eventName) {
+        parts.push(hasNames ? `en ${image.eventName}` : image.eventName);
+      }
+      break;
+    case 'STILL':
+    default:
+      if (movieRef) {
+        parts.push(hasNames ? `en ${movieRef}` : movieRef);
+      }
+      break;
   }
 
   return parts.join(' ') || '';
@@ -126,6 +152,8 @@ function CaptionContent({ image }: { image: HeroImage }) {
     });
   }
 
+  const hasNames = sortedPeople.length > 0;
+
   const movieElement = image.movie ? (() => {
     const displayYear = getDisplayYear(image.movie);
     return (
@@ -138,13 +166,46 @@ function CaptionContent({ image }: { image: HeroImage }) {
     );
   })() : null;
 
-  if (peopleElements.length === 0 && !movieElement) return null;
+  // EVENT type: show eventName instead of movie
+  if (image.type === 'EVENT') {
+    if (!hasNames && !image.eventName) return null;
+    return (
+      <>
+        {hasNames && peopleElements}
+        {hasNames && image.eventName && ' en '}
+        {image.eventName}
+      </>
+    );
+  }
+
+  if (!hasNames && !movieElement) return null;
+
+  // Connector (between people and movie) and prefix (before movie when no people)
+  let connector = ' en ';
+  let prefix = '';
+
+  switch (image.type) {
+    case 'BEHIND_THE_SCENES':
+      connector = ' en el rodaje de ';
+      prefix = 'Detrás de escena de ';
+      break;
+    case 'PUBLICITY':
+      connector = ' en foto promocional de ';
+      prefix = 'Foto promocional de ';
+      break;
+    case 'PREMIERE':
+      connector = ' en el estreno de ';
+      prefix = 'Estreno de ';
+      break;
+  }
 
   return (
     <>
-      {peopleElements.length > 0 && peopleElements}
-      {peopleElements.length > 0 && movieElement && ' en '}
+      {hasNames && peopleElements}
+      {hasNames && movieElement && connector}
+      {!hasNames && movieElement && prefix}
       {movieElement}
+      {image.type === 'PREMIERE' && image.eventName && ` (${image.eventName})`}
     </>
   );
 }
