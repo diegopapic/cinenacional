@@ -30,27 +30,9 @@
 
 ---
 
-### 1.2 Grids — ~85% similares
+### 1.2 Grids — ~85% similares ✅ HECHO
 
-**Archivos:**
-- `src/app/(site)/listados/peliculas/PeliculasGrid.tsx`
-- `src/app/(site)/listados/personas/PersonasGrid.tsx`
-
-**Problema:** Misma estructura: loading skeleton → empty state → compact/detailed render. Solo cambian:
-- El tipo de datos (`MovieListItem[]` vs `PersonWithMovie[]`)
-- Las columnas del grid (`grid-cols-3` vs `grid-cols-2`)
-- Los skeletons (poster rectangular vs retrato circular)
-- Los card components que renderizan
-
-**Acción:** Crear un componente genérico `ListGrid<T>` que reciba:
-- `items: T[]`
-- `isLoading: boolean`
-- `viewMode: ViewMode`
-- `renderCompact: (item: T) => ReactNode`
-- `renderDetailed: (item: T) => ReactNode`
-- `gridClassCompact / gridClassDetailed`
-- `skeletonCompact / skeletonDetailed: ReactNode`
-- `emptyMessage: string`
+**Resuelto:** Se creó `src/components/shared/ListGrid.tsx`, un componente genérico `ListGrid<T>` que encapsula la estructura compartida: loading skeleton → empty state → compact/detailed render. Recibe `items`, `isLoading`, `viewMode`, `renderCompact`/`renderDetailed`, clases de grid, skeletons, `emptyMessage` y `keyExtractor`. `PeliculasGrid.tsx` y `PersonasGrid.tsx` ahora son wrappers delgados (~50 líneas cada uno) que definen sus skeletons y render functions específicos.
 
 ---
 
@@ -472,7 +454,7 @@ if (data.isPartialX && data.partialX) {
 | ~~ViewToggle unificado~~ | ~~2 → 1~~ | ~~~45 líneas~~ ✅ Unificado |
 | ~~ExternalLinks unificado~~ | ~~2 → 1~~ | ~~~90 líneas (SVGs duplicados)~~ ✅ Unificado |
 | ~~Pagination compartido~~ | ~~3 → 1~~ | ~~~90 líneas~~ ✅ Unificado en 5 archivos |
-| ListGrid genérico | 2 → 1 | ~40 líneas |
+| ~~ListGrid genérico~~ | ~~2 → 1~~ | ~~~40 líneas~~ ✅ Creado `src/components/shared/ListGrid.tsx` |
 | ~~Hook useListPage~~ | ~~2 Content → 1 hook + 2 thin wrappers~~ | ~~~250 líneas~~ ✅ Extraído a `useListPage.ts` + `ListToolbar.tsx` |
 | FilterSelect/FilterInput compartidos | 4 definiciones → 2 componentes | ~60 líneas |
 | ~~Tipos compartidos (ViewMode, etc)~~ | ~~4+ archivos → 1 shared~~ | ~~~30 líneas~~ ✅ Extraídos a `src/lib/shared/listTypes.ts` |
@@ -520,7 +502,7 @@ if (data.isPartialX && data.partialX) {
 3. **Baja prioridad / Alto esfuerzo (pero alto impacto):**
    - ~~Crear hook `useListPage` genérico (elimina ~250 líneas duplicadas)~~ ✅ Creado `src/hooks/useListPage.ts` + `src/components/shared/ListToolbar.tsx`
    - ~~Crear factory de CRUD API routes (subtareas 3.1.1–3.1.7)~~ ✅ Creado `src/lib/api/crud-factory.ts`, migrados genres, calificaciones, themes, roles, screening-venues
-   - Crear ListGrid genérico
+   - ~~Crear ListGrid genérico~~ ✅ Creado `src/components/shared/ListGrid.tsx`
    - Unificar FilterSelect/FilterInput
    - Completar migración de servicios a `apiClient`
    - Extraer helper `processPartialDateForAPI` en servicios
