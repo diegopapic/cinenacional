@@ -220,7 +220,7 @@ export default function Header() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Películas, personas..."
-                  className="h-10 w-full border-b border-nav-foreground/10 bg-transparent pl-10 pr-3 font-sans text-sm text-nav-foreground placeholder:text-nav-foreground/30 focus:border-accent/40 focus:outline-none"
+                  className="h-10 w-full border-b border-nav-foreground/10 bg-transparent pl-10 pr-3 font-sans text-base text-nav-foreground placeholder:text-nav-foreground/30 focus:border-accent/40 focus:outline-none"
                   aria-label="Buscar películas y personas"
                   autoComplete="off"
                 />
