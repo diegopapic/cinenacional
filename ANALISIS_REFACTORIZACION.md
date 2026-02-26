@@ -42,18 +42,9 @@
 
 ---
 
-### 1.4 FilterSelect / FilterInput — componentes locales duplicados
+### 1.4 FilterSelect / FilterInput — componentes locales duplicados ✅ HECHO
 
-**Archivos:**
-- `PeliculasFilters.tsx` define `FilterSelect` y `FilterInput` como funciones locales
-- `PersonasFilters.tsx` define `FilterSelect` y `FilterInput` como funciones locales
-
-**Problema:** Ambos definen componentes `FilterSelect` y `FilterInput` con la misma estructura visual (label + select/input con estilos idénticos). Las diferencias menores:
-- `PeliculasFilters.FilterSelect` recibe `options[]` y renderiza internamente
-- `PersonasFilters.FilterSelect` recibe `children` como React nodes
-- `PeliculasFilters` tiene un `DateInput` adicional que no existe en personas
-
-**Acción:** Extraer a `src/components/shared/filters/FilterSelect.tsx` y `FilterInput.tsx`. Unificar la API usando el patrón con `options` + render prop opcional.
+**Resuelto:** Se crearon `src/components/shared/filters/FilterSelect.tsx` y `FilterInput.tsx` con barrel export en `index.ts`. `FilterSelect` soporta ambos patrones: `options` array (usado por PeliculasFilters) y `children` (usado por PersonasFilters), con "Todos" auto-prepended. `FilterInput` unifica las versiones con soporte de `min`/`max`/`placeholder`. `DateInput` se mantiene local en PeliculasFilters (específico de películas). Se eliminaron las 4 definiciones locales duplicadas (-134 / +93 líneas netas).
 
 ---
 
@@ -456,7 +447,7 @@ if (data.isPartialX && data.partialX) {
 | ~~Pagination compartido~~ | ~~3 → 1~~ | ~~~90 líneas~~ ✅ Unificado en 5 archivos |
 | ~~ListGrid genérico~~ | ~~2 → 1~~ | ~~~40 líneas~~ ✅ Creado `src/components/shared/ListGrid.tsx` |
 | ~~Hook useListPage~~ | ~~2 Content → 1 hook + 2 thin wrappers~~ | ~~~250 líneas~~ ✅ Extraído a `useListPage.ts` + `ListToolbar.tsx` |
-| FilterSelect/FilterInput compartidos | 4 definiciones → 2 componentes | ~60 líneas |
+| ~~FilterSelect/FilterInput compartidos~~ | ~~4 definiciones → 2 componentes~~ | ~~~60 líneas~~ ✅ Extraídos a `src/components/shared/filters/` |
 | ~~Tipos compartidos (ViewMode, etc)~~ | ~~4+ archivos → 1 shared~~ | ~~~30 líneas~~ ✅ Extraídos a `src/lib/shared/listTypes.ts` |
 | ~~Utils compartidos (buildPageNumbers, etc)~~ | ~~2 → 1 shared + 2 specific~~ | ~~~50 líneas~~ ✅ Movidos a `src/lib/shared/listUtils.ts` |
 | ~~formatDuration unificado~~ | ~~3 → 1~~ | ~~~20 líneas~~ ✅ Unificado en `listUtils.ts` |
@@ -503,7 +494,7 @@ if (data.isPartialX && data.partialX) {
    - ~~Crear hook `useListPage` genérico (elimina ~250 líneas duplicadas)~~ ✅ Creado `src/hooks/useListPage.ts` + `src/components/shared/ListToolbar.tsx`
    - ~~Crear factory de CRUD API routes (subtareas 3.1.1–3.1.7)~~ ✅ Creado `src/lib/api/crud-factory.ts`, migrados genres, calificaciones, themes, roles, screening-venues
    - ~~Crear ListGrid genérico~~ ✅ Creado `src/components/shared/ListGrid.tsx`
-   - Unificar FilterSelect/FilterInput
+   - ~~Unificar FilterSelect/FilterInput~~ ✅ Extraídos a `src/components/shared/filters/`
    - Completar migración de servicios a `apiClient`
    - Extraer helper `processPartialDateForAPI` en servicios
 
