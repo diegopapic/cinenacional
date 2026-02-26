@@ -389,15 +389,27 @@ Estos componentes no agregan valor. Se podrían usar directamente `<AdBanner slo
 
 ---
 
-## 12. Inconsistencia en servicios
+## 12. Inconsistencia en servicios ✅ HECHO
 
-**Archivo:** `src/services/people.service.ts`
+**Resuelto:** Se completó la migración de ambos servicios a `apiClient`.
 
-Mezcla `apiClient` (para `getById`, `delete`, `checkSlugAvailability`, `getStats`) con `fetch()` raw (para `getAll`, `search`, `create`, `update`, `exportToCSV`). Esto sugiere una migración incompleta a `apiClient`.
+**api-client.ts** — Se agregaron dos nuevas capacidades:
+- **`ApiError`** — clase de error con `status` y `data` (body de la respuesta), reemplazando el `Error` genérico. Permite manejo tipado de errores HTTP (ej: 409 Conflict con datos de conflictos).
+- **`getBlob()`** — método para descargas de archivos binarios (CSV exports), ya que `handleResponse` siempre parsea JSON.
 
-**Archivo:** `src/services/movies.service.ts` — usa `fetch()` raw para todo.
+**people.service.ts** — 5 funciones migradas:
+- `getAll` → `apiClient.get` (con soporte de `AbortSignal` via options)
+- `search` → `apiClient.get` (con params)
+- `create` → `apiClient.post` (con catch de `ApiError` para re-lanzar `ExternalIdConflictError` en 409)
+- `update` → `apiClient.put` (mismo manejo de 409)
+- `exportToCSV` → `apiClient.getBlob`
+- `checkSlugAvailability` — ya usaba apiClient pero con query string manual; migrado a usar `params` de apiClient
 
-**Acción:** Completar la migración de ambos servicios a `apiClient` para consistencia. El `apiClient` ya provee manejo de errores, building de URLs, y Content-Type headers automáticos.
+**movies.service.ts** — Todas las funciones migradas (10):
+- `getAll`, `getById`, `getByIdForEdit`, `create`, `update`, `delete`, `search`, `checkSlugAvailability`, `getStats`, `exportToCSV`
+- Eliminado `console.log` de debug en `update()`
+
+**Resultado:** -125 líneas netas (211 eliminadas, 86 agregadas). Ambos servicios ahora usan exclusivamente `apiClient` para todas las llamadas HTTP.
 
 ---
 
@@ -495,7 +507,7 @@ if (data.isPartialX && data.partialX) {
    - ~~Crear factory de CRUD API routes (subtareas 3.1.1–3.1.7)~~ ✅ Creado `src/lib/api/crud-factory.ts`, migrados genres, calificaciones, themes, roles, screening-venues
    - ~~Crear ListGrid genérico~~ ✅ Creado `src/components/shared/ListGrid.tsx`
    - ~~Unificar FilterSelect/FilterInput~~ ✅ Extraídos a `src/components/shared/filters/`
-   - Completar migración de servicios a `apiClient`
+   - ~~Completar migración de servicios a `apiClient`~~ ✅ Migrados movies.service.ts y people.service.ts
    - Extraer helper `processPartialDateForAPI` en servicios
 
 4. **Limpieza general:**
