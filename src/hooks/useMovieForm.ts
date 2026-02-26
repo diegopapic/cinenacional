@@ -828,6 +828,26 @@ export function useMovieForm({
                 delete movieData.id;
             }
 
+            // Validar duplicados en cast (misma persona)
+            const seenCastKeys = new Set<string>()
+            const castDuplicates: string[] = []
+            for (let ci = 0; ci < movieRelations.cast.length; ci++) {
+                const cm = movieRelations.cast[ci]
+                const pid = cm.personId || cm.person?.id || cm.person?.personId
+                if (!pid || pid <= 0) continue
+                const castKey = String(pid)
+                if (seenCastKeys.has(castKey)) {
+                    const pName = cm.alternativeName || cm.personName || ('Persona ID ' + pid)
+                    castDuplicates.push(pName)
+                }
+                seenCastKeys.add(castKey)
+            }
+            if (castDuplicates.length > 0) {
+                alert('No se puede grabar: cast duplicado.\n\n' + castDuplicates.join('\n'))
+                setIsSubmitting(false)
+                return
+            }
+
             // Validar duplicados en crew (misma persona + mismo rol)
             const seenCrewKeys = new Set<string>()
             const crewDuplicates: string[] = []
