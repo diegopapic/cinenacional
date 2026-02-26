@@ -139,14 +139,14 @@ Además, `formatPartialDate()` en personListUtils y `formatReleaseDate()` en mov
 
 ## 3. API routes con boilerplate repetido
 
-### 3.1 CRUD idéntico para entidades simples ✅ HECHO (parcial)
+### 3.1 CRUD idéntico para entidades simples ✅ HECHO
 
 **Archivos afectados:**
 - `src/app/api/genres/route.ts` + `[id]/route.ts` ✅
 - `src/app/api/themes/route.ts` + `[id]/route.ts` ✅
-- `src/app/api/roles/route.ts` + `[id]/route.ts`
+- `src/app/api/roles/route.ts` + `[id]/route.ts` ✅
 - `src/app/api/calificaciones/route.ts` + `[id]/route.ts` ✅
-- `src/app/api/screening-venues/route.ts` + `[id]/route.ts`
+- `src/app/api/screening-venues/route.ts` + `[id]/route.ts` ✅
 
 **Problema:** Todos siguen exactamente el mismo patrón:
 
@@ -199,8 +199,8 @@ export async function POST(request: NextRequest) {
 
 **Resuelto:** Se creó `src/lib/api/crud-factory.ts` con dos funciones factory:
 
-- **`createListAndCreateHandlers(config)`** — genera `{ GET, POST }` para `route.ts`. Soporta: `orderBy`, `include`, `search` (campos configurables con `?search=`), `sort` (dinámico con `?sortBy=`/`?sortOrder=`), `formatResponse` (para transformar items), `buildCreateData`.
-- **`createItemHandlers(config)`** — genera `{ GET, PUT, DELETE }` para `[id]/route.ts`. Soporta: `include`, `includeOnDetail` (si GET by id necesita include diferente), `buildUpdateData`, `regenerateSlugOnUpdate`, `deleteCheck` (relación, mensaje, status code), `formatResponse`.
+- **`createListAndCreateHandlers(config)`** — genera `{ GET, POST }` para `route.ts`. Soporta: `orderBy`, `include`, `search` (campos configurables con `?search=`), `sort` (dinámico con `?sortBy=`/`?sortOrder=`), `pagination` (con `?page=`/`?limit=`), `extraFilters` (filtros adicionales desde searchParams), `formatResponse` (para transformar items), `buildCreateData`.
+- **`createItemHandlers(config)`** — genera `{ GET, PUT, DELETE }` para `[id]/route.ts`. Soporta: `include`, `includeOnDetail` (si GET by id necesita include diferente), `buildUpdateData`, `regenerateSlugOnUpdate`, `deleteCheck` (relación, mensaje, status code, `extraResponse`), `formatResponse`.
 
 Ambas funciones internamente manejan: auth check, validación de nombre, error handling con logging, generación de slug único, parseo de ID, y respuestas consistentes (201 para create, 204 para delete, 400/404/500 para errores).
 
@@ -220,26 +220,21 @@ Ambas funciones internamente manejan: auth check, validación de nombre, error h
 
 **Resuelto:** `roles/[id]/route.ts` pasó de 203 a 20 líneas usando la factory con `zodSchema`, `regenerateSlugOnUpdate` y `deleteCheck`. `roles/route.ts` pasó de 333 a 185 líneas: el POST usa `makeUniqueSlug` de la factory + Zod validation; el GET se mantiene custom por su complejidad (unaccent search, CSV export, sort-by-usage) pero fue refactorizado para eliminar duplicación interna (helpers `respondWithRoles` y `buildCsvResponse`). Se reemplazó `generateSlug` por `createSlug` (vía `makeUniqueSlug`). Se agregó soporte para `zodSchema` en la factory (`ListCreateConfig` e `ItemConfig`) con manejo de `ZodError` → 400.
 
-#### Subtarea 3.1.7 — Migrar `screening-venues`
+#### Subtarea 3.1.7 — Migrar `screening-venues` ✅ HECHO
 
-Migrar `src/app/api/screening-venues/route.ts` y `[id]/route.ts`.
+**Resuelto:** `screening-venues/route.ts` pasó de 144 a 50 líneas, `screening-venues/[id]/route.ts` de 191 a 47 líneas. Se extendió la factory con tres nuevas capacidades:
 
-**Diferencias vs anteriores:**
-- Usa **Zod** para validación
-- GET list es **paginado** con formato `{ venues, pagination: { page, limit, total, totalPages } }` — normalizar al formato estándar de la factory
-- GET list tiene **search** + filtro por **type** (`?type=`) — usa `extraFilters`
-- DELETE retorna **409 Conflict** (no 400) con campo extra `moviesCount` — usa `deleteErrorStatus: 409` + `deleteExtraResponse`
-- No regenera slug en PUT
+- **`pagination`** — soporte de paginación en GET list (vía `?page=` y `?limit=`), retorna `{ [itemsKey]: items, pagination: { page, limit, total, totalPages } }`.
+- **`extraFilters`** — función que recibe `searchParams` y retorna filtros adicionales para el `where` (usado para `?type=` e `?isActive=`).
+- **`deleteCheck.extraResponse`** — función que recibe el count y retorna campos extra para la respuesta de error de DELETE (usado para `moviesCount`).
 
-**Nota sobre formato de respuesta:** La factory debería usar un formato de paginación consistente. Los consumidores (frontend) que usen el formato viejo de screening-venues necesitarán actualización.
-
-**Verificación:** Testear paginación, search + filtro por tipo, que DELETE retorna 409 con moviesCount.
+El formato de respuesta se mantiene idéntico al original (`{ venues, pagination }`) para no romper el frontend existente. DELETE sigue retornando 409 con `moviesCount`.
 
 ### 3.2 Patrón de error handling repetido ✅ HECHO (parcial)
 
-**Resuelto para genres, calificaciones, themes:** El error handling está integrado en los handlers generados por `crud-factory.ts`. Cada handler generado incluye try/catch con `console.error` y respuesta 500 consistente.
+**Resuelto para genres, calificaciones, themes, roles, screening-venues:** El error handling está integrado en los handlers generados por `crud-factory.ts`. Cada handler generado incluye try/catch con `console.error` y respuesta 500 consistente.
 
-**Pendiente:** Los routes que no usan la factory (`roles`, `screening-venues`, `movies`, `people`, etc.) siguen teniendo el patrón repetido inline.
+**Pendiente:** Los routes que no usan la factory (`movies`, `people`, etc.) siguen teniendo el patrón repetido inline.
 
 ### 3.3 Inconsistencias entre API routes ✅ HECHO (parcial)
 
@@ -486,7 +481,7 @@ if (data.isPartialX && data.partialX) {
 | ~~formatPartialDate unificado~~ | ~~3 → 1~~ | ~~~40 líneas~~ ✅ Delegado a `dateUtils.ts` |
 | ~~calculateAge unificado~~ | ~~2 → 1~~ | ~~~30 líneas~~ ✅ Delegado a `calculateYearsBetween` de `dateUtils.ts` |
 | ~~PaginatedResponse genérico~~ | ~~5 → 1~~ | ~~~25 líneas~~ ✅ Unificado en `PaginatedResponse<T>` |
-| ~~CRUD factory (genres, calificaciones, themes)~~ | ~~6 archivos → factory + 6 thin configs~~ | ~~288 líneas~~ ✅ Creado `src/lib/api/crud-factory.ts` |
+| ~~CRUD factory (genres, calificaciones, themes, roles, screening-venues)~~ | ~~10 archivos → factory + thin configs~~ | ~~500+ líneas~~ ✅ Creado `src/lib/api/crud-factory.ts` |
 | Procesamiento de fechas en servicios | 5 bloques → 1 helper | ~50 líneas |
 | ~~Console.logs de debug~~ | ~~eliminación directa~~ | ~~~30 líneas~~ ✅ Eliminados |
 | **Total consolidable** | | **~900 líneas** |
@@ -524,7 +519,7 @@ if (data.isPartialX && data.partialX) {
 
 3. **Baja prioridad / Alto esfuerzo (pero alto impacto):**
    - ~~Crear hook `useListPage` genérico (elimina ~250 líneas duplicadas)~~ ✅ Creado `src/hooks/useListPage.ts` + `src/components/shared/ListToolbar.tsx`
-   - ~~Crear factory de CRUD API routes (subtareas 3.1.1–3.1.6)~~ ✅ Creado `src/lib/api/crud-factory.ts`, migrados genres, calificaciones, themes, roles. Pendiente: migrar screening-venues (3.1.7)
+   - ~~Crear factory de CRUD API routes (subtareas 3.1.1–3.1.7)~~ ✅ Creado `src/lib/api/crud-factory.ts`, migrados genres, calificaciones, themes, roles, screening-venues
    - Crear ListGrid genérico
    - Unificar FilterSelect/FilterInput
    - Completar migración de servicios a `apiClient`
