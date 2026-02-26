@@ -413,27 +413,14 @@ Estos componentes no agregan valor. Se podrían usar directamente `<AdBanner slo
 
 ---
 
-## 13. Patrón de procesamiento de fechas repetido en servicios
+## 13. Patrón de procesamiento de fechas repetido en servicios ✅ HECHO
 
-**Archivos:**
-- `src/services/movies.service.ts` — `formatMovieDataForAPI()` repite el mismo bloque de 12 líneas **3 veces** (release, filmingStart, filmingEnd)
-- `src/services/people.service.ts` — `formatPersonDataForAPI()` repite el mismo bloque **2 veces** (birth, death)
+**Resuelto:** Se crearon dos helpers en `src/lib/shared/dateUtils.ts`:
 
-Patrón repetido:
-```ts
-if (data.isPartialX && data.partialX) {
-  apiData.XYear = data.partialX.year;
-  apiData.XMonth = data.partialX.month;
-  apiData.XDay = data.partialX.day;
-} else if (data.X) {
-  const partial = dateToPartialFields(data.X);
-  // ...
-} else {
-  apiData.XYear = null; apiData.XMonth = null; apiData.XDay = null;
-}
-```
+- **`processPartialDateForAPI(isPartial, partialDate, fullDate)`** — Convierte fecha parcial o completa del formulario al formato `{ year, month, day }` de la API. Elimina las 5 copias del bloque if/else-if/else en `formatMovieDataForAPI` (3 bloques) y `formatPersonDataForAPI` (2 bloques).
+- **`processPartialDateFromAPI(year, month, day)`** — Convierte campos year/month/day de la API al formato del formulario (`{ date, isPartial, partialDate }`). Elimina las 5 copias del bloque if/partialFieldsToDate en `formatMovieFromAPI` (3 bloques) y `formatPersonFromAPI` (2 bloques).
 
-**Acción:** Extraer un helper `processPartialDateForAPI(isPartial, partialDate, fullDate)` que elimine las 5 copias.
+Se eliminó también el import no usado de `PartialDate` en `movies.service.ts` y los imports de `dateToPartialFields`/`partialFieldsToDate` de ambos servicios (ahora encapsulados en los helpers). Resultado: -80 líneas netas.
 
 ---
 
@@ -467,7 +454,7 @@ if (data.isPartialX && data.partialX) {
 | ~~calculateAge unificado~~ | ~~2 → 1~~ | ~~~30 líneas~~ ✅ Delegado a `calculateYearsBetween` de `dateUtils.ts` |
 | ~~PaginatedResponse genérico~~ | ~~5 → 1~~ | ~~~25 líneas~~ ✅ Unificado en `PaginatedResponse<T>` |
 | ~~CRUD factory (genres, calificaciones, themes, roles, screening-venues)~~ | ~~10 archivos → factory + thin configs~~ | ~~500+ líneas~~ ✅ Creado `src/lib/api/crud-factory.ts` |
-| Procesamiento de fechas en servicios | 5 bloques → 1 helper | ~50 líneas |
+| ~~Procesamiento de fechas en servicios~~ | ~~10 bloques → 2 helpers~~ | ~~80 líneas~~ ✅ Extraídos a `dateUtils.ts` |
 | ~~Console.logs de debug~~ | ~~eliminación directa~~ | ~~~30 líneas~~ ✅ Eliminados |
 | **Total consolidable** | | **~900 líneas** |
 
@@ -508,7 +495,7 @@ if (data.isPartialX && data.partialX) {
    - ~~Crear ListGrid genérico~~ ✅ Creado `src/components/shared/ListGrid.tsx`
    - ~~Unificar FilterSelect/FilterInput~~ ✅ Extraídos a `src/components/shared/filters/`
    - ~~Completar migración de servicios a `apiClient`~~ ✅ Migrados movies.service.ts y people.service.ts
-   - Extraer helper `processPartialDateForAPI` en servicios
+   - ~~Extraer helper `processPartialDateForAPI` en servicios~~ ✅ Extraídos `processPartialDateForAPI` y `processPartialDateFromAPI` en `dateUtils.ts`
 
 4. **Limpieza general:**
    - Eliminar directorio `_basura/`

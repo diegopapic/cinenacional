@@ -8,7 +8,7 @@ import {
   PersonFilters,
   PaginatedPeopleResponse
 } from '@/lib/people/peopleTypes';
-import { dateToPartialFields, partialFieldsToDate } from '@/lib/shared/dateUtils';
+import { processPartialDateForAPI, processPartialDateFromAPI } from '@/lib/shared/dateUtils';
 
 export interface ExternalIdConflict {
   field: string;
@@ -52,43 +52,15 @@ function formatPersonDataForAPI(data: PersonFormData): any {
     tmdbId: data.tmdbId || null,
   };
 
-  // Procesar fecha de nacimiento
-  if (data.isPartialBirthDate && data.partialBirthDate) {
-    // Fecha parcial de nacimiento
-    apiData.birthYear = data.partialBirthDate.year;
-    apiData.birthMonth = data.partialBirthDate.month;
-    apiData.birthDay = data.partialBirthDate.day;
-  } else if (data.birthDate) {
-    // Fecha completa de nacimiento - convertir a campos parciales
-    const partial = dateToPartialFields(data.birthDate);
-    apiData.birthYear = partial.year;
-    apiData.birthMonth = partial.month;
-    apiData.birthDay = partial.day;
-  } else {
-    // Sin fecha de nacimiento
-    apiData.birthYear = null;
-    apiData.birthMonth = null;
-    apiData.birthDay = null;
-  }
+  const birth = processPartialDateForAPI(data.isPartialBirthDate, data.partialBirthDate, data.birthDate);
+  apiData.birthYear = birth.year;
+  apiData.birthMonth = birth.month;
+  apiData.birthDay = birth.day;
 
-  // Procesar fecha de fallecimiento
-  if (data.isPartialDeathDate && data.partialDeathDate) {
-    // Fecha parcial de fallecimiento
-    apiData.deathYear = data.partialDeathDate.year;
-    apiData.deathMonth = data.partialDeathDate.month;
-    apiData.deathDay = data.partialDeathDate.day;
-  } else if (data.deathDate) {
-    // Fecha completa de fallecimiento - convertir a campos parciales
-    const partial = dateToPartialFields(data.deathDate);
-    apiData.deathYear = partial.year;
-    apiData.deathMonth = partial.month;
-    apiData.deathDay = partial.day;
-  } else {
-    // Sin fecha de fallecimiento
-    apiData.deathYear = null;
-    apiData.deathMonth = null;
-    apiData.deathDay = null;
-  }
+  const death = processPartialDateForAPI(data.isPartialDeathDate, data.partialDeathDate, data.deathDate);
+  apiData.deathYear = death.year;
+  apiData.deathMonth = death.month;
+  apiData.deathDay = death.day;
 
   // Procesar nacionalidades
   if (data.nationalities && data.nationalities.length > 0) {
@@ -132,44 +104,18 @@ function formatPersonFromAPI(person: any): PersonFormData {
     nationalities: []
   };
 
-  // Procesar fecha de nacimiento
-  if (person.birthYear) {
-    const birthPartial = {
-      year: person.birthYear,
-      month: person.birthMonth,
-      day: person.birthDay
-    };
-
-    // Si la fecha está completa, convertirla a formato ISO
-    if (person.birthYear && person.birthMonth && person.birthDay) {
-      formData.birthDate = partialFieldsToDate(birthPartial) || '';
-      formData.isPartialBirthDate = false;
-    } else {
-      // Fecha parcial
-      formData.partialBirthDate = birthPartial;
-      formData.isPartialBirthDate = true;
-      formData.birthDate = '';
-    }
+  const birthResult = processPartialDateFromAPI(person.birthYear, person.birthMonth, person.birthDay);
+  if (birthResult) {
+    formData.birthDate = birthResult.date;
+    formData.isPartialBirthDate = birthResult.isPartial;
+    if (birthResult.partialDate) formData.partialBirthDate = birthResult.partialDate;
   }
 
-  // Procesar fecha de fallecimiento
-  if (person.deathYear) {
-    const deathPartial = {
-      year: person.deathYear,
-      month: person.deathMonth,
-      day: person.deathDay
-    };
-
-    // Si la fecha está completa, convertirla a formato ISO
-    if (person.deathYear && person.deathMonth && person.deathDay) {
-      formData.deathDate = partialFieldsToDate(deathPartial) || '';
-      formData.isPartialDeathDate = false;
-    } else {
-      // Fecha parcial
-      formData.partialDeathDate = deathPartial;
-      formData.isPartialDeathDate = true;
-      formData.deathDate = '';
-    }
+  const deathResult = processPartialDateFromAPI(person.deathYear, person.deathMonth, person.deathDay);
+  if (deathResult) {
+    formData.deathDate = deathResult.date;
+    formData.isPartialDeathDate = deathResult.isPartial;
+    if (deathResult.partialDate) formData.partialDeathDate = deathResult.partialDate;
   }
 
   // Procesar nacionalidades

@@ -319,3 +319,49 @@ export function isCompleteDate(partial: PartialDate): boolean {
 export function isEmptyDate(partial: PartialDate): boolean {
   return !partial.year && !partial.month && !partial.day;
 }
+
+/**
+ * Resultado de convertir campos de fecha de la API al formato del formulario
+ */
+export interface PartialDateFormFields {
+  date: string;
+  isPartial: boolean;
+  partialDate?: PartialDate;
+}
+
+/**
+ * Procesa una fecha parcial o completa del formulario al formato de la API (year/month/day).
+ * Unifica el patrón repetido en formatMovieDataForAPI y formatPersonDataForAPI.
+ */
+export function processPartialDateForAPI(
+  isPartial: boolean | undefined,
+  partialDate: PartialDate | undefined,
+  fullDate: string | undefined
+): PartialDate {
+  if (isPartial && partialDate) {
+    return { year: partialDate.year, month: partialDate.month, day: partialDate.day }
+  }
+  if (fullDate) {
+    return dateToPartialFields(fullDate)
+  }
+  return { year: null, month: null, day: null }
+}
+
+/**
+ * Procesa campos year/month/day de la API al formato del formulario (date string + isPartial + partialDate).
+ * Unifica el patrón repetido en formatMovieFromAPI y formatPersonFromAPI.
+ * Retorna null si no hay año (sin fecha).
+ */
+export function processPartialDateFromAPI(
+  year: number | null,
+  month: number | null,
+  day: number | null
+): PartialDateFormFields | null {
+  if (!year) return null
+
+  const partial: PartialDate = { year, month, day }
+  if (year && month && day) {
+    return { date: partialFieldsToDate(partial) || '', isPartial: false }
+  }
+  return { date: '', isPartial: true, partialDate: partial }
+}

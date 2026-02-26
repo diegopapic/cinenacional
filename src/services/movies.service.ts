@@ -2,7 +2,7 @@
 import { apiClient } from './api-client'
 import { MovieFilters } from '@/components/admin/movies/MoviesFilters'
 import { MovieCompleteData } from '@/lib/movies/movieTypes'
-import { dateToPartialFields, partialFieldsToDate, PartialDate } from '@/lib/shared/dateUtils'
+import { processPartialDateForAPI, processPartialDateFromAPI } from '@/lib/shared/dateUtils'
 
 interface MoviesResponse {
   movies: any[]
@@ -52,62 +52,20 @@ function formatMovieDataForAPI(data: MovieCompleteData): any {
     screeningVenues: data.screeningVenues
   }
 
-  // Procesar fecha de estreno
-  if (data.isPartialReleaseDate && data.partialReleaseDate) {
-    // Fecha parcial de estreno
-    apiData.releaseYear = data.partialReleaseDate.year
-    apiData.releaseMonth = data.partialReleaseDate.month
-    apiData.releaseDay = data.partialReleaseDate.day
-  } else if (data.releaseDate) {
-    // Fecha completa de estreno - convertir a campos parciales
-    const partial = dateToPartialFields(data.releaseDate)
-    apiData.releaseYear = partial.year
-    apiData.releaseMonth = partial.month
-    apiData.releaseDay = partial.day
-  } else {
-    // Sin fecha de estreno
-    apiData.releaseYear = null
-    apiData.releaseMonth = null
-    apiData.releaseDay = null
-  }
+  const release = processPartialDateForAPI(data.isPartialReleaseDate, data.partialReleaseDate, data.releaseDate)
+  apiData.releaseYear = release.year
+  apiData.releaseMonth = release.month
+  apiData.releaseDay = release.day
 
-  // Procesar fecha de inicio de rodaje
-  if (data.isPartialFilmingStartDate && data.partialFilmingStartDate) {
-    // Fecha parcial de inicio de rodaje
-    apiData.filmingStartYear = data.partialFilmingStartDate.year
-    apiData.filmingStartMonth = data.partialFilmingStartDate.month
-    apiData.filmingStartDay = data.partialFilmingStartDate.day
-  } else if (data.filmingStartDate) {
-    // Fecha completa de inicio de rodaje - convertir a campos parciales
-    const partial = dateToPartialFields(data.filmingStartDate)
-    apiData.filmingStartYear = partial.year
-    apiData.filmingStartMonth = partial.month
-    apiData.filmingStartDay = partial.day
-  } else {
-    // Sin fecha de inicio de rodaje
-    apiData.filmingStartYear = null
-    apiData.filmingStartMonth = null
-    apiData.filmingStartDay = null
-  }
+  const filmingStart = processPartialDateForAPI(data.isPartialFilmingStartDate, data.partialFilmingStartDate, data.filmingStartDate)
+  apiData.filmingStartYear = filmingStart.year
+  apiData.filmingStartMonth = filmingStart.month
+  apiData.filmingStartDay = filmingStart.day
 
-  // Procesar fecha de fin de rodaje
-  if (data.isPartialFilmingEndDate && data.partialFilmingEndDate) {
-    // Fecha parcial de fin de rodaje
-    apiData.filmingEndYear = data.partialFilmingEndDate.year
-    apiData.filmingEndMonth = data.partialFilmingEndDate.month
-    apiData.filmingEndDay = data.partialFilmingEndDate.day
-  } else if (data.filmingEndDate) {
-    // Fecha completa de fin de rodaje - convertir a campos parciales
-    const partial = dateToPartialFields(data.filmingEndDate)
-    apiData.filmingEndYear = partial.year
-    apiData.filmingEndMonth = partial.month
-    apiData.filmingEndDay = partial.day
-  } else {
-    // Sin fecha de fin de rodaje
-    apiData.filmingEndYear = null
-    apiData.filmingEndMonth = null
-    apiData.filmingEndDay = null
-  }
+  const filmingEnd = processPartialDateForAPI(data.isPartialFilmingEndDate, data.partialFilmingEndDate, data.filmingEndDate)
+  apiData.filmingEndYear = filmingEnd.year
+  apiData.filmingEndMonth = filmingEnd.month
+  apiData.filmingEndDay = filmingEnd.day
 
   return apiData
 }
@@ -153,64 +111,25 @@ function formatMovieFromAPI(movie: any): MovieCompleteData {
     screeningVenues: movie.screeningVenues || []
   }
 
-  // Procesar fecha de estreno
-  if (movie.releaseYear) {
-    const releasePartial: PartialDate = {
-      year: movie.releaseYear,
-      month: movie.releaseMonth,
-      day: movie.releaseDay
-    }
-
-    // Si la fecha está completa, convertirla a formato ISO
-    if (movie.releaseYear && movie.releaseMonth && movie.releaseDay) {
-      formData.releaseDate = partialFieldsToDate(releasePartial) || ''
-      formData.isPartialReleaseDate = false
-    } else {
-      // Fecha parcial
-      formData.partialReleaseDate = releasePartial
-      formData.isPartialReleaseDate = true
-      formData.releaseDate = ''
-    }
+  const release = processPartialDateFromAPI(movie.releaseYear, movie.releaseMonth, movie.releaseDay)
+  if (release) {
+    formData.releaseDate = release.date
+    formData.isPartialReleaseDate = release.isPartial
+    if (release.partialDate) formData.partialReleaseDate = release.partialDate
   }
 
-  // Procesar fecha de inicio de rodaje
-  if (movie.filmingStartYear) {
-    const filmingStartPartial: PartialDate = {
-      year: movie.filmingStartYear,
-      month: movie.filmingStartMonth,
-      day: movie.filmingStartDay
-    }
-
-    // Si la fecha está completa, convertirla a formato ISO
-    if (movie.filmingStartYear && movie.filmingStartMonth && movie.filmingStartDay) {
-      formData.filmingStartDate = partialFieldsToDate(filmingStartPartial) || ''
-      formData.isPartialFilmingStartDate = false
-    } else {
-      // Fecha parcial
-      formData.partialFilmingStartDate = filmingStartPartial
-      formData.isPartialFilmingStartDate = true
-      formData.filmingStartDate = ''
-    }
+  const filmingStart = processPartialDateFromAPI(movie.filmingStartYear, movie.filmingStartMonth, movie.filmingStartDay)
+  if (filmingStart) {
+    formData.filmingStartDate = filmingStart.date
+    formData.isPartialFilmingStartDate = filmingStart.isPartial
+    if (filmingStart.partialDate) formData.partialFilmingStartDate = filmingStart.partialDate
   }
 
-  // Procesar fecha de fin de rodaje
-  if (movie.filmingEndYear) {
-    const filmingEndPartial: PartialDate = {
-      year: movie.filmingEndYear,
-      month: movie.filmingEndMonth,
-      day: movie.filmingEndDay
-    }
-
-    // Si la fecha está completa, convertirla a formato ISO
-    if (movie.filmingEndYear && movie.filmingEndMonth && movie.filmingEndDay) {
-      formData.filmingEndDate = partialFieldsToDate(filmingEndPartial) || ''
-      formData.isPartialFilmingEndDate = false
-    } else {
-      // Fecha parcial
-      formData.partialFilmingEndDate = filmingEndPartial
-      formData.isPartialFilmingEndDate = true
-      formData.filmingEndDate = ''
-    }
+  const filmingEnd = processPartialDateFromAPI(movie.filmingEndYear, movie.filmingEndMonth, movie.filmingEndDay)
+  if (filmingEnd) {
+    formData.filmingEndDate = filmingEnd.date
+    formData.isPartialFilmingEndDate = filmingEnd.isPartial
+    if (filmingEnd.partialDate) formData.partialFilmingEndDate = filmingEnd.partialDate
   }
 
   return formData
