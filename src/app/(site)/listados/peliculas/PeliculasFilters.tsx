@@ -1,8 +1,9 @@
 // src/app/(site)/listados/peliculas/PeliculasFilters.tsx
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
-import { ChevronDown, CalendarDays } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { CalendarDays } from 'lucide-react';
+import { FilterSelect, FilterInput } from '@/components/shared/filters';
 import {
   MovieListFilters,
   MovieFiltersDataResponse
@@ -16,43 +17,7 @@ interface PeliculasFiltersProps {
   onClearFilters: () => void;
 }
 
-/* ── FilterSelect ─────────────────────────────────────── */
-function FilterSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string | number | '';
-  options: Array<{ id: number | string; name: string; count?: number }>;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-[10px] uppercase tracking-widest text-muted-foreground/40">
-        {label}
-      </label>
-      <div className="relative">
-        <select
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-8 w-full appearance-none border border-border/30 bg-transparent px-2 pr-7 text-[12px] text-muted-foreground/60 outline-none cursor-pointer [&>option]:bg-[#0c0d0f] [&>option]:text-[#9a9da2]"
-        >
-          <option value="">Todos</option>
-          {options.map(opt => (
-            <option key={opt.id} value={opt.id}>
-              {opt.name} {opt.count !== undefined && `(${opt.count})`}
-            </option>
-          ))}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/40" />
-      </div>
-    </div>
-  );
-}
-
-/* ── DateInput ────────────────────────────────────────── */
+/* ── DateInput (specific to peliculas) ──────────────────── */
 function DateInput({
   label,
   value,
@@ -136,32 +101,6 @@ function DateInput({
           />
         </div>
       </div>
-    </div>
-  );
-}
-
-/* ── FilterInput (year) ───────────────────────────────── */
-function FilterInput({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number | '';
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-[10px] uppercase tracking-widest text-muted-foreground/40">
-        {label}
-      </label>
-      <input
-        type="number"
-        placeholder="Año"
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-8 w-full border border-border/30 bg-transparent px-2 text-[12px] text-muted-foreground/60 outline-none placeholder:text-muted-foreground/25"
-      />
     </div>
   );
 }
