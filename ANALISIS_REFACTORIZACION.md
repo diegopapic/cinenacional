@@ -74,7 +74,7 @@ Además, `formatPartialDate()` en personListUtils y `formatReleaseDate()` en mov
 **Acción:**
 1. ~~Mover `buildPageNumbers`, `generateYearOptions` a `src/lib/shared/listUtils.ts`~~ ✅ Movidos
 2. ~~Mover `formatPartialDate` a `src/lib/shared/dateUtils.ts` (o verificar si ya existe ahí)~~ ✅ Ya existía, las duplicadas ahora delegan
-3. Crear funciones genéricas `filtersToSearchParams<T>`, `searchParamsToFilters<T>`, etc., que usen un esquema de filtros configurable en vez de hardcodear cada campo
+3. ~~Crear funciones genéricas `filtersToSearchParams<T>`, `searchParamsToFilters<T>`, etc., que usen un esquema de filtros configurable en vez de hardcodear cada campo~~ ✅ Se creó `src/lib/shared/filterUtils.ts` con `createFilterHelpers<T>()` factory. Ambos módulos definen un esquema declarativo de campos y delegan las 6 funciones + `getDefaultSortOrder` a la factory. Resultado: -238 líneas netas (301 eliminadas, 63 agregadas en utils + filterUtils).
 
 ### 2.2 Types — tipos duplicados ✅ HECHO
 

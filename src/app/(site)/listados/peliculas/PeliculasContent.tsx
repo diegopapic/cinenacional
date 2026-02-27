@@ -20,6 +20,7 @@ import {
   countActiveFilters,
   clearFilters,
   hasActiveFilters,
+  getDefaultSortOrder,
   buildTitle,
   buildSubtitle,
 } from '@/lib/movies/movieListUtils';
@@ -35,7 +36,7 @@ const movieListConfig = {
   countActiveFilters,
   hasActiveFilters,
   clearFilters,
-  getDefaultSortOrder: (sortBy: string) => (sortBy === 'title' ? 'asc' : 'desc') as 'asc' | 'desc',
+  getDefaultSortOrder,
 };
 
 export default function PeliculasContent() {
