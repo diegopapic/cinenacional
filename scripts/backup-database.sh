@@ -192,12 +192,16 @@ echo "5. Limpiando backups antiguos..."
 
 # Limpiar backups locales (más de 7 días)
 DELETED_LOCAL=0
+NOW_EPOCH=$(date +%s)
+LOCAL_CUTOFF_EPOCH=$((NOW_EPOCH - LOCAL_RETENTION_DAYS * 86400))
+
 for dir in "${BACKUP_DIR}"/backup_*; do
     if [ -d "$dir" ]; then
         DIR_DATE=$(basename "$dir" | sed 's/backup_//' | cut -d'_' -f1)
-        DIR_TIMESTAMP=$(date -d "${DIR_DATE:0:4}-${DIR_DATE:4:2}-${DIR_DATE:6:2}" +%s 2>/dev/null || echo 0)
-        CUTOFF_TIMESTAMP=$(date -d "-${LOCAL_RETENTION_DAYS} days" +%s)
-        if [ "$DIR_TIMESTAMP" -lt "$CUTOFF_TIMESTAMP" ] && [ "$DIR_TIMESTAMP" -ne 0 ]; then
+        # Convertir YYYYMMDD a epoch: extraer año, mes, día
+        Y=${DIR_DATE:0:4}; M=${DIR_DATE:4:2}; D=${DIR_DATE:6:2}
+        DIR_EPOCH=$(date -d "${Y}-${M}-${D}" +%s 2>/dev/null || date -D "%Y%m%d" -d "$DIR_DATE" +%s 2>/dev/null || echo 0)
+        if [ "$DIR_EPOCH" -lt "$LOCAL_CUTOFF_EPOCH" ] && [ "$DIR_EPOCH" -ne 0 ]; then
             rm -rf "$dir"
             DELETED_LOCAL=$((DELETED_LOCAL + 1))
             echo "   Eliminado local: $(basename $dir)"
@@ -208,12 +212,14 @@ done
 # Limpiar backups antiguos en Google Drive (más de 30 días)
 DELETED_GDRIVE=0
 if command -v rclone &>/dev/null; then
-    CUTOFF_DATE=$(date -d "-${GDRIVE_RETENTION_DAYS} days" +"%Y%m%d")
+    GDRIVE_CUTOFF_EPOCH=$((NOW_EPOCH - GDRIVE_RETENTION_DAYS * 86400))
     GDRIVE_DIRS=$(rclone lsd "${GDRIVE_REMOTE}:${GDRIVE_FOLDER}/" 2>/dev/null | awk '{print $NF}' | grep "^backup_" || true)
 
     for dir in ${GDRIVE_DIRS}; do
         DIR_DATE=$(echo "$dir" | sed 's/backup_//' | cut -d'_' -f1)
-        if [ "$DIR_DATE" -lt "$CUTOFF_DATE" ] 2>/dev/null; then
+        Y=${DIR_DATE:0:4}; M=${DIR_DATE:4:2}; D=${DIR_DATE:6:2}
+        DIR_EPOCH=$(date -d "${Y}-${M}-${D}" +%s 2>/dev/null || date -D "%Y%m%d" -d "$DIR_DATE" +%s 2>/dev/null || echo 0)
+        if [ "$DIR_EPOCH" -lt "$GDRIVE_CUTOFF_EPOCH" ] && [ "$DIR_EPOCH" -ne 0 ]; then
             rclone purge "${GDRIVE_REMOTE}:${GDRIVE_FOLDER}/${dir}" 2>/dev/null && DELETED_GDRIVE=$((DELETED_GDRIVE + 1))
             echo "   Eliminado Drive: ${dir}"
         fi
