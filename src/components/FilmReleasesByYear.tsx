@@ -354,7 +354,7 @@ function CompactCard({ film, showYear }: { film: ReleaseEntry; showYear: boolean
 
       {/* Info */}
       <div className="mt-2">
-        <p className="truncate text-[12px] font-medium leading-snug text-foreground/80 transition-colors group-hover:text-accent md:text-[13px]">
+        <p className="line-clamp-2 text-[12px] font-medium leading-snug text-foreground/80 transition-colors group-hover:text-accent md:text-[13px]">
           {film.title}
           {film.year && (
             <span className="ml-1 text-[11px] font-normal tabular-nums text-muted-foreground/40">
