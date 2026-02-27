@@ -108,7 +108,7 @@ export default function MovieCard({
       </div>
 
       {/* Título (Año) */}
-      <h3 className="mt-2.5 truncate text-[13px] font-medium leading-snug text-foreground/80 transition-colors group-hover:text-accent">
+      <h3 className="mt-2.5 line-clamp-2 text-[13px] font-medium leading-snug text-foreground/80 transition-colors group-hover:text-accent">
         {tituloConAnio}
       </h3>
 

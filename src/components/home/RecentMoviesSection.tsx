@@ -78,7 +78,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
                     {/* Borde sutil overlay */}
                     <div className="absolute inset-0 rounded-sm border border-foreground/[0.04]" />
                   </div>
-                  <h3 className="mt-2 w-28 truncate text-[12px] font-medium leading-snug text-foreground/80 group-hover:text-accent">
+                  <h3 className="mt-2 w-28 line-clamp-2 text-[12px] font-medium leading-snug text-foreground/80 group-hover:text-accent">
                     {pelicula.title}
                   </h3>
                 </Link>
@@ -116,7 +116,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
                     {/* Borde sutil overlay */}
                     <div className="absolute inset-0 rounded-sm border border-foreground/[0.04]" />
                   </div>
-                  <h3 className="mt-2.5 truncate text-[13px] font-medium leading-snug text-foreground/80 transition-colors group-hover:text-accent">
+                  <h3 className="mt-2.5 line-clamp-2 text-[13px] font-medium leading-snug text-foreground/80 transition-colors group-hover:text-accent">
                     {pelicula.title}
                   </h3>
                 </Link>
