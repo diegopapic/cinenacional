@@ -148,14 +148,14 @@ for TABLE in ${TABLES}; do
             gzip "${TABLES_DIR}/${TABLE}.sql"
             TABLE_SIZE=$(stat -c%s "${TABLES_DIR}/${TABLE}.sql.gz")
             echo "   ✓ ${TABLE}.sql.gz ($(format_size ${TABLE_SIZE}))"
-            ((TABLE_COUNT++))
+            TABLE_COUNT=$((TABLE_COUNT + 1))
         else
             rm -f "${TABLES_DIR}/${TABLE}.sql"
             echo "   - ${TABLE} (vacía, omitida)"
         fi
     else
         echo "   ✗ ${TABLE} (error)"
-        ((TABLE_ERRORS++))
+        TABLE_ERRORS=$((TABLE_ERRORS + 1))
         rm -f "${TABLES_DIR}/${TABLE}.sql"
     fi
 done
@@ -199,7 +199,7 @@ for dir in "${BACKUP_DIR}"/backup_*; do
         CUTOFF_TIMESTAMP=$(date -d "-${LOCAL_RETENTION_DAYS} days" +%s)
         if [ "$DIR_TIMESTAMP" -lt "$CUTOFF_TIMESTAMP" ] && [ "$DIR_TIMESTAMP" -ne 0 ]; then
             rm -rf "$dir"
-            ((DELETED_LOCAL++))
+            DELETED_LOCAL=$((DELETED_LOCAL + 1))
             echo "   Eliminado local: $(basename $dir)"
         fi
     fi
@@ -214,7 +214,7 @@ if command -v rclone &>/dev/null; then
     for dir in ${GDRIVE_DIRS}; do
         DIR_DATE=$(echo "$dir" | sed 's/backup_//' | cut -d'_' -f1)
         if [ "$DIR_DATE" -lt "$CUTOFF_DATE" ] 2>/dev/null; then
-            rclone purge "${GDRIVE_REMOTE}:${GDRIVE_FOLDER}/${dir}" 2>/dev/null && ((DELETED_GDRIVE++))
+            rclone purge "${GDRIVE_REMOTE}:${GDRIVE_FOLDER}/${dir}" 2>/dev/null && DELETED_GDRIVE=$((DELETED_GDRIVE + 1))
             echo "   Eliminado Drive: ${dir}"
         fi
     done
