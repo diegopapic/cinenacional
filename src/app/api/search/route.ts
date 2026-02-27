@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { apiHandler } from '@/lib/api/api-handler'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,8 +27,7 @@ function getDisplayYear(year: number | null, releaseYear: number | null): number
   return null
 }
 
-export async function GET(request: NextRequest) {
-  try {
+export const GET = apiHandler(async (request: NextRequest) => {
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get('q')
     const limit = parseInt(searchParams.get('limit') || '10')
@@ -258,12 +258,4 @@ export async function GET(request: NextRequest) {
       people: formattedPeople,
       total: formattedMovies.length + formattedPeople.length
     })
-
-  } catch (error) {
-    console.error('Search error:', error)
-    return NextResponse.json(
-      { error: 'Error searching' },
-      { status: 500 }
-    )
-  }
-}
+}, 'buscar')

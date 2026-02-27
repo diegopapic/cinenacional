@@ -1,12 +1,12 @@
 // src/app/api/people/slug/[slug]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { apiHandler } from '@/lib/api/api-handler';
 
-export async function GET(
+export const GET = apiHandler(async (
   request: NextRequest,
   { params }: { params: { slug: string } }
-) {
-  try {
+) => {
     const person = await prisma.person.findFirst({
       where: {
         slug: params.slug,
@@ -130,11 +130,4 @@ export async function GET(
       ...personData,
       galleryImages
     });
-  } catch (error) {
-    console.error('Error fetching person by slug:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch person' },
-      { status: 500 }
-    );
-  }
-}
+}, 'obtener persona')

@@ -3,12 +3,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { apiHandler } from '@/lib/api/api-handler';
 
 // Esta ruta usa searchParams, debe ser dinámica
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
-  try {
+export const GET = apiHandler(async (request: NextRequest) => {
     const { searchParams } = request.nextUrl;
 
     // Extraer parámetros
@@ -299,15 +299,7 @@ export async function GET(request: NextRequest) {
       totalPages,
       hasMore: page < totalPages
     });
-
-  } catch (error) {
-    console.error('Error fetching movies list:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch movies' },
-      { status: 500 }
-    );
-  }
-}
+}, 'obtener listado de películas')
 
 /**
  * Obtiene películas con ordenamiento alfabético refinado:
