@@ -6,6 +6,7 @@ import { generatePersonSlug } from '@/lib/people/peopleUtils';
 import { splitFullName } from '@/lib/people/nameUtils';
 import RedisClient from '@/lib/redis';
 import { requireAuth } from '@/lib/auth';
+import { apiHandler } from '@/lib/api/api-handler';
 
 // ============================================
 // CACHE CONFIGURATION
@@ -649,224 +650,216 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = apiHandler(async (request: NextRequest) => {
   const auth = await requireAuth()
   if (auth.error) return auth.error
 
-  try {
-    const data = await request.json();
+  const data = await request.json();
 
-    // ✨ SEPARACIÓN INTELIGENTE DE NOMBRES
-    // Usa FirstNameGender para identificar qué palabras son nombres
-    if (data.name && !data.firstName && !data.lastName) {
-      const { firstName, lastName } = await splitFullName(data.name, prisma);
-      data.firstName = firstName;
-      data.lastName = lastName;
+  // ✨ SEPARACIÓN INTELIGENTE DE NOMBRES
+  // Usa FirstNameGender para identificar qué palabras son nombres
+  if (data.name && !data.firstName && !data.lastName) {
+    const { firstName, lastName } = await splitFullName(data.name, prisma);
+    data.firstName = firstName;
+    data.lastName = lastName;
+  }
+
+  let baseSlug = generatePersonSlug(data.firstName, data.lastName);
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (await prisma.person.findUnique({ where: { slug } })) {
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+
+  // Verificar duplicados de imdbId y tmdbId
+  const conflicts: Array<{ field: string; value: string; personId: number; personName: string }> = [];
+
+  if (data.imdbId) {
+    const existing = await prisma.person.findFirst({
+      where: { imdbId: data.imdbId },
+      select: { id: true, firstName: true, lastName: true },
+    });
+    if (existing) {
+      conflicts.push({
+        field: 'imdbId',
+        value: data.imdbId,
+        personId: existing.id,
+        personName: [existing.firstName, existing.lastName].filter(Boolean).join(' '),
+      });
     }
+  }
 
-    let baseSlug = generatePersonSlug(data.firstName, data.lastName);
-    let slug = baseSlug;
-    let counter = 1;
-
-    while (await prisma.person.findUnique({ where: { slug } })) {
-      slug = `${baseSlug}-${counter}`;
-      counter++;
-    }
-
-    // Verificar duplicados de imdbId y tmdbId
-    const conflicts: Array<{ field: string; value: string; personId: number; personName: string }> = [];
-
-    if (data.imdbId) {
+  if (data.tmdbId) {
+    const tmdbIdInt = typeof data.tmdbId === 'string' ? parseInt(data.tmdbId) : data.tmdbId;
+    if (tmdbIdInt) {
       const existing = await prisma.person.findFirst({
-        where: { imdbId: data.imdbId },
+        where: { tmdbId: tmdbIdInt },
         select: { id: true, firstName: true, lastName: true },
       });
       if (existing) {
         conflicts.push({
-          field: 'imdbId',
-          value: data.imdbId,
+          field: 'tmdbId',
+          value: String(tmdbIdInt),
           personId: existing.id,
           personName: [existing.firstName, existing.lastName].filter(Boolean).join(' '),
         });
       }
     }
+  }
 
-    if (data.tmdbId) {
-      const tmdbIdInt = typeof data.tmdbId === 'string' ? parseInt(data.tmdbId) : data.tmdbId;
-      if (tmdbIdInt) {
-        const existing = await prisma.person.findFirst({
-          where: { tmdbId: tmdbIdInt },
-          select: { id: true, firstName: true, lastName: true },
-        });
-        if (existing) {
-          conflicts.push({
-            field: 'tmdbId',
-            value: String(tmdbIdInt),
-            personId: existing.id,
-            personName: [existing.firstName, existing.lastName].filter(Boolean).join(' '),
-          });
-        }
-      }
-    }
-
-    if (conflicts.length > 0 && !data.forceReassign) {
-      return NextResponse.json(
-        { message: 'ID duplicado', conflicts },
-        { status: 409 }
-      );
-    }
-
-    const personData: any = {
-      slug,
-      firstName: data.firstName || null,
-      lastName: data.lastName || null,
-      realName: data.realName || null,
-      birthYear: data.birthYear || null,
-      birthMonth: data.birthMonth || null,
-      birthDay: data.birthDay || null,
-      deathYear: data.deathYear || null,
-      deathMonth: data.deathMonth || null,
-      deathDay: data.deathDay || null,
-      birthLocationId: data.birthLocationId || null,
-      deathLocationId: data.deathLocationId || null,
-      biography: data.biography || null,
-      photoUrl: data.photoUrl || null,
-      photoPublicId: data.photoPublicId || null,
-      gender: data.gender || null,
-      hideAge: data.hideAge || false,
-      isActive: data.isActive ?? true,
-      hasLinks: data.links && data.links.length > 0,
-      imdbId: data.imdbId || null,
-      tmdbId: data.tmdbId ? parseInt(data.tmdbId) : null,
-    };
-
-    const person = await prisma.$transaction(async (tx) => {
-      // Si forceReassign, desasignar IDs de las otras personas
-      if (data.forceReassign && conflicts.length > 0) {
-        for (const conflict of conflicts) {
-          await tx.person.update({
-            where: { id: conflict.personId },
-            data: { [conflict.field]: null },
-          });
-        }
-      }
-
-      const newPerson = await tx.person.create({
-        data: personData,
-      });
-
-      if (data.links && data.links.length > 0) {
-        await tx.personLink.createMany({
-          data: data.links.map((link: any, index: number) => ({
-            personId: newPerson.id,
-            type: link.type,
-            url: link.url,
-            displayOrder: link.displayOrder ?? index,
-            isVerified: link.isVerified || false,
-            isActive: link.isActive ?? true,
-          })),
-        });
-      }
-
-      if (data.nationalities && data.nationalities.length > 0) {
-        await tx.personNationality.createMany({
-          data: data.nationalities.map((locationId: number) => ({
-            personId: newPerson.id,
-            locationId: locationId,
-          })),
-        });
-      }
-
-      // 🆕 Crear nombres alternativos si se enviaron
-      if (data.alternativeNames && data.alternativeNames.length > 0) {
-        const validNames = data.alternativeNames.filter(
-          (alt: any) => alt.fullName && alt.fullName.trim()
-        );
-        if (validNames.length > 0) {
-          await tx.personAlternativeName.createMany({
-            data: validNames.map((alt: any) => ({
-              personId: newPerson.id,
-              fullName: alt.fullName.trim(),
-            })),
-          });
-        }
-      }
-
-      return tx.person.findUnique({
-        where: { id: newPerson.id },
-        include: {
-          links: true,
-          nationalities: {
-            include: { location: true }
-          },
-          birthLocation: {
-            include: { parent: true }
-          },
-          deathLocation: {
-            include: { parent: true }
-          },
-          alternativeNames: {
-            orderBy: { createdAt: 'asc' }
-          },
-          _count: {
-            select: {
-              links: true,
-              castRoles: true,
-              crewRoles: true,
-            },
-          },
-        },
-      });
-    });
-
-    // IMPORTANTE: Agregar el campo 'name' al resultado
-    const personWithName = {
-      ...person,
-      name: `${person?.firstName || ''} ${person?.lastName || ''}`.trim() || person?.realName || 'Sin nombre'
-    };
-
-    // ============================================
-    // INVALIDAR CACHÉS si es un obituario
-    // ============================================
-    if (person?.deathYear) {
-      console.log('🗑️ Invalidando cachés de obituarios tras crear persona fallecida');
-      
-      const redisClient = RedisClient.getInstance();
-      if (redisClient) {
-        try {
-          const keys = await redisClient.keys('people:list:*deathYear*');
-          if (keys.length > 0) {
-            await redisClient.del(...keys);
-            console.log(`✅ ${keys.length} cachés de obituarios invalidados en Redis`);
-          }
-          
-          // También invalidar death-years
-          await redisClient.del('people:death-years:v1');
-          console.log('✅ Caché de death-years invalidado en Redis');
-        } catch (err) {
-          console.error('Error invalidando cachés de Redis:', err);
-        }
-      }
-      
-      // Limpiar memoria también
-      let memoryKeysDeleted = 0;
-      for (const key of memoryCache.keys()) {
-        if (key.includes('deathYear') || key === 'people:death-years:v1') {
-          memoryCache.delete(key);
-          memoryKeysDeleted++;
-        }
-      }
-      if (memoryKeysDeleted > 0) {
-        console.log(`✅ ${memoryKeysDeleted} cachés de obituarios invalidados en memoria`);
-      }
-    }
-
-    return NextResponse.json(personWithName, { status: 201 });
-  } catch (error) {
-    console.error('Error creating person:', error);
+  if (conflicts.length > 0 && !data.forceReassign) {
     return NextResponse.json(
-      { message: 'Error al crear persona' },
-      { status: 500 }
+      { message: 'ID duplicado', conflicts },
+      { status: 409 }
     );
   }
-}
+
+  const personData: any = {
+    slug,
+    firstName: data.firstName || null,
+    lastName: data.lastName || null,
+    realName: data.realName || null,
+    birthYear: data.birthYear || null,
+    birthMonth: data.birthMonth || null,
+    birthDay: data.birthDay || null,
+    deathYear: data.deathYear || null,
+    deathMonth: data.deathMonth || null,
+    deathDay: data.deathDay || null,
+    birthLocationId: data.birthLocationId || null,
+    deathLocationId: data.deathLocationId || null,
+    biography: data.biography || null,
+    photoUrl: data.photoUrl || null,
+    photoPublicId: data.photoPublicId || null,
+    gender: data.gender || null,
+    hideAge: data.hideAge || false,
+    isActive: data.isActive ?? true,
+    hasLinks: data.links && data.links.length > 0,
+    imdbId: data.imdbId || null,
+    tmdbId: data.tmdbId ? parseInt(data.tmdbId) : null,
+  };
+
+  const person = await prisma.$transaction(async (tx) => {
+    // Si forceReassign, desasignar IDs de las otras personas
+    if (data.forceReassign && conflicts.length > 0) {
+      for (const conflict of conflicts) {
+        await tx.person.update({
+          where: { id: conflict.personId },
+          data: { [conflict.field]: null },
+        });
+      }
+    }
+
+    const newPerson = await tx.person.create({
+      data: personData,
+    });
+
+    if (data.links && data.links.length > 0) {
+      await tx.personLink.createMany({
+        data: data.links.map((link: any, index: number) => ({
+          personId: newPerson.id,
+          type: link.type,
+          url: link.url,
+          displayOrder: link.displayOrder ?? index,
+          isVerified: link.isVerified || false,
+          isActive: link.isActive ?? true,
+        })),
+      });
+    }
+
+    if (data.nationalities && data.nationalities.length > 0) {
+      await tx.personNationality.createMany({
+        data: data.nationalities.map((locationId: number) => ({
+          personId: newPerson.id,
+          locationId: locationId,
+        })),
+      });
+    }
+
+    // 🆕 Crear nombres alternativos si se enviaron
+    if (data.alternativeNames && data.alternativeNames.length > 0) {
+      const validNames = data.alternativeNames.filter(
+        (alt: any) => alt.fullName && alt.fullName.trim()
+      );
+      if (validNames.length > 0) {
+        await tx.personAlternativeName.createMany({
+          data: validNames.map((alt: any) => ({
+            personId: newPerson.id,
+            fullName: alt.fullName.trim(),
+          })),
+        });
+      }
+    }
+
+    return tx.person.findUnique({
+      where: { id: newPerson.id },
+      include: {
+        links: true,
+        nationalities: {
+          include: { location: true }
+        },
+        birthLocation: {
+          include: { parent: true }
+        },
+        deathLocation: {
+          include: { parent: true }
+        },
+        alternativeNames: {
+          orderBy: { createdAt: 'asc' }
+        },
+        _count: {
+          select: {
+            links: true,
+            castRoles: true,
+            crewRoles: true,
+          },
+        },
+      },
+    });
+  });
+
+  // IMPORTANTE: Agregar el campo 'name' al resultado
+  const personWithName = {
+    ...person,
+    name: `${person?.firstName || ''} ${person?.lastName || ''}`.trim() || person?.realName || 'Sin nombre'
+  };
+
+  // ============================================
+  // INVALIDAR CACHÉS si es un obituario
+  // ============================================
+  if (person?.deathYear) {
+    console.log('🗑️ Invalidando cachés de obituarios tras crear persona fallecida');
+
+    const redisClient = RedisClient.getInstance();
+    if (redisClient) {
+      try {
+        const keys = await redisClient.keys('people:list:*deathYear*');
+        if (keys.length > 0) {
+          await redisClient.del(...keys);
+          console.log(`✅ ${keys.length} cachés de obituarios invalidados en Redis`);
+        }
+
+        // También invalidar death-years
+        await redisClient.del('people:death-years:v1');
+        console.log('✅ Caché de death-years invalidado en Redis');
+      } catch (err) {
+        console.error('Error invalidando cachés de Redis:', err);
+      }
+    }
+
+    // Limpiar memoria también
+    let memoryKeysDeleted = 0;
+    for (const key of memoryCache.keys()) {
+      if (key.includes('deathYear') || key === 'people:death-years:v1') {
+        memoryCache.delete(key);
+        memoryKeysDeleted++;
+      }
+    }
+    if (memoryKeysDeleted > 0) {
+      console.log(`✅ ${memoryKeysDeleted} cachés de obituarios invalidados en memoria`);
+    }
+  }
+
+  return NextResponse.json(personWithName, { status: 201 });
+}, 'crear persona')

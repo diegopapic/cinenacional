@@ -1,11 +1,11 @@
 // src/app/api/movies/route.ts - CON REDIS CACHE
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { z } from 'zod'
 import { movieSchema } from '@/lib/schemas'
 import { generateUniqueSlug } from '@/lib/utils/slugs'
 import RedisClient from '@/lib/redis'
 import { requireAuth } from '@/lib/auth'
+import { apiHandler } from '@/lib/api/api-handler'
 
 // ============================================
 // CACHE CONFIGURATION
@@ -473,256 +473,240 @@ export async function GET(request: NextRequest) {
 // ============================================
 // POST /api/movies - Crear nueva película
 // ============================================
-export async function POST(request: NextRequest) {
+export const POST = apiHandler(async (request: NextRequest) => {
   const auth = await requireAuth()
   if (auth.error) return auth.error
 
-  try {
-    const body = await request.json()
+  const body = await request.json()
 
-    // Limpiar datos antes de validar
-    const cleanedData = {
-      ...body,
-      year: (body.year === 0 || body.year === '' || body.year === null || (typeof body.year === 'number' && isNaN(body.year))) ? null : body.year,
-      colorTypeId: (body.colorTypeId === 0 || body.colorTypeId === '' || body.colorTypeId === null || (typeof body.colorTypeId === 'number' && isNaN(body.colorTypeId))) ? null : body.colorTypeId,
-      soundType: body.soundType || null,
-      ratingId: body.ratingId === 0 ? null : body.ratingId,
-      tmdbId: (body.tmdbId === '' || body.tmdbId === null || body.tmdbId === undefined || isNaN(Number(body.tmdbId)))
-        ? null
-        : Number(body.tmdbId),
-      // Asegurar que metaKeywords sea un array
-      metaKeywords: body.metaKeywords
-        ? Array.isArray(body.metaKeywords)
-          ? body.metaKeywords
-          : typeof body.metaKeywords === 'string'
-            ? body.metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
-            : []
-        : []
-    };
-
-    // Validar datos
-    const validatedData = movieSchema.parse(cleanedData)
-
-    // Generar slug único con la función actualizada
-const slug = await generateUniqueSlug(validatedData.title, 'movie', prisma)
-
-    // Extraer relaciones y campos especiales
-    const {
-      genres,
-      cast,
-      crew,
-      countries,
-      productionCompanies,
-      distributionCompanies,
-      themes,
-      alternativeTitles,
-      links,
-      screeningVenues,
-      colorTypeId,
-      ratingId,
-      metaKeywords,
-      releaseYear,
-      releaseMonth,
-      releaseDay,
-      filmingStartYear,
-      filmingStartMonth,
-      filmingStartDay,
-      filmingEndYear,
-      filmingEndMonth,
-      filmingEndDay,
-      ...movieDataClean
-    } = validatedData
-
+  // Limpiar datos antes de validar
+  const cleanedData = {
+    ...body,
+    year: (body.year === 0 || body.year === '' || body.year === null || (typeof body.year === 'number' && isNaN(body.year))) ? null : body.year,
+    colorTypeId: (body.colorTypeId === 0 || body.colorTypeId === '' || body.colorTypeId === null || (typeof body.colorTypeId === 'number' && isNaN(body.colorTypeId))) ? null : body.colorTypeId,
+    soundType: body.soundType || null,
+    ratingId: body.ratingId === 0 ? null : body.ratingId,
+    tmdbId: (body.tmdbId === '' || body.tmdbId === null || body.tmdbId === undefined || isNaN(Number(body.tmdbId)))
+      ? null
+      : Number(body.tmdbId),
     // Asegurar que metaKeywords sea un array
-    const processedMetaKeywords = metaKeywords
-      ? Array.isArray(metaKeywords)
-        ? metaKeywords
-        : typeof metaKeywords === 'string'
-          ? metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
+    metaKeywords: body.metaKeywords
+      ? Array.isArray(body.metaKeywords)
+        ? body.metaKeywords
+        : typeof body.metaKeywords === 'string'
+          ? body.metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
           : []
       : []
+  };
 
-    // Crear película con relaciones
-    const movie = await prisma.movie.create({
-      data: {
-        ...movieDataClean,
-        slug,
-        metaKeywords: processedMetaKeywords,
-        releaseYear: releaseYear ?? null,
-        releaseMonth: releaseMonth ?? null,
-        releaseDay: releaseDay ?? null,
-        filmingStartYear: filmingStartYear ?? null,
-        filmingStartMonth: filmingStartMonth ?? null,
-        filmingStartDay: filmingStartDay ?? null,
-        filmingEndYear: filmingEndYear ?? null,
-        filmingEndMonth: filmingEndMonth ?? null,
-        filmingEndDay: filmingEndDay ?? null,
+  // Validar datos
+  const validatedData = movieSchema.parse(cleanedData)
 
-        // Relaciones opcionales con connect
-        ...(colorTypeId && {
-          colorType: { connect: { id: colorTypeId } }
-        }),
-        ...(ratingId && {
-          rating: { connect: { id: ratingId } }
-        }),
+  // Generar slug único con la función actualizada
+  const slug = await generateUniqueSlug(validatedData.title, 'movie', prisma)
 
-        // Relaciones many-to-many
-        ...(genres && genres.length > 0 && {
-          genres: {
-            create: genres.map((genreId: number, index: number) => ({
-              genreId,
-              isPrimary: index === 0
-            }))
-          }
-        }),
+  // Extraer relaciones y campos especiales
+  const {
+    genres,
+    cast,
+    crew,
+    countries,
+    productionCompanies,
+    distributionCompanies,
+    themes,
+    alternativeTitles,
+    links,
+    screeningVenues,
+    colorTypeId,
+    ratingId,
+    metaKeywords,
+    releaseYear,
+    releaseMonth,
+    releaseDay,
+    filmingStartYear,
+    filmingStartMonth,
+    filmingStartDay,
+    filmingEndYear,
+    filmingEndMonth,
+    filmingEndDay,
+    ...movieDataClean
+  } = validatedData
 
-        ...(cast && cast.length > 0 && {
-          cast: {
-            create: cast.map((item: any) => ({
-              personId: item.personId,
-              characterName: item.characterName || null,
-              billingOrder: item.billingOrder || 0,
-              isPrincipal: item.isPrincipal || false
-            }))
-          }
-        }),
+  // Asegurar que metaKeywords sea un array
+  const processedMetaKeywords = metaKeywords
+    ? Array.isArray(metaKeywords)
+      ? metaKeywords
+      : typeof metaKeywords === 'string'
+        ? metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
+        : []
+    : []
 
-        ...(crew && crew.length > 0 && {
-          crew: {
-            create: crew.map((item: any) => ({
-              personId: item.personId,
-              roleId: item.roleId,
-              billingOrder: item.billingOrder || 0
-            }))
-          }
-        }),
+  // Crear película con relaciones
+  const movie = await prisma.movie.create({
+    data: {
+      ...movieDataClean,
+      slug,
+      metaKeywords: processedMetaKeywords,
+      releaseYear: releaseYear ?? null,
+      releaseMonth: releaseMonth ?? null,
+      releaseDay: releaseDay ?? null,
+      filmingStartYear: filmingStartYear ?? null,
+      filmingStartMonth: filmingStartMonth ?? null,
+      filmingStartDay: filmingStartDay ?? null,
+      filmingEndYear: filmingEndYear ?? null,
+      filmingEndMonth: filmingEndMonth ?? null,
+      filmingEndDay: filmingEndDay ?? null,
 
-        ...(countries && countries.length > 0 && {
-          movieCountries: {
-            create: countries.map((countryId: number, index: number) => ({
-              countryId,
-              isPrimary: index === 0
-            }))
-          }
-        }),
+      // Relaciones opcionales con connect
+      ...(colorTypeId && {
+        colorType: { connect: { id: colorTypeId } }
+      }),
+      ...(ratingId && {
+        rating: { connect: { id: ratingId } }
+      }),
 
-        ...(productionCompanies && productionCompanies.length > 0 && {
-          productionCompanies: {
-            create: productionCompanies.map((companyId: number, index: number) => ({
-              companyId,
-              isPrimary: index === 0
-            }))
-          }
-        }),
-
-        ...(distributionCompanies && distributionCompanies.length > 0 && {
-          distributionCompanies: {
-            create: distributionCompanies.map((companyId: number) => ({
-              companyId,
-              territory: 'Argentina'
-            }))
-          }
-        }),
-
-        ...(themes && themes.length > 0 && {
-          themes: {
-            create: themes.map((themeId: number) => ({
-              themeId
-            }))
-          }
-        }),
-
-        ...(alternativeTitles && alternativeTitles.length > 0 && {
-          alternativeTitles: {
-            create: alternativeTitles.map((title: any) => ({
-              title: title.title,
-              description: title.description || null
-            }))
-          }
-        }),
-
-        ...(links && links.length > 0 && {
-          links: {
-            create: links.map((link: any) => ({
-              type: link.type,
-              url: link.url,
-              isActive: link.isActive !== false
-            }))
-          }
-        }),
-
-        ...(screeningVenues && screeningVenues.length > 0 && {
-          screenings: {
-            create: screeningVenues.map((sv: any) => ({
-              venueId: sv.venueId,
-              screeningDate: sv.screeningDate ? new Date(sv.screeningDate) : null,
-              isPremiere: sv.isPremiere || false,
-              isExclusive: sv.isExclusive || false
-            }))
-          }
-        })
-      },
-      include: {
+      // Relaciones many-to-many
+      ...(genres && genres.length > 0 && {
         genres: {
-          include: {
-            genre: true
-          }
-        },
+          create: genres.map((genreId: number, index: number) => ({
+            genreId,
+            isPrimary: index === 0
+          }))
+        }
+      }),
+
+      ...(cast && cast.length > 0 && {
         cast: {
-          include: {
-            person: true
-          }
-        },
+          create: cast.map((item: any) => ({
+            personId: item.personId,
+            characterName: item.characterName || null,
+            billingOrder: item.billingOrder || 0,
+            isPrincipal: item.isPrincipal || false
+          }))
+        }
+      }),
+
+      ...(crew && crew.length > 0 && {
         crew: {
-          include: {
-            person: true
-          }
+          create: crew.map((item: any) => ({
+            personId: item.personId,
+            roleId: item.roleId,
+            billingOrder: item.billingOrder || 0
+          }))
+        }
+      }),
+
+      ...(countries && countries.length > 0 && {
+        movieCountries: {
+          create: countries.map((countryId: number, index: number) => ({
+            countryId,
+            isPrimary: index === 0
+          }))
+        }
+      }),
+
+      ...(productionCompanies && productionCompanies.length > 0 && {
+        productionCompanies: {
+          create: productionCompanies.map((companyId: number, index: number) => ({
+            companyId,
+            isPrimary: index === 0
+          }))
+        }
+      }),
+
+      ...(distributionCompanies && distributionCompanies.length > 0 && {
+        distributionCompanies: {
+          create: distributionCompanies.map((companyId: number) => ({
+            companyId,
+            territory: 'Argentina'
+          }))
+        }
+      }),
+
+      ...(themes && themes.length > 0 && {
+        themes: {
+          create: themes.map((themeId: number) => ({
+            themeId
+          }))
+        }
+      }),
+
+      ...(alternativeTitles && alternativeTitles.length > 0 && {
+        alternativeTitles: {
+          create: alternativeTitles.map((title: any) => ({
+            title: title.title,
+            description: title.description || null
+          }))
+        }
+      }),
+
+      ...(links && links.length > 0 && {
+        links: {
+          create: links.map((link: any) => ({
+            type: link.type,
+            url: link.url,
+            isActive: link.isActive !== false
+          }))
+        }
+      }),
+
+      ...(screeningVenues && screeningVenues.length > 0 && {
+        screenings: {
+          create: screeningVenues.map((sv: any) => ({
+            venueId: sv.venueId,
+            screeningDate: sv.screeningDate ? new Date(sv.screeningDate) : null,
+            isPremiere: sv.isPremiere || false,
+            isExclusive: sv.isExclusive || false
+          }))
+        }
+      })
+    },
+    include: {
+      genres: {
+        include: {
+          genre: true
+        }
+      },
+      cast: {
+        include: {
+          person: true
+        }
+      },
+      crew: {
+        include: {
+          person: true
         }
       }
-    })
+    }
+  })
 
-    // INVALIDAR CACHÉS de listados después de crear
-    console.log('🗑️ Invalidando cachés de listados tras crear película');
-    
-    const redisClient = RedisClient.getInstance();
-    if (redisClient) {
-      try {
-        const keys = await redisClient.keys('movies:list:*');
-        if (keys.length > 0) {
-          await redisClient.del(...keys);
-          console.log(`✅ ${keys.length} cachés de listados invalidados en Redis`);
-        }
-      } catch (err) {
-        console.error('Error invalidando cachés de Redis:', err);
+  // INVALIDAR CACHÉS de listados después de crear
+  console.log('🗑️ Invalidando cachés de listados tras crear película');
+
+  const redisClient = RedisClient.getInstance();
+  if (redisClient) {
+    try {
+      const keys = await redisClient.keys('movies:list:*');
+      if (keys.length > 0) {
+        await redisClient.del(...keys);
+        console.log(`✅ ${keys.length} cachés de listados invalidados en Redis`);
       }
+    } catch (err) {
+      console.error('Error invalidando cachés de Redis:', err);
     }
-    
-    // Limpiar memoria también
-    let memoryKeysDeleted = 0;
-    for (const key of memoryCache.keys()) {
-      if (key.startsWith('movies:list:')) {
-        memoryCache.delete(key);
-        memoryKeysDeleted++;
-      }
-    }
-    if (memoryKeysDeleted > 0) {
-      console.log(`✅ ${memoryKeysDeleted} cachés de listados invalidados en memoria`);
-    }
-
-    return NextResponse.json(movie, { status: 201 })
-
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    console.error('Error creating movie:', error)
-    return NextResponse.json(
-      { error: 'Error al crear la película' },
-      { status: 500 }
-    )
   }
-}
+
+  // Limpiar memoria también
+  let memoryKeysDeleted = 0;
+  for (const key of memoryCache.keys()) {
+    if (key.startsWith('movies:list:')) {
+      memoryCache.delete(key);
+      memoryKeysDeleted++;
+    }
+  }
+  if (memoryKeysDeleted > 0) {
+    console.log(`✅ ${memoryKeysDeleted} cachés de listados invalidados en memoria`);
+  }
+
+  return NextResponse.json(movie, { status: 201 })
+}, 'crear la película')

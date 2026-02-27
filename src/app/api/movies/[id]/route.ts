@@ -3,11 +3,11 @@
 // ==================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { z } from 'zod'
 import { movieSchema } from '@/lib/schemas'
 import RedisClient from '@/lib/redis'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireAuth } from '@/lib/auth'
+import { apiHandler } from '@/lib/api/api-handler'
 
 // Cache en memoria como fallback
 const memoryCache = new Map<string, { data: any; timestamp: number }>();
@@ -356,411 +356,393 @@ export async function GET(
 }
 
 // PUT /api/movies/[id] - Actualizar película
-export async function PUT(
+export const PUT = apiHandler(async (
   request: NextRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   const auth = await requireAuth()
   if (auth.error) return auth.error
 
-  try {
-    const id = parseInt(params.id)
+  const id = parseInt(params.id)
 
-    if (isNaN(id)) {
-      return NextResponse.json(
-        { error: 'ID inválido' },
-        { status: 400 }
-      )
-    }
-
-    const body = await request.json()
-
-    // Limpiar datos antes de validar
-    const cleanedData = {
-      ...body,
-      year: (body.year === 0 || body.year === '' || body.year === null || (typeof body.year === 'number' && isNaN(body.year))) ? null : body.year,
-      colorTypeId: (body.colorTypeId === 0 || body.colorTypeId === '' || body.colorTypeId === null || (typeof body.colorTypeId === 'number' && isNaN(body.colorTypeId))) ? null : body.colorTypeId,
-      soundType: body.soundType || null,
-      ratingId: body.ratingId === 0 ? null : body.ratingId,
-      tmdbId: (body.tmdbId === '' || body.tmdbId === null || body.tmdbId === undefined || isNaN(Number(body.tmdbId)))
-        ? null
-        : Number(body.tmdbId),
-      genres: Array.isArray(body.genres)
-        ? body.genres.filter((g: any) => g != null && g !== 0 && !isNaN(Number(g)))
-        : [],
-      countries: Array.isArray(body.countries)
-        ? body.countries.filter((c: any) => c != null && c !== 0 && !isNaN(Number(c)))
-        : body.countries || [],
-      productionCompanies: Array.isArray(body.productionCompanies)
-        ? body.productionCompanies.filter((pc: any) => pc != null && pc !== 0 && !isNaN(Number(pc)))
-        : [],
-      distributionCompanies: Array.isArray(body.distributionCompanies)
-        ? body.distributionCompanies.filter((dc: any) => dc != null && dc !== 0 && !isNaN(Number(dc)))
-        : [],
-      themes: Array.isArray(body.themes)
-        ? body.themes.filter((t: any) => t != null && t !== 0 && !isNaN(Number(t)))
-        : [],
-      metaKeywords: body.metaKeywords
-        ? Array.isArray(body.metaKeywords)
-          ? body.metaKeywords
-          : typeof body.metaKeywords === 'string'
-            ? body.metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
-            : []
-        : []
-    };
-
-    // Validar datos
-    const validatedData = movieSchema.parse(cleanedData)
-
-    if (validatedData.duration === 0) {
-      validatedData.duration = null;
-    }
-    if (validatedData.durationSeconds === 0) {
-      validatedData.durationSeconds = null;
-    }
-
-    // Verificar que la película existe y obtener slug para invalidar caché
-    const existingMovie = await prisma.movie.findUnique({
-      where: { id },
-      select: { slug: true }
-    })
-
-    if (!existingMovie) {
-      return NextResponse.json(
-        { error: 'Película no encontrada' },
-        { status: 404 }
-      )
-    }
-
-    // Extraer relaciones
-    const {
-      genres,
-      cast,
-      crew,
-      countries,
-      productionCompanies,
-      distributionCompanies,
-      themes,
-      alternativeTitles,
-      links,
-      screeningVenues,
-      ...movieData
-    } = validatedData
-
-    // Usar transacción para actualizar todo
-    const movie = await prisma.$transaction(async (tx) => {
-      // 🔧 CORRECCIÓN CRÍTICA: Extraer synopsisLocked ANTES de crear movieDataClean
-      const {
-        colorTypeId,
-        ratingId,
-        releaseYear,
-        releaseMonth,
-        releaseDay,
-        filmingStartYear,
-        filmingStartMonth,
-        filmingStartDay,
-        filmingEndYear,
-        filmingEndMonth,
-        filmingEndDay,
-        metaKeywords,
-        synopsisLocked,  // ✅ Extraer synopsisLocked explícitamente
-        ...movieDataClean
-      } = movieData
-
-      // 1. Actualizar datos básicos de la película
-      const updatedMovie = await tx.movie.update({
-        where: { id },
-        data: {
-          ...movieDataClean,
-          synopsisLocked: synopsisLocked ?? false, // ✅ Usar variable directa (CORREGIDO)
-          metaKeywords: Array.isArray(metaKeywords)
-            ? metaKeywords
-            : typeof metaKeywords === 'string'
-              ? metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
-              : [],
-          releaseYear: releaseYear !== undefined ? releaseYear : null,
-          releaseMonth: releaseMonth !== undefined ? releaseMonth : null,
-          releaseDay: releaseDay !== undefined ? releaseDay : null,
-          filmingStartYear: filmingStartYear !== undefined ? filmingStartYear : null,
-          filmingStartMonth: filmingStartMonth !== undefined ? filmingStartMonth : null,
-          filmingStartDay: filmingStartDay !== undefined ? filmingStartDay : null,
-          filmingEndYear: filmingEndYear !== undefined ? filmingEndYear : null,
-          filmingEndMonth: filmingEndMonth !== undefined ? filmingEndMonth : null,
-          filmingEndDay: filmingEndDay !== undefined ? filmingEndDay : null,
-          ...(ratingId !== undefined && {
-            rating: (ratingId === null || ratingId === 0)
-              ? { disconnect: true }
-              : { connect: { id: ratingId } }
-          }),
-          ...(colorTypeId !== undefined && {
-            colorType: (colorTypeId === null || colorTypeId === 0)
-              ? { disconnect: true }
-              : { connect: { id: colorTypeId } }
-          })
-        }
-      })
-
-      // 2. Actualizar géneros
-      if (genres) {
-        await tx.movieGenre.deleteMany({ where: { movieId: id } })
-        if (genres.length > 0) {
-          await tx.movieGenre.createMany({
-            data: genres.map((genreId, index) => ({
-              movieId: id,
-              genreId,
-              isPrimary: index === 0
-            }))
-          })
-        }
-      }
-
-      // 3. Actualizar cast - 🆕 CON alternativeNameId
-      if (cast) {
-        await tx.movieCast.deleteMany({ where: { movieId: id } })
-        if (cast.length > 0) {
-          await tx.movieCast.createMany({
-            data: cast.map((item, index) => ({
-              movieId: id,
-              personId: item.personId,
-              alternativeNameId: item.alternativeNameId || null,  // 🆕
-              characterName: item.characterName || null,
-              billingOrder: item.billingOrder || index + 1,
-              isPrincipal: item.isPrincipal || false,
-              isActor: item.isActor !== undefined ? item.isActor : true,
-              notes: item.notes || null
-            }))
-          })
-        }
-      }
-
-      // 4. Actualizar crew - 🆕 CON alternativeNameId
-      if (crew) {
-        await tx.movieCrew.deleteMany({ where: { movieId: id } })
-        if (crew.length > 0) {
-          await tx.movieCrew.createMany({
-            data: crew.map((item, index) => ({
-              movieId: id,
-              personId: item.personId,
-              alternativeNameId: item.alternativeNameId || null,  // 🆕
-              role: item.role,
-              roleId: item.roleId,
-              billingOrder: item.billingOrder || index + 1,
-              notes: item.notes || null
-            }))
-          })
-        }
-      }
-
-      // 5. Actualizar países
-      if (countries) {
-        await tx.movieCountry.deleteMany({ where: { movieId: id } })
-        if (countries.length > 0) {
-          await tx.movieCountry.createMany({
-            data: countries.map((countryId, index) => ({
-              movieId: id,
-              countryId,
-              isPrimary: index === 0
-            }))
-          })
-        }
-      }
-
-      // 6. Actualizar productoras
-      if (productionCompanies) {
-        await tx.movieProductionCompany.deleteMany({ where: { movieId: id } })
-        if (productionCompanies.length > 0) {
-          await tx.movieProductionCompany.createMany({
-            data: productionCompanies.map((companyId, index) => ({
-              movieId: id,
-              companyId,
-              isPrimary: index === 0
-            }))
-          })
-        }
-      }
-
-      // 7. Actualizar distribuidoras
-      if (distributionCompanies) {
-        await tx.movieDistributionCompany.deleteMany({ where: { movieId: id } })
-        if (distributionCompanies.length > 0) {
-          await tx.movieDistributionCompany.createMany({
-            data: distributionCompanies.map(companyId => ({
-              movieId: id,
-              companyId,
-              territory: 'Argentina'
-            }))
-          })
-        }
-      }
-
-      // 8. Actualizar temas
-      if (themes) {
-        await tx.movieTheme.deleteMany({ where: { movieId: id } })
-        if (themes.length > 0) {
-          await tx.movieTheme.createMany({
-            data: themes.map(themeId => ({
-              movieId: id,
-              themeId
-            }))
-          })
-        }
-      }
-
-      // 9. Actualizar títulos alternativos
-      if (alternativeTitles !== undefined) {
-        await tx.movieAlternativeTitle.deleteMany({ where: { movieId: id } })
-        if (alternativeTitles && alternativeTitles.length > 0) {
-          await tx.movieAlternativeTitle.createMany({
-            data: alternativeTitles.map(title => ({
-              movieId: id,
-              title: title.title,
-              description: title.description || null
-            }))
-          })
-        }
-      }
-
-      // 10. Actualizar links oficiales
-      if (links !== undefined) {
-        await tx.movieLink.deleteMany({ where: { movieId: id } })
-        if (links && links.length > 0) {
-          await tx.movieLink.createMany({
-            data: links.map((link: any) => ({
-              movieId: id,
-              type: link.type,
-              url: link.url,
-              isActive: link.isActive !== false
-            }))
-          })
-        }
-      }
-
-      // 11. Actualizar screening venues
-      if (screeningVenues !== undefined) {
-        await tx.movieScreening.deleteMany({ where: { movieId: id } })
-        if (screeningVenues && screeningVenues.length > 0) {
-          await tx.movieScreening.createMany({
-            data: screeningVenues.map((sv: any) => ({
-              movieId: id,
-              venueId: sv.venueId,
-              screeningDate: sv.screeningDate ? new Date(sv.screeningDate) : null,
-              isPremiere: sv.isPremiere || false,
-              isExclusive: sv.isExclusive || false
-            }))
-          })
-        }
-      }
-
-      // 12. Retornar la película actualizada con todas las relaciones
-      return await tx.movie.findUnique({
-        where: { id },
-        include: {
-          genres: {
-            include: {
-              genre: true
-            }
-          },
-          cast: {
-            include: {
-              person: true,
-              alternativeName: true  // 🆕
-            }
-          },
-          crew: {
-            include: {
-              person: true,
-              alternativeName: true  // 🆕
-            }
-          },
-          themes: {
-            include: {
-              theme: true
-            }
-          },
-          movieCountries: {
-            include: {
-              location: true
-            }
-          },
-          productionCompanies: {
-            include: {
-              company: true
-            }
-          },
-          distributionCompanies: {
-            include: {
-              company: true
-            }
-          },
-          links: true,
-          screenings: {
-            include: {
-              venue: true
-            }
-          },
-          colorType: true,
-        }
-      })
-    }, {
-      maxWait: 10000,
-      timeout: 30000,
-    })
-
-    // ⭐⭐⭐ INVALIDACIÓN COMPLETA DE CACHÉS ⭐⭐⭐
-    console.log('🗑️ Invalidando cachés para película actualizada');
-
-    // 1. Invalidar Redis
-    const cacheKeysToInvalidate = [
-      `movie:id:${id}:v1`,
-      `movie:slug:${existingMovie.slug}:v1`,
-      'home-feed:movies:v1'
-    ];
-
-    await Promise.all(
-      cacheKeysToInvalidate.map(key =>
-        RedisClient.del(key).catch(err =>
-          console.error(`Error invalidando Redis key ${key}:`, err)
-        )
-      )
-    );
-
-    // 2. Invalidar caché en memoria
-    cacheKeysToInvalidate.forEach(key => memoryCache.delete(key));
-
-    // 3. Invalidar caché de Next.js (por si acaso, aunque ya no lo usamos principalmente)
-    try {
-      revalidateTag('movies');
-      revalidateTag(`movie-${existingMovie.slug}`);
-      revalidatePath(`/pelicula/${existingMovie.slug}`);
-      revalidatePath('/');
-      revalidatePath('/listados/peliculas');
-
-      console.log(`✅ Next.js cache invalidado para: /pelicula/${existingMovie.slug}`);
-    } catch (revalidateError) {
-      console.log('ℹ️ Next.js revalidation skipped (using Redis cache primarily)');
-    }
-
-    console.log(`✅ Todos los cachés invalidados para película: ${existingMovie.slug}`);
-
-    return NextResponse.json(movie)
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      console.log('=== ERRORES DE VALIDACIÓN ZOD ===')
-      console.log(JSON.stringify(error.errors, null, 2))
-      console.log('=================================')
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    console.error('Error updating movie:', error)
+  if (isNaN(id)) {
     return NextResponse.json(
-      { error: 'Error al actualizar la película' },
-      { status: 500 }
+      { error: 'ID inválido' },
+      { status: 400 }
     )
   }
-}
+
+  const body = await request.json()
+
+  // Limpiar datos antes de validar
+  const cleanedData = {
+    ...body,
+    year: (body.year === 0 || body.year === '' || body.year === null || (typeof body.year === 'number' && isNaN(body.year))) ? null : body.year,
+    colorTypeId: (body.colorTypeId === 0 || body.colorTypeId === '' || body.colorTypeId === null || (typeof body.colorTypeId === 'number' && isNaN(body.colorTypeId))) ? null : body.colorTypeId,
+    soundType: body.soundType || null,
+    ratingId: body.ratingId === 0 ? null : body.ratingId,
+    tmdbId: (body.tmdbId === '' || body.tmdbId === null || body.tmdbId === undefined || isNaN(Number(body.tmdbId)))
+      ? null
+      : Number(body.tmdbId),
+    genres: Array.isArray(body.genres)
+      ? body.genres.filter((g: any) => g != null && g !== 0 && !isNaN(Number(g)))
+      : [],
+    countries: Array.isArray(body.countries)
+      ? body.countries.filter((c: any) => c != null && c !== 0 && !isNaN(Number(c)))
+      : body.countries || [],
+    productionCompanies: Array.isArray(body.productionCompanies)
+      ? body.productionCompanies.filter((pc: any) => pc != null && pc !== 0 && !isNaN(Number(pc)))
+      : [],
+    distributionCompanies: Array.isArray(body.distributionCompanies)
+      ? body.distributionCompanies.filter((dc: any) => dc != null && dc !== 0 && !isNaN(Number(dc)))
+      : [],
+    themes: Array.isArray(body.themes)
+      ? body.themes.filter((t: any) => t != null && t !== 0 && !isNaN(Number(t)))
+      : [],
+    metaKeywords: body.metaKeywords
+      ? Array.isArray(body.metaKeywords)
+        ? body.metaKeywords
+        : typeof body.metaKeywords === 'string'
+          ? body.metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
+          : []
+      : []
+  };
+
+  // Validar datos
+  const validatedData = movieSchema.parse(cleanedData)
+
+  if (validatedData.duration === 0) {
+    validatedData.duration = null;
+  }
+  if (validatedData.durationSeconds === 0) {
+    validatedData.durationSeconds = null;
+  }
+
+  // Verificar que la película existe y obtener slug para invalidar caché
+  const existingMovie = await prisma.movie.findUnique({
+    where: { id },
+    select: { slug: true }
+  })
+
+  if (!existingMovie) {
+    return NextResponse.json(
+      { error: 'Película no encontrada' },
+      { status: 404 }
+    )
+  }
+
+  // Extraer relaciones
+  const {
+    genres,
+    cast,
+    crew,
+    countries,
+    productionCompanies,
+    distributionCompanies,
+    themes,
+    alternativeTitles,
+    links,
+    screeningVenues,
+    ...movieData
+  } = validatedData
+
+  // Usar transacción para actualizar todo
+  const movie = await prisma.$transaction(async (tx) => {
+    // 🔧 CORRECCIÓN CRÍTICA: Extraer synopsisLocked ANTES de crear movieDataClean
+    const {
+      colorTypeId,
+      ratingId,
+      releaseYear,
+      releaseMonth,
+      releaseDay,
+      filmingStartYear,
+      filmingStartMonth,
+      filmingStartDay,
+      filmingEndYear,
+      filmingEndMonth,
+      filmingEndDay,
+      metaKeywords,
+      synopsisLocked,  // ✅ Extraer synopsisLocked explícitamente
+      ...movieDataClean
+    } = movieData
+
+    // 1. Actualizar datos básicos de la película
+    const updatedMovie = await tx.movie.update({
+      where: { id },
+      data: {
+        ...movieDataClean,
+        synopsisLocked: synopsisLocked ?? false, // ✅ Usar variable directa (CORREGIDO)
+        metaKeywords: Array.isArray(metaKeywords)
+          ? metaKeywords
+          : typeof metaKeywords === 'string'
+            ? metaKeywords.split(',').map((k: string) => k.trim()).filter(Boolean)
+            : [],
+        releaseYear: releaseYear !== undefined ? releaseYear : null,
+        releaseMonth: releaseMonth !== undefined ? releaseMonth : null,
+        releaseDay: releaseDay !== undefined ? releaseDay : null,
+        filmingStartYear: filmingStartYear !== undefined ? filmingStartYear : null,
+        filmingStartMonth: filmingStartMonth !== undefined ? filmingStartMonth : null,
+        filmingStartDay: filmingStartDay !== undefined ? filmingStartDay : null,
+        filmingEndYear: filmingEndYear !== undefined ? filmingEndYear : null,
+        filmingEndMonth: filmingEndMonth !== undefined ? filmingEndMonth : null,
+        filmingEndDay: filmingEndDay !== undefined ? filmingEndDay : null,
+        ...(ratingId !== undefined && {
+          rating: (ratingId === null || ratingId === 0)
+            ? { disconnect: true }
+            : { connect: { id: ratingId } }
+        }),
+        ...(colorTypeId !== undefined && {
+          colorType: (colorTypeId === null || colorTypeId === 0)
+            ? { disconnect: true }
+            : { connect: { id: colorTypeId } }
+        })
+      }
+    })
+
+    // 2. Actualizar géneros
+    if (genres) {
+      await tx.movieGenre.deleteMany({ where: { movieId: id } })
+      if (genres.length > 0) {
+        await tx.movieGenre.createMany({
+          data: genres.map((genreId, index) => ({
+            movieId: id,
+            genreId,
+            isPrimary: index === 0
+          }))
+        })
+      }
+    }
+
+    // 3. Actualizar cast - 🆕 CON alternativeNameId
+    if (cast) {
+      await tx.movieCast.deleteMany({ where: { movieId: id } })
+      if (cast.length > 0) {
+        await tx.movieCast.createMany({
+          data: cast.map((item, index) => ({
+            movieId: id,
+            personId: item.personId,
+            alternativeNameId: item.alternativeNameId || null,  // 🆕
+            characterName: item.characterName || null,
+            billingOrder: item.billingOrder || index + 1,
+            isPrincipal: item.isPrincipal || false,
+            isActor: item.isActor !== undefined ? item.isActor : true,
+            notes: item.notes || null
+          }))
+        })
+      }
+    }
+
+    // 4. Actualizar crew - 🆕 CON alternativeNameId
+    if (crew) {
+      await tx.movieCrew.deleteMany({ where: { movieId: id } })
+      if (crew.length > 0) {
+        await tx.movieCrew.createMany({
+          data: crew.map((item, index) => ({
+            movieId: id,
+            personId: item.personId,
+            alternativeNameId: item.alternativeNameId || null,  // 🆕
+            role: item.role,
+            roleId: item.roleId,
+            billingOrder: item.billingOrder || index + 1,
+            notes: item.notes || null
+          }))
+        })
+      }
+    }
+
+    // 5. Actualizar países
+    if (countries) {
+      await tx.movieCountry.deleteMany({ where: { movieId: id } })
+      if (countries.length > 0) {
+        await tx.movieCountry.createMany({
+          data: countries.map((countryId, index) => ({
+            movieId: id,
+            countryId,
+            isPrimary: index === 0
+          }))
+        })
+      }
+    }
+
+    // 6. Actualizar productoras
+    if (productionCompanies) {
+      await tx.movieProductionCompany.deleteMany({ where: { movieId: id } })
+      if (productionCompanies.length > 0) {
+        await tx.movieProductionCompany.createMany({
+          data: productionCompanies.map((companyId, index) => ({
+            movieId: id,
+            companyId,
+            isPrimary: index === 0
+          }))
+        })
+      }
+    }
+
+    // 7. Actualizar distribuidoras
+    if (distributionCompanies) {
+      await tx.movieDistributionCompany.deleteMany({ where: { movieId: id } })
+      if (distributionCompanies.length > 0) {
+        await tx.movieDistributionCompany.createMany({
+          data: distributionCompanies.map(companyId => ({
+            movieId: id,
+            companyId,
+            territory: 'Argentina'
+          }))
+        })
+      }
+    }
+
+    // 8. Actualizar temas
+    if (themes) {
+      await tx.movieTheme.deleteMany({ where: { movieId: id } })
+      if (themes.length > 0) {
+        await tx.movieTheme.createMany({
+          data: themes.map(themeId => ({
+            movieId: id,
+            themeId
+          }))
+        })
+      }
+    }
+
+    // 9. Actualizar títulos alternativos
+    if (alternativeTitles !== undefined) {
+      await tx.movieAlternativeTitle.deleteMany({ where: { movieId: id } })
+      if (alternativeTitles && alternativeTitles.length > 0) {
+        await tx.movieAlternativeTitle.createMany({
+          data: alternativeTitles.map(title => ({
+            movieId: id,
+            title: title.title,
+            description: title.description || null
+          }))
+        })
+      }
+    }
+
+    // 10. Actualizar links oficiales
+    if (links !== undefined) {
+      await tx.movieLink.deleteMany({ where: { movieId: id } })
+      if (links && links.length > 0) {
+        await tx.movieLink.createMany({
+          data: links.map((link: any) => ({
+            movieId: id,
+            type: link.type,
+            url: link.url,
+            isActive: link.isActive !== false
+          }))
+        })
+      }
+    }
+
+    // 11. Actualizar screening venues
+    if (screeningVenues !== undefined) {
+      await tx.movieScreening.deleteMany({ where: { movieId: id } })
+      if (screeningVenues && screeningVenues.length > 0) {
+        await tx.movieScreening.createMany({
+          data: screeningVenues.map((sv: any) => ({
+            movieId: id,
+            venueId: sv.venueId,
+            screeningDate: sv.screeningDate ? new Date(sv.screeningDate) : null,
+            isPremiere: sv.isPremiere || false,
+            isExclusive: sv.isExclusive || false
+          }))
+        })
+      }
+    }
+
+    // 12. Retornar la película actualizada con todas las relaciones
+    return await tx.movie.findUnique({
+      where: { id },
+      include: {
+        genres: {
+          include: {
+            genre: true
+          }
+        },
+        cast: {
+          include: {
+            person: true,
+            alternativeName: true  // 🆕
+          }
+        },
+        crew: {
+          include: {
+            person: true,
+            alternativeName: true  // 🆕
+          }
+        },
+        themes: {
+          include: {
+            theme: true
+          }
+        },
+        movieCountries: {
+          include: {
+            location: true
+          }
+        },
+        productionCompanies: {
+          include: {
+            company: true
+          }
+        },
+        distributionCompanies: {
+          include: {
+            company: true
+          }
+        },
+        links: true,
+        screenings: {
+          include: {
+            venue: true
+          }
+        },
+        colorType: true,
+      }
+    })
+  }, {
+    maxWait: 10000,
+    timeout: 30000,
+  })
+
+  // ⭐⭐⭐ INVALIDACIÓN COMPLETA DE CACHÉS ⭐⭐⭐
+  console.log('🗑️ Invalidando cachés para película actualizada');
+
+  // 1. Invalidar Redis
+  const cacheKeysToInvalidate = [
+    `movie:id:${id}:v1`,
+    `movie:slug:${existingMovie.slug}:v1`,
+    'home-feed:movies:v1'
+  ];
+
+  await Promise.all(
+    cacheKeysToInvalidate.map(key =>
+      RedisClient.del(key).catch(err =>
+        console.error(`Error invalidando Redis key ${key}:`, err)
+      )
+    )
+  );
+
+  // 2. Invalidar caché en memoria
+  cacheKeysToInvalidate.forEach(key => memoryCache.delete(key));
+
+  // 3. Invalidar caché de Next.js (por si acaso, aunque ya no lo usamos principalmente)
+  try {
+    revalidateTag('movies');
+    revalidateTag(`movie-${existingMovie.slug}`);
+    revalidatePath(`/pelicula/${existingMovie.slug}`);
+    revalidatePath('/');
+    revalidatePath('/listados/peliculas');
+
+    console.log(`✅ Next.js cache invalidado para: /pelicula/${existingMovie.slug}`);
+  } catch (revalidateError) {
+    console.log('ℹ️ Next.js revalidation skipped (using Redis cache primarily)');
+  }
+
+  console.log(`✅ Todos los cachés invalidados para película: ${existingMovie.slug}`);
+
+  return NextResponse.json(movie)
+}, 'actualizar la película')
 
 // DELETE /api/movies/[id] - Eliminar película
 export async function DELETE(
