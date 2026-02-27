@@ -4,119 +4,40 @@ import { MovieListFilters, DEFAULT_MOVIE_FILTERS, MovieListItem, MovieFiltersDat
 import { MOVIE_STAGES } from './movieConstants';
 import { formatPartialDate as sharedFormatPartialDate } from '@/lib/shared/dateUtils';
 import { formatDuration, generateYearOptions } from '@/lib/shared/listUtils';
+import { createFilterHelpers } from '@/lib/shared/filterUtils';
 
 // Re-export para mantener compatibilidad con importaciones existentes
 export { formatDuration, generateYearOptions };
 
-/**
- * Convierte los filtros del estado a parámetros de URL
- */
-export function filtersToSearchParams(filters: MovieListFilters): URLSearchParams {
-  const params = new URLSearchParams();
+// Esquema de filtros de películas para la factory genérica
+const movieFilterHelpers = createFilterHelpers<MovieListFilters>({
+  fields: {
+    search: 'string',
+    soundType: 'string',
+    colorTypeId: 'number',
+    tipoDuracion: 'string',
+    countryId: 'number',
+    genreId: 'number',
+    ratingId: 'number',
+    releaseDateFrom: 'string',
+    releaseDateTo: 'string',
+    productionYearFrom: 'number',
+    productionYearTo: 'number',
+  },
+  defaults: DEFAULT_MOVIE_FILTERS,
+  sortByValues: MOVIE_SORT_OPTIONS.map(o => o.value),
+  defaultSortOrder: (sortBy) => sortBy === 'title' ? 'asc' : 'desc',
+})
 
-  if (filters.search) params.set('search', filters.search);
-  if (filters.soundType) params.set('soundType', filters.soundType);
-  if (filters.colorTypeId) params.set('colorTypeId', String(filters.colorTypeId));
-  if (filters.tipoDuracion) params.set('tipoDuracion', filters.tipoDuracion);
-  if (filters.countryId) params.set('countryId', String(filters.countryId));
-  if (filters.genreId) params.set('genreId', String(filters.genreId));
-  if (filters.ratingId) params.set('ratingId', String(filters.ratingId));
-  if (filters.releaseDateFrom) params.set('releaseDateFrom', filters.releaseDateFrom);
-  if (filters.releaseDateTo) params.set('releaseDateTo', filters.releaseDateTo);
-  if (filters.productionYearFrom) params.set('productionYearFrom', String(filters.productionYearFrom));
-  if (filters.productionYearTo) params.set('productionYearTo', String(filters.productionYearTo));
-  if (filters.sortBy && filters.sortBy !== DEFAULT_MOVIE_FILTERS.sortBy) {
-    params.set('sortBy', filters.sortBy);
-  }
-  if (filters.sortOrder && filters.sortOrder !== DEFAULT_MOVIE_FILTERS.sortOrder) {
-    params.set('sortOrder', filters.sortOrder);
-  }
-  if (filters.page && filters.page !== 1) params.set('page', String(filters.page));
-
-  return params;
-}
-
-/**
- * Convierte parámetros de URL a filtros
- */
-export function searchParamsToFilters(searchParams: URLSearchParams): MovieListFilters {
-  const filters: MovieListFilters = { ...DEFAULT_MOVIE_FILTERS };
-
-  const search = searchParams.get('search');
-  if (search) filters.search = search;
-
-  const soundType = searchParams.get('soundType');
-  if (soundType) filters.soundType = soundType;
-
-  const colorTypeId = searchParams.get('colorTypeId');
-  if (colorTypeId) filters.colorTypeId = parseInt(colorTypeId);
-
-  const tipoDuracion = searchParams.get('tipoDuracion');
-  if (tipoDuracion) filters.tipoDuracion = tipoDuracion;
-
-  const countryId = searchParams.get('countryId');
-  if (countryId) filters.countryId = parseInt(countryId);
-
-  const genreId = searchParams.get('genreId');
-  if (genreId) filters.genreId = parseInt(genreId);
-
-  const ratingId = searchParams.get('ratingId');
-  if (ratingId) filters.ratingId = parseInt(ratingId);
-
-  const releaseDateFrom = searchParams.get('releaseDateFrom');
-  if (releaseDateFrom) filters.releaseDateFrom = releaseDateFrom;
-
-  const releaseDateTo = searchParams.get('releaseDateTo');
-  if (releaseDateTo) filters.releaseDateTo = releaseDateTo;
-
-  const productionYearFrom = searchParams.get('productionYearFrom');
-  if (productionYearFrom) filters.productionYearFrom = parseInt(productionYearFrom);
-
-  const productionYearTo = searchParams.get('productionYearTo');
-  if (productionYearTo) filters.productionYearTo = parseInt(productionYearTo);
-
-  const sortBy = searchParams.get('sortBy');
-  if (sortBy === 'id' || sortBy === 'title' || sortBy === 'releaseDate' || sortBy === 'duration' || sortBy === 'popularity') {
-    filters.sortBy = sortBy;
-  }
-
-  const sortOrder = searchParams.get('sortOrder');
-  if (sortOrder === 'asc' || sortOrder === 'desc') {
-    filters.sortOrder = sortOrder;
-  } else if (filters.sortBy) {
-    filters.sortOrder = (filters.sortBy === 'title') ? 'asc' : 'desc';
-  }
-
-  const page = searchParams.get('page');
-  if (page) filters.page = parseInt(page);
-
-  return filters;
-}
-
-/**
- * Convierte filtros a parámetros de API
- */
-export function filtersToApiParams(filters: MovieListFilters): Record<string, string> {
-  const params: Record<string, string> = {};
-
-  if (filters.search) params.search = filters.search;
-  if (filters.soundType) params.soundType = filters.soundType;
-  if (filters.colorTypeId) params.colorTypeId = String(filters.colorTypeId);
-  if (filters.tipoDuracion) params.tipoDuracion = filters.tipoDuracion;
-  if (filters.countryId) params.countryId = String(filters.countryId);
-  if (filters.genreId) params.genreId = String(filters.genreId);
-  if (filters.ratingId) params.ratingId = String(filters.ratingId);
-  if (filters.releaseDateFrom) params.releaseDateFrom = filters.releaseDateFrom;
-  if (filters.releaseDateTo) params.releaseDateTo = filters.releaseDateTo;
-  if (filters.productionYearFrom) params.productionYearFrom = String(filters.productionYearFrom);
-  if (filters.productionYearTo) params.productionYearTo = String(filters.productionYearTo);
-  if (filters.sortBy) params.sortBy = filters.sortBy;
-  if (filters.sortOrder) params.sortOrder = filters.sortOrder;
-  if (filters.page) params.page = String(filters.page);
-  if (filters.limit) params.limit = String(filters.limit);
-
-  return params;
-}
+export const {
+  filtersToSearchParams,
+  searchParamsToFilters,
+  filtersToApiParams,
+  countActiveFilters,
+  hasActiveFilters,
+  clearFilters,
+  getDefaultSortOrder,
+} = movieFilterHelpers
 
 /**
  * Obtiene el año a mostrar para una película (producción o estreno)
@@ -138,46 +59,6 @@ export function formatReleaseDate(
     { year: year ?? null, month: month ?? null, day: day ?? null },
     { fallback: '' }
   );
-}
-
-/**
- * Cuenta cuántos filtros activos hay
- */
-export function countActiveFilters(filters: MovieListFilters): number {
-  let count = 0;
-
-  if (filters.search) count++;
-  if (filters.soundType) count++;
-  if (filters.colorTypeId) count++;
-  if (filters.tipoDuracion) count++;
-  if (filters.countryId) count++;
-  if (filters.genreId) count++;
-  if (filters.ratingId) count++;
-  if (filters.releaseDateFrom) count++;
-  if (filters.releaseDateTo) count++;
-  if (filters.productionYearFrom) count++;
-  if (filters.productionYearTo) count++;
-
-  return count;
-}
-
-/**
- * Verifica si hay filtros activos (excluyendo ordenamiento y paginación)
- */
-export function hasActiveFilters(filters: MovieListFilters): boolean {
-  return countActiveFilters(filters) > 0;
-}
-
-/**
- * Limpia todos los filtros manteniendo ordenamiento
- */
-export function clearFilters(filters: MovieListFilters): MovieListFilters {
-  return {
-    ...DEFAULT_MOVIE_FILTERS,
-    sortBy: filters.sortBy,
-    sortOrder: filters.sortOrder,
-    limit: filters.limit
-  };
 }
 
 /**

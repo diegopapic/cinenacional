@@ -20,6 +20,7 @@ import {
   countActiveFilters,
   clearFilters,
   hasActiveFilters,
+  getDefaultSortOrder,
   buildTitle,
   buildSubtitle,
 } from '@/lib/people/personListUtils';
@@ -35,8 +36,7 @@ const personListConfig = {
   countActiveFilters,
   hasActiveFilters,
   clearFilters,
-  getDefaultSortOrder: (sortBy: string) =>
-    (sortBy === 'lastName' || sortBy === 'birthDate' ? 'asc' : 'desc') as 'asc' | 'desc',
+  getDefaultSortOrder,
 };
 
 export default function PersonasContent() {
