@@ -13,7 +13,7 @@ NC='\033[0m'
 echo -e "${GREEN}🔧 Configurando cron job de backup${NC}"
 echo "========================================"
 
-PROJECT_PATH="${PROJECT_PATH:-/root/cinenacional}"
+PROJECT_PATH="${PROJECT_PATH:-/var/www/cinenacional}"
 
 if [ ! -d "$PROJECT_PATH" ]; then
     echo -e "${RED}❌ No se encontró el proyecto en $PROJECT_PATH${NC}"
