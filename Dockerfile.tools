@@ -1,0 +1,20 @@
+FROM node:18-alpine
+WORKDIR /app
+
+# Herramientas del sistema: curl (letterboxd), postgresql-client (backup),
+# rclone (backup → Google Drive), bc (formateo), tzdata (zona horaria)
+RUN apk add --no-cache curl postgresql15-client rclone bc tzdata
+
+ENV TZ=America/Argentina/Buenos_Aires
+
+# Dependencias Node (Prisma + tsx)
+COPY package*.json ./
+COPY prisma ./prisma/
+RUN HUSKY=0 npm ci --only=production --ignore-scripts
+RUN npx prisma generate
+RUN npm install -g tsx
+
+# Scripts
+COPY scripts/letterboxd/update-popularity-daily.ts ./scripts/letterboxd/
+COPY scripts/backup-database.sh ./scripts/
+RUN chmod +x ./scripts/backup-database.sh
