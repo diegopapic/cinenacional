@@ -47,7 +47,11 @@ model Movie {
   synopsisLocked        Boolean                    @default(false) @map("synopsis_locked")
   tmdbId                Int?                       @map("tmdb_id")
   letterboxdWatches          Int?                       @map("letterboxd_watches")
-  letterboxdWatchesUpdatedAt DateTime?                  @map("letterboxd_watches_updated_at") @db.Timestamptz
+  letterboxdLists            Int?                       @map("letterboxd_lists")
+  letterboxdLikes            Int?                       @map("letterboxd_likes")
+  letterboxdRating           Float?                     @map("letterboxd_rating")
+  popularity                 Float?
+  popularityUpdatedAt        DateTime?                  @map("popularity_updated_at") @db.Timestamptz
   images                Image[]
   alternativeTitles     MovieAlternativeTitle[]
   awards                MovieAward[]
