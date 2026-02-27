@@ -3,7 +3,7 @@ WORKDIR /app
 
 # Herramientas del sistema: curl (letterboxd), postgresql-client (backup),
 # rclone (backup → Google Drive), bc (formateo), tzdata (zona horaria)
-RUN apk add --no-cache curl postgresql15-client rclone bc tzdata
+RUN apk add --no-cache bash curl postgresql15-client rclone bc tzdata
 
 ENV TZ=America/Argentina/Buenos_Aires
 
