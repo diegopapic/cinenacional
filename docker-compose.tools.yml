@@ -1,29 +1,10 @@
 # docker-compose.tools.yml
 # Servicios de mantenimiento que corren vía cron
 #
-# Ambos usan la misma imagen (Dockerfile.tools) con todas las herramientas.
-#
 # Uso:
-#   docker compose -f docker-compose.yml -f docker-compose.tools.yml run --rm letterboxd-updater
 #   docker compose -f docker-compose.yml -f docker-compose.tools.yml run --rm db-backup
 
 services:
-  letterboxd-updater:
-    build:
-      context: .
-      dockerfile: Dockerfile.tools
-    container_name: cinenacional-letterboxd-updater
-    profiles:
-      - tools
-    environment:
-      - DATABASE_URL=postgresql://cinenacional:${POSTGRES_PASSWORD}@postgres:5432/cinenacional
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - cinenacional-network
-    command: ["tsx", "scripts/letterboxd/update-popularity-daily.ts"]
-
   db-backup:
     build:
       context: .
