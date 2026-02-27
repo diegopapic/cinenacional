@@ -260,12 +260,14 @@ async function main(): Promise<void> {
         if (options.dryRun) console.log(`Modo:                  DRY RUN`);
         console.log('');
 
-        // 3. Obtener las más antiguas por popularity_updated_at (NULLs primero)
+        // 3. Obtener las más antiguas por popularity_updated_at
+        // NULLs al final: primero refrescar películas que ya tienen datos,
+        // después intentar las nunca scrapeadas
         const movies = await prisma.movie.findMany({
             where: { tmdbId: { not: null } },
             select: { id: true, tmdbId: true, title: true, year: true },
             orderBy: [
-                { popularityUpdatedAt: { sort: 'asc', nulls: 'first' } },
+                { popularityUpdatedAt: { sort: 'asc', nulls: 'last' } },
             ],
             take: batchSize,
         });
