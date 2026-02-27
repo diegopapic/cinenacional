@@ -203,11 +203,29 @@ Ambas funciones internamente manejan: auth check, validación de nombre, error h
 
 El formato de respuesta se mantiene idéntico al original (`{ venues, pagination }`) para no romper el frontend existente. DELETE sigue retornando 409 con `moviesCount`.
 
-### 3.2 Patrón de error handling repetido ✅ HECHO (parcial)
+### 3.2 Patrón de error handling repetido ✅ HECHO
 
-**Resuelto para genres, calificaciones, themes, roles, screening-venues:** El error handling está integrado en los handlers generados por `crud-factory.ts`. Cada handler generado incluye try/catch con `console.error` y respuesta 500 consistente.
+**Resuelto en dos fases:**
 
-**Pendiente:** Los routes que no usan la factory (`movies`, `people`, etc.) siguen teniendo el patrón repetido inline.
+**Fase 1 — CRUD factory (5 entidades):** El error handling está integrado en los handlers generados por `crud-factory.ts` (genres, calificaciones, themes, roles, screening-venues).
+
+**Fase 2 — `apiHandler` wrapper (37 archivos restantes):** Se creó `src/lib/api/api-handler.ts` con dos funciones:
+- **`apiHandler(handler, action)`** — wrapper que envuelve un handler en try/catch, maneja `ZodError` → 400, y todo lo demás → `console.error` + 500. Elimina el boilerplate try/catch del handler.
+- **`handleApiError(error, action)`** — función standalone para usar en catch blocks que necesitan lógica custom antes del fallback 500 (ej: `images/route.ts` POST con check de P2002).
+
+**Archivos migrados a `apiHandler`:**
+- `locations/` (5 archivos: route, [id], countries, search, check-slug)
+- `images/` (3 archivos: route GET, [id] GET/PUT/DELETE, hero)
+- `festivals/` (8 archivos: festivals, [id], editions, festival-editions/[id], sections, screenings, festival-screenings/[id], festival-sections/[id])
+- `movies/` (3 archivos: route POST, [id] PUT, filters, list)
+- `people/` (7 archivos: route POST, [id] PUT/DELETE, filters, list, review-names, slug/[slug], merge, merge/preview)
+- Otros (6 archivos: color-types, first-name-gender, companies/distribution, companies/production, analytics/pageview, admin/stats, metrics/database, search, search/full)
+
+**No migrados (error handling custom):**
+- Routes con stale-cache fallback (movies GET, movies/[id] GET, people GET, people/[id] GET, efemerides, home-feed, people/death-years, people/filmography)
+- `movies/[id] DELETE` (manejo de Prisma P2003 con campo `detail`)
+- `health/` routes (retornan 503, no 500)
+- `stats/route.ts` (retorna zeros en vez de error)
 
 ### 3.3 Inconsistencias entre API routes ✅ HECHO (parcial)
 
