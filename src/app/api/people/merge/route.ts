@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { generatePersonSlug } from '@/lib/people/peopleUtils';
 import RedisClient from '@/lib/redis';
 import { requireAuth } from '@/lib/auth';
+import { apiHandler } from '@/lib/api/api-handler';
 
 /** Strip diacritics (tildes, dieresis, etc.) for name comparison */
 function normalizeForComparison(str: string): string {
@@ -21,11 +22,10 @@ interface MergeRequest {
   resolutions: MergeResolutions;
 }
 
-export async function POST(request: NextRequest) {
-  const auth = await requireAuth()
-  if (auth.error) return auth.error
+export const POST = apiHandler(async (request: NextRequest) => {
+    const auth = await requireAuth()
+    if (auth.error) return auth.error
 
-  try {
     const body: MergeRequest = await request.json();
     const { personAId, personBId, survivorId, resolutions } = body;
 
@@ -549,11 +549,4 @@ export async function POST(request: NextRequest) {
       success: true,
       ...result,
     });
-  } catch (error: any) {
-    console.error('Error executing merge:', error);
-    return NextResponse.json(
-      { message: error.message || 'Error al ejecutar el merge' },
-      { status: 500 }
-    );
-  }
-}
+}, 'mergear personas')

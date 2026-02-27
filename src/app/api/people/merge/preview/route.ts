@@ -2,17 +2,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
+import { apiHandler } from '@/lib/api/api-handler';
 
 /** Strip diacritics (tildes, dieresis, etc.) for name comparison */
 function normalizeForComparison(str: string): string {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
-export async function POST(request: NextRequest) {
-  const auth = await requireAuth()
-  if (auth.error) return auth.error
+export const POST = apiHandler(async (request: NextRequest) => {
+    const auth = await requireAuth()
+    if (auth.error) return auth.error
 
-  try {
     const { personAId, personBId } = await request.json();
 
     if (!personAId || !personBId) {
@@ -294,11 +294,4 @@ export async function POST(request: NextRequest) {
         },
       },
     });
-  } catch (error) {
-    console.error('Error in merge preview:', error);
-    return NextResponse.json(
-      { message: 'Error al generar preview del merge' },
-      { status: 500 }
-    );
-  }
-}
+}, 'previsualizar merge')

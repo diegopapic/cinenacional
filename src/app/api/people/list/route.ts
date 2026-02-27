@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { apiHandler } from '@/lib/api/api-handler';
 
 // Esta ruta usa searchParams, debe ser dinámica
 export const dynamic = 'force-dynamic';
@@ -32,8 +33,7 @@ async function getLocationDescendantIds(locationId: number): Promise<number[]> {
   return descendants.map(d => d.id);
 }
 
-export async function GET(request: NextRequest) {
-  try {
+export const GET = apiHandler(async (request: NextRequest) => {
     const searchParams = request.nextUrl.searchParams;
     
     // Parámetros de filtrado
@@ -417,15 +417,7 @@ export async function GET(request: NextRequest) {
       totalPages,
       hasMore: page < totalPages
     });
-
-  } catch (error) {
-    console.error('Error fetching people list:', error);
-    return NextResponse.json(
-      { message: 'Error al obtener listado de personas' },
-      { status: 500 }
-    );
-  }
-}
+}, 'obtener listado de personas')
 
 /**
  * Agrega la película destacada (más reciente) y conteo correcto a cada persona

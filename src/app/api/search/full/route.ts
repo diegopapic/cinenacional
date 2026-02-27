@@ -3,11 +3,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { apiHandler } from '@/lib/api/api-handler'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
-  try {
+export const GET = apiHandler(async (request: NextRequest) => {
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get('q')
 
@@ -206,12 +206,4 @@ export async function GET(request: NextRequest) {
         totalPeople: sortedPeople.length
       })
     }
-
-  } catch (error) {
-    console.error('Full search error:', error)
-    return NextResponse.json(
-      { error: 'Error searching' },
-      { status: 500 }
-    )
-  }
-}
+}, 'buscar')

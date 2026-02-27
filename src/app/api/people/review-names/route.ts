@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
+import { apiHandler } from '@/lib/api/api-handler';
 
 // Esta ruta debe ser dinámica
 export const dynamic = 'force-dynamic';
 
 // GET: Obtener casos para revisar
-export async function GET() {
-  try {
+export const GET = apiHandler(async () => {
     // Función para contar palabras
     const countWords = (str: string | null) => {
       if (!str) return 0;
@@ -56,22 +56,13 @@ export async function GET() {
       cases: formattedCases,
       total: formattedCases.length
     });
-
-  } catch (error) {
-    console.error('Error fetching cases to review:', error);
-    return NextResponse.json(
-      { error: 'Error al obtener casos para revisar' },
-      { status: 500 }
-    );
-  }
-}
+}, 'obtener nombres para revisión')
 
 // PUT: Actualizar nombre de persona
-export async function PUT(request: Request) {
-  const auth = await requireAuth()
-  if (auth.error) return auth.error
+export const PUT = apiHandler(async (request: Request) => {
+    const auth = await requireAuth()
+    if (auth.error) return auth.error
 
-  try {
     const { id, firstName, lastName } = await request.json();
 
     if (!id) {
@@ -137,12 +128,4 @@ export async function PUT(request: Request) {
       success: true,
       person: updatedPerson
     });
-
-  } catch (error) {
-    console.error('Error updating person:', error);
-    return NextResponse.json(
-      { error: 'Error al actualizar persona' },
-      { status: 500 }
-    );
-  }
-}
+}, 'actualizar nombre')
