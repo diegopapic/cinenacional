@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { festivalSectionFormSchema } from '@/lib/festivals/festivalTypes'
 import { requireAuth } from '@/lib/auth'
+import { apiHandler } from '@/lib/api/api-handler'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -18,136 +19,120 @@ function generateSlug(name: string): string {
     .replace(/^-|-$/g, '')
 }
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
-    const editionId = parseInt(id)
+export const GET = apiHandler(async (request: NextRequest, { params }: RouteParams) => {
+  const { id } = await params
+  const editionId = parseInt(id)
 
-    if (isNaN(editionId)) {
-      return NextResponse.json(
-        { error: 'ID inválido' },
-        { status: 400 }
-      )
-    }
-
-    const sections = await prisma.festivalSection.findMany({
-      where: { editionId },
-      include: {
-        template: {
-          select: { id: true, name: true }
-        },
-        _count: {
-          select: { screenings: true, juryMembers: true }
-        }
-      },
-      orderBy: { displayOrder: 'asc' }
-    })
-
-    return NextResponse.json(sections)
-  } catch (error) {
-    console.error('Error fetching sections:', error)
+  if (isNaN(editionId)) {
     return NextResponse.json(
-      { error: 'Error al obtener secciones' },
-      { status: 500 }
+      { error: 'ID inválido' },
+      { status: 400 }
     )
   }
-}
 
-export async function POST(request: NextRequest, { params }: RouteParams) {
+  const sections = await prisma.festivalSection.findMany({
+    where: { editionId },
+    include: {
+      template: {
+        select: { id: true, name: true }
+      },
+      _count: {
+        select: { screenings: true, juryMembers: true }
+      }
+    },
+    orderBy: { displayOrder: 'asc' }
+  })
+
+  return NextResponse.json(sections)
+}, 'obtener secciones')
+
+export const POST = apiHandler(async (request: NextRequest, { params }: RouteParams) => {
   const auth = await requireAuth()
   if (auth.error) return auth.error
 
-  try {
-    const { id } = await params
-    const editionId = parseInt(id)
+  const { id } = await params
+  const editionId = parseInt(id)
 
-    if (isNaN(editionId)) {
-      return NextResponse.json(
-        { error: 'ID inválido' },
-        { status: 400 }
-      )
-    }
-
-    // Verificar que la edición existe
-    const edition = await prisma.festivalEdition.findUnique({
-      where: { id: editionId }
-    })
-
-    if (!edition) {
-      return NextResponse.json(
-        { error: 'Edición no encontrada' },
-        { status: 404 }
-      )
-    }
-
-    const body = await request.json()
-
-    // Endpoint especial para crear desde templates
-    if (body.templateIds && Array.isArray(body.templateIds)) {
-      return createSectionsFromTemplates(editionId, body.templateIds)
-    }
-
-    // Agregar editionId al body
-    const dataToValidate = { ...body, editionId }
-
-    const validation = festivalSectionFormSchema.safeParse(dataToValidate)
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: validation.error.flatten() },
-        { status: 400 }
-      )
-    }
-
-    const data = validation.data
-    const slug = data.slug || generateSlug(data.name)
-
-    // Verificar que no exista otra sección con el mismo slug en esta edición
-    const existingSection = await prisma.festivalSection.findFirst({
-      where: {
-        editionId,
-        slug
-      }
-    })
-
-    if (existingSection) {
-      return NextResponse.json(
-        { error: 'Ya existe una sección con ese slug en esta edición' },
-        { status: 400 }
-      )
-    }
-
-    // Obtener el máximo displayOrder actual
-    const maxOrder = await prisma.festivalSection.aggregate({
-      where: { editionId },
-      _max: { displayOrder: true }
-    })
-
-    const section = await prisma.festivalSection.create({
-      data: {
-        editionId,
-        templateId: data.templateId || null,
-        slug,
-        name: data.name,
-        description: data.description || null,
-        isCompetitive: data.isCompetitive ?? false,
-        displayOrder: data.displayOrder ?? (maxOrder._max.displayOrder ?? 0) + 1,
-      },
-      include: {
-        template: {
-          select: { id: true, name: true }
-        }
-      }
-    })
-
-    return NextResponse.json(section, { status: 201 })
-  } catch (error) {
-    console.error('Error creating section:', error)
+  if (isNaN(editionId)) {
     return NextResponse.json(
-      { error: 'Error al crear sección' },
-      { status: 500 }
+      { error: 'ID inválido' },
+      { status: 400 }
     )
   }
-}
+
+  // Verificar que la edición existe
+  const edition = await prisma.festivalEdition.findUnique({
+    where: { id: editionId }
+  })
+
+  if (!edition) {
+    return NextResponse.json(
+      { error: 'Edición no encontrada' },
+      { status: 404 }
+    )
+  }
+
+  const body = await request.json()
+
+  // Endpoint especial para crear desde templates
+  if (body.templateIds && Array.isArray(body.templateIds)) {
+    return createSectionsFromTemplates(editionId, body.templateIds)
+  }
+
+  // Agregar editionId al body
+  const dataToValidate = { ...body, editionId }
+
+  const validation = festivalSectionFormSchema.safeParse(dataToValidate)
+  if (!validation.success) {
+    return NextResponse.json(
+      { error: 'Datos inválidos', details: validation.error.flatten() },
+      { status: 400 }
+    )
+  }
+
+  const data = validation.data
+  const slug = data.slug || generateSlug(data.name)
+
+  // Verificar que no exista otra sección con el mismo slug en esta edición
+  const existingSection = await prisma.festivalSection.findFirst({
+    where: {
+      editionId,
+      slug
+    }
+  })
+
+  if (existingSection) {
+    return NextResponse.json(
+      { error: 'Ya existe una sección con ese slug en esta edición' },
+      { status: 400 }
+    )
+  }
+
+  // Obtener el máximo displayOrder actual
+  const maxOrder = await prisma.festivalSection.aggregate({
+    where: { editionId },
+    _max: { displayOrder: true }
+  })
+
+  const section = await prisma.festivalSection.create({
+    data: {
+      editionId,
+      templateId: data.templateId || null,
+      slug,
+      name: data.name,
+      description: data.description || null,
+      isCompetitive: data.isCompetitive ?? false,
+      displayOrder: data.displayOrder ?? (maxOrder._max.displayOrder ?? 0) + 1,
+    },
+    include: {
+      template: {
+        select: { id: true, name: true }
+      }
+    }
+  })
+
+  return NextResponse.json(section, { status: 201 })
+}, 'crear sección')
 
 async function createSectionsFromTemplates(editionId: number, templateIds: number[]) {
   try {
