@@ -179,7 +179,7 @@ export async function GET(request: NextRequest) {
         orderBy = { duration: sortOrder === 'desc' ? { sort: 'desc', nulls: 'last' } : { sort: 'asc', nulls: 'last' } };
         break;
       case 'popularity':
-        orderBy = { letterboxdWatches: sortOrder === 'desc' ? { sort: 'desc', nulls: 'last' } : { sort: 'asc', nulls: 'last' } };
+        orderBy = { popularity: sortOrder === 'desc' ? { sort: 'desc', nulls: 'last' } : { sort: 'asc', nulls: 'last' } };
         break;
       case 'id':
         orderBy = { id: sortOrder };
