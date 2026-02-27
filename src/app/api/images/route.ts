@@ -3,81 +3,74 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { imageFormSchema } from '@/lib/images/imageTypes'
 import { requireAuth } from '@/lib/auth'
+import { apiHandler, handleApiError } from '@/lib/api/api-handler'
 
 // GET - Listar imágenes (con filtro opcional por movieId)
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const movieId = searchParams.get('movieId')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const skip = (page - 1) * limit
+export const GET = apiHandler(async (request: NextRequest) => {
+  const { searchParams } = new URL(request.url)
+  const movieId = searchParams.get('movieId')
+  const page = parseInt(searchParams.get('page') || '1')
+  const limit = parseInt(searchParams.get('limit') || '20')
+  const skip = (page - 1) * limit
 
-    const where: any = {}
-    if (movieId) {
-      where.movieId = parseInt(movieId)
-    }
+  const where: any = {}
+  if (movieId) {
+    where.movieId = parseInt(movieId)
+  }
 
-    const [images, totalCount] = await Promise.all([
-      prisma.image.findMany({
-        where,
-        include: {
-          movie: {
-            select: {
-              id: true,
-              title: true,
-              releaseYear: true
-            }
-          },
-          people: {
-            include: {
-              person: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true
-                }
-              }
-            },
-            orderBy: {
-              position: 'asc'
-            }
+  const [images, totalCount] = await Promise.all([
+    prisma.image.findMany({
+      where,
+      include: {
+        movie: {
+          select: {
+            id: true,
+            title: true,
+            releaseYear: true
           }
         },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit
-      }),
-      prisma.image.count({ where })
-    ])
+        people: {
+          include: {
+            person: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true
+              }
+            }
+          },
+          orderBy: {
+            position: 'asc'
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
+    }),
+    prisma.image.count({ where })
+  ])
 
-    return NextResponse.json({
-      data: images,
-      totalCount,
-      page,
-      totalPages: Math.ceil(totalCount / limit),
-      hasMore: skip + images.length < totalCount
-    })
-  } catch (error) {
-    console.error('Error fetching images:', error)
-    return NextResponse.json(
-      { error: 'Error al obtener imágenes' },
-      { status: 500 }
-    )
-  }
-}
+  return NextResponse.json({
+    data: images,
+    totalCount,
+    page,
+    totalPages: Math.ceil(totalCount / limit),
+    hasMore: skip + images.length < totalCount
+  })
+}, 'obtener imágenes')
 
-// POST - Crear imagen
+// POST - Crear imagen (keeps try/catch for P2002 custom handling)
 export async function POST(request: NextRequest) {
   const auth = await requireAuth()
   if (auth.error) return auth.error
 
   try {
     const body = await request.json()
-    
+
     // Validar datos
     const validatedData = imageFormSchema.parse(body)
-    
+
     const { people, ...imageData } = validatedData
 
     // Crear imagen con personas en una transacción
@@ -135,19 +128,13 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(image, { status: 201 })
-  } catch (error) {
-    console.error('Error creating image:', error)
-    
-    if (error instanceof Error && error.message.includes('Unique constraint')) {
+  } catch (error: any) {
+    if (error?.code === 'P2002') {
       return NextResponse.json(
         { error: 'Ya existe una imagen con ese ID de Cloudinary' },
         { status: 409 }
       )
     }
-    
-    return NextResponse.json(
-      { error: 'Error al crear imagen' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'crear imagen')
   }
 }
