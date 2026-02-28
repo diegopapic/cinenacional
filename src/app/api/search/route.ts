@@ -66,6 +66,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
               WHEN unaccent(LOWER(title)) LIKE unaccent(${searchQuery + '%'}) THEN 2
               ELSE 3
             END,
+            popularity DESC NULLS LAST,
             title ASC
           LIMIT ${limit}
         `
@@ -92,6 +93,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
               WHEN unaccent(LOWER(title)) LIKE unaccent(${searchPattern}) THEN 3
               ELSE 4
             END,
+            popularity DESC NULLS LAST,
             title ASC
           LIMIT ${limit}
         `
@@ -114,7 +116,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
           posterUrl: true
         },
         take: limit,
-        orderBy: { title: 'asc' }
+        orderBy: [
+          { popularity: 'desc' },
+          { title: 'asc' }
+        ]
       })
       movies = movieResults
     }
