@@ -4,8 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Edit, Trash2, Calendar, Eye, EyeOff, ExternalLink } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { formatDayMonth, formatDayMonthYear } from '@/lib/shared/dateUtils'
 import DeleteEditionButton from './DeleteEditionButton'
 
 interface PageProps {
@@ -178,8 +177,8 @@ export default async function FestivalDetailPage({ params }: PageProps) {
                       )}
                     </Link>
                     <div className="mt-1 text-sm text-gray-500">
-                      {format(new Date(edition.startDate), "d 'de' MMMM", { locale: es })} -{' '}
-                      {format(new Date(edition.endDate), "d 'de' MMMM, yyyy", { locale: es })}
+                      {formatDayMonth(new Date(edition.startDate))} -{' '}
+                      {formatDayMonthYear(new Date(edition.endDate))}
                       <span className="mx-2">•</span>
                       {edition._count.sections} secciones
                       <span className="mx-2">•</span>

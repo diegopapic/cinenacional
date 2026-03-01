@@ -308,12 +308,12 @@ El formato de respuesta se mantiene idéntico al original (`{ venues, pagination
 |---|---|---|---|
 | `react-icons` | Solo en `Footer.tsx` (3 iconos) | Reemplazar con lucide-react y **eliminar** | ✅ Reemplazada con `Instagram` de lucide-react, dep eliminada |
 | `lodash` | Solo en `LocationFields.tsx` (`debounce`) | Reemplazar con `setTimeout` manual. **Eliminar lodash** | ✅ Reemplazada con setTimeout + useRef, dep eliminada (+ `@types/lodash`) |
-| `date-fns` | Solo en 3 archivos admin | Evaluar si se puede reemplazar con funciones nativas o las utils propias de fecha | Pendiente |
+| `date-fns` | Solo en 3 archivos admin | Reemplazada con helpers nativos en `dateUtils.ts` (`formatDayMonth`, `formatDayMonthYear`, `formatWeekdayDayMonth`, `formatTime`, `parseLocalDate`). **Eliminada** | ✅ Eliminada |
 | `isomorphic-dompurify` | En 3 archivos (persona page, MovieHero, MovieInfo) | Mantener — se usa para sanitizar HTML | N/A — se mantiene |
 
 ### 5.3 Impacto estimado → Resultado real
 
-Se eliminaron 9 dependencias (las 8 previstas + `@types/lodash`), resultando en **42 paquetes removidos** de node_modules. Build verificado exitoso.
+Se eliminaron 10 dependencias (las 8 previstas + `@types/lodash` + `date-fns`), resultando en reducción significativa de node_modules. Build verificado exitoso.
 
 ---
 

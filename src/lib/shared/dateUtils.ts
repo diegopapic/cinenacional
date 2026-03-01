@@ -28,6 +28,57 @@ export const MONTHS = [
 ];
 
 /**
+ * Nombres de meses en español (minúsculas) indexados por 0
+ */
+const MONTH_NAMES_LOWER = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+]
+
+/**
+ * Nombres de días de la semana en español (domingo=0)
+ */
+const WEEKDAY_NAMES = [
+  'domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'
+]
+
+/**
+ * Parsea un string ISO de fecha (YYYY-MM-DD) como fecha local (evita el problema de timezone con new Date())
+ */
+export function parseLocalDate(isoDateString: string): Date {
+  const [year, month, day] = isoDateString.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+/**
+ * Formatea una fecha como "5 de marzo"
+ */
+export function formatDayMonth(date: Date): string {
+  return `${date.getDate()} de ${MONTH_NAMES_LOWER[date.getMonth()]}`
+}
+
+/**
+ * Formatea una fecha como "5 de marzo, 2024"
+ */
+export function formatDayMonthYear(date: Date): string {
+  return `${date.getDate()} de ${MONTH_NAMES_LOWER[date.getMonth()]}, ${date.getFullYear()}`
+}
+
+/**
+ * Formatea una fecha como "lunes 5 de marzo"
+ */
+export function formatWeekdayDayMonth(date: Date): string {
+  return `${WEEKDAY_NAMES[date.getDay()]} ${date.getDate()} de ${MONTH_NAMES_LOWER[date.getMonth()]}`
+}
+
+/**
+ * Formatea una fecha como "14:30"
+ */
+export function formatTime(date: Date): string {
+  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+}
+
+/**
  * Convierte una fecha completa (string ISO) a campos parciales
  * IMPORTANTE: Maneja correctamente las zonas horarias para evitar el problema del día anterior
  */
@@ -108,23 +159,19 @@ export function formatPartialDate(
     return fallback;
   }
   
-  const monthNames = {
-    short: [
-      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
-    ],
-    long: [
-      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
-    ]
-  };
-  
+  const MONTH_NAMES_SHORT = [
+    'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+  ]
+
   // Solo año
   if (!partial.month) {
     return partial.year.toString();
   }
-  
-  const monthName = monthNames[monthFormat][partial.month - 1];
+
+  const monthName = monthFormat === 'short'
+    ? MONTH_NAMES_SHORT[partial.month - 1]
+    : MONTH_NAMES_LOWER[partial.month - 1];
   
   // Año y mes
   if (!partial.day || !includeDay) {

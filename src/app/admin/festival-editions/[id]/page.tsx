@@ -4,8 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Edit, Trash2, Film, Calendar, Clock, MapPin, Star } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
-import { format, parseISO } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { formatDayMonth, formatDayMonthYear, formatWeekdayDayMonth, formatTime, parseLocalDate } from '@/lib/shared/dateUtils'
 import { PremiereTypeLabels } from '@/lib/festivals/festivalTypes'
 import AddScreeningSection from './AddScreeningSection'
 import DeleteScreeningButton from './DeleteScreeningButton'
@@ -105,8 +104,8 @@ export default async function EditionDetailPage({ params }: PageProps) {
               {edition.festival.shortName || edition.festival.name} - {edition.editionNumber}° Edición
             </h1>
             <p className="text-sm text-gray-500">
-              {format(new Date(edition.startDate), "d 'de' MMMM", { locale: es })} -{' '}
-              {format(new Date(edition.endDate), "d 'de' MMMM, yyyy", { locale: es })}
+              {formatDayMonth(new Date(edition.startDate))} -{' '}
+              {formatDayMonthYear(new Date(edition.endDate))}
             </p>
           </div>
         </div>
@@ -218,7 +217,7 @@ export default async function EditionDetailPage({ params }: PageProps) {
               <div key={dateKey} className="p-4">
                 <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-400" />
-                  {format(parseISO(dateKey), "EEEE d 'de' MMMM", { locale: es })}
+                  {formatWeekdayDayMonth(parseLocalDate(dateKey))}
                   <span className="text-sm font-normal text-gray-500">
                     ({screeningsByDate[dateKey].length} proyecciones)
                   </span>
@@ -271,7 +270,7 @@ export default async function EditionDetailPage({ params }: PageProps) {
                                 const timeStr = String(screening.screeningTime)
                                 // Extract HH:mm from the time string (handles both Date and string)
                                 const match = timeStr.match(/(\d{2}):(\d{2})/)
-                                return match ? `${match[1]}:${match[2]}` : format(new Date(screening.screeningTime), 'HH:mm')
+                                return match ? `${match[1]}:${match[2]}` : formatTime(new Date(screening.screeningTime))
                               })()}
                             </span>
                           )}
