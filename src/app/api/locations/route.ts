@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { generateUniqueSlug } from '@/lib/utils/slugs'
+import { makeUniqueSlug } from '@/lib/api/crud-factory'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler } from '@/lib/api/api-handler'
 
@@ -97,7 +97,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   // Generar slug único
-  const slug = await generateUniqueSlug(name, 'location', prisma)
+  const slug = await makeUniqueSlug(name, prisma.location as any)
 
   const location = await prisma.location.create({
     data: {

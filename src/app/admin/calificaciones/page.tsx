@@ -20,9 +20,7 @@ interface Calificacion {
   abbreviation?: string | null
   description?: string | null
   createdAt: string
-  _count?: {
-    movies: number
-  }
+  movieCount: number
 }
 
 export default function AdminCalificacionesPage() {
@@ -292,7 +290,7 @@ export default function AdminCalificacionesPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {calificacion._count?.movies || 0}
+                        {calificacion.movieCount || 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">

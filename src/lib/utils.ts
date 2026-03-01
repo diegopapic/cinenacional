@@ -15,17 +15,29 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * createSlug
- * @TODO Add documentation
+ * Genera un slug URL-friendly a partir de un texto.
+ * Si el resultado queda vacío o muy corto (< 2 chars), genera un fallback basado en hash.
  */
 export function createSlug(text: string): string {
-  return text
+  const slug = text
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
     .replace(/[^a-z0-9]+/g, '-') // Reemplazar caracteres especiales con guiones
     .replace(/^-+|-+$/g, '') // Eliminar guiones al inicio y final
     .replace(/-+/g, '-') // Reemplazar múltiples guiones con uno solo
+
+  if (!slug || slug.length < 2) {
+    // Fallback: hash para títulos sin caracteres alfanuméricos (ej: ")(", "!!")
+    let hash = 0
+    for (let i = 0; i < text.length; i++) {
+      hash = ((hash << 5) - hash) + text.charCodeAt(i)
+      hash = hash & hash
+    }
+    return `title-${Math.abs(hash).toString(36)}`
+  }
+
+  return slug
 }
 
 /**

@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { generateSlug } from '@/lib/utils/slugs'
+import { createSlug } from '@/lib/utils'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler } from '@/lib/api/api-handler'
 
@@ -21,7 +21,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     )
   }
 
-  const baseSlug = generateSlug(name)
+  const baseSlug = createSlug(name)
   let slug = baseSlug
   let counter = 1
   let available = false

@@ -227,9 +227,9 @@ El formato de respuesta se mantiene idéntico al original (`{ venues, pagination
 - `health/` routes (retornan 503, no 500)
 - `stats/route.ts` (retorna zeros en vez de error)
 
-### 3.3 Inconsistencias entre API routes ✅ HECHO (parcial)
+### 3.3 Inconsistencias entre API routes ✅ HECHO
 
-**Resuelto (isNaN + DELETE format):** Se normalizaron las dos inconsistencias más críticas en 10 archivos:
+**Fase 1 — isNaN + DELETE format (10 archivos):**
 
 **Validación `isNaN(id)` agregada a:**
 - `calificaciones/[id]/route.ts` — GET, PUT, DELETE
@@ -253,15 +253,25 @@ El formato de respuesta se mantiene idéntico al original (`{ venues, pagination
 - `LocationTree.tsx` — `confirmDelete` actualizado para manejar 204 sin llamar `.json()` (que fallaría sin body)
 - `api-client.ts` ya manejaba 204 correctamente (retorna `null`)
 
-**Pendiente:**
-| Problema | Dónde |
-|---|---|
-| **GET list responde diferente** | `roles` devuelve `{ data, totalCount, page, totalPages, hasMore }`; los demás devuelven array plano |
-| **Validación mixta** | `roles` usa Zod schema; los demás usan `if (!body.name)` manual |
-| **Dos funciones de slug** | `roles` importa `generateSlug` de `@/lib/utils/slugs`; los demás usan `createSlug` de `@/lib/utils` |
-| **Error swallowing** | `stats/route.ts` devuelve zeros con status 200 en vez de 500 en caso de error |
-| **themes GET** | Agrega `movieCount` mapeado; genres/calificaciones devuelven `_count` raw de Prisma |
-| **Estilo de código** | roles usa semicolons; genres/themes/calificaciones no — inconsistente |
+**Fase 2 — Tabla de pendientes restantes (6 items resueltos):**
+
+- **`_count` raw → `movieCount` mapeado:** Se agregó `formatResponse` a `genres/route.ts`, `genres/[id]/route.ts`, `calificaciones/route.ts` y `calificaciones/[id]/route.ts` para transformar `_count.movies` → `movieCount`, consistente con themes. Se actualizaron `admin/genres/page.tsx` y `admin/calificaciones/page.tsx` para usar `movieCount` en vez de `_count?.movies`.
+
+- **Validación Zod unificada:** Se agregaron schemas Zod a genres (`genreSchema`: name requerido max 100 + description opcional) y calificaciones (`ratingSchema`: name + abbreviation max 10 + description). Se activó `zodSchema` en la factory para POST y PUT, y `regenerateSlugOnUpdate: true` en los handlers de `[id]`. Ahora todas las entidades CRUD usan validación Zod consistente.
+
+- **Funciones de slug unificadas:** Se migraron 5 archivos de `generateSlug`/`generateUniqueSlug` (de `@/lib/utils/slugs`) a `createSlug` (de `@/lib/utils`) y `makeUniqueSlug` (de `@/lib/api/crud-factory`):
+  - `locations/route.ts`, `locations/[id]/route.ts` — `generateUniqueSlug` → `makeUniqueSlug`
+  - `locations/check-slug/route.ts` — `generateSlug` → `createSlug`
+  - `movies/route.ts` — `generateUniqueSlug` → `makeUniqueSlug`
+  - `roles/seed/route.ts` — `generateSlug` → `createSlug`
+  - Se mejoró `createSlug` con fallback de hash para slugs vacíos/cortos (edge case de títulos sin chars alfanuméricos).
+  - Se eliminó `src/lib/utils/slugs.ts` (126 líneas, ya no tiene importadores).
+
+- **Error swallowing en `stats/route.ts`:** Cambiado de retornar `{ zeros... }` con status 200 a retornar `{ error: '...' }` con status 500. `HeaderStats.tsx` actualizado para verificar `res.ok` antes de parsear JSON.
+
+- **Semicolons normalizados:** `roles/seed/route.ts` migrado al estilo sin semicolons consistente con el resto del codebase.
+
+- **GET list diferente en roles:** Se mantiene intencional — roles requiere paginación server-side, unaccent search y CSV export, lo que justifica el formato `{ data, totalCount, page, totalPages, hasMore }` diferente al array plano de entidades simples.
 
 ---
 

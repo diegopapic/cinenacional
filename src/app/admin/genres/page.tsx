@@ -20,9 +20,7 @@ interface Genre {
   name: string
   description?: string | null
   createdAt: string
-  _count?: {
-    movies: number
-  }
+  movieCount: number
 }
 
 export default function AdminGenresPage() {
@@ -269,7 +267,7 @@ export default function AdminGenresPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {genre._count?.movies || 0}
+                        {genre.movieCount || 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">

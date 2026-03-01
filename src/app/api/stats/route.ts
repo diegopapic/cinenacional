@@ -76,14 +76,9 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Error fetching stats:', error)
-    return NextResponse.json({
-      peliculas: 0,
-      personas: 0,
-      efemerides: 0,
-      afiches: 0,
-      fotos: 0,
-      imagenes: 0,
-      trailers: 0,
-    })
+    return NextResponse.json(
+      { error: 'Error al obtener las estadísticas' },
+      { status: 500 }
+    )
   }
 }

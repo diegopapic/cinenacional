@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { movieSchema } from '@/lib/schemas'
-import { generateUniqueSlug } from '@/lib/utils/slugs'
+import { makeUniqueSlug } from '@/lib/api/crud-factory'
 import RedisClient from '@/lib/redis'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler } from '@/lib/api/api-handler'
@@ -503,7 +503,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const validatedData = movieSchema.parse(cleanedData)
 
   // Generar slug único con la función actualizada
-  const slug = await generateUniqueSlug(validatedData.title, 'movie', prisma)
+  const slug = await makeUniqueSlug(validatedData.title, prisma.movie as any)
 
   // Extraer relaciones y campos especiales
   const {

@@ -29,7 +29,10 @@ export default function HeaderStats() {
 
   useEffect(() => {
     fetch('/api/stats')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
       .then(data => setStats(data))
       .catch(err => console.error('Error loading stats:', err))
   }, [])
