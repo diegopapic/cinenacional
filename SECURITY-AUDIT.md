@@ -373,10 +373,16 @@ Los intentos de login se registran en tabla `auditLog`. Esto es una buena práct
 
 ### Inmediato (esta semana)
 
-1. **Rotar todos los secretos** — contraseñas de BD, API keys, tokens, NEXTAUTH_SECRET
-2. **Limpiar historial de git** con `git filter-repo` para eliminar secretos de commits anteriores
-3. **Mover la IP de producción** fuera de `package.json` a una variable de entorno
-4. **Agregar `.env*` a `.gitignore`** (excepto `.env.example` sin valores reales)
+1. ~~**Rotar todos los secretos** — contraseñas de BD, API keys, tokens, NEXTAUTH_SECRET~~ ✅ Completado 2026-03-02
+   - DB password, TMDB token, Anthropic API key, Telegram bot token, Cloudinary key+secret, NEXTAUTH_SECRET rotados
+   - IP_HASH_SALT generado y configurado como variable de entorno requerida
+   - Salt fallback hardcodeado eliminado de `analytics/pageview/route.ts`
+2. ~~**Limpiar historial de git** con `git filter-repo` para eliminar secretos de commits anteriores~~ ✅ Completado 2026-03-02
+   - `.env.production` eliminado de los 742 commits del historial
+   - Force push realizado a GitHub
+3. ~~**Mover la IP de producción** fuera de `package.json` a una variable de entorno~~ ✅ Completado 2026-03-02
+   - IP eliminada del script `perf:test:prod`, ahora requiere `BASE_URL` como env var
+4. ~~**Agregar `.env*` a `.gitignore`** (excepto `.env.example` sin valores reales)~~ ✅ Ya estaba configurado + `.env.example` creado 2026-03-02
 
 ### Corto plazo (1-2 semanas)
 
@@ -393,4 +399,4 @@ Los intentos de login se registran en tabla `auditLog`. Esto es una buena práct
 12. **Sanitizar mensajes de error** en producción (no exponer detalles internos)
 13. **Implementar sistema de logging** centralizado y seguro
 14. **Fortalecer cookies de sesión** — `sameSite: 'strict'`, revisar flags
-15. **Generar salt de IP dinámicamente** y almacenarlo de forma segura
+15. ~~**Generar salt de IP dinámicamente** y almacenarlo de forma segura~~ ✅ Completado 2026-03-02 (resuelto en punto 1)
