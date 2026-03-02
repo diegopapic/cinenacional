@@ -28,7 +28,10 @@ interface PageViewRequest {
 // Función para hashear IP (privacidad)
 function hashIP(ip: string): string {
   // Agregar salt para mayor seguridad
-  const salt = process.env.IP_HASH_SALT || 'cinenacional-analytics-2024';
+  const salt = process.env.IP_HASH_SALT;
+  if (!salt) {
+    throw new Error('IP_HASH_SALT environment variable is required');
+  }
   return crypto.createHash('sha256').update(ip + salt).digest('hex');
 }
 
