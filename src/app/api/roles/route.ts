@@ -14,6 +14,9 @@ const INCLUDE = { _count: { select: { crewRoles: true } } }
 // ---------------------------------------------------------------------------
 
 export async function GET(request: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')

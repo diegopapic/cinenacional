@@ -386,7 +386,10 @@ Los intentos de login se registran en tabla `auditLog`. Esto es una buena práct
 
 ### Corto plazo (1-2 semanas)
 
-5. **Proteger endpoints de lectura** con autorización donde corresponda
+5. ~~**Proteger endpoints de lectura** con autorización donde corresponda~~ ✅ Completado 2026-03-02
+   - `requireAuth()` agregado a GET en `createListAndCreateHandlers` y `createItemHandlers` (crud-factory.ts)
+   - `requireAuth()` agregado a GET custom en `/api/roles/route.ts`
+   - Endpoints protegidos: calificaciones, genres, themes, screening-venues, roles (list + detail)
 6. **Implementar rate limiting persistente** con Redis o similar
 7. **Fortalecer CSP** — reemplazar `unsafe-inline` con nonces
 8. **Actualizar dependencias vulnerables** (`next`, `ajv`, `minimatch`)
