@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { apiHandler } from '@/lib/api/api-handler'
+import { applyRateLimit, getClientIp, RATE_LIMIT_PRESETS } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +29,10 @@ function getDisplayYear(year: number | null, releaseYear: number | null): number
 }
 
 export const GET = apiHandler(async (request: NextRequest) => {
+    const ip = getClientIp(request)
+    const limited = await applyRateLimit(ip, RATE_LIMIT_PRESETS.search)
+    if (limited) return limited
+
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get('q')
     const limit = parseInt(searchParams.get('limit') || '10')

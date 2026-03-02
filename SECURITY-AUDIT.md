@@ -390,7 +390,11 @@ Los intentos de login se registran en tabla `auditLog`. Esto es una buena práct
    - `requireAuth()` agregado a GET en `createListAndCreateHandlers` y `createItemHandlers` (crud-factory.ts)
    - `requireAuth()` agregado a GET custom en `/api/roles/route.ts`
    - Endpoints protegidos: calificaciones, genres, themes, screening-venues, roles (list + detail)
-6. **Implementar rate limiting persistente** con Redis o similar
+6. ~~**Implementar rate limiting persistente** con Redis o similar~~ ✅ Completado 2026-03-02
+   - Creado `src/lib/rate-limit.ts` con Redis (ioredis) + fallback in-memory
+   - Rate limiting Redis aplicado en POST `/api/auth/[...nextauth]` (10 req/5min)
+   - Rate limiting Redis aplicado en GET `/api/search` (60 req/min)
+   - Middleware conservado como primera línea de defensa (in-memory, Edge Runtime)
 7. **Fortalecer CSP** — reemplazar `unsafe-inline` con nonces
 8. **Actualizar dependencias vulnerables** (`next`, `ajv`, `minimatch`)
 9. **Proteger endpoints de health** con autenticación o limitar información expuesta

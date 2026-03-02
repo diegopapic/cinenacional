@@ -2,15 +2,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
-// Rate limiting con memoria (el middleware no soporta Redis)
+// Rate limiting en middleware: primera línea de defensa (in-memory, Edge Runtime).
+// El rate limiting persistente con Redis se aplica en las rutas de API
+// individuales (ver src/lib/rate-limit.ts).
 const requestCounts = new Map<string, { count: number; resetTime: number }>()
 
-// LÍMITES ACTUALIZADOS PARA PRODUCCIÓN
 const RATE_LIMITS = {
   api: { requests: 1000, window: 60000 },      // 1000 req/min
-  static: { requests: 2000, window: 60000 },   // 2000 req/min  
   auth: { requests: 10, window: 300000 },      // 10 req/5min
-  search: { requests: 500, window: 60000 }     // 500 req/min para búsquedas
+  search: { requests: 500, window: 60000 }     // 500 req/min
 }
 
 function getRateLimitKey(req: NextRequest): string {
@@ -22,16 +22,16 @@ function getRateLimitKey(req: NextRequest): string {
 function checkRateLimit(key: string, limit: typeof RATE_LIMITS.api): boolean {
   const now = Date.now()
   const record = requestCounts.get(key)
-  
+
   if (!record || record.resetTime < now) {
     requestCounts.set(key, { count: 1, resetTime: now + limit.window })
     return true
   }
-  
+
   if (record.count >= limit.requests) {
     return false
   }
-  
+
   record.count++
   return true
 }
@@ -122,16 +122,11 @@ export async function middleware(request: NextRequest) {
   const clientKey = getRateLimitKey(request)
   
   // Determinar límite según el tipo de ruta
-  let rateLimit = RATE_LIMITS.static
-  if (path.startsWith('/api/')) {
-    // Límite especial para búsquedas
-    if (path.includes('/search') || path.includes('/autocomplete')) {
-      rateLimit = RATE_LIMITS.search
-    } else {
-      rateLimit = RATE_LIMITS.api
-    }
-  } else if (path.startsWith('/api/auth/') || path === '/admin/login') {
+  let rateLimit = RATE_LIMITS.api
+  if (path.startsWith('/api/auth/') || path === '/admin/login') {
     rateLimit = RATE_LIMITS.auth
+  } else if (path.includes('/search') || path.includes('/autocomplete')) {
+    rateLimit = RATE_LIMITS.search
   }
   
   // Verificar rate limit
