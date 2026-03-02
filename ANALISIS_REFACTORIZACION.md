@@ -373,22 +373,9 @@ Contiene dumps de WordPress y archivos de migración. No se necesitan en el repo
 
 ---
 
-## 8. Componentes Ad triviales
+## 8. Componentes Ad triviales ✅ HECHO
 
-**Archivos:**
-- `src/components/ads/HomeBottomBanner.tsx` (4 líneas útiles)
-- `src/components/ads/HomeMiddleBanner.tsx` (4 líneas útiles)
-
-**Problema:** Cada archivo es un wrapper de una sola línea sobre `AdBanner`:
-```tsx
-export default function HomeBottomBanner() {
-  return <AdBanner slot="1192731540" format="horizontal" className="my-12" />
-}
-```
-
-Estos componentes no agregan valor. Se podrían usar directamente `<AdBanner slot="..." format="horizontal" className="my-12" />` donde se necesiten.
-
-**Acción:** Evaluar si eliminarlos y usar `AdBanner` directamente, o mantenerlos por claridad semántica (el nombre del componente documenta dónde va). **Baja prioridad.**
+**Resuelto:** `HomeBottomBanner.tsx` y `HomeMiddleBanner.tsx` fueron eliminados. Ambos eran wrappers triviales de una línea sobre `AdBanner` y sus usos en `page.tsx` estaban comentados (nunca se renderizaban). Se eliminaron los imports muertos de `page.tsx` y se borraron los dos archivos.
 
 ---
 

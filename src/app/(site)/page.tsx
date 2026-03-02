@@ -11,8 +11,6 @@ import EfemeridesSection from '@/components/home/EfemeridesSection';
 import ErrorMessage from '@/components/home/ErrorMessage';
 import { HeroMovie, Efemeride } from '@/types/home.types';
 import { formatPartialDate } from '@/lib/shared/dateUtils';
-import HomeMiddleBanner from '@/components/ads/HomeMiddleBanner'
-import HomeBottomBanner from '@/components/ads/HomeBottomBanner'
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
