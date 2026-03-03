@@ -106,8 +106,8 @@ services:
       - TZ=America/Argentina/Buenos_Aires
       - HOSTNAME=0.0.0.0
       - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dzndglyjr
-      - DATABASE_URL=${DATABASE_URL}
-      - DIRECT_URL=${DIRECT_URL}
+      - DATABASE_URL=postgresql://cinenacional:${POSTGRES_PASSWORD}@postgres:5432/cinenacional?schema=public&connection_limit=5&pool_timeout=10&connect_timeout=10&statement_timeout=30000
+      - DIRECT_URL=postgresql://cinenacional:${POSTGRES_PASSWORD}@postgres:5432/cinenacional?schema=public
       - REDIS_URL=redis://redis:6379
       - NODE_ENV=production
     ports:
