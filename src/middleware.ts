@@ -94,10 +94,16 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
+      // DEBUG: ver qué cookies llegan al middleware
+      const allCookies = request.cookies.getAll().map(c => c.name)
+      console.log(`[AUTH DEBUG] path=${path} cookies=[${allCookies.join(', ')}]`)
+
       const token = await getToken({
         req: request,
         secret: process.env.NEXTAUTH_SECRET
       })
+
+      console.log(`[AUTH DEBUG] getToken result: ${token ? JSON.stringify({ role: token.role, id: token.id }) : 'null'}`)
 
       if (!token) {
         const loginUrl = new URL('/admin/login', request.url)
