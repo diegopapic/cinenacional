@@ -12,6 +12,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 
 interface Calificacion {
   id: number
@@ -107,7 +108,8 @@ export default function AdminCalificacionesPage() {
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...getCsrfHeaders()
         },
         body: JSON.stringify({
           name: formData.name.trim(),
@@ -161,7 +163,8 @@ export default function AdminCalificacionesPage() {
     try {
       setDeletingCalifId(id)
       const response = await fetch(`/api/calificaciones/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getCsrfHeaders()
       })
 
       if (!response.ok) {

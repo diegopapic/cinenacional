@@ -17,6 +17,7 @@ import {
   Building,
   ExternalLink
 } from 'lucide-react'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 
 interface ScreeningVenue {
   id: number
@@ -181,7 +182,8 @@ export default function AdminScreeningVenuesPage() {
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...getCsrfHeaders()
         },
         body: JSON.stringify(processedData)
       })
@@ -251,7 +253,8 @@ export default function AdminScreeningVenuesPage() {
     try {
       setDeletingVenueId(id)
       const response = await fetch(`/api/screening-venues/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getCsrfHeaders()
       })
 
       if (!response.ok) {

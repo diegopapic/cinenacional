@@ -5,6 +5,7 @@
 import { Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 
 interface DeleteEditionButtonProps {
   editionId: number
@@ -21,7 +22,8 @@ export default function DeleteEditionButton({ editionId, editionName }: DeleteEd
 
     try {
       const response = await fetch(`/api/festival-editions/${editionId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getCsrfHeaders()
       })
 
       if (!response.ok) {

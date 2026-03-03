@@ -4,6 +4,7 @@ import { User, X, Plus, ArrowRight } from 'lucide-react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { peopleService } from '@/services/people.service'
 import toast from 'react-hot-toast'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 import GenderSelectionModal from './GenderSelectionModal'
 import NameSplitModal from './NameSplitModal'
 
@@ -65,7 +66,7 @@ async function saveFirstNameGender(firstName: string, gender: 'MALE' | 'FEMALE')
   try {
     const response = await fetch('/api/first-name-gender', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
       body: JSON.stringify({ name: firstName, gender })
     })
     
@@ -371,8 +372,8 @@ export default function PersonSearchInput({
       
       const response = await fetch('/api/people', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
+        body: JSON.stringify({
           name: fullName,
           gender: gender
         })
@@ -409,8 +410,8 @@ export default function PersonSearchInput({
       
       const response = await fetch('/api/people', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
+        body: JSON.stringify({
           firstName,
           lastName,
           gender

@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { X } from 'lucide-react'
 import { useDebounce } from '@/hooks/useDebounce'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 
 interface Location {
   id: number
@@ -116,7 +117,7 @@ export default function LocationForm({ location }: LocationFormProps) {
     try {
       const response = await fetch('/api/locations/check-slug', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({
           name: formData.name,
           excludeId: location?.id
@@ -200,7 +201,7 @@ export default function LocationForm({ location }: LocationFormProps) {
       
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({
           ...formData,
           parentId: formData.parentId || null

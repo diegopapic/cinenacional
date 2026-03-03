@@ -13,6 +13,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 
 interface Genre {
   id: number
@@ -100,7 +101,8 @@ export default function AdminGenresPage() {
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...getCsrfHeaders()
         },
         body: JSON.stringify({
           name: formData.name.trim(),
@@ -152,7 +154,8 @@ export default function AdminGenresPage() {
     try {
       setDeletingGenreId(id)
       const response = await fetch(`/api/genres/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getCsrfHeaders()
       })
 
       if (!response.ok) {

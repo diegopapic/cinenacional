@@ -1,6 +1,12 @@
 // src/middleware.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
+import {
+  CSRF_COOKIE_NAME,
+  CSRF_HEADER_NAME,
+  generateSignedCsrfToken,
+  verifyCsrfSignature
+} from '@/lib/csrf'
 
 // Rate limiting en middleware: primera línea de defensa (in-memory, Edge Runtime).
 // El rate limiting persistente con Redis se aplica en las rutas de API
@@ -162,10 +168,11 @@ export async function middleware(request: NextRequest) {
       ? ['https://cinenacional.com', 'https://www.cinenacional.com']
       : ['http://localhost:3000']
 
-    // CSRF: rechazar mutaciones de orígenes externos
-    // NextAuth callback (/api/auth/) se excluye porque maneja su propia validación
+    // CSRF: rechazar mutaciones de orígenes externos + validar token CSRF
+    // /api/auth/ se excluye: NextAuth maneja su propia validación CSRF
+    // /api/analytics/ se excluye: usa sendBeacon que no puede enviar headers custom
     // Si no hay Origin ni Referer (same-origin request), se permite (el browser no los envía en same-origin)
-    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method) && !path.startsWith('/api/auth/')) {
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method) && !path.startsWith('/api/auth/') && !path.startsWith('/api/analytics/')) {
       const origin = request.headers.get('origin')
       const referer = request.headers.get('referer')
 
@@ -189,6 +196,30 @@ export async function middleware(request: NextRequest) {
         }
       }
       // Si no hay ni Origin ni Referer: same-origin request, permitir
+
+      // CSRF Token: validar signed double-submit cookie
+      // El token se genera en el middleware y se setea como cookie no-httpOnly.
+      // El cliente lo lee del cookie y lo envía como header X-CSRF-Token.
+      const csrfSecret = process.env.NEXTAUTH_SECRET
+      if (csrfSecret) {
+        const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value
+        const headerToken = request.headers.get(CSRF_HEADER_NAME)
+
+        if (!cookieToken || !headerToken || cookieToken !== headerToken) {
+          return new NextResponse(JSON.stringify({ error: 'Token CSRF inválido' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' }
+          })
+        }
+
+        const isValid = await verifyCsrfSignature(cookieToken, csrfSecret)
+        if (!isValid) {
+          return new NextResponse(JSON.stringify({ error: 'Token CSRF inválido' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' }
+          })
+        }
+      }
     }
 
     // CORS headers
@@ -198,7 +229,7 @@ export async function middleware(request: NextRequest) {
     }
 
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-csrf-token')
     response.headers.set('Access-Control-Max-Age', '86400')
 
     if (request.method === 'OPTIONS') {
@@ -206,6 +237,22 @@ export async function middleware(request: NextRequest) {
     }
   }
   
+  // ============ CSRF TOKEN COOKIE ============
+  // Generar y setear cookie CSRF si no existe. El token es non-httpOnly para
+  // que JavaScript pueda leerlo y enviarlo como header en requests de mutación.
+  const existingCsrfToken = request.cookies.get(CSRF_COOKIE_NAME)?.value
+  const csrfSecret = process.env.NEXTAUTH_SECRET
+  if (!existingCsrfToken && csrfSecret) {
+    const csrfToken = await generateSignedCsrfToken(csrfSecret)
+    response.cookies.set(CSRF_COOKIE_NAME, csrfToken, {
+      httpOnly: false,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 86400 // 24 horas
+    })
+  }
+
   // ============ PROTECCIÓN CONTRA BOTS ============
   const userAgent = request.headers.get('user-agent') || ''
   const blockedBots = ['bot', 'crawler', 'spider', 'scraper']

@@ -22,6 +22,7 @@ interface SimpleFestivalSection {
   isCompetitive: boolean
 }
 import { DateInput } from '@/components/admin/ui/DateInput'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 import toast from 'react-hot-toast'
 
 interface Movie {
@@ -213,7 +214,7 @@ export default function FestivalScreeningForm({
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify(formData)
       })
 

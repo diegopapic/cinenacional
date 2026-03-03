@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { getCsrfHeaders } from '@/lib/csrf-client';
 
 interface CaseToReview {
   id: number;
@@ -69,6 +70,7 @@ export default function ReviewNamesPage() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          ...getCsrfHeaders(),
         },
         body: JSON.stringify({
           id: cases[currentIndex].id,

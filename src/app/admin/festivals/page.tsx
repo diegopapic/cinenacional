@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus, Edit, Trash2, Calendar, ChevronRight, Search, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 
 interface FestivalListItem {
   id: number
@@ -54,7 +55,8 @@ export default function FestivalsPage() {
 
     try {
       const response = await fetch(`/api/festivals/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getCsrfHeaders()
       })
 
       if (!response.ok) {

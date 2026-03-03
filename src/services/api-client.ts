@@ -1,5 +1,7 @@
 // src/services/api-client.ts
 
+import { getCsrfHeaders } from '@/lib/csrf-client'
+
 export class ApiError extends Error {
   status: number
   data: any
@@ -94,12 +96,13 @@ class ApiClient {
   async post<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
     const { params, ...fetchOptions } = options || {}
     const url = this.buildUrl(endpoint, params)
-    
+
     const response = await fetch(url, {
       ...fetchOptions,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...getCsrfHeaders(),
         ...fetchOptions.headers
       },
       body: data ? JSON.stringify(data) : undefined
@@ -111,12 +114,13 @@ class ApiClient {
   async put<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
     const { params, ...fetchOptions } = options || {}
     const url = this.buildUrl(endpoint, params)
-    
+
     const response = await fetch(url, {
       ...fetchOptions,
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...getCsrfHeaders(),
         ...fetchOptions.headers
       },
       body: data ? JSON.stringify(data) : undefined
@@ -128,12 +132,13 @@ class ApiClient {
   async patch<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
     const { params, ...fetchOptions } = options || {}
     const url = this.buildUrl(endpoint, params)
-    
+
     const response = await fetch(url, {
       ...fetchOptions,
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        ...getCsrfHeaders(),
         ...fetchOptions.headers
       },
       body: data ? JSON.stringify(data) : undefined
@@ -145,10 +150,14 @@ class ApiClient {
   async delete<T = void>(endpoint: string, options?: RequestOptions): Promise<T> {
     const { params, ...fetchOptions } = options || {}
     const url = this.buildUrl(endpoint, params)
-    
+
     const response = await fetch(url, {
       ...fetchOptions,
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: {
+        ...getCsrfHeaders(),
+        ...fetchOptions.headers
+      }
     })
     
     return this.handleResponse<T>(response)

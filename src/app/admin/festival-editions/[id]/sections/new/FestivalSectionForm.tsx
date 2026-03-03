@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, Copy } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 
 interface SectionTemplate {
   id: number
@@ -77,7 +78,7 @@ export default function FestivalSectionForm({ editionId, templates }: FestivalSe
     try {
       const response = await fetch(`/api/festival-editions/${editionId}/sections`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({ templateIds: selectedTemplates })
       })
 
@@ -111,7 +112,7 @@ export default function FestivalSectionForm({ editionId, templates }: FestivalSe
     try {
       const response = await fetch(`/api/festival-editions/${editionId}/sections`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify(formData)
       })
 

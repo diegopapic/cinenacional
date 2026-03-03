@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import { FestivalEdition, FestivalEditionFormData, festivalEditionFormSchema } from '@/lib/festivals/festivalTypes'
 import { DateInput } from '@/components/admin/ui/DateInput'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 import toast from 'react-hot-toast'
 
 interface FestivalEditionFormProps {
@@ -79,7 +80,7 @@ export default function FestivalEditionForm({ festivalId, festivalName, edition 
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify(formData)
       })
 

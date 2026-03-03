@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import LocationTreeNode from './LocationTreeNode'
 import { Search, Loader2, RefreshCw } from 'lucide-react'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 
 interface LocationNode {
   id: number
@@ -101,7 +102,8 @@ export default function LocationTree() {
 
     try {
       const response = await fetch(`/api/locations/${deleteModal.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getCsrfHeaders()
       })
 
       if (!response.ok) {

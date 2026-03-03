@@ -5,6 +5,7 @@
 import { Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 
 interface DeleteScreeningButtonProps {
   screeningId: number
@@ -21,7 +22,8 @@ export default function DeleteScreeningButton({ screeningId, movieTitle }: Delet
 
     try {
       const response = await fetch(`/api/festival-screenings/${screeningId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getCsrfHeaders()
       })
 
       if (!response.ok) {

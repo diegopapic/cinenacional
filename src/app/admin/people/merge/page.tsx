@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { ArrowLeft, Merge, ArrowRight, CheckCircle2, AlertTriangle, Loader2, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { getCsrfHeaders } from '@/lib/csrf-client';
 import PersonSearchInput from '@/components/admin/shared/PersonSearchInput';
 
 interface PersonData {
@@ -193,7 +194,7 @@ export default function MergePeoplePage() {
     try {
       const response = await fetch('/api/people/merge/preview', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({ personAId, personBId }),
       });
 
@@ -276,7 +277,7 @@ export default function MergePeoplePage() {
 
       const response = await fetch('/api/people/merge', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({
           personAId,
           personBId,

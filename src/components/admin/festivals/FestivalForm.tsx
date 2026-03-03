@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { X, Loader2 } from 'lucide-react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { Festival, FestivalFormData, festivalFormSchema } from '@/lib/festivals/festivalTypes'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 import toast from 'react-hot-toast'
 
 interface Location {
@@ -168,7 +169,7 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify(formData)
       })
 

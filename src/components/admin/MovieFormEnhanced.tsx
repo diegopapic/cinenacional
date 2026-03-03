@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import ScreeningVenueSelector from './ScreeningVenueSelector'
 import CastList from './movies/CastList'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 
 
 interface MovieFormEnhancedProps {
@@ -351,7 +352,7 @@ export default function MovieFormEnhanced({
     try {
       const response = await fetch('/api/people', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({ name: personSearch })
       })
 

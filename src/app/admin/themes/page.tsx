@@ -17,6 +17,7 @@ import {
   Hash
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { getCsrfHeaders } from '@/lib/csrf-client'
 
 // Schema de validación
 const themeFormSchema = z.object({
@@ -93,7 +94,7 @@ export default function AdminThemesPage() {
       const method = editingTheme ? 'PUT' : 'POST'
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify(data)
       })
 
@@ -127,7 +128,8 @@ export default function AdminThemesPage() {
     try {
       setDeletingThemeId(id)
       const response = await fetch(`/api/themes/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getCsrfHeaders()
       })
 
       if (!response.ok) {
