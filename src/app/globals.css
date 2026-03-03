@@ -371,7 +371,7 @@ body {
 
 /* Links dentro de sinopsis y biografías */
 .serif-body a {
-  color: oklch(0.62 0.01 80);
+  color: oklch(0.95 0.005 260 / 0.8);
   transition: color 0.2s ease;
 }
 
