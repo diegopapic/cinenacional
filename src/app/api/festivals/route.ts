@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { festivalFormSchema } from '@/lib/festivals/festivalTypes'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler } from '@/lib/api/api-handler'
+import { parseIntClamped, parsePositiveInt, LIMITS, PAGES } from '@/lib/api/parse-params'
 
 function generateSlug(name: string): string {
   return name
@@ -20,8 +21,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const search = searchParams.get('search')
   const isActive = searchParams.get('isActive')
   const locationId = searchParams.get('locationId')
-  const page = parseInt(searchParams.get('page') || '1')
-  const limit = parseInt(searchParams.get('limit') || '20')
+  const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX)
+  const limit = parseIntClamped(searchParams.get('limit'), LIMITS.DEFAULT, LIMITS.MIN, LIMITS.MAX)
 
   const where: any = {}
 
@@ -37,7 +38,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
 
   if (locationId) {
-    where.locationId = parseInt(locationId)
+    const parsedLocationId = parsePositiveInt(locationId)
+    if (parsedLocationId) where.locationId = parsedLocationId
   }
 
   const [festivals, total] = await Promise.all([

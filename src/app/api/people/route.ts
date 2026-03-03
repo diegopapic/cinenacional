@@ -7,6 +7,7 @@ import { splitFullName } from '@/lib/people/nameUtils';
 import RedisClient from '@/lib/redis';
 import { requireAuth } from '@/lib/auth';
 import { apiHandler } from '@/lib/api/api-handler';
+import { parseIntClamped, LIMITS, PAGES, YEARS } from '@/lib/api/parse-params';
 
 // ============================================
 // CACHE CONFIGURATION
@@ -22,7 +23,7 @@ function getRedisTTL(searchParams: URLSearchParams): number {
   
   // Obituarios de años pasados: 24 horas (no cambian)
   if (deathYear) {
-    const year = parseInt(deathYear);
+    const year = parseIntClamped(deathYear, 0, YEARS.MIN, YEARS.MAX);
     const currentYear = new Date().getFullYear();
     
     if (year < currentYear) {
@@ -78,8 +79,8 @@ export async function GET(request: NextRequest) {
     const deathYear = searchParams.get('deathYear'); // 🆕 NUEVO FILTRO
     const sortBy = searchParams.get('sortBy') || 'last_name';
     const sortOrder = searchParams.get('sortOrder') || 'asc';
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX);
+    const limit = parseIntClamped(searchParams.get('limit'), LIMITS.DEFAULT, LIMITS.MIN, LIMITS.MAX);
 
     // ============================================
     // CACHE LOGIC (solo para obituarios)
@@ -407,7 +408,7 @@ export async function GET(request: NextRequest) {
     
     // 🆕 NUEVO: Filtro por año de defunción específico
     if (deathYear) {
-      where.deathYear = parseInt(deathYear);
+      where.deathYear = parseIntClamped(deathYear, 0, YEARS.MIN, YEARS.MAX);
     } else if (hasDeathDate === 'true') {
       // Si no se especifica año pero se pide hasDeathDate, filtrar los que tienen
       where.deathYear = { not: null };

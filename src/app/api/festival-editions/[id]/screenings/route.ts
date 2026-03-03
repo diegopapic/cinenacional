@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { festivalScreeningFormSchema } from '@/lib/festivals/festivalTypes'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler } from '@/lib/api/api-handler'
+import { parseIntClamped, parsePositiveInt, LIMITS, PAGES } from '@/lib/api/parse-params'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -12,9 +13,9 @@ interface RouteParams {
 
 export const GET = apiHandler(async (request: NextRequest, { params }: RouteParams) => {
   const { id } = await params
-  const editionId = parseInt(id)
+  const editionId = parsePositiveInt(id)
 
-  if (isNaN(editionId)) {
+  if (!editionId) {
     return NextResponse.json(
       { error: 'ID inválido' },
       { status: 400 }
@@ -27,17 +28,19 @@ export const GET = apiHandler(async (request: NextRequest, { params }: RoutePara
   const premiereType = searchParams.get('premiereType')
   const dateFrom = searchParams.get('dateFrom')
   const dateTo = searchParams.get('dateTo')
-  const page = parseInt(searchParams.get('page') || '1')
-  const limit = parseInt(searchParams.get('limit') || '50')
+  const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX)
+  const limit = parseIntClamped(searchParams.get('limit'), 50, LIMITS.MIN, LIMITS.MAX)
 
   const where: any = { editionId }
 
   if (sectionId) {
-    where.sectionId = parseInt(sectionId)
+    const parsedSectionId = parsePositiveInt(sectionId)
+    if (parsedSectionId) where.sectionId = parsedSectionId
   }
 
   if (movieId) {
-    where.movieId = parseInt(movieId)
+    const parsedMovieId = parsePositiveInt(movieId)
+    if (parsedMovieId) where.movieId = parsedMovieId
   }
 
   if (premiereType) {

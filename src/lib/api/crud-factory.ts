@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { createSlug } from '@/lib/utils'
 import { requireAuth } from '@/lib/auth'
 import { ZodError, type ZodSchema } from 'zod'
+import { parseIntClamped, LIMITS, PAGES } from '@/lib/api/parse-params'
 
 // ---------------------------------------------------------------------------
 // Helpers (exportados para uso independiente fuera del factory)
@@ -16,8 +17,8 @@ import { ZodError, type ZodSchema } from 'zod'
  * Retorna el número o null si es inválido.
  */
 export function parseId(idStr: string): number | null {
-  const id = parseInt(idStr)
-  return isNaN(id) ? null : id
+  const id = parseInt(idStr, 10)
+  return isNaN(id) || id <= 0 ? null : id
 }
 
 /**
@@ -193,8 +194,8 @@ export function createListAndCreateHandlers(config: ListCreateConfig) {
       let skip: number | undefined
       let take: number | undefined
       if (config.pagination) {
-        const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
-        const limit = parseInt(searchParams.get('limit') || String(config.pagination.defaultLimit ?? 20))
+        const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX)
+        const limit = parseIntClamped(searchParams.get('limit'), config.pagination.defaultLimit ?? LIMITS.DEFAULT, LIMITS.MIN, LIMITS.MAX)
         skip = (page - 1) * limit
         take = limit
       }
@@ -217,7 +218,7 @@ export function createListAndCreateHandlers(config: ListCreateConfig) {
       // Return paginated or plain response
       if (config.pagination) {
         const total = await model.count(hasWhere ? { where } : undefined)
-        const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+        const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX)
         const limit = take!
         return NextResponse.json({
           [config.pagination.itemsKey]: formattedItems,

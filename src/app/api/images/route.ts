@@ -4,18 +4,20 @@ import { prisma } from '@/lib/prisma'
 import { imageFormSchema } from '@/lib/images/imageTypes'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler, handleApiError } from '@/lib/api/api-handler'
+import { parseIntClamped, parsePositiveInt, LIMITS, PAGES } from '@/lib/api/parse-params'
 
 // GET - Listar imágenes (con filtro opcional por movieId)
 export const GET = apiHandler(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url)
   const movieId = searchParams.get('movieId')
-  const page = parseInt(searchParams.get('page') || '1')
-  const limit = parseInt(searchParams.get('limit') || '20')
+  const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX)
+  const limit = parseIntClamped(searchParams.get('limit'), LIMITS.DEFAULT, LIMITS.MIN, LIMITS.MAX)
   const skip = (page - 1) * limit
 
   const where: any = {}
   if (movieId) {
-    where.movieId = parseInt(movieId)
+    const parsedMovieId = parsePositiveInt(movieId)
+    if (parsedMovieId) where.movieId = parsedMovieId
   }
 
   const [images, totalCount] = await Promise.all([

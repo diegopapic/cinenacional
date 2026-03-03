@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { apiHandler } from '@/lib/api/api-handler'
+import { parseIntClamped, LIMITS } from '@/lib/api/parse-params'
 import { applyRateLimit, getClientIp, RATE_LIMIT_PRESETS } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
@@ -35,7 +36,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get('q')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const limit = parseIntClamped(searchParams.get('limit'), 10, LIMITS.MIN, LIMITS.MAX)
 
     if (!query || query.length < 2) {
       return NextResponse.json({ 

@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { makeUniqueSlug } from '@/lib/api/crud-factory'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler } from '@/lib/api/api-handler'
+import { parsePositiveInt, parseFloatClamped } from '@/lib/api/parse-params'
 
 // Forzar que esta ruta sea dinámica
 /**
@@ -34,7 +35,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
   if (parentId === 'null') {
     where.parentId = null
   } else if (parentId) {
-    where.parentId = parseInt(parentId)
+    const parsedParentId = parsePositiveInt(parentId)
+    if (parsedParentId) where.parentId = parsedParentId
   }
 
   if (search) {
@@ -103,9 +105,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
     data: {
       name,
       slug,
-      parent: parentId ? { connect: { id: parseInt(parentId) } } : undefined,
-      latitude: latitude ? parseFloat(latitude) : null,
-      longitude: longitude ? parseFloat(longitude) : null
+      parent: parentId ? { connect: { id: parsePositiveInt(String(parentId))! } } : undefined,
+      latitude: latitude ? parseFloatClamped(String(latitude), 0, -90, 90) : null,
+      longitude: longitude ? parseFloatClamped(String(longitude), 0, -180, 180) : null
     },
     include: {
       parent: true

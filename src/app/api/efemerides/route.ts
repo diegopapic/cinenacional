@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { calcularAniosDesde, formatearEfemeride } from '@/lib/utils/efemerides';
 import { Efemeride, DirectorInfo } from '@/types/home.types';
+import { parseIntClamped } from '@/lib/api/parse-params';
 import RedisClient from '@/lib/redis';
 
 export const dynamic = 'force-dynamic';
@@ -39,27 +40,13 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     
     // Obtener parámetros - si no se especifican, usar fecha actual
+    // parseIntClamped garantiza rango válido (no se necesita validación adicional)
     const hoy = new Date();
-    const dia = parseInt(searchParams.get('day') || searchParams.get('dia') || hoy.getDate().toString());
-    const mes = parseInt(searchParams.get('month') || searchParams.get('mes') || (hoy.getMonth() + 1).toString());
-    
+    const dia = parseIntClamped(searchParams.get('day') || searchParams.get('dia'), hoy.getDate(), 1, 31);
+    const mes = parseIntClamped(searchParams.get('month') || searchParams.get('mes'), hoy.getMonth() + 1, 1, 12);
+
     // Parámetro para indicar si queremos muestra aleatoria (para la home)
     const randomSample = searchParams.get('random') === 'true';
-    
-    // Validar parámetros
-    if (mes < 1 || mes > 12) {
-      return NextResponse.json(
-        { error: 'Mes inválido (debe ser entre 1 y 12)' },
-        { status: 400 }
-      );
-    }
-    
-    if (dia < 1 || dia > 31) {
-      return NextResponse.json(
-        { error: 'Día inválido (debe ser entre 1 y 31)' },
-        { status: 400 }
-      );
-    }
 
     // ============================================
     // 1. INTENTAR REDIS CACHE
@@ -479,8 +466,8 @@ export async function GET(request: NextRequest) {
     // Intentar servir desde caché stale si hay error
     const searchParams = request.nextUrl.searchParams;
     const hoy = new Date();
-    const dia = parseInt(searchParams.get('day') || searchParams.get('dia') || hoy.getDate().toString());
-    const mes = parseInt(searchParams.get('month') || searchParams.get('mes') || (hoy.getMonth() + 1).toString());
+    const dia = parseIntClamped(searchParams.get('day') || searchParams.get('dia'), hoy.getDate(), 1, 31);
+    const mes = parseIntClamped(searchParams.get('month') || searchParams.get('mes'), hoy.getMonth() + 1, 1, 12);
     const randomSample = searchParams.get('random') === 'true';
     
     const cacheKey = generateCacheKey(dia, mes, randomSample);

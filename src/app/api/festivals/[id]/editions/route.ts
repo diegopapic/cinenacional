@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { festivalEditionFormSchema } from '@/lib/festivals/festivalTypes'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler } from '@/lib/api/api-handler'
+import { parseIntClamped, parsePositiveInt, LIMITS, PAGES, YEARS } from '@/lib/api/parse-params'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -12,9 +13,9 @@ interface RouteParams {
 
 export const GET = apiHandler(async (request: NextRequest, { params }: RouteParams) => {
   const { id } = await params
-  const festivalId = parseInt(id)
+  const festivalId = parsePositiveInt(id)
 
-  if (isNaN(festivalId)) {
+  if (!festivalId) {
     return NextResponse.json(
       { error: 'ID inválido' },
       { status: 400 }
@@ -24,13 +25,14 @@ export const GET = apiHandler(async (request: NextRequest, { params }: RoutePara
   const searchParams = request.nextUrl.searchParams
   const year = searchParams.get('year')
   const isPublished = searchParams.get('isPublished')
-  const page = parseInt(searchParams.get('page') || '1')
-  const limit = parseInt(searchParams.get('limit') || '20')
+  const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX)
+  const limit = parseIntClamped(searchParams.get('limit'), LIMITS.DEFAULT, LIMITS.MIN, LIMITS.MAX)
 
   const where: any = { festivalId }
 
   if (year) {
-    where.year = parseInt(year)
+    const parsedYear = parseIntClamped(year, 0, YEARS.MIN, YEARS.MAX)
+    if (parsedYear) where.year = parsedYear
   }
 
   if (isPublished !== null && isPublished !== undefined) {

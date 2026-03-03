@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { apiHandler } from '@/lib/api/api-handler';
+import { parseIntClamped, parsePositiveInt, LIMITS, PAGES, YEARS } from '@/lib/api/parse-params';
 
 // Esta ruta usa searchParams, debe ser dinámica
 export const dynamic = 'force-dynamic';
@@ -25,8 +26,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
     const productionYearTo = searchParams.get('productionYearTo');
     const sortBy = searchParams.get('sortBy') || 'updatedAt';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = Math.min(parseInt(searchParams.get('limit') || '60'), 100);
+    const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX);
+    const limit = parseIntClamped(searchParams.get('limit'), 60, LIMITS.MIN, LIMITS.MAX);
     const skip = (page - 1) * limit;
 
     // Construir condiciones WHERE
@@ -47,7 +48,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
     // Filtro de color
     if (colorTypeId) {
-      where.colorTypeId = parseInt(colorTypeId);
+      const parsedColorTypeId = parsePositiveInt(colorTypeId);
+      if (parsedColorTypeId) where.colorTypeId = parsedColorTypeId;
     }
 
     // Filtro de tipo de duración
@@ -57,25 +59,32 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
     // Filtro de país coproductor
     if (countryId) {
-      where.movieCountries = {
-        some: {
-          countryId: parseInt(countryId)
-        }
-      };
+      const parsedCountryId = parsePositiveInt(countryId);
+      if (parsedCountryId) {
+        where.movieCountries = {
+          some: {
+            countryId: parsedCountryId
+          }
+        };
+      }
     }
 
     // Filtro de género
     if (genreId) {
-      where.genres = {
-        some: {
-          genreId: parseInt(genreId)
-        }
-      };
+      const parsedGenreId = parsePositiveInt(genreId);
+      if (parsedGenreId) {
+        where.genres = {
+          some: {
+            genreId: parsedGenreId
+          }
+        };
+      }
     }
 
     // Filtro de calificación/restricción
     if (ratingId) {
-      where.ratingId = parseInt(ratingId);
+      const parsedRatingId = parsePositiveInt(ratingId);
+      if (parsedRatingId) where.ratingId = parsedRatingId;
     }
 
     // Filtros de fecha de estreno (fecha completa YYYY-MM-DD)
@@ -141,10 +150,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
     if (productionYearFrom || productionYearTo) {
       where.year = {};
       if (productionYearFrom) {
-        where.year.gte = parseInt(productionYearFrom);
+        where.year.gte = parseIntClamped(productionYearFrom, YEARS.MIN, YEARS.MIN, YEARS.MAX);
       }
       if (productionYearTo) {
-        where.year.lte = parseInt(productionYearTo);
+        where.year.lte = parseIntClamped(productionYearTo, YEARS.MAX, YEARS.MIN, YEARS.MAX);
       }
     }
 

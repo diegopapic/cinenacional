@@ -6,6 +6,7 @@ import { roleSchema, Department } from '@/lib/roles/rolesTypes'
 import { makeUniqueSlug } from '@/lib/api/crud-factory'
 import { requireAuth } from '@/lib/auth'
 import { ZodError } from 'zod'
+import { parseIntClamped, LIMITS, PAGES } from '@/lib/api/parse-params'
 
 const INCLUDE = { _count: { select: { crewRoles: true } } }
 
@@ -19,8 +20,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX)
+    const limit = parseIntClamped(searchParams.get('limit'), LIMITS.DEFAULT, LIMITS.MIN, LIMITS.MAX)
     const search = searchParams.get('search') || ''
     const department = searchParams.get('department') as Department
     const isActive = searchParams.get('isActive')

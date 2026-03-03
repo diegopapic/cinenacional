@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { apiHandler } from '@/lib/api/api-handler';
+import { parseIntClamped, DAYS } from '@/lib/api/parse-params';
 import crypto from 'crypto';
 
 // Tipos válidos de página
@@ -118,7 +119,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 export const GET = apiHandler(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const pageType = searchParams.get('pageType');
-  const days = parseInt(searchParams.get('days') || '30');
+  const days = parseIntClamped(searchParams.get('days'), DAYS.DEFAULT, DAYS.MIN, DAYS.MAX);
 
   const dateFrom = new Date();
   dateFrom.setDate(dateFrom.getDate() - days);

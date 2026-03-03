@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { apiHandler } from '@/lib/api/api-handler';
+import { parseIntClamped, parsePositiveInt, LIMITS, PAGES, YEARS } from '@/lib/api/parse-params';
 
 // Esta ruta usa searchParams, debe ser dinámica
 export const dynamic = 'force-dynamic';
@@ -51,19 +52,21 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // Parámetros de ordenamiento y paginación
     const sortBy = searchParams.get('sortBy') || 'id';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '60');
+    const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX);
+    const limit = parseIntClamped(searchParams.get('limit'), 60, LIMITS.MIN, LIMITS.MAX);
     const skip = (page - 1) * limit;
 
     // Obtener IDs de ubicaciones descendientes si hay filtros de ubicación
     let birthLocationIds: number[] = [];
     let deathLocationIds: number[] = [];
-    
+
     if (birthLocationId) {
-      birthLocationIds = await getLocationDescendantIds(parseInt(birthLocationId));
+      const parsedId = parsePositiveInt(birthLocationId);
+      if (parsedId) birthLocationIds = await getLocationDescendantIds(parsedId);
     }
     if (deathLocationId) {
-      deathLocationIds = await getLocationDescendantIds(parseInt(deathLocationId));
+      const parsedId = parsePositiveInt(deathLocationId);
+      if (parsedId) deathLocationIds = await getLocationDescendantIds(parsedId);
     }
 
     // Construir WHERE clause
@@ -113,36 +116,39 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
     // Filtro de nacionalidad
     if (nationalityId) {
-      where.nationalities = {
-        some: {
-          locationId: parseInt(nationalityId)
-        }
-      };
+      const parsedNationalityId = parsePositiveInt(nationalityId);
+      if (parsedNationalityId) {
+        where.nationalities = {
+          some: {
+            locationId: parsedNationalityId
+          }
+        };
+      }
     }
 
     // Filtro de rol (Actor, Como sí mismo, o rol técnico)
     if (roleId) {
       if (roleId === 'ACTOR') {
-        // Actuaciones reales (is_actor = true)
         where.castRoles = {
           some: {
             isActor: true
           }
         };
       } else if (roleId === 'SELF') {
-        // Apariciones como sí mismo (is_actor = false)
         where.castRoles = {
           some: {
             isActor: false
           }
         };
       } else {
-        // Roles técnicos
-        where.crewRoles = {
-          some: {
-            roleId: parseInt(roleId)
-          }
-        };
+        const parsedRoleId = parsePositiveInt(roleId);
+        if (parsedRoleId) {
+          where.crewRoles = {
+            some: {
+              roleId: parsedRoleId
+            }
+          };
+        }
       }
     }
 
@@ -150,10 +156,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
     if (birthYearFrom || birthYearTo) {
       where.birthYear = {};
       if (birthYearFrom) {
-        where.birthYear.gte = parseInt(birthYearFrom);
+        where.birthYear.gte = parseIntClamped(birthYearFrom, YEARS.MIN, YEARS.MIN, YEARS.MAX);
       }
       if (birthYearTo) {
-        where.birthYear.lte = parseInt(birthYearTo);
+        where.birthYear.lte = parseIntClamped(birthYearTo, YEARS.MAX, YEARS.MIN, YEARS.MAX);
       }
     }
 
@@ -161,10 +167,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
     if (deathYearFrom || deathYearTo) {
       where.deathYear = {};
       if (deathYearFrom) {
-        where.deathYear.gte = parseInt(deathYearFrom);
+        where.deathYear.gte = parseIntClamped(deathYearFrom, YEARS.MIN, YEARS.MIN, YEARS.MAX);
       }
       if (deathYearTo) {
-        where.deathYear.lte = parseInt(deathYearTo);
+        where.deathYear.lte = parseIntClamped(deathYearTo, YEARS.MAX, YEARS.MIN, YEARS.MAX);
       }
     }
 
@@ -196,19 +202,20 @@ export const GET = apiHandler(async (request: NextRequest) => {
         conditions.push(Prisma.sql`p.gender = ${gender}::"Gender"`);
       }
       if (birthYearFrom) {
-        conditions.push(Prisma.sql`p.birth_year >= ${parseInt(birthYearFrom)}`);
+        conditions.push(Prisma.sql`p.birth_year >= ${parseIntClamped(birthYearFrom, YEARS.MIN, YEARS.MIN, YEARS.MAX)}`);
       }
       if (birthYearTo) {
-        conditions.push(Prisma.sql`p.birth_year <= ${parseInt(birthYearTo)}`);
+        conditions.push(Prisma.sql`p.birth_year <= ${parseIntClamped(birthYearTo, YEARS.MAX, YEARS.MIN, YEARS.MAX)}`);
       }
       if (deathYearFrom) {
-        conditions.push(Prisma.sql`p.death_year >= ${parseInt(deathYearFrom)}`);
+        conditions.push(Prisma.sql`p.death_year >= ${parseIntClamped(deathYearFrom, YEARS.MIN, YEARS.MIN, YEARS.MAX)}`);
       }
       if (deathYearTo) {
-        conditions.push(Prisma.sql`p.death_year <= ${parseInt(deathYearTo)}`);
+        conditions.push(Prisma.sql`p.death_year <= ${parseIntClamped(deathYearTo, YEARS.MAX, YEARS.MIN, YEARS.MAX)}`);
       }
       if (nationalityId) {
-        conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM person_nationalities pn WHERE pn.person_id = p.id AND pn.location_id = ${parseInt(nationalityId)})`);
+        const parsedNatId = parsePositiveInt(nationalityId);
+        if (parsedNatId) conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM person_nationalities pn WHERE pn.person_id = p.id AND pn.location_id = ${parsedNatId})`);
       }
       if (roleId === 'ACTOR') {
         // Actuaciones reales (is_actor = true)
@@ -220,7 +227,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
       }
       if (roleId && roleId !== 'ACTOR' && roleId !== 'SELF') {
         // Roles técnicos
-        conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM movie_crew mcr WHERE mcr.person_id = p.id AND mcr.role_id = ${parseInt(roleId)})`);
+        const parsedRoleIdSql = parsePositiveInt(roleId);
+        if (parsedRoleIdSql) conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM movie_crew mcr WHERE mcr.person_id = p.id AND mcr.role_id = ${parsedRoleIdSql})`);
       }
       if (sortBy === 'birthDate') {
         conditions.push(Prisma.sql`p.birth_year IS NOT NULL`);

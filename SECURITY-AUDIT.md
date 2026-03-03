@@ -422,7 +422,17 @@ Los intentos de login se registran en tabla `auditLog`. Esto es una buena práct
    - Middleware valida header === cookie Y firma válida (previene cookie injection)
    - Exclusiones: `/api/auth/` (NextAuth maneja CSRF propio), `/api/analytics/` (usa sendBeacon)
    - 21 archivos actualizados: middleware, api-client, 18 formularios/páginas admin
-11. **Validar rangos** en todos los parámetros numéricos de la API
+11. ~~**Validar rangos** en todos los parámetros numéricos de la API~~ ✅ Completado 2026-03-03
+   - Creado `src/lib/api/parse-params.ts` con utilidades `parseIntClamped`, `parseFloatClamped`, `parsePositiveInt` y constantes de rango
+   - `limit` clampeado a 1-100 en todas las rutas (search, movies, people, festivals, images, roles, crud-factory)
+   - `page` clampeado a 1-10000 en todas las rutas
+   - `days` clampeado a 1-365 en analytics/pageview
+   - Años (`year`, `yearFrom`, `yearTo`, `birthYear`, `deathYear`, etc.) clampeados a 1890-2100
+   - IDs de filtros (`locationId`, `genreId`, `roleId`, etc.) validados como enteros positivos con `parsePositiveInt`
+   - Coordenadas (`latitude`, `longitude`) validadas con `parseFloatClamped` (-90/90, -180/180)
+   - `dia`/`mes` en efemerides clampeados a 1-31 y 1-12 respectivamente
+   - `parseId` en crud-factory actualizado para rechazar IDs <= 0
+   - 15 archivos de API actualizados
 12. **Sanitizar mensajes de error** en producción (no exponer detalles internos)
 13. **Implementar sistema de logging** centralizado y seguro
 14. **Fortalecer cookies de sesión** — `sameSite: 'strict'`, revisar flags
