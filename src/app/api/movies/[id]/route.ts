@@ -17,10 +17,11 @@ const REDIS_CACHE_TTL = 3600; // 1 hora en segundos
 // GET /api/movies/[id] - Obtener película por ID o slug
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: paramId } = await params
   try {
-    const idOrSlug = params.id
+    const idOrSlug = paramId
     const isId = /^\d+$/.test(idOrSlug)
     const skipCache = request.nextUrl.searchParams.get('fresh') === 'true'
 
@@ -334,7 +335,7 @@ export async function GET(
     console.error('Error fetching movie:', error)
 
     // Intentar servir desde caché stale si hay error
-    const cacheKey = `movie:${/^\d+$/.test(params.id) ? 'id' : 'slug'}:${params.id}:v1`;
+    const cacheKey = `movie:${/^\d+$/.test(paramId) ? 'id' : 'slug'}:${paramId}:v1`;
     const staleCache = memoryCache.get(cacheKey);
 
     if (staleCache) {
@@ -358,12 +359,13 @@ export async function GET(
 // PUT /api/movies/[id] - Actualizar película
 export const PUT = apiHandler(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
+  const { id: paramId } = await params
   const auth = await requireAuth()
   if (auth.error) return auth.error
 
-  const id = parseInt(params.id)
+  const id = parseInt(paramId)
 
   if (isNaN(id)) {
     return NextResponse.json(
@@ -747,13 +749,14 @@ export const PUT = apiHandler(async (
 // DELETE /api/movies/[id] - Eliminar película
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: paramId } = await params
   const auth = await requireAuth()
   if (auth.error) return auth.error
 
   try {
-    const id = parseInt(params.id)
+    const id = parseInt(paramId)
 
     if (isNaN(id)) {
       return NextResponse.json(

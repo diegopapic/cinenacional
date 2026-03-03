@@ -8,9 +8,10 @@ import { apiHandler } from '@/lib/api/api-handler'
 // GET - Obtener imagen por ID
 export const GET = apiHandler(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
-  const id = parseInt(params.id)
+  const { id: paramId } = await params
+  const id = parseInt(paramId)
 
   if (isNaN(id)) {
     return NextResponse.json(
@@ -59,12 +60,13 @@ export const GET = apiHandler(async (
 // PUT - Actualizar imagen
 export const PUT = apiHandler(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
+  const { id: paramId } = await params
   const auth = await requireAuth()
   if (auth.error) return auth.error
 
-  const id = parseInt(params.id)
+  const id = parseInt(paramId)
 
   if (isNaN(id)) {
     return NextResponse.json(
@@ -142,12 +144,13 @@ export const PUT = apiHandler(async (
 // DELETE - Eliminar imagen
 export const DELETE = apiHandler(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
+  const { id: paramId } = await params
   const auth = await requireAuth()
   if (auth.error) return auth.error
 
-  const id = parseInt(params.id)
+  const id = parseInt(paramId)
 
   if (isNaN(id)) {
     return NextResponse.json(

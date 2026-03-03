@@ -10,10 +10,11 @@ const REDIS_CACHE_TTL = 3600; // 1 hora en segundos
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: paramId } = await params;
   try {
-    const personId = parseInt(params.id);
+    const personId = parseInt(paramId);
 
     if (isNaN(personId)) {
       return NextResponse.json(
@@ -38,7 +39,7 @@ export async function GET(
               'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
               'X-Cache': 'HIT',
               'X-Cache-Source': 'redis',
-              'X-Person-Id': params.id
+              'X-Person-Id': paramId
             }
           }
         );
@@ -63,7 +64,7 @@ export async function GET(
           'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
           'X-Cache': 'HIT',
           'X-Cache-Source': 'memory',
-          'X-Person-Id': params.id
+          'X-Person-Id': paramId
         }
       });
     }
@@ -169,14 +170,14 @@ export async function GET(
         'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
         'X-Cache': 'MISS',
         'X-Cache-Source': 'database',
-        'X-Person-Id': params.id
+        'X-Person-Id': paramId
       }
     });
   } catch (error) {
     console.error('Error fetching person filmography:', error);
 
     // Intentar servir desde caché stale si hay error
-    const cacheKey = `person:filmography:${parseInt(params.id)}:v2`;
+    const cacheKey = `person:filmography:${parseInt(paramId)}:v2`;
     const staleCache = memoryCache.get(cacheKey);
 
     if (staleCache) {

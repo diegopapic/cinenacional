@@ -12,9 +12,9 @@ export const metadata = {
 }
 
 interface EditLocationPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 async function getLocation(id: number) {
@@ -24,12 +24,13 @@ async function getLocation(id: number) {
       parent: true
     }
   })
-  
+
   return location
 }
 
 export default async function EditLocationPage({ params }: EditLocationPageProps) {
-  const id = parseInt(params.id)
+  const { id: idStr } = await params
+  const id = parseInt(idStr)
   
   if (isNaN(id)) {
     notFound()

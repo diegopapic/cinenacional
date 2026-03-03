@@ -5,11 +5,12 @@ import { apiHandler } from '@/lib/api/api-handler';
 
 export const GET = apiHandler(async (
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) => {
+    const { slug } = await params;
     const person = await prisma.person.findFirst({
       where: {
-        slug: params.slug,
+        slug,
         isActive: true
       },
       include: {

@@ -1,7 +1,7 @@
 // src/app/persona/[slug]/page.tsx - VERSIÓN CON 2 PESTAÑAS: "Todos los roles" y "Por rol"
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -37,9 +37,9 @@ function getCreditedLabel(gender?: string | null): string {
 }
 
 interface PersonPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 
@@ -128,7 +128,8 @@ interface GalleryImage {
   } | null;
 }
 
-export default function PersonPage({ params }: PersonPageProps) {
+export default function PersonPage({ params: paramsPromise }: PersonPageProps) {
+  const params = use(paramsPromise);
   const [person, setPerson] = useState<any>(null);
   const [filmography, setFilmography] = useState<any>(null);
   const [loading, setLoading] = useState(true);

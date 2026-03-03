@@ -9,9 +9,10 @@ import { apiHandler } from '@/lib/api/api-handler'
 // GET /api/locations/[id] - Obtener un lugar por ID con path completo
 export const GET = apiHandler(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
-  const id = parseInt(params.id)
+  const { id: paramId } = await params
+  const id = parseInt(paramId)
 
   if (isNaN(id)) {
     return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -78,12 +79,13 @@ export const GET = apiHandler(async (
 // PUT /api/locations/[id] - Actualizar un lugar
 export const PUT = apiHandler(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
+  const { id: paramId } = await params
   const auth = await requireAuth()
   if (auth.error) return auth.error
 
-  const id = parseInt(params.id)
+  const id = parseInt(paramId)
 
   if (isNaN(id)) {
     return NextResponse.json(
@@ -159,12 +161,13 @@ export const PUT = apiHandler(async (
 // DELETE /api/locations/[id] - Eliminar un lugar
 export const DELETE = apiHandler(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
+  const { id: paramId } = await params
   const auth = await requireAuth()
   if (auth.error) return auth.error
 
-  const id = parseInt(params.id)
+  const id = parseInt(paramId)
 
   if (isNaN(id)) {
     return NextResponse.json(

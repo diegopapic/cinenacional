@@ -69,12 +69,12 @@ export const metadata: Metadata = {
   },
 }
 
-export default function SiteLayout({
+export default async function SiteLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const nonce = headers().get('x-nonce') ?? ''
+  const nonce = (await headers()).get('x-nonce') ?? ''
   const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-5SGTLPHYYX'
 
   return (

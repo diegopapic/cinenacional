@@ -402,7 +402,13 @@ Los intentos de login se registran en tabla `auditLog`. Esto es una buena práct
    - `'unsafe-inline'` y `https:` mantenidos como fallback para browsers sin soporte de nonces
    - Nonce pasado a layout via header `x-nonce` y aplicado a todos los `<Script>` components
    - `style-src` mantiene `'unsafe-inline'` (requerido por Next.js para estilos inline)
-8. **Actualizar dependencias vulnerables** (`next`, `ajv`, `minimatch`)
+8. ~~**Actualizar dependencias vulnerables** (`next`, `ajv`, `minimatch`)~~ ✅ Completado 2026-03-02
+   - `next` actualizado de 14.2.35 a 15.5.12 (corrige GHSA-9g9p-9gw9-jx7f y GHSA-h25m-26qc-wcjf)
+   - `ajv` actualizado a 6.14.0+ via npm audit fix (corrige ReDoS GHSA-2g4f-4pwh-qvx6)
+   - `minimatch` actualizado en todas las instancias transitivas via npm audit fix
+   - `documentation` devDependency eliminada (traía `vue-template-compiler` vulnerable sin parche disponible, reemplazada por `typedoc`/`jsdoc`)
+   - Código migrado a Next.js 15: `headers()` async, `params` como Promise en 10 archivos, `swcMinify` eliminado
+   - `npm audit`: 0 vulnerabilidades
 9. **Proteger endpoints de health** con autenticación o limitar información expuesta
 
 ### Mediano plazo (1 mes)

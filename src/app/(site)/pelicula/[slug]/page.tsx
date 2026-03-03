@@ -5,9 +5,9 @@ import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 // Configuración de página dinámica
@@ -283,7 +283,8 @@ async function getMovieData(slug: string) {
 
 // Metadata dinámica
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const movie = await getMovieData(params.slug);
+  const { slug } = await params;
+  const movie = await getMovieData(slug);
 
   if (!movie) {
     return {
@@ -420,7 +421,8 @@ function buildGalleryImages(
 }
 
 export default async function MoviePage({ params }: PageProps) {
-  const movie = await getMovieData(params.slug);
+  const { slug } = await params;
+  const movie = await getMovieData(slug);
 
   if (!movie) {
     notFound();

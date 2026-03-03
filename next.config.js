@@ -57,8 +57,6 @@ const nextConfig = {
     ],
   },
   
-  swcMinify: true,
-  
   experimental: {
     workerThreads: false,
     cpus: 1,
