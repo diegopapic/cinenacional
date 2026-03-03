@@ -67,30 +67,44 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next({
     request: { headers: requestHeaders }
   })
-  
+
+  // ============ CSRF TOKEN COOKIE (antes de early returns) ============
+  // Generar y setear cookie CSRF si no existe. El token es non-httpOnly para
+  // que JavaScript pueda leerlo y enviarlo como header en requests de mutación.
+  // Se genera temprano para que cualquier `return response` incluya el cookie.
+  const existingCsrfToken = request.cookies.get(CSRF_COOKIE_NAME)?.value
+  const csrfSecret = process.env.NEXTAUTH_SECRET
+  if (!existingCsrfToken && csrfSecret) {
+    const csrfToken = await generateSignedCsrfToken(csrfSecret)
+    response.cookies.set(CSRF_COOKIE_NAME, csrfToken, {
+      httpOnly: false,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 86400 // 24 horas
+    })
+  }
+
   // ============ PROTECCIÓN DE ADMIN ============
-  if (path.startsWith('/admin')) {
-    if (path === '/admin/login') {
-      return response
-    }
-    
+  // /admin/login no requiere auth (pero sí recibe headers de seguridad más abajo)
+  if (path.startsWith('/admin') && path !== '/admin/login') {
     try {
-      const token = await getToken({ 
-        req: request, 
-        secret: process.env.NEXTAUTH_SECRET 
+      const token = await getToken({
+        req: request,
+        secret: process.env.NEXTAUTH_SECRET
       })
-      
+
       if (!token) {
         const loginUrl = new URL('/admin/login', request.url)
         loginUrl.searchParams.set('callbackUrl', path)
         return NextResponse.redirect(loginUrl)
       }
-      
-      const hasAdminAccess = 
-        token.role === 'ADMIN' || 
+
+      const hasAdminAccess =
+        token.role === 'ADMIN' ||
         token.role === 'EDITOR' ||
         token.isAdmin === true
-      
+
       if (!hasAdminAccess) {
         return NextResponse.redirect(new URL('/unauthorized', request.url))
       }
@@ -237,22 +251,6 @@ export async function middleware(request: NextRequest) {
     }
   }
   
-  // ============ CSRF TOKEN COOKIE ============
-  // Generar y setear cookie CSRF si no existe. El token es non-httpOnly para
-  // que JavaScript pueda leerlo y enviarlo como header en requests de mutación.
-  const existingCsrfToken = request.cookies.get(CSRF_COOKIE_NAME)?.value
-  const csrfSecret = process.env.NEXTAUTH_SECRET
-  if (!existingCsrfToken && csrfSecret) {
-    const csrfToken = await generateSignedCsrfToken(csrfSecret)
-    response.cookies.set(CSRF_COOKIE_NAME, csrfToken, {
-      httpOnly: false,
-      sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 86400 // 24 horas
-    })
-  }
-
   // ============ PROTECCIÓN CONTRA BOTS ============
   const userAgent = request.headers.get('user-agent') || ''
   const blockedBots = ['bot', 'crawler', 'spider', 'scraper']

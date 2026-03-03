@@ -289,10 +289,11 @@ export function createItemHandlers(config: ItemConfig) {
 
   async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) {
     try {
-      const id = parseId(params.id)
+      const { id: idStr } = await params
+      const id = parseId(idStr)
       if (id === null) {
         return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
       }
@@ -327,13 +328,14 @@ export function createItemHandlers(config: ItemConfig) {
 
   async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) {
     const auth = await requireAuth()
     if (auth.error) return auth.error
 
     try {
-      const id = parseId(params.id)
+      const { id: idStr } = await params
+      const id = parseId(idStr)
       if (id === null) {
         return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
       }
@@ -389,13 +391,14 @@ export function createItemHandlers(config: ItemConfig) {
 
   async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) {
     const auth = await requireAuth()
     if (auth.error) return auth.error
 
     try {
-      const id = parseId(params.id)
+      const { id: idStr } = await params
+      const id = parseId(idStr)
       if (id === null) {
         return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
       }
