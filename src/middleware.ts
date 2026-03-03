@@ -15,7 +15,7 @@ const requestCounts = new Map<string, { count: number; resetTime: number }>()
 
 const RATE_LIMITS = {
   api: { requests: 1000, window: 60000 },      // 1000 req/min
-  auth: { requests: 10, window: 300000 },      // 10 req/5min
+  auth: { requests: 30, window: 300000 },      // 30 req/5min (primera línea; Redis en route handler es más estricto)
   search: { requests: 500, window: 60000 }     // 500 req/min
 }
 
@@ -154,8 +154,9 @@ export async function middleware(request: NextRequest) {
   const clientKey = getRateLimitKey(request)
   
   // Determinar límite según el tipo de ruta
+  // /admin/login es una página, no un endpoint de auth — usa el rate limit general
   let rateLimit = RATE_LIMITS.api
-  if (path.startsWith('/api/auth/') || path === '/admin/login') {
+  if (path.startsWith('/api/auth/')) {
     rateLimit = RATE_LIMITS.auth
   } else if (path.includes('/search') || path.includes('/autocomplete')) {
     rateLimit = RATE_LIMITS.search
