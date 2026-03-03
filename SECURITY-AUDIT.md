@@ -416,7 +416,12 @@ Los intentos de login se registran en tabla `auditLog`. Esto es una buena práct
 
 ### Mediano plazo (1 mes)
 
-10. **Implementar tokens CSRF** para formularios
+10. ~~**Implementar tokens CSRF** para formularios~~ ✅ Completado 2026-03-03
+   - Patrón signed double-submit cookie: middleware genera token HMAC-SHA256, setea cookie non-httpOnly
+   - Cliente lee cookie y envía como header `X-CSRF-Token` en cada mutación
+   - Middleware valida header === cookie Y firma válida (previene cookie injection)
+   - Exclusiones: `/api/auth/` (NextAuth maneja CSRF propio), `/api/analytics/` (usa sendBeacon)
+   - 21 archivos actualizados: middleware, api-client, 18 formularios/páginas admin
 11. **Validar rangos** en todos los parámetros numéricos de la API
 12. **Sanitizar mensajes de error** en producción (no exponer detalles internos)
 13. **Implementar sistema de logging** centralizado y seguro
