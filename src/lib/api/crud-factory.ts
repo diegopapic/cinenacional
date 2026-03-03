@@ -163,9 +163,6 @@ export function createListAndCreateHandlers(config: ListCreateConfig) {
   const model = getModel(config.model)
 
   async function GET(request: NextRequest) {
-    const auth = await requireAuth()
-    if (auth.error) return auth.error
-
     try {
       const searchParams = request.nextUrl.searchParams
 
@@ -294,9 +291,6 @@ export function createItemHandlers(config: ItemConfig) {
     request: NextRequest,
     { params }: { params: { id: string } }
   ) {
-    const auth = await requireAuth()
-    if (auth.error) return auth.error
-
     try {
       const id = parseId(params.id)
       if (id === null) {
