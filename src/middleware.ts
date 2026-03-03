@@ -86,8 +86,13 @@ export async function middleware(request: NextRequest) {
   }
 
   // ============ PROTECCIÓN DE ADMIN ============
-  // /admin/login no requiere auth (pero sí recibe headers de seguridad más abajo)
-  if (path.startsWith('/admin') && path !== '/admin/login') {
+  if (path.startsWith('/admin')) {
+    // Login page: retornar temprano sin CSP (evita problemas de nonce con hydration).
+    // La cookie CSRF ya se seteó arriba.
+    if (path === '/admin/login') {
+      return response
+    }
+
     try {
       const token = await getToken({
         req: request,
@@ -151,19 +156,25 @@ export async function middleware(request: NextRequest) {
     return response
   }
   
-  const clientKey = getRateLimitKey(request)
-  
+  const clientIp = getRateLimitKey(request)
+
   // Determinar límite según el tipo de ruta
   // /admin/login es una página, no un endpoint de auth — usa el rate limit general
   let rateLimit = RATE_LIMITS.api
+  let rateBucket = 'api'
   if (path.startsWith('/api/auth/')) {
     rateLimit = RATE_LIMITS.auth
+    rateBucket = 'auth'
   } else if (path.includes('/search') || path.includes('/autocomplete')) {
     rateLimit = RATE_LIMITS.search
+    rateBucket = 'search'
   }
-  
+
+  // Key = ip:bucket para que cada categoría tenga su propio contador
+  const rateLimitKey = `${clientIp}:${rateBucket}`
+
   // Verificar rate limit
-  if (!checkRateLimit(clientKey, rateLimit)) {
+  if (!checkRateLimit(rateLimitKey, rateLimit)) {
     console.log(`Rate limit exceeded for IP: ${clientKey} on path: ${path}`)
     
     return new NextResponse('Too Many Requests', {
