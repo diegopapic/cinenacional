@@ -1,17 +1,19 @@
 // src/app/api/health/db/route.ts
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
-    // Test básico de conexión
     const startTime = Date.now()
     await prisma.$queryRaw`SELECT 1`
     const queryTime = Date.now() - startTime
 
-    // Obtener estadísticas básicas de la BD
     const [movieCount, peopleCount, poolStatsRaw] = await Promise.all([
       prisma.movie.count(),
       prisma.person.count(),
@@ -20,7 +22,7 @@ export async function GET() {
         active_connections: number
         idle_connections: number
       }>>`
-        SELECT 
+        SELECT
           CAST(count(*) AS INTEGER) as total_connections,
           CAST(count(*) FILTER (WHERE state = 'active') AS INTEGER) as active_connections,
           CAST(count(*) FILTER (WHERE state = 'idle') AS INTEGER) as idle_connections
@@ -29,7 +31,6 @@ export async function GET() {
       `
     ])
 
-    // Convertir BigInt a números normales
     const poolStats = poolStatsRaw[0] ? {
       total_connections: Number(poolStatsRaw[0].total_connections),
       active_connections: Number(poolStatsRaw[0].active_connections),
@@ -53,14 +54,12 @@ export async function GET() {
       },
       timestamp: new Date().toISOString()
     })
-  } catch (error) {
-    console.error('Database health check failed:', error)
+  } catch {
     return NextResponse.json(
       {
         status: 'unhealthy',
         database: {
           connected: false,
-          error: error instanceof Error ? error.message : 'Unknown error'
         },
         timestamp: new Date().toISOString()
       },

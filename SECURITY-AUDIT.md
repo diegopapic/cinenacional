@@ -409,7 +409,10 @@ Los intentos de login se registran en tabla `auditLog`. Esto es una buena práct
    - `documentation` devDependency eliminada (traía `vue-template-compiler` vulnerable sin parche disponible, reemplazada por `typedoc`/`jsdoc`)
    - Código migrado a Next.js 15: `headers()` async, `params` como Promise en 10 archivos, `swcMinify` eliminado
    - `npm audit`: 0 vulnerabilidades
-9. **Proteger endpoints de health** con autenticación o limitar información expuesta
+9. ~~**Proteger endpoints de health** con autenticación o limitar información expuesta~~ ✅ Completado 2026-03-02
+   - `/api/health` simplificado: solo retorna `status` y `timestamp` (sin uptime, environment ni errores detallados)
+   - `/api/health/db` protegido con `requireAuth()`: requiere sesión ADMIN/EDITOR para acceder a estadísticas de BD
+   - Mensajes de error en ambos endpoints sanitizados (no exponen detalles internos)
 
 ### Mediano plazo (1 mes)
 
