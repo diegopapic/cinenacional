@@ -84,7 +84,7 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
           <div>
             <h3 className="text-[10px] uppercase tracking-wider text-muted-foreground/40 md:text-[11px] md:tracking-widest mb-3">Sinopsis</h3>
             <div
-              className="text-sm leading-relaxed text-muted-foreground/80"
+              className="prose-links text-sm leading-relaxed text-muted-foreground/80"
               dangerouslySetInnerHTML={{ __html: sanitizedSynopsis }}
             />
           </div>

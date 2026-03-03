@@ -354,7 +354,7 @@ export function MovieHero({
 
               {sanitizedSynopsis && (
                 <div
-                  className="text-[13px] leading-relaxed text-muted-foreground/70"
+                  className="prose-links text-[13px] leading-relaxed text-muted-foreground/70"
                   dangerouslySetInnerHTML={{ __html: sanitizedSynopsis }}
                 />
               )}
@@ -415,7 +415,7 @@ export function MovieHero({
               {/* Synopsis desktop */}
               {sanitizedSynopsis && (
                 <div
-                  className="max-w-2xl text-sm leading-relaxed text-muted-foreground/80"
+                  className="prose-links max-w-2xl text-sm leading-relaxed text-muted-foreground/80"
                   dangerouslySetInnerHTML={{ __html: sanitizedSynopsis }}
                 />
               )}

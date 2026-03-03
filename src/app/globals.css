@@ -370,11 +370,15 @@ body {
 }
 
 /* Links dentro de sinopsis y biografías */
-.serif-body a {
+.prose-links a {
   color: oklch(0.95 0.005 260 / 0.8);
-  transition: color 0.2s ease;
+  text-decoration: underline;
+  text-decoration-color: oklch(0.95 0.005 260 / 0.3);
+  text-underline-offset: 2px;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
 }
 
-.serif-body a:hover {
+.prose-links a:hover {
   color: oklch(0.72 0.08 230);
+  text-decoration-color: oklch(0.72 0.08 230 / 0.5);
 }
