@@ -395,7 +395,13 @@ Los intentos de login se registran en tabla `auditLog`. Esto es una buena práct
    - Rate limiting Redis aplicado en POST `/api/auth/[...nextauth]` (10 req/5min)
    - Rate limiting Redis aplicado en GET `/api/search` (60 req/min)
    - Middleware conservado como primera línea de defensa (in-memory, Edge Runtime)
-7. **Fortalecer CSP** — reemplazar `unsafe-inline` con nonces
+7. ~~**Fortalecer CSP** — reemplazar `unsafe-inline` con nonces~~ ✅ Completado 2026-03-02
+   - Nonce per-request generado en middleware con `crypto.randomUUID()`
+   - `script-src` usa `'nonce-xxx' 'strict-dynamic'` en vez de `'unsafe-inline'`
+   - `'strict-dynamic'` propaga confianza a scripts cargados dinámicamente (GTM, GA, AdSense)
+   - `'unsafe-inline'` y `https:` mantenidos como fallback para browsers sin soporte de nonces
+   - Nonce pasado a layout via header `x-nonce` y aplicado a todos los `<Script>` components
+   - `style-src` mantiene `'unsafe-inline'` (requerido por Next.js para estilos inline)
 8. **Actualizar dependencias vulnerables** (`next`, `ajv`, `minimatch`)
 9. **Proteger endpoints de health** con autenticación o limitar información expuesta
 

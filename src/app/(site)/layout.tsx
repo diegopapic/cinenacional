@@ -1,5 +1,6 @@
 // /src/app/(site)/layout.tsx
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { Libre_Franklin, Libre_Caslon_Display } from 'next/font/google'
 import Script from 'next/script'
 import '../globals.css'
@@ -73,8 +74,9 @@ export default function SiteLayout({
 }: {
   children: React.ReactNode
 }) {
+  const nonce = headers().get('x-nonce') ?? ''
   const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-5SGTLPHYYX'
-  
+
   return (
     <html lang="es" className={`h-full ${libreFranklin.variable} ${libreCaslonDisplay.variable}`}>
       <head>
@@ -82,6 +84,7 @@ export default function SiteLayout({
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4540700730503978"
           crossOrigin="anonymous"
+          nonce={nonce}
         />
       </head>
       <body className={`${libreFranklin.className} min-h-full flex flex-col bg-[oklch(0.16_0.005_250)] text-[oklch(0.92_0.01_80)]`}>
@@ -91,8 +94,9 @@ export default function SiteLayout({
             <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
               strategy="afterInteractive"
+              nonce={nonce}
             />
-            <Script id="google-analytics" strategy="afterInteractive">
+            <Script id="google-analytics" strategy="afterInteractive" nonce={nonce}>
               {`
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}

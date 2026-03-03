@@ -49,8 +49,18 @@ if (typeof setInterval !== 'undefined') {
 }
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next()
   const path = request.nextUrl.pathname
+
+  // Generar nonce para CSP (per-request)
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+
+  // Pasar nonce a layouts via request header
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-nonce', nonce)
+
+  const response = NextResponse.next({
+    request: { headers: requestHeaders }
+  })
   
   // ============ PROTECCIÓN DE ADMIN ============
   if (path.startsWith('/admin')) {
@@ -95,10 +105,12 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()') // Restringir APIs del browser
 
   // CSP - única fuente de verdad (eliminada de next.config.js)
+  // Nonce-based strict CSP: 'strict-dynamic' permite que scripts cargados por scripts con nonce sean confiables.
+  // 'unsafe-inline' y https: son fallbacks para browsers que no soportan nonces/strict-dynamic.
   const cspDirectives = [
     "default-src 'self'",
-    // Scripts: unsafe-inline necesario para GTM/GA, unsafe-eval necesario para Next.js dev (hot reload)
-    `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV !== 'production' ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com https://www.google-analytics.com https://res.cloudinary.com https://upload-widget.cloudinary.com https://pagead2.googlesyndication.com https://adservice.google.com https://*.googlesyndication.com https://googleads.g.doubleclick.net https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google`,
+    // Scripts: nonce reemplaza unsafe-inline, strict-dynamic propaga confianza a scripts cargados dinámicamente (GTM, GA, AdSense)
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${process.env.NODE_ENV !== 'production' ? " 'unsafe-eval'" : ''} 'unsafe-inline' https:`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' blob: data: https://res.cloudinary.com https://*.cloudinary.com https://images.unsplash.com https://img.youtube.com https://i.ytimg.com https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com https://www.google.com.ar https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google",
     "font-src 'self' https://fonts.gstatic.com data:",
