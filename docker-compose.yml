@@ -107,6 +107,7 @@ services:
       - HOSTNAME=0.0.0.0
       - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dzndglyjr
       - DATABASE_URL=${DATABASE_URL}
+      - DIRECT_URL=${DIRECT_URL}
       - REDIS_URL=redis://redis:6379
       - NODE_ENV=production
     ports:
