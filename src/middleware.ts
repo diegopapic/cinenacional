@@ -135,26 +135,28 @@ export async function middleware(request: NextRequest) {
   }
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()') // Restringir APIs del browser
 
-  // CSP - única fuente de verdad (eliminada de next.config.js)
-  // Nonce-based strict CSP: 'strict-dynamic' permite que scripts cargados por scripts con nonce sean confiables.
-  // 'unsafe-inline' y https: son fallbacks para browsers que no soportan nonces/strict-dynamic.
-  const cspDirectives = [
-    "default-src 'self'",
-    // Scripts: nonce reemplaza unsafe-inline, strict-dynamic propaga confianza a scripts cargados dinámicamente (GTM, GA, AdSense)
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${process.env.NODE_ENV !== 'production' ? " 'unsafe-eval'" : ''} 'unsafe-inline' https:`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' blob: data: https://res.cloudinary.com https://*.cloudinary.com https://images.unsplash.com https://img.youtube.com https://i.ytimg.com https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com https://www.google.com.ar https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google",
-    "font-src 'self' https://fonts.gstatic.com data:",
-    "connect-src 'self' https://res.cloudinary.com https://api.cloudinary.com https://*.cloudinary.com https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://region1.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://www.google.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google https://csi.gstatic.com",
-    "frame-src 'self' https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://upload-widget.cloudinary.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.googlesyndication.com https://www.googletagmanager.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google https://www.google.com",
-    "media-src 'self' https://res.cloudinary.com",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'none'",
-    ...(process.env.NODE_ENV === 'production' ? ["upgrade-insecure-requests"] : [])
-  ]
-  response.headers.set('Content-Security-Policy', cspDirectives.join('; '))
+  // CSP - nonce-based strict CSP para el sitio público.
+  // Admin pages NO reciben CSP con nonces porque el root layout no propaga
+  // el nonce a los <script> tags de Next.js → strict-dynamic bloquea todo JS.
+  // El site layout sí lee x-nonce y lo usa para GA/AdSense.
+  if (!path.startsWith('/admin')) {
+    const cspDirectives = [
+      "default-src 'self'",
+      `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${process.env.NODE_ENV !== 'production' ? " 'unsafe-eval'" : ''} 'unsafe-inline' https:`,
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' blob: data: https://res.cloudinary.com https://*.cloudinary.com https://images.unsplash.com https://img.youtube.com https://i.ytimg.com https://www.googletagmanager.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com https://www.google.com.ar https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "connect-src 'self' https://res.cloudinary.com https://api.cloudinary.com https://*.cloudinary.com https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://region1.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://www.google.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google https://csi.gstatic.com",
+      "frame-src 'self' https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://upload-widget.cloudinary.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.googlesyndication.com https://www.googletagmanager.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google https://www.google.com",
+      "media-src 'self' https://res.cloudinary.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      ...(process.env.NODE_ENV === 'production' ? ["upgrade-insecure-requests"] : [])
+    ]
+    response.headers.set('Content-Security-Policy', cspDirectives.join('; '))
+  }
   
   // ============ RATE LIMITING ============
   // Excluir assets estáticos del rate limiting
@@ -181,7 +183,7 @@ export async function middleware(request: NextRequest) {
 
   // Verificar rate limit
   if (!checkRateLimit(rateLimitKey, rateLimit)) {
-    console.log(`Rate limit exceeded for IP: ${clientKey} on path: ${path}`)
+    console.log(`Rate limit exceeded for IP: ${clientIp} on path: ${path}`)
     
     return new NextResponse('Too Many Requests', {
       status: 429,
