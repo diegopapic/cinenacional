@@ -8,6 +8,7 @@ import { CrewSection } from "@/components/movies/CrewSection";
 import { FilmTechnical } from "@/components/movies/FilmTechnical";
 import { ExternalLinks } from "@/components/shared/ExternalLinks";
 import { ImageGallery } from "@/components/movies/ImageGallery";
+import { AdditionalData } from "@/components/movies/AdditionalData";
 import { usePageView } from '@/hooks/usePageView';
 
 // Componente de anuncios
@@ -87,6 +88,8 @@ interface MoviePageClientProps {
     directors?: Director[];
     productionType?: string | null;
     externalLinks?: Array<{ type: string; url: string }>;
+    alternativeTitles?: Array<{ id: number; title: string; description?: string | null }>;
+    notes?: string | null;
 }
 
 // Slots de AdSense
@@ -118,7 +121,9 @@ export function MoviePageClient({
     galleryImages = [],
     directors = [],
     productionType,
-    externalLinks = []
+    externalLinks = [],
+    alternativeTitles = [],
+    notes
 }: MoviePageClientProps) {
     usePageView({ pageType: 'MOVIE', movieId: movie.id });
 
@@ -189,6 +194,16 @@ export function MoviePageClient({
                         <ImageGallery
                             images={galleryImages}
                             movieTitle={movie.title}
+                        />
+                    </div>
+                )}
+
+                {/* Datos adicionales */}
+                {(alternativeTitles.length > 0 || notes) && (
+                    <div className="mt-12">
+                        <AdditionalData
+                            alternativeTitles={alternativeTitles}
+                            notes={notes}
                         />
                     </div>
                 )}

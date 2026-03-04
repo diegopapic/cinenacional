@@ -245,6 +245,15 @@ async function getMovieData(slug: string) {
           }
         },
         
+        // Títulos alternativos
+        alternativeTitles: {
+          select: {
+            id: true,
+            title: true,
+            description: true
+          }
+        },
+
         // Links externos de la película
         links: {
           where: { isActive: true },
@@ -661,6 +670,8 @@ export default async function MoviePage({ params }: PageProps) {
       directors={directors}
       productionType={movie.tipoDuracion}
       externalLinks={movie.links || []}
+      alternativeTitles={movie.alternativeTitles || []}
+      notes={movie.notes || null}
     />
   );
 }
