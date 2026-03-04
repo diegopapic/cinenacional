@@ -38,7 +38,7 @@ export function AdditionalData({
             <div className="flex flex-col gap-1.5">
               {alternativeTitles.map((at) => (
                 <div key={at.id} className="flex items-baseline gap-1.5">
-                  <span className="text-[13px] leading-snug text-foreground/80 md:text-sm">
+                  <span className="text-[13px] leading-snug text-muted-foreground/80 md:text-sm">
                     {at.title}
                   </span>
                   {at.description && (
@@ -63,7 +63,7 @@ export function AdditionalData({
                 <li key={item.id} className="flex items-start gap-2">
                   <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/30" />
                   <span
-                    className="text-[13px] leading-relaxed text-foreground/80 md:text-sm [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-primary/80"
+                    className="prose-links text-[13px] leading-relaxed text-muted-foreground/80 md:text-sm"
                     dangerouslySetInnerHTML={{ __html: item.content }}
                   />
                 </li>
