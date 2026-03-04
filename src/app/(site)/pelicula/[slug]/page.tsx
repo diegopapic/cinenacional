@@ -684,7 +684,6 @@ export default async function MoviePage({ params }: PageProps) {
       externalLinks={movie.links || []}
       alternativeTitles={movie.alternativeTitles || []}
       trivia={movie.trivia || []}
-      notes={movie.notes || null}
     />
   );
 }

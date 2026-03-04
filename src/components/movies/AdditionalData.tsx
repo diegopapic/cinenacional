@@ -16,13 +16,11 @@ interface TriviaItem {
 interface AdditionalDataProps {
   alternativeTitles?: AlternativeTitle[];
   trivia?: TriviaItem[];
-  notes?: string | null;
 }
 
 export function AdditionalData({
   alternativeTitles = [],
   trivia = [],
-  notes,
 }: AdditionalDataProps) {
   return (
     <div>
@@ -69,18 +67,6 @@ export function AdditionalData({
                 </li>
               ))}
             </ul>
-          </div>
-        )}
-
-        {/* Notas */}
-        {notes && (
-          <div className={`flex flex-col gap-2${(alternativeTitles.length > 0 || trivia.length > 0) ? ' mt-4' : ''}`}>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground/40 md:text-[11px] md:tracking-widest">
-              Notas
-            </span>
-            <p className="text-[13px] leading-relaxed text-foreground/80 md:text-sm">
-              {notes}
-            </p>
           </div>
         )}
       </div>
