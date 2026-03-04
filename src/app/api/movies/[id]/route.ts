@@ -296,6 +296,15 @@ export async function GET(
             title: true,
             description: true
           }
+        },
+
+        trivia: {
+          select: {
+            id: true,
+            content: true,
+            sortOrder: true
+          },
+          orderBy: { sortOrder: 'asc' }
         }
       }
     })
@@ -451,6 +460,7 @@ export const PUT = apiHandler(async (
     distributionCompanies,
     themes,
     alternativeTitles,
+    trivia,
     links,
     screeningVenues,
     ...movieData
@@ -629,7 +639,21 @@ export const PUT = apiHandler(async (
       }
     }
 
-    // 10. Actualizar links oficiales
+    // 10. Actualizar trivia
+    if (trivia !== undefined) {
+      await tx.movieTrivia.deleteMany({ where: { movieId: id } })
+      if (trivia && trivia.length > 0) {
+        await tx.movieTrivia.createMany({
+          data: trivia.map((item: any, index: number) => ({
+            movieId: id,
+            content: item.content,
+            sortOrder: index
+          }))
+        })
+      }
+    }
+
+    // 11. Actualizar links oficiales
     if (links !== undefined) {
       await tx.movieLink.deleteMany({ where: { movieId: id } })
       if (links && links.length > 0) {

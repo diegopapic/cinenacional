@@ -3,6 +3,7 @@ import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import { MONTHS } from '@/lib/shared/dateUtils'
 import { MOVIE_STAGES } from '@/lib/movies/movieConstants'
 import AlternativeTitlesManager from '@/components/admin/AlternativeTitlesManager'
+import TriviaManager from '@/components/admin/TriviaManager'
 import MovieLinksManager from '@/components/admin/MovieLinksManager'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 
@@ -26,6 +27,8 @@ export default function AdvancedTab() {
     // Data
     alternativeTitles,
     setAlternativeTitles,
+    trivia,
+    setTrivia,
     movieFormInitialData,
     movieLinks,
     editingMovie,
@@ -260,6 +263,14 @@ export default function AdvancedTab() {
         <AlternativeTitlesManager
           onChange={setAlternativeTitles}
           initialTitles={editingMovieId ? alternativeTitles : []}
+        />
+      </div>
+
+      {/* Trivia */}
+      <div className="mt-6">
+        <TriviaManager
+          onChange={setTrivia}
+          initialTrivia={editingMovieId ? trivia : []}
         />
       </div>
 

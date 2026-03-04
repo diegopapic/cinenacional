@@ -254,6 +254,16 @@ async function getMovieData(slug: string) {
           }
         },
 
+        // Trivia
+        trivia: {
+          select: {
+            id: true,
+            content: true,
+            sortOrder: true
+          },
+          orderBy: { sortOrder: 'asc' as const }
+        },
+
         // Links externos de la película
         links: {
           where: { isActive: true },
@@ -268,6 +278,7 @@ async function getMovieData(slug: string) {
             images: true,
             videos: true,
             alternativeTitles: true,
+            trivia: true,
             links: true,
             awards: true,
             screenings: true
@@ -638,6 +649,7 @@ export default async function MoviePage({ params }: PageProps) {
         hasImages: movie._count.images > 0,
         hasVideos: movie._count.videos > 0,
         hasAlternativeTitles: movie._count.alternativeTitles > 0,
+        hasTrivia: movie._count.trivia > 0,
         hasLinks: movie._count.links > 0,
         hasAwards: movie._count.awards > 0,
         imageCount: movie._count.images,
@@ -671,6 +683,7 @@ export default async function MoviePage({ params }: PageProps) {
       productionType={movie.tipoDuracion}
       externalLinks={movie.links || []}
       alternativeTitles={movie.alternativeTitles || []}
+      trivia={movie.trivia || []}
       notes={movie.notes || null}
     />
   );

@@ -55,6 +55,8 @@ interface UseMovieFormReturn {
     movieFormInitialData: any
     alternativeTitles: any[]
     setAlternativeTitles: (titles: any[]) => void
+    trivia: any[]
+    setTrivia: (trivia: any[]) => void
     movieLinks: any[]
 
     // Metadata
@@ -182,6 +184,7 @@ export function useMovieForm({
 
     // Estados adicionales
     const [alternativeTitles, setAlternativeTitles] = useState<any[]>([])
+    const [trivia, setTrivia] = useState<any[]>([])
     const [movieLinks, setMovieLinks] = useState<any[]>([])
 
     // React Hook Form
@@ -437,6 +440,11 @@ export function useMovieForm({
             // Configurar títulos alternativos
             if (cleanedMovie.alternativeTitles) {
                 setAlternativeTitles(cleanedMovie.alternativeTitles)
+            }
+
+            // Configurar trivia
+            if (cleanedMovie.trivia) {
+                setTrivia(cleanedMovie.trivia)
             }
 
             // Llenar el formulario con los datos limpios
@@ -815,6 +823,7 @@ export function useMovieForm({
 
                 // Otros campos manejados por estado
                 alternativeTitles,
+                trivia,
                 links: movieLinks
             }
 
@@ -937,6 +946,7 @@ export function useMovieForm({
         })
         setMovieLinks([])
         setAlternativeTitles([])
+        setTrivia([])
         setTipoDuracionDisabled(false)
         setActiveTab('basic')
         setMovieFormInitialData(null)
@@ -973,6 +983,8 @@ export function useMovieForm({
         movieFormInitialData,
         alternativeTitles,
         setAlternativeTitles,
+        trivia,
+        setTrivia,
         movieLinks,
 
         // Metadata

@@ -44,6 +44,8 @@ interface MovieModalContextValue {
   movieFormInitialData: any;
   alternativeTitles: any[];
   setAlternativeTitles: (titles: any[]) => void;
+  trivia: any[];
+  setTrivia: (trivia: any[]) => void;
   movieLinks: any[];
   
   // Metadata

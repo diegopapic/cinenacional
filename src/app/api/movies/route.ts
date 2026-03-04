@@ -516,6 +516,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     distributionCompanies,
     themes,
     alternativeTitles,
+    trivia,
     links,
     screeningVenues,
     colorTypeId,
@@ -637,6 +638,15 @@ export const POST = apiHandler(async (request: NextRequest) => {
           create: alternativeTitles.map((title: any) => ({
             title: title.title,
             description: title.description || null
+          }))
+        }
+      }),
+
+      ...(trivia && trivia.length > 0 && {
+        trivia: {
+          create: trivia.map((item: any, index: number) => ({
+            content: item.content,
+            sortOrder: index
           }))
         }
       }),

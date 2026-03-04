@@ -89,6 +89,7 @@ interface MoviePageClientProps {
     productionType?: string | null;
     externalLinks?: Array<{ type: string; url: string }>;
     alternativeTitles?: Array<{ id: number; title: string; description?: string | null }>;
+    trivia?: Array<{ id: number; content: string; sortOrder: number }>;
     notes?: string | null;
 }
 
@@ -123,6 +124,7 @@ export function MoviePageClient({
     productionType,
     externalLinks = [],
     alternativeTitles = [],
+    trivia = [],
     notes
 }: MoviePageClientProps) {
     usePageView({ pageType: 'MOVIE', movieId: movie.id });
@@ -199,10 +201,11 @@ export function MoviePageClient({
                 )}
 
                 {/* Datos adicionales */}
-                {(alternativeTitles.length > 0 || notes) && (
+                {(alternativeTitles.length > 0 || trivia.length > 0 || notes) && (
                     <div className="mt-12">
                         <AdditionalData
                             alternativeTitles={alternativeTitles}
+                            trivia={trivia}
                             notes={notes}
                         />
                     </div>

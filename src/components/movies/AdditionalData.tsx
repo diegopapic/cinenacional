@@ -7,13 +7,21 @@ interface AlternativeTitle {
   description?: string | null;
 }
 
+interface TriviaItem {
+  id: number;
+  content: string;
+  sortOrder: number;
+}
+
 interface AdditionalDataProps {
   alternativeTitles?: AlternativeTitle[];
+  trivia?: TriviaItem[];
   notes?: string | null;
 }
 
 export function AdditionalData({
   alternativeTitles = [],
+  trivia = [],
   notes,
 }: AdditionalDataProps) {
   return (
@@ -44,9 +52,28 @@ export function AdditionalData({
           </div>
         )}
 
+        {/* Trivia */}
+        {trivia.length > 0 && (
+          <div className={`flex flex-col gap-2${alternativeTitles.length > 0 ? ' mt-4' : ''}`}>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground/40 md:text-[11px] md:tracking-widest">
+              Trivia
+            </span>
+            <ul className="flex flex-col gap-2">
+              {trivia.map((item) => (
+                <li key={item.id} className="flex items-start gap-2">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/30" />
+                  <span className="text-[13px] leading-relaxed text-foreground/80 md:text-sm">
+                    {item.content}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Notas */}
         {notes && (
-          <div className={`flex flex-col gap-2${alternativeTitles.length > 0 ? ' mt-4' : ''}`}>
+          <div className={`flex flex-col gap-2${(alternativeTitles.length > 0 || trivia.length > 0) ? ' mt-4' : ''}`}>
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground/40 md:text-[11px] md:tracking-widest">
               Notas
             </span>

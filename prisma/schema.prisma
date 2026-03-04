@@ -54,6 +54,7 @@ model Movie {
   popularityUpdatedAt        DateTime?                  @map("popularity_updated_at") @db.Timestamptz
   images                Image[]
   alternativeTitles     MovieAlternativeTitle[]
+  trivia                MovieTrivia[]
   awards                MovieAward[]
   cast                  MovieCast[]
   movieCountries        MovieCountry[]
@@ -170,6 +171,18 @@ model MovieAlternativeTitle {
   @@index([movieId])
   @@index([title])
   @@map("movie_alternative_titles")
+}
+
+model MovieTrivia {
+  id        Int      @id @default(autoincrement())
+  movieId   Int      @map("movie_id")
+  content   String
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@index([movieId])
+  @@map("movie_trivia")
 }
 
 model MovieLink {
