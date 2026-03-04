@@ -288,6 +288,14 @@ export async function GET(
           include: {
             venue: true
           }
+        },
+
+        alternativeTitles: {
+          select: {
+            id: true,
+            title: true,
+            description: true
+          }
         }
       }
     })
