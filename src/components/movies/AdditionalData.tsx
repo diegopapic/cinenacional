@@ -62,9 +62,10 @@ export function AdditionalData({
               {trivia.map((item) => (
                 <li key={item.id} className="flex items-start gap-2">
                   <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/30" />
-                  <span className="text-[13px] leading-relaxed text-foreground/80 md:text-sm">
-                    {item.content}
-                  </span>
+                  <span
+                    className="text-[13px] leading-relaxed text-foreground/80 md:text-sm [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-primary/80"
+                    dangerouslySetInnerHTML={{ __html: item.content }}
+                  />
                 </li>
               ))}
             </ul>
