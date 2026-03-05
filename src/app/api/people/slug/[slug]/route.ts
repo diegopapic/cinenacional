@@ -4,9 +4,6 @@ import { prisma } from '@/lib/prisma';
 import RedisClient from '@/lib/redis';
 import { apiHandler } from '@/lib/api/api-handler';
 
-// Cache en memoria como fallback
-const memoryCache = new Map<string, { data: any; timestamp: number }>();
-const MEMORY_CACHE_TTL = 60 * 60 * 1000; // 1 hora en ms
 const REDIS_CACHE_TTL = 3600; // 1 hora en segundos
 
 export const GET = apiHandler(async (
@@ -32,22 +29,7 @@ export const GET = apiHandler(async (
       console.error('Redis error (non-fatal):', redisError);
     }
 
-    // 2. Verificar caché en memoria como fallback
-    const now = Date.now();
-    const memoryCached = memoryCache.get(cacheKey);
-    if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
-      RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), REDIS_CACHE_TTL)
-        .catch(err => console.error('Error guardando en Redis:', err));
-      return NextResponse.json(memoryCached.data, {
-        headers: {
-          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
-          'X-Cache': 'HIT',
-          'X-Cache-Source': 'memory',
-        }
-      });
-    }
-
-    // 3. Cache MISS - consultar BD
+    // 2. Cache MISS - consultar BD
     const person = await prisma.person.findFirst({
       where: {
         slug,
@@ -173,16 +155,9 @@ export const GET = apiHandler(async (
     const { imageAppearances, ...personData } = person;
     const responseData = { ...personData, galleryImages };
 
-    // 4. Guardar en ambos cachés
+    // 3. Guardar en Redis
     RedisClient.set(cacheKey, JSON.stringify(responseData), REDIS_CACHE_TTL)
       .catch(err => console.error('Error guardando en Redis:', err));
-
-    memoryCache.set(cacheKey, { data: responseData, timestamp: now });
-
-    if (memoryCache.size > 100) {
-      const oldestKey = memoryCache.keys().next().value;
-      if (oldestKey) memoryCache.delete(oldestKey);
-    }
 
     return NextResponse.json(responseData, {
       headers: {

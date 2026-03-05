@@ -3,9 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import RedisClient from '@/lib/redis';
 
-// Cache en memoria como fallback
-const memoryCache = new Map<string, { data: any; timestamp: number }>();
-const MEMORY_CACHE_TTL = 60 * 60 * 1000; // 1 hora en ms
 const REDIS_CACHE_TTL = 3600; // 1 hora en segundos
 
 export async function GET(
@@ -48,28 +45,7 @@ export async function GET(
       console.error('Redis error (non-fatal):', redisError);
     }
 
-    // 2. Verificar caché en memoria como fallback
-    const now = Date.now();
-    const memoryCached = memoryCache.get(cacheKey);
-
-    if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
-      console.log(`✅ Cache HIT desde memoria para filmografía de persona: ${personId}`);
-
-      // Intentar guardar en Redis para próximas requests
-      RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), REDIS_CACHE_TTL)
-        .catch(err => console.error('Error guardando en Redis:', err));
-
-      return NextResponse.json(memoryCached.data, {
-        headers: {
-          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
-          'X-Cache': 'HIT',
-          'X-Cache-Source': 'memory',
-          'X-Person-Id': paramId
-        }
-      });
-    }
-
-    // 3. No hay caché, consultar base de datos
+    // 2. No hay caché, consultar base de datos
     console.log(`🔄 Cache MISS - Consultando BD para filmografía de persona: ${personId}`);
 
     // Obtener roles como actor/actriz
@@ -141,29 +117,9 @@ export async function GET(
       ])].length
     };
 
-    // 4. Guardar en ambos cachés
-    // Redis con TTL de 1 hora
+    // 3. Guardar en Redis
     RedisClient.set(cacheKey, JSON.stringify(filmography), REDIS_CACHE_TTL)
-      .then(saved => {
-        if (saved) {
-          console.log(`✅ Filmografía de persona ${personId} guardada en Redis`);
-        }
-      })
       .catch(err => console.error('Error guardando en Redis:', err));
-
-    // Memoria como fallback
-    memoryCache.set(cacheKey, {
-      data: filmography,
-      timestamp: now
-    });
-
-    // Limpiar caché de memoria viejo (mantener máximo 50 filmografías)
-    if (memoryCache.size > 50) {
-      const oldestKey = memoryCache.keys().next().value;
-      if (oldestKey) {
-        memoryCache.delete(oldestKey);
-      }
-    }
 
     return NextResponse.json(filmography, {
       headers: {
@@ -175,21 +131,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching person filmography:', error);
-
-    // Intentar servir desde caché stale si hay error
-    const cacheKey = `person:filmography:${parseInt(paramId)}:v2`;
-    const staleCache = memoryCache.get(cacheKey);
-
-    if (staleCache) {
-      console.log('⚠️ Sirviendo caché stale de filmografía debido a error');
-      return NextResponse.json(staleCache.data, {
-        headers: {
-          'Cache-Control': 'public, s-maxage=60',
-          'X-Cache': 'STALE',
-          'X-Cache-Source': 'memory-fallback'
-        }
-      });
-    }
 
     return NextResponse.json(
       { error: 'Failed to fetch filmography' },
