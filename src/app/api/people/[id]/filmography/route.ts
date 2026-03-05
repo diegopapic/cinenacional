@@ -75,8 +75,8 @@ export async function GET(
         }
       },
       orderBy: [
-        { movie: { releaseYear: 'desc' } },
-        { movie: { year: 'desc' } }
+        { movie: { year: 'desc' } },
+        { movie: { releaseYear: 'desc' } }
       ]
     });
 
@@ -103,8 +103,8 @@ export async function GET(
         role: true // Incluir la referencia al rol si existe
       },
       orderBy: [
-        { movie: { releaseYear: 'desc' } },
-        { movie: { year: 'desc' } }
+        { movie: { year: 'desc' } },
+        { movie: { releaseYear: 'desc' } }
       ]
     });
 

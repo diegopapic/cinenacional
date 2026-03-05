@@ -274,19 +274,28 @@ export default function PersonPage({ params: paramsPromise }: PersonPageProps) {
       // Si solo B es priority, va primero
       if (isStageBPriority) return 1;
 
-      // Si ninguna es priority (incluyendo COMPLETA, INÉDITA, INCONCLUSA), ordenar por fecha
+      // Si ninguna es priority (incluyendo COMPLETA, INÉDITA, INCONCLUSA), ordenar por año de producción
+      const yearA = getEffectiveYear(movieA);
+      const yearB = getEffectiveYear(movieB);
+
+      if (yearA !== yearB) {
+        return descending ? yearB - yearA : yearA - yearB;
+      }
+
+      // Mismo año de producción: desempatar por fecha de estreno
       const dateA = getEffectiveDate(movieA);
       const dateB = getEffectiveDate(movieB);
 
-      if (dateA.getTime() === dateB.getTime()) {
-        const titleA = movieA.title.toLowerCase();
-        const titleB = movieB.title.toLowerCase();
-        return titleA.localeCompare(titleB);
+      if (dateA.getTime() !== dateB.getTime()) {
+        return descending
+          ? dateB.getTime() - dateA.getTime()
+          : dateA.getTime() - dateB.getTime();
       }
 
-      return descending
-        ? dateB.getTime() - dateA.getTime()
-        : dateA.getTime() - dateB.getTime();
+      // Mismo año y fecha: desempatar alfabéticamente
+      const titleA = movieA.title.toLowerCase();
+      const titleB = movieB.title.toLowerCase();
+      return titleA.localeCompare(titleB);
     });
   };
 
