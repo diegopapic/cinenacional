@@ -77,6 +77,16 @@ function formatPersonDataForAPI(data: PersonFormData): any {
     apiData.alternativeNames = data.alternativeNames;
   }
 
+  // Procesar trivia si existe
+  if (data.trivia && data.trivia.length > 0) {
+    apiData.trivia = data.trivia;
+  }
+
+  // Incluir photoPublicId
+  if (data.photoPublicId) {
+    apiData.photoPublicId = data.photoPublicId;
+  }
+
   return apiData;
 }
 
@@ -101,7 +111,8 @@ function formatPersonFromAPI(person: any): PersonFormData {
     tmdbId: person.tmdbId || null,
     links: person.links || [],
     alternativeNames: person.alternativeNames || [],
-    nationalities: []
+    nationalities: [],
+    trivia: person.trivia || []
   };
 
   const birthResult = processPartialDateFromAPI(person.birthYear, person.birthMonth, person.birthDay);
