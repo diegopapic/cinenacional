@@ -480,7 +480,7 @@ export const PUT = apiHandler(async (
     const cacheKeysToInvalidate = [
         `person:id:${personId}:v1`,
         `person:slug:${currentPerson.slug}:v1`,
-        `person:filmography:${personId}:v1`, // También invalidar filmografía
+        `person:filmography:${personId}:v2`, // También invalidar filmografía
         'people-list:v1' // Lista de personas si existe
     ];
 
@@ -571,7 +571,7 @@ export const DELETE = apiHandler(async (
     const cacheKeysToInvalidate = [
         `person:id:${personId}:v1`,
         `person:slug:${person.slug}:v1`,
-        `person:filmography:${personId}:v1`,
+        `person:filmography:${personId}:v2`,
         'people-list:v1'
     ];
 
