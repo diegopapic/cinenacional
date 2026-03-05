@@ -46,6 +46,8 @@ function extractPublicIdFromUrl(url: string): string | null {
   }
 }
 
+const BATCH_SIZE = 500
+
 async function main() {
   console.log('═══════════════════════════════════════════════════')
   console.log('  Backfill de posterPublicId / photoPublicId')
@@ -64,20 +66,14 @@ async function main() {
 
     console.log(`🎬 Películas con posterUrl pero sin posterPublicId: ${moviesWithoutPublicId.length}`)
 
-    let movieUpdated = 0
+    const movieUpdates: Array<{ id: number; publicId: string }> = []
     let movieSkipped = 0
 
     for (const movie of moviesWithoutPublicId) {
       const publicId = extractPublicIdFromUrl(movie.posterUrl!)
       if (publicId) {
-        if (APPLY) {
-          await prisma.movie.update({
-            where: { id: movie.id },
-            data: { posterPublicId: publicId },
-          })
-        }
-        movieUpdated++
-        if (movieUpdated <= 5) {
+        movieUpdates.push({ id: movie.id, publicId })
+        if (movieUpdates.length <= 5) {
           console.log(`   ✅ [${movie.id}] ${movie.title}`)
           console.log(`      URL: ${movie.posterUrl}`)
           console.log(`      Public ID: ${publicId}`)
@@ -88,12 +84,28 @@ async function main() {
       }
     }
 
-    if (movieUpdated > 5) {
-      console.log(`   ... y ${movieUpdated - 5} más`)
+    if (movieUpdates.length > 5) {
+      console.log(`   ... y ${movieUpdates.length - 5} más`)
     }
-    console.log(`   Total: ${movieUpdated} para actualizar, ${movieSkipped} sin URL de Cloudinary\n`)
+    console.log(`   Total: ${movieUpdates.length} para actualizar, ${movieSkipped} sin URL de Cloudinary`)
+
+    if (APPLY && movieUpdates.length > 0) {
+      console.log(`   Aplicando en batches de ${BATCH_SIZE}...`)
+      for (let i = 0; i < movieUpdates.length; i += BATCH_SIZE) {
+        const batch = movieUpdates.slice(i, i + BATCH_SIZE)
+        // Construir CASE WHEN para batch update
+        const cases = batch.map(u => `WHEN ${u.id} THEN '${u.publicId.replace(/'/g, "''")}'`).join(' ')
+        const ids = batch.map(u => u.id).join(',')
+        await prisma.$executeRawUnsafe(
+          `UPDATE movies SET poster_public_id = CASE id ${cases} END WHERE id IN (${ids})`
+        )
+        process.stdout.write(`\r   Progreso: ${Math.min(i + BATCH_SIZE, movieUpdates.length)}/${movieUpdates.length}`)
+      }
+      console.log(`\n   ✅ ${movieUpdates.length} películas actualizadas`)
+    }
 
     // --- Personas ---
+    console.log('')
     const peopleWithoutPublicId = await prisma.person.findMany({
       where: {
         photoUrl: { not: null },
@@ -104,20 +116,14 @@ async function main() {
 
     console.log(`👤 Personas con photoUrl pero sin photoPublicId: ${peopleWithoutPublicId.length}`)
 
-    let personUpdated = 0
+    const personUpdates: Array<{ id: number; publicId: string }> = []
     let personSkipped = 0
 
     for (const person of peopleWithoutPublicId) {
       const publicId = extractPublicIdFromUrl(person.photoUrl!)
       if (publicId) {
-        if (APPLY) {
-          await prisma.person.update({
-            where: { id: person.id },
-            data: { photoPublicId: publicId },
-          })
-        }
-        personUpdated++
-        if (personUpdated <= 5) {
+        personUpdates.push({ id: person.id, publicId })
+        if (personUpdates.length <= 5) {
           const name = [person.firstName, person.lastName].filter(Boolean).join(' ')
           console.log(`   ✅ [${person.id}] ${name}`)
           console.log(`      URL: ${person.photoUrl}`)
@@ -130,17 +136,32 @@ async function main() {
       }
     }
 
-    if (personUpdated > 5) {
-      console.log(`   ... y ${personUpdated - 5} más`)
+    if (personUpdates.length > 5) {
+      console.log(`   ... y ${personUpdates.length - 5} más`)
     }
-    console.log(`   Total: ${personUpdated} para actualizar, ${personSkipped} sin URL de Cloudinary\n`)
+    console.log(`   Total: ${personUpdates.length} para actualizar, ${personSkipped} sin URL de Cloudinary`)
+
+    if (APPLY && personUpdates.length > 0) {
+      console.log(`   Aplicando en batches de ${BATCH_SIZE}...`)
+      for (let i = 0; i < personUpdates.length; i += BATCH_SIZE) {
+        const batch = personUpdates.slice(i, i + BATCH_SIZE)
+        const cases = batch.map(u => `WHEN ${u.id} THEN '${u.publicId.replace(/'/g, "''")}'`).join(' ')
+        const ids = batch.map(u => u.id).join(',')
+        await prisma.$executeRawUnsafe(
+          `UPDATE people SET photo_public_id = CASE id ${cases} END WHERE id IN (${ids})`
+        )
+        process.stdout.write(`\r   Progreso: ${Math.min(i + BATCH_SIZE, personUpdates.length)}/${personUpdates.length}`)
+      }
+      console.log(`\n   ✅ ${personUpdates.length} personas actualizadas`)
+    }
 
     // --- Resumen ---
-    console.log('═══════════════════════════════════════════════════')
-    console.log(`  Resumen: ${movieUpdated + personUpdated} registros ${APPLY ? 'actualizados' : 'por actualizar'}`)
+    const total = movieUpdates.length + personUpdates.length
+    console.log('\n═══════════════════════════════════════════════════')
+    console.log(`  Resumen: ${total} registros ${APPLY ? 'actualizados' : 'por actualizar'}`)
     console.log('═══════════════════════════════════════════════════')
 
-    if (!APPLY && (movieUpdated + personUpdated) > 0) {
+    if (!APPLY && total > 0) {
       console.log(`\n💡 Para aplicar los cambios, ejecutá:`)
       console.log(`   npx tsx scripts/backfill-cloudinary-public-ids.ts --apply`)
     }
