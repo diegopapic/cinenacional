@@ -433,7 +433,16 @@ Los intentos de login se registran en tabla `auditLog`. Esto es una buena práct
    - `dia`/`mes` en efemerides clampeados a 1-31 y 1-12 respectivamente
    - `parseId` en crud-factory actualizado para rechazar IDs <= 0
    - 15 archivos de API actualizados
-12. **Sanitizar mensajes de error** en producción (no exponer detalles internos)
+12. ~~**Sanitizar mensajes de error** en producción (no exponer detalles internos)~~ ✅ Completado 2026-03-05
+   - Creado `sanitizeValidationError()` y `sanitizeValidationFlat()` en `api-handler.ts`
+   - Producción: errores Zod solo exponen nombres de campos (`fields`), sin detalles de schema
+   - Desarrollo: mantiene detalles completos para debugging
+   - `handleApiError` centralizado usa sanitización automática
+   - `formatZodError` local en crud-factory eliminada, reemplazada por helper centralizado
+   - `roles/route.ts`: consolidado error handling con `handleApiError`
+   - `roles/seed/route.ts`: eliminado `error.message` de respuesta 500
+   - 8 rutas de festivales: `validation.error.flatten()` reemplazado por `sanitizeValidationFlat()`
+   - 12 archivos actualizados
 13. **Implementar sistema de logging** centralizado y seguro
 14. **Fortalecer cookies de sesión** — `sameSite: 'strict'`, revisar flags
 15. ~~**Generar salt de IP dinámicamente** y almacenarlo de forma segura~~ ✅ Completado 2026-03-02 (resuelto en punto 1)
