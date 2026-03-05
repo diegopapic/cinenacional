@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { festivalScreeningFormSchema } from '@/lib/festivals/festivalTypes'
 import { requireAuth } from '@/lib/auth'
-import { apiHandler } from '@/lib/api/api-handler'
+import { apiHandler, sanitizeValidationFlat } from '@/lib/api/api-handler'
 import { parseIntClamped, parsePositiveInt, LIMITS, PAGES } from '@/lib/api/parse-params'
 
 interface RouteParams {
@@ -147,7 +147,7 @@ export const POST = apiHandler(async (request: NextRequest, { params }: RoutePar
   const validation = festivalScreeningFormSchema.safeParse(dataToValidate)
   if (!validation.success) {
     return NextResponse.json(
-      { error: 'Datos inválidos', details: validation.error.flatten() },
+      { error: 'Datos inválidos', ...sanitizeValidationFlat(validation.error) },
       { status: 400 }
     )
   }
@@ -226,7 +226,8 @@ async function bulkCreateScreenings(editionId: number, screeningsData: any[]) {
       if (!validation.success) {
         errors.push({
           data,
-          error: validation.error.flatten()
+          error: 'Datos inválidos',
+          ...sanitizeValidationFlat(validation.error)
         })
         continue
       }

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { festivalEditionFormSchema } from '@/lib/festivals/festivalTypes'
 import { requireAuth } from '@/lib/auth'
-import { apiHandler } from '@/lib/api/api-handler'
+import { apiHandler, sanitizeValidationFlat } from '@/lib/api/api-handler'
 import { parseIntClamped, parsePositiveInt, LIMITS, PAGES, YEARS } from '@/lib/api/parse-params'
 
 interface RouteParams {
@@ -108,7 +108,7 @@ export const POST = apiHandler(async (request: NextRequest, { params }: RoutePar
   const validation = festivalEditionFormSchema.safeParse(dataToValidate)
   if (!validation.success) {
     return NextResponse.json(
-      { error: 'Datos inválidos', details: validation.error.flatten() },
+      { error: 'Datos inválidos', ...sanitizeValidationFlat(validation.error) },
       { status: 400 }
     )
   }

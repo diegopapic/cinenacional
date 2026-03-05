@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { createSlug } from '@/lib/utils'
 import { requireAuth } from '@/lib/auth'
 import { ZodError, type ZodSchema } from 'zod'
+import { sanitizeValidationError } from '@/lib/api/api-handler'
 import { parseIntClamped, LIMITS, PAGES } from '@/lib/api/parse-params'
 
 // ---------------------------------------------------------------------------
@@ -152,9 +153,6 @@ function validateName(body: any): NextResponse | null {
   return null
 }
 
-function formatZodError(error: ZodError): string {
-  return error.errors.map(e => e.message).join(', ')
-}
 
 // ---------------------------------------------------------------------------
 // Factory: List + Create handlers (para route.ts)
@@ -266,7 +264,7 @@ export function createListAndCreateHandlers(config: ListCreateConfig) {
     } catch (error) {
       if (error instanceof ZodError) {
         return NextResponse.json(
-          { error: formatZodError(error) },
+          { error: 'Datos inválidos', ...sanitizeValidationError(error) },
           { status: 400 }
         )
       }
@@ -378,7 +376,7 @@ export function createItemHandlers(config: ItemConfig) {
     } catch (error) {
       if (error instanceof ZodError) {
         return NextResponse.json(
-          { error: formatZodError(error) },
+          { error: 'Datos inválidos', ...sanitizeValidationError(error) },
           { status: 400 }
         )
       }

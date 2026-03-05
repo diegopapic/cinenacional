@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { festivalFormSchema } from '@/lib/festivals/festivalTypes'
 import { requireAuth } from '@/lib/auth'
-import { apiHandler } from '@/lib/api/api-handler'
+import { apiHandler, sanitizeValidationFlat } from '@/lib/api/api-handler'
 import { parseIntClamped, parsePositiveInt, LIMITS, PAGES } from '@/lib/api/parse-params'
 
 function generateSlug(name: string): string {
@@ -90,7 +90,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const validation = festivalFormSchema.safeParse(body)
   if (!validation.success) {
     return NextResponse.json(
-      { error: 'Datos inválidos', details: validation.error.flatten() },
+      { error: 'Datos inválidos', ...sanitizeValidationFlat(validation.error) },
       { status: 400 }
     )
   }

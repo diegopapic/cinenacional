@@ -209,7 +209,6 @@ export async function POST() {
       {
         success: false,
         error: 'Error interno del servidor',
-        details: error instanceof Error ? error.message : 'Error desconocido'
       },
       { status: 500 }
     )

@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { roleSchema, Department } from '@/lib/roles/rolesTypes'
 import { makeUniqueSlug } from '@/lib/api/crud-factory'
 import { requireAuth } from '@/lib/auth'
-import { ZodError } from 'zod'
+import { handleApiError } from '@/lib/api/api-handler'
 import { parseIntClamped, LIMITS, PAGES } from '@/lib/api/parse-params'
 
 const INCLUDE = { _count: { select: { crewRoles: true } } }
@@ -166,17 +166,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(role, { status: 201 })
   } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { error: error.errors.map(e => e.message).join(', ') },
-        { status: 400 }
-      )
-    }
-    console.error('Error creating role:', error)
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'crear rol')
   }
 }
 
