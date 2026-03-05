@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { imageFormSchema } from '@/lib/images/imageTypes'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler } from '@/lib/api/api-handler'
+import { deleteCloudinaryImage } from '@/lib/cloudinary'
 
 // GET - Obtener imagen por ID
 export const GET = apiHandler(async (
@@ -80,6 +81,19 @@ export const PUT = apiHandler(async (
   const validatedData = imageFormSchema.parse(body)
   const { people, ...imageData } = validatedData
 
+  // Obtener el publicId anterior para eliminar de Cloudinary si cambió
+  const existingImage = await prisma.image.findUnique({
+    where: { id },
+    select: { cloudinaryPublicId: true }
+  })
+
+  if (!existingImage) {
+    return NextResponse.json({ error: 'Imagen no encontrada' }, { status: 404 })
+  }
+
+  const oldPublicId = existingImage.cloudinaryPublicId
+  const newPublicId = imageData.cloudinaryPublicId
+
   const image = await prisma.$transaction(async (tx) => {
     // Actualizar imagen
     await tx.image.update({
@@ -138,6 +152,11 @@ export const PUT = apiHandler(async (
     })
   })
 
+  // Si el publicId cambió, eliminar la imagen vieja de Cloudinary
+  if (oldPublicId && oldPublicId !== newPublicId) {
+    deleteCloudinaryImage(oldPublicId).catch(() => {})
+  }
+
   return NextResponse.json(image)
 }, 'actualizar imagen')
 
@@ -159,9 +178,24 @@ export const DELETE = apiHandler(async (
     )
   }
 
+  // Obtener el publicId antes de borrar el registro
+  const image = await prisma.image.findUnique({
+    where: { id },
+    select: { cloudinaryPublicId: true }
+  })
+
+  if (!image) {
+    return NextResponse.json({ error: 'Imagen no encontrada' }, { status: 404 })
+  }
+
   await prisma.image.delete({
     where: { id }
   })
+
+  // Eliminar de Cloudinary (fire-and-forget)
+  if (image.cloudinaryPublicId) {
+    deleteCloudinaryImage(image.cloudinaryPublicId).catch(() => {})
+  }
 
   return new NextResponse(null, { status: 204 })
 }, 'eliminar imagen')

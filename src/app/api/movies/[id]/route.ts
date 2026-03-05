@@ -8,6 +8,7 @@ import RedisClient from '@/lib/redis'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler } from '@/lib/api/api-handler'
+import { deleteCloudinaryImage } from '@/lib/cloudinary'
 
 // Cache en memoria como fallback
 const memoryCache = new Map<string, { data: any; timestamp: number }>();
@@ -437,10 +438,10 @@ export const PUT = apiHandler(async (
     validatedData.durationSeconds = null;
   }
 
-  // Verificar que la película existe y obtener slug para invalidar caché
+  // Verificar que la película existe y obtener slug + poster para invalidar caché
   const existingMovie = await prisma.movie.findUnique({
     where: { id },
-    select: { slug: true }
+    select: { slug: true, posterPublicId: true }
   })
 
   if (!existingMovie) {
@@ -739,6 +740,13 @@ export const PUT = apiHandler(async (
     timeout: 30000,
   })
 
+  // Eliminar poster viejo de Cloudinary si cambió
+  const newPosterPublicId = validatedData.posterPublicId || null
+  const oldPosterPublicId = existingMovie.posterPublicId || null
+  if (oldPosterPublicId && oldPosterPublicId !== newPosterPublicId) {
+    deleteCloudinaryImage(oldPosterPublicId).catch(() => {})
+  }
+
   // ⭐⭐⭐ INVALIDACIÓN COMPLETA DE CACHÉS ⭐⭐⭐
   console.log('🗑️ Invalidando cachés para película actualizada');
 
@@ -797,10 +805,10 @@ export async function DELETE(
       )
     }
 
-    // Verificar que la película existe y obtener slug para invalidar caché
+    // Verificar que la película existe y obtener slug + poster para invalidar caché
     const movie = await prisma.movie.findUnique({
       where: { id },
-      select: { slug: true }
+      select: { slug: true, posterPublicId: true }
     })
 
     if (!movie) {
@@ -810,10 +818,27 @@ export async function DELETE(
       )
     }
 
+    // Obtener imágenes asociadas antes de borrar (las imágenes tienen onDelete: SetNull,
+    // así que no se eliminan, pero necesitamos borrarlas de Cloudinary)
+    const movieImages = await prisma.image.findMany({
+      where: { movieId: id },
+      select: { cloudinaryPublicId: true }
+    })
+
     // Eliminar película (las relaciones se eliminan en cascada)
     await prisma.movie.delete({
       where: { id }
     })
+
+    // Eliminar poster e imágenes de Cloudinary (fire-and-forget)
+    if (movie.posterPublicId) {
+      deleteCloudinaryImage(movie.posterPublicId).catch(() => {})
+    }
+    for (const img of movieImages) {
+      if (img.cloudinaryPublicId) {
+        deleteCloudinaryImage(img.cloudinaryPublicId).catch(() => {})
+      }
+    }
 
     // ⭐ INVALIDAR CACHÉS después de eliminar ⭐
     console.log('🗑️ Invalidando cachés para película eliminada');

@@ -5,6 +5,7 @@ import { generatePersonSlug } from '@/lib/people/peopleUtils';
 import RedisClient from '@/lib/redis';
 import { requireAuth } from '@/lib/auth';
 import { apiHandler } from '@/lib/api/api-handler';
+import { deleteCloudinaryImage } from '@/lib/cloudinary';
 
 // Cache en memoria como fallback
 const memoryCache = new Map<string, { data: any; timestamp: number }>();
@@ -216,7 +217,7 @@ export const PUT = apiHandler(async (
     let slug = undefined;
     const currentPerson = await prisma.person.findUnique({
         where: { id: personId },
-        select: { firstName: true, lastName: true, slug: true },
+        select: { firstName: true, lastName: true, slug: true, photoPublicId: true },
     });
 
     if (!currentPerson) {
@@ -441,6 +442,13 @@ export const PUT = apiHandler(async (
         });
     });
 
+    // Eliminar foto vieja de Cloudinary si cambió
+    const newPhotoPublicId = data.photoPublicId || null
+    const oldPhotoPublicId = currentPerson.photoPublicId || null
+    if (oldPhotoPublicId && oldPhotoPublicId !== newPhotoPublicId) {
+        deleteCloudinaryImage(oldPhotoPublicId).catch(() => {})
+    }
+
     // INVALIDAR CACHÉS después de actualizar exitosamente
     console.log('🗑️ Invalidando cachés para persona actualizada');
 
@@ -495,6 +503,7 @@ export const DELETE = apiHandler(async (
         where: { id: personId },
         select: {
             slug: true,
+            photoPublicId: true,
             _count: {
                 select: {
                     castRoles: true,
@@ -525,6 +534,11 @@ export const DELETE = apiHandler(async (
     await prisma.person.delete({
         where: { id: personId },
     });
+
+    // Eliminar foto de Cloudinary (fire-and-forget)
+    if (person.photoPublicId) {
+        deleteCloudinaryImage(person.photoPublicId).catch(() => {})
+    }
 
     // INVALIDAR CACHÉS después de eliminar
     console.log('🗑️ Invalidando cachés para persona eliminada');
