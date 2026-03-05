@@ -29,6 +29,8 @@ const prisma = new PrismaClient()
 
 const DELETE_MODE = process.argv.includes('--delete')
 const CLOUDINARY_PREFIX = 'cinenacional'
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload`
 const BATCH_SIZE = 100 // Cloudinary permite hasta 100 por delete_resources
 
 async function getCloudinaryResources(): Promise<string[]> {
@@ -160,7 +162,7 @@ async function main() {
       console.log(`   ${folder}: ${ids.length}`)
       // Mostrar primeras 5 de cada carpeta
       for (const id of ids.slice(0, 5)) {
-        console.log(`     - ${id}`)
+        console.log(`     - ${CLOUDINARY_BASE_URL}/${id}`)
       }
       if (ids.length > 5) {
         console.log(`     ... y ${ids.length - 5} más`)
