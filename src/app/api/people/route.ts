@@ -778,6 +778,19 @@ export const POST = apiHandler(async (request: NextRequest) => {
       });
     }
 
+    // Crear trivia si se envió
+    if (data.trivia && data.trivia.length > 0) {
+      await tx.personTrivia.createMany({
+        data: data.trivia
+          .filter((item: any) => item.content && item.content.trim())
+          .map((item: any, index: number) => ({
+            personId: newPerson.id,
+            content: item.content.trim(),
+            sortOrder: index,
+          })),
+      });
+    }
+
     // 🆕 Crear nombres alternativos si se enviaron
     if (data.alternativeNames && data.alternativeNames.length > 0) {
       const validNames = data.alternativeNames.filter(

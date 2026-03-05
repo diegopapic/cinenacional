@@ -85,6 +85,10 @@ export async function GET(
                 alternativeNames: {
                     orderBy: { createdAt: 'asc' },
                 },
+                trivia: {
+                    select: { id: true, content: true, sortOrder: true },
+                    orderBy: { sortOrder: 'asc' },
+                },
                 nationalities: {
                     include: {
                         location: true
@@ -377,6 +381,23 @@ export const PUT = apiHandler(async (
             });
         }
 
+        // Eliminar trivia existente y crear nueva
+        await tx.personTrivia.deleteMany({
+            where: { personId },
+        });
+
+        if (data.trivia && data.trivia.length > 0) {
+            await tx.personTrivia.createMany({
+                data: data.trivia
+                    .filter((item: any) => item.content && item.content.trim())
+                    .map((item: any, index: number) => ({
+                        personId,
+                        content: item.content.trim(),
+                        sortOrder: index,
+                    })),
+            });
+        }
+
         // Eliminar nombres alternativos existentes
         await tx.personAlternativeName.deleteMany({
             where: { personId },
@@ -400,6 +421,10 @@ export const PUT = apiHandler(async (
             include: {
                 links: true,
                 alternativeNames: true,
+                trivia: {
+                    select: { id: true, content: true, sortOrder: true },
+                    orderBy: { sortOrder: 'asc' },
+                },
                 nationalities: {
                     include: {
                         location: true

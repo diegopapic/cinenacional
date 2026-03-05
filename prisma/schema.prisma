@@ -237,6 +237,7 @@ model Person {
   alternativeNames     PersonAlternativeName[]
   links                PersonLink[]
   nationalities        PersonNationality[]
+  trivia               PersonTrivia[]
   festivalJury         FestivalJury[]
   festivalAwardWinners FestivalAwardWinner[]
 
@@ -270,6 +271,18 @@ model PersonAlternativeName {
   @@index([fullName], map: "idx_people_alt_names_full_name")
   @@index([personId], map: "idx_people_alt_names_person_id")
   @@map("people_alternative_names")
+}
+
+model PersonTrivia {
+  id        Int      @id @default(autoincrement())
+  personId  Int      @map("person_id")
+  content   String
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@index([personId])
+  @@map("people_trivia")
 }
 
 model PersonNationality {

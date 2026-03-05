@@ -108,7 +108,8 @@ export const DEFAULT_PERSON_FORM_VALUES: PersonFormData = {
   tmdbId: null,
   links: [],
   alternativeNames: [],
-  nationalities: []
+  nationalities: [],
+  trivia: []
 };
 
 // Valores por defecto para un nuevo link

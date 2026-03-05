@@ -933,6 +933,26 @@ export default function PersonPage({ params: paramsPromise }: PersonPageProps) {
               />
             )}
 
+            {/* Trivia */}
+            {person.trivia && person.trivia.length > 0 && (
+              <div className="mt-5 flex flex-col gap-2">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/40">
+                  Trivia
+                </span>
+                <ul className="flex flex-col gap-2">
+                  {person.trivia.map((item: { id: number; content: string }) => (
+                    <li key={item.id} className="flex items-start gap-2">
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/30" />
+                      <span
+                        className="prose-links text-[13px] leading-relaxed text-muted-foreground/80"
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.content) }}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
           </div>
 
           {/* ===== DESKTOP LAYOUT ===== */}
@@ -1135,6 +1155,26 @@ export default function PersonPage({ params: paramsPromise }: PersonPageProps) {
                     })
                   }}
                 />
+              )}
+
+              {/* Trivia */}
+              {person.trivia && person.trivia.length > 0 && (
+                <div className="mt-5 flex flex-col gap-2">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground/40">
+                    Trivia
+                  </span>
+                  <ul className="flex flex-col gap-2">
+                    {person.trivia.map((item: { id: number; content: string }) => (
+                      <li key={item.id} className="flex items-start gap-2">
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/30" />
+                        <span
+                          className="prose-links text-[13px] leading-relaxed text-muted-foreground/80"
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.content) }}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
 
             </div>

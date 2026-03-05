@@ -151,6 +151,7 @@ export interface PersonFormData {
   links: PersonLink[];
   alternativeNames?: PersonAlternativeName[];
   nationalities?: number[];
+  trivia?: Array<{ id?: number; content: string }>;
 }
 
 // Tipo para filtros de búsqueda

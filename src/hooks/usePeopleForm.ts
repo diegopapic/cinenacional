@@ -70,6 +70,11 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
                 formattedData.alternativeNames = person.alternativeNames;
             }
 
+            // Si la persona tiene trivia, cargarla
+            if (person.trivia) {
+                formattedData.trivia = person.trivia;
+            }
+
             // Si la persona tiene nacionalidades, cargarlas como array de IDs
             if (person.nationalities && Array.isArray(person.nationalities)) {
                 formattedData.nationalities = person.nationalities.map((n: any) => {

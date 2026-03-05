@@ -8,6 +8,7 @@ import { usePeopleForm } from '@/hooks/usePeopleForm';
 import { PersonWithRelations } from '@/lib/people/peopleTypes';
 import NationalitiesField from './PersonFormFields/NationalitiesField'
 import { CloudinaryUploadWidget } from '@/components/admin/CloudinaryUploadWidget';
+import TriviaManager from '@/components/admin/TriviaManager';
 
 // Importar sub-componentes del formulario
 import { BasicInfoFields } from './PersonFormFields/BasicInfoFields';
@@ -193,6 +194,14 @@ export function PersonForm({
                     onAddLink={addLink}
                     onUpdateLink={updateLink}
                     onRemoveLink={removeLink}
+                />
+            </div>
+
+            {/* Trivia */}
+            <div className="bg-white rounded-lg shadow p-6">
+                <TriviaManager
+                    onChange={(trivia) => updateField('trivia', trivia)}
+                    initialTrivia={formData.trivia || []}
                 />
             </div>
 

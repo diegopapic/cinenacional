@@ -58,6 +58,10 @@ export const GET = apiHandler(async (
             createdAt: 'asc'
           }
         },
+        trivia: {
+          select: { id: true, content: true, sortOrder: true },
+          orderBy: { sortOrder: 'asc' }
+        },
         // Imágenes en las que aparece la persona
         imageAppearances: {
           include: {
