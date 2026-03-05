@@ -10,8 +10,13 @@
  *   npx tsx scripts/cleanup-cloudinary-orphans.ts --delete  # Eliminar huérfanas
  */
 
+import path from 'path'
+import { config } from 'dotenv'
 import { PrismaClient } from '@prisma/client'
 import { v2 as cloudinary } from 'cloudinary'
+
+// Cargar .env.local
+config({ path: path.resolve(process.cwd(), '.env.local') })
 
 // Configurar Cloudinary
 cloudinary.config({
