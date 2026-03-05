@@ -59,20 +59,46 @@ async function getCloudinaryResources(): Promise<string[]> {
   return publicIds
 }
 
+/**
+ * Extrae el public ID de una URL de Cloudinary.
+ * Copia de src/lib/images/imageUtils.ts (no se puede importar directamente en scripts standalone).
+ */
+function extractPublicIdFromUrl(url: string): string | null {
+  if (!url || !url.includes('res.cloudinary.com')) return null
+  try {
+    const uploadIndex = url.indexOf('/image/upload/')
+    if (uploadIndex === -1) return null
+    let p = url.substring(uploadIndex + '/image/upload/'.length)
+    p = p.replace(/\.\w{3,4}$/, '')
+    const segments = p.split('/')
+    let startIndex = 0
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i]
+      if (seg.includes(',') || /^[a-z]{1,2}_/.test(seg)) { startIndex = i + 1; continue }
+      if (/^v\d+$/.test(seg)) { startIndex = i + 1; continue }
+      break
+    }
+    const publicId = segments.slice(startIndex).join('/')
+    return publicId || null
+  } catch {
+    return null
+  }
+}
+
 async function getDbPublicIds(): Promise<Set<string>> {
   console.log('🔍 Obteniendo public IDs de la base de datos...')
 
-  const [images, moviePosters, personPhotos] = await Promise.all([
+  const [images, movies, people] = await Promise.all([
     prisma.image.findMany({
       select: { cloudinaryPublicId: true },
     }),
     prisma.movie.findMany({
-      where: { posterPublicId: { not: null } },
-      select: { posterPublicId: true },
+      where: { OR: [{ posterPublicId: { not: null } }, { posterUrl: { not: null } }] },
+      select: { posterPublicId: true, posterUrl: true },
     }),
     prisma.person.findMany({
-      where: { photoPublicId: { not: null } },
-      select: { photoPublicId: true },
+      where: { OR: [{ photoPublicId: { not: null } }, { photoUrl: { not: null } }] },
+      select: { photoPublicId: true, photoUrl: true },
     }),
   ])
 
@@ -81,14 +107,35 @@ async function getDbPublicIds(): Promise<Set<string>> {
   for (const img of images) {
     if (img.cloudinaryPublicId) ids.add(img.cloudinaryPublicId)
   }
-  for (const movie of moviePosters) {
-    if (movie.posterPublicId) ids.add(movie.posterPublicId)
-  }
-  for (const person of personPhotos) {
-    if (person.photoPublicId) ids.add(person.photoPublicId)
+
+  let moviesFromPublicId = 0
+  let moviesFromUrl = 0
+  for (const movie of movies) {
+    if (movie.posterPublicId) {
+      ids.add(movie.posterPublicId)
+      moviesFromPublicId++
+    } else if (movie.posterUrl) {
+      const extracted = extractPublicIdFromUrl(movie.posterUrl)
+      if (extracted) { ids.add(extracted); moviesFromUrl++ }
+    }
   }
 
-  console.log(`✅ Public IDs en DB: ${ids.size} (${images.length} imágenes, ${moviePosters.length} posters, ${personPhotos.length} fotos)`)
+  let peopleFromPublicId = 0
+  let peopleFromUrl = 0
+  for (const person of people) {
+    if (person.photoPublicId) {
+      ids.add(person.photoPublicId)
+      peopleFromPublicId++
+    } else if (person.photoUrl) {
+      const extracted = extractPublicIdFromUrl(person.photoUrl)
+      if (extracted) { ids.add(extracted); peopleFromUrl++ }
+    }
+  }
+
+  console.log(`✅ Public IDs en DB: ${ids.size}`)
+  console.log(`   - ${images.length} imágenes (galería)`)
+  console.log(`   - ${moviesFromPublicId + moviesFromUrl} posters (${moviesFromPublicId} con publicId, ${moviesFromUrl} extraídos de URL)`)
+  console.log(`   - ${peopleFromPublicId + peopleFromUrl} fotos (${peopleFromPublicId} con publicId, ${peopleFromUrl} extraídas de URL)`)
   return ids
 }
 
