@@ -248,22 +248,16 @@ error: error instanceof Error ? error.message : 'Unknown error'
 
 ---
 
-### 3.5 Logging excesivo de información sensible
+### 3.5 ~~Logging excesivo de información sensible~~ ✅ Resuelto 2026-03-06
 
 - **Categoría:** Exposición de información
 - **Severidad:** MEDIA
 - **Archivo:** `src/middleware.ts` (línea 139) y múltiples rutas
 
 **Descripción:**
-133 llamadas a `console.error` en rutas de API. El middleware loguea IPs y patrones de acceso:
+133 llamadas a `console.error` en rutas de API. El middleware logueaba IPs y patrones de acceso.
 
-```typescript
-console.log(`Rate limit exceeded for IP: ${clientKey} on path: ${path}`)
-```
-
-Sin agregación segura ni sistema de logging dedicado.
-
-**Riesgo:** Exposición de información sensible en logs de producción.
+**Resolución:** Sistema de logging centralizado implementado en `src/lib/logger.ts`. Todas las ~279 llamadas `console.*` reemplazadas por logger con redacción automática de datos sensibles, filtrado por nivel y JSON estructurado en producción. IPs y PII eliminados de los logs.
 
 ---
 
@@ -443,6 +437,13 @@ Los intentos de login se registran en tabla `auditLog`. Esto es una buena práct
    - `roles/seed/route.ts`: eliminado `error.message` de respuesta 500
    - 8 rutas de festivales: `validation.error.flatten()` reemplazado por `sanitizeValidationFlat()`
    - 12 archivos actualizados
-13. **Implementar sistema de logging** centralizado y seguro
+13. ~~**Implementar sistema de logging** centralizado y seguro~~ ✅ Completado 2026-03-06
+   - Creado `src/lib/logger.ts` con `createLogger(module)` factory y interface `Logger`
+   - Filtrado por nivel: producción solo warn+error, desarrollo debug+
+   - Redacción automática de datos sensibles (password, token, apikey, ip, cookie, ssn, creditcard, authorization, etc.)
+   - JSON estructurado en producción, output legible en desarrollo
+   - Compatible con Edge Runtime (middleware), Node.js (API) y browser (components)
+   - ~279 `console.*` reemplazados en 60+ archivos: middleware, 20 API routes, lib/ (prisma, auth, redis, cloudinary, api-handler, crud-factory), 20 components, 7 hooks, 2 services, 1 context, 10 pages
+   - IPs y PII eliminados de logs (resuelve hallazgo 3.5 directamente)
 14. **Fortalecer cookies de sesión** — `sameSite: 'strict'`, revisar flags
 15. ~~**Generar salt de IP dinámicamente** y almacenarlo de forma segura~~ ✅ Completado 2026-03-02 (resuelto en punto 1)
