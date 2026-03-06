@@ -1,26 +1,20 @@
 // src/app/listados/estrenos/EstrenosContent.tsx
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { FilmReleasesByYear, ReleaseEntry } from '@/components/FilmReleasesByYear';
 import { MovieWithRelease } from '@/types/home.types';
 
 export default function EstrenosContent() {
     const searchParams = useSearchParams();
-    const initialUpcoming = searchParams.get('period') === 'upcoming';
+    const isUpcoming = searchParams.get('period') === 'upcoming';
     const [movies, setMovies] = useState<MovieWithRelease[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Cargar TODAS las películas con fecha de estreno
-    useEffect(() => {
-        loadAllMovies();
-    }, []);
-
-    const loadAllMovies = async () => {
+    const loadMovies = useCallback(async (upcoming: boolean) => {
         setIsLoading(true);
         try {
-            // Traer todas las películas con fecha de estreno
             const params = new URLSearchParams({
                 page: '1',
                 limit: '10000',
@@ -28,8 +22,7 @@ export default function EstrenosContent() {
                 sortOrder: 'asc',
             });
 
-            // Si venimos con period=upcoming, filtrar desde el backend
-            if (initialUpcoming) {
+            if (upcoming) {
                 params.set('upcoming', 'true');
             }
 
@@ -37,17 +30,23 @@ export default function EstrenosContent() {
             if (!response.ok) throw new Error('Error al cargar estrenos');
 
             const data = await response.json();
-            const filteredMovies = (data.movies || []).filter(
-                (m: MovieWithRelease) => m.releaseYear,
+            setMovies(
+                (data.movies || []).filter(
+                    (m: MovieWithRelease) => m.releaseYear,
+                ),
             );
-            setMovies(filteredMovies);
         } catch (error) {
             console.error('Error loading movies:', error);
             setMovies([]);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
+
+    // Re-fetch cuando cambia el modo (upcoming ↔ regular) via URL
+    useEffect(() => {
+        loadMovies(isUpcoming);
+    }, [isUpcoming, loadMovies]);
 
     // Convertir MovieWithRelease[] → ReleaseEntry[]
     const entries: ReleaseEntry[] = useMemo(() => {
@@ -108,5 +107,5 @@ export default function EstrenosContent() {
         );
     }
 
-    return <FilmReleasesByYear entries={entries} initialUpcoming={initialUpcoming} />;
+    return <FilmReleasesByYear entries={entries} initialUpcoming={isUpcoming} />;
 }

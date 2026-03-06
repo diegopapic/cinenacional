@@ -311,6 +311,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Cuando se ordena por releaseYear sin otros filtros de año, excluir películas sin fecha de estreno.
+    // Reduce el dataset de ~12500 a ~5000 y evita timeouts al pedir límites altos.
+    if (sortBy === 'releaseYear' && !year && !yearFrom && !yearTo && upcoming !== 'true') {
+      where.releaseYear = { ...where.releaseYear, not: null }
+    }
+
     if (upcoming === 'true') {
       const now = new Date()
       const currentYear = now.getFullYear()
