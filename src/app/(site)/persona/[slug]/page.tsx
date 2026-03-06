@@ -12,6 +12,9 @@ import { ImageGallery } from '@/components/movies/ImageGallery';
 import { PosterPlaceholder } from '@/components/film/PosterPlaceholder';
 import { ExternalLinks } from '@/components/shared/ExternalLinks';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('page:persona')
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -497,7 +500,7 @@ export default function PersonPage({ params: paramsPromise }: PersonPageProps) {
         setActiveTab('Todos los roles');
       }
     } catch (error) {
-      console.error('Error fetching person data:', error);
+      log.error('Failed to fetch person data', error);
     } finally {
       setLoading(false);
     }

@@ -10,6 +10,9 @@ import {
 } from '@/lib/people/peopleTypes';
 import { PEOPLE_PAGINATION } from '@/lib/people/peopleConstants';
 import { toast } from 'react-hot-toast';
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('hook:people')
 
 interface UsePeopleOptions {
   autoLoad?: boolean;
@@ -71,11 +74,11 @@ export function usePeople(options: UsePeopleOptions = {}) {
     } catch (err: any) {
       // Ignorar errores de cancelación
       if (err?.name === 'AbortError') {
-        console.log('Request cancelado');
+        log.debug('Request cancelled');
         return;
       }
       
-      console.error('Error loading people:', err);
+      log.error('Failed to load people', err);
       setError(err as Error);
       
       // Solo mostrar toast si no es un error de cancelación
@@ -152,7 +155,7 @@ export function usePeople(options: UsePeopleOptions = {}) {
       toast.success('Persona eliminada correctamente');
       await loadPeople();
     } catch (err) {
-      console.error('Error deleting person:', err);
+      log.error('Failed to delete person', err);
       const errorMessage = err instanceof Error 
         ? err.message 
         : 'Error al eliminar persona';
@@ -174,7 +177,7 @@ export function usePeople(options: UsePeopleOptions = {}) {
       document.body.removeChild(a);
       toast.success('Archivo CSV descargado correctamente');
     } catch (err) {
-      console.error('Error exporting to CSV:', err);
+      log.error('Failed to export CSV', err);
       toast.error('No se pudo exportar a CSV');
     }
   }, [filters]);
@@ -225,7 +228,7 @@ export function usePeopleSearch() {
         const data = await peopleService.search(debouncedQuery);
         setResults(data);
       } catch (error) {
-        console.error('Error searching people:', error);
+        log.error('Failed to search people', error);
         setResults([]);
       } finally {
         setLoading(false);
@@ -264,7 +267,7 @@ export function usePerson(id: number | string | null) {
         const data = await peopleService.getById(personId);
         setPerson(data);
       } catch (err) {
-        console.error('Error loading person:', err);
+        log.error('Failed to load person', err);
         setError(err as Error);
       } finally {
         setLoading(false);

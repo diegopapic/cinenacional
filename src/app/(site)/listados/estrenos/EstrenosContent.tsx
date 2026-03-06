@@ -5,6 +5,9 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { FilmReleasesByYear, ReleaseEntry } from '@/components/FilmReleasesByYear';
 import { MovieWithRelease } from '@/types/home.types';
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('page:estrenos')
 
 export default function EstrenosContent() {
     const searchParams = useSearchParams();
@@ -36,7 +39,7 @@ export default function EstrenosContent() {
                 ),
             );
         } catch (error) {
-            console.error('Error loading movies:', error);
+            log.error('Failed to load releases', error);
             setMovies([]);
         } finally {
             setIsLoading(false);

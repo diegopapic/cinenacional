@@ -1,6 +1,7 @@
 // src/services/people.service.ts
 
 import { apiClient, ApiError } from './api-client';
+import { createLogger } from '@/lib/logger'
 import {
   Person,
   PersonWithRelations,
@@ -167,6 +168,8 @@ function formatPersonFromAPI(person: any): PersonFormData {
   return formData;
 }
 
+const log = createLogger('service:people')
+
 export const peopleService = {
   /**
    * Obtiene una lista paginada de personas con filtros
@@ -197,7 +200,7 @@ export const peopleService = {
         params: { search: query, limit: String(limit) }
       });
     } catch (error) {
-      console.error('Error searching people:', error);
+      log.error('Failed to search people', error);
       return [];
     }
   },

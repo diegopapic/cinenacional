@@ -1,6 +1,9 @@
 // src/hooks/useHomeData.ts
 import { useState, useEffect } from 'react';
 import { MovieWithRelease, SimpleMovie, SimplePerson, HomeDataResponse } from '@/types/home.types';
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('hook:homeData')
 
 interface UseHomeDataReturn {
   ultimosEstrenos: MovieWithRelease[];
@@ -26,12 +29,12 @@ export function useHomeData(): UseHomeDataReturn {
 
   const fetchHomeData = async (attempt = 1) => {
     try {
-      console.log(`🔄 Intento ${attempt} de cargar datos...`);
+      log.debug('Loading home data', { attempt });
       setError(null);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
-        console.log('⏱️ Timeout alcanzado, abortando...');
+        log.warn('Home data fetch timeout, aborting');
         controller.abort();
       }, 20000);
 
@@ -55,7 +58,7 @@ export function useHomeData(): UseHomeDataReturn {
       setError(null);
 
     } catch (error: any) {
-      console.error(`❌ Error en intento ${attempt}:`, error);
+      log.error('Failed to load home data', error, { attempt });
 
       if (error.name === 'AbortError') {
         setError('La carga tardó demasiado. Intentando de nuevo...');
@@ -65,7 +68,7 @@ export function useHomeData(): UseHomeDataReturn {
 
       if (attempt < 3) {
         const delay = attempt * 2000;
-        console.log(`⏳ Reintentando en ${delay / 1000} segundos...`);
+        log.debug('Retrying home data fetch', { delayMs: delay });
         setTimeout(() => fetchHomeData(attempt + 1), delay);
       } else {
         setError('No se pudieron cargar los datos después de varios intentos.');

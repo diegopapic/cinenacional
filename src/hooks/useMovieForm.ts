@@ -16,6 +16,9 @@ import {
 } from '@/lib/movies/movieUtils'
 import { moviesService } from '@/services'
 import { arrayMove } from '@dnd-kit/sortable'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('hook:movieForm')
 
 
 
@@ -227,7 +230,7 @@ export function useMovieForm({
                     }
                 }
             } catch (error) {
-                console.error('Error loading metadata:', error)
+                log.error('Failed to load metadata', error)
             }
         }
 
@@ -615,8 +618,7 @@ export function useMovieForm({
             })
 
         } catch (error) {
-            console.error('Error completo en loadMovieData:', error)
-            console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack')
+            log.error('Failed to load movie data', error)
             toast.error('Error al cargar los datos de la película')
 
             // Notificar error al context parent
@@ -902,7 +904,7 @@ export function useMovieForm({
             }
 
         } catch (error) {
-            console.error('❌ Error in onSubmit:', error)
+            log.error('Failed to submit movie form', error)
             const errorMessage = error instanceof Error ? error.message : 'Error al guardar la película'
             toast.error(errorMessage)
 

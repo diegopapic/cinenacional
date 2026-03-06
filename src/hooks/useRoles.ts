@@ -9,6 +9,9 @@ import type {
   Department 
 } from '@/lib/roles/rolesTypes';
 import { useDebounce } from './useDebounce';
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('hook:roles')
 
 interface UseRolesReturn {
   // Datos
@@ -82,7 +85,7 @@ export function useRoles(): UseRolesReturn {
       setHasMore(response.hasMore);
       
     } catch (err) {
-      console.error('Error loading roles:', err);
+      log.error('Failed to load roles', err);
       setError(err instanceof Error ? err : new Error('Error desconocido'));
       setRoles([]);
       setTotalCount(0);

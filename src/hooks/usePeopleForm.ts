@@ -21,6 +21,9 @@ import {
     removePersonLink
 } from '@/lib/people/peopleUtils';
 import { toast } from 'react-hot-toast';
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('hook:peopleForm')
 
 interface UsePeopleFormProps {
     personId?: number;
@@ -49,7 +52,7 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
         try {
             setLoading(true);
             const person = await peopleService.getById(personId);
-            console.log('usePeopleForm - Raw person from getById:', person);
+            log.debug('Person loaded for editing');
             const formattedData = formatPersonDataForForm(person);
 
             // NUEVO: Agregar el ID al formData para saber que es edición
@@ -93,7 +96,7 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
 
             setFormData(formattedData);
         } catch (error) {
-            console.error('Error loading person:', error);
+            log.error('Failed to load person', error);
             toast.error('No se pudo cargar la información de la persona');
         } finally {
             setLoading(false);
@@ -202,7 +205,7 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
                 return false;
             }
 
-            console.error('Error saving person:', error);
+            log.error('Failed to save person', error);
             const errorMessage = error instanceof Error
                 ? error.message
                 : personId ? PERSON_ERROR_MESSAGES.UPDATE_ERROR : PERSON_ERROR_MESSAGES.CREATE_ERROR;

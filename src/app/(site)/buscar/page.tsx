@@ -10,6 +10,9 @@ import { Film, User, Calendar, Search, Loader2 } from 'lucide-react'
 import { formatPartialDate } from '@/lib/shared/dateUtils'
 import DOMPurify from 'dompurify'
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('page:buscar')
 
 /**
  * Sanitiza HTML permitiendo solo tags de formato básico.
@@ -116,7 +119,7 @@ export default function SearchPage() {
         setResults(data)
       } catch (err) {
         setError('Error al realizar la búsqueda. Por favor, intenta de nuevo.')
-        console.error('Search error:', err)
+        log.error('Search failed', err)
       } finally {
         setLoading(false)
       }

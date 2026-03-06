@@ -14,6 +14,9 @@ import { formatPartialDate } from '@/lib/shared/dateUtils';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('page:home')
 
 export default function HomePage() {
   const {
@@ -61,7 +64,7 @@ export default function HomePage() {
         const data = await response.json();
         setHeroImages(data.images || []);
       } catch (error) {
-        console.error('Error fetching hero images:', error);
+        log.error('Failed to fetch hero images', error);
         setHeroImages([]);
       } finally {
         setLoadingHero(false);
@@ -102,7 +105,7 @@ export default function HomePage() {
 
         setObituarios(personasOrdenadas.slice(0, 3));
       } catch (error) {
-        console.error('Error fetching obituarios:', error);
+        log.error('Failed to fetch obituarios', error);
         setObituarios([]);
       } finally {
         setLoadingObituarios(false);
@@ -121,8 +124,6 @@ export default function HomePage() {
         const response = await fetch('/api/efemerides');
 
         if (!response.ok) {
-          const errorData = await response.text();
-          console.error('Error response:', errorData);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
@@ -145,7 +146,7 @@ export default function HomePage() {
           setEfemerides([]);
         }
       } catch (error) {
-        console.error('Error fetching efemérides:', error);
+        log.error('Failed to fetch efemerides', error);
         setEfemerides([]);
       } finally {
         setLoadingEfemerides(false);

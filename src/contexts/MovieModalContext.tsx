@@ -2,6 +2,9 @@
 import React, { createContext, useContext, useEffect, useRef, ReactNode } from 'react';
 import { useMovieForm } from '@/hooks/useMovieForm';
 import type { Movie } from '@/lib/movies/movieTypes';
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('context:movieModal')
 
 interface MovieModalContextValue {
   // Form methods
@@ -124,13 +127,13 @@ export function MovieModalProvider({
       loadCounterRef.current += 1;
       const currentLoad = loadCounterRef.current;
 
-      console.log(`🔄 [Load #${currentLoad}] Loading movie data for editing:`, editingMovie.title, '(id:', editingMovie.id, ')')
+      log.debug('Loading movie data for editing', { id: editingMovie.id, loadNumber: currentLoad })
       lastLoadedMovieRef.current = editingMovie.id;
 
       movieFormData.loadMovieData(editingMovie).then(() => {
-        console.log(`✅ [Load #${currentLoad}] Movie data loaded successfully for:`, editingMovie.title)
+        log.debug('Movie data loaded successfully', { id: editingMovie.id, loadNumber: currentLoad })
       }).catch(error => {
-        console.error(`❌ [Load #${currentLoad}] Error loading movie data:`, error)
+        log.error('Failed to load movie data', error, { loadNumber: currentLoad })
         if (onError) {
           onError(error instanceof Error ? error : new Error('Error loading movie data'))
         }
@@ -138,7 +141,7 @@ export function MovieModalProvider({
     } else {
       // Si no hay película editándose, resetear para nueva película
       if (lastLoadedMovieRef.current !== null) {
-        console.log('🧹 Resetting form (editingMovie set to null)')
+        log.debug('Resetting form, no editing movie')
         lastLoadedMovieRef.current = null;
         movieFormData.resetForNewMovie()
       }

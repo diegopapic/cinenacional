@@ -3,6 +3,9 @@ import { notFound } from 'next/navigation';
 import { MoviePageClient } from './MoviePageClient';
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('page:pelicula')
 
 interface PageProps {
   params: Promise<{
@@ -28,7 +31,7 @@ function buildCloudinaryUrl(publicId: string): string {
 // Función para obtener película directamente de Prisma (para SSR)
 async function getMovieData(slug: string) {
   try {
-    console.log(`📡 Fetching movie from database: ${slug}`);
+    log.debug('Fetching movie from database', { slug });
     
     const movie = await prisma.movie.findFirst({
       where: { slug: slug },
@@ -288,15 +291,14 @@ async function getMovieData(slug: string) {
     });
     
     if (movie) {
-      console.log(`✅ Movie found: ${movie.title}`);
-      console.log(`🖼️ Images found: ${movie.images?.length || 0}`);
+      log.debug('Movie found', { slug, imageCount: movie.images?.length || 0 });
     } else {
-      console.log(`❌ Movie not found: ${slug}`);
+      log.debug('Movie not found', { slug });
     }
     
     return movie;
   } catch (error) {
-    console.error('Error fetching movie:', error);
+    log.error('Failed to fetch movie', error);
     return null;
   }
 }
@@ -513,13 +515,7 @@ export default async function MoviePage({ params }: PageProps) {
     gender: c.person.gender || null
   })) || [];
 
-  // Log reducido en producción
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Película:', movie.title);
-    console.log('Total de actores:', allCast.length);
-    console.log('Actores con isPrincipal:', allCast.filter((c: any) => c.isPrincipal).length);
-    console.log('Hero background image:', heroBackgroundImage ? 'Sí' : 'No (usando placeholder)');
-  }
+  log.debug('Movie page data processed', { castCount: allCast.length, principalCount: allCast.filter((c: any) => c.isPrincipal).length, hasHeroImage: !!heroBackgroundImage });
 
   // Separar cast principal del cast completo
   let mainCast: any[] = [];
@@ -637,10 +633,7 @@ export default async function MoviePage({ params }: PageProps) {
       slug: c.personSlug || '',
     }));
 
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Departamentos en crew principal:', Object.keys(basicCrewByDepartment));
-    console.log('Departamentos en crew completo:', Object.keys(fullCrewByDepartment));
-  }
+  log.debug('Crew departments processed', { basicDepts: Object.keys(basicCrewByDepartment).length, fullDepts: Object.keys(fullCrewByDepartment).length });
 
   return (
     <MoviePageClient

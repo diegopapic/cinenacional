@@ -8,6 +8,9 @@ import ObituariosGrid from '@/app/(site)/listados/obituarios/ObituariosGrid';
 import { PersonWithDeath, ObituariosPagination } from '@/lib/obituarios/obituariosTypes';
 import { getCurrentYear, filtersToApiParams } from '@/lib/obituarios/obituariosUtils';
 import Pagination from '@/components/shared/Pagination';
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('page:obituarios')
 
 export default function ObituariosContent() {
   const router = useRouter();
@@ -82,7 +85,7 @@ export default function ObituariosContent() {
       const data = await response.json();
       setAvailableYears(data.years || []);
     } catch (error) {
-      console.error('Error loading death years:', error);
+      log.error('Failed to load death years', error);
       setAvailableYears([]);
     }
   };
@@ -111,7 +114,7 @@ export default function ObituariosContent() {
       });
 
     } catch (error) {
-      console.error('Error loading people:', error);
+      log.error('Failed to load obituaries', error);
       setPeople([]);
     } finally {
       setIsLoading(false);

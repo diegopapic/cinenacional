@@ -5,6 +5,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { ViewMode } from '@/components/shared/ViewToggle'
 import type { PaginationState } from '@/lib/shared/listTypes'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('hook:listPage')
 
 export interface ListPageConfig<TFilters, TItem, TFiltersData> {
   /** Base URL for the list page (e.g. '/listados/peliculas') */
@@ -90,7 +93,7 @@ export function useListPage<
         const data = await response.json()
         setFiltersData(data)
       } catch (error) {
-        console.error('Error loading filters:', error)
+        log.error('Failed to load filters', error)
       } finally {
         setIsLoadingFilters(false)
       }
@@ -123,7 +126,7 @@ export function useListPage<
           totalCount: data.totalCount || 0
         })
       } catch (error) {
-        console.error('Error loading items:', error)
+        log.error('Failed to load items', error)
         setItems([])
       } finally {
         setIsLoading(false)

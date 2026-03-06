@@ -8,6 +8,9 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Efemeride } from '@/types/home.types'
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
 import Pagination from '@/components/shared/Pagination'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('page:efemerides')
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
@@ -74,7 +77,7 @@ export default function EfemeridesPage() {
       const result = await response.json()
       setEfemerides(result.efemerides || [])
     } catch (error) {
-      console.error('Error fetching efemérides:', error)
+      log.error('Failed to fetch efemerides', error)
       setEfemerides([])
     } finally {
       setLoading(false)

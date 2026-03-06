@@ -1,13 +1,16 @@
 // src/services/roles.service.ts
 
 import { apiClient } from './api-client';
-import type { 
+import { createLogger } from '@/lib/logger'
+import type {
   Role,
   RoleFormData, 
   RoleFilters, 
   PaginatedRolesResponse,
   Department 
 } from '@/lib/roles/rolesTypes';
+
+const log = createLogger('service:roles')
 
 export const rolesService = {
   /**
@@ -111,7 +114,7 @@ export const rolesService = {
    * Crea un nuevo rol
    */
   async create(data: RoleFormData): Promise<Role> {
-    console.log('🎭 Creating role:', data);
+    log.debug('Creating role');
     
     const formattedData = {
       ...data,
@@ -126,7 +129,7 @@ export const rolesService = {
    * Actualiza un rol existente
    */
   async update(id: number, data: RoleFormData): Promise<Role> {
-    console.log('📝 Updating role:', id, data);
+    log.debug('Updating role', { id });
     
     return apiClient.put<Role>(`/roles/${id}`, data);
   },
@@ -135,7 +138,7 @@ export const rolesService = {
    * Elimina un rol
    */
   async delete(id: number): Promise<void> {
-    console.log('🗑️ Deleting role:', id);
+    log.debug('Deleting role', { id });
     return apiClient.delete(`/roles/${id}`);
   },
 

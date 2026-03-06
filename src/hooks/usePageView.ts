@@ -2,6 +2,9 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('hook:pageView')
 
 // Tipos de página disponibles
 export type PageType = 
@@ -61,7 +64,7 @@ async function trackPageView(options: PageViewOptions): Promise<void> {
     }
   } catch (error) {
     // Silenciar errores de analytics - no afectar UX
-    console.warn('Error tracking pageview:', error);
+    log.warn('Failed to track pageview', { errorMessage: error instanceof Error ? error.message : String(error) });
   }
 }
 
