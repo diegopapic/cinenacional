@@ -6,6 +6,9 @@ import RedisClient from '@/lib/redis';
 import { requireAuth } from '@/lib/auth';
 import { apiHandler } from '@/lib/api/api-handler';
 import { deleteCloudinaryImage } from '@/lib/cloudinary';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('api:people:detail');
 
 // Cache en memoria como fallback
 const memoryCache = new Map<string, { data: any; timestamp: number }>();
@@ -35,7 +38,7 @@ export async function GET(
             const redisCached = await RedisClient.get(cacheKey);
 
             if (redisCached) {
-                console.log(`✅ Cache HIT desde Redis para persona: ${personId}`);
+                log.debug('Cache HIT (Redis)', { key: cacheKey });
                 return NextResponse.json(
                     JSON.parse(redisCached),
                     {
@@ -49,7 +52,7 @@ export async function GET(
                 );
             }
         } catch (redisError) {
-            console.error('Redis error (non-fatal):', redisError);
+            log.warn('Redis error (non-fatal)', { error: String(redisError) });
         }
 
         // 2. Verificar caché en memoria como fallback
@@ -57,11 +60,11 @@ export async function GET(
         const memoryCached = memoryCache.get(cacheKey);
 
         if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
-            console.log(`✅ Cache HIT desde memoria para persona: ${personId}`);
+            log.debug('Cache HIT (memory)', { key: cacheKey });
 
             // Intentar guardar en Redis para próximas requests
             RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), REDIS_CACHE_TTL)
-                .catch(err => console.error('Error guardando en Redis:', err));
+                .catch(err => log.warn('Redis save error', { error: String(err) }));
 
             return NextResponse.json(memoryCached.data, {
                 headers: {
@@ -74,7 +77,7 @@ export async function GET(
         }
 
         // 3. No hay caché, consultar base de datos
-        console.log(`🔄 Cache MISS - Consultando BD para persona: ${personId}`);
+        log.debug('Cache MISS', { key: cacheKey });
 
         const person = await prisma.person.findUnique({
             where: { id: personId },
@@ -140,12 +143,7 @@ export async function GET(
         // 4. Guardar en ambos cachés
         // Redis con TTL de 1 hora
         RedisClient.set(cacheKey, JSON.stringify(person), REDIS_CACHE_TTL)
-            .then(saved => {
-                if (saved) {
-                    console.log(`✅ Persona ${personId} guardada en Redis`);
-                }
-            })
-            .catch(err => console.error('Error guardando en Redis:', err));
+            .catch(err => log.warn('Redis save error', { error: String(err) }));
 
         // Memoria como fallback
         memoryCache.set(cacheKey, {
@@ -170,7 +168,7 @@ export async function GET(
             }
         });
     } catch (error) {
-        console.error('Error fetching person:', error);
+        log.error('Failed to fetch person', error);
 
         // Intentar servir desde caché stale si hay error
         const { id } = await params;
@@ -178,7 +176,7 @@ export async function GET(
         const staleCache = memoryCache.get(cacheKey);
 
         if (staleCache) {
-            console.log('⚠️ Sirviendo caché stale debido a error');
+            log.warn('Serving stale cache');
             return NextResponse.json(staleCache.data, {
                 headers: {
                     'Cache-Control': 'public, s-maxage=60',
@@ -214,8 +212,7 @@ export const PUT = apiHandler(async (
 
     const data = await request.json();
 
-    console.log('Data received in API:', data);
-    console.log('Nationalities received:', data.nationalities);
+    log.debug('Person update data received');
 
     // Verificar si necesitamos actualizar el slug
     let slug = undefined;
@@ -327,7 +324,7 @@ export const PUT = apiHandler(async (
         tmdbId: data.tmdbId ? parseInt(data.tmdbId) : null,
     };
 
-    console.log('Update data prepared:', updateData);
+    log.debug('Person update prepared');
 
     // Actualizar persona, links y nacionalidades en una transacción
     const person = await prisma.$transaction(async (tx) => {
@@ -475,7 +472,7 @@ export const PUT = apiHandler(async (
     }
 
     // INVALIDAR CACHÉS después de actualizar exitosamente
-    console.log('🗑️ Invalidando cachés para persona actualizada');
+    log.debug('Invalidating caches');
 
     const cacheKeysToInvalidate = [
         `person:id:${personId}:v1`,
@@ -493,7 +490,7 @@ export const PUT = apiHandler(async (
     await Promise.all(
         cacheKeysToInvalidate.map(key =>
             RedisClient.del(key).catch(err =>
-                console.error(`Error invalidando Redis key ${key}:`, err)
+                log.warn('Redis invalidation error', { error: String(err), key })
             )
         )
     );
@@ -501,7 +498,7 @@ export const PUT = apiHandler(async (
     // Invalidar en memoria
     cacheKeysToInvalidate.forEach(key => memoryCache.delete(key));
 
-    console.log(`✅ Cachés invalidados: ${cacheKeysToInvalidate.join(', ')}`);
+    log.debug('Caches invalidated');
 
     return NextResponse.json(person);
 }, 'actualizar persona')
@@ -566,7 +563,7 @@ export const DELETE = apiHandler(async (
     }
 
     // INVALIDAR CACHÉS después de eliminar
-    console.log('🗑️ Invalidando cachés para persona eliminada');
+    log.debug('Invalidating caches');
 
     const cacheKeysToInvalidate = [
         `person:id:${personId}:v1`,
@@ -579,7 +576,7 @@ export const DELETE = apiHandler(async (
     await Promise.all(
         cacheKeysToInvalidate.map(key =>
             RedisClient.del(key).catch(err =>
-                console.error(`Error invalidando Redis key ${key}:`, err)
+                log.warn('Redis invalidation error', { error: String(err), key })
             )
         )
     );
@@ -587,7 +584,7 @@ export const DELETE = apiHandler(async (
     // Invalidar en memoria
     cacheKeysToInvalidate.forEach(key => memoryCache.delete(key));
 
-    console.log(`✅ Cachés invalidados tras eliminar: ${cacheKeysToInvalidate.join(', ')}`);
+    log.debug('Caches invalidated');
 
     return new NextResponse(null, { status: 204 });
 }, 'eliminar persona')

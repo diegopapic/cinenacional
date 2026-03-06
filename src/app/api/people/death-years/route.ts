@@ -2,6 +2,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import RedisClient from '@/lib/redis';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('api:people:death-years');
 
 // Esta ruta debe ser dinámica
 export const dynamic = 'force-dynamic';
@@ -28,7 +31,7 @@ export async function GET() {
       const redisCached = await RedisClient.get(cacheKey);
       
       if (redisCached) {
-        console.log('✅ Cache HIT desde Redis para death-years');
+        log.debug('Cache HIT (Redis)', { key: cacheKey });
         return NextResponse.json(
           JSON.parse(redisCached),
           {
@@ -41,18 +44,18 @@ export async function GET() {
         );
       }
     } catch (redisError) {
-      console.error('Redis error (non-fatal):', redisError);
+      log.warn('Redis error (non-fatal)', { error: String(redisError) });
     }
-    
+
     // 2. Verificar caché en memoria como fallback
     const memoryCached = memoryCache.get(cacheKey);
-    
+
     if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
-      console.log('✅ Cache HIT desde memoria para death-years');
-      
+      log.debug('Cache HIT (memory)', { key: cacheKey });
+
       // Intentar guardar en Redis para próximas requests
       RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), redisTTL)
-        .catch(err => console.error('Error guardando en Redis:', err));
+        .catch(err => log.warn('Redis save error', { error: String(err) }));
       
       return NextResponse.json(memoryCached.data, {
         headers: {
@@ -64,7 +67,7 @@ export async function GET() {
     }
     
     // 3. No hay caché, consultar base de datos
-    console.log('🔄 Cache MISS - Consultando BD para death-years');
+    log.debug('Cache MISS', { key: cacheKey });
     
     // Obtener años únicos de defunción
     const result = await prisma.person.findMany({
@@ -94,12 +97,7 @@ export async function GET() {
     
     // 4. Guardar en ambos cachés
     RedisClient.set(cacheKey, JSON.stringify(response), redisTTL)
-      .then(saved => {
-        if (saved) {
-          console.log(`✅ Death-years guardado en Redis con TTL ${redisTTL}s (24h)`);
-        }
-      })
-      .catch(err => console.error('Error guardando en Redis:', err));
+      .catch(err => log.warn('Redis save error', { error: String(err) }));
     
     memoryCache.set(cacheKey, {
       data: response,
@@ -115,13 +113,13 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Error fetching death years:', error);
-    
+    log.error('Failed to fetch death years', error);
+
     // Intentar servir desde caché stale si hay error
     const staleCache = memoryCache.get(cacheKey);
-    
+
     if (staleCache) {
-      console.log('⚠️ Sirviendo caché stale debido a error');
+      log.warn('Serving stale cache');
       return NextResponse.json(staleCache.data, {
         headers: {
           'Cache-Control': 'public, s-maxage=60',

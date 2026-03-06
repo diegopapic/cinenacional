@@ -8,6 +8,9 @@ import RedisClient from '@/lib/redis';
 import { requireAuth } from '@/lib/auth';
 import { apiHandler } from '@/lib/api/api-handler';
 import { parseIntClamped, LIMITS, PAGES, YEARS } from '@/lib/api/parse-params';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('api:people');
 
 // ============================================
 // CACHE CONFIGURATION
@@ -95,7 +98,7 @@ export async function GET(request: NextRequest) {
         const redisCached = await RedisClient.get(cacheKey);
         
         if (redisCached) {
-          console.log(`✅ Cache HIT desde Redis para obituarios: ${cacheKey.substring(0, 60)}...`);
+          log.debug('Cache HIT (Redis)', { key: cacheKey });
           return NextResponse.json(
             JSON.parse(redisCached),
             {
@@ -108,18 +111,18 @@ export async function GET(request: NextRequest) {
           );
         }
       } catch (redisError) {
-        console.error('Redis error (non-fatal):', redisError);
+        log.warn('Redis error (non-fatal)', { error: String(redisError) });
       }
-      
+
       // 2. Verificar caché en memoria como fallback
       const memoryCached = memoryCache.get(cacheKey);
-      
+
       if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
-        console.log(`✅ Cache HIT desde memoria para obituarios: ${cacheKey.substring(0, 60)}...`);
-        
+        log.debug('Cache HIT (memory)', { key: cacheKey });
+
         // Intentar guardar en Redis para próximas requests
         RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), redisTTL)
-          .catch(err => console.error('Error guardando en Redis:', err));
+          .catch(err => log.warn('Redis save error', { error: String(err) }));
         
         return NextResponse.json(memoryCached.data, {
           headers: {
@@ -131,7 +134,7 @@ export async function GET(request: NextRequest) {
       }
       
       // 3. No hay caché, consultar base de datos
-      console.log(`🔄 Cache MISS - Consultando BD para obituarios: ${cacheKey.substring(0, 60)}...`);
+      log.debug('Cache MISS', { key: cacheKey });
     }
     
     // ============================================
@@ -333,7 +336,7 @@ export async function GET(request: NextRequest) {
             }])
           );
         } catch (filmErr) {
-          console.error('Error fetching filmography stats:', filmErr);
+          log.warn('Filmography stats error', { error: String(filmErr) });
         }
 
         // IMPORTANTE: Agregar el campo 'name' formateado y info de match alternativo
@@ -361,7 +364,7 @@ export async function GET(request: NextRequest) {
         });
 
       } catch (err) {
-        console.error('Error with unaccent:', err);
+        log.warn('Unaccent search failed', { error: String(err) });
         // Continuar con búsqueda normal
       }
     }
@@ -480,10 +483,8 @@ export async function GET(request: NextRequest) {
       take: limit,
     });
 
-    console.log('Found people:', people.length);
-    console.log('Where clause:', where);
-    console.log('Skip:', (page - 1) * limit);
-    console.log('Take:', limit);
+    log.debug('People query results', { count: people.length });
+    log.debug('People query pagination', { skip: (page - 1) * limit, take: limit });
 
     const totalPages = Math.ceil(totalCount / limit);
 
@@ -583,16 +584,11 @@ export async function GET(request: NextRequest) {
       const redisTTL = getRedisTTL(request.nextUrl.searchParams);
       const now = Date.now();
       
-      console.log(`💾 Guardando en caché: ${cacheKey.substring(0, 60)}...`);
-      
+      log.debug('Saving to cache', { key: cacheKey });
+
       // Guardar en Redis
       RedisClient.set(cacheKey, JSON.stringify(result), redisTTL)
-        .then(saved => {
-          if (saved) {
-            console.log(`✅ Obituarios guardados en Redis con TTL ${redisTTL}s (${redisTTL/60} min)`);
-          }
-        })
-        .catch(err => console.error('Error guardando en Redis:', err));
+        .catch(err => log.warn('Redis save error', { error: String(err) }));
       
       // Guardar en memoria
       memoryCache.set(cacheKey, {
@@ -625,15 +621,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
     
   } catch (error) {
-    console.error('Error fetching people:', error);
-    
+    log.error('Failed to fetch people', error);
+
     // Intentar servir desde caché stale si hay error (solo obituarios)
     if (shouldCache(request.nextUrl.searchParams)) {
       const cacheKey = generateCacheKey(request.nextUrl.searchParams);
       const staleCache = memoryCache.get(cacheKey);
-      
+
       if (staleCache) {
-        console.log('⚠️ Sirviendo caché stale debido a error');
+        log.warn('Serving stale cache');
         return NextResponse.json(staleCache.data, {
           headers: {
             'Cache-Control': 'public, s-maxage=60',
@@ -843,7 +839,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // INVALIDAR CACHÉS si es un obituario
   // ============================================
   if (person?.deathYear) {
-    console.log('🗑️ Invalidando cachés de obituarios tras crear persona fallecida');
+    log.debug('Invalidating caches');
 
     const redisClient = RedisClient.getInstance();
     if (redisClient) {
@@ -851,27 +847,21 @@ export const POST = apiHandler(async (request: NextRequest) => {
         const keys = await redisClient.keys('people:list:*deathYear*');
         if (keys.length > 0) {
           await redisClient.del(...keys);
-          console.log(`✅ ${keys.length} cachés de obituarios invalidados en Redis`);
         }
 
         // También invalidar death-years
         await redisClient.del('people:death-years:v1');
-        console.log('✅ Caché de death-years invalidado en Redis');
+        log.debug('Caches invalidated');
       } catch (err) {
-        console.error('Error invalidando cachés de Redis:', err);
+        log.warn('Redis invalidation error', { error: String(err) });
       }
     }
 
     // Limpiar memoria también
-    let memoryKeysDeleted = 0;
     for (const key of memoryCache.keys()) {
       if (key.includes('deathYear') || key === 'people:death-years:v1') {
         memoryCache.delete(key);
-        memoryKeysDeleted++;
       }
-    }
-    if (memoryKeysDeleted > 0) {
-      console.log(`✅ ${memoryKeysDeleted} cachés de obituarios invalidados en memoria`);
     }
   }
 

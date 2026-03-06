@@ -5,6 +5,9 @@ import { generatePersonSlug } from '@/lib/people/peopleUtils';
 import RedisClient from '@/lib/redis';
 import { requireAuth } from '@/lib/auth';
 import { apiHandler } from '@/lib/api/api-handler';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('api:people:merge');
 
 /** Strip diacritics (tildes, dieresis, etc.) for name comparison */
 function normalizeForComparison(str: string): string {
@@ -537,13 +540,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
     await Promise.all(
       cacheKeysToInvalidate.map(key =>
         RedisClient.del(key).catch(err =>
-          console.error(`Error invalidando Redis key ${key}:`, err)
+          log.warn('Redis invalidation error', { error: String(err), key })
         )
       )
     );
 
-    console.log(`✅ Merge completado: persona ${result.absorbedId} absorbida por ${result.survivorId}`);
-    console.log(`   Stats:`, result.stats);
+    log.info('Merge completed', { absorbedId: result.absorbedId, survivorId: result.survivorId });
+    log.info('Merge stats', result.stats);
 
     return NextResponse.json({
       success: true,

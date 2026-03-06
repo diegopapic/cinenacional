@@ -2,6 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import RedisClient from '@/lib/redis';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('api:people:filmography');
 
 const REDIS_CACHE_TTL = 3600; // 1 hora en segundos
 
@@ -28,7 +31,7 @@ export async function GET(
       const redisCached = await RedisClient.get(cacheKey);
 
       if (redisCached) {
-        console.log(`✅ Cache HIT desde Redis para filmografía de persona: ${personId}`);
+        log.debug('Cache HIT (Redis)', { key: cacheKey });
         return NextResponse.json(
           JSON.parse(redisCached),
           {
@@ -42,11 +45,11 @@ export async function GET(
         );
       }
     } catch (redisError) {
-      console.error('Redis error (non-fatal):', redisError);
+      log.warn('Redis error (non-fatal)', { error: String(redisError) });
     }
 
     // 2. No hay caché, consultar base de datos
-    console.log(`🔄 Cache MISS - Consultando BD para filmografía de persona: ${personId}`);
+    log.debug('Cache MISS', { key: cacheKey });
 
     // Obtener roles como actor/actriz
     const castRoles = await prisma.movieCast.findMany({
@@ -119,7 +122,7 @@ export async function GET(
 
     // 3. Guardar en Redis
     RedisClient.set(cacheKey, JSON.stringify(filmography), REDIS_CACHE_TTL)
-      .catch(err => console.error('Error guardando en Redis:', err));
+      .catch(err => log.warn('Redis save error', { error: String(err) }));
 
     return NextResponse.json(filmography, {
       headers: {
@@ -130,7 +133,7 @@ export async function GET(
       }
     });
   } catch (error) {
-    console.error('Error fetching person filmography:', error);
+    log.error('Failed to fetch filmography', error);
 
     return NextResponse.json(
       { error: 'Failed to fetch filmography' },

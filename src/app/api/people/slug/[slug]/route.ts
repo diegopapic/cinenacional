@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import RedisClient from '@/lib/redis';
 import { apiHandler } from '@/lib/api/api-handler';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('api:people:slug');
 
 const REDIS_CACHE_TTL = 3600; // 1 hora en segundos
 
@@ -26,7 +29,7 @@ export const GET = apiHandler(async (
         });
       }
     } catch (redisError) {
-      console.error('Redis error (non-fatal):', redisError);
+      log.warn('Redis error (non-fatal)', { error: String(redisError) });
     }
 
     // 2. Cache MISS - consultar BD
@@ -157,7 +160,7 @@ export const GET = apiHandler(async (
 
     // 3. Guardar en Redis
     RedisClient.set(cacheKey, JSON.stringify(responseData), REDIS_CACHE_TTL)
-      .catch(err => console.error('Error guardando en Redis:', err));
+      .catch(err => log.warn('Redis save error', { error: String(err) }));
 
     return NextResponse.json(responseData, {
       headers: {
