@@ -20,13 +20,18 @@ export default function EstrenosContent() {
     const loadAllMovies = async () => {
         setIsLoading(true);
         try {
-            // Traer un lote grande para tener todas las películas con estreno
+            // Traer todas las películas con fecha de estreno
             const params = new URLSearchParams({
                 page: '1',
                 limit: '10000',
                 sortBy: 'releaseYear',
                 sortOrder: 'asc',
             });
+
+            // Si venimos con period=upcoming, filtrar desde el backend
+            if (initialUpcoming) {
+                params.set('upcoming', 'true');
+            }
 
             const response = await fetch(`/api/movies?${params}`);
             if (!response.ok) throw new Error('Error al cargar estrenos');

@@ -118,8 +118,11 @@ export async function GET(request: NextRequest) {
     console.log(`🔄 Cache MISS - Consultando BD para listado: ${cacheKey.substring(0, 60)}...`);
     
     const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX)
-    const limit = parseIntClamped(searchParams.get('limit'), LIMITS.DEFAULT, LIMITS.MIN, LIMITS.MAX)
     const search = searchParams.get('search') || ''
+    // Queries sin búsqueda de texto (ej: estrenos) necesitan límites más altos para cargar todos los resultados.
+    // Son seguras porque se cachean en Redis y no generan queries costosas de full-text.
+    const effectiveMaxLimit = search ? LIMITS.MAX : 10000
+    const limit = parseIntClamped(searchParams.get('limit'), LIMITS.DEFAULT, LIMITS.MIN, effectiveMaxLimit)
     const genre = searchParams.get('genre') || ''
     const year = searchParams.get('year') || ''
     const stage = searchParams.get('stage') || ''
@@ -311,10 +314,35 @@ export async function GET(request: NextRequest) {
     if (upcoming === 'true') {
       const now = new Date()
       const currentYear = now.getFullYear()
+      const currentMonth = now.getMonth() + 1
+      const currentDay = now.getDate()
 
-      where.releaseYear = {
-        gte: currentYear
-      }
+      where.OR = [
+        // Año futuro
+        { releaseYear: { gt: currentYear } },
+        // Mismo año, mes futuro
+        {
+          releaseYear: currentYear,
+          releaseMonth: { gt: currentMonth }
+        },
+        // Mismo año y mes, día >= hoy
+        {
+          releaseYear: currentYear,
+          releaseMonth: currentMonth,
+          releaseDay: { gte: currentDay }
+        },
+        // Mismo año, sin mes (fecha parcial: solo año)
+        {
+          releaseYear: currentYear,
+          releaseMonth: null
+        },
+        // Mismo año y mes, sin día (fecha parcial: solo año+mes)
+        {
+          releaseYear: currentYear,
+          releaseMonth: currentMonth,
+          releaseDay: null
+        }
+      ]
     }
 
     if (stage) {
