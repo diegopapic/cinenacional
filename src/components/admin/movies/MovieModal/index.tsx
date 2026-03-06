@@ -3,6 +3,9 @@ import { useCallback } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { toast } from 'react-hot-toast'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('MovieModal')
 
 // Componentes del modal
 import MovieModalHeader from './MovieModalHeader'
@@ -40,15 +43,9 @@ export default function MovieModal({ isOpen, onClose }: MovieModalProps) {
   // Handler para errores de validación de react-hook-form
   // Sin esto, handleSubmit falla silenciosamente si Zod rechaza algún campo
   const onValidationError = useCallback((errors: Record<string, any>) => {
-    console.error('❌ Errores de validación del formulario:', errors)
     const fieldNames = Object.keys(errors)
+    log.error('Form validation errors', undefined, { fields: fieldNames })
     toast.error(`No se puede guardar. Errores en: ${fieldNames.join(', ')}`, { duration: 5000 })
-    console.table(fieldNames.map(f => ({
-      campo: f,
-      tipo: errors[f]?.type,
-      mensaje: errors[f]?.message,
-      valor: errors[f]?.ref?.value
-    })))
   }, [])
 
   if (!isOpen) return null

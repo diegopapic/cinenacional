@@ -2,6 +2,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api:locations')
 
 // Forzar que esta ruta sea dinámica
 export const dynamic = 'force-dynamic'
@@ -84,7 +87,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Error fetching location tree:', error)
+    log.error('Failed to fetch location tree', error)
     return NextResponse.json(
       { error: 'Error al obtener el árbol de lugares' },
       { status: 500 }

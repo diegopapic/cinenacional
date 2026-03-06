@@ -1,5 +1,8 @@
 // src/lib/redis.ts
 import { Redis } from 'ioredis';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('redis');
 
 const getRedisUrl = () => {
   // Si hay una URL explícita, usarla
@@ -34,7 +37,7 @@ class RedisClient {
       if (!redisUrl) {
         this.isRedisEnabled = false;
         this.connectionAttempted = true;
-        console.log('📌 Redis deshabilitado - usando solo caché en memoria');
+        log.info('Redis disabled, using memory cache only');
         return null;
       }
       
@@ -46,7 +49,7 @@ class RedisClient {
           retryStrategy: (times) => {
             if (times > 1) {
               this.isRedisEnabled = false;
-              console.log('⚠️ Redis no disponible - continuando con caché en memoria');
+              log.warn('Redis unavailable, falling back to memory cache');
               return null;
             }
             return 500;
@@ -59,14 +62,14 @@ class RedisClient {
         let errorShown = false;
         this.instance.on('error', (err) => {
           if (!errorShown) {
-            console.log('⚠️ Redis no disponible - usando caché en memoria');
+            log.warn('Redis unavailable, using memory cache');
             errorShown = true;
           }
           this.isRedisEnabled = false;
         });
 
         this.instance.on('connect', () => {
-          console.log('✅ Redis conectado exitosamente');
+          log.info('Redis connected');
           this.isRedisEnabled = true;
         });
 
@@ -79,7 +82,7 @@ class RedisClient {
       } catch (error) {
         this.isRedisEnabled = false;
         this.instance = null;
-        console.log('⚠️ Redis no configurado - usando caché en memoria');
+        log.warn('Redis not configured, using memory cache');
       }
     }
     

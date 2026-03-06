@@ -2,6 +2,9 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('AdBanner')
 
 // Variable de entorno para deshabilitar todos los ads
 const ADS_ENABLED = process.env.NEXT_PUBLIC_ADS_ENABLED !== 'false'
@@ -72,7 +75,7 @@ export default function AdBanner({
           isLoaded.current = true
         }
       } catch (err) {
-        console.error('AdSense error:', err)
+        log.error('AdSense error', err)
       }
     }, 100)
 

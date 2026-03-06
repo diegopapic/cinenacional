@@ -4,6 +4,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { apiHandler } from '@/lib/api/api-handler'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api:search:full')
 
 export const dynamic = 'force-dynamic'
 
@@ -130,7 +133,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       })
 
     } catch (err) {
-      console.log('Unaccent not available, using fallback search')
+      log.debug('Unaccent not available, using fallback')
       
       // Fallback: búsqueda estándar sin normalización
       const [movies, people] = await Promise.all([

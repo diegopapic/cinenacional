@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { PersonFormData } from '@/lib/people/peopleTypes';
 import { MapPin, Search, X, Loader2 } from 'lucide-react';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('LocationFields');
 
 interface LocationFieldsProps {
   formData: PersonFormData;
@@ -73,7 +76,7 @@ function LocationAutocomplete({
         setSearchTerm(formatted);
       }
     } catch (error) {
-      console.error('Error fetching location:', error);
+      log.error('Error fetching location', error);
     }
   };
 
@@ -106,7 +109,7 @@ function LocationAutocomplete({
           setLocations(data);
         }
       } catch (error) {
-        console.error('Error searching locations:', error);
+        log.error('Error searching locations', error);
       } finally {
         setLoading(false);
       }
@@ -151,7 +154,7 @@ function LocationAutocomplete({
   // Seleccionar una ubicación
   const handleSelectLocation = (location: Location) => {
     const formatted = formatLocationDisplay(location);
-    console.log('Selected location:', { location, formatted });
+    log.debug('Location selected', { id: location.id });
     setSearchTerm(formatted);
     setDisplayValue(formatted);
     onChange(location.id, formatted);
@@ -188,7 +191,7 @@ function LocationAutocomplete({
         }
       }
     } catch (error) {
-      console.error('Error setting CABA:', error);
+      log.error('Error setting CABA', error);
     } finally {
       setLoading(false);
     }
@@ -293,14 +296,14 @@ function LocationAutocomplete({
 
 export function LocationFields({ formData, updateField }: LocationFieldsProps) {
   const handleBirthLocationChange = (locationId: number | null, locationName: string) => {
-    console.log('Birth location change:', { locationId, locationName });
+    log.debug('Birth location changed', { locationId });
     // Actualizar tanto el ID como el texto
     updateField('birthLocationId', locationId);
     updateField('birthLocation', locationName);
   };
 
   const handleDeathLocationChange = (locationId: number | null, locationName: string) => {
-    console.log('Death location change:', { locationId, locationName });
+    log.debug('Death location changed', { locationId });
     // Actualizar tanto el ID como el texto
     updateField('deathLocationId', locationId);
     updateField('deathLocation', locationName);

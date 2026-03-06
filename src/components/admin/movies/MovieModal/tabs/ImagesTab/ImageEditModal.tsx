@@ -12,6 +12,9 @@ import {
 import { imagePresets, generateImageCaption } from '@/lib/images/imageUtils'
 import { imagesService } from '@/services/images.service'
 import { toast } from 'react-hot-toast'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('ImageEditModal')
 
 interface MoviePerson {
   personId: number
@@ -130,7 +133,7 @@ export function ImageEditModal({
       toast.success('Imagen actualizada')
       onSave(updated)
     } catch (error) {
-      console.error('Error guardando imagen:', error)
+      log.error('Error saving image', error)
       toast.error('Error al guardar')
     } finally {
       setSaving(false)
@@ -146,7 +149,7 @@ export function ImageEditModal({
       toast.success('Imagen eliminada')
       onDelete(image.id)
     } catch (error) {
-      console.error('Error eliminando imagen:', error)
+      log.error('Error deleting image', error)
       toast.error('Error al eliminar')
     } finally {
       setDeleting(false)

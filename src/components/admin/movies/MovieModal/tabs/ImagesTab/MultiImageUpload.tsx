@@ -5,6 +5,9 @@ import { CldUploadWidget } from 'next-cloudinary'
 import { useState, useRef, useCallback } from 'react'
 import { ImagePlus } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('MultiImageUpload')
 
 interface MultiImageUploadProps {
   movieId: number
@@ -27,7 +30,7 @@ export function MultiImageUpload({
   const handleUploadSuccess = useCallback((result: any) => {
     if (result.info) {
       const { public_id } = result.info
-      console.log('✅ Imagen subida:', public_id)
+      log.debug('Image uploaded', { public_id })
       uploadedIdsRef.current.push(public_id)
       setUploadCount(prev => prev + 1)
     }
@@ -35,7 +38,7 @@ export function MultiImageUpload({
 
   const handleClose = useCallback(() => {
     const uploadedIds = uploadedIdsRef.current
-    console.log('🚪 Widget cerrado, imágenes subidas:', uploadedIds.length, uploadedIds)
+    log.debug('Upload widget closed', { count: uploadedIds.length })
     
     setIsUploading(false)
     

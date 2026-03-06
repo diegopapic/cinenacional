@@ -3,6 +3,9 @@ import { useState, useEffect, useRef } from 'react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { Search, X } from 'lucide-react'
 import { rolesService } from '@/services/roles.service'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('RoleSelector')
 import { 
   Department, 
   DEPARTMENT_LABELS, 
@@ -43,7 +46,7 @@ export default function RoleSelector({
           setSelectedRole(role)
           setSearchTerm(role.name)
         })
-        .catch(err => console.error('Error cargando rol:', err))
+        .catch(err => log.error('Error loading role', err))
     }
   }, [value])
 
@@ -86,7 +89,7 @@ export default function RoleSelector({
           setRoles(response.data)
         }
       } catch (error) {
-        console.error('Error buscando roles:', error)
+        log.error('Error searching roles', error)
         setRoles([])
       } finally {
         setLoading(false)
@@ -274,8 +277,7 @@ export default function RoleSelector({
                   type="button"
                   className="w-full text-left px-3 py-2 hover:bg-green-50 flex items-center space-x-2 text-green-700"
                   onClick={() => {
-                    console.log('Crear nuevo rol:', debouncedSearch)
-                    // Aquí podrías abrir un modal para crear el rol
+                    log.debug('Create new role requested', { name: debouncedSearch })
                     setIsOpen(false)
                   }}
                 >

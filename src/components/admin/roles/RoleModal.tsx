@@ -8,6 +8,9 @@ import { z } from 'zod';
 import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { rolesService } from '@/services/roles.service';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('RoleModal');
 import { getDepartmentOptions, getDepartmentColor, DEPARTMENTS } from '@/lib/roles/roleUtils';
 import { Department } from '@/lib/roles/rolesTypes';
 
@@ -102,7 +105,7 @@ export function RoleModal({
       
       onSuccess();
     } catch (error) {
-      console.error('Error saving role:', error);
+      log.error('Error saving role', error);
       toast.error(isEdit ? 'Error al actualizar rol' : 'Error al crear rol');
     }
   };

@@ -10,6 +10,9 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { Festival, FestivalFormData, festivalFormSchema } from '@/lib/festivals/festivalTypes'
 import { getCsrfHeaders } from '@/lib/csrf-client'
 import toast from 'react-hot-toast'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('FestivalForm')
 
 interface Location {
   id: number
@@ -110,7 +113,7 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
         setShowSuggestions(true)
       }
     } catch (error) {
-      console.error('Error searching locations:', error)
+      log.error('Error searching locations', error)
     } finally {
       setIsSearching(false)
     }

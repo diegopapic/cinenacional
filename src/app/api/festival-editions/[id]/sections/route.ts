@@ -5,6 +5,9 @@ import { prisma } from '@/lib/prisma'
 import { festivalSectionFormSchema } from '@/lib/festivals/festivalTypes'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler, sanitizeValidationFlat } from '@/lib/api/api-handler'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api:festivals:sections')
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -193,7 +196,7 @@ async function createSectionsFromTemplates(editionId: number, templateIds: numbe
 
     return NextResponse.json(sections, { status: 201 })
   } catch (error) {
-    console.error('Error creating sections from templates:', error)
+    log.error('Failed to create sections from templates', error)
     return NextResponse.json(
       { error: 'Error al crear secciones desde templates' },
       { status: 500 }

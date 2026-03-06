@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { getCsrfHeaders } from '@/lib/csrf-client';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('admin:review-names');
 
 interface CaseToReview {
   id: number;
@@ -53,7 +56,7 @@ export default function ReviewNamesPage() {
         }
       }
     } catch (error) {
-      console.error('Error loading cases:', error);
+      log.error('Failed to load cases', error);
       toast.error('Error al cargar casos');
     } finally {
       setLoading(false);
@@ -100,7 +103,7 @@ export default function ReviewNamesPage() {
       }
 
     } catch (error) {
-      console.error('Error saving:', error);
+      log.error('Failed to save', error);
       toast.error('Error al guardar cambios');
     } finally {
       setSaving(false);

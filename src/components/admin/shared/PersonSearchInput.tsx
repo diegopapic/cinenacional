@@ -7,6 +7,9 @@ import toast from 'react-hot-toast'
 import { getCsrfHeaders } from '@/lib/csrf-client'
 import GenderSelectionModal from './GenderSelectionModal'
 import NameSplitModal from './NameSplitModal'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('PersonSearchInput')
 
 interface PersonAlternativeName {
   id: number
@@ -54,14 +57,14 @@ async function checkFirstNameGender(firstName: string): Promise<{
     }
     return response.json()
   } catch (error) {
-    console.error('Error consultando género del nombre:', error)
+    log.error('Error checking first name gender', error)
     return { found: false, gender: null }
   }
 }
 
 // Función para guardar un nombre con su género
 async function saveFirstNameGender(firstName: string, gender: 'MALE' | 'FEMALE'): Promise<boolean> {
-  console.log(`💾 Intentando guardar nombre "${firstName}" con género ${gender}...`)
+  log.debug('Saving first name gender', { firstName, gender })
   
   try {
     const response = await fetch('/api/first-name-gender', {
@@ -73,14 +76,14 @@ async function saveFirstNameGender(firstName: string, gender: 'MALE' | 'FEMALE')
     const data = await response.json()
     
     if (!response.ok) {
-      console.error('❌ Error en respuesta:', data)
+      log.error('Error in save response', data)
       throw new Error(data.error || 'Error guardando género')
     }
     
-    console.log(`✅ Nombre "${firstName}" guardado exitosamente en first_name_genders:`, data)
+    log.debug('First name gender saved successfully', { firstName })
     return true
   } catch (error) {
-    console.error('❌ Error guardando género del nombre:', error)
+    log.error('Error saving first name gender', error)
     throw error
   }
 }
@@ -222,7 +225,7 @@ export default function PersonSearchInput({
           setSearchTerm(displayName)
           setSelectedAlternativeNameId(alternativeNameId || null)
         })
-        .catch(err => console.error('Error cargando persona:', err))
+        .catch(err => log.error('Error loading person', err))
     }
   }, [value, alternativeNameId, initialPersonName])
 
@@ -263,7 +266,7 @@ export default function PersonSearchInput({
         
         setPeople(peopleData)
       } catch (error) {
-        console.error('Error buscando personas:', error)
+        log.error('Error searching people', error)
         setPeople([])
       } finally {
         setLoading(false)
@@ -332,12 +335,11 @@ export default function PersonSearchInput({
     try {
       // 1. Consultar el género del primer token (si no es inicial ni apodo)
       if (!isInitial(firstToken) && !isNickname(firstToken)) {
-        console.log(`🔍 Consultando género para "${firstToken}"...`)
+        log.debug('Checking gender for first token', { firstToken })
         const genderResult = await checkFirstNameGender(firstToken)
-        
+
         if (genderResult.found && genderResult.gender && genderResult.gender !== 'UNISEX') {
-          // Género determinado automáticamente
-          console.log(`✅ Género determinado automáticamente: ${genderResult.gender}`)
+          log.debug('Gender determined automatically', { gender: genderResult.gender })
           await createPersonWithGender(fullName, genderResult.gender)
           return
         }
@@ -347,16 +349,14 @@ export default function PersonSearchInput({
       setCreating(false)
       
       if (hasNicknameOrInitial(fullName)) {
-        // Tiene apodo o inicial → el algoritmo puede separar bien, solo pedir género
-        console.log(`❓ Nombre tiene apodo/inicial, mostrando modal de género`)
+        log.debug('Name has nickname/initial, showing gender modal')
         setShowGenderModal(true)
       } else {
-        // No tiene nada conocido → mostrar modal de separación + género
-        console.log(`❓ No se reconoce ningún nombre, mostrando modal de separación`)
+        log.debug('No recognized name, showing name split modal')
         setShowNameSplitModal(true)
       }
     } catch (error) {
-      console.error('Error en proceso de creación:', error)
+      log.error('Error in person creation process', error)
       toast.error('Error al procesar la solicitud')
       setCreating(false)
     }
@@ -364,12 +364,12 @@ export default function PersonSearchInput({
 
   // Función para crear persona con género ya determinado (separación automática por API)
   const createPersonWithGender = async (
-    fullName: string, 
+    fullName: string,
     gender: 'MALE' | 'FEMALE' | 'OTHER' | null
   ) => {
     try {
-      console.log(`🚀 Creando persona "${fullName}" con género: ${gender || 'sin especificar'}`)
-      
+      log.debug('Creating person with gender', { fullName, gender })
+
       const response = await fetch('/api/people', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
@@ -385,14 +385,14 @@ export default function PersonSearchInput({
       }
 
       const newPerson = await response.json()
-      console.log('✅ Persona creada:', newPerson)
-      
+      log.debug('Person created', { id: newPerson.id })
+
       toast.success(`Persona "${formatPersonName(newPerson)}" creada exitosamente`)
-      
+
       handleSelectPerson(newPerson)
-      
+
     } catch (error) {
-      console.error('❌ Error creando persona:', error)
+      log.error('Error creating person', error)
       toast.error(error instanceof Error ? error.message : 'Error al crear la persona')
     } finally {
       setCreating(false)
@@ -406,8 +406,8 @@ export default function PersonSearchInput({
     gender: 'MALE' | 'FEMALE' | 'OTHER' | null
   ) => {
     try {
-      console.log(`🚀 Creando persona firstName="${firstName}", lastName="${lastName}", gender=${gender}`)
-      
+      log.debug('Creating person with split name', { gender })
+
       const response = await fetch('/api/people', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
@@ -424,14 +424,14 @@ export default function PersonSearchInput({
       }
 
       const newPerson = await response.json()
-      console.log('✅ Persona creada:', newPerson)
-      
+      log.debug('Person created with split name', { id: newPerson.id })
+
       toast.success(`Persona "${formatPersonName(newPerson)}" creada exitosamente`)
-      
+
       handleSelectPerson(newPerson)
-      
+
     } catch (error) {
-      console.error('❌ Error creando persona:', error)
+      log.error('Error creating person with split name', error)
       toast.error(error instanceof Error ? error.message : 'Error al crear la persona')
     } finally {
       setCreating(false)
@@ -443,7 +443,7 @@ export default function PersonSearchInput({
     gender: 'MALE' | 'FEMALE' | 'OTHER' | null, 
     saveToDatabase: boolean
   ) => {
-    console.log(`🎯 handleGenderSelect:`, { gender, saveToDatabase, pendingFirstName, pendingPersonName })
+    log.debug('Gender selected', { gender, saveToDatabase })
     
     setShowGenderModal(false)
     setCreating(true)
@@ -451,13 +451,13 @@ export default function PersonSearchInput({
     try {
       // Si es MALE o FEMALE, guardar el nombre en first_name_genders
       if (saveToDatabase && (gender === 'MALE' || gender === 'FEMALE')) {
-        console.log(`💾 Guardando "${pendingFirstName}" como ${gender}...`)
-        
+        log.debug('Saving first name gender from modal', { pendingFirstName, gender })
+
         try {
           await saveFirstNameGender(pendingFirstName, gender)
           toast.success(`El nombre "${pendingFirstName}" se guardó como ${gender === 'MALE' ? 'masculino' : 'femenino'}`)
         } catch (saveError) {
-          console.error('⚠️ Error guardando en first_name_genders:', saveError)
+          log.error('Error saving to first_name_genders', saveError)
           toast.error(`No se pudo guardar el nombre "${pendingFirstName}" en la base de datos de nombres`)
         }
       }
@@ -466,7 +466,7 @@ export default function PersonSearchInput({
       await createPersonWithGender(pendingPersonName, gender)
       
     } catch (error) {
-      console.error('Error en selección de género:', error)
+      log.error('Error in gender selection', error)
       toast.error('Error al procesar la selección')
       setCreating(false)
     }
@@ -479,7 +479,7 @@ export default function PersonSearchInput({
     gender: 'MALE' | 'FEMALE' | 'OTHER' | null,
     saveToDatabase: boolean
   ) => {
-    console.log(`🎯 handleNameSplitConfirm:`, { firstName, lastName, gender, saveToDatabase })
+    log.debug('Name split confirmed', { gender, saveToDatabase })
     
     setShowNameSplitModal(false)
     setCreating(true)
@@ -489,15 +489,14 @@ export default function PersonSearchInput({
       if (saveToDatabase && (gender === 'MALE' || gender === 'FEMALE')) {
         const firstNameWords = tokenizeName(firstName).filter(w => !isInitial(w) && !isNickname(w))
         
-        console.log(`💾 Guardando ${firstNameWords.length} nombre(s): ${firstNameWords.join(', ')}`)
-        
+        log.debug('Saving first name words', { count: firstNameWords.length })
+
         for (const word of firstNameWords) {
           try {
             await saveFirstNameGender(word, gender)
-            console.log(`✅ "${word}" guardado como ${gender}`)
-          } catch (saveError) {
-            // Puede fallar si ya existe, ignorar
-            console.log(`⚠️ "${word}" ya existe o error:`, saveError)
+            log.debug('First name word saved', { word, gender })
+          } catch {
+            log.warn('First name word save failed (may already exist)', { word })
           }
         }
         
@@ -510,7 +509,7 @@ export default function PersonSearchInput({
       await createPersonWithSplit(firstName, lastName, gender)
       
     } catch (error) {
-      console.error('Error en confirmación de nombre:', error)
+      log.error('Error in name split confirmation', error)
       toast.error('Error al procesar la solicitud')
       setCreating(false)
     }

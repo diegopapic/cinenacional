@@ -8,6 +8,9 @@ import Link from 'next/link'
 import { X } from 'lucide-react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { getCsrfHeaders } from '@/lib/csrf-client'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('LocationForm')
 
 interface Location {
   id: number
@@ -108,7 +111,7 @@ export default function LocationForm({ location }: LocationFormProps) {
         setParentSearch(parentData.name)
       }
     } catch (error) {
-      console.error('Error loading parent location:', error)
+      log.error('Error loading parent location', error)
     }
   }
 
@@ -129,7 +132,7 @@ export default function LocationForm({ location }: LocationFormProps) {
         setSlug(data.slug)
       }
     } catch (error) {
-      console.error('Error checking slug:', error)
+      log.error('Error checking slug', error)
     } finally {
       setIsCheckingSlug(false)
     }
@@ -155,7 +158,7 @@ export default function LocationForm({ location }: LocationFormProps) {
         setShowSuggestions(true)
       }
     } catch (error) {
-      console.error('Error searching locations:', error)
+      log.error('Error searching locations', error)
     } finally {
       setIsSearching(false)
     }

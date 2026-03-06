@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler } from '@/lib/api/api-handler'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api:metrics')
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +36,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
     pgStats = result[0]
   } catch (error) {
-    console.error('Error fetching PG stats:', error)
+    log.error('Failed to fetch PG stats', error)
   }
 
   // Pool stats
@@ -54,7 +57,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
     poolStats = poolResult[0]
   } catch (error) {
-    console.error('Error fetching pool stats:', error)
+    log.error('Failed to fetch pool stats', error)
   }
 
   // Query performance stats
@@ -77,7 +80,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     queryStats = queryResult
   } catch (error) {
     // pg_stat_statements puede no estar habilitado
-    console.log('pg_stat_statements not available')
+    log.debug('pg_stat_statements not available')
   }
 
   const response = {

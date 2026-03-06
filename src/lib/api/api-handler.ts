@@ -3,6 +3,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api')
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -37,7 +40,7 @@ export function sanitizeValidationFlat(error: ZodError): Record<string, unknown>
 /**
  * Handles an API error with consistent logging and response format.
  * - ZodError → 400 with sanitized validation details
- * - Everything else → console.error + generic 500
+ * - Everything else → log.error + generic 500
  *
  * Use standalone in catch blocks that need custom pre-handling (e.g. stale cache).
  */
@@ -48,7 +51,7 @@ export function handleApiError(error: unknown, action: string): NextResponse {
       { status: 400 }
     )
   }
-  console.error(`Error ${action}:`, error)
+  log.error(`Error ${action}`, error)
   return NextResponse.json(
     { error: `Error al ${action}` },
     { status: 500 }
@@ -66,7 +69,7 @@ export function handleApiError(error: unknown, action: string): NextResponse {
  *     const data = await prisma.model.findMany()
  *     return NextResponse.json(data)
  *   } catch (error) {
- *     console.error('Error fetching X:', error)
+ *     log.error('Error fetching X', error)
  *     return NextResponse.json({ error: 'Error al obtener X' }, { status: 500 })
  *   }
  * }

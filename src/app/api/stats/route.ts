@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api:stats')
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -75,7 +78,7 @@ export async function GET() {
       trailers: totalTrailers,
     })
   } catch (error) {
-    console.error('Error fetching stats:', error)
+    log.error('Failed to fetch stats', error)
     return NextResponse.json(
       { error: 'Error al obtener las estadísticas' },
       { status: 500 }

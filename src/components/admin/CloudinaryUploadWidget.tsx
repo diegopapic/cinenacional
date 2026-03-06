@@ -5,6 +5,9 @@ import { CldUploadWidget } from 'next-cloudinary'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Upload, X, ImageIcon } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('CloudinaryUploadWidget')
 
 interface CloudinaryUploadWidgetProps {
   value?: string
@@ -100,7 +103,7 @@ export function CloudinaryUploadWidget({
 
   // Función para restaurar el scroll
   const restoreScroll = useCallback(() => {
-    console.log('🔄 Restoring scroll')
+    log.debug('Restoring scroll')
     document.body.style.overflow = ''
     document.documentElement.style.overflow = ''
     document.body.style.position = ''
@@ -110,7 +113,7 @@ export function CloudinaryUploadWidget({
 
   // Handler de éxito - mejorado con cleanup
   const handleUploadSuccess = useCallback((result: any) => {
-    console.log('✅ Upload success:', result)
+    log.debug('Upload success')
     if (result.info) {
       const { secure_url, public_id } = result.info
       setImageUrl(secure_url)
@@ -130,7 +133,7 @@ export function CloudinaryUploadWidget({
 
   // Handler de cierre - mejorado
   const handleClose = useCallback(() => {
-    console.log('🚪 Widget closed')
+    log.debug('Widget closed')
     setIsUploading(false)
     isOpeningRef.current = false
     restoreScroll()
@@ -138,7 +141,7 @@ export function CloudinaryUploadWidget({
 
   // Handler de error - mejorado
   const handleError = useCallback((error: any) => {
-    console.error('❌ Upload error:', error)
+    log.error('Upload error', error)
     toast.error('Error al subir la imagen')
     setIsUploading(false)
     isOpeningRef.current = false
@@ -149,12 +152,12 @@ export function CloudinaryUploadWidget({
   const openWidget = useCallback(() => {
     // Prevenir múltiples aperturas simultáneas
     if (isOpeningRef.current) {
-      console.log('⚠️ Widget already opening, skipping')
+      log.debug('Widget already opening, skipping')
       return
     }
     
     if (widgetOpenRef.current) {
-      console.log('📂 Opening widget')
+      log.debug('Opening widget')
       isOpeningRef.current = true
       setIsUploading(true)
       widgetOpenRef.current()

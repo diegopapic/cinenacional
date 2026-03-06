@@ -8,6 +8,9 @@ import { requireAuth } from '@/lib/auth'
 import { ZodError, type ZodSchema } from 'zod'
 import { sanitizeValidationError } from '@/lib/api/api-handler'
 import { parseIntClamped, LIMITS, PAGES } from '@/lib/api/parse-params'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api:crud')
 
 // ---------------------------------------------------------------------------
 // Helpers (exportados para uso independiente fuera del factory)
@@ -226,7 +229,7 @@ export function createListAndCreateHandlers(config: ListCreateConfig) {
 
       return NextResponse.json(formattedItems)
     } catch (error) {
-      console.error(`Error fetching ${config.model}s:`, error)
+      log.error(`Error fetching ${config.model}s`, error)
       return NextResponse.json(
         { error: `Error al obtener ${config.entityName}` },
         { status: 500 }
@@ -268,7 +271,7 @@ export function createListAndCreateHandlers(config: ListCreateConfig) {
           { status: 400 }
         )
       }
-      console.error(`Error creating ${config.model}:`, error)
+      log.error(`Error creating ${config.model}`, error)
       return NextResponse.json(
         { error: `Error al crear ${config.entityName}` },
         { status: 500 }
@@ -317,7 +320,7 @@ export function createItemHandlers(config: ItemConfig) {
 
       return NextResponse.json(item)
     } catch (error) {
-      console.error(`Error fetching ${config.model}:`, error)
+      log.error(`Error fetching ${config.model}`, error)
       return NextResponse.json(
         { error: `Error al obtener ${config.entityName}` },
         { status: 500 }
@@ -380,7 +383,7 @@ export function createItemHandlers(config: ItemConfig) {
           { status: 400 }
         )
       }
-      console.error(`Error updating ${config.model}:`, error)
+      log.error(`Error updating ${config.model}`, error)
       return NextResponse.json(
         { error: `Error al actualizar ${config.entityName}` },
         { status: 500 }
@@ -433,7 +436,7 @@ export function createItemHandlers(config: ItemConfig) {
 
       return new NextResponse(null, { status: 204 })
     } catch (error) {
-      console.error(`Error deleting ${config.model}:`, error)
+      log.error(`Error deleting ${config.model}`, error)
       return NextResponse.json(
         { error: `Error al eliminar ${config.entityName}` },
         { status: 500 }

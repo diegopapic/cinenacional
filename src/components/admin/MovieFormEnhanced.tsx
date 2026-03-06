@@ -16,6 +16,9 @@ import {
 import ScreeningVenueSelector from './ScreeningVenueSelector'
 import CastList from './movies/CastList'
 import { getCsrfHeaders } from '@/lib/csrf-client'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('MovieFormEnhanced')
 
 
 interface MovieFormEnhancedProps {
@@ -109,15 +112,11 @@ export default function MovieFormEnhanced({
   // Inicializar con datos existentes - CORREGIDO
   useEffect(() => {
     if (initialData && !isInitialized) {
-      console.log('🎬 MovieFormEnhanced - initialData completo:', initialData)
-      console.log('🎭 MovieFormEnhanced - initialData.genres:', initialData.genres)
+      log.debug('Initializing with data')
       if (initialData.genres) {
-        console.log('🎭 Primer género:', initialData.genres[0])
         const genreIds = initialData.genres.map(g => {
-          console.log('🎭 Procesando género:', g)
           return g.genre?.id || g.genreId || g.id
         })
-        console.log('🎭 IDs extraídos:', genreIds)
 
         setSelectedGenres(genreIds)
       }
@@ -137,7 +136,6 @@ export default function MovieFormEnhanced({
       }
 
       if (initialData.crew) {
-        console.log('🎬 Crew data received:', initialData.crew)
         setCrew(initialData.crew)
       }
 
@@ -262,7 +260,7 @@ export default function MovieFormEnhanced({
       setAvailableRoles(roles.data || [])
 
     } catch (error) {
-      console.error('Error loading initial data:', error)
+      log.error('Error loading initial data', error)
       // Asegurar que los estados sean arrays vacíos en caso de error
       setAvailableGenres([])
       setAvailableCountries([])
@@ -288,21 +286,16 @@ export default function MovieFormEnhanced({
       setAvailablePeople(peopleData)
 
     } catch (error) {
-      console.error('Error searching people:', error)
+      log.error('Error searching people', error)
       setAvailablePeople([])
     }
   }
 
   // Agregar persona al cast o crew
   const addPerson = () => {
-    console.log('🔵 addPerson - INICIO')
-    console.log('🔵 personId:', newPerson.personId)
-    console.log('🔵 cast actual:', cast)
-
     if (!newPerson.personId) return
 
     const selectedPerson = availablePeople.find((p: any) => p.id === newPerson.personId)
-    console.log('🔵 selectedPerson encontrado:', selectedPerson)
 
     if (!selectedPerson) return
 
@@ -314,13 +307,8 @@ export default function MovieFormEnhanced({
         billingOrder: cast.length + 1,
         isPrincipal: cast.length < 5
       }
-      console.log('🔵 newMember a agregar:', newMember)
-
       const newCast = [...cast, newMember]
-      console.log('🔵 newCast completo:', newCast)
-
       setCast(newCast)
-      console.log('🔵 setCast ejecutado')
     } else if (addingType === 'crew') {
       const selectedRole = availableRoles.find(r => r.id === newPerson.roleId)
 
@@ -362,7 +350,7 @@ export default function MovieFormEnhanced({
         setNewPerson({ ...newPerson, personId: newPersonData.id })
       }
     } catch (error) {
-      console.error('Error creating person:', error)
+      log.error('Error creating person', error)
     }
   }
 
@@ -755,9 +743,6 @@ export default function MovieFormEnhanced({
           {crew.length > 0 && (
             <div className="mb-4 space-y-2">
               {crew.map((member, index) => {
-                console.log('🎭 Member:', member) // ← AGREGADO
-                console.log('Person:', member.person)  // ← AGREGAR
-                console.log('Role:', member.role)      // ← AGREGAR
                 return (
                   <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                     <div className="flex-1">

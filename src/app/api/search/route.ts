@@ -6,6 +6,9 @@ import { prisma } from '@/lib/prisma'
 import { apiHandler } from '@/lib/api/api-handler'
 import { parseIntClamped, LIMITS } from '@/lib/api/parse-params'
 import { applyRateLimit, getClientIp, RATE_LIMIT_PRESETS } from '@/lib/rate-limit'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api:search')
 
 export const dynamic = 'force-dynamic'
 
@@ -105,7 +108,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         `
       }
     } catch (err) {
-      console.log('Falling back to standard search for movies')
+      log.debug('Falling back to standard search for movies')
       // Fallback si unaccent no está instalado
       const movieResults = await prisma.movie.findMany({
         where: {
@@ -205,7 +208,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         `
       }
     } catch (err) {
-      console.log('Falling back to standard search for people')
+      log.debug('Falling back to standard search for people')
       // Fallback si unaccent no está instalado
       const peopleResults = await prisma.person.findMany({
         where: {

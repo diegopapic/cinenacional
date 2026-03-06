@@ -5,6 +5,9 @@ import { prisma } from '@/lib/prisma'
 import { Department } from '@/lib/roles/rolesTypes'
 import { createSlug } from '@/lib/utils'
 import { requireAuth } from '@/lib/auth'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api:roles:seed')
 
 // Roles iniciales por departamento
 const INITIAL_ROLES_BY_DEPARTMENT = {
@@ -155,10 +158,10 @@ export async function POST() {
     let created = 0
     let skipped = 0
 
-    console.log('Iniciando seeding de roles...')
+    log.info('Starting roles seeding')
 
     for (const [department, roleNames] of Object.entries(INITIAL_ROLES_BY_DEPARTMENT)) {
-      console.log(`Procesando departamento: ${department}`)
+      log.info('Processing department', { department })
 
       for (let i = 0; i < roleNames.length; i++) {
         const roleName = roleNames[i]
@@ -170,7 +173,7 @@ export async function POST() {
         })
 
         if (existingRole) {
-          console.log(`Rol "${roleName}" ya existe`)
+          log.debug('Role already exists', { name: roleName })
           skipped++
           continue
         }
@@ -189,12 +192,12 @@ export async function POST() {
           }
         })
 
-        console.log(`Creado rol: ${roleName}${isMainRole ? ' (Principal)' : ''}`)
+        log.info('Role created', { name: roleName, isMain: isMainRole })
         created++
       }
     }
 
-    console.log(`Seeding completado: ${created} roles creados, ${skipped} omitidos`)
+    log.info('Seeding completed', { created, skipped })
 
     return NextResponse.json({
       success: true,
@@ -204,7 +207,7 @@ export async function POST() {
     })
 
   } catch (error) {
-    console.error('Error en seeding:', error)
+    log.error('Seeding failed', error)
     return NextResponse.json(
       {
         success: false,

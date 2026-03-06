@@ -8,6 +8,9 @@ import MoviesPagination from '@/components/admin/movies/MoviesPagination'
 import MoviesTable from '@/components/admin/movies/MoviesTable'
 import MovieModal from '@/components/admin/movies/MovieModal'
 import { MovieModalProvider } from '@/contexts/MovieModalContext'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('admin:movies')
 import { moviesService } from '@/services'
 import { type Movie } from '@/lib/movies/movieTypes'
 
@@ -83,7 +86,7 @@ export default function AdminMoviesPage() {
   }
 
   const handleMovieError = (error: Error) => {
-    console.error('Error en operación de película:', error)
+    log.error('Movie operation failed', error)
     toast.error(error.message || 'Error al procesar la película')
   }
 

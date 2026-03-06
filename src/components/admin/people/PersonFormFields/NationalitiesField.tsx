@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { apiClient } from '@/services/api-client'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('NationalitiesField')
 
 interface Location {
   id: number
@@ -45,7 +48,7 @@ export default function NationalitiesField({
       const response = await apiClient.get<Location[]>('/locations/countries')
       setCountries(response)
     } catch (error) {
-      console.error('Error loading countries:', error)
+      log.error('Error loading countries', error)
     }
   }
 

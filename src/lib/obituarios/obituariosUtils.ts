@@ -2,6 +2,9 @@
 
 import { PersonWithDeath } from './obituariosTypes';
 import { calculateYearsBetween, type PartialDate } from '@/lib/shared/dateUtils';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('obituarios');
 
 /**
  * Nombres de los meses en español
@@ -31,7 +34,7 @@ export async function getAvailableYears(): Promise<number[]> {
     const data = await response.json();
     return data.years || [];
   } catch (error) {
-    console.error('Error loading death years:', error);
+    log.error('Failed to load death years', error);
     return [];
   }
 }

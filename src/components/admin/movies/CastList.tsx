@@ -2,6 +2,9 @@
 'use client'
 
 import { useState } from 'react'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('CastList')
 import {
     DndContext,
     closestCenter,
@@ -154,17 +157,8 @@ function SortableCastItem({
 }
 
 export default function CastList({ cast, onCastChange }: CastListProps) {
-    console.log('🎬 CastList RENDER - cast recibido:', cast)
-    console.log('🎬 Cantidad de items:', cast.length)
-    cast.forEach((item, i) => {
-        console.log(`🎬 Item ${i}:`, {
-            personId: item.personId,
-            hasPersonId: !!item.personId,
-            personFromObject: item.person?.id,
-            isPrincipal: item.isPrincipal  // ✅ Log para debugging
-        })
-    })
-    
+    log.debug('CastList render', { count: cast.length })
+
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, {

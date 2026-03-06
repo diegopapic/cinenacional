@@ -1,9 +1,12 @@
-// src/app/api/movies/home-feed/route.ts - VERSIÓN CORREGIDA
+// src/app/api/movies/home-feed/route.ts
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import RedisClient from '@/lib/redis';
 import { requireAuth } from '@/lib/auth';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('api:movies:home-feed');
 
 // Mantener caché en memoria como fallback si Redis falla
 let memoryCachedData: any = null;
@@ -18,7 +21,7 @@ export async function GET() {
     const redisCached = await RedisClient.get(cacheKey);
 
     if (redisCached) {
-      console.log('✅ Cache HIT desde Redis');
+      log.debug('Cache HIT (Redis)', { key: cacheKey });
       return NextResponse.json(
         JSON.parse(redisCached),
         {
@@ -34,7 +37,7 @@ export async function GET() {
     // 2. Si Redis falla o no hay caché, verificar caché en memoria como fallback
     const now = Date.now();
     if (memoryCachedData && (now - memoryCacheTime) < CACHE_DURATION) {
-      console.log('✅ Cache HIT desde memoria (Redis fallback)');
+      log.debug('Cache HIT (memory)', { key: cacheKey });
 
       // Intentar guardar en Redis para próximas requests
       await RedisClient.set(
@@ -53,7 +56,7 @@ export async function GET() {
     }
 
     // 3. Si no hay caché en ningún lado, generar nuevo
-    console.log('🔄 Cache MISS - Generando datos desde la base de datos');
+    log.debug('Cache MISS', { key: cacheKey });
 
     const today = new Date();
     const currentYear = today.getFullYear();
@@ -319,10 +322,8 @@ export async function GET() {
       300 // 5 minutos en segundos
     );
 
-    if (redisSaved) {
-      console.log('✅ Datos guardados en Redis');
-    } else {
-      console.log('⚠️ No se pudo guardar en Redis, usando solo caché en memoria');
+    if (!redisSaved) {
+      log.warn('Redis save failed, using memory cache only');
     }
 
     // Actualizar caché en memoria como fallback
@@ -338,11 +339,11 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('❌ Error fetching home feed:', error);
+    log.error('Failed to fetch home feed', error);
 
     // Si hay error, intentar servir desde caché en memoria
     if (memoryCachedData) {
-      console.log('⚠️ Sirviendo caché viejo desde memoria debido a error');
+      log.warn('Serving stale cache');
       return NextResponse.json(memoryCachedData, {
         headers: {
           'Cache-Control': 'public, s-maxage=60',

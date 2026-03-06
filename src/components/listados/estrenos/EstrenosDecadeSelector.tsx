@@ -6,6 +6,9 @@ import { generateDecades } from '@/lib/estrenos/estrenosUtils';
 import { ChevronDown } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('EstrenosDecadeSelector');
 
 interface EstrenosDecadeSelectorProps {
   value: DecadePeriod;
@@ -84,7 +87,7 @@ export default function EstrenosDecadeSelector({ value, onChange }: EstrenosDeca
   
   // ✅ Mejorado con logs y event handling
   const handleSelect = (period: DecadePeriod) => {
-    console.log('🎯 Selecting period:', period);
+    log.debug('Period selected', { period });
     onChange(period);
     setIsOpen(false);
   };

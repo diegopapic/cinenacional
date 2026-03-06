@@ -6,6 +6,9 @@ import { festivalScreeningFormSchema } from '@/lib/festivals/festivalTypes'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler, sanitizeValidationFlat } from '@/lib/api/api-handler'
 import { parseIntClamped, parsePositiveInt, LIMITS, PAGES } from '@/lib/api/parse-params'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api:festivals:screenings')
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -264,7 +267,7 @@ async function bulkCreateScreenings(editionId: number, screeningsData: any[]) {
       errorDetails: errors.length > 0 ? errors : undefined
     }, { status: 201 })
   } catch (error) {
-    console.error('Error bulk creating screenings:', error)
+    log.error('Failed to bulk create screenings', error)
     return NextResponse.json(
       { error: 'Error al crear proyecciones' },
       { status: 500 }

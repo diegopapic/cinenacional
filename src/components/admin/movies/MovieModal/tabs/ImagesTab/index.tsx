@@ -10,6 +10,9 @@ import { imagesService } from '@/services/images.service'
 import { MultiImageUpload } from './MultiImageUpload'
 import { ImageEditModal } from './ImageEditModal'
 import { toast } from 'react-hot-toast'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('ImagesTab')
 
 interface MoviePerson {
     personId: number
@@ -45,7 +48,7 @@ export default function ImagesTab() {
             const data = await imagesService.getByMovieId(movieId)
             setImages(data)
         } catch (error) {
-            console.error('Error cargando imágenes:', error)
+            log.error('Error loading images', error)
             toast.error('Error al cargar imágenes')
         } finally {
             setLoading(false)
@@ -61,7 +64,7 @@ export default function ImagesTab() {
             const response = await fetch(`/api/movies/${movieId}`)
             const movie = await response.json()
 
-            console.log('🎬 Cargando personas de la película:', movie.title)
+            log.debug('Loading movie people', { movieId })
 
             const people: MoviePerson[] = []
             const seenIds = new Set<number>()
@@ -107,10 +110,10 @@ export default function ImagesTab() {
                 return nameA.localeCompare(nameB)
             })
 
-            console.log('👥 Personas encontradas:', people.length, people)
+            log.debug('Movie people loaded', { count: people.length })
             setMoviePeople(people)
         } catch (error) {
-            console.error('Error cargando personas:', error)
+            log.error('Error loading movie people', error)
         }
     }
 
@@ -122,7 +125,7 @@ export default function ImagesTab() {
             const newImages = await imagesService.createBulk(movieId, publicIds, 'STILL')
             setImages(prev => [...newImages, ...prev])
         } catch (error) {
-            console.error('Error guardando imágenes:', error)
+            log.error('Error saving images', error)
             toast.error('Error al guardar algunas imágenes')
         }
     }

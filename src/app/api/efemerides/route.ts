@@ -6,6 +6,9 @@ import { calcularAniosDesde, formatearEfemeride } from '@/lib/utils/efemerides';
 import { Efemeride, DirectorInfo } from '@/types/home.types';
 import { parseIntClamped } from '@/lib/api/parse-params';
 import RedisClient from '@/lib/redis';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('api:efemerides');
 
 export const dynamic = 'force-dynamic';
 
@@ -58,7 +61,7 @@ export async function GET(request: NextRequest) {
       const redisCached = await RedisClient.get(cacheKey);
       
       if (redisCached) {
-        console.log(`✅ Cache HIT desde Redis para efemérides: ${mes}/${dia}`);
+        log.debug('Cache HIT (Redis)', { key: cacheKey });
         return NextResponse.json(
           JSON.parse(redisCached),
           {
@@ -71,7 +74,7 @@ export async function GET(request: NextRequest) {
         );
       }
     } catch (redisError) {
-      console.error('Redis error (non-fatal):', redisError);
+      log.warn('Redis error (non-fatal)', { error: String(redisError) });
     }
 
     // ============================================
@@ -80,10 +83,10 @@ export async function GET(request: NextRequest) {
     const memoryCached = memoryCache.get(cacheKey);
     
     if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
-      console.log(`✅ Cache HIT desde memoria para efemérides: ${mes}/${dia}`);
-      
+      log.debug('Cache HIT (memory)', { key: cacheKey });
+
       RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), REDIS_TTL)
-        .catch(err => console.error('Error guardando en Redis:', err));
+        .catch(err => log.warn('Redis save error', err));
       
       return NextResponse.json(memoryCached.data, {
         headers: {
@@ -97,7 +100,7 @@ export async function GET(request: NextRequest) {
     // ============================================
     // 3. CONSULTAR BASE DE DATOS
     // ============================================
-    console.log(`🔄 Cache MISS - Consultando BD para efemérides: ${mes}/${dia}`);
+    log.debug('Cache MISS', { key: cacheKey });
     
     // Obtener películas con fechas de estreno para esta fecha
     const peliculasEstreno = await prisma.movie.findMany({
@@ -432,12 +435,7 @@ export async function GET(request: NextRequest) {
     // ============================================
     if (!randomSample) {
       RedisClient.set(cacheKey, JSON.stringify(resultado), REDIS_TTL)
-        .then(saved => {
-          if (saved) {
-            console.log(`✅ Efemérides guardadas en Redis con TTL ${REDIS_TTL}s (24h)`);
-          }
-        })
-        .catch(err => console.error('Error guardando en Redis:', err));
+        .catch(err => log.warn('Redis save error', err));
       
       memoryCache.set(cacheKey, {
         data: resultado,
@@ -461,7 +459,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('❌ Error fetching efemérides:', error);
+    log.error('Failed to fetch efemerides', error);
     
     // Intentar servir desde caché stale si hay error
     const searchParams = request.nextUrl.searchParams;
@@ -474,7 +472,7 @@ export async function GET(request: NextRequest) {
     const staleCache = memoryCache.get(cacheKey);
     
     if (staleCache) {
-      console.log('⚠️ Sirviendo caché stale debido a error');
+      log.warn('Serving stale cache');
       return NextResponse.json(staleCache.data, {
         headers: {
           'Cache-Control': 'public, s-maxage=60',

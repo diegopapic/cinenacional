@@ -3,6 +3,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { apiHandler } from '@/lib/api/api-handler';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('api:first-name-gender');
 
 /**
  * GET /api/first-name-gender?name=Juan
@@ -81,7 +84,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         }
     });
 
-    console.log(`✅ Nombre "${normalizedName}" guardado con género ${gender}`);
+    log.debug('Name-gender saved', { name: normalizedName, gender });
 
     return NextResponse.json({
         success: true,

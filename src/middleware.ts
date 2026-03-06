@@ -7,6 +7,9 @@ import {
   generateSignedCsrfToken,
   verifyCsrfSignature
 } from '@/lib/csrf'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('middleware')
 
 // Rate limiting en middleware: primera línea de defensa (in-memory, Edge Runtime).
 // El rate limiting persistente con Redis se aplica en las rutas de API
@@ -114,7 +117,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/unauthorized', request.url))
       }
     } catch (error) {
-      console.error('Auth middleware error:', error)
+      log.error('Auth middleware error', error)
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }
@@ -177,7 +180,7 @@ export async function middleware(request: NextRequest) {
 
   // Verificar rate limit
   if (!checkRateLimit(rateLimitKey, rateLimit)) {
-    console.log(`Rate limit exceeded for IP: ${clientIp} on path: ${path}`)
+    log.warn('Rate limit exceeded', { path, bucket: rateBucket })
     
     return new NextResponse('Too Many Requests', {
       status: 429,
@@ -207,7 +210,7 @@ export async function middleware(request: NextRequest) {
       if (origin) {
         // Hay Origin header — verificar que sea nuestro dominio
         if (!allowedOrigins.includes(origin)) {
-          console.log(`CSRF blocked: origin=${origin}, path=${path}`)
+          log.warn('CSRF blocked: invalid origin', { path })
           return new NextResponse(JSON.stringify({ error: 'Origen no permitido' }), {
             status: 403,
             headers: { 'Content-Type': 'application/json' }
@@ -216,7 +219,7 @@ export async function middleware(request: NextRequest) {
       } else if (referer) {
         // No hay Origin pero sí Referer — verificar
         if (!allowedOrigins.some(o => referer.startsWith(o))) {
-          console.log(`CSRF blocked: referer=${referer}, path=${path}`)
+          log.warn('CSRF blocked: invalid referer', { path })
           return new NextResponse(JSON.stringify({ error: 'Origen no permitido' }), {
             status: 403,
             headers: { 'Content-Type': 'application/json' }

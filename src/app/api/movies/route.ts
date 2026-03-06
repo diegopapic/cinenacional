@@ -7,6 +7,9 @@ import RedisClient from '@/lib/redis'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler } from '@/lib/api/api-handler'
 import { parseIntClamped, LIMITS, PAGES, YEARS } from '@/lib/api/parse-params'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api:movies')
 
 // ============================================
 // CACHE CONFIGURATION
@@ -78,7 +81,7 @@ export async function GET(request: NextRequest) {
       const redisCached = await RedisClient.get(cacheKey);
       
       if (redisCached) {
-        console.log(`✅ Cache HIT desde Redis para listado: ${cacheKey.substring(0, 60)}...`);
+        log.debug('Cache HIT (Redis)', { key: cacheKey });
         return NextResponse.json(
           JSON.parse(redisCached),
           {
@@ -91,7 +94,7 @@ export async function GET(request: NextRequest) {
         );
       }
     } catch (redisError) {
-      console.error('Redis error (non-fatal):', redisError);
+      log.warn('Redis error (non-fatal)', { error: String(redisError) });
     }
     
     // 2. Verificar caché en memoria como fallback
@@ -99,11 +102,11 @@ export async function GET(request: NextRequest) {
     const memoryCached = memoryCache.get(cacheKey);
     
     if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
-      console.log(`✅ Cache HIT desde memoria para listado: ${cacheKey.substring(0, 60)}...`);
-      
+      log.debug('Cache HIT (memory)', { key: cacheKey });
+
       // Intentar guardar en Redis para próximas requests
       RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), redisTTL)
-        .catch(err => console.error('Error guardando en Redis:', err));
+        .catch(err => log.warn('Redis save error', { error: String(err) }));
       
       return NextResponse.json(memoryCached.data, {
         headers: {
@@ -115,7 +118,7 @@ export async function GET(request: NextRequest) {
     }
     
     // 3. No hay caché, consultar base de datos
-    console.log(`🔄 Cache MISS - Consultando BD para listado: ${cacheKey.substring(0, 60)}...`);
+    log.debug('Cache MISS', { key: cacheKey });
     
     const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX)
     const search = searchParams.get('search') || ''
@@ -229,13 +232,8 @@ export async function GET(request: NextRequest) {
           
           // Guardar en ambos cachés
           RedisClient.set(cacheKey, JSON.stringify(result), redisTTL)
-            .then(saved => {
-              if (saved) {
-                console.log(`✅ Listado guardado en Redis con TTL ${redisTTL}s (${redisTTL/60} min)`);
-              }
-            })
-            .catch(err => console.error('Error guardando en Redis:', err));
-          
+            .catch(err => log.warn('Redis save error', { error: String(err) }));
+
           memoryCache.set(cacheKey, {
             data: result,
             timestamp: now
@@ -264,7 +262,7 @@ export async function GET(request: NextRequest) {
         
         // También cachear resultados vacíos (por menos tiempo)
         RedisClient.set(cacheKey, JSON.stringify(emptyResult), 300)
-          .catch(err => console.error('Error guardando en Redis:', err));
+          .catch(err => log.warn('Redis save error', { error: String(err) }));
 
         return NextResponse.json(emptyResult, {
           headers: {
@@ -275,7 +273,7 @@ export async function GET(request: NextRequest) {
         });
 
       } catch (err) {
-        console.error('Error with unaccent search:', err)
+        log.warn('Unaccent search failed, using fallback', { error: String(err) })
         // Continuar con fallback
       }
     }
@@ -452,12 +450,7 @@ export async function GET(request: NextRequest) {
     
     // 4. Guardar en ambos cachés
     RedisClient.set(cacheKey, JSON.stringify(result), redisTTL)
-      .then(saved => {
-        if (saved) {
-          console.log(`✅ Listado guardado en Redis con TTL ${redisTTL}s (${redisTTL/60} min)`);
-        }
-      })
-      .catch(err => console.error('Error guardando en Redis:', err));
+      .catch(err => log.warn('Redis save error', { error: String(err) }));
     
     memoryCache.set(cacheKey, {
       data: result,
@@ -481,14 +474,14 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching movies:', error)
-    
+    log.error('Failed to fetch movies', error)
+
     // Intentar servir desde caché stale si hay error
     const cacheKey = generateCacheKey(request.nextUrl.searchParams);
     const staleCache = memoryCache.get(cacheKey);
-    
+
     if (staleCache) {
-      console.log('⚠️ Sirviendo caché stale debido a error');
+      log.warn('Serving stale cache');
       return NextResponse.json(staleCache.data, {
         headers: {
           'Cache-Control': 'public, s-maxage=60',
@@ -726,7 +719,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   })
 
   // INVALIDAR CACHÉS de listados después de crear
-  console.log('🗑️ Invalidando cachés de listados tras crear película');
+  log.debug('Invalidating caches');
 
   const redisClient = RedisClient.getInstance();
   if (redisClient) {
@@ -734,10 +727,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
       const keys = await redisClient.keys('movies:list:*');
       if (keys.length > 0) {
         await redisClient.del(...keys);
-        console.log(`✅ ${keys.length} cachés de listados invalidados en Redis`);
+        log.debug('List caches invalidated', { count: keys.length });
       }
     } catch (err) {
-      console.error('Error invalidando cachés de Redis:', err);
+      log.warn('Redis invalidation error', { error: String(err) });
     }
   }
 
@@ -750,7 +743,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     }
   }
   if (memoryKeysDeleted > 0) {
-    console.log(`✅ ${memoryKeysDeleted} cachés de listados invalidados en memoria`);
+    log.debug('Memory list caches invalidated', { count: memoryKeysDeleted });
   }
 
   return NextResponse.json(movie, { status: 201 })

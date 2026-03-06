@@ -1,5 +1,8 @@
 // src/lib/cloudinary.ts
 import { v2 as cloudinary } from 'cloudinary'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('cloudinary')
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -15,18 +18,18 @@ export async function deleteCloudinaryImage(publicId: string): Promise<boolean> 
   if (!publicId) return false
 
   try {
-    const result = await cloudinary.uploader.destroy(publicId)
+    const result = await cloudinary.uploader.destroy(publicId, { invalidate: true })
     const success = result.result === 'ok' || result.result === 'not found'
     if (result.result === 'ok') {
-      console.log(`🗑️ Cloudinary: eliminada imagen ${publicId}`)
+      log.debug('Image deleted', { publicId })
     } else if (result.result === 'not found') {
-      console.log(`⚠️ Cloudinary: imagen ${publicId} no encontrada (ya eliminada)`)
+      log.debug('Image not found (already deleted)', { publicId })
     } else {
-      console.error(`❌ Cloudinary: error eliminando ${publicId}:`, result)
+      log.error('Image deletion failed', undefined, { publicId, result: result.result })
     }
     return success
   } catch (error) {
-    console.error(`❌ Cloudinary: error eliminando ${publicId}:`, error)
+    log.error('Image deletion error', error, { publicId })
     return false
   }
 }
@@ -40,7 +43,7 @@ export async function deleteCloudinaryImages(publicIds: string[]): Promise<{ del
   if (validIds.length === 0) return { deleted: [], failed: [] }
 
   try {
-    const result = await cloudinary.api.delete_resources(validIds)
+    const result = await cloudinary.api.delete_resources(validIds, { invalidate: true })
     const deleted: string[] = []
     const failed: string[] = []
 
@@ -52,10 +55,10 @@ export async function deleteCloudinaryImages(publicIds: string[]): Promise<{ del
       }
     }
 
-    console.log(`🗑️ Cloudinary batch: ${deleted.length} eliminadas, ${failed.length} fallaron`)
+    log.info('Batch delete completed', { deleted: deleted.length, failed: failed.length })
     return { deleted, failed }
   } catch (error) {
-    console.error('❌ Cloudinary batch delete error:', error)
+    log.error('Batch delete error', error)
     return { deleted: [], failed: validIds }
   }
 }
@@ -76,7 +79,7 @@ export async function listCloudinaryResources(prefix: string, maxResults = 500):
         ...(nextCursor && { next_cursor: nextCursor }),
       })
 
-      resources.push(...result.resources.map((r: any) => ({
+      resources.push(...result.resources.map((r: { public_id: string; created_at: string }) => ({
         public_id: r.public_id,
         created_at: r.created_at,
       })))
@@ -86,7 +89,7 @@ export async function listCloudinaryResources(prefix: string, maxResults = 500):
 
     return resources
   } catch (error) {
-    console.error(`❌ Cloudinary: error listando recursos con prefijo ${prefix}:`, error)
+    log.error('Failed to list resources', error, { prefix })
     return resources
   }
 }

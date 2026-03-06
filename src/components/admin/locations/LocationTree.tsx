@@ -7,6 +7,9 @@ import { useRouter } from 'next/navigation'
 import LocationTreeNode from './LocationTreeNode'
 import { Search, Loader2, RefreshCw } from 'lucide-react'
 import { getCsrfHeaders } from '@/lib/csrf-client'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('LocationTree')
 
 interface LocationNode {
   id: number
@@ -52,7 +55,7 @@ export default function LocationTree() {
         setLocations(data)
       }
     } catch (error) {
-      console.error('Error loading location tree:', error)
+      log.error('Error loading location tree', error)
     } finally {
       setIsLoading(false)
     }
@@ -116,7 +119,7 @@ export default function LocationTree() {
       await loadLocationTree()
       router.refresh()
     } catch (error) {
-      console.error('Error deleting location:', error)
+      log.error('Error deleting location', error)
       alert('Error al eliminar el lugar')
     } finally {
       setDeleteModal(null)

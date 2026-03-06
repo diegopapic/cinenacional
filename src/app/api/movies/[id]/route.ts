@@ -1,5 +1,5 @@
 // ==================================================
-// src/app/api/movies/[id]/route.ts - CON ALTERNATIVE_NAME_ID ✅
+// src/app/api/movies/[id]/route.ts - CON ALTERNATIVE_NAME_ID
 // ==================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -9,6 +9,9 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import { requireAuth } from '@/lib/auth'
 import { apiHandler } from '@/lib/api/api-handler'
 import { deleteCloudinaryImage } from '@/lib/cloudinary'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api:movies:detail')
 
 // Cache en memoria como fallback
 const memoryCache = new Map<string, { data: any; timestamp: number }>();
@@ -37,7 +40,7 @@ export async function GET(
         const redisCached = await RedisClient.get(cacheKey);
 
         if (redisCached) {
-          console.log(`✅ Cache HIT desde Redis para película: ${idOrSlug}`);
+          log.debug('Cache HIT (Redis)', { key: cacheKey });
           return NextResponse.json(
             JSON.parse(redisCached),
             {
@@ -51,18 +54,18 @@ export async function GET(
           );
         }
       } catch (redisError) {
-        console.error('Redis error (non-fatal):', redisError);
+        log.warn('Redis error (non-fatal)', { error: String(redisError) });
       }
 
       // 2. Verificar caché en memoria como fallback
       const memoryCached = memoryCache.get(cacheKey);
 
       if (memoryCached && (now - memoryCached.timestamp) < MEMORY_CACHE_TTL) {
-        console.log(`✅ Cache HIT desde memoria para película: ${idOrSlug}`);
+        log.debug('Cache HIT (memory)', { key: cacheKey });
 
         // Intentar guardar en Redis para próximas requests
         RedisClient.set(cacheKey, JSON.stringify(memoryCached.data), REDIS_CACHE_TTL)
-          .catch(err => console.error('Error guardando en Redis:', err));
+          .catch(err => log.warn('Redis save error', { error: String(err) }));
 
         return NextResponse.json(memoryCached.data, {
           headers: {
@@ -76,7 +79,7 @@ export async function GET(
     }
 
     // 3. No hay caché (o skipCache), consultar base de datos
-    console.log(`📄 Cache MISS - Consultando BD para película: ${idOrSlug}`);
+    log.debug('Cache MISS', { key: cacheKey });
 
     const movie = await prisma.movie.findUnique({
       where: isId ? { id: parseInt(idOrSlug) } : { slug: idOrSlug },
@@ -320,12 +323,7 @@ export async function GET(
     // 4. Guardar en ambos cachés
     // Redis con TTL de 1 hora
     RedisClient.set(cacheKey, JSON.stringify(movie), REDIS_CACHE_TTL)
-      .then(saved => {
-        if (saved) {
-          console.log(`✅ Película ${idOrSlug} guardada en Redis`);
-        }
-      })
-      .catch(err => console.error('Error guardando en Redis:', err));
+      .catch(err => log.warn('Redis save error', { error: String(err) }));
 
     // Memoria como fallback
     memoryCache.set(cacheKey, {
@@ -350,14 +348,14 @@ export async function GET(
       }
     })
   } catch (error) {
-    console.error('Error fetching movie:', error)
+    log.error('Failed to fetch movie', error)
 
     // Intentar servir desde caché stale si hay error
     const cacheKey = `movie:${/^\d+$/.test(paramId) ? 'id' : 'slug'}:${paramId}:v1`;
     const staleCache = memoryCache.get(cacheKey);
 
     if (staleCache) {
-      console.log('⚠️ Sirviendo caché stale debido a error');
+      log.warn('Serving stale cache');
       return NextResponse.json(staleCache.data, {
         headers: {
           'Cache-Control': 'public, s-maxage=60',
@@ -747,8 +745,8 @@ export const PUT = apiHandler(async (
     deleteCloudinaryImage(oldPosterPublicId).catch(() => {})
   }
 
-  // ⭐⭐⭐ INVALIDACIÓN COMPLETA DE CACHÉS ⭐⭐⭐
-  console.log('🗑️ Invalidando cachés para película actualizada');
+  // INVALIDACION COMPLETA DE CACHES
+  log.debug('Invalidating caches');
 
   // 1. Invalidar Redis
   const cacheKeysToInvalidate = [
@@ -760,7 +758,7 @@ export const PUT = apiHandler(async (
   await Promise.all(
     cacheKeysToInvalidate.map(key =>
       RedisClient.del(key).catch(err =>
-        console.error(`Error invalidando Redis key ${key}:`, err)
+        log.warn('Redis invalidation error', { error: String(err), key })
       )
     )
   );
@@ -776,12 +774,12 @@ export const PUT = apiHandler(async (
     revalidatePath('/');
     revalidatePath('/listados/peliculas');
 
-    console.log(`✅ Next.js cache invalidado para: /pelicula/${existingMovie.slug}`);
+    log.debug('Next.js cache invalidated', { slug: existingMovie.slug });
   } catch (revalidateError) {
-    console.log('ℹ️ Next.js revalidation skipped (using Redis cache primarily)');
+    log.debug('Next.js revalidation skipped');
   }
 
-  console.log(`✅ Todos los cachés invalidados para película: ${existingMovie.slug}`);
+  log.debug('Caches invalidated', { slug: existingMovie.slug });
 
   return NextResponse.json(movie)
 }, 'actualizar la película')
@@ -840,8 +838,8 @@ export async function DELETE(
       }
     }
 
-    // ⭐ INVALIDAR CACHÉS después de eliminar ⭐
-    console.log('🗑️ Invalidando cachés para película eliminada');
+    // INVALIDAR CACHES después de eliminar
+    log.debug('Invalidating caches');
 
     // 1. Invalidar Redis
     const cacheKeysToInvalidate = [
@@ -853,7 +851,7 @@ export async function DELETE(
     await Promise.all(
       cacheKeysToInvalidate.map(key =>
         RedisClient.del(key).catch(err =>
-          console.error(`Error invalidando Redis key ${key}:`, err)
+          log.warn('Redis invalidation error', { error: String(err), key })
         )
       )
     );
@@ -869,16 +867,16 @@ export async function DELETE(
       revalidatePath('/');
       revalidatePath('/listados/peliculas');
 
-      console.log(`✅ Next.js cache invalidado para película eliminada: ${movie.slug}`);
+      log.debug('Next.js cache invalidated', { slug: movie.slug });
     } catch (revalidateError) {
-      console.log('ℹ️ Next.js revalidation skipped (using Redis cache primarily)');
+      log.debug('Next.js revalidation skipped');
     }
 
-    console.log(`✅ Todos los cachés invalidados tras eliminar: ${movie.slug}`);
+    log.debug('Caches invalidated', { slug: movie.slug });
 
     return new NextResponse(null, { status: 204 })
   } catch (error: any) {
-    console.error('Error deleting movie:', error)
+    log.error('Failed to delete movie', error)
 
     const detail = error?.code === 'P2003'
       ? 'La película tiene registros asociados que impiden su eliminación'

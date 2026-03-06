@@ -3,6 +3,9 @@
 
 import { useState, useEffect } from 'react'
 import { X, Search, Building, Globe, Tv, Film } from 'lucide-react'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('ScreeningVenueSelector')
 
 interface ScreeningVenue {
     id: number
@@ -56,7 +59,7 @@ export default function ScreeningVenueSelector({
             setVenues(data.venues || [])
             setFilteredVenues(data.venues || [])
         } catch (error) {
-            console.error('Error loading screening venues:', error)
+            log.error('Error loading screening venues', error)
             setVenues([])
             setFilteredVenues([])
         } finally {

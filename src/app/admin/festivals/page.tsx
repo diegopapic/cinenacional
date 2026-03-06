@@ -7,6 +7,9 @@ import Link from 'next/link'
 import { Plus, Edit, Trash2, Calendar, ChevronRight, Search, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCsrfHeaders } from '@/lib/csrf-client'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('admin:festivals')
 
 interface FestivalListItem {
   id: number
@@ -43,7 +46,7 @@ export default function FestivalsPage() {
         setTotal(data.total)
       }
     } catch (error) {
-      console.error('Error loading festivals:', error)
+      log.error('Failed to load festivals', error)
       toast.error('Error al cargar festivales')
     } finally {
       setIsLoading(false)

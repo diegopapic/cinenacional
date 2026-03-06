@@ -7,6 +7,9 @@ import { makeUniqueSlug } from '@/lib/api/crud-factory'
 import { requireAuth } from '@/lib/auth'
 import { handleApiError } from '@/lib/api/api-handler'
 import { parseIntClamped, LIMITS, PAGES } from '@/lib/api/parse-params'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('api:roles')
 
 const INCLUDE = { _count: { select: { crewRoles: true } } }
 
@@ -132,7 +135,7 @@ export async function GET(request: NextRequest) {
       hasMore: page < totalPages
     })
   } catch (error) {
-    console.error('Error fetching roles:', error)
+    log.error('Failed to fetch roles', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

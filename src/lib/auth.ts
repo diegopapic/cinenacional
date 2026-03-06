@@ -5,6 +5,9 @@ import { prismaBase } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 import { NextResponse } from "next/server"
+import { createLogger } from "@/lib/logger"
+
+const log = createLogger('auth')
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -74,7 +77,7 @@ export const authOptions: NextAuthOptions = {
             image: user.avatarUrl
           }
         } catch (error) {
-          console.error('Auth error:', error)
+          log.error('Authentication failed', error)
           return null
         }
       }

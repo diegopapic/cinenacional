@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('HeaderStats')
 
 interface Stats {
   peliculas: number
@@ -34,7 +37,7 @@ export default function HeaderStats() {
         return res.json()
       })
       .then(data => setStats(data))
-      .catch(err => console.error('Error loading stats:', err))
+      .catch(err => log.error('Error loading stats', err))
   }, [])
 
   const statsDisplay = [

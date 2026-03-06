@@ -24,6 +24,9 @@ interface SimpleFestivalSection {
 import { DateInput } from '@/components/admin/ui/DateInput'
 import { getCsrfHeaders } from '@/lib/csrf-client'
 import toast from 'react-hot-toast'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('FestivalScreeningForm')
 
 interface Movie {
   id: number
@@ -140,7 +143,7 @@ export default function FestivalScreeningForm({
         setVenues(data.venues || data.data || [])
       }
     } catch (error) {
-      console.error('Error loading venues:', error)
+      log.error('Error loading venues', error)
     }
   }
 
@@ -155,7 +158,7 @@ export default function FestivalScreeningForm({
         setShowMovieSuggestions(true)
       }
     } catch (error) {
-      console.error('Error searching movies:', error)
+      log.error('Error searching movies', error)
     } finally {
       setIsSearchingMovies(false)
     }
