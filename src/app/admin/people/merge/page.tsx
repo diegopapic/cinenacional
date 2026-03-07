@@ -239,15 +239,12 @@ export default function MergePeoplePage() {
       const newResolutions: Record<string, 'A' | 'B'> = {};
       for (const fc of preview.fieldComparisons) {
         // For fields where both have values and they differ, default to the survivor
-        const isDateField = fc.field === 'birthDate' || fc.field === 'deathDate';
-        const aEmpty = isDateField ? !fc.displayA : (fc.valueA === null || fc.valueA === undefined || fc.valueA === '');
-        const bEmpty = isDateField ? !fc.displayB : (fc.valueB === null || fc.valueB === undefined || fc.valueB === '');
-        if (!aEmpty && !bEmpty) {
-          const differ = isDateField ? fc.displayA !== fc.displayB : String(fc.valueA) !== String(fc.valueB);
-          if (differ) {
-            // Keep any existing user choice, otherwise default to survivor
-            newResolutions[fc.field] = resolutions[fc.field] || choice;
-          }
+        // Use displayA/displayB (strings) for comparison, not valueA/valueB which can be objects
+        const aEmpty = !fc.displayA;
+        const bEmpty = !fc.displayB;
+        if (!aEmpty && !bEmpty && fc.displayA !== fc.displayB) {
+          // Keep any existing user choice, otherwise default to survivor
+          newResolutions[fc.field] = resolutions[fc.field] || choice;
         }
       }
       setResolutions(newResolutions);
