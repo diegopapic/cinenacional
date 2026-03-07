@@ -266,42 +266,72 @@ export const POST = apiHandler(async (request: NextRequest) => {
       }
 
       // 5. Migrate MovieCast
+      // Unique constraint: @@unique([movieId, personId, characterName])
+      // A person can have multiple entries per movie (different characters),
+      // so we track by composite key (movieId + characterName) not just movieId.
       const absorbedCast = await tx.movieCast.findMany({
         where: { personId: absorbed.id }
       });
       const survivorCast = await tx.movieCast.findMany({
         where: { personId: survivor.id }
       });
-      const survivorCastByMovie = new Map<number, typeof survivorCast[0]>();
+
+      // Track survivor's cast by composite key and by movieId
+      // For NULL characterName, PostgreSQL treats each NULL as distinct in unique constraints,
+      // but for merge purposes we treat them as duplicates.
+      const castKey = (movieId: number, characterName: string | null) =>
+        `${movieId}:${characterName ?? '\0NULL'}`;
+
+      const survivorCastKeySet = new Set(
+        survivorCast.map(c => castKey(c.movieId, c.characterName))
+      );
+      const survivorCastMovieIds = new Set(survivorCast.map(c => c.movieId));
+
+      // Also track entries with null characterName per movie for enrichment
+      const survivorNullCharEntries = new Map<number, typeof survivorCast[0]>();
       for (const c of survivorCast) {
-        survivorCastByMovie.set(c.movieId, c);
+        if (!c.characterName) {
+          survivorNullCharEntries.set(c.movieId, c);
+        }
       }
 
       let castTransferred = 0;
       let castDeleted = 0;
 
       for (const cast of absorbedCast) {
-        const existingSurvivorCast = survivorCastByMovie.get(cast.movieId);
-
         // Remap alternativeNameId
         let newAltNameId = cast.alternativeNameId;
         if (newAltNameId && altNameIdMap[newAltNameId] !== undefined) {
           newAltNameId = altNameIdMap[newAltNameId];
         }
 
-        if (existingSurvivorCast) {
-          // Duplicate by movieId - copy characterName if survivor's is null
-          if (!existingSurvivorCast.characterName && cast.characterName) {
-            await tx.movieCast.update({
-              where: { id: existingSurvivorCast.id },
-              data: { characterName: cast.characterName }
-            });
+        const key = castKey(cast.movieId, cast.characterName);
+
+        if (survivorCastKeySet.has(key)) {
+          // Exact duplicate (same movie + same characterName) → delete
+          await tx.movieCast.delete({ where: { id: cast.id } });
+          castDeleted++;
+        } else if (survivorCastMovieIds.has(cast.movieId)) {
+          // Same movie but different characterName
+          // Try to enrich a survivor entry that has null characterName
+          if (cast.characterName) {
+            const nullEntry = survivorNullCharEntries.get(cast.movieId);
+            if (nullEntry && !survivorCastKeySet.has(castKey(cast.movieId, cast.characterName))) {
+              await tx.movieCast.update({
+                where: { id: nullEntry.id },
+                data: { characterName: cast.characterName }
+              });
+              // Update tracking
+              survivorCastKeySet.delete(castKey(cast.movieId, null));
+              survivorCastKeySet.add(castKey(cast.movieId, cast.characterName));
+              survivorNullCharEntries.delete(cast.movieId);
+            }
           }
-          // Delete absorbed's record
+          // Delete absorbed's record (duplicate movie)
           await tx.movieCast.delete({ where: { id: cast.id } });
           castDeleted++;
         } else {
-          // Unique - transfer to survivor
+          // Movie not in survivor at all → transfer
           await tx.movieCast.update({
             where: { id: cast.id },
             data: {
@@ -309,6 +339,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
               alternativeNameId: newAltNameId,
             }
           });
+          survivorCastKeySet.add(key);
+          survivorCastMovieIds.add(cast.movieId);
           castTransferred++;
         }
       }
