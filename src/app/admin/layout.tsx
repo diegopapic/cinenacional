@@ -4,6 +4,7 @@
 import './admin.css'
 
 import Link from 'next/link'
+import { Toaster } from 'react-hot-toast'
 import {
   Film,
   Users,
@@ -122,6 +123,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Contenido */}
         <main className="text-gray-900">{children}</main>
       </div>
+      <Toaster position="top-right" />
     </div>
   )
 }
