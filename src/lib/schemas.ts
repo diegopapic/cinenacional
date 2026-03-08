@@ -138,3 +138,58 @@ export const movieSchema = z.object({
 })
 
 export type MovieFormData = z.infer<typeof movieSchema>
+
+export const movieReviewSchema = z.object({
+  title: z.string().max(500).optional().nullable(),
+  summary: z.string().optional().nullable(),
+  url: z.string().max(1000).optional().nullable(),
+  content: z.string().optional().nullable(),
+  language: z.string().max(10).optional().default('es'),
+  hasPaywall: z.boolean().optional().default(false),
+  score: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined) return null
+      const num = Number(val)
+      return isNaN(num) ? null : num
+    },
+    z.number().int().min(1).max(10).nullable().optional()
+  ),
+  authorId: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined || val === 0) return null
+      return Number(val)
+    },
+    z.number().int().positive().nullable().optional()
+  ),
+  mediaOutletId: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined || val === 0) return null
+      return Number(val)
+    },
+    z.number().int().positive().nullable().optional()
+  ),
+  publishYear: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined) return null
+      return Number(val)
+    },
+    z.number().int().positive().nullable().optional()
+  ),
+  publishMonth: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined) return null
+      return Number(val)
+    },
+    z.number().int().min(1).max(12).nullable().optional()
+  ),
+  publishDay: z.preprocess(
+    (val) => {
+      if (val === '' || val === null || val === undefined) return null
+      return Number(val)
+    },
+    z.number().int().min(1).max(31).nullable().optional()
+  ),
+  sortOrder: z.number().int().optional().default(0)
+})
+
+export type MovieReviewFormData = z.infer<typeof movieReviewSchema>

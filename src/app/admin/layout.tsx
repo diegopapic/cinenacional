@@ -19,7 +19,8 @@ import {
   Tag,
   Hash,
   BarChart3,
-  Calendar
+  Calendar,
+  Newspaper
 } from 'lucide-react'
 import { ReactNode, useState } from 'react'
 
@@ -43,6 +44,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Premios', href: '/admin/awards', icon: Award },
     { name: 'Festivales', href: '/admin/festivals', icon: Calendar },
     { name: 'Lugares', href: '/admin/locations', icon: Globe },
+    { name: 'Medios', href: '/admin/media-outlets', icon: Newspaper },
     { name: 'Temas', href: '/admin/themes', icon: Tag },
     { name: 'Calificaciones', href: '/admin/calificaciones', icon: Tag }
   ]

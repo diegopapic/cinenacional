@@ -76,6 +76,7 @@ model Movie {
   watchlists            UserWatchlist[]
   festivalScreenings    FestivalScreening[]
   festivalAwardWinners  FestivalAwardWinner[]
+  reviews               MovieReview[]
 
   @@index([slug])
   @@index([title])
@@ -240,6 +241,7 @@ model Person {
   trivia               PersonTrivia[]
   festivalJury         FestivalJury[]
   festivalAwardWinners FestivalAwardWinner[]
+  reviews              MovieReview[]
 
   @@index([slug])
   @@index([firstName])
@@ -817,6 +819,54 @@ model TmdbPendingMovie {
   @@index([tmdbId])
   @@index([createdAt])
   @@map("tmdb_pending_movies")
+}
+
+// ============================================
+// MEDIOS Y CRÍTICAS
+// ============================================
+
+model MediaOutlet {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique @db.VarChar(255)
+  name      String   @db.VarChar(255)
+  url       String?  @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  reviews MovieReview[]
+
+  @@index([name])
+  @@map("media_outlets")
+}
+
+model MovieReview {
+  id            Int      @id @default(autoincrement())
+  movieId       Int      @map("movie_id")
+  authorId      Int?     @map("author_id")
+  mediaOutletId Int?     @map("media_outlet_id")
+  title         String?  @db.VarChar(500)
+  summary       String?
+  url           String?  @db.VarChar(1000)
+  content       String?
+  language      String   @default("es") @db.VarChar(10)
+  hasPaywall    Boolean  @default(false) @map("has_paywall")
+  score         Int?     @db.SmallInt
+  publishYear   Int?     @map("publish_year")
+  publishMonth  Int?     @map("publish_month") @db.SmallInt
+  publishDay    Int?     @map("publish_day") @db.SmallInt
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  movie       Movie        @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  author      Person?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  mediaOutlet MediaOutlet? @relation(fields: [mediaOutletId], references: [id], onDelete: SetNull)
+
+  @@index([movieId])
+  @@index([authorId])
+  @@index([mediaOutletId])
+  @@index([movieId, sortOrder])
+  @@map("movie_reviews")
 }
 
 enum ImageType {

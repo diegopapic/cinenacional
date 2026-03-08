@@ -19,6 +19,7 @@ import CastTab from './tabs/CastTab'
 import CrewTab from './tabs/CrewTab'
 import ImagesTab from './tabs/ImagesTab'
 import AdvancedTab from './tabs/AdvancedTab'
+import ReviewsTab from './tabs/ReviewsTab'
 
 interface MovieModalProps {
   isOpen: boolean
@@ -81,6 +82,10 @@ export default function MovieModal({ isOpen, onClose }: MovieModalProps) {
 
               <Tabs.Content value="images">
                 <ImagesTab />
+              </Tabs.Content>
+
+              <Tabs.Content value="reviews">
+                <ReviewsTab />
               </Tabs.Content>
 
               <Tabs.Content value="advanced">
