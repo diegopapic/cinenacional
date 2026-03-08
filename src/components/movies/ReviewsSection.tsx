@@ -94,32 +94,11 @@ export function ReviewsSection({ reviews }: ReviewsSectionProps) {
                           <span className="text-yellow-500/90">{review.score}/10</span>
                         </span>
                       )}
-                      {review.title ? (
-                        review.url ? (
-                          <a
-                            href={review.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[13px] font-medium leading-snug text-foreground/90 hover:text-accent transition-colors md:text-sm"
-                          >
-                            {review.title}
-                          </a>
-                        ) : (
-                          <span className="text-[13px] font-medium leading-snug text-foreground/90 md:text-sm">
-                            {review.title}
-                          </span>
-                        )
-                      ) : review.url ? (
-                        <a
-                          href={review.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[13px] leading-snug text-foreground/70 hover:text-accent transition-colors md:text-sm"
-                        >
-                          Ver crítica
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      ) : null}
+                      {review.title && (
+                        <span className="text-[13px] font-medium leading-snug text-foreground/90 md:text-sm">
+                          {review.title}
+                        </span>
+                      )}
 
                       {review.hasPaywall && (
                         <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/40" title="Detrás de paywall">
@@ -193,6 +172,25 @@ export function ReviewsSection({ reviews }: ReviewsSectionProps) {
                   <p className="text-[13px] leading-relaxed text-muted-foreground/60 md:text-sm">
                     {review.summary}
                   </p>
+                )}
+
+                {/* Link a la crítica */}
+                {(review.url || review.content) && (
+                  review.url ? (
+                    <a
+                      href={review.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[12px] text-accent/80 hover:text-accent transition-colors md:text-[13px]"
+                    >
+                      Leé la crítica
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <span className="text-[12px] text-accent/80 md:text-[13px]">
+                      Leé la crítica
+                    </span>
+                  )
                 )}
               </article>
             );
