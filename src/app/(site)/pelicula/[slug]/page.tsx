@@ -276,6 +276,40 @@ async function getMovieData(slug: string) {
           }
         },
 
+        // Críticas
+        reviews: {
+          select: {
+            id: true,
+            title: true,
+            summary: true,
+            url: true,
+            content: true,
+            language: true,
+            hasPaywall: true,
+            score: true,
+            publishYear: true,
+            publishMonth: true,
+            publishDay: true,
+            sortOrder: true,
+            author: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                slug: true
+              }
+            },
+            mediaOutlet: {
+              select: {
+                id: true,
+                name: true,
+                url: true
+              }
+            }
+          },
+          orderBy: { sortOrder: 'asc' as const }
+        },
+
         _count: {
           select: {
             images: true,
@@ -284,7 +318,8 @@ async function getMovieData(slug: string) {
             trivia: true,
             links: true,
             awards: true,
-            screenings: true
+            screenings: true,
+            reviews: true
           }
         }
       }
@@ -677,6 +712,7 @@ export default async function MoviePage({ params }: PageProps) {
       externalLinks={movie.links || []}
       alternativeTitles={movie.alternativeTitles || []}
       trivia={movie.trivia || []}
+      reviews={movie.reviews || []}
     />
   );
 }

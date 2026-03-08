@@ -24,6 +24,27 @@
 - Si un script o comando puede tardar mucho tiempo (ej: scraping masivo, migraciones pesadas, builds largos), consultá antes de ejecutarlo.
 - Si hay ambigüedad genuina en los requerimientos y no podés inferir la intención.
 
+## Corrección de errores autónoma
+- Cuando recibas un informe de error: simplemente arreglalo. No pidas que te lleven de la mano.
+- Identificá logs, errores o tests que fallan y luego resolvelos.
+- Ejecutá `npm run lint` y `npm run build` para verificar que no rompiste nada antes de hacer commit.
+- No marques una tarea como completada sin demostrar que funciona.
+
+## Verificación antes de finalizar
+- Antes de cada commit, preguntate: "¿Aprobaría esto un ingeniero senior?"
+- Si hay TypeScript errors, ESLint warnings o build failures: arreglalos, no los ignorés.
+- Para cambios no triviales, revisá si hay una solución más simple antes de presentarla.
+
+## Bucle de automejora
+- Tras cualquier corrección por parte del usuario: actualizá `tasks/lessons.md` con el patrón del error.
+- Escribí reglas para vos mismo que eviten el mismo error en el futuro.
+- Al inicio de cada sesión del proyecto, revisá `tasks/lessons.md`.
+
+## Gestión de tareas
+- Para tareas de más de 3 pasos, escribí el plan en `tasks/todo.md` con elementos verificables antes de implementar.
+- Marcá los elementos como completados a medida que avancés.
+- Al finalizar, añadí una sección de revisión en `tasks/todo.md` con lo que se hizo y cualquier decisión técnica relevante.
+
 ---
 
 ## Descripción del proyecto
@@ -156,6 +177,10 @@ scripts/
 └── backup-database.sh          # Backup de la DB
 
 docs/                           # Documentación extensa
+tasks/
+├── todo.md                     # Plan de tareas activo
+└── lessons.md                  # Lecciones aprendidas (errores y patrones)
+
 public/                         # Assets estáticos
 ```
 

@@ -9,6 +9,7 @@ import { FilmTechnical } from "@/components/movies/FilmTechnical";
 import { ExternalLinks } from "@/components/shared/ExternalLinks";
 import { ImageGallery } from "@/components/movies/ImageGallery";
 import { AdditionalData } from "@/components/movies/AdditionalData";
+import { ReviewsSection } from "@/components/movies/ReviewsSection";
 import { usePageView } from '@/hooks/usePageView';
 
 // Componente de anuncios
@@ -90,6 +91,21 @@ interface MoviePageClientProps {
     externalLinks?: Array<{ type: string; url: string }>;
     alternativeTitles?: Array<{ id: number; title: string; description?: string | null }>;
     trivia?: Array<{ id: number; content: string; sortOrder: number }>;
+    reviews?: Array<{
+        id: number;
+        title?: string | null;
+        summary?: string | null;
+        url?: string | null;
+        content?: string | null;
+        language: string;
+        hasPaywall: boolean;
+        score?: number | null;
+        publishYear?: number | null;
+        publishMonth?: number | null;
+        publishDay?: number | null;
+        author?: { id: number; firstName?: string | null; lastName?: string | null; slug: string } | null;
+        mediaOutlet?: { id: number; name: string; url?: string | null } | null;
+    }>;
 }
 
 // Slots de AdSense
@@ -124,6 +140,7 @@ export function MoviePageClient({
     externalLinks = [],
     alternativeTitles = [],
     trivia = [],
+    reviews = [],
 }: MoviePageClientProps) {
     usePageView({ pageType: 'MOVIE', movieId: movie.id });
 
@@ -195,6 +212,13 @@ export function MoviePageClient({
                             images={galleryImages}
                             movieTitle={movie.title}
                         />
+                    </div>
+                )}
+
+                {/* Críticas */}
+                {reviews.length > 0 && (
+                    <div className="mt-12">
+                        <ReviewsSection reviews={reviews} />
                     </div>
                 )}
 
