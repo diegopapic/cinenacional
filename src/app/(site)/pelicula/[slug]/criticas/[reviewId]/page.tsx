@@ -45,6 +45,17 @@ function formatPublishDate(year?: number | null, month?: number | null, day?: nu
   return String(year)
 }
 
+function contentToHtml(content: string): string {
+  // Si ya tiene tags HTML, devolver tal cual
+  if (/<[a-z][\s\S]*>/i.test(content)) return content
+  // Texto plano: convertir doble salto de línea en párrafos, simple en <br>
+  return content
+    .split(/\n\s*\n/)
+    .filter(p => p.trim())
+    .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+    .join('\n')
+}
+
 async function getReviewData(slug: string, reviewId: number) {
   const review = await prismaBase.movieReview.findFirst({
     where: {
@@ -185,7 +196,7 @@ export default async function FilmReviewPage({ params }: PageProps) {
         publication={publicationName}
         publicationHref={publicationHref}
         date={date}
-        body={review.content}
+        body={contentToHtml(review.content)}
       />
     </main>
   )
