@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ExternalLink, Lock, Star } from 'lucide-react';
+import { ArrowRight, ExternalLink, Lock, Star } from 'lucide-react';
 
 interface ReviewAuthor {
   id: number;
@@ -35,6 +35,7 @@ interface Review {
 
 interface ReviewsSectionProps {
   reviews: Review[];
+  movieSlug?: string;
 }
 
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -67,7 +68,7 @@ function formatPublishDate(year?: number | null, month?: number | null, day?: nu
   return String(year);
 }
 
-export function ReviewsSection({ reviews }: ReviewsSectionProps) {
+export function ReviewsSection({ reviews, movieSlug }: ReviewsSectionProps) {
   return (
     <div>
       <h2 className="font-serif text-xl tracking-tight text-foreground md:text-2xl">
@@ -176,7 +177,15 @@ export function ReviewsSection({ reviews }: ReviewsSectionProps) {
 
                 {/* Link a la crítica */}
                 {(review.url || review.content) && (
-                  review.url ? (
+                  review.content && movieSlug ? (
+                    <Link
+                      href={`/pelicula/${movieSlug}/criticas/${review.id}`}
+                      className="inline-flex items-center gap-1 text-[12px] text-accent/80 hover:text-accent transition-colors md:text-[13px]"
+                    >
+                      Leé la crítica
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  ) : review.url ? (
                     <a
                       href={review.url}
                       target="_blank"
@@ -186,11 +195,7 @@ export function ReviewsSection({ reviews }: ReviewsSectionProps) {
                       Leé la crítica
                       <ExternalLink className="w-3 h-3" />
                     </a>
-                  ) : (
-                    <span className="text-[12px] text-accent/80 md:text-[13px]">
-                      Leé la crítica
-                    </span>
-                  )
+                  ) : null
                 )}
               </article>
             );

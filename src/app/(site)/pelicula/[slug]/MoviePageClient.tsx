@@ -218,7 +218,7 @@ export function MoviePageClient({
                 {/* Críticas */}
                 {reviews.length > 0 && (
                     <div className="mt-12">
-                        <ReviewsSection reviews={reviews} />
+                        <ReviewsSection reviews={reviews} movieSlug={movie.slug} />
                     </div>
                 )}
 
