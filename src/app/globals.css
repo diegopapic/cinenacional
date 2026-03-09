@@ -369,6 +369,13 @@ body {
   color: #1F2937 !important;
 }
 
+/* Prose editorial: blockquotes */
+.prose blockquote {
+  border-left-color: oklch(0.72 0.08 230 / 0.3);
+  font-style: normal;
+  color: oklch(0.78 0.01 260 / 0.7);
+}
+
 /* Links dentro de sinopsis y biografías */
 .prose-links a {
   color: oklch(0.95 0.005 260 / 0.8);
