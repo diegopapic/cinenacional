@@ -131,14 +131,25 @@ const nextConfig = {
       // =============================================
       // Eliminar sufijos de URLs de películas
       // /pelicula/[slug]/[cualquier-cosa] → /pelicula/[slug]
+      // Excepto /pelicula/[slug]/criticas/[reviewId] (ruta válida)
       // =============================================
       {
-        source: '/pelicula/:slug/:rest+/',
+        source: '/pelicula/:slug/:first((?!criticas)[^/]+)/',
         destination: '/pelicula/:slug',
         permanent: true,
       },
       {
-        source: '/pelicula/:slug/:rest+',
+        source: '/pelicula/:slug/:first((?!criticas)[^/]+)',
+        destination: '/pelicula/:slug',
+        permanent: true,
+      },
+      {
+        source: '/pelicula/:slug/:first((?!criticas)[^/]+)/:rest+/',
+        destination: '/pelicula/:slug',
+        permanent: true,
+      },
+      {
+        source: '/pelicula/:slug/:first((?!criticas)[^/]+)/:rest+',
         destination: '/pelicula/:slug',
         permanent: true,
       },
