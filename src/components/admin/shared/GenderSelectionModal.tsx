@@ -19,15 +19,16 @@ export default function GenderSelectionModal({
   showSaveHint = true
 }: GenderSelectionModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [saveName, setSaveName] = useState(true)
 
   if (!isOpen) return null
 
   const handleSelect = async (gender: 'MALE' | 'FEMALE' | 'OTHER' | null) => {
     setIsSubmitting(true)
-    
-    // Solo guardar en la base de datos si es MALE o FEMALE
-    const shouldSave = gender === 'MALE' || gender === 'FEMALE'
-    
+
+    // Guardar en la base de datos solo si es MALE/FEMALE y el checkbox está activado
+    const shouldSave = saveName && (gender === 'MALE' || gender === 'FEMALE')
+
     onSelect(gender, shouldSave)
     setIsSubmitting(false)
   }
@@ -83,7 +84,6 @@ export default function GenderSelectionModal({
                 <User className="h-6 w-6 text-blue-600" />
               </div>
               <span className="font-medium text-gray-900">Masculino</span>
-              {showSaveHint && <span className="text-xs text-gray-500">Se guardará en la base de datos</span>}
             </button>
 
             {/* Femenino */}
@@ -97,7 +97,6 @@ export default function GenderSelectionModal({
                 <User className="h-6 w-6 text-pink-600" />
               </div>
               <span className="font-medium text-gray-900">Femenino</span>
-              {showSaveHint && <span className="text-xs text-gray-500">Se guardará en la base de datos</span>}
             </button>
 
             {/* Otro */}
@@ -111,7 +110,6 @@ export default function GenderSelectionModal({
                 <User className="h-6 w-6 text-purple-600" />
               </div>
               <span className="font-medium text-gray-900">Otro</span>
-              {showSaveHint && <span className="text-xs text-gray-500">No se guardará el nombre</span>}
             </button>
 
             {/* Desconocido */}
@@ -125,18 +123,24 @@ export default function GenderSelectionModal({
                 <User className="h-6 w-6 text-gray-400" />
               </div>
               <span className="font-medium text-gray-900">Desconocido</span>
-              {showSaveHint && <span className="text-xs text-gray-500">No se guardará el nombre</span>}
             </button>
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Footer con checkbox para guardar nombre */}
         {showSaveHint && (
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center">
-              Si eliges <strong>Masculino</strong> o <strong>Femenino</strong>, el nombre &ldquo;{firstName}&rdquo; se guardará
-              para futuras asignaciones automáticas.
-            </p>
+            <label className="flex items-center justify-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={saveName}
+                onChange={(e) => setSaveName(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-xs text-gray-600">
+                Guardar &ldquo;{firstName}&rdquo; para futuras asignaciones automáticas de género
+              </span>
+            </label>
           </div>
         )}
       </div>
