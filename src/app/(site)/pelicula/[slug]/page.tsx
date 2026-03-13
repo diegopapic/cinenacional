@@ -1,6 +1,7 @@
 // src/app/pelicula/[slug]/page.tsx - USAR PRISMA DIRECTO (mejor para SSR)
 import { notFound } from 'next/navigation';
 import { MoviePageClient } from './MoviePageClient';
+import { MovieSchema } from '@/components/movies/MovieSchema';
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import { createLogger } from '@/lib/logger'
@@ -674,7 +675,27 @@ export default async function MoviePage({ params }: PageProps) {
 
   log.debug('Crew departments processed', { basicDepts: Object.keys(basicCrewByDepartment).length, fullDepts: Object.keys(fullCrewByDepartment).length });
 
+  // Países para JSON-LD (incluye Argentina siempre)
+  const schemaCountries = movie.movieCountries?.map((c: any) => ({
+    name: c.location.name,
+  })) || [];
+
   return (
+    <>
+    <MovieSchema
+      title={movie.title}
+      slug={movie.slug}
+      year={displayYear}
+      duration={totalDuration}
+      synopsis={movie.synopsis}
+      posterUrl={movie.posterUrl}
+      rating={rating}
+      genres={genres}
+      directors={directors}
+      cast={allCast}
+      countries={schemaCountries}
+      alternativeTitles={movie.alternativeTitles || []}
+    />
     <MoviePageClient
       movie={{
         ...movie,
@@ -718,5 +739,6 @@ export default async function MoviePage({ params }: PageProps) {
       trivia={movie.trivia || []}
       reviews={movie.reviews || []}
     />
+    </>
   );
 }
