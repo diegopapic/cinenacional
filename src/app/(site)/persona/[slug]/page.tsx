@@ -538,7 +538,7 @@ export default async function PersonPage({ params }: PageProps) {
   const photoUrlLg = person.photoUrl ? getPersonPhotoUrl(person.photoUrl, 'lg') : null
 
   return (
-    <div className="min-h-screen">
+    <>
       <PersonSchema
         firstName={person.firstName}
         lastName={person.lastName}
@@ -557,6 +557,7 @@ export default async function PersonPage({ params }: PageProps) {
         links={person.links}
         roleBadges={roleBadges}
       />
+      <div className="min-h-screen">
       <PageViewTracker personId={person.id} />
 
       {/* Person Header Section */}
@@ -865,5 +866,6 @@ export default async function PersonPage({ params }: PageProps) {
         </section>
       )}
     </div>
+    </>
   )
 }
