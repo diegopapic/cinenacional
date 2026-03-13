@@ -82,12 +82,11 @@ export function MovieSchema({
     jsonLd.description = synopsis
   }
 
-  if (countries.length > 0) {
-    jsonLd.countryOfOrigin = countries.map(c => ({
-      '@type': 'Country',
-      name: c.name,
-    }))
-  }
+  const argentina = { '@type': 'Country' as const, name: 'Argentina' }
+  const otherCountries = countries
+    .filter(c => c.name !== 'Argentina')
+    .map(c => ({ '@type': 'Country' as const, name: c.name }))
+  jsonLd.countryOfOrigin = [argentina, ...otherCountries]
 
   if (alternativeTitles.length > 0) {
     if (alternativeTitles.length === 1) {
