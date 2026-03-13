@@ -44,8 +44,6 @@ export function CloudinaryUploadWidget({
   const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Ref para saber si el widget efectivamente abrió
   const widgetDidOpenRef = useRef(false)
-  // Track si el script de Cloudinary está listo
-  const [isWidgetReady, setIsWidgetReady] = useState(false)
 
   // Sincronizar con el valor externo
   useEffect(() => {
@@ -185,12 +183,6 @@ export function CloudinaryUploadWidget({
       return
     }
 
-    if (!isWidgetReady) {
-      log.warn('Widget not ready yet (script still loading)')
-      toast.error('El widget de imágenes aún está cargando. Intentá de nuevo en unos segundos.')
-      return
-    }
-
     if (widgetOpenRef.current) {
       log.debug('Opening widget')
       isOpeningRef.current = true
@@ -211,12 +203,13 @@ export function CloudinaryUploadWidget({
       safetyTimeoutRef.current = setTimeout(() => {
         if (isOpeningRef.current && !widgetDidOpenRef.current) {
           log.warn('Widget open timed out - resetting state')
+          toast.error('No se pudo abrir el selector de imágenes. Intentá de nuevo.')
           setIsUploading(false)
           isOpeningRef.current = false
         }
       }, 5000)
     }
-  }, [isWidgetReady])
+  }, [])
 
   const handleRemove = useCallback(() => {
     setImageUrl('')
@@ -313,13 +306,9 @@ export function CloudinaryUploadWidget({
         onClose={handleClose}
         onError={handleError}
       >
-        {({ open, isLoading }) => {
+        {({ open }) => {
           // Guardar la función open en el ref
           widgetOpenRef.current = open
-          // Actualizar estado de ready cuando el script carga
-          if (!isLoading && !isWidgetReady) {
-            queueMicrotask(() => setIsWidgetReady(true))
-          }
 
           return (
             <>
@@ -333,7 +322,7 @@ export function CloudinaryUploadWidget({
                 >
                   <Upload className="mx-auto h-12 w-12 text-gray-400" />
                   <p className="mt-2 text-sm font-medium text-gray-900">
-                    {isUploading ? 'Subiendo imagen...' : isLoading ? 'Cargando widget...' : 'Click para subir o arrastra una imagen aquí'}
+                    {isUploading ? 'Subiendo imagen...' : 'Click para subir o arrastra una imagen aquí'}
                   </p>
                   <p className="mt-1 text-xs text-gray-500">
                     JPG, PNG o WEBP hasta 10MB

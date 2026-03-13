@@ -22,7 +22,6 @@ export function MultiImageUpload({
 }: MultiImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadCount, setUploadCount] = useState(0)
-  const [isWidgetReady, setIsWidgetReady] = useState(false)
   const widgetRef = useRef<(() => void) | null>(null)
   const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const widgetDidOpenRef = useRef(false)
@@ -83,12 +82,6 @@ export function MultiImageUpload({
   const openWidget = useCallback(() => {
     if (isUploading) return
 
-    if (!isWidgetReady) {
-      log.warn('Widget not ready yet')
-      toast.error('El widget de imágenes aún está cargando. Intentá de nuevo en unos segundos.')
-      return
-    }
-
     if (widgetRef.current) {
       // Resetear antes de abrir
       uploadedIdsRef.current = []
@@ -107,13 +100,14 @@ export function MultiImageUpload({
 
       // Safety timeout
       safetyTimeoutRef.current = setTimeout(() => {
-        if (isUploading && !widgetDidOpenRef.current) {
+        if (!widgetDidOpenRef.current) {
           log.warn('Widget open timed out - resetting state')
+          toast.error('No se pudo abrir el selector de imágenes. Intentá de nuevo.')
           setIsUploading(false)
         }
       }, 5000)
     }
-  }, [isUploading, isWidgetReady])
+  }, [isUploading])
 
   return (
     <CldUploadWidget
@@ -154,11 +148,8 @@ export function MultiImageUpload({
       onSuccess={handleUploadSuccess}
       onClose={handleClose}
     >
-      {({ open, isLoading }) => {
+      {({ open }) => {
         widgetRef.current = open
-        if (!isLoading && !isWidgetReady) {
-          queueMicrotask(() => setIsWidgetReady(true))
-        }
 
         return (
           <button
@@ -172,13 +163,6 @@ export function MultiImageUpload({
                 <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
                 <p className="text-sm font-medium text-gray-700">
                   Subiendo imágenes... ({uploadCount} completadas)
-                </p>
-              </>
-            ) : isLoading ? (
-              <>
-                <ImagePlus className="mx-auto h-10 w-10 text-gray-300 mb-3" />
-                <p className="text-sm font-medium text-gray-500">
-                  Cargando widget...
                 </p>
               </>
             ) : (
