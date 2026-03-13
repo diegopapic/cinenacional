@@ -1,8 +1,6 @@
 import { MetadataRoute } from 'next'
 import { prisma } from '@/lib/prisma'
 
-export const dynamic = 'force-dynamic'
-
 const BASE_URL = 'https://cinenacional.com'
 
 export async function generateSitemaps() {
@@ -16,42 +14,51 @@ export default async function sitemap({
 }: {
   id: number
 }): Promise<MetadataRoute.Sitemap> {
-  if (id === 1) {
-    const people = await prisma.person.findMany({
+  try {
+    if (id === 1) {
+      const people = await prisma.person.findMany({
+        select: { slug: true, updatedAt: true },
+        orderBy: { id: 'asc' },
+      })
+
+      return people.map((person) => ({
+        url: `${BASE_URL}/persona/${person.slug}`,
+        lastModified: person.updatedAt,
+        changeFrequency: 'monthly' as const,
+        priority: 0.7,
+      }))
+    }
+
+    // id === 0: static pages + movies
+    const movies = await prisma.movie.findMany({
       select: { slug: true, updatedAt: true },
       orderBy: { id: 'asc' },
     })
 
-    return people.map((person) => ({
-      url: `${BASE_URL}/persona/${person.slug}`,
-      lastModified: person.updatedAt,
-      changeFrequency: 'monthly' as const,
-      priority: 0.7,
-    }))
+    return [
+      {
+        url: BASE_URL,
+        changeFrequency: 'weekly',
+        priority: 1.0,
+      },
+      {
+        url: `${BASE_URL}/estrenos`,
+        changeFrequency: 'weekly',
+        priority: 0.9,
+      },
+      ...movies.map((movie) => ({
+        url: `${BASE_URL}/pelicula/${movie.slug}`,
+        lastModified: movie.updatedAt,
+        changeFrequency: 'monthly' as const,
+        priority: 0.8,
+      })),
+    ]
+  } catch {
+    // DB not available at build time — return static entries only
+    if (id === 1) return []
+    return [
+      { url: BASE_URL, changeFrequency: 'weekly', priority: 1.0 },
+      { url: `${BASE_URL}/estrenos`, changeFrequency: 'weekly', priority: 0.9 },
+    ]
   }
-
-  // id === 0: static pages + movies
-  const movies = await prisma.movie.findMany({
-    select: { slug: true, updatedAt: true },
-    orderBy: { id: 'asc' },
-  })
-
-  return [
-    {
-      url: BASE_URL,
-      changeFrequency: 'weekly',
-      priority: 1.0,
-    },
-    {
-      url: `${BASE_URL}/estrenos`,
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-    ...movies.map((movie) => ({
-      url: `${BASE_URL}/pelicula/${movie.slug}`,
-      lastModified: movie.updatedAt,
-      changeFrequency: 'monthly' as const,
-      priority: 0.8,
-    })),
-  ]
 }
