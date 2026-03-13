@@ -658,7 +658,7 @@ export default function PersonPage({ params: paramsPromise }: PersonPageProps) {
     // Largometraje no estrenado (solo si NO es INCONCLUSA ni INÉDITA)
     if (movie.tipoDuracion === 'largometraje' && isUnreleased && movie.stage !== 'INCONCLUSA' && movie.stage !== 'INEDITA') {
       return {
-        text: 'No estrenada',
+        text: 'No estrenada en la Argentina',
         color: 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
       };
     }
