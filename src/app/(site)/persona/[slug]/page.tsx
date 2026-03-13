@@ -13,6 +13,7 @@ import { PosterPlaceholder } from '@/components/film/PosterPlaceholder';
 import { ExternalLinks } from '@/components/shared/ExternalLinks';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 import { createLogger } from '@/lib/logger'
+import { PersonSchema } from '@/components/people/PersonSchema'
 
 const log = createLogger('page:persona')
 
@@ -736,6 +737,24 @@ export default function PersonPage({ params: paramsPromise }: PersonPageProps) {
 
   return (
     <div className="min-h-screen">
+      <PersonSchema
+        firstName={person.firstName}
+        lastName={person.lastName}
+        realName={person.realName}
+        slug={params.slug}
+        birthYear={person.birthYear}
+        birthMonth={person.birthMonth}
+        birthDay={person.birthDay}
+        deathYear={person.deathYear}
+        deathMonth={person.deathMonth}
+        deathDay={person.deathDay}
+        birthLocation={person.birthLocation}
+        deathLocation={person.deathLocation}
+        photoUrl={person.photoUrl ? getPersonPhotoUrl(person.photoUrl, 'lg') : null}
+        gender={person.gender}
+        links={person.links}
+        roleBadges={roleBadges}
+      />
       {/* Person Header Section */}
       <section>
         <div className="max-w-7xl mx-auto px-4 lg:px-6 pt-6 pb-10 md:pt-12 md:pb-16 lg:pt-16 lg:pb-20">
