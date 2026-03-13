@@ -22,10 +22,10 @@ interface CloudinaryUploadWidgetProps {
   maxDisplayHeight?: number
 }
 
-export function CloudinaryUploadWidget({ 
-  value, 
-  onChange, 
-  label, 
+export function CloudinaryUploadWidget({
+  value,
+  onChange,
+  label,
   type = 'poster',
   movieId,
   personId,
@@ -36,11 +36,17 @@ export function CloudinaryUploadWidget({
 }: CloudinaryUploadWidgetProps) {
   const [imageUrl, setImageUrl] = useState(value || '')
   const [isUploading, setIsUploading] = useState(false)
-  
+
   // Ref para controlar el widget y evitar múltiples instancias
   const widgetOpenRef = useRef<(() => void) | null>(null)
   const isOpeningRef = useRef(false)
-  
+  // Ref para el timeout de seguridad
+  const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Ref para saber si el widget efectivamente abrió
+  const widgetDidOpenRef = useRef(false)
+  // Track si el script de Cloudinary está listo
+  const [isWidgetReady, setIsWidgetReady] = useState(false)
+
   // Sincronizar con el valor externo
   useEffect(() => {
     setImageUrl(value || '')
@@ -56,9 +62,14 @@ export function CloudinaryUploadWidget({
       // Reset de refs
       widgetOpenRef.current = null
       isOpeningRef.current = false
+      // Limpiar safety timeout
+      if (safetyTimeoutRef.current) {
+        clearTimeout(safetyTimeoutRef.current)
+        safetyTimeoutRef.current = null
+      }
     }
   }, [])
-  
+
   // Configuración según el tipo de imagen
   const getUploadPreset = () => {
     switch(type) {
@@ -111,42 +122,60 @@ export function CloudinaryUploadWidget({
     document.documentElement.classList.remove('overflow-hidden')
   }, [])
 
+  // Limpiar safety timeout (llamado cuando el widget confirma que abrió/cerró/falló)
+  const clearSafetyTimeout = useCallback(() => {
+    if (safetyTimeoutRef.current) {
+      clearTimeout(safetyTimeoutRef.current)
+      safetyTimeoutRef.current = null
+    }
+  }, [])
+
+  // Handler de apertura - confirma que el widget se abrió correctamente
+  const handleOpen = useCallback(() => {
+    log.debug('Widget opened')
+    widgetDidOpenRef.current = true
+    clearSafetyTimeout()
+  }, [clearSafetyTimeout])
+
   // Handler de éxito - mejorado con cleanup
   const handleUploadSuccess = useCallback((result: any) => {
     log.debug('Upload success')
+    clearSafetyTimeout()
     if (result.info) {
       const { secure_url, public_id } = result.info
       setImageUrl(secure_url)
       onChange(secure_url, public_id)
       toast.success('Imagen subida exitosamente')
     }
-    
+
     // Resetear estado
     setIsUploading(false)
     isOpeningRef.current = false
-    
+
     // Restaurar el scroll después de un delay
     setTimeout(() => {
       restoreScroll()
     }, 500)
-  }, [onChange, restoreScroll])
+  }, [onChange, restoreScroll, clearSafetyTimeout])
 
   // Handler de cierre - mejorado
   const handleClose = useCallback(() => {
     log.debug('Widget closed')
+    clearSafetyTimeout()
     setIsUploading(false)
     isOpeningRef.current = false
     restoreScroll()
-  }, [restoreScroll])
+  }, [restoreScroll, clearSafetyTimeout])
 
   // Handler de error - mejorado
   const handleError = useCallback((error: any) => {
     log.error('Upload error', error)
+    clearSafetyTimeout()
     toast.error('Error al subir la imagen')
     setIsUploading(false)
     isOpeningRef.current = false
     restoreScroll()
-  }, [restoreScroll])
+  }, [restoreScroll, clearSafetyTimeout])
 
   // Función para abrir el widget - previene múltiples aperturas
   const openWidget = useCallback(() => {
@@ -155,14 +184,39 @@ export function CloudinaryUploadWidget({
       log.debug('Widget already opening, skipping')
       return
     }
-    
+
+    if (!isWidgetReady) {
+      log.warn('Widget not ready yet (script still loading)')
+      toast.error('El widget de imágenes aún está cargando. Intentá de nuevo en unos segundos.')
+      return
+    }
+
     if (widgetOpenRef.current) {
       log.debug('Opening widget')
       isOpeningRef.current = true
+      widgetDidOpenRef.current = false
       setIsUploading(true)
-      widgetOpenRef.current()
+
+      try {
+        widgetOpenRef.current()
+      } catch (err) {
+        log.error('Error opening widget', err)
+        toast.error('Error al abrir el selector de imágenes')
+        setIsUploading(false)
+        isOpeningRef.current = false
+        return
+      }
+
+      // Safety timeout: si en 5 segundos no se disparó onOpen ni onClose, resetear
+      safetyTimeoutRef.current = setTimeout(() => {
+        if (isOpeningRef.current && !widgetDidOpenRef.current) {
+          log.warn('Widget open timed out - resetting state')
+          setIsUploading(false)
+          isOpeningRef.current = false
+        }
+      }, 5000)
     }
-  }, [])
+  }, [isWidgetReady])
 
   const handleRemove = useCallback(() => {
     setImageUrl('')
@@ -174,24 +228,24 @@ export function CloudinaryUploadWidget({
 
   // Determinar aspect ratio y dimensiones
   const aspectRatio = customAspectRatio || (
-    type === 'poster' ? '2/3' : 
-    type === 'backdrop' ? '16/9' : 
+    type === 'poster' ? '2/3' :
+    type === 'backdrop' ? '16/9' :
     type === 'person_photo' ? '3/4' :
     '1/1'
   )
-  
+
   const [aspectWidth, aspectHeight] = aspectRatio.split('/').map(Number)
-  
-  const dimensions = 
-    type === 'poster' ? '500x750px' : 
-    type === 'backdrop' ? '1920x1080px' : 
+
+  const dimensions =
+    type === 'poster' ? '500x750px' :
+    type === 'backdrop' ? '1920x1080px' :
     type === 'person_photo' ? '600x800px' :
     '1200x1200px'
 
   // Calcular dimensiones de display
   let displayWidth = '100%'
   let displayHeight = 'auto'
-  
+
   if (maxDisplayHeight) {
     displayHeight = `${maxDisplayHeight}px`
     displayWidth = `${Math.round(maxDisplayHeight * aspectWidth / aspectHeight)}px`
@@ -204,8 +258,8 @@ export function CloudinaryUploadWidget({
           {label}
         </label>
       )}
-      
-      {/* 🎯 UNA SOLA INSTANCIA DEL WIDGET */}
+
+      {/* UNA SOLA INSTANCIA DEL WIDGET */}
       <CldUploadWidget
         uploadPreset="cinenacional-unsigned"
         options={{
@@ -215,8 +269,8 @@ export function CloudinaryUploadWidget({
           maxFiles: 1,
           clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
           maxFileSize: 10000000, // 10MB
-          showCompletedButton: true,  
-          showUploadMoreButton: false, 
+          showCompletedButton: true,
+          showUploadMoreButton: false,
           singleUploadAutoClose: false,
           showSkipCropButton: false,
           showPoweredBy: false,
@@ -254,13 +308,18 @@ export function CloudinaryUploadWidget({
             }
           }
         }}
+        onOpen={handleOpen}
         onSuccess={handleUploadSuccess}
         onClose={handleClose}
         onError={handleError}
       >
-        {({ open }) => {
+        {({ open, isLoading }) => {
           // Guardar la función open en el ref
           widgetOpenRef.current = open
+          // Actualizar estado de ready cuando el script carga
+          if (!isLoading && !isWidgetReady) {
+            queueMicrotask(() => setIsWidgetReady(true))
+          }
 
           return (
             <>
@@ -274,7 +333,7 @@ export function CloudinaryUploadWidget({
                 >
                   <Upload className="mx-auto h-12 w-12 text-gray-400" />
                   <p className="mt-2 text-sm font-medium text-gray-900">
-                    {isUploading ? 'Subiendo imagen...' : 'Click para subir o arrastra una imagen aquí'}
+                    {isUploading ? 'Subiendo imagen...' : isLoading ? 'Cargando widget...' : 'Click para subir o arrastra una imagen aquí'}
                   </p>
                   <p className="mt-1 text-xs text-gray-500">
                     JPG, PNG o WEBP hasta 10MB
@@ -288,10 +347,10 @@ export function CloudinaryUploadWidget({
                 <div className="space-y-2">
                   {/* Preview de la imagen */}
                   <div className="flex justify-center">
-                    <div 
+                    <div
                       onClick={openWidget}
                       className="relative rounded-lg overflow-hidden bg-gray-100 shadow-lg cursor-pointer border-2 border-transparent hover:border-blue-500 transition-all group"
-                      style={{ 
+                      style={{
                         width: displayWidth,
                         height: displayHeight,
                         maxWidth: '100%'
@@ -308,7 +367,7 @@ export function CloudinaryUploadWidget({
                           objectFit: maxDisplayHeight ? 'contain' : 'cover'
                         }}
                       />
-                      
+
                       {/* Overlay al hacer hover */}
                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
                         <p className="text-white font-medium text-lg drop-shadow-lg">
@@ -317,7 +376,7 @@ export function CloudinaryUploadWidget({
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Botones de acción */}
                   <div className="flex gap-2">
                     <button
@@ -329,7 +388,7 @@ export function CloudinaryUploadWidget({
                       <ImageIcon className="w-4 h-4" />
                       <span>{isUploading ? 'Subiendo...' : 'Cambiar imagen'}</span>
                     </button>
-                    
+
                     <button
                       type="button"
                       onClick={handleRemove}
@@ -340,7 +399,7 @@ export function CloudinaryUploadWidget({
                       <span>Eliminar</span>
                     </button>
                   </div>
-                  
+
                   {/* Info de la imagen */}
                   <div className="text-xs text-gray-500 text-center">
                     Imagen subida correctamente • {dimensions}

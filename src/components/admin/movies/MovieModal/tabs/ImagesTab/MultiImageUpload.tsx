@@ -2,7 +2,7 @@
 'use client'
 
 import { CldUploadWidget } from 'next-cloudinary'
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { ImagePlus } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { createLogger } from '@/lib/logger'
@@ -15,17 +15,41 @@ interface MultiImageUploadProps {
   disabled?: boolean
 }
 
-export function MultiImageUpload({ 
-  movieId, 
+export function MultiImageUpload({
+  movieId,
   onUploadComplete,
-  disabled = false 
+  disabled = false
 }: MultiImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadCount, setUploadCount] = useState(0)
+  const [isWidgetReady, setIsWidgetReady] = useState(false)
   const widgetRef = useRef<(() => void) | null>(null)
-  
+  const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const widgetDidOpenRef = useRef(false)
+
   // Usar ref para los IDs (evita problemas de closure)
   const uploadedIdsRef = useRef<string[]>([])
+
+  // Limpiar safety timeout
+  const clearSafetyTimeout = useCallback(() => {
+    if (safetyTimeoutRef.current) {
+      clearTimeout(safetyTimeoutRef.current)
+      safetyTimeoutRef.current = null
+    }
+  }, [])
+
+  // Limpiar al desmontar
+  useEffect(() => {
+    return () => {
+      clearSafetyTimeout()
+    }
+  }, [clearSafetyTimeout])
+
+  const handleOpen = useCallback(() => {
+    log.debug('Widget opened')
+    widgetDidOpenRef.current = true
+    clearSafetyTimeout()
+  }, [clearSafetyTimeout])
 
   const handleUploadSuccess = useCallback((result: any) => {
     if (result.info) {
@@ -39,31 +63,57 @@ export function MultiImageUpload({
   const handleClose = useCallback(() => {
     const uploadedIds = uploadedIdsRef.current
     log.debug('Upload widget closed', { count: uploadedIds.length })
-    
+
+    clearSafetyTimeout()
     setIsUploading(false)
-    
+
     if (uploadedIds.length > 0) {
       onUploadComplete([...uploadedIds]) // Pasar copia del array
       toast.success(`${uploadedIds.length} imagen(es) subida(s)`)
     }
-    
+
     // Resetear para próxima subida
     uploadedIdsRef.current = []
     setUploadCount(0)
-    
+
     // Restaurar scroll
     document.body.style.overflow = ''
-  }, [onUploadComplete])
+  }, [onUploadComplete, clearSafetyTimeout])
 
   const openWidget = useCallback(() => {
-    if (widgetRef.current && !isUploading) {
+    if (isUploading) return
+
+    if (!isWidgetReady) {
+      log.warn('Widget not ready yet')
+      toast.error('El widget de imágenes aún está cargando. Intentá de nuevo en unos segundos.')
+      return
+    }
+
+    if (widgetRef.current) {
       // Resetear antes de abrir
       uploadedIdsRef.current = []
       setUploadCount(0)
+      widgetDidOpenRef.current = false
       setIsUploading(true)
-      widgetRef.current()
+
+      try {
+        widgetRef.current()
+      } catch (err) {
+        log.error('Error opening widget', err)
+        toast.error('Error al abrir el selector de imágenes')
+        setIsUploading(false)
+        return
+      }
+
+      // Safety timeout
+      safetyTimeoutRef.current = setTimeout(() => {
+        if (isUploading && !widgetDidOpenRef.current) {
+          log.warn('Widget open timed out - resetting state')
+          setIsUploading(false)
+        }
+      }, 5000)
     }
-  }, [isUploading])
+  }, [isUploading, isWidgetReady])
 
   return (
     <CldUploadWidget
@@ -100,11 +150,15 @@ export function MultiImageUpload({
           }
         }
       }}
+      onOpen={handleOpen}
       onSuccess={handleUploadSuccess}
       onClose={handleClose}
     >
-      {({ open }) => {
+      {({ open, isLoading }) => {
         widgetRef.current = open
+        if (!isLoading && !isWidgetReady) {
+          queueMicrotask(() => setIsWidgetReady(true))
+        }
 
         return (
           <button
@@ -118,6 +172,13 @@ export function MultiImageUpload({
                 <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
                 <p className="text-sm font-medium text-gray-700">
                   Subiendo imágenes... ({uploadCount} completadas)
+                </p>
+              </>
+            ) : isLoading ? (
+              <>
+                <ImagePlus className="mx-auto h-10 w-10 text-gray-300 mb-3" />
+                <p className="text-sm font-medium text-gray-500">
+                  Cargando widget...
                 </p>
               </>
             ) : (
