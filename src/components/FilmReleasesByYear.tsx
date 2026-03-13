@@ -3,11 +3,11 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, CalendarClock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Pagination from '@/components/shared/Pagination'
 import { PosterPlaceholder } from '@/components/film/PosterPlaceholder'
+import type { EstrenosMode } from '@/lib/estrenos/estrenosTypes'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -75,13 +75,6 @@ function formatReleaseBadge(
   return capitalMonth
 }
 
-// ── Component ──────────────────────────────────────────────────────────────
-
-interface FilmReleasesByYearProps {
-  entries: ReleaseEntry[]
-  initialUpcoming?: boolean
-}
-
 function isEntryFuture(entry: ReleaseEntry): boolean {
   if (!entry.year) return false
   const now = new Date()
@@ -102,18 +95,31 @@ function isEntryFuture(entry: ReleaseEntry): boolean {
   return day >= currentDay
 }
 
-export function FilmReleasesByYear({ entries, initialUpcoming = false }: FilmReleasesByYearProps) {
-  const router = useRouter()
+function findDecadeIndex(year: number): number {
+  const idx = DECADES.findIndex(d => year >= d.start && year <= d.end)
+  return idx >= 0 ? idx : DECADES.length - 1
+}
 
-  // La década activa inicial es la que contiene CURRENT_YEAR
-  const initialDecadeIdx = DECADES.findIndex(
-    (d) => CURRENT_YEAR >= d.start && CURRENT_YEAR <= d.end,
-  )
-  const [decadeIndex, setDecadeIndex] = useState(
-    initialDecadeIdx >= 0 ? initialDecadeIdx : DECADES.length - 1,
-  )
-  const [selectedYear, setSelectedYear] = useState<number | null>(CURRENT_YEAR)
-  const [upcomingMode, setUpcomingMode] = useState(initialUpcoming)
+// ── Component ──────────────────────────────────────────────────────────────
+
+interface FilmReleasesByYearProps {
+  entries: ReleaseEntry[]
+  mode: EstrenosMode
+}
+
+export function FilmReleasesByYear({ entries, mode }: FilmReleasesByYearProps) {
+  const isUpcoming = mode.type === 'upcoming'
+  const selectedYear = mode.type === 'year' ? mode.value : null
+  const isDecadeView = mode.type === 'decade'
+
+  // Década activa en la barra de navegación
+  const getInitialDecadeIndex = () => {
+    if (mode.type === 'year') return findDecadeIndex(mode.value)
+    if (mode.type === 'decade') return DECADES.findIndex(d => d.start === mode.start)
+    return findDecadeIndex(CURRENT_YEAR)
+  }
+
+  const [decadeIndex, setDecadeIndex] = useState(getInitialDecadeIndex)
   const [page, setPage] = useState(1)
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -133,15 +139,19 @@ export function FilmReleasesByYear({ entries, initialUpcoming = false }: FilmRel
       const left = offset - container.clientWidth / 2 + btnRect.width / 2
       container.scrollTo({ left, behavior: 'smooth' })
     })
-  }, [selectedYear, decadeIndex])
+  }, [selectedYear, decadeIndex, isDecadeView])
 
-  // Filtrar entries por década, año o upcoming, ordenar de más antiguo a más reciente
+  // Filtrar entries por modo
   const filtered = useMemo(() => {
     let result: ReleaseEntry[]
-    if (upcomingMode) {
+    if (isUpcoming) {
       result = entries.filter(isEntryFuture)
     } else if (selectedYear !== null) {
       result = entries.filter((e) => e.year === selectedYear)
+    } else if (isDecadeView && mode.type === 'decade') {
+      result = entries.filter(
+        (e) => e.year !== null && e.year >= mode.start && e.year <= mode.end,
+      )
     } else {
       result = entries.filter(
         (e) => e.year !== null && e.year >= decade.start && e.year <= decade.end,
@@ -155,13 +165,13 @@ export function FilmReleasesByYear({ entries, initialUpcoming = false }: FilmRel
       const isoB = b.releaseDateISO ?? ''
       return isoA.localeCompare(isoB)
     })
-  }, [entries, decade, selectedYear, upcomingMode])
+  }, [entries, decade, selectedYear, isUpcoming, isDecadeView, mode])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE)
 
   // Title
-  const title = upcomingMode
+  const title = isUpcoming
     ? 'Próximos estrenos'
     : selectedYear
       ? `Estrenos de ${selectedYear}`
@@ -172,35 +182,16 @@ export function FilmReleasesByYear({ entries, initialUpcoming = false }: FilmRel
     const next = decadeIndex + dir
     if (next < 0 || next >= DECADES.length) return
     setDecadeIndex(next)
-    setSelectedYear(null)
-    setPage(1)
-  }
-
-  const handleYearSelect = (year: number | null) => {
-    setSelectedYear(year)
-    setPage(1)
-  }
-
-  const toggleUpcoming = () => {
-    const next = !upcomingMode
-    setUpcomingMode(next)
-    setPage(1)
-    router.replace(
-      next ? '/listados/estrenos?period=upcoming' : '/listados/estrenos',
-      { scroll: false },
-    )
-  }
-
-  const exitUpcoming = () => {
-    setUpcomingMode(false)
-    setPage(1)
-    router.replace('/listados/estrenos', { scroll: false })
   }
 
   const handlePageChange = (p: number) => {
     setPage(p)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+
+  // Determinar si un botón de año/década está activo
+  const isYearActive = (y: number) => selectedYear === y
+  const isDecadeBtnActive = isDecadeView && mode.type === 'decade' && mode.start === decade.start
 
   return (
     <div>
@@ -215,23 +206,23 @@ export function FilmReleasesByYear({ entries, initialUpcoming = false }: FilmRel
               {filtered.length} {filtered.length === 1 ? 'pelicula' : 'peliculas'}
             </p>
           </div>
-          <button
-            onClick={upcomingMode ? exitUpcoming : toggleUpcoming}
+          <Link
+            href={isUpcoming ? `/listados/estrenos/${CURRENT_YEAR}` : '/listados/estrenos/proximos'}
             className={cn(
               'mt-1 flex shrink-0 items-center gap-1.5 rounded-sm px-3 py-1.5 text-[12px] transition-colors md:text-[13px]',
-              upcomingMode
+              isUpcoming
                 ? 'bg-accent/15 text-accent'
                 : 'text-muted-foreground/50 hover:text-foreground/70',
             )}
           >
             <CalendarClock className="h-3.5 w-3.5" />
-            {upcomingMode ? 'Ver todos' : 'Próximos estrenos'}
-          </button>
+            {isUpcoming ? 'Ver todos' : 'Próximos estrenos'}
+          </Link>
         </div>
       </div>
 
       {/* ── Year bar (oculta en modo upcoming) ── */}
-      {!upcomingMode && <div className="mx-auto mt-6 w-full max-w-7xl border-b border-border/10 lg:px-6">
+      {!isUpcoming && <div className="mx-auto mt-6 w-full max-w-7xl border-b border-border/10 lg:px-6">
         <div className="flex items-center">
           {/* Prev decade arrow */}
           <button
@@ -246,40 +237,47 @@ export function FilmReleasesByYear({ entries, initialUpcoming = false }: FilmRel
           <div ref={scrollRef} className="min-w-0 flex-1 overflow-x-auto scrollbar-hide">
             <div className="flex w-max items-center">
               {/* Decade button */}
-              <button
-                data-active={selectedYear === null}
-                onClick={() => handleYearSelect(null)}
+              <Link
+                href={`/listados/estrenos/${decade.start}s`}
+                data-active={isDecadeBtnActive}
                 className={cn(
                   'border-b-2 px-3 py-2 text-[12px] font-medium tracking-wide whitespace-nowrap transition-colors md:text-[13px]',
-                  selectedYear === null
+                  isDecadeBtnActive
                     ? 'border-accent text-accent'
                     : 'border-transparent text-muted-foreground/50 hover:text-foreground/70',
                 )}
               >
                 {decade.label}
-              </button>
+              </Link>
 
               {/* Year buttons */}
               {years.map((y) => {
                 const isFuture = y > CURRENT_YEAR
-                const isActive = selectedYear === y
+                const isActive = isYearActive(y)
+                if (isFuture) {
+                  return (
+                    <span
+                      key={y}
+                      className="border-b-2 border-transparent px-2.5 py-2 text-[12px] tabular-nums whitespace-nowrap text-muted-foreground/20 cursor-not-allowed md:px-3 md:text-[13px]"
+                    >
+                      {y}
+                    </span>
+                  )
+                }
                 return (
-                  <button
+                  <Link
                     key={y}
+                    href={`/listados/estrenos/${y}`}
                     data-active={isActive}
-                    disabled={isFuture}
-                    onClick={() => handleYearSelect(y)}
                     className={cn(
                       'border-b-2 px-2.5 py-2 text-[12px] tabular-nums whitespace-nowrap transition-colors md:px-3 md:text-[13px]',
                       isActive
                         ? 'border-accent text-accent'
-                        : isFuture
-                          ? 'border-transparent text-muted-foreground/20 cursor-not-allowed'
-                          : 'border-transparent text-muted-foreground/50 hover:text-foreground/70',
+                        : 'border-transparent text-muted-foreground/50 hover:text-foreground/70',
                     )}
                   >
                     {y}
-                  </button>
+                  </Link>
                 )
               })}
             </div>
@@ -305,7 +303,7 @@ export function FilmReleasesByYear({ entries, initialUpcoming = false }: FilmRel
       ) : (
         <div className="mt-6 grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
           {paginated.map((film, i) => (
-            <CompactCard key={`${film.href}-${i}`} film={film} showYear={upcomingMode || selectedYear === null} />
+            <CompactCard key={`${film.href}-${i}`} film={film} showYear={isUpcoming || selectedYear === null} />
           ))}
         </div>
       )}

@@ -17,6 +17,12 @@ export interface Decade {
   years: number[];
 }
 
+/** Modo de visualización de estrenos, derivado de la URL */
+export type EstrenosMode =
+  | { type: 'year'; value: number }
+  | { type: 'decade'; start: number; end: number; label: string }
+  | { type: 'upcoming' }
+
 export interface EstrenosResponse {
   movies: any[];
   pagination: {
