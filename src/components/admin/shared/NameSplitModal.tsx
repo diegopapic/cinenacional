@@ -30,6 +30,7 @@ export default function NameSplitModal({
   const [selectedGender, setSelectedGender] = useState<'MALE' | 'FEMALE' | 'OTHER' | null>(null)
   const [step, setStep] = useState<'name' | 'gender'>('name')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [saveName, setSaveName] = useState(true)
 
   // Parsear palabras cuando cambia fullName
   useEffect(() => {
@@ -58,10 +59,10 @@ export default function NameSplitModal({
   const handleGenderSelect = async (gender: 'MALE' | 'FEMALE' | 'OTHER' | null) => {
     setIsSubmitting(true)
     setSelectedGender(gender)
-    
-    // Solo guardar en la base de datos si es MALE o FEMALE
-    const shouldSave = gender === 'MALE' || gender === 'FEMALE'
-    
+
+    // Guardar solo si es MALE/FEMALE y el checkbox está activado
+    const shouldSave = saveName && (gender === 'MALE' || gender === 'FEMALE')
+
     onConfirm(firstName, lastName, gender, shouldSave)
     setIsSubmitting(false)
   }
@@ -199,7 +200,6 @@ export default function NameSplitModal({
                     <User className="h-6 w-6 text-blue-600" />
                   </div>
                   <span className="font-medium text-gray-900">Masculino</span>
-                  <span className="text-xs text-gray-500">Se guardará en la base</span>
                 </button>
 
                 {/* Femenino */}
@@ -213,7 +213,6 @@ export default function NameSplitModal({
                     <User className="h-6 w-6 text-pink-600" />
                   </div>
                   <span className="font-medium text-gray-900">Femenino</span>
-                  <span className="text-xs text-gray-500">Se guardará en la base</span>
                 </button>
 
                 {/* Otro */}
@@ -227,7 +226,6 @@ export default function NameSplitModal({
                     <User className="h-6 w-6 text-purple-600" />
                   </div>
                   <span className="font-medium text-gray-900">Otro</span>
-                  <span className="text-xs text-gray-500">No se guardará</span>
                 </button>
 
                 {/* Desconocido */}
@@ -241,7 +239,6 @@ export default function NameSplitModal({
                     <User className="h-6 w-6 text-gray-400" />
                   </div>
                   <span className="font-medium text-gray-900">Desconocido</span>
-                  <span className="text-xs text-gray-500">No se guardará</span>
                 </button>
               </div>
 
@@ -262,12 +259,23 @@ export default function NameSplitModal({
 
         {/* Footer */}
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center">
-            {step === 'name' 
-              ? '💡 Haz clic en las palabras que forman el nombre o usa el slider.'
-              : `💡 Si eliges Masculino o Femenino, "${firstName}" se guardará para futuras asignaciones.`
-            }
-          </p>
+          {step === 'name' ? (
+            <p className="text-xs text-gray-500 text-center">
+              Haz clic en las palabras que forman el nombre o usa el slider.
+            </p>
+          ) : (
+            <label className="flex items-center justify-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={saveName}
+                onChange={(e) => setSaveName(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-xs text-gray-600">
+                Guardar &ldquo;{firstName}&rdquo; para futuras asignaciones automáticas de género
+              </span>
+            </label>
+          )}
         </div>
       </div>
     </div>
