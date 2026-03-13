@@ -10,6 +10,7 @@ interface CrewMember {
   personSlug?: string;
   creditedAs?: string | null;
   gender?: string | null;
+  notes?: string | null;
 }
 
 interface CrewDepartment {
@@ -57,6 +58,14 @@ export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
     return <span className={className}>{member.name}</span>;
   };
 
+  // Render notas del crew
+  const renderNotes = (member: CrewMember) => {
+    if (!member.notes) return null;
+    return (
+      <span className="text-[11px] italic text-muted-foreground/50">{member.notes}</span>
+    );
+  };
+
   // Render crédito alternativo
   const renderCredit = (member: CrewMember) => {
     if (!member.creditedAs) return null;
@@ -79,7 +88,10 @@ export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
             </h4>
             {members.map((member, i) => (
               <div key={i}>
-                {renderName(member, 'block text-[13px] leading-snug text-foreground/80 md:text-sm')}
+                <span className="flex items-baseline gap-1.5">
+                  {renderName(member, 'text-[13px] leading-snug text-foreground/80 md:text-sm')}
+                  {renderNotes(member)}
+                </span>
                 {renderCredit(member)}
               </div>
             ))}
@@ -107,6 +119,7 @@ export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
                     <div className="flex items-baseline gap-1.5">
                       {renderName(member, 'text-[13px] text-foreground/80 md:text-sm')}
                       <span className="text-[11px] text-muted-foreground/35">{member.role}</span>
+                      {renderNotes(member)}
                     </div>
                     {renderCredit(member)}
                   </div>

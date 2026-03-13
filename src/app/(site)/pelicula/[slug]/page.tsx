@@ -107,6 +107,7 @@ async function getMovieData(slug: string) {
           select: {
             roleId: true,
             billingOrder: true,
+            notes: true,
             alternativeNameId: true,  // 🆕 ID del nombre alternativo usado
             alternativeName: {        // 🆕 Datos del nombre alternativo
               select: {
@@ -592,12 +593,13 @@ export default async function MoviePage({ params }: PageProps) {
     personSlug: c.person.slug,
     // 🆕 Campos para "Acreditado/a como"
     creditedAs: c.alternativeName?.fullName || null,
-    gender: c.person.gender || null
+    gender: c.person.gender || null,
+    notes: c.notes || null
   })) || [];
 
   const basicCrewMembers = allCrew.filter((c: any) => mainCrewRoleIds.includes(c.roleId));
 
-  const basicCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string; creditedAs?: string | null; gender?: string | null }> } = {};
+  const basicCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string; creditedAs?: string | null; gender?: string | null; notes?: string | null }> } = {};
 
   const mainDepartmentOrder = [
     'Dirección',
@@ -623,8 +625,9 @@ export default async function MoviePage({ params }: PageProps) {
       name: member.name,
       role: member.role,
       personSlug: member.personSlug,
-      creditedAs: member.creditedAs,  // 🆕
-      gender: member.gender           // 🆕
+      creditedAs: member.creditedAs,
+      gender: member.gender,
+      notes: member.notes
     });
   });
 
@@ -634,7 +637,7 @@ export default async function MoviePage({ params }: PageProps) {
     }
   });
 
-  const fullCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string; creditedAs?: string | null; gender?: string | null }> } = {};
+  const fullCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string; creditedAs?: string | null; gender?: string | null; notes?: string | null }> } = {};
 
   allCrew
     .sort((a: any, b: any) => {
@@ -654,8 +657,9 @@ export default async function MoviePage({ params }: PageProps) {
         name: member.name,
         role: member.role,
         personSlug: member.personSlug,
-        creditedAs: member.creditedAs,  // 🆕
-        gender: member.gender           // 🆕
+        creditedAs: member.creditedAs,
+        gender: member.gender,
+        notes: member.notes
       });
     });
 
