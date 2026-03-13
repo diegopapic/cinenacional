@@ -8,13 +8,15 @@ interface GenderSelectionModalProps {
   firstName: string
   onSelect: (gender: 'MALE' | 'FEMALE' | 'OTHER' | null, saveToDatabase: boolean) => void
   onCancel: () => void
+  showSaveHint?: boolean
 }
 
 export default function GenderSelectionModal({
   isOpen,
   firstName,
   onSelect,
-  onCancel
+  onCancel,
+  showSaveHint = true
 }: GenderSelectionModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -54,10 +56,19 @@ export default function GenderSelectionModal({
         {/* Content */}
         <div className="p-6">
           <p className="text-gray-600 mb-6 text-center">
-            No se pudo determinar el género automáticamente para{' '}
-            <span className="font-semibold text-gray-900">"{firstName}"</span>.
-            <br />
-            Por favor, selecciona el género correspondiente:
+            {showSaveHint ? (
+              <>
+                No se pudo determinar el género automáticamente para{' '}
+                <span className="font-semibold text-gray-900">&ldquo;{firstName}&rdquo;</span>.
+                <br />
+                Por favor, selecciona el género correspondiente:
+              </>
+            ) : (
+              <>
+                Selecciona el género para{' '}
+                <span className="font-semibold text-gray-900">&ldquo;{firstName}&rdquo;</span>:
+              </>
+            )}
           </p>
 
           <div className="grid grid-cols-2 gap-3">
@@ -72,7 +83,7 @@ export default function GenderSelectionModal({
                 <User className="h-6 w-6 text-blue-600" />
               </div>
               <span className="font-medium text-gray-900">Masculino</span>
-              <span className="text-xs text-gray-500">Se guardará en la base de datos</span>
+              {showSaveHint && <span className="text-xs text-gray-500">Se guardará en la base de datos</span>}
             </button>
 
             {/* Femenino */}
@@ -86,7 +97,7 @@ export default function GenderSelectionModal({
                 <User className="h-6 w-6 text-pink-600" />
               </div>
               <span className="font-medium text-gray-900">Femenino</span>
-              <span className="text-xs text-gray-500">Se guardará en la base de datos</span>
+              {showSaveHint && <span className="text-xs text-gray-500">Se guardará en la base de datos</span>}
             </button>
 
             {/* Otro */}
@@ -100,7 +111,7 @@ export default function GenderSelectionModal({
                 <User className="h-6 w-6 text-purple-600" />
               </div>
               <span className="font-medium text-gray-900">Otro</span>
-              <span className="text-xs text-gray-500">No se guardará el nombre</span>
+              {showSaveHint && <span className="text-xs text-gray-500">No se guardará el nombre</span>}
             </button>
 
             {/* Desconocido */}
@@ -114,18 +125,20 @@ export default function GenderSelectionModal({
                 <User className="h-6 w-6 text-gray-400" />
               </div>
               <span className="font-medium text-gray-900">Desconocido</span>
-              <span className="text-xs text-gray-500">No se guardará el nombre</span>
+              {showSaveHint && <span className="text-xs text-gray-500">No se guardará el nombre</span>}
             </button>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center">
-            💡 Si eliges <strong>Masculino</strong> o <strong>Femenino</strong>, el nombre "{firstName}" se guardará 
-            para futuras asignaciones automáticas.
-          </p>
-        </div>
+        {showSaveHint && (
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <p className="text-xs text-gray-500 text-center">
+              Si eliges <strong>Masculino</strong> o <strong>Femenino</strong>, el nombre &ldquo;{firstName}&rdquo; se guardará
+              para futuras asignaciones automáticas.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

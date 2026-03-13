@@ -198,6 +198,9 @@ export default function PersonSearchInput({
   
   // Estado para el modal de separación de nombre (caso sin nombres conocidos)
   const [showNameSplitModal, setShowNameSplitModal] = useState(false)
+
+  // Flag para nombres de una sola palabra (va directo a apellido)
+  const [pendingSingleWord, setPendingSingleWord] = useState(false)
   
   const containerRef = useRef<HTMLDivElement>(null)
   const debouncedSearch = useDebounce(searchTerm, 300)
@@ -347,12 +350,19 @@ export default function PersonSearchInput({
       
       // 2. Si no se encontró el género, decidir qué modal mostrar
       setCreating(false)
-      
-      if (hasNicknameOrInitial(fullName)) {
+
+      if (tokens.length === 1) {
+        // Nombre de una sola palabra: va directo a apellido, solo preguntar género
+        log.debug('Single word name, showing gender modal (will use as lastName)')
+        setPendingSingleWord(true)
+        setShowGenderModal(true)
+      } else if (hasNicknameOrInitial(fullName)) {
         log.debug('Name has nickname/initial, showing gender modal')
+        setPendingSingleWord(false)
         setShowGenderModal(true)
       } else {
         log.debug('No recognized name, showing name split modal')
+        setPendingSingleWord(false)
         setShowNameSplitModal(true)
       }
     } catch (error) {
@@ -440,31 +450,37 @@ export default function PersonSearchInput({
 
   // Handler para cuando se selecciona género en el modal simple
   const handleGenderSelect = async (
-    gender: 'MALE' | 'FEMALE' | 'OTHER' | null, 
+    gender: 'MALE' | 'FEMALE' | 'OTHER' | null,
     saveToDatabase: boolean
   ) => {
-    log.debug('Gender selected', { gender, saveToDatabase })
-    
+    log.debug('Gender selected', { gender, saveToDatabase, pendingSingleWord })
+
     setShowGenderModal(false)
     setCreating(true)
 
     try {
-      // Si es MALE o FEMALE, guardar el nombre en first_name_genders
-      if (saveToDatabase && (gender === 'MALE' || gender === 'FEMALE')) {
-        log.debug('Saving first name gender from modal', { pendingFirstName, gender })
+      if (pendingSingleWord) {
+        // Nombre de una sola palabra: va directo a apellido, no guardar en first_name_genders
+        log.debug('Single word name, creating with lastName only', { lastName: pendingPersonName })
+        await createPersonWithSplit('', pendingPersonName, gender)
+      } else {
+        // Si es MALE o FEMALE, guardar el nombre en first_name_genders
+        if (saveToDatabase && (gender === 'MALE' || gender === 'FEMALE')) {
+          log.debug('Saving first name gender from modal', { pendingFirstName, gender })
 
-        try {
-          await saveFirstNameGender(pendingFirstName, gender)
-          toast.success(`El nombre "${pendingFirstName}" se guardó como ${gender === 'MALE' ? 'masculino' : 'femenino'}`)
-        } catch (saveError) {
-          log.error('Error saving to first_name_genders', saveError)
-          toast.error(`No se pudo guardar el nombre "${pendingFirstName}" en la base de datos de nombres`)
+          try {
+            await saveFirstNameGender(pendingFirstName, gender)
+            toast.success(`El nombre "${pendingFirstName}" se guardó como ${gender === 'MALE' ? 'masculino' : 'femenino'}`)
+          } catch (saveError) {
+            log.error('Error saving to first_name_genders', saveError)
+            toast.error(`No se pudo guardar el nombre "${pendingFirstName}" en la base de datos de nombres`)
+          }
         }
+
+        // Crear la persona con el género seleccionado (la API separa automáticamente)
+        await createPersonWithGender(pendingPersonName, gender)
       }
 
-      // Crear la persona con el género seleccionado (la API separa automáticamente)
-      await createPersonWithGender(pendingPersonName, gender)
-      
     } catch (error) {
       log.error('Error in gender selection', error)
       toast.error('Error al procesar la selección')
@@ -520,6 +536,7 @@ export default function PersonSearchInput({
     setShowGenderModal(false)
     setPendingPersonName('')
     setPendingFirstName('')
+    setPendingSingleWord(false)
     setIsOpen(true)
   }
 
@@ -727,12 +744,13 @@ export default function PersonSearchInput({
         )}
       </div>
 
-      {/* Modal de selección de género (para casos con apodo/inicial) */}
+      {/* Modal de selección de género (para casos con apodo/inicial o nombre de una sola palabra) */}
       <GenderSelectionModal
         isOpen={showGenderModal}
-        firstName={pendingFirstName}
+        firstName={pendingSingleWord ? pendingPersonName : pendingFirstName}
         onSelect={handleGenderSelect}
         onCancel={handleGenderCancel}
+        showSaveHint={!pendingSingleWord}
       />
 
       {/* Modal de separación de nombre (para casos sin nombres conocidos) */}
