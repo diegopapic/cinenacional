@@ -1,6 +1,3 @@
-'use client'
-
-import { useEffect } from 'react'
 import type { PersonLink } from '@/lib/people/peopleTypes'
 
 interface PersonSchemaProps {
@@ -121,40 +118,13 @@ function buildPersonJsonLd(props: PersonSchemaProps): Record<string, unknown> | 
 }
 
 export function PersonSchema(props: PersonSchemaProps) {
-  const {
-    firstName, lastName, realName, slug,
-    birthYear, birthMonth, birthDay,
-    deathYear, deathMonth, deathDay,
-    birthLocation, deathLocation,
-    photoUrl, gender, links, roleBadges,
-  } = props
+  const jsonLd = buildPersonJsonLd(props)
+  if (!jsonLd) return null
 
-  useEffect(() => {
-    const jsonLd = buildPersonJsonLd({
-      firstName, lastName, realName, slug,
-      birthYear, birthMonth, birthDay,
-      deathYear, deathMonth, deathDay,
-      birthLocation, deathLocation,
-      photoUrl, gender, links, roleBadges,
-    })
-    if (!jsonLd) return
-
-    const script = document.createElement('script')
-    script.type = 'application/ld+json'
-    script.id = 'person-schema'
-    script.textContent = JSON.stringify(jsonLd)
-    document.head.appendChild(script)
-
-    return () => {
-      script.remove()
-    }
-  }, [
-    firstName, lastName, realName, slug,
-    birthYear, birthMonth, birthDay,
-    deathYear, deathMonth, deathDay,
-    birthLocation, deathLocation,
-    photoUrl, gender, links, roleBadges,
-  ])
-
-  return null
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  )
 }
