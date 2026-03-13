@@ -64,7 +64,9 @@ export default function MovieModal({ isOpen, onClose }: MovieModalProps) {
             />
 
             <div className="p-6">
-              <Tabs.Content value="basic">
+              {/* forceMount en BasicInfo y Advanced para evitar que MovieFormEnhanced
+                  pierda su estado interno al cambiar de tab (Radix desmonta el contenido inactivo) */}
+              <Tabs.Content value="basic" forceMount className="data-[state=inactive]:hidden">
                 <BasicInfoTab />
               </Tabs.Content>
 
@@ -88,7 +90,7 @@ export default function MovieModal({ isOpen, onClose }: MovieModalProps) {
                 <ReviewsTab />
               </Tabs.Content>
 
-              <Tabs.Content value="advanced">
+              <Tabs.Content value="advanced" forceMount className="data-[state=inactive]:hidden">
                 <AdvancedTab />
               </Tabs.Content>
             </div>
