@@ -52,15 +52,14 @@ function buildPersonJsonLd(props: PersonSchemaProps): Record<string, unknown> | 
   const name = [props.firstName, props.lastName].filter(Boolean).join(' ')
   if (!name) return null
 
-  const jsonLd: Record<string, unknown> = {
-    '@context': 'https://schema.org',
+  const person: Record<string, unknown> = {
     '@type': 'Person',
     name,
     url: `${BASE_URL}/persona/${props.slug}`,
   }
 
   if (props.realName && props.realName !== name) {
-    jsonLd.alternateName = props.realName
+    person.alternateName = props.realName
   }
 
   if (props.roleBadges && props.roleBadges.length > 0) {
@@ -68,38 +67,38 @@ function buildPersonJsonLd(props: PersonSchemaProps): Record<string, unknown> | 
       r => !r.startsWith('Aparición como')
     )
     if (relevantRoles.length > 0) {
-      jsonLd.jobTitle = relevantRoles[0]
+      person.jobTitle = relevantRoles[0]
     }
   }
 
   if (props.gender === 'MALE') {
-    jsonLd.gender = 'Male'
+    person.gender = 'Male'
   } else if (props.gender === 'FEMALE') {
-    jsonLd.gender = 'Female'
+    person.gender = 'Female'
   }
 
   const birthDateISO = formatPartialDateISO(props.birthYear, props.birthMonth, props.birthDay)
   if (birthDateISO) {
-    jsonLd.birthDate = birthDateISO
+    person.birthDate = birthDateISO
   }
 
   const deathDateISO = formatPartialDateISO(props.deathYear, props.deathMonth, props.deathDay)
   if (deathDateISO) {
-    jsonLd.deathDate = deathDateISO
+    person.deathDate = deathDateISO
   }
 
   const birthPlaceName = formatLocationName(props.birthLocation)
   if (birthPlaceName) {
-    jsonLd.birthPlace = { '@type': 'Place', name: birthPlaceName }
+    person.birthPlace = { '@type': 'Place', name: birthPlaceName }
   }
 
   const deathPlaceName = formatLocationName(props.deathLocation)
   if (deathPlaceName) {
-    jsonLd.deathPlace = { '@type': 'Place', name: deathPlaceName }
+    person.deathPlace = { '@type': 'Place', name: deathPlaceName }
   }
 
   if (props.photoUrl) {
-    jsonLd.image = props.photoUrl.startsWith('http') ? props.photoUrl : `${BASE_URL}${props.photoUrl}`
+    person.image = props.photoUrl.startsWith('http') ? props.photoUrl : `${BASE_URL}${props.photoUrl}`
   }
 
   const sameAs: string[] = []
@@ -111,10 +110,14 @@ function buildPersonJsonLd(props: PersonSchemaProps): Record<string, unknown> | 
     }
   }
   if (sameAs.length > 0) {
-    jsonLd.sameAs = sameAs
+    person.sameAs = sameAs
   }
 
-  return jsonLd
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    mainEntity: person,
+  }
 }
 
 export function PersonSchema(props: PersonSchemaProps) {
