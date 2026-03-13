@@ -1,3 +1,6 @@
+'use client'
+
+import { useEffect } from 'react'
 import type { PersonLink } from '@/lib/people/peopleTypes'
 
 interface PersonSchemaProps {
@@ -48,43 +51,23 @@ function formatLocationName(location: LocationNode | null | undefined): string |
   return parts.join(', ')
 }
 
-export function PersonSchema({
-  firstName,
-  lastName,
-  realName,
-  slug,
-  birthYear,
-  birthMonth,
-  birthDay,
-  deathYear,
-  deathMonth,
-  deathDay,
-  birthLocation,
-  deathLocation,
-  photoUrl,
-  gender,
-  links,
-  roleBadges,
-}: PersonSchemaProps) {
-  const name = [firstName, lastName].filter(Boolean).join(' ')
+function buildPersonJsonLd(props: PersonSchemaProps): Record<string, unknown> | null {
+  const name = [props.firstName, props.lastName].filter(Boolean).join(' ')
   if (!name) return null
 
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Person',
     name,
-    url: `${BASE_URL}/persona/${slug}`,
+    url: `${BASE_URL}/persona/${props.slug}`,
   }
 
-  // alternateName: realName si difiere del nombre principal
-  if (realName && realName !== name) {
-    jsonLd.alternateName = realName
+  if (props.realName && props.realName !== name) {
+    jsonLd.alternateName = props.realName
   }
 
-  // jobTitle: primer rol relevante
-  if (roleBadges && roleBadges.length > 0) {
-    // Filtrar roles genéricos como "Aparición como sí mismo/a"
-    const relevantRoles = roleBadges.filter(
+  if (props.roleBadges && props.roleBadges.length > 0) {
+    const relevantRoles = props.roleBadges.filter(
       r => !r.startsWith('Aparición como')
     )
     if (relevantRoles.length > 0) {
@@ -92,52 +75,39 @@ export function PersonSchema({
     }
   }
 
-  // gender
-  if (gender === 'MALE') {
+  if (props.gender === 'MALE') {
     jsonLd.gender = 'Male'
-  } else if (gender === 'FEMALE') {
+  } else if (props.gender === 'FEMALE') {
     jsonLd.gender = 'Female'
   }
 
-  // birthDate
-  const birthDateISO = formatPartialDateISO(birthYear, birthMonth, birthDay)
+  const birthDateISO = formatPartialDateISO(props.birthYear, props.birthMonth, props.birthDay)
   if (birthDateISO) {
     jsonLd.birthDate = birthDateISO
   }
 
-  // deathDate
-  const deathDateISO = formatPartialDateISO(deathYear, deathMonth, deathDay)
+  const deathDateISO = formatPartialDateISO(props.deathYear, props.deathMonth, props.deathDay)
   if (deathDateISO) {
     jsonLd.deathDate = deathDateISO
   }
 
-  // birthPlace
-  const birthPlaceName = formatLocationName(birthLocation)
+  const birthPlaceName = formatLocationName(props.birthLocation)
   if (birthPlaceName) {
-    jsonLd.birthPlace = {
-      '@type': 'Place',
-      name: birthPlaceName,
-    }
+    jsonLd.birthPlace = { '@type': 'Place', name: birthPlaceName }
   }
 
-  // deathPlace
-  const deathPlaceName = formatLocationName(deathLocation)
+  const deathPlaceName = formatLocationName(props.deathLocation)
   if (deathPlaceName) {
-    jsonLd.deathPlace = {
-      '@type': 'Place',
-      name: deathPlaceName,
-    }
+    jsonLd.deathPlace = { '@type': 'Place', name: deathPlaceName }
   }
 
-  // image
-  if (photoUrl) {
-    jsonLd.image = photoUrl.startsWith('http') ? photoUrl : `${BASE_URL}${photoUrl}`
+  if (props.photoUrl) {
+    jsonLd.image = props.photoUrl.startsWith('http') ? props.photoUrl : `${BASE_URL}${props.photoUrl}`
   }
 
-  // sameAs: links externos
   const sameAs: string[] = []
-  if (links) {
-    for (const link of links) {
+  if (props.links) {
+    for (const link of props.links) {
       if (link.isActive && link.url) {
         sameAs.push(link.url)
       }
@@ -147,10 +117,44 @@ export function PersonSchema({
     jsonLd.sameAs = sameAs
   }
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-    />
-  )
+  return jsonLd
+}
+
+export function PersonSchema(props: PersonSchemaProps) {
+  const {
+    firstName, lastName, realName, slug,
+    birthYear, birthMonth, birthDay,
+    deathYear, deathMonth, deathDay,
+    birthLocation, deathLocation,
+    photoUrl, gender, links, roleBadges,
+  } = props
+
+  useEffect(() => {
+    const jsonLd = buildPersonJsonLd({
+      firstName, lastName, realName, slug,
+      birthYear, birthMonth, birthDay,
+      deathYear, deathMonth, deathDay,
+      birthLocation, deathLocation,
+      photoUrl, gender, links, roleBadges,
+    })
+    if (!jsonLd) return
+
+    const script = document.createElement('script')
+    script.type = 'application/ld+json'
+    script.id = 'person-schema'
+    script.textContent = JSON.stringify(jsonLd)
+    document.head.appendChild(script)
+
+    return () => {
+      script.remove()
+    }
+  }, [
+    firstName, lastName, realName, slug,
+    birthYear, birthMonth, birthDay,
+    deathYear, deathMonth, deathDay,
+    birthLocation, deathLocation,
+    photoUrl, gender, links, roleBadges,
+  ])
+
+  return null
 }
