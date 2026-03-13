@@ -1,7 +1,8 @@
 // src/components/admin/shared/NameSplitModal.tsx
 
 import { useState, useEffect } from 'react'
-import { X, User, UserCircle, Check } from 'lucide-react'
+import { X, UserCircle, Check } from 'lucide-react'
+import GenderSelector from './GenderSelector'
 
 interface NameSplitModalProps {
   isOpen: boolean
@@ -27,10 +28,7 @@ export default function NameSplitModal({
 }: NameSplitModalProps) {
   const [words, setWords] = useState<string[]>([])
   const [firstNameWordCount, setFirstNameWordCount] = useState(1)
-  const [selectedGender, setSelectedGender] = useState<'MALE' | 'FEMALE' | 'OTHER' | null>(null)
   const [step, setStep] = useState<'name' | 'gender'>('name')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [saveName, setSaveName] = useState(true)
 
   // Parsear palabras cuando cambia fullName
   useEffect(() => {
@@ -39,7 +37,6 @@ export default function NameSplitModal({
       const tokens = tokenizeName(fullName.trim())
       setWords(tokens)
       setFirstNameWordCount(1)
-      setSelectedGender(null)
       setStep('name')
     }
   }, [fullName])
@@ -56,20 +53,12 @@ export default function NameSplitModal({
     }
   }
 
-  const handleGenderSelect = async (gender: 'MALE' | 'FEMALE' | 'OTHER' | null) => {
-    setIsSubmitting(true)
-    setSelectedGender(gender)
-
-    // Guardar solo si es MALE/FEMALE y el checkbox está activado
-    const shouldSave = saveName && (gender === 'MALE' || gender === 'FEMALE')
-
-    onConfirm(firstName, lastName, gender, shouldSave)
-    setIsSubmitting(false)
+  const handleGenderSelect = (gender: 'MALE' | 'FEMALE' | 'OTHER' | null, saveToDatabase: boolean) => {
+    onConfirm(firstName, lastName, gender, saveToDatabase)
   }
 
   const handleBack = () => {
     setStep('name')
-    setSelectedGender(null)
   }
 
   return (
@@ -87,7 +76,6 @@ export default function NameSplitModal({
             type="button"
             onClick={onCancel}
             className="text-gray-400 hover:text-gray-600 transition-colors"
-            disabled={isSubmitting}
           >
             <X className="h-5 w-5" />
           </button>
@@ -99,7 +87,7 @@ export default function NameSplitModal({
             <>
               <p className="text-gray-600 mb-4 text-center">
                 No se reconoció ningún nombre en{' '}
-                <span className="font-semibold text-gray-900">"{fullName}"</span>.
+                <span className="font-semibold text-gray-900">&ldquo;{fullName}&rdquo;</span>.
                 <br />
                 Selecciona cuántas palabras forman el <strong>nombre</strong>:
               </p>
@@ -115,8 +103,8 @@ export default function NameSplitModal({
                       onClick={() => setFirstNameWordCount(index + 1)}
                       className={`
                         px-4 py-2 rounded-lg font-medium transition-all border-2
-                        ${isSelected 
-                          ? 'bg-blue-100 border-blue-500 text-blue-800' 
+                        ${isSelected
+                          ? 'bg-blue-100 border-blue-500 text-blue-800'
                           : 'bg-gray-100 border-gray-300 text-gray-600 hover:border-gray-400'
                         }
                       `}
@@ -185,98 +173,36 @@ export default function NameSplitModal({
                 Apellido: <span className="font-semibold text-green-700">{lastName}</span>
               </p>
               <p className="text-gray-600 mb-6 text-center">
-                Selecciona el género para <span className="font-semibold">"{firstName}"</span>:
+                Selecciona el género para <span className="font-semibold">&ldquo;{firstName}&rdquo;</span>:
               </p>
 
-              <div className="grid grid-cols-2 gap-3">
-                {/* Masculino */}
-                <button
-                  type="button"
-                  onClick={() => handleGenderSelect('MALE')}
-                  disabled={isSubmitting}
-                  className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                    <User className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <span className="font-medium text-gray-900">Masculino</span>
-                </button>
-
-                {/* Femenino */}
-                <button
-                  type="button"
-                  onClick={() => handleGenderSelect('FEMALE')}
-                  disabled={isSubmitting}
-                  className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-pink-500 hover:bg-pink-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center">
-                    <User className="h-6 w-6 text-pink-600" />
-                  </div>
-                  <span className="font-medium text-gray-900">Femenino</span>
-                </button>
-
-                {/* Otro */}
-                <button
-                  type="button"
-                  onClick={() => handleGenderSelect('OTHER')}
-                  disabled={isSubmitting}
-                  className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                    <User className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <span className="font-medium text-gray-900">Otro</span>
-                </button>
-
-                {/* Desconocido */}
-                <button
-                  type="button"
-                  onClick={() => handleGenderSelect(null)}
-                  disabled={isSubmitting}
-                  className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                    <User className="h-6 w-6 text-gray-400" />
-                  </div>
-                  <span className="font-medium text-gray-900">Desconocido</span>
-                </button>
-              </div>
+              <GenderSelector
+                onSelect={handleGenderSelect}
+                firstName={firstName}
+              />
 
               {/* Botón volver */}
               <div className="flex justify-start mt-4">
                 <button
                   type="button"
                   onClick={handleBack}
-                  disabled={isSubmitting}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                 >
-                  ← Volver
+                  &larr; Volver
                 </button>
               </div>
             </>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-          {step === 'name' ? (
+        {/* Footer (solo en step name) */}
+        {step === 'name' && (
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
             <p className="text-xs text-gray-500 text-center">
               Haz clic en las palabras que forman el nombre o usa el slider.
             </p>
-          ) : (
-            <label className="flex items-center justify-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={saveName}
-                onChange={(e) => setSaveName(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-xs text-gray-600">
-                Guardar &ldquo;{firstName}&rdquo; para futuras asignaciones automáticas de género
-              </span>
-            </label>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -290,29 +216,29 @@ function tokenizeName(fullName: string): string[] {
   let current = ''
   let inQuotes = false
   let quoteChar = ''
-  
+
   for (let i = 0; i < fullName.length; i++) {
     const char = fullName[i]
     const prevChar = i > 0 ? fullName[i - 1] : ''
-    
+
     // Detectar inicio de comillas (solo si hay espacio antes o es el inicio)
-    if (!inQuotes && (char === '"' || char === "'" || char === '«' || char === '"')) {
+    if (!inQuotes && (char === '"' || char === "'" || char === '«' || char === '\u201C')) {
       if (prevChar === ' ' || i === 0) {
         inQuotes = true
-        quoteChar = char === '«' ? '»' : (char === '"' ? '"' : char)
+        quoteChar = char === '«' ? '»' : (char === '\u201C' ? '\u201D' : char)
         current += char
         continue
       }
     }
-    
+
     // Detectar fin de comillas
-    if (inQuotes && (char === quoteChar || (quoteChar === '"' && char === '"'))) {
+    if (inQuotes && (char === quoteChar || (quoteChar === '\u201D' && char === '\u201D'))) {
       current += char
       inQuotes = false
       quoteChar = ''
       continue
     }
-    
+
     // Espacios fuera de comillas separan tokens
     if (char === ' ' && !inQuotes) {
       if (current.trim()) {
@@ -323,11 +249,11 @@ function tokenizeName(fullName: string): string[] {
       current += char
     }
   }
-  
+
   // Agregar última palabra
   if (current.trim()) {
     tokens.push(current.trim())
   }
-  
+
   return tokens
 }
