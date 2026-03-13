@@ -570,12 +570,12 @@ export default async function MoviePage({ params }: PageProps) {
   }
 
   // PROCESAR CREW - 🆕 Incluir alternativeName y gender
-  const mainCrewRoleIds = [2, 3, 703, 526, 836, 636, 402, 641];
+  const mainCrewRoleIds = [2, 3, 689, 526, 836, 636, 402, 641];
 
   const mainRoleDepartmentMap: { [key: number]: string } = {
     2: 'Dirección',
     3: 'Guión',
-    703: 'Producción Ejecutiva',
+    689: 'Producción',
     526: 'Dirección de Fotografía',
     836: 'Dirección de Arte',
     636: 'Montaje',
@@ -604,7 +604,7 @@ export default async function MoviePage({ params }: PageProps) {
   const mainDepartmentOrder = [
     'Dirección',
     'Guión',
-    'Producción Ejecutiva',
+    'Producción',
     'Dirección de Fotografía',
     'Dirección de Arte',
     'Montaje',
