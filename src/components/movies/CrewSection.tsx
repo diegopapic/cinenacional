@@ -26,6 +26,23 @@ function getCreditedLabel(gender?: string | null): string {
   return gender === 'FEMALE' ? 'Acreditada' : 'Acreditado';
 }
 
+const deptDisplayName: Record<string, string> = {
+  DIRECCION: 'Dirección',
+  PRODUCCION: 'Producción',
+  GUION: 'Guion',
+  FOTOGRAFIA: 'Fotografía',
+  ARTE: 'Dirección de arte',
+  MONTAJE: 'Montaje',
+  SONIDO: 'Sonido',
+  MUSICA: 'Música',
+  VESTUARIO: 'Vestuario',
+  MAQUILLAJE: 'Maquillaje',
+  EFECTOS: 'Efectos',
+  ANIMACION: 'Animación',
+  POSTPRODUCCION: 'Postproducción',
+  OTROS: 'Otros',
+};
+
 export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
   const [expanded, setExpanded] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -111,7 +128,7 @@ export function CrewSection({ basicCrew, fullCrew }: CrewSectionProps) {
           return (
             <div key={dept} className="mb-5 break-inside-avoid">
               <h4 className="text-[10px] uppercase tracking-wider text-muted-foreground/40 md:text-[11px] md:tracking-widest">
-                {dept}
+                {deptDisplayName[dept] || dept}
               </h4>
               <div className="mt-1.5 flex flex-col gap-1">
                 {members.map((member, i) => (

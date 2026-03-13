@@ -574,7 +574,7 @@ export default async function MoviePage({ params }: PageProps) {
 
   const mainRoleDepartmentMap: { [key: number]: string } = {
     2: 'Dirección',
-    3: 'Guión',
+    3: 'Guion',
     689: 'Producción',
     526: 'Dirección de Fotografía',
     836: 'Dirección de Arte',
@@ -603,7 +603,7 @@ export default async function MoviePage({ params }: PageProps) {
 
   const mainDepartmentOrder = [
     'Dirección',
-    'Guión',
+    'Guion',
     'Producción',
     'Dirección de Fotografía',
     'Dirección de Arte',
