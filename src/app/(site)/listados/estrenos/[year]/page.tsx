@@ -69,7 +69,13 @@ export default async function EstrenosYearPage({ params }: PageProps) {
     parsed.type === 'year'
       ? await prisma.movie.findMany({
           where: { releaseYear: parsed.value },
-          select: { title: true, slug: true },
+          select: {
+            title: true,
+            slug: true,
+            posterUrl: true,
+            releaseMonth: true,
+            releaseDay: true,
+          },
           orderBy: [
             { releaseMonth: 'asc' },
             { releaseDay: 'asc' },
