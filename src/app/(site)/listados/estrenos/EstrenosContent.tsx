@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { FilmReleasesByYear, type ReleaseEntry } from '@/components/FilmReleasesByYear'
-import { EstrenosSchema } from '@/components/listados/estrenos/EstrenosSchema'
 import type { MovieWithRelease } from '@/types/home.types'
 import type { EstrenosMode } from '@/lib/estrenos/estrenosTypes'
 import { createLogger } from '@/lib/logger'
@@ -112,12 +111,5 @@ export default function EstrenosContent({ mode }: EstrenosContentProps) {
     )
   }
 
-  return (
-    <>
-      {mode.type === 'year' && (
-        <EstrenosSchema year={mode.value} entries={entries} />
-      )}
-      <FilmReleasesByYear entries={entries} mode={mode} />
-    </>
-  )
+  return <FilmReleasesByYear entries={entries} mode={mode} />
 }
