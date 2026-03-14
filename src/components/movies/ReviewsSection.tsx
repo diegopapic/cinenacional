@@ -130,20 +130,9 @@ export function ReviewsSection({ reviews, movieSlug }: ReviewsSectionProps) {
                       )}
 
                       {review.mediaOutlet && (
-                        review.mediaOutlet.url ? (
-                          <a
-                            href={review.mediaOutlet.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[12px] text-muted-foreground/60 hover:text-accent transition-colors md:text-[13px]"
-                          >
-                            {review.mediaOutlet.name}
-                          </a>
-                        ) : (
-                          <span className="text-[12px] text-muted-foreground/60 md:text-[13px]">
-                            {review.mediaOutlet.name}
-                          </span>
-                        )
+                        <span className="text-[12px] italic text-muted-foreground/60 md:text-[13px]">
+                          {review.mediaOutlet.name}
+                        </span>
                       )}
 
                       {(authorName || review.mediaOutlet) && publishDate && (
