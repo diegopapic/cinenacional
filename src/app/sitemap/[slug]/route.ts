@@ -36,6 +36,21 @@ export async function GET(
     )
   }
 
+  if (name === 'estrenos') {
+    const currentYear = new Date().getFullYear()
+    const entries: SitemapEntry[] = []
+
+    for (let year = 1896; year <= currentYear; year++) {
+      entries.push({
+        url: `${SITEMAP_BASE_URL}/estrenos/${year}`,
+        changeFrequency: year === currentYear ? 'weekly' : 'yearly',
+        priority: year === currentYear ? 0.9 : 0.5,
+      })
+    }
+
+    return xmlResponse(buildSitemapXml(entries))
+  }
+
   const moviesMatch = name.match(/^movies-(\d+)$/)
   if (moviesMatch) {
     const page = parseInt(moviesMatch[1], 10)
