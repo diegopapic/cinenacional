@@ -115,20 +115,22 @@ export default function ReviewSearchPage() {
 
     if (nullAuthorIndices.length === 0) return
 
+    console.log(`[enrich] Starting enrichment for ${nullAuthorIndices.length} reviews with null author`)
     setEnriching(true)
     setEnrichProgress({ done: 0, total: nullAuthorIndices.length })
 
     // Process in parallel batches of 5
     const BATCH_SIZE = 5
     let completed = 0
+    let found = 0
 
     for (let i = 0; i < nullAuthorIndices.length; i += BATCH_SIZE) {
       const batch = nullAuthorIndices.slice(i, i + BATCH_SIZE)
 
       await Promise.all(
         batch.map(async (reviewIndex) => {
+          const review = parsedReviews[reviewIndex]
           try {
-            const review = parsedReviews[reviewIndex]
             const res = await fetch('/api/review-search/extract-author', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
@@ -138,15 +140,21 @@ export default function ReviewSearchPage() {
             if (res.ok) {
               const { author } = await res.json()
               if (author) {
+                found++
+                console.log(`[enrich] Found author "${author}" for ${review.medio}`)
                 setReviews((prev) =>
                   prev.map((r, idx) =>
                     idx === reviewIndex ? { ...r, autor: author } : r
                   )
                 )
+              } else {
+                console.log(`[enrich] No author found for ${review.medio} (${review.link})`)
               }
+            } else {
+              console.error(`[enrich] HTTP ${res.status} for ${review.medio}: ${review.link}`)
             }
-          } catch {
-            // individual failure is OK
+          } catch (err) {
+            console.error(`[enrich] Error fetching author for ${review.medio}:`, err)
           } finally {
             completed++
             setEnrichProgress({ done: completed, total: nullAuthorIndices.length })
@@ -155,7 +163,11 @@ export default function ReviewSearchPage() {
       )
     }
 
+    console.log(`[enrich] Done. Found ${found} authors out of ${nullAuthorIndices.length} missing.`)
     setEnriching(false)
+    if (found > 0) {
+      toast.success(`${found} autor(es) encontrado(s) automáticamente`)
+    }
   }
 
   async function handleSearch() {
