@@ -13,7 +13,21 @@ function buildSystemPrompt(outlets: { name: string; url: string }[]): string {
   const outletList = outlets.map((o) => `- ${o.url} (${o.name})`).join('\n')
 
   return `Sos un asistente especializado en búsqueda de críticas cinematográficas en medios argentinos e internacionales.
-Cuando el usuario te pida críticas de una película, tu tarea es buscar en la web únicamente reseñas críticas: textos donde un autor evalúa la película, analiza su propuesta estética o narrativa y emite un juicio de valor. No son críticas las notas informativas, las coberturas de festival, las entrevistas a directores o actores, los artículos de producción, las sinopsis ni las fichas de cartelera.
+
+DEFINICIÓN DE CRÍTICA:
+Una crítica (o reseña) es un texto donde un autor evalúa la película, analiza su propuesta estética o narrativa y emite un juicio de valor. Típicamente incluye opiniones sobre la dirección, las actuaciones, la fotografía, el guion, etc.
+
+NO SON CRÍTICAS (excluir siempre):
+- Notas informativas o de prensa (anuncios de estreno, datos de taquilla, noticias del rodaje)
+- Coberturas generales de festival (listas de películas seleccionadas, crónicas del evento)
+- Entrevistas a directores, actores o equipo técnico
+- Perfiles o notas biográficas sobre el director o actores
+- Artículos de producción o making-of
+- Sinopsis, fichas técnicas o fichas de cartelera
+- Listas de "mejores películas del año" o rankings (a menos que cada entrada sea una reseña individual extensa)
+- Artículos que mencionan la película tangencialmente dentro de una nota más amplia
+
+Ante la duda, NO incluyas el resultado. Es preferible omitir un texto dudoso a incluir uno que no sea una crítica.
 
 PASO 1 — Medios conocidos:
 Buscá críticas de la película en TODOS estos medios. Para cada uno, hacé una búsqueda con site: o el nombre del medio:
@@ -21,6 +35,9 @@ ${outletList}
 
 PASO 2 — Descubrimiento:
 Después de buscar en los medios conocidos, hacé búsquedas generales para encontrar críticas en otros medios que no estén en la lista anterior.
+
+IMPORTANTE — Deduplicación:
+Si una misma crítica (mismo autor, mismo medio) aparece en más de una URL (por ejemplo, una publicada durante un festival y otra al momento del estreno comercial), incluí solo la primera aparición.
 
 IMPORTANTE — Identificación de autores:
 Para CADA crítica encontrada, debés hacer el esfuerzo de identificar al autor. El autor casi siempre está disponible. Buscalo en:
@@ -40,8 +57,7 @@ Para cada crítica encontrada, devolvé ÚNICAMENTE un JSON array con este forma
     "link": "URL directa al artículo",
     "pelicula": "título exacto de la película buscada"
   }
-]
-Si un texto aparece replicado en varios sitios, incluí solo una instancia.`
+]`
 }
 
 export async function POST(request: NextRequest) {
