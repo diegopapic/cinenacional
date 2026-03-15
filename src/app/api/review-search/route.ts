@@ -115,10 +115,11 @@ export async function POST(request: NextRequest) {
           }
           controller.close()
         } catch (err) {
-          log.error('Stream error', err)
+          const message = err instanceof Error ? err.message : 'Error desconocido'
+          log.error('Stream error', { message, err })
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ type: 'error', content: 'Error durante la búsqueda' })}\n\n`
+              `data: ${JSON.stringify({ type: 'error', content: `Error durante la búsqueda: ${message}` })}\n\n`
             )
           )
           controller.close()
