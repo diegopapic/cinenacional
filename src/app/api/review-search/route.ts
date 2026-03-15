@@ -35,6 +35,8 @@ Para cada crítica encontrada, devolvé ÚNICAMENTE un JSON array con este forma
   {
     "medio": "nombre del medio",
     "autor": "nombre del autor o null si no está disponible",
+    "titulo": "título del artículo/reseña o null",
+    "fecha": "fecha de publicación en formato YYYY-MM-DD o YYYY-MM o YYYY, o null",
     "link": "URL directa al artículo",
     "pelicula": "título exacto de la película buscada"
   }

@@ -13,6 +13,8 @@ const log = createLogger('api:review-search-save')
 const reviewItemSchema = z.object({
   medio: z.string().min(1),
   autor: z.string().nullable(),
+  titulo: z.string().nullable().optional(),
+  fecha: z.string().nullable().optional(),
   link: z.string().url(),
   pelicula: z.string().min(1)
 })
@@ -74,13 +76,32 @@ export async function POST(request: NextRequest) {
           continue
         }
 
+        // Parse partial date (YYYY-MM-DD, YYYY-MM, or YYYY)
+        let publishYear: number | null = null
+        let publishMonth: number | null = null
+        let publishDay: number | null = null
+        if (review.fecha) {
+          const parts = review.fecha.split('-')
+          if (parts[0]) publishYear = parseInt(parts[0], 10) || null
+          if (parts[1]) publishMonth = parseInt(parts[1], 10) || null
+          if (parts[2]) publishDay = parseInt(parts[2], 10) || null
+        }
+
+        // Detect language from URL domain
+        const urlDomain = new URL(review.link).hostname
+        const isSpanish = /\.ar$|\.es$|\.com\.ar|pagina12|lanacion|escribiendocine|asalallena|otroscines|micropsia|reencuadre|agenciapacourondo|cineargentinohoy|laestatuilla|elcontraplano/i.test(urlDomain)
+
         // Create the review
         const created = await prisma.movieReview.create({
           data: {
             movieId,
             mediaOutletId: mediaOutlet.id,
+            title: review.titulo || null,
             url: review.link,
-            language: 'es'
+            language: isSpanish ? 'es' : 'en',
+            publishYear,
+            publishMonth,
+            publishDay
           }
         })
 

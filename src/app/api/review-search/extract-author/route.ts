@@ -21,12 +21,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result)
   } catch (error) {
     log.error('Error extracting author', error)
-    return NextResponse.json({ author: null, method: null, debug: `Exception: ${error}` })
+    return NextResponse.json({ author: null, title: null, fecha: null, method: null, debug: `Exception: ${error}` })
   }
 }
 
 interface ExtractionResult {
   author: string | null
+  title: string | null
+  fecha: string | null
   method: string | null
   debug: string
 }
@@ -51,39 +53,43 @@ async function extractAuthorFromPage(url: string): Promise<ExtractionResult> {
 
     if (!res.ok) {
       log.debug(`Failed to fetch ${url}: ${res.status}`)
-      return { author: null, method: null, debug: `HTTP ${res.status} fetching URL` }
+      return { author: null, title: null, fecha: null, method: null, debug: `HTTP ${res.status} fetching URL` }
     }
 
     const html = await res.text()
     const htmlLen = html.length
 
+    // Extract title and date regardless of author method
+    const title = extractTitle(html)
+    const fecha = extractPublishDate(html)
+
     // 1. JSON-LD structured data
     const jsonLdAuthor = extractFromJsonLd(html)
     if (jsonLdAuthor) {
       log.info(`Found author "${jsonLdAuthor}" via JSON-LD in ${url}`)
-      return { author: jsonLdAuthor, method: 'json-ld', debug: `HTML ${htmlLen} chars` }
+      return { author: jsonLdAuthor, title, fecha, method: 'json-ld', debug: `HTML ${htmlLen} chars` }
     }
 
     // 2. Meta tags
     const metaAuthor = extractFromMetaTags(html)
     if (metaAuthor) {
       log.info(`Found author "${metaAuthor}" via meta tag in ${url}`)
-      return { author: metaAuthor, method: 'meta', debug: `HTML ${htmlLen} chars` }
+      return { author: metaAuthor, title, fecha, method: 'meta', debug: `HTML ${htmlLen} chars` }
     }
 
     // 3. HTML byline patterns
     const bylineAuthor = extractFromByline(html)
     if (bylineAuthor) {
       log.info(`Found author "${bylineAuthor}" via byline in ${url}`)
-      return { author: bylineAuthor, method: 'byline', debug: `HTML ${htmlLen} chars` }
+      return { author: bylineAuthor, title, fecha, method: 'byline', debug: `HTML ${htmlLen} chars` }
     }
 
     log.debug(`No author found in ${url}`)
-    return { author: null, method: null, debug: `HTML ${htmlLen} chars, no author pattern matched` }
+    return { author: null, title, fecha, method: null, debug: `HTML ${htmlLen} chars, no author pattern matched` }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     log.debug(`Error fetching ${url}: ${msg}`)
-    return { author: null, method: null, debug: `Fetch error: ${msg}` }
+    return { author: null, title: null, fecha: null, method: null, debug: `Fetch error: ${msg}` }
   }
 }
 
@@ -270,6 +276,73 @@ function extractFromByline(html: string): string | null {
       }
     }
   }
+
+  return null
+}
+
+function extractTitle(html: string): string | null {
+  // 1. og:title meta tag (usually the cleanest)
+  const ogTitle = html.match(
+    /<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i
+  ) || html.match(
+    /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:title["']/i
+  )
+  if (ogTitle?.[1]) {
+    const t = ogTitle[1].trim()
+    if (t.length > 2 && t.length < 500) return t
+  }
+
+  // 2. JSON-LD headline
+  const headlineMatch = html.match(/"headline"\s*:\s*"([^"]{2,500})"/i)
+  if (headlineMatch?.[1]) return headlineMatch[1]
+
+  // 3. <title> tag (often has site name appended)
+  const titleTag = html.match(/<title[^>]*>([^<]{2,500})<\/title>/i)
+  if (titleTag?.[1]) {
+    let t = titleTag[1].trim()
+    // Remove common site name separators
+    t = t.replace(/\s*[|\-–—]\s*[^|\-–—]+$/, '').trim()
+    if (t.length > 2) return t
+  }
+
+  return null
+}
+
+function extractPublishDate(html: string): string | null {
+  // 1. JSON-LD datePublished
+  const jsonLdDate = html.match(/"datePublished"\s*:\s*"([^"]+)"/i)
+  if (jsonLdDate?.[1]) return normalizeDate(jsonLdDate[1])
+
+  // 2. article:published_time meta
+  const metaDate = html.match(
+    /<meta[^>]*property=["']article:published_time["'][^>]*content=["']([^"']+)["']/i
+  ) || html.match(
+    /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']article:published_time["']/i
+  )
+  if (metaDate?.[1]) return normalizeDate(metaDate[1])
+
+  // 3. <time datetime="..."> element
+  const timeEl = html.match(/<time[^>]*datetime=["']([^"']+)["']/i)
+  if (timeEl?.[1]) return normalizeDate(timeEl[1])
+
+  // 4. date meta tag
+  const dateMeta = html.match(
+    /<meta[^>]*(?:name|property)=["'](?:date|DC\.date|pubdate|publish_date)["'][^>]*content=["']([^"']+)["']/i
+  )
+  if (dateMeta?.[1]) return normalizeDate(dateMeta[1])
+
+  return null
+}
+
+function normalizeDate(raw: string): string | null {
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`
+
+  const ymMatch = raw.match(/^(\d{4})-(\d{2})$/)
+  if (ymMatch) return `${ymMatch[1]}-${ymMatch[2]}`
+
+  const yMatch = raw.match(/^(\d{4})$/)
+  if (yMatch) return yMatch[1]
 
   return null
 }

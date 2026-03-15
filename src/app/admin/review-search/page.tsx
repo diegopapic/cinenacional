@@ -9,6 +9,8 @@ import { getCsrfHeaders } from '@/lib/csrf-client'
 interface ReviewResult {
   medio: string
   autor: string | null
+  titulo: string | null
+  fecha: string | null
   link: string
   pelicula: string
 }
@@ -115,8 +117,12 @@ export default function ReviewSearchPage() {
     const needsAuthor = (r: ReviewResult) =>
       !r.autor || r.autor === 'null' || r.autor === 'N/A' || r.autor === 'No disponible'
 
+    // Enrich reviews that are missing author, title, or date
+    const needsEnrichment = (r: ReviewResult) =>
+      needsAuthor(r) || !r.titulo || !r.fecha
+
     const nullAuthorIndices = parsedReviews
-      .map((r, i) => (needsAuthor(r) ? i : -1))
+      .map((r, i) => (needsEnrichment(r) ? i : -1))
       .filter((i) => i !== -1)
 
     console.log('[enrichMissingAuthors] nullAuthorIndices:', nullAuthorIndices.length, nullAuthorIndices)
@@ -146,12 +152,19 @@ export default function ReviewSearchPage() {
 
         if (res.ok) {
           const data = await res.json()
-          console.log(`[enrich] ${review.medio}: author=${data.author}, method=${data.method}, debug=${data.debug}`)
-          if (data.author) {
+          console.log(`[enrich] ${review.medio}: author=${data.author}, title=${data.title}, fecha=${data.fecha}, method=${data.method}`)
+          const updates: Partial<ReviewResult> = {}
+          if (data.author && needsAuthor(review)) {
+            updates.autor = data.author
             found++
+          }
+          if (data.title && !review.titulo) updates.titulo = data.title
+          if (data.fecha && !review.fecha) updates.fecha = data.fecha
+
+          if (Object.keys(updates).length > 0) {
             setReviews((prev) =>
               prev.map((r, idx) =>
-                idx === reviewIndex ? { ...r, autor: data.author } : r
+                idx === reviewIndex ? { ...r, ...updates } : r
               )
             )
           }
@@ -239,6 +252,8 @@ export default function ReviewSearchPage() {
           if (r.autor === 'null' || r.autor === 'N/A' || r.autor === 'No disponible') {
             r.autor = null
           }
+          if (!r.titulo || r.titulo === 'null') r.titulo = null
+          if (!r.fecha || r.fecha === 'null') r.fecha = null
         }
         setReviews(parsed)
         setSelected(new Set(parsed.map((_, i) => i)))
@@ -425,7 +440,13 @@ export default function ReviewSearchPage() {
                       Medio
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Título
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Autor
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Fecha
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Link
@@ -457,8 +478,14 @@ export default function ReviewSearchPage() {
                           </button>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900">{review.medio}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate" title={review.titulo || ''}>
+                          {review.titulo || '—'}
+                        </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
                           {review.autor && review.autor !== 'null' ? review.autor : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                          {review.fecha || '—'}
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <a
