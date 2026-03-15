@@ -15,6 +15,15 @@ Comenzá buscando en los siguientes sitios, que deben rastrearse siempre:
 - otroscines.com
 - variety.com
 Luego continuá buscando en otros medios y sitios especializados para ampliar el resultado.
+
+IMPORTANTE — Identificación de autores:
+Para CADA crítica encontrada, debés hacer el esfuerzo de identificar al autor. El autor casi siempre está disponible. Buscalo en:
+- El byline del artículo (ej: "Por Paula Vázquez Prieto", "By Guy Lodge")
+- La firma al final del texto
+- Los metadatos de la página (meta author, schema.org, JSON-LD)
+- El snippet del resultado de búsqueda, que suele incluir el nombre del autor
+Solo devolvé null en "autor" si genuinamente no encontrás el nombre después de revisar la página. No devuelvas null por defecto.
+
 Para cada crítica encontrada, devolvé ÚNICAMENTE un JSON array con este formato exacto, sin texto adicional:
 [
   {
