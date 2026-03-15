@@ -3,7 +3,10 @@
  *
  * Compara los recursos existentes en Cloudinary (bajo el prefijo "cinenacional/")
  * contra los public IDs registrados en la base de datos (Image.cloudinaryPublicId,
- * Movie.posterPublicId, Person.photoPublicId).
+ * Movie.posterPublicId/posterUrl, Person.photoPublicId/photoUrl).
+ *
+ * IMPORTANTE: Chequea AMBOS campos (publicId y URL) para evitar falsos positivos
+ * cuando hay mismatch entre el campo publicId y el ID real en la URL.
  *
  * Uso:
  *   npx tsx scripts/cleanup-cloudinary-orphans.ts          # Solo listar huérfanas (dry-run)
@@ -37,7 +40,7 @@ async function getCloudinaryResources(): Promise<string[]> {
   const publicIds: string[] = []
   let nextCursor: string | undefined
 
-  console.log(`📡 Obteniendo recursos de Cloudinary con prefijo "${CLOUDINARY_PREFIX}"...`)
+  console.log(`Obteniendo recursos de Cloudinary con prefijo "${CLOUDINARY_PREFIX}"...`)
 
   do {
     const result: any = await cloudinary.api.resources({
@@ -55,13 +58,12 @@ async function getCloudinaryResources(): Promise<string[]> {
     process.stdout.write(`\r  Encontrados: ${publicIds.length} recursos`)
   } while (nextCursor)
 
-  console.log(`\n✅ Total recursos en Cloudinary: ${publicIds.length}`)
+  console.log(`\n  Total recursos en Cloudinary: ${publicIds.length}`)
   return publicIds
 }
 
 /**
  * Extrae el public ID de una URL de Cloudinary.
- * Copia de src/lib/images/imageUtils.ts (no se puede importar directamente en scripts standalone).
  */
 function extractPublicIdFromUrl(url: string): string | null {
   if (!url || !url.includes('res.cloudinary.com')) return null
@@ -86,7 +88,7 @@ function extractPublicIdFromUrl(url: string): string | null {
 }
 
 async function getDbPublicIds(): Promise<Set<string>> {
-  console.log('🔍 Obteniendo public IDs de la base de datos...')
+  console.log('Obteniendo public IDs de la base de datos...')
 
   const [images, movies, people] = await Promise.all([
     prisma.image.findMany({
@@ -110,37 +112,145 @@ async function getDbPublicIds(): Promise<Set<string>> {
 
   let moviesFromPublicId = 0
   let moviesFromUrl = 0
+  let movieMismatches = 0
   for (const movie of movies) {
+    // Agregar AMBOS public IDs (campo y URL) para evitar borrar imágenes en uso
     if (movie.posterPublicId) {
       ids.add(movie.posterPublicId)
       moviesFromPublicId++
-    } else if (movie.posterUrl) {
+    }
+    if (movie.posterUrl) {
       const extracted = extractPublicIdFromUrl(movie.posterUrl)
-      if (extracted) { ids.add(extracted); moviesFromUrl++ }
+      if (extracted) {
+        ids.add(extracted)
+        moviesFromUrl++
+        if (movie.posterPublicId && extracted !== movie.posterPublicId) {
+          movieMismatches++
+        }
+      }
     }
   }
 
   let peopleFromPublicId = 0
   let peopleFromUrl = 0
+  let peopleMismatches = 0
   for (const person of people) {
     if (person.photoPublicId) {
       ids.add(person.photoPublicId)
       peopleFromPublicId++
-    } else if (person.photoUrl) {
+    }
+    if (person.photoUrl) {
       const extracted = extractPublicIdFromUrl(person.photoUrl)
-      if (extracted) { ids.add(extracted); peopleFromUrl++ }
+      if (extracted) {
+        ids.add(extracted)
+        peopleFromUrl++
+        if (person.photoPublicId && extracted !== person.photoPublicId) {
+          peopleMismatches++
+        }
+      }
     }
   }
 
-  console.log(`✅ Public IDs en DB: ${ids.size}`)
-  console.log(`   - ${images.length} imágenes (galería)`)
-  console.log(`   - ${moviesFromPublicId + moviesFromUrl} posters (${moviesFromPublicId} con publicId, ${moviesFromUrl} extraídos de URL)`)
-  console.log(`   - ${peopleFromPublicId + peopleFromUrl} fotos (${peopleFromPublicId} con publicId, ${peopleFromUrl} extraídas de URL)`)
+  console.log(`  Public IDs en DB: ${ids.size}`)
+  console.log(`   - ${images.length} imagenes (galeria)`)
+  console.log(`   - ${moviesFromPublicId + moviesFromUrl} posters (${moviesFromPublicId} con publicId, ${moviesFromUrl} extraidos de URL, ${movieMismatches} mismatches)`)
+  console.log(`   - ${peopleFromPublicId + peopleFromUrl} fotos (${peopleFromPublicId} con publicId, ${peopleFromUrl} extraidas de URL, ${peopleMismatches} mismatches)`)
   return ids
 }
 
+/**
+ * Para cada huérfana, busca en la DB si hay un registro relacionado
+ * y muestra su estado actual para verificación manual.
+ */
+async function verifyOrphans(orphanIds: string[]): Promise<void> {
+  console.log(`\nVerificando cada huerfana contra la DB...\n`)
+
+  for (const orphanId of orphanIds) {
+    const parts = orphanId.split('/')
+    // Formato esperado: cinenacional/{type}/{entityId}/{filename}
+    // type: posters, people, personas, gallery
+    const type = parts[1] // posters, people, personas, gallery
+    const entityId = parts[2] ? parseInt(parts[2]) : null
+
+    console.log(`  ${orphanId}`)
+
+    if (!entityId || isNaN(entityId)) {
+      console.log(`    -> No se pudo extraer ID de entidad del path`)
+      console.log(`    -> HUERFANA (path no estándar)`)
+      continue
+    }
+
+    if (type === 'posters') {
+      const movie = await prisma.movie.findUnique({
+        where: { id: entityId },
+        select: { id: true, title: true, posterPublicId: true, posterUrl: true },
+      })
+
+      if (!movie) {
+        console.log(`    -> Pelicula #${entityId} NO EXISTE en la DB`)
+        console.log(`    -> HUERFANA CONFIRMADA (pelicula eliminada)`)
+      } else {
+        const urlId = movie.posterUrl ? extractPublicIdFromUrl(movie.posterUrl) : null
+        const referencedByField = movie.posterPublicId === orphanId
+        const referencedByUrl = urlId === orphanId
+
+        if (referencedByField || referencedByUrl) {
+          console.log(`    -> FALSO POSITIVO! Pelicula "${movie.title}" SI referencia esta imagen`)
+          console.log(`       posterPublicId: ${movie.posterPublicId}`)
+          console.log(`       posterUrl ID:   ${urlId}`)
+        } else {
+          console.log(`    -> Pelicula "${movie.title}" existe pero usa OTRA imagen:`)
+          console.log(`       posterPublicId: ${movie.posterPublicId || '(null)'}`)
+          console.log(`       posterUrl ID:   ${urlId || '(null/no-cloudinary)'}`)
+          console.log(`    -> HUERFANA CONFIRMADA (imagen vieja reemplazada)`)
+        }
+      }
+    } else if (type === 'people' || type === 'personas') {
+      const person = await prisma.person.findUnique({
+        where: { id: entityId },
+        select: { id: true, firstName: true, lastName: true, photoPublicId: true, photoUrl: true },
+      })
+
+      if (!person) {
+        console.log(`    -> Persona #${entityId} NO EXISTE en la DB`)
+        console.log(`    -> HUERFANA CONFIRMADA (persona eliminada/mergeada)`)
+      } else {
+        const urlId = person.photoUrl ? extractPublicIdFromUrl(person.photoUrl) : null
+        const referencedByField = person.photoPublicId === orphanId
+        const referencedByUrl = urlId === orphanId
+
+        if (referencedByField || referencedByUrl) {
+          console.log(`    -> FALSO POSITIVO! Persona "${person.firstName} ${person.lastName}" SI referencia esta imagen`)
+          console.log(`       photoPublicId: ${person.photoPublicId}`)
+          console.log(`       photoUrl ID:   ${urlId}`)
+        } else {
+          console.log(`    -> Persona "${person.firstName} ${person.lastName}" existe pero usa OTRA imagen:`)
+          console.log(`       photoPublicId: ${person.photoPublicId || '(null)'}`)
+          console.log(`       photoUrl ID:   ${urlId || '(null/no-cloudinary)'}`)
+          console.log(`    -> HUERFANA CONFIRMADA (foto vieja reemplazada)`)
+        }
+      }
+    } else if (type === 'gallery') {
+      // Las imágenes de galería se buscan por cloudinaryPublicId directamente
+      const image = await prisma.image.findUnique({
+        where: { cloudinaryPublicId: orphanId },
+      })
+
+      if (!image) {
+        console.log(`    -> No hay registro Image con este cloudinaryPublicId`)
+        console.log(`    -> HUERFANA CONFIRMADA`)
+      } else {
+        console.log(`    -> FALSO POSITIVO! Image #${image.id} SI referencia esta imagen`)
+      }
+    } else {
+      console.log(`    -> Tipo desconocido: "${type}"`)
+      console.log(`    -> HUERFANA (carpeta no reconocida)`)
+    }
+  }
+}
+
 async function deleteOrphans(orphanIds: string[]): Promise<void> {
-  console.log(`\n🗑️  Eliminando ${orphanIds.length} imágenes huérfanas de Cloudinary...`)
+  console.log(`\nEliminando ${orphanIds.length} imagenes huerfanas de Cloudinary...`)
 
   let deleted = 0
   let failed = 0
@@ -156,25 +266,25 @@ async function deleteOrphans(orphanIds: string[]): Promise<void> {
           deleted++
         } else {
           failed++
-          console.error(`  ❌ No se pudo eliminar: ${id} (${status})`)
+          console.error(`  No se pudo eliminar: ${id} (${status})`)
         }
       }
 
       process.stdout.write(`\r  Progreso: ${Math.min(i + BATCH_SIZE, orphanIds.length)}/${orphanIds.length}`)
     } catch (error) {
-      console.error(`\n  ❌ Error en batch ${i}-${i + BATCH_SIZE}:`, error)
+      console.error(`\n  Error en batch ${i}-${i + BATCH_SIZE}:`, error)
       failed += batch.length
     }
   }
 
-  console.log(`\n✅ Eliminadas: ${deleted}, Fallaron: ${failed}`)
+  console.log(`\nEliminadas: ${deleted}, Fallaron: ${failed}`)
 }
 
 async function main() {
-  console.log('═══════════════════════════════════════════════')
-  console.log('  Limpieza de imágenes huérfanas en Cloudinary')
-  console.log(`  Modo: ${DELETE_MODE ? '🔴 ELIMINACIÓN' : '🟢 DRY-RUN (solo listar)'}`)
-  console.log('═══════════════════════════════════════════════\n')
+  console.log('='.repeat(55))
+  console.log('  Limpieza de imagenes huerfanas en Cloudinary')
+  console.log(`  Modo: ${DELETE_MODE ? 'ELIMINACION' : 'DRY-RUN (solo listar)'}`)
+  console.log('='.repeat(55) + '\n')
 
   try {
     const [cloudinaryIds, dbIds] = await Promise.all([
@@ -185,41 +295,40 @@ async function main() {
     // Encontrar huérfanas: están en Cloudinary pero no en la DB
     const orphans = cloudinaryIds.filter(id => !dbIds.has(id))
 
-    console.log(`\n📊 Resultados:`)
+    console.log(`\nResultados:`)
     console.log(`   Recursos en Cloudinary: ${cloudinaryIds.length}`)
     console.log(`   Referenciados en DB:    ${dbIds.size}`)
-    console.log(`   Huérfanas:              ${orphans.length}`)
+    console.log(`   Huerfanas:              ${orphans.length}`)
 
     if (orphans.length === 0) {
-      console.log('\n✅ No hay imágenes huérfanas. Todo limpio.')
+      console.log('\nNo hay imagenes huerfanas. Todo limpio.')
       return
     }
 
-    // Agrupar por carpeta para mejor visualización
+    // Verificar cada huérfana contra la DB
+    await verifyOrphans(orphans)
+
+    // Contar falsos positivos (si los hay, no borrar)
+    // La verificación es informativa; el borrado se basa en la detección original
+
+    // Agrupar por carpeta para resumen
     const byFolder = new Map<string, string[]>()
     for (const id of orphans) {
       const parts = id.split('/')
-      const folder = parts.slice(0, -1).join('/') || '(raíz)'
+      const folder = parts.slice(0, -1).join('/') || '(raiz)'
       if (!byFolder.has(folder)) byFolder.set(folder, [])
       byFolder.get(folder)!.push(id)
     }
 
-    console.log(`\n📁 Huérfanas por carpeta:`)
+    console.log(`\nResumen por carpeta:`)
     for (const [folder, ids] of [...byFolder.entries()].sort()) {
       console.log(`   ${folder}: ${ids.length}`)
-      // Mostrar primeras 5 de cada carpeta
-      for (const id of ids.slice(0, 5)) {
-        console.log(`     - ${CLOUDINARY_BASE_URL}/${id}`)
-      }
-      if (ids.length > 5) {
-        console.log(`     ... y ${ids.length - 5} más`)
-      }
     }
 
     if (DELETE_MODE) {
       await deleteOrphans(orphans)
     } else {
-      console.log(`\n💡 Para eliminar, ejecutá:`)
+      console.log(`\nPara eliminar, ejecuta:`)
       console.log(`   npx tsx scripts/cleanup-cloudinary-orphans.ts --delete`)
     }
   } finally {
@@ -228,7 +337,7 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('❌ Error fatal:', error)
+  console.error('Error fatal:', error)
   prisma.$disconnect()
   process.exit(1)
 })
