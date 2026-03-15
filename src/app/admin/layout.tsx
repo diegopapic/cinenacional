@@ -20,7 +20,8 @@ import {
   Hash,
   BarChart3,
   Calendar,
-  Newspaper
+  Newspaper,
+  Search
 } from 'lucide-react'
 import { ReactNode, useState } from 'react'
 
@@ -46,7 +47,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Lugares', href: '/admin/locations', icon: Globe },
     { name: 'Medios', href: '/admin/media-outlets', icon: Newspaper },
     { name: 'Temas', href: '/admin/themes', icon: Tag },
-    { name: 'Calificaciones', href: '/admin/calificaciones', icon: Tag }
+    { name: 'Calificaciones', href: '/admin/calificaciones', icon: Tag },
+    { name: 'Buscar Críticas', href: '/admin/review-search', icon: Search }
   ]
 
   return (
