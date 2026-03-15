@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result)
   } catch (error) {
     log.error('Error extracting author', error)
-    return NextResponse.json({ author: null, title: null, fecha: null, method: null, debug: `Exception: ${error}` })
+    return NextResponse.json({ author: null, title: null, fecha: null, method: null, debug: `Exception: ${error}`, nonReviewSignals: [] })
   }
 }
 
@@ -31,6 +31,84 @@ interface ExtractionResult {
   fecha: string | null
   method: string | null
   debug: string
+  nonReviewSignals: string[]
+}
+
+/**
+ * Detect signals that an article is NOT a review (interview, feature, etc.).
+ * Returns an array of human-readable signal descriptions.
+ */
+function detectNonReviewSignals(html: string): string[] {
+  const signals: string[] = []
+
+  // Strip HTML to get plain text for analysis
+  const text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&ldquo;|&rdquo;|&laquo;|&raquo;/gi, '"')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&#?\w+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (text.length < 200) return signals
+
+  // 1. Interview patterns: direct speech with attribution verbs (Spanish)
+  // Matches: "quoted text", dice/dijo/explica/etc.
+  const speechPatternEs = /["«"][^""«»"']{15,}["»"]\s*,?\s*(?:dice|dijo|explica|explicó|señala|señaló|afirma|afirmó|sostiene|sostuvo|cuenta|contó|relata|relataba|agrega|agregó|comenta|comentó|recuerda|recordó|advierte|asegura|aseguró|apunta|detalla|detalló|precisó|precisa|resume|describe|describió|reconoce|reconoció|confiesa|confesó|revela|reveló|plantea|planteó|destaca|destacó|subraya|subrayó|propone|propuso|analiza|reflexiona)\b/gi
+  const speechMatchesEs = text.match(speechPatternEs) || []
+
+  // 2. Interview patterns: direct speech with attribution verbs (English)
+  const speechPatternEn = /[""][^""]{15,}[""]\s*,?\s*(?:says|said|explains|explained|notes|noted|adds|added|recalls|recalled|tells|told|describes|described|stated|remarked|observed|acknowledges|acknowledged|reveals|revealed|admits|admitted|argues|argued|suggests|suggested|reflects|reflected)\b/gi
+  const speechMatchesEn = text.match(speechPatternEn) || []
+
+  const totalSpeechMatches = speechMatchesEs.length + speechMatchesEn.length
+  if (totalSpeechMatches >= 4) {
+    signals.push(`${totalSpeechMatches} citas directas con atribución (perfil de entrevista)`)
+  }
+
+  // 3. Q&A format detection (Spanish)
+  const qaPattern = /[-–—]\s*¿[^?]{10,}\?/g
+  const qaMatches = text.match(qaPattern) || []
+  if (qaMatches.length >= 3) {
+    signals.push(`Formato pregunta-respuesta (${qaMatches.length} preguntas)`)
+  }
+
+  // 4. Explicit interview markers
+  const interviewMarkers = /\b(?:en diálogo con|en entrevista con|en conversación con|hablamos con|conversamos con|charlamos con|habló en exclusiva|entrevista exclusiva|interview with)\b/gi
+  const markerMatches = text.match(interviewMarkers) || []
+  if (markerMatches.length >= 1) {
+    signals.push('Marcadores explícitos de entrevista en el texto')
+  }
+
+  // 5. Article section metadata suggesting non-review content
+  const sectionPatterns = [
+    /<meta[^>]*property=["']article:section["'][^>]*content=["']([^"']+)["']/i,
+    /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']article:section["']/i
+  ]
+  for (const pattern of sectionPatterns) {
+    const match = html.match(pattern)
+    if (match?.[1]) {
+      const section = match[1].toLowerCase()
+      if (/\b(radar|suplemento|entrevista|interview|reportaje|feature|perfil|profile|especial)\b/.test(section)) {
+        signals.push(`Sección "${match[1]}" (no es sección de críticas)`)
+      }
+      break
+    }
+  }
+
+  // 6. JSON-LD articleSection
+  const articleSectionMatch = html.match(/"articleSection"\s*:\s*"([^"]+)"/i)
+  if (articleSectionMatch?.[1]) {
+    const section = articleSectionMatch[1].toLowerCase()
+    if (/\b(radar|suplemento|entrevista|interview|reportaje|feature|perfil|profile|especial)\b/.test(section)) {
+      signals.push(`Sección JSON-LD: "${articleSectionMatch[1]}"`)
+    }
+  }
+
+  return signals
 }
 
 async function extractAuthorFromPage(url: string, movieTitle?: string): Promise<ExtractionResult> {
@@ -53,7 +131,7 @@ async function extractAuthorFromPage(url: string, movieTitle?: string): Promise<
 
     if (!res.ok) {
       log.debug(`Failed to fetch ${url}: ${res.status}`)
-      return { author: null, title: null, fecha: null, method: null, debug: `HTTP ${res.status} fetching URL` }
+      return { author: null, title: null, fecha: null, method: null, debug: `HTTP ${res.status} fetching URL`, nonReviewSignals: [] }
     }
 
     const html = await res.text()
@@ -62,34 +140,39 @@ async function extractAuthorFromPage(url: string, movieTitle?: string): Promise<
     // Extract title and date regardless of author method
     const title = extractTitle(html, movieTitle)
     const fecha = extractPublishDate(html)
+    const nonReviewSignals = detectNonReviewSignals(html)
+
+    if (nonReviewSignals.length > 0) {
+      log.info(`Non-review signals for ${url}: ${nonReviewSignals.join('; ')}`)
+    }
 
     // 1. JSON-LD structured data
     const jsonLdAuthor = extractFromJsonLd(html)
     if (jsonLdAuthor) {
       log.info(`Found author "${jsonLdAuthor}" via JSON-LD in ${url}`)
-      return { author: jsonLdAuthor, title, fecha, method: 'json-ld', debug: `HTML ${htmlLen} chars` }
+      return { author: jsonLdAuthor, title, fecha, method: 'json-ld', debug: `HTML ${htmlLen} chars`, nonReviewSignals }
     }
 
     // 2. Meta tags
     const metaAuthor = extractFromMetaTags(html)
     if (metaAuthor) {
       log.info(`Found author "${metaAuthor}" via meta tag in ${url}`)
-      return { author: metaAuthor, title, fecha, method: 'meta', debug: `HTML ${htmlLen} chars` }
+      return { author: metaAuthor, title, fecha, method: 'meta', debug: `HTML ${htmlLen} chars`, nonReviewSignals }
     }
 
     // 3. HTML byline patterns
     const bylineAuthor = extractFromByline(html)
     if (bylineAuthor) {
       log.info(`Found author "${bylineAuthor}" via byline in ${url}`)
-      return { author: bylineAuthor, title, fecha, method: 'byline', debug: `HTML ${htmlLen} chars` }
+      return { author: bylineAuthor, title, fecha, method: 'byline', debug: `HTML ${htmlLen} chars`, nonReviewSignals }
     }
 
     log.debug(`No author found in ${url}`)
-    return { author: null, title, fecha, method: null, debug: `HTML ${htmlLen} chars, no author pattern matched` }
+    return { author: null, title, fecha, method: null, debug: `HTML ${htmlLen} chars, no author pattern matched`, nonReviewSignals }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     log.debug(`Error fetching ${url}: ${msg}`)
-    return { author: null, title: null, fecha: null, method: null, debug: `Fetch error: ${msg}` }
+    return { author: null, title: null, fecha: null, method: null, debug: `Fetch error: ${msg}`, nonReviewSignals: [] }
   }
 }
 
@@ -201,6 +284,8 @@ function isValidAuthorName(name: string): boolean {
   if (/^https?:\/\//i.test(name)) return false
   if (name.includes('@') && name.includes('.')) return false // email
   if (/^\d+$/.test(name)) return false
+  // Reject photo/image credits
+  if (/^(Photo|Image|Credit|Courtesy|Foto|Crédito|Imagen|Illustration|Getty|Shutterstock|AP Photo|Reuters|AFP)[\s:]/i.test(name)) return false
   if (/^(Share|Tweet|Email|Print|Comment|Read|More|View|Posted|Written|Admin|Editor|Redacción|Texto por)$/i.test(name)) return false
   return true
 }

@@ -40,6 +40,7 @@ export default function ReviewSearchPage() {
   const [enriching, setEnriching] = useState(false)
   const [enrichProgress, setEnrichProgress] = useState({ done: 0, total: 0 })
   const [duplicates, setDuplicates] = useState<Set<number>>(new Set())
+  const [nonReviewFlags, setNonReviewFlags] = useState<Map<number, string[]>>(new Map())
 
   // Movie selection
   const [movieQuery, setMovieQuery] = useState('')
@@ -89,14 +90,20 @@ export default function ReviewSearchPage() {
 
   /**
    * Find duplicate reviews: same domain + same author + similar title = duplicate.
-   * Same author on the same site with different titles (e.g. festival review vs
-   * theatrical release review) are NOT duplicates.
+   * Also catches same domain + same author with different titles but similar URL slugs
+   * (e.g. /nuestra-tierra/ vs /73ssiff-nuestra-tierra/, or English vs Spanish versions).
    * Returns the set of indices to mark as duplicates (keeps first occurrence).
    */
   function findDuplicates(revs: ReviewResult[]): Set<number> {
     const dupes = new Set<number>()
     const normalize = (s: string) =>
       s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()
+    const getSlug = (url: string): string => {
+      try {
+        const segments = new URL(url).pathname.split('/').filter(Boolean)
+        return segments[segments.length - 1] || ''
+      } catch { return '' }
+    }
 
     // Group by domain
     const byDomain = new Map<string, number[]>()
@@ -111,8 +118,7 @@ export default function ReviewSearchPage() {
     for (const indices of byDomain.values()) {
       if (indices.length < 2) continue
 
-      // Same domain + same author + similar title → duplicate (keep first)
-      // A "key" is author + normalized title. If both match, it's a duplicate.
+      // Pass 1: same domain + same author + same title → duplicate (keep first)
       const seen = new Map<string, number>()
       for (const idx of indices) {
         const author = revs[idx].autor
@@ -124,6 +130,30 @@ export default function ReviewSearchPage() {
           dupes.add(idx)
         } else {
           seen.set(key, idx)
+        }
+      }
+
+      // Pass 2: same domain + same author + one URL slug contains the other
+      // Catches: /nuestra-tierra/ vs /73ssiff-nuestra-tierra/ (festival prefix)
+      // Catches: English vs Spanish versions of same review on same site
+      for (let a = 0; a < indices.length; a++) {
+        if (dupes.has(indices[a])) continue
+        for (let b = a + 1; b < indices.length; b++) {
+          if (dupes.has(indices[b])) continue
+          const idxA = indices[a]
+          const idxB = indices[b]
+          const authorA = revs[idxA].autor
+          const authorB = revs[idxB].autor
+          if (!authorA || !authorB || authorA === 'null' || authorB === 'null') continue
+          if (normalize(authorA) !== normalize(authorB)) continue
+
+          const slugA = getSlug(revs[idxA].link)
+          const slugB = getSlug(revs[idxB].link)
+          if (slugA && slugB && slugA.length >= 3 && slugB.length >= 3) {
+            if (slugA.includes(slugB) || slugB.includes(slugA)) {
+              dupes.add(idxB) // keep first, mark second as duplicate
+            }
+          }
         }
       }
     }
@@ -212,6 +242,16 @@ export default function ReviewSearchPage() {
           const isAuthoritative = data.method === 'json-ld' || data.method === 'meta'
           const claudeAuthorMissing = !review.autor || review.autor === 'null' || review.autor === 'N/A' || review.autor === 'No disponible'
 
+          // Track non-review signals
+          if (data.nonReviewSignals && data.nonReviewSignals.length > 0) {
+            console.log(`[enrich] ${review.medio}: NON-REVIEW signals:`, data.nonReviewSignals)
+            setNonReviewFlags(prev => {
+              const next = new Map(prev)
+              next.set(i, data.nonReviewSignals)
+              return next
+            })
+          }
+
           if (data.author && (isAuthoritative || claudeAuthorMissing)) {
             if (!review.autor || data.author !== review.autor) {
               if (review.autor && data.author !== review.autor) {
@@ -263,6 +303,19 @@ export default function ReviewSearchPage() {
       }
       return currentReviews
     })
+
+    // Auto-deselect non-reviews
+    setNonReviewFlags((currentFlags) => {
+      if (currentFlags.size > 0) {
+        setSelected((prev) => {
+          const next = new Set(prev)
+          currentFlags.forEach((_, idx) => next.delete(idx))
+          return next
+        })
+        toast(`${currentFlags.size} resultado(s) marcado(s) como posible no-crítica`, { icon: '⚠️' })
+      }
+      return currentFlags
+    })
   }
 
   async function handleSearch() {
@@ -279,6 +332,7 @@ export default function ReviewSearchPage() {
     setParseError(null)
     setEnriching(false)
     setDuplicates(new Set())
+    setNonReviewFlags(new Map())
 
     try {
       const res = await fetch('/api/review-search', {
@@ -588,10 +642,11 @@ export default function ReviewSearchPage() {
                   {reviews.map((review, i) => {
                     const result = saveResults?.find((r) => r.review.link === review.link)
                     const isDuplicate = duplicates.has(i)
+                    const isNonReview = nonReviewFlags.has(i)
                     return (
                       <tr
                         key={i}
-                        className={`hover:bg-gray-50 ${result?.success ? 'bg-green-50' : result && !result.success ? 'bg-red-50' : isDuplicate ? 'bg-yellow-50/50' : ''}`}
+                        className={`hover:bg-gray-50 ${result?.success ? 'bg-green-50' : result && !result.success ? 'bg-red-50' : isDuplicate ? 'bg-yellow-50/50' : isNonReview ? 'bg-orange-50/50' : ''}`}
                       >
                         <td className="px-4 py-3 text-center">
                           <button
@@ -632,6 +687,15 @@ export default function ReviewSearchPage() {
                             <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
                               <Copy className="h-3 w-3" />
                               Duplicada
+                            </span>
+                          )}
+                          {nonReviewFlags.has(i) && !isDuplicate && !result && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-800 cursor-help"
+                              title={nonReviewFlags.get(i)!.join('\n')}
+                            >
+                              <AlertCircle className="h-3 w-3" />
+                              No parece crítica
                             </span>
                           )}
                           {result?.success && (
