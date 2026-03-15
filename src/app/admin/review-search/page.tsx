@@ -60,12 +60,17 @@ export default function ReviewSearchPage() {
         const res = await fetch(`/api/movies?search=${encodeURIComponent(query)}&limit=10`)
         if (res.ok) {
           const data = await res.json()
-          const movies = (data.items || data).map((m: Record<string, unknown>) => {
+          const items = data.movies || data.items || (Array.isArray(data) ? data : [])
+          const movies = items.map((m: Record<string, unknown>) => {
             // Extract director from crew (roleId 2)
             let director: string | null = null
-            const crew = m.crew as Array<{ role?: { name?: string }; person?: { firstName?: string; lastName?: string } }> | undefined
-            if (crew) {
-              const dir = crew.find(c => c.role?.name === 'Director' || c.role?.name === 'Dirección')
+            const crew = m.crew as Array<{ roleId?: number; role?: string | { name?: string }; person?: { firstName?: string; lastName?: string } }> | undefined
+            if (crew && crew.length > 0) {
+              const dir = crew.find(c => {
+                if (c.roleId === 2) return true
+                const roleName = typeof c.role === 'string' ? c.role : c.role?.name
+                return roleName === 'Director' || roleName === 'Dirección'
+              })
               if (dir?.person) {
                 director = [dir.person.firstName, dir.person.lastName].filter(Boolean).join(' ')
               }

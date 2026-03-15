@@ -182,7 +182,7 @@ export async function GET(request: NextRequest) {
         const movieIds = movies.map(m => m.id)
 
         if (movieIds.length > 0) {
-          const [genres, countries] = await Promise.all([
+          const [genres, countries, crews] = await Promise.all([
             prisma.movieGenre.findMany({
               where: { movieId: { in: movieIds } },
               include: { genre: true }
@@ -190,12 +190,21 @@ export async function GET(request: NextRequest) {
             prisma.movieCountry.findMany({
               where: { movieId: { in: movieIds }, isPrimary: true },
               include: { location: true }
+            }),
+            prisma.movieCrew.findMany({
+              where: { movieId: { in: movieIds }, roleId: 2 },
+              include: {
+                person: { select: { id: true, firstName: true, lastName: true, slug: true } },
+                role: true
+              },
+              orderBy: { billingOrder: 'asc' }
             })
           ])
 
           const formattedMovies = movies.map((movie: any) => {
             const movieGenres = genres.filter(g => g.movieId === movie.id)
             const movieCountry = countries.find(c => c.movieId === movie.id)
+            const movieCrew = crews.filter(c => c.movieId === movie.id)
 
             return {
               id: movie.id,
@@ -214,7 +223,12 @@ export async function GET(request: NextRequest) {
                 id: g.genre.id,
                 name: g.genre.name
               })),
-              country: movieCountry?.location?.name || 'Argentina'
+              country: movieCountry?.location?.name || 'Argentina',
+              crew: movieCrew.map(c => ({
+                roleId: c.roleId,
+                role: c.role?.name || c.role,
+                person: c.person
+              }))
             }
           })
 
