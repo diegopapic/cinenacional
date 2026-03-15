@@ -119,48 +119,41 @@ export default function ReviewSearchPage() {
     setEnriching(true)
     setEnrichProgress({ done: 0, total: nullAuthorIndices.length })
 
-    // Process in parallel batches of 5
-    const BATCH_SIZE = 5
-    let completed = 0
     let found = 0
 
-    for (let i = 0; i < nullAuthorIndices.length; i += BATCH_SIZE) {
-      const batch = nullAuthorIndices.slice(i, i + BATCH_SIZE)
+    // Process sequentially to avoid rate limiting from same-domain servers
+    for (let i = 0; i < nullAuthorIndices.length; i++) {
+      const reviewIndex = nullAuthorIndices[i]
+      const review = parsedReviews[reviewIndex]
 
-      await Promise.all(
-        batch.map(async (reviewIndex) => {
-          const review = parsedReviews[reviewIndex]
-          try {
-            const res = await fetch('/api/review-search/extract-author', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
-              body: JSON.stringify({ url: review.link })
-            })
-
-            if (res.ok) {
-              const { author } = await res.json()
-              if (author) {
-                found++
-                console.log(`[enrich] Found author "${author}" for ${review.medio}`)
-                setReviews((prev) =>
-                  prev.map((r, idx) =>
-                    idx === reviewIndex ? { ...r, autor: author } : r
-                  )
-                )
-              } else {
-                console.log(`[enrich] No author found for ${review.medio} (${review.link})`)
-              }
-            } else {
-              console.error(`[enrich] HTTP ${res.status} for ${review.medio}: ${review.link}`)
-            }
-          } catch (err) {
-            console.error(`[enrich] Error fetching author for ${review.medio}:`, err)
-          } finally {
-            completed++
-            setEnrichProgress({ done: completed, total: nullAuthorIndices.length })
-          }
+      try {
+        const res = await fetch('/api/review-search/extract-author', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
+          body: JSON.stringify({ url: review.link })
         })
-      )
+
+        if (res.ok) {
+          const { author } = await res.json()
+          if (author) {
+            found++
+            console.log(`[enrich] Found author "${author}" for ${review.medio}`)
+            setReviews((prev) =>
+              prev.map((r, idx) =>
+                idx === reviewIndex ? { ...r, autor: author } : r
+              )
+            )
+          } else {
+            console.log(`[enrich] No author found for ${review.medio} (${review.link})`)
+          }
+        } else {
+          console.error(`[enrich] HTTP ${res.status} for ${review.medio}: ${review.link}`)
+        }
+      } catch (err) {
+        console.error(`[enrich] Error fetching author for ${review.medio}:`, err)
+      }
+
+      setEnrichProgress({ done: i + 1, total: nullAuthorIndices.length })
     }
 
     console.log(`[enrich] Done. Found ${found} authors out of ${nullAuthorIndices.length} missing.`)
