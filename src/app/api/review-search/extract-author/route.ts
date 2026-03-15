@@ -17,15 +17,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'URL requerida' }, { status: 400 })
     }
 
-    const author = await extractAuthorFromPage(url)
-    return NextResponse.json({ author })
+    const result = await extractAuthorFromPage(url)
+    return NextResponse.json(result)
   } catch (error) {
     log.error('Error extracting author', error)
-    return NextResponse.json({ author: null })
+    return NextResponse.json({ author: null, method: null, debug: `Exception: ${error}` })
   }
 }
 
-async function extractAuthorFromPage(url: string): Promise<string | null> {
+interface ExtractionResult {
+  author: string | null
+  method: string | null
+  debug: string
+}
+
+async function extractAuthorFromPage(url: string): Promise<ExtractionResult> {
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 10000)
@@ -45,37 +51,39 @@ async function extractAuthorFromPage(url: string): Promise<string | null> {
 
     if (!res.ok) {
       log.debug(`Failed to fetch ${url}: ${res.status}`)
-      return null
+      return { author: null, method: null, debug: `HTTP ${res.status} fetching URL` }
     }
 
     const html = await res.text()
+    const htmlLen = html.length
 
     // 1. JSON-LD structured data
     const jsonLdAuthor = extractFromJsonLd(html)
     if (jsonLdAuthor) {
       log.info(`Found author "${jsonLdAuthor}" via JSON-LD in ${url}`)
-      return jsonLdAuthor
+      return { author: jsonLdAuthor, method: 'json-ld', debug: `HTML ${htmlLen} chars` }
     }
 
     // 2. Meta tags
     const metaAuthor = extractFromMetaTags(html)
     if (metaAuthor) {
       log.info(`Found author "${metaAuthor}" via meta tag in ${url}`)
-      return metaAuthor
+      return { author: metaAuthor, method: 'meta', debug: `HTML ${htmlLen} chars` }
     }
 
     // 3. HTML byline patterns
     const bylineAuthor = extractFromByline(html)
     if (bylineAuthor) {
       log.info(`Found author "${bylineAuthor}" via byline in ${url}`)
-      return bylineAuthor
+      return { author: bylineAuthor, method: 'byline', debug: `HTML ${htmlLen} chars` }
     }
 
     log.debug(`No author found in ${url}`)
-    return null
+    return { author: null, method: null, debug: `HTML ${htmlLen} chars, no author pattern matched` }
   } catch (err) {
-    log.debug(`Error fetching ${url}: ${err}`)
-    return null
+    const msg = err instanceof Error ? err.message : String(err)
+    log.debug(`Error fetching ${url}: ${msg}`)
+    return { author: null, method: null, debug: `Fetch error: ${msg}` }
   }
 }
 

@@ -138,18 +138,21 @@ export default function ReviewSearchPage() {
         })
 
         if (res.ok) {
-          const { author } = await res.json()
-          if (author) {
+          const data = await res.json()
+          console.log(`[enrich] ${review.medio}: author=${data.author}, method=${data.method}, debug=${data.debug}`)
+          if (data.author) {
             found++
             setReviews((prev) =>
               prev.map((r, idx) =>
-                idx === reviewIndex ? { ...r, autor: author } : r
+                idx === reviewIndex ? { ...r, autor: data.author } : r
               )
             )
           }
+        } else {
+          console.error(`[enrich] ${review.medio}: HTTP ${res.status} from extract-author endpoint`)
         }
-      } catch {
-        // ignore fetch errors
+      } catch (err) {
+        console.error(`[enrich] ${review.medio}: fetch failed`, err)
       }
 
       setEnrichProgress({ done: i + 1, total: nullAuthorIndices.length })
