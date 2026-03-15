@@ -361,8 +361,10 @@ function extractFromByline(html: string): string | null {
     /<img[^>]*alt=["']([^"']{2,80})["'][^>]*class=["'][^"']*(?:author|avatar)[^"']*["']/i,
     // "By <name>" pattern in text
     /<[^>]*class=["'][^"']*\bbyline\b[^"']*["'][^>]*>[\s\S]*?\b(?:By|Por|por)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,4})/i,
-    // Simple "By Name" near article start
-    /class=["'][^"']*(?:article|post|entry)[^"']*["'][\s\S]{0,500}?\b(?:By|Por)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,3})/i
+    // "By <a>Name</a>" pattern near article header (e.g. reverseshot: <div class="article-header">...<div>By <a>A.G. Sims</a>)
+    /class=["'][^"']*(?:article-header|article-info|article-meta|post-header|entry-header)[^"']*["'][\s\S]{0,500}?\b(?:By|Por)\s+(?:<a[^>]*>)\s*([^<]{2,80})\s*<\/a>/i,
+    // Simple "By Name" near article start (with optional <a> wrapper, supports initials like A.G.)
+    /class=["'][^"']*(?:article|post|entry)[^"']*["'][\s\S]{0,500}?\b(?:By|Por)\s+(?:<a[^>]*>\s*)?([A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ.]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ.]*){1,3})/i
   ]
 
   for (const pattern of patterns) {

@@ -89,9 +89,11 @@ export default function ReviewSearchPage() {
   }, [])
 
   /**
-   * Find duplicate reviews: same domain + same author + similar title = duplicate.
-   * Also catches same domain + same author with different titles but similar URL slugs
-   * (e.g. /nuestra-tierra/ vs /73ssiff-nuestra-tierra/, or English vs Spanish versions).
+   * Find duplicate reviews using 3 passes (all require same domain + same author):
+   * Pass 1: Same normalized title → duplicate
+   * Pass 2: One URL slug contains the other → duplicate (e.g. /nuestra-tierra/ vs /73ssiff-nuestra-tierra/)
+   * Pass 3: Slug "essences" overlap (subset check) → duplicate. Catches same review republished
+   *         at festival vs theatrical release with completely different slugs.
    * Returns the set of indices to mark as duplicates (keeps first occurrence).
    */
   function findDuplicates(revs: ReviewResult[]): Set<number> {
@@ -103,6 +105,30 @@ export default function ReviewSearchPage() {
         const segments = new URL(url).pathname.split('/').filter(Boolean)
         return segments[segments.length - 1] || ''
       } catch { return '' }
+    }
+
+    // Extract meaningful words from URL slug, removing stop words, dates,
+    // festival/review terms — leaves only the "essence" (movie name, director, etc.)
+    const slugStopWords = new Set([
+      'de', 'del', 'la', 'el', 'los', 'las', 'en', 'a', 'y', 'un', 'una', 'por', 'con', 'para', 'sobre',
+      'the', 'of', 'and', 'in', 'an', 'by', 'for', 'with', 'at', 'to', 'from', 'that', 'which', 'who',
+      'critica', 'review', 'resena', 'estrenos', 'estreno', 'festival', 'venecia', 'venice',
+      'cannes', 'berlin', 'berlinale', 'toronto', 'tiff', 'bafici', 'ssiff', 'mar',
+      'seccion', 'oficial', 'fuera', 'competicion', 'competencia', 'especial',
+      'post', 'nota', 'entry', 'article',
+      'cine', 'pelicula', 'film', 'movie', 'director', 'directora', 'dirigida',
+      'entrevista', 'interview', 'perfil', 'profile', 'reportaje'
+    ])
+    const getSlugEssence = (url: string): string[] => {
+      const slug = getSlug(url)
+      if (!slug) return []
+      return slug.split(/[-_]/).filter(w => {
+        if (!w || w.length <= 1) return false
+        if (slugStopWords.has(w.toLowerCase())) return false
+        if (/^\d+$/.test(w)) return false
+        if (/^\d+ssiff$/i.test(w)) return false
+        return true
+      }).map(w => w.toLowerCase())
     }
 
     // Group by domain
@@ -133,9 +159,7 @@ export default function ReviewSearchPage() {
         }
       }
 
-      // Pass 2: same domain + same author + one URL slug contains the other
-      // Catches: /nuestra-tierra/ vs /73ssiff-nuestra-tierra/ (festival prefix)
-      // Catches: English vs Spanish versions of same review on same site
+      // Pairwise checks for Pass 2 and 3 (same domain + same author)
       for (let a = 0; a < indices.length; a++) {
         if (dupes.has(indices[a])) continue
         for (let b = a + 1; b < indices.length; b++) {
@@ -147,11 +171,28 @@ export default function ReviewSearchPage() {
           if (!authorA || !authorB || authorA === 'null' || authorB === 'null') continue
           if (normalize(authorA) !== normalize(authorB)) continue
 
+          // Pass 2: one slug contains the other
           const slugA = getSlug(revs[idxA].link)
           const slugB = getSlug(revs[idxB].link)
           if (slugA && slugB && slugA.length >= 3 && slugB.length >= 3) {
             if (slugA.includes(slugB) || slugB.includes(slugA)) {
-              dupes.add(idxB) // keep first, mark second as duplicate
+              dupes.add(idxB)
+              continue
+            }
+          }
+
+          // Pass 3: slug essence subset — one's meaningful words are fully contained in the other's
+          // Catches: venecia-2025-critica-de-nuestra-tierra-de-lucrecia-martel-fuera-de-competicion
+          //      vs: estrenos-critica-de-nuestra-tierra-de-lucrecia-martel
+          // Both essences: [nuestra, tierra, lucrecia, martel] — identical
+          const essenceA = getSlugEssence(revs[idxA].link)
+          const essenceB = getSlugEssence(revs[idxB].link)
+          if (essenceA.length >= 2 && essenceB.length >= 2) {
+            const shorter = essenceA.length <= essenceB.length ? essenceA : essenceB
+            const longerSet = new Set(essenceA.length <= essenceB.length ? essenceB : essenceA)
+            const allContained = shorter.every(w => longerSet.has(w))
+            if (allContained) {
+              dupes.add(idxB)
             }
           }
         }
