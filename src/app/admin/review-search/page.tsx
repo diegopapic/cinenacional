@@ -150,12 +150,8 @@ export default function ReviewSearchPage() {
     return null
   }
 
-  async function enrichMissingAuthors(parsedReviews: ReviewResult[]) {
-    console.log('[enrichMissingAuthors] ENTERED, reviews:', parsedReviews.length)
-
-    // Claude sometimes returns "null" (string) instead of null (JSON null)
-    const needsAuthor = (r: ReviewResult) =>
-      !r.autor || r.autor === 'null' || r.autor === 'N/A' || r.autor === 'No disponible'
+  async function enrichReviews(parsedReviews: ReviewResult[]) {
+    console.log('[enrichReviews] ENTERED, reviews:', parsedReviews.length)
 
     // Check if a title is essentially just the movie name
     const isTitleJustMovieName = (title: string, movie: string) => {
@@ -172,31 +168,15 @@ export default function ReviewSearchPage() {
       })
     }
 
-    // Enrich reviews that are missing author, title, or date, or whose title is just the movie name
-    const needsEnrichment = (r: ReviewResult) =>
-      needsAuthor(r) || !r.titulo || !r.fecha || (r.titulo && isTitleJustMovieName(r.titulo, r.pelicula))
-
-    const nullAuthorIndices = parsedReviews
-      .map((r, i) => (needsEnrichment(r) ? i : -1))
-      .filter((i) => i !== -1)
-
-    console.log('[enrichMissingAuthors] nullAuthorIndices:', nullAuthorIndices.length, nullAuthorIndices)
-
-    if (nullAuthorIndices.length === 0) {
-      console.log('[enrichMissingAuthors] No reviews need authors, returning')
-      return
-    }
-
+    // Always enrich ALL reviews: authoritative sources (JSON-LD, meta) override Claude
     setEnriching(true)
-    setEnrichProgress({ done: 0, total: nullAuthorIndices.length })
-    toast(`Buscando autores para ${nullAuthorIndices.length} críticas...`)
+    setEnrichProgress({ done: 0, total: parsedReviews.length })
+    toast(`Verificando metadatos de ${parsedReviews.length} críticas...`)
 
-    let found = 0
+    let corrected = 0
 
-    // Process sequentially to avoid rate limiting from same-domain servers
-    for (let i = 0; i < nullAuthorIndices.length; i++) {
-      const reviewIndex = nullAuthorIndices[i]
-      const review = parsedReviews[reviewIndex]
+    for (let i = 0; i < parsedReviews.length; i++) {
+      const review = parsedReviews[i]
 
       try {
         const res = await fetch('/api/review-search/extract-author', {
@@ -209,21 +189,32 @@ export default function ReviewSearchPage() {
           const data = await res.json()
           console.log(`[enrich] ${review.medio}: author=${data.author}, title=${data.title}, fecha=${data.fecha}, method=${data.method}`)
           const updates: Partial<ReviewResult> = {}
-          if (data.author && needsAuthor(review)) {
-            updates.autor = data.author
-            found++
+
+          // Author: authoritative sources (json-ld, meta) always override Claude.
+          // Byline only fills in if Claude had no author.
+          const isAuthoritative = data.method === 'json-ld' || data.method === 'meta'
+          const claudeAuthorMissing = !review.autor || review.autor === 'null' || review.autor === 'N/A' || review.autor === 'No disponible'
+
+          if (data.author && (isAuthoritative || claudeAuthorMissing)) {
+            if (!review.autor || data.author !== review.autor) {
+              if (review.autor && data.author !== review.autor) {
+                console.log(`[enrich] ${review.medio}: overriding Claude author "${review.autor}" → "${data.author}" (${data.method})`)
+              }
+              updates.autor = data.author
+              corrected++
+            }
           }
-          // Replace title if missing or if current title is just the movie name
+
+          // Title: replace if missing or if current is just the movie name
           if (data.title && (!review.titulo || isTitleJustMovieName(review.titulo, review.pelicula))) {
             updates.titulo = data.title
           }
+          // Date: fill in if missing
           if (data.fecha && !review.fecha) updates.fecha = data.fecha
 
           if (Object.keys(updates).length > 0) {
             setReviews((prev) =>
-              prev.map((r, idx) =>
-                idx === reviewIndex ? { ...r, ...updates } : r
-              )
+              prev.map((r, idx) => (idx === i ? { ...r, ...updates } : r))
             )
           }
         } else {
@@ -233,14 +224,12 @@ export default function ReviewSearchPage() {
         console.error(`[enrich] ${review.medio}: fetch failed`, err)
       }
 
-      setEnrichProgress({ done: i + 1, total: nullAuthorIndices.length })
+      setEnrichProgress({ done: i + 1, total: parsedReviews.length })
     }
 
     setEnriching(false)
-    if (found > 0) {
-      toast.success(`${found} autor(es) encontrado(s) automáticamente`)
-    } else {
-      toast(`No se encontraron autores adicionales`, { icon: 'ℹ️' })
+    if (corrected > 0) {
+      toast.success(`${corrected} metadato(s) corregido(s) automáticamente`)
     }
 
     // Run dedup after enrichment (now we have corrected authors)
@@ -248,7 +237,6 @@ export default function ReviewSearchPage() {
       const dupes = findDuplicates(currentReviews)
       if (dupes.size > 0) {
         setDuplicates(dupes)
-        // Auto-deselect duplicates
         setSelected((prev) => {
           const next = new Set(prev)
           dupes.forEach((idx) => next.delete(idx))
@@ -256,7 +244,7 @@ export default function ReviewSearchPage() {
         })
         toast(`${dupes.size} duplicada(s) detectada(s) y deseleccionada(s)`, { icon: '🔄' })
       }
-      return currentReviews // don't modify, just read
+      return currentReviews
     })
   }
 
@@ -344,16 +332,13 @@ export default function ReviewSearchPage() {
           toast(`${initialDupes.size} duplicada(s) detectada(s) y deseleccionada(s)`, { icon: '🔄' })
         }
 
-        // Enrich reviews with missing authors — awaited with visible error handling
-        const needsEnrichCount = parsed.filter(r => !r.autor || !r.titulo || !r.fecha).length
-        console.log(`[search] Parsed ${parsed.length} reviews, ${needsEnrichCount} need enrichment`)
-        if (needsEnrichCount > 0) {
-          try {
-            await enrichMissingAuthors(parsed)
-          } catch (enrichErr) {
-            console.error('[search] enrichMissingAuthors CRASHED:', enrichErr)
-            toast.error(`Error buscando autores: ${enrichErr instanceof Error ? enrichErr.message : String(enrichErr)}`)
-          }
+        // Enrich ALL reviews: authoritative HTML metadata overrides Claude's authors
+        console.log(`[search] Parsed ${parsed.length} reviews, enriching all`)
+        try {
+          await enrichReviews(parsed)
+        } catch (enrichErr) {
+          console.error('[search] enrichReviews CRASHED:', enrichErr)
+          toast.error(`Error verificando metadatos: ${enrichErr instanceof Error ? enrichErr.message : String(enrichErr)}`)
         }
       } else if (accumulated.trim()) {
         setParseError(
