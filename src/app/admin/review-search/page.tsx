@@ -229,7 +229,11 @@ export default function ReviewSearchPage() {
         setSearching(false)
 
         // Enrich reviews with missing authors
-        enrichMissingAuthors(parsed)
+        const nullCount = parsed.filter(r => !r.autor).length
+        console.log(`[handleSearch] Parsed ${parsed.length} reviews, ${nullCount} with null author. Starting enrichment...`)
+        enrichMissingAuthors(parsed).catch(err => {
+          console.error('[handleSearch] enrichMissingAuthors crashed:', err)
+        })
       } else if (accumulated.trim()) {
         setParseError(
           'No se pudo extraer un JSON válido de la respuesta. Revisá el texto de Claude abajo.'
