@@ -12,12 +12,12 @@ export async function POST(request: NextRequest) {
   if (auth.error) return auth.error
 
   try {
-    const { url } = await request.json()
+    const { url, movieTitle } = await request.json()
     if (!url || typeof url !== 'string') {
       return NextResponse.json({ error: 'URL requerida' }, { status: 400 })
     }
 
-    const result = await extractAuthorFromPage(url)
+    const result = await extractAuthorFromPage(url, typeof movieTitle === 'string' ? movieTitle : undefined)
     return NextResponse.json(result)
   } catch (error) {
     log.error('Error extracting author', error)
@@ -33,7 +33,7 @@ interface ExtractionResult {
   debug: string
 }
 
-async function extractAuthorFromPage(url: string): Promise<ExtractionResult> {
+async function extractAuthorFromPage(url: string, movieTitle?: string): Promise<ExtractionResult> {
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 10000)
@@ -60,7 +60,7 @@ async function extractAuthorFromPage(url: string): Promise<ExtractionResult> {
     const htmlLen = html.length
 
     // Extract title and date regardless of author method
-    const title = extractTitle(html)
+    const title = extractTitle(html, movieTitle)
     const fecha = extractPublishDate(html)
 
     // 1. JSON-LD structured data
@@ -280,32 +280,167 @@ function extractFromByline(html: string): string | null {
   return null
 }
 
-function extractTitle(html: string): string | null {
-  // 1. og:title meta tag (usually the cleanest)
+/**
+ * Normalize a string for comparison: lowercase, strip accents, remove non-alphanumeric.
+ */
+function normalizeForComparison(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Check if an extracted page title is essentially just the movie name
+ * (possibly with generic prefixes like "Crítica |" or suffixes like "(Landmarks)").
+ */
+function isTitleJustMovieName(title: string, movieTitle: string): boolean {
+  const cleanMovie = normalizeForComparison(movieTitle)
+
+  // Direct match after normalizing
+  if (normalizeForComparison(title) === cleanMovie) return true
+
+  // Remove parentheticals: "(Landmarks)", "(2025)"
+  const stripped = title.replace(/\s*\([^)]*\)\s*/g, ' ').trim()
+  if (normalizeForComparison(stripped) === cleanMovie) return true
+
+  // Split by common separators (|, –, —, spaced dash) and check each segment
+  const segments = stripped.split(/\s*[|–—]\s*|\s+-\s+/)
+  const prefixPattern = /^(critica|review|resena|critica de|review of)\s*/i
+
+  for (const seg of segments) {
+    const normalized = normalizeForComparison(seg)
+    if (normalized === cleanMovie) return true
+    // Also try after removing review label prefix: "Crítica | Movie" → "Movie"
+    const withoutPrefix = normalized.replace(prefixPattern, '').trim()
+    if (withoutPrefix === cleanMovie) return true
+  }
+
+  return false
+}
+
+/**
+ * Try to extract the review's own creative headline from the article body.
+ * Used when the page title is just the movie name.
+ */
+function extractReviewHeadline(html: string): string | null {
+  // 1. Subtitle elements (e.g. elantepenultimomohicano: <div class="subtítulo-artículo">)
+  const subtitlePatterns = [
+    /<[^>]*class=["'][^"']*subtítulo[^"']*["'][^>]*>\s*([^<]{2,200})/i,
+    /<[^>]*class=["'][^"']*\bsubtitle\b[^"']*["'][^>]*>\s*([^<]{2,200})/i,
+    /<[^>]*class=["'][^"']*\bpost-subtitle\b[^"']*["'][^>]*>\s*([^<]{2,200})/i,
+    /<[^>]*class=["'][^"']*\bentry-subtitle\b[^"']*["'][^>]*>\s*([^<]{2,200})/i
+  ]
+  for (const pattern of subtitlePatterns) {
+    const match = html.match(pattern)
+    if (match?.[1]) {
+      const t = match[1].trim()
+      if (t.length > 2 && t.length < 200) return t
+    }
+  }
+
+  // 2. Centered <strong> in first paragraph (e.g. asalallena: <p style="text-align: center;"><strong>DOS DISPAROS</strong>)
+  const centeredStrong = html.match(
+    /<p[^>]*style=["'][^"']*text-align:\s*center[^"']*["'][^>]*>\s*<strong>\s*([^<]{2,200})\s*<\/strong>/i
+  )
+  if (centeredStrong?.[1]) {
+    const t = centeredStrong[1].trim()
+    if (t.length > 2 && t.length < 200) return t
+  }
+
+  // 3. First <strong> at very start of article body
+  //    (e.g. reverseshot: <div class="article-text"><p class="body"><strong>Earth and Sky</strong>)
+  const articleBodyPatterns = [
+    /class=["'][^"']*(?:article-text|entry-content|post-content|post-body|article-body|article__body)[^"']*["'][^>]*>\s*(?:<p[^>]*>)?\s*<strong>\s*([^<]{2,200})\s*<\/strong>/i,
+    /class=["'][^"']*(?:article-text|entry-content|post-content|post-body|article-body|article__body)[^"']*["'][^>]*>\s*<p[^>]*>\s*<strong>\s*([^<]{2,200})\s*<\/strong>/i
+  ]
+  for (const pattern of articleBodyPatterns) {
+    const match = html.match(pattern)
+    if (match?.[1]) {
+      const t = match[1].trim()
+      // Only use if it's short enough to be a headline (not a full sentence)
+      if (t.length > 2 && t.length < 120 && !t.includes('.')) return t
+    }
+  }
+
+  // 4. og:description first sentence — sometimes contains the review title
+  //    e.g. "El sentido de mirar a cámara. Crítica de Nuestra tierra..."
+  const ogDesc = html.match(
+    /<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i
+  ) || html.match(
+    /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:description["']/i
+  )
+  if (ogDesc?.[1]) {
+    const firstSentence = ogDesc[1].split(/\.\s/)[0]?.trim()
+    if (firstSentence && firstSentence.length > 3 && firstSentence.length < 120) {
+      // Check it's not just the movie name or a generic description
+      const normalized = normalizeForComparison(firstSentence)
+      if (!normalized.startsWith('critica') && !normalized.startsWith('review')) {
+        return firstSentence
+      }
+    }
+  }
+
+  return null
+}
+
+function extractTitle(html: string, movieTitle?: string): string | null {
+  // Collect candidate titles from all standard sources
+  const candidates: string[] = []
+
+  // 1. og:title
   const ogTitle = html.match(
     /<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i
   ) || html.match(
     /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:title["']/i
   )
-  if (ogTitle?.[1]) {
-    const t = ogTitle[1].trim()
-    if (t.length > 2 && t.length < 500) return t
-  }
+  if (ogTitle?.[1]?.trim()) candidates.push(ogTitle[1].trim())
 
-  // 2. JSON-LD headline
+  // 2. twitter:title (sometimes longer/more complete)
+  const twitterTitle = html.match(
+    /<meta[^>]*(?:name|property)=["']twitter:title["'][^>]*content=["']([^"']+)["']/i
+  ) || html.match(
+    /<meta[^>]*content=["']([^"']+)["'][^>]*(?:name|property)=["']twitter:title["']/i
+  )
+  if (twitterTitle?.[1]?.trim()) candidates.push(twitterTitle[1].trim())
+
+  // 3. JSON-LD headline
   const headlineMatch = html.match(/"headline"\s*:\s*"([^"]{2,500})"/i)
-  if (headlineMatch?.[1]) return headlineMatch[1]
+  if (headlineMatch?.[1]) candidates.push(headlineMatch[1])
 
-  // 3. <title> tag (often has site name appended)
+  // 4. <h1> in article area (sometimes has the full untruncated title)
+  const h1Match = html.match(
+    /<h1[^>]*class=["'][^"']*(?:entry-title|post-title|article-title|headline)[^"']*["'][^>]*>([^<]{2,500})<\/h1>/i
+  )
+  if (h1Match?.[1]?.trim()) candidates.push(h1Match[1].trim())
+
+  // 5. <title> tag (cleaned)
   const titleTag = html.match(/<title[^>]*>([^<]{2,500})<\/title>/i)
   if (titleTag?.[1]) {
     let t = titleTag[1].trim()
-    // Remove common site name separators
     t = t.replace(/\s*[|\-–—]\s*[^|\-–—]+$/, '').trim()
-    if (t.length > 2) return t
+    if (t.length > 2) candidates.push(t)
   }
 
-  return null
+  // Filter valid candidates and pick the best one (longest, as it's usually most complete)
+  const validCandidates = candidates.filter((c) => c.length > 2 && c.length < 500)
+  const pageTitle = validCandidates.length > 0
+    ? validCandidates.reduce((a, b) => (a.length >= b.length ? a : b))
+    : null
+
+  // If we know the movie title, check if the page title is just the movie name
+  if (movieTitle && pageTitle && isTitleJustMovieName(pageTitle, movieTitle)) {
+    const reviewHeadline = extractReviewHeadline(html)
+    if (reviewHeadline) {
+      log.info(`Review headline "${reviewHeadline}" found (page title "${pageTitle}" ≈ movie name)`)
+      return reviewHeadline
+    }
+  }
+
+  return pageTitle
 }
 
 function extractPublishDate(html: string): string | null {

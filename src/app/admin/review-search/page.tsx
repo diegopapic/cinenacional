@@ -117,9 +117,24 @@ export default function ReviewSearchPage() {
     const needsAuthor = (r: ReviewResult) =>
       !r.autor || r.autor === 'null' || r.autor === 'N/A' || r.autor === 'No disponible'
 
-    // Enrich reviews that are missing author, title, or date
+    // Check if a title is essentially just the movie name
+    const isTitleJustMovieName = (title: string, movie: string) => {
+      const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()
+      const cleanMovie = normalize(movie)
+      if (normalize(title) === cleanMovie) return true
+      const stripped = title.replace(/\s*\([^)]*\)\s*/g, ' ').trim()
+      if (normalize(stripped) === cleanMovie) return true
+      const segments = stripped.split(/\s*[|–—]\s*|\s+-\s+/)
+      const prefix = /^(critica|review|resena|critica de|review of)\s*/i
+      return segments.some(seg => {
+        const n = normalize(seg)
+        return n === cleanMovie || n.replace(prefix, '').trim() === cleanMovie
+      })
+    }
+
+    // Enrich reviews that are missing author, title, or date, or whose title is just the movie name
     const needsEnrichment = (r: ReviewResult) =>
-      needsAuthor(r) || !r.titulo || !r.fecha
+      needsAuthor(r) || !r.titulo || !r.fecha || (r.titulo && isTitleJustMovieName(r.titulo, r.pelicula))
 
     const nullAuthorIndices = parsedReviews
       .map((r, i) => (needsEnrichment(r) ? i : -1))
@@ -147,7 +162,7 @@ export default function ReviewSearchPage() {
         const res = await fetch('/api/review-search/extract-author', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
-          body: JSON.stringify({ url: review.link })
+          body: JSON.stringify({ url: review.link, movieTitle: review.pelicula })
         })
 
         if (res.ok) {
@@ -158,7 +173,10 @@ export default function ReviewSearchPage() {
             updates.autor = data.author
             found++
           }
-          if (data.title && !review.titulo) updates.titulo = data.title
+          // Replace title if missing or if current title is just the movie name
+          if (data.title && (!review.titulo || isTitleJustMovieName(review.titulo, review.pelicula))) {
+            updates.titulo = data.title
+          }
           if (data.fecha && !review.fecha) updates.fecha = data.fecha
 
           if (Object.keys(updates).length > 0) {
