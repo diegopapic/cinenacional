@@ -1,8 +1,8 @@
 // src/app/admin/review-search/page.tsx
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
-import { Search, Loader2, Save, ExternalLink, CheckSquare, Square, AlertCircle, UserSearch, Copy } from 'lucide-react'
+import React, { useState, useRef, useCallback } from 'react'
+import { Search, Loader2, Save, ExternalLink, CheckSquare, Square, AlertCircle, UserSearch, Copy, FileText, ChevronDown, ChevronUp } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCsrfHeaders } from '@/lib/csrf-client'
 
@@ -13,6 +13,7 @@ interface ReviewResult {
   fecha: string | null
   link: string
   pelicula: string
+  summary?: string | null
 }
 
 interface MovieOption {
@@ -41,6 +42,9 @@ export default function ReviewSearchPage() {
   const [enrichProgress, setEnrichProgress] = useState({ done: 0, total: 0 })
   const [duplicates, setDuplicates] = useState<Set<number>>(new Set())
   const [nonReviewFlags, setNonReviewFlags] = useState<Map<number, string[]>>(new Map())
+  const [summarizing, setSummarizing] = useState(false)
+  const [summarizeProgress, setSummarizeProgress] = useState({ done: 0, total: 0 })
+  const [expandedSummary, setExpandedSummary] = useState<number | null>(null)
 
   // Movie selection
   const [movieQuery, setMovieQuery] = useState('')
@@ -359,6 +363,58 @@ export default function ReviewSearchPage() {
     })
   }
 
+  async function handleSummarize() {
+    const selectedIndices = Array.from(selected).filter(
+      (i) => !duplicates.has(i) && !nonReviewFlags.has(i) && !reviews[i]?.summary
+    )
+
+    if (selectedIndices.length === 0) {
+      toast('No hay críticas seleccionadas sin resumen', { icon: '⚠️' })
+      return
+    }
+
+    setSummarizing(true)
+    setSummarizeProgress({ done: 0, total: selectedIndices.length })
+    toast(`Generando resúmenes de ${selectedIndices.length} críticas...`)
+
+    let generated = 0
+
+    for (let j = 0; j < selectedIndices.length; j++) {
+      const i = selectedIndices[j]
+      const review = reviews[i]
+
+      try {
+        const res = await fetch('/api/review-search/summarize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
+          body: JSON.stringify({ url: review.link })
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          if (data.summary) {
+            setReviews((prev) =>
+              prev.map((r, idx) => (idx === i ? { ...r, summary: data.summary } : r))
+            )
+            generated++
+          }
+        } else {
+          const err = await res.json().catch(() => ({ error: 'Error' }))
+          console.error(`[summarize] ${review.medio}: ${err.error}`)
+        }
+      } catch (err) {
+        console.error(`[summarize] ${review.medio}: fetch failed`, err)
+      }
+
+      setSummarizeProgress({ done: j + 1, total: selectedIndices.length })
+    }
+
+    setSummarizing(false)
+    if (generated > 0) {
+      toast.success(`${generated} resumen(es) generado(s)`)
+    }
+  }
+
   async function handleSearch() {
     if (!selectedMovie) {
       toast.error('Seleccioná una película de la base de datos')
@@ -645,6 +701,12 @@ export default function ReviewSearchPage() {
                     Buscando autores ({enrichProgress.done}/{enrichProgress.total})...
                   </span>
                 )}
+                {summarizing && (
+                  <span className="inline-flex items-center gap-1.5 text-sm text-purple-600">
+                    <FileText className="h-4 w-4 animate-pulse" />
+                    Generando resúmenes ({summarizeProgress.done}/{summarizeProgress.total})...
+                  </span>
+                )}
               </div>
               <button
                 onClick={toggleAll}
@@ -684,83 +746,105 @@ export default function ReviewSearchPage() {
                     const result = saveResults?.find((r) => r.review.link === review.link)
                     const isDuplicate = duplicates.has(i)
                     const isNonReview = nonReviewFlags.has(i)
+                    const hasSummary = !!review.summary
+                    const isExpanded = expandedSummary === i
                     return (
-                      <tr
-                        key={i}
-                        className={`hover:bg-gray-50 ${result?.success ? 'bg-green-50' : result && !result.success ? 'bg-red-50' : isDuplicate ? 'bg-yellow-50/50' : isNonReview ? 'bg-orange-50/50' : ''}`}
-                      >
-                        <td className="px-4 py-3 text-center">
-                          <button
-                            onClick={() => toggleSelect(i)}
-                            className="text-gray-500 hover:text-blue-600"
-                            disabled={!!result?.success}
-                          >
-                            {selected.has(i) ? (
-                              <CheckSquare className="h-5 w-5 text-blue-600" />
-                            ) : (
-                              <Square className="h-5 w-5" />
-                            )}
-                          </button>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{review.medio}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate" title={review.titulo || ''}>
-                          {review.titulo || '—'}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
-                          {review.autor && review.autor !== 'null' ? review.autor : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
-                          {review.fecha || '—'}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <a
-                            href={review.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline max-w-xs truncate"
-                          >
-                            <ExternalLink className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{review.link}</span>
-                          </a>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {isDuplicate && !result && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                              <Copy className="h-3 w-3" />
-                              Duplicada
-                            </span>
-                          )}
-                          {nonReviewFlags.has(i) && !isDuplicate && !result && (
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-800 cursor-help"
-                              title={nonReviewFlags.get(i)!.join('\n')}
+                      <React.Fragment key={i}>
+                        <tr
+                          className={`hover:bg-gray-50 ${result?.success ? 'bg-green-50' : result && !result.success ? 'bg-red-50' : isDuplicate ? 'bg-yellow-50/50' : isNonReview ? 'bg-orange-50/50' : ''}`}
+                        >
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => toggleSelect(i)}
+                              className="text-gray-500 hover:text-blue-600"
+                              disabled={!!result?.success}
                             >
-                              <AlertCircle className="h-3 w-3" />
-                              No parece crítica
-                            </span>
-                          )}
-                          {result?.success && (
-                            <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                              Guardada
-                            </span>
-                          )}
-                          {result && !result.success && (
-                            <span
-                              className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800"
-                              title={result.error}
+                              {selected.has(i) ? (
+                                <CheckSquare className="h-5 w-5 text-blue-600" />
+                              ) : (
+                                <Square className="h-5 w-5" />
+                              )}
+                            </button>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{review.medio}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate" title={review.titulo || ''}>
+                            {review.titulo || '—'}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {review.autor && review.autor !== 'null' ? review.autor : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                            {review.fecha || '—'}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            <a
+                              href={review.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline max-w-xs truncate"
                             >
-                              Error
-                            </span>
-                          )}
-                        </td>
-                      </tr>
+                              <ExternalLink className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{review.link}</span>
+                            </a>
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            <div className="flex items-center gap-1.5">
+                              {isDuplicate && !result && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                                  <Copy className="h-3 w-3" />
+                                  Duplicada
+                                </span>
+                              )}
+                              {nonReviewFlags.has(i) && !isDuplicate && !result && (
+                                <span
+                                  className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-800 cursor-help"
+                                  title={nonReviewFlags.get(i)!.join('\n')}
+                                >
+                                  <AlertCircle className="h-3 w-3" />
+                                  No parece crítica
+                                </span>
+                              )}
+                              {result?.success && (
+                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                                  Guardada
+                                </span>
+                              )}
+                              {result && !result.success && (
+                                <span
+                                  className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800"
+                                  title={result.error}
+                                >
+                                  Error
+                                </span>
+                              )}
+                              {hasSummary && (
+                                <button
+                                  onClick={() => setExpandedSummary(isExpanded ? null : i)}
+                                  className="inline-flex items-center gap-0.5 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800 hover:bg-purple-200"
+                                  title="Ver resumen"
+                                >
+                                  <FileText className="h-3 w-3" />
+                                  {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                        {hasSummary && isExpanded && (
+                          <tr className="bg-purple-50/30">
+                            <td colSpan={7} className="px-8 py-3">
+                              <p className="text-sm text-gray-700 italic leading-relaxed">{review.summary}</p>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     )
                   })}
                 </tbody>
               </table>
             </div>
 
-            {/* Save */}
+            {/* Actions */}
             <div className="px-6 py-4 border-t border-gray-200">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">
@@ -771,18 +855,32 @@ export default function ReviewSearchPage() {
                     </span>
                   )}
                 </p>
-                <button
-                  onClick={handleSave}
-                  disabled={saving || selected.size === 0 || !selectedMovie}
-                  className="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
-                  Guardar seleccionadas
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSummarize}
+                    disabled={summarizing || enriching || selected.size === 0}
+                    className="inline-flex items-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {summarizing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileText className="h-4 w-4" />
+                    )}
+                    Generar resúmenes
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving || selected.size === 0 || !selectedMovie}
+                    className="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Guardar seleccionadas
+                  </button>
+                </div>
               </div>
             </div>
           </div>

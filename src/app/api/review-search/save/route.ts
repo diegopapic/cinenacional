@@ -16,7 +16,8 @@ const reviewItemSchema = z.object({
   titulo: z.string().nullable().optional(),
   fecha: z.string().nullable().optional(),
   link: z.string().url(),
-  pelicula: z.string().min(1)
+  pelicula: z.string().min(1),
+  summary: z.string().nullable().optional()
 })
 
 const saveReviewsSchema = z.object({
@@ -97,6 +98,7 @@ export async function POST(request: NextRequest) {
             movieId,
             mediaOutletId: mediaOutlet.id,
             title: review.titulo || null,
+            summary: review.summary || null,
             url: review.link,
             language: isSpanish ? 'es' : 'en',
             publishYear,
