@@ -88,13 +88,15 @@ export default function ReviewSearchPage() {
   }, [])
 
   /**
-   * Find duplicate reviews: same domain + same author = duplicate.
+   * Find duplicate reviews: same domain + same author + similar title = duplicate.
+   * Same author on the same site with different titles (e.g. festival review vs
+   * theatrical release review) are NOT duplicates.
    * Returns the set of indices to mark as duplicates (keeps first occurrence).
    */
   function findDuplicates(revs: ReviewResult[]): Set<number> {
     const dupes = new Set<number>()
     const normalize = (s: string) =>
-      s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+      s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()
 
     // Group by domain
     const byDomain = new Map<string, number[]>()
@@ -109,16 +111,19 @@ export default function ReviewSearchPage() {
     for (const indices of byDomain.values()) {
       if (indices.length < 2) continue
 
-      // Same domain + same author → duplicate (keep first)
-      const seenAuthors = new Map<string, number>()
+      // Same domain + same author + similar title → duplicate (keep first)
+      // A "key" is author + normalized title. If both match, it's a duplicate.
+      const seen = new Map<string, number>()
       for (const idx of indices) {
         const author = revs[idx].autor
         if (!author || author === 'null') continue
-        const key = normalize(author)
-        if (seenAuthors.has(key)) {
+        const authorKey = normalize(author)
+        const titleKey = normalize(revs[idx].titulo || revs[idx].link)
+        const key = `${authorKey}::${titleKey}`
+        if (seen.has(key)) {
           dupes.add(idx)
         } else {
-          seenAuthors.set(key, idx)
+          seen.set(key, idx)
         }
       }
     }

@@ -192,9 +192,22 @@ function findAuthorInJsonLd(data: unknown): string | null {
   return null
 }
 
+/**
+ * Validate that a string looks like a person name, not a URL/email/junk.
+ */
+function isValidAuthorName(name: string): boolean {
+  if (!name || name.length < 2 || name.length > 100) return false
+  if (name.includes('<') || name.includes('{')) return false
+  if (/^https?:\/\//i.test(name)) return false
+  if (name.includes('@') && name.includes('.')) return false // email
+  if (/^\d+$/.test(name)) return false
+  if (/^(Share|Tweet|Email|Print|Comment|Read|More|View|Posted|Written|Admin|Editor|Redacción|Texto por)$/i.test(name)) return false
+  return true
+}
+
 function resolveAuthorName(author: unknown): string | null {
-  if (typeof author === 'string' && author.length > 1 && author.length < 100) {
-    return author
+  if (typeof author === 'string' && isValidAuthorName(author.trim())) {
+    return author.trim()
   }
 
   if (Array.isArray(author)) {
@@ -207,8 +220,8 @@ function resolveAuthorName(author: unknown): string | null {
 
   if (author && typeof author === 'object') {
     const obj = author as Record<string, unknown>
-    if (typeof obj.name === 'string' && obj.name.length > 1) {
-      return obj.name
+    if (typeof obj.name === 'string' && isValidAuthorName(obj.name.trim())) {
+      return obj.name.trim()
     }
   }
 
@@ -216,19 +229,27 @@ function resolveAuthorName(author: unknown): string | null {
 }
 
 function extractFromMetaTags(html: string): string | null {
-  const patterns = [
-    // name/property first, then content
-    /<meta[^>]*(?:name|property)=["'](?:author|article:author|og:article:author|citation_author|dc\.creator|sailthru\.author)["'][^>]*content=["']([^"']+)["']/i,
-    // content first, then name/property
-    /<meta[^>]*content=["']([^"']+)["'][^>]*(?:name|property)=["'](?:author|article:author|og:article:author|citation_author|dc\.creator|sailthru\.author)["']/i
+  // Check meta tags in priority order: author > article:author > DC.creator
+  const metaTagGroups = [
+    ['author'],
+    ['article:author', 'og:article:author'],
+    ['citation_author', 'dc\\.creator', 'sailthru\\.author']
   ]
 
-  for (const pattern of patterns) {
-    const match = html.match(pattern)
-    if (match?.[1]) {
-      const name = match[1].trim()
-      if (name && name.length > 1 && name.length < 100 && !name.includes('<')) {
-        return name
+  for (const group of metaTagGroups) {
+    const names = group.join('|')
+    const patterns = [
+      new RegExp(`<meta[^>]*(?:name|property)=["'](?:${names})["'][^>]*content=["']([^"']+)["']`, 'i'),
+      new RegExp(`<meta[^>]*content=["']([^"']+)["'][^>]*(?:name|property)=["'](?:${names})["']`, 'i')
+    ]
+
+    for (const pattern of patterns) {
+      const match = html.match(pattern)
+      if (match?.[1]) {
+        const name = match[1].trim()
+        if (isValidAuthorName(name)) {
+          return name
+        }
       }
     }
   }
@@ -342,13 +363,19 @@ function extractReviewHeadline(html: string): string | null {
     }
   }
 
-  // 2. Centered <strong> in first paragraph (e.g. asalallena: <p style="text-align: center;"><strong>DOS DISPAROS</strong>)
-  const centeredStrong = html.match(
-    /<p[^>]*style=["'][^"']*text-align:\s*center[^"']*["'][^>]*>\s*<strong>\s*([^<]{2,200})\s*<\/strong>/i
-  )
-  if (centeredStrong?.[1]) {
-    const t = centeredStrong[1].trim()
-    if (t.length > 2 && t.length < 200) return t
+  // 2. Styled <strong> in paragraph — centered or right-aligned
+  //    Inline style: <p style="text-align: center;"><strong>DOS DISPAROS</strong>
+  //    WordPress class: <p class="has-text-align-right"><strong>LOS DE ANTES</strong>
+  const styledStrongPatterns = [
+    /<p[^>]*style=["'][^"']*text-align:\s*(?:center|right)[^"']*["'][^>]*>\s*<strong>\s*([^<]{2,200})\s*<\/strong>/i,
+    /<p[^>]*class=["'][^"']*has-text-align-(?:center|right)[^"']*["'][^>]*>\s*<strong>\s*([^<]{2,200})\s*<\/strong>/i
+  ]
+  for (const pattern of styledStrongPatterns) {
+    const match = html.match(pattern)
+    if (match?.[1]) {
+      const t = match[1].trim()
+      if (t.length > 2 && t.length < 200) return t
+    }
   }
 
   // 3. First <strong> at very start of article body

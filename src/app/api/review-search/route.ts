@@ -26,6 +26,13 @@ NO SON CRÍTICAS (excluir siempre):
 - Sinopsis, fichas técnicas o fichas de cartelera
 - Listas de "mejores películas del año" o rankings (a menos que cada entrada sea una reseña individual extensa)
 - Artículos que mencionan la película tangencialmente dentro de una nota más amplia
+- Notas de anticipación o preview previas al estreno que describen la película sin evaluarla críticamente
+- Artículos de la edición impresa que son ensayos, perfiles del director o contextualizaciones que no evalúan la película como obra
+
+CÓMO DISTINGUIR una crítica de una nota informativa:
+- Una CRÍTICA dice si la película es buena o mala, analiza sus méritos artísticos, emite juicios de valor ("lograda", "fallida", "notable", "decepcionante", etc.)
+- Una NOTA INFORMATIVA describe la película, da contexto sobre su producción o estreno, pero NO emite un juicio evaluativo sobre su calidad
+- Si la nota habla MÁS del director/contexto que de la calidad de la película, probablemente NO es una crítica
 
 Ante la duda, NO incluyas el resultado. Es preferible omitir un texto dudoso a incluir uno que no sea una crítica.
 
@@ -37,7 +44,8 @@ PASO 2 — Descubrimiento:
 Después de buscar en los medios conocidos, hacé búsquedas generales para encontrar críticas en otros medios que no estén en la lista anterior.
 
 IMPORTANTE — Deduplicación:
-Si una misma crítica (mismo autor, mismo medio) aparece en más de una URL (por ejemplo, una publicada durante un festival y otra al momento del estreno comercial), incluí solo la primera aparición.
+Si una misma crítica aparece en más de una URL del mismo medio (por ejemplo, URLs distintas que llevan al mismo texto), incluí solo una.
+PERO: si el mismo autor en el mismo medio publicó dos textos DISTINTOS (por ejemplo, uno durante un festival y otro en el estreno comercial), incluí ambos — son críticas diferentes.
 
 IMPORTANTE — Identificación de autores:
 Para CADA crítica encontrada, debés hacer el esfuerzo de identificar al autor. El autor casi siempre está disponible. Buscalo en:
