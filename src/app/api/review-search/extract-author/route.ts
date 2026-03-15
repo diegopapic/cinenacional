@@ -238,8 +238,15 @@ function extractFromByline(html: string): string | null {
     /<a[^>]*rel=["']author["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i,
     // Author link with class containing "author"
     /<a[^>]*class=["'][^"']*\bauthor\b[^"']*["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i,
+    // Author div/span with "Por" text followed by a link (Drupal/Agencia Paco Urondo pattern)
+    /<[^>]*class=["'][^"']*\bauthor\b[^"']*["'][^>]*>[\s\S]*?<a[^>]*>\s*([^<]{2,80})\s*<\/a>/i,
     // WordPress-style author vcard
     /<[^>]*class=["'][^"']*\bvcard\b[^"']*["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*</i,
+    // Author container with img alt (Escribiendo Cine "columnistas-noticia" pattern)
+    /<[^>]*class=["'][^"']*columnista[^"']*["'][^>]*>[\s\S]{0,500}?<img[^>]*alt=["']([^"']{2,80})["']/i,
+    // Author image with class containing author/avatar
+    /<img[^>]*class=["'][^"']*(?:author|avatar)[^"']*["'][^>]*alt=["']([^"']{2,80})["']/i,
+    /<img[^>]*alt=["']([^"']{2,80})["'][^>]*class=["'][^"']*(?:author|avatar)[^"']*["']/i,
     // "By <name>" pattern in text
     /<[^>]*class=["'][^"']*\bbyline\b[^"']*["'][^>]*>[\s\S]*?\b(?:By|Por|por)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,4})/i,
     // Simple "By Name" near article start
