@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { Search, Loader2, Save, ExternalLink, CheckSquare, Square, AlertCircle } from 'lucide-react'
+import { Search, Loader2, Save, ExternalLink, CheckSquare, Square, AlertCircle, UserSearch } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCsrfHeaders } from '@/lib/csrf-client'
 
@@ -35,6 +35,8 @@ export default function ReviewSearchPage() {
   const [saving, setSaving] = useState(false)
   const [saveResults, setSaveResults] = useState<SaveResult[] | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
+  const [enriching, setEnriching] = useState(false)
+  const [enrichProgress, setEnrichProgress] = useState({ done: 0, total: 0 })
 
   // Movie selection
   const [movieQuery, setMovieQuery] = useState('')
@@ -106,6 +108,56 @@ export default function ReviewSearchPage() {
     return null
   }
 
+  async function enrichMissingAuthors(parsedReviews: ReviewResult[]) {
+    const nullAuthorIndices = parsedReviews
+      .map((r, i) => (!r.autor ? i : -1))
+      .filter((i) => i !== -1)
+
+    if (nullAuthorIndices.length === 0) return
+
+    setEnriching(true)
+    setEnrichProgress({ done: 0, total: nullAuthorIndices.length })
+
+    // Process in parallel batches of 5
+    const BATCH_SIZE = 5
+    let completed = 0
+
+    for (let i = 0; i < nullAuthorIndices.length; i += BATCH_SIZE) {
+      const batch = nullAuthorIndices.slice(i, i + BATCH_SIZE)
+
+      await Promise.all(
+        batch.map(async (reviewIndex) => {
+          try {
+            const review = parsedReviews[reviewIndex]
+            const res = await fetch('/api/review-search/extract-author', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
+              body: JSON.stringify({ url: review.link })
+            })
+
+            if (res.ok) {
+              const { author } = await res.json()
+              if (author) {
+                setReviews((prev) =>
+                  prev.map((r, idx) =>
+                    idx === reviewIndex ? { ...r, autor: author } : r
+                  )
+                )
+              }
+            }
+          } catch {
+            // individual failure is OK
+          } finally {
+            completed++
+            setEnrichProgress({ done: completed, total: nullAuthorIndices.length })
+          }
+        })
+      )
+    }
+
+    setEnriching(false)
+  }
+
   async function handleSearch() {
     if (!movieTitle.trim()) return
 
@@ -115,6 +167,7 @@ export default function ReviewSearchPage() {
     setSelected(new Set())
     setSaveResults(null)
     setParseError(null)
+    setEnriching(false)
 
     try {
       const res = await fetch('/api/review-search', {
@@ -139,7 +192,6 @@ export default function ReviewSearchPage() {
 
       const decoder = new TextDecoder()
       let accumulated = ''
-      let enrichedFromServer = false
 
       while (true) {
         const { done, value } = await reader.read()
@@ -155,12 +207,6 @@ export default function ReviewSearchPage() {
             if (event.type === 'text') {
               accumulated += event.content
               setStreamText(accumulated)
-            } else if (event.type === 'enriched') {
-              // Server enriched reviews with extracted authors
-              const enriched = event.content as ReviewResult[]
-              setReviews(enriched)
-              setSelected(new Set(enriched.map((_: ReviewResult, i: number) => i)))
-              enrichedFromServer = true
             } else if (event.type === 'error') {
               toast.error(event.content)
             }
@@ -170,19 +216,21 @@ export default function ReviewSearchPage() {
         }
       }
 
-      // If server already sent enriched results, skip client-side parsing
-      if (!enrichedFromServer) {
-        const parsed = parseJsonFromText(accumulated)
-        if (parsed && parsed.length > 0) {
-          setReviews(parsed)
-          setSelected(new Set(parsed.map((_, i) => i)))
-        } else if (accumulated.trim()) {
-          setParseError(
-            'No se pudo extraer un JSON válido de la respuesta. Revisá el texto de Claude abajo.'
-          )
-        } else {
-          setParseError('Claude no devolvió resultados.')
-        }
+      // Parse the accumulated text
+      const parsed = parseJsonFromText(accumulated)
+      if (parsed && parsed.length > 0) {
+        setReviews(parsed)
+        setSelected(new Set(parsed.map((_, i) => i)))
+        setSearching(false)
+
+        // Enrich reviews with missing authors
+        enrichMissingAuthors(parsed)
+      } else if (accumulated.trim()) {
+        setParseError(
+          'No se pudo extraer un JSON válido de la respuesta. Revisá el texto de Claude abajo.'
+        )
+      } else {
+        setParseError('Claude no devolvió resultados.')
       }
     } catch (err) {
       toast.error('Error de conexión')
@@ -318,10 +366,18 @@ export default function ReviewSearchPage() {
         {reviews.length > 0 && (
           <div className="bg-white shadow rounded-lg overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-lg font-medium text-gray-900">
-                {reviews.length} crítica{reviews.length !== 1 && 's'} encontrada
-                {reviews.length !== 1 && 's'}
-              </h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-medium text-gray-900">
+                  {reviews.length} crítica{reviews.length !== 1 && 's'} encontrada
+                  {reviews.length !== 1 && 's'}
+                </h2>
+                {enriching && (
+                  <span className="inline-flex items-center gap-1.5 text-sm text-blue-600">
+                    <UserSearch className="h-4 w-4 animate-pulse" />
+                    Buscando autores ({enrichProgress.done}/{enrichProgress.total})...
+                  </span>
+                )}
+              </div>
               <button
                 onClick={toggleAll}
                 className="text-sm text-blue-600 hover:text-blue-800"
