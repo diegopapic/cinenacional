@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { Search, Loader2, Save, ExternalLink, CheckSquare, Square, AlertCircle, UserSearch } from 'lucide-react'
+import { Search, Loader2, Save, ExternalLink, CheckSquare, Square, AlertCircle, UserSearch, Copy } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCsrfHeaders } from '@/lib/csrf-client'
 
@@ -39,6 +39,7 @@ export default function ReviewSearchPage() {
   const [parseError, setParseError] = useState<string | null>(null)
   const [enriching, setEnriching] = useState(false)
   const [enrichProgress, setEnrichProgress] = useState({ done: 0, total: 0 })
+  const [duplicates, setDuplicates] = useState<Set<number>>(new Set())
 
   // Movie selection
   const [movieQuery, setMovieQuery] = useState('')
@@ -73,6 +74,45 @@ export default function ReviewSearchPage() {
       }
     }, 300)
   }, [])
+
+  /**
+   * Find duplicate reviews: same domain + same author = duplicate.
+   * Returns the set of indices to mark as duplicates (keeps first occurrence).
+   */
+  function findDuplicates(revs: ReviewResult[]): Set<number> {
+    const dupes = new Set<number>()
+    const normalize = (s: string) =>
+      s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+
+    // Group by domain
+    const byDomain = new Map<string, number[]>()
+    for (let i = 0; i < revs.length; i++) {
+      try {
+        const domain = new URL(revs[i].link).hostname.replace(/^www\./, '')
+        if (!byDomain.has(domain)) byDomain.set(domain, [])
+        byDomain.get(domain)!.push(i)
+      } catch { /* skip invalid URLs */ }
+    }
+
+    for (const indices of byDomain.values()) {
+      if (indices.length < 2) continue
+
+      // Same domain + same author → duplicate (keep first)
+      const seenAuthors = new Map<string, number>()
+      for (const idx of indices) {
+        const author = revs[idx].autor
+        if (!author || author === 'null') continue
+        const key = normalize(author)
+        if (seenAuthors.has(key)) {
+          dupes.add(idx)
+        } else {
+          seenAuthors.set(key, idx)
+        }
+      }
+    }
+
+    return dupes
+  }
 
   function parseJsonFromText(text: string): ReviewResult[] | null {
     // Try to extract JSON array from potentially messy output
@@ -202,6 +242,22 @@ export default function ReviewSearchPage() {
     } else {
       toast(`No se encontraron autores adicionales`, { icon: 'ℹ️' })
     }
+
+    // Run dedup after enrichment (now we have corrected authors)
+    setReviews((currentReviews) => {
+      const dupes = findDuplicates(currentReviews)
+      if (dupes.size > 0) {
+        setDuplicates(dupes)
+        // Auto-deselect duplicates
+        setSelected((prev) => {
+          const next = new Set(prev)
+          dupes.forEach((idx) => next.delete(idx))
+          return next
+        })
+        toast(`${dupes.size} duplicada(s) detectada(s) y deseleccionada(s)`, { icon: '🔄' })
+      }
+      return currentReviews // don't modify, just read
+    })
   }
 
   async function handleSearch() {
@@ -214,6 +270,7 @@ export default function ReviewSearchPage() {
     setSaveResults(null)
     setParseError(null)
     setEnriching(false)
+    setDuplicates(new Set())
 
     try {
       const res = await fetch('/api/review-search', {
@@ -274,13 +331,23 @@ export default function ReviewSearchPage() {
           if (!r.fecha || r.fecha === 'null') r.fecha = null
         }
         setReviews(parsed)
-        setSelected(new Set(parsed.map((_, i) => i)))
+        // Initial dedup with Claude-provided authors
+        const initialDupes = findDuplicates(parsed)
+        setDuplicates(initialDupes)
+        // Select all except initial duplicates
+        const initialSelection = new Set(parsed.map((_, i) => i))
+        initialDupes.forEach((idx) => initialSelection.delete(idx))
+        setSelected(initialSelection)
         setSearching(false)
 
+        if (initialDupes.size > 0) {
+          toast(`${initialDupes.size} duplicada(s) detectada(s) y deseleccionada(s)`, { icon: '🔄' })
+        }
+
         // Enrich reviews with missing authors — awaited with visible error handling
-        const nullCount = parsed.filter(r => !r.autor).length
-        console.log(`[search] Parsed ${parsed.length} reviews, ${nullCount} with null author`)
-        if (nullCount > 0) {
+        const needsEnrichCount = parsed.filter(r => !r.autor || !r.titulo || !r.fecha).length
+        console.log(`[search] Parsed ${parsed.length} reviews, ${needsEnrichCount} need enrichment`)
+        if (needsEnrichCount > 0) {
           try {
             await enrichMissingAuthors(parsed)
           } catch (enrichErr) {
@@ -477,10 +544,11 @@ export default function ReviewSearchPage() {
                 <tbody className="divide-y divide-gray-200">
                   {reviews.map((review, i) => {
                     const result = saveResults?.find((r) => r.review.link === review.link)
+                    const isDuplicate = duplicates.has(i)
                     return (
                       <tr
                         key={i}
-                        className={`hover:bg-gray-50 ${result?.success ? 'bg-green-50' : result && !result.success ? 'bg-red-50' : ''}`}
+                        className={`hover:bg-gray-50 ${result?.success ? 'bg-green-50' : result && !result.success ? 'bg-red-50' : isDuplicate ? 'bg-yellow-50/50' : ''}`}
                       >
                         <td className="px-4 py-3 text-center">
                           <button
@@ -517,6 +585,12 @@ export default function ReviewSearchPage() {
                           </a>
                         </td>
                         <td className="px-4 py-3 text-sm">
+                          {isDuplicate && !result && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                              <Copy className="h-3 w-3" />
+                              Duplicada
+                            </span>
+                          )}
                           {result?.success && (
                             <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                               Guardada
