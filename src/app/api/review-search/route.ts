@@ -60,12 +60,21 @@ Para cada crítica encontrada, devolvé ÚNICAMENTE un JSON array con este forma
 ]`
 }
 
+function buildUserMessage(title: string, year?: number | null, director?: string | null): string {
+  const parts = [`Buscá críticas de la película "${title}"`]
+  const context: string[] = []
+  if (year) context.push(`año ${year}`)
+  if (director) context.push(`dirigida por ${director}`)
+  if (context.length > 0) parts.push(`(${context.join(', ')})`)
+  return parts.join(' ')
+}
+
 export async function POST(request: NextRequest) {
   const auth = await requireAuth()
   if (auth.error) return auth.error
 
   try {
-    const { movieTitle } = await request.json()
+    const { movieTitle, movieYear, movieDirector } = await request.json()
     if (!movieTitle || typeof movieTitle !== 'string' || movieTitle.trim().length === 0) {
       return new Response(JSON.stringify({ error: 'El título de la película es requerido' }), {
         status: 400,
@@ -107,7 +116,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'user',
-          content: `Buscá críticas de la película "${movieTitle.trim()}"`
+          content: buildUserMessage(movieTitle.trim(), movieYear, movieDirector)
         }
       ]
     })

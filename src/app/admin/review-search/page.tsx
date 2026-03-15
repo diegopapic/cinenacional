@@ -19,6 +19,7 @@ interface MovieOption {
   id: number
   title: string
   year: number | null
+  director: string | null
 }
 
 interface SaveResult {
@@ -29,7 +30,6 @@ interface SaveResult {
 }
 
 export default function ReviewSearchPage() {
-  const [movieTitle, setMovieTitle] = useState('')
   const [searching, setSearching] = useState(false)
   const [streamText, setStreamText] = useState('')
   const [reviews, setReviews] = useState<ReviewResult[]>([])
@@ -60,11 +60,18 @@ export default function ReviewSearchPage() {
         const res = await fetch(`/api/movies?search=${encodeURIComponent(query)}&limit=10`)
         if (res.ok) {
           const data = await res.json()
-          const movies = (data.items || data).map((m: Record<string, unknown>) => ({
-            id: m.id,
-            title: m.title,
-            year: m.year
-          }))
+          const movies = (data.items || data).map((m: Record<string, unknown>) => {
+            // Extract director from crew (roleId 2)
+            let director: string | null = null
+            const crew = m.crew as Array<{ role?: { name?: string }; person?: { firstName?: string; lastName?: string } }> | undefined
+            if (crew) {
+              const dir = crew.find(c => c.role?.name === 'Director' || c.role?.name === 'Dirección')
+              if (dir?.person) {
+                director = [dir.person.firstName, dir.person.lastName].filter(Boolean).join(' ')
+              }
+            }
+            return { id: m.id as number, title: m.title as string, year: m.year as number | null, director }
+          })
           setMovieOptions(movies)
         }
       } catch {
@@ -249,7 +256,10 @@ export default function ReviewSearchPage() {
   }
 
   async function handleSearch() {
-    if (!movieTitle.trim()) return
+    if (!selectedMovie) {
+      toast.error('Seleccioná una película de la base de datos')
+      return
+    }
 
     setSearching(true)
     setStreamText('')
@@ -264,7 +274,11 @@ export default function ReviewSearchPage() {
       const res = await fetch('/api/review-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
-        body: JSON.stringify({ movieTitle: movieTitle.trim() })
+        body: JSON.stringify({
+          movieTitle: selectedMovie.title,
+          movieYear: selectedMovie.year,
+          movieDirector: selectedMovie.director
+        })
       })
 
       if (!res.ok) {
@@ -432,19 +446,53 @@ export default function ReviewSearchPage() {
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Search section */}
         <div className="bg-white shadow rounded-lg p-6">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Película
+          </label>
           <div className="flex gap-3">
-            <input
-              type="text"
-              value={movieTitle}
-              onChange={(e) => setMovieTitle(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !searching && handleSearch()}
-              placeholder="Título de la película..."
-              className="flex-1 rounded-md border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900"
-              disabled={searching}
-            />
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={selectedMovie ? `${selectedMovie.title} (${selectedMovie.year || 'S/A'})${selectedMovie.director ? ` — ${selectedMovie.director}` : ''}` : movieQuery}
+                onChange={(e) => {
+                  setSelectedMovie(null)
+                  setMovieQuery(e.target.value)
+                  searchMovies(e.target.value)
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && selectedMovie && !searching && handleSearch()}
+                placeholder="Buscá la película en la base de datos..."
+                className="w-full rounded-md border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900"
+                disabled={searching}
+              />
+              {loadingMovies && (
+                <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-gray-400" />
+              )}
+              {movieOptions.length > 0 && !selectedMovie && (
+                <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                  {movieOptions.map((m) => (
+                    <li key={m.id}>
+                      <button
+                        onClick={() => {
+                          setSelectedMovie(m)
+                          setMovieOptions([])
+                          setMovieQuery('')
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-900 hover:bg-blue-50"
+                      >
+                        {m.title}{' '}
+                        <span className="text-gray-500">({m.year || 'S/A'})</span>
+                        {m.director && (
+                          <span className="text-gray-400 ml-1">— {m.director}</span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <button
               onClick={handleSearch}
-              disabled={searching || !movieTitle.trim()}
+              disabled={searching || !selectedMovie}
               className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {searching ? (
@@ -452,7 +500,7 @@ export default function ReviewSearchPage() {
               ) : (
                 <Search className="h-4 w-4" />
               )}
-              Buscar
+              Buscar críticas
             </button>
           </div>
         </div>
@@ -597,52 +645,16 @@ export default function ReviewSearchPage() {
               </table>
             </div>
 
-            {/* Movie selector + Save */}
-            <div className="px-6 py-4 border-t border-gray-200 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Película en la base de datos
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={selectedMovie ? `${selectedMovie.title} (${selectedMovie.year || 'S/A'})` : movieQuery}
-                    onChange={(e) => {
-                      setSelectedMovie(null)
-                      setMovieQuery(e.target.value)
-                      searchMovies(e.target.value)
-                    }}
-                    placeholder="Buscá la película en la base de datos..."
-                    className="w-full rounded-md border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900"
-                  />
-                  {loadingMovies && (
-                    <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-gray-400" />
-                  )}
-                  {movieOptions.length > 0 && !selectedMovie && (
-                    <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                      {movieOptions.map((m) => (
-                        <li key={m.id}>
-                          <button
-                            onClick={() => {
-                              setSelectedMovie(m)
-                              setMovieOptions([])
-                              setMovieQuery('')
-                            }}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-900 hover:bg-blue-50"
-                          >
-                            {m.title}{' '}
-                            <span className="text-gray-500">({m.year || 'S/A'})</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-
+            {/* Save */}
+            <div className="px-6 py-4 border-t border-gray-200">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">
                   {selected.size} de {reviews.length} seleccionada{selected.size !== 1 && 's'}
+                  {selectedMovie && (
+                    <span className="ml-2 text-gray-400">
+                      → {selectedMovie.title} ({selectedMovie.year || 'S/A'})
+                    </span>
+                  )}
                 </p>
                 <button
                   onClick={handleSave}
