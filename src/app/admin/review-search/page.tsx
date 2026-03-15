@@ -139,6 +139,7 @@ export default function ReviewSearchPage() {
 
       const decoder = new TextDecoder()
       let accumulated = ''
+      let enrichedFromServer = false
 
       while (true) {
         const { done, value } = await reader.read()
@@ -154,6 +155,12 @@ export default function ReviewSearchPage() {
             if (event.type === 'text') {
               accumulated += event.content
               setStreamText(accumulated)
+            } else if (event.type === 'enriched') {
+              // Server enriched reviews with extracted authors
+              const enriched = event.content as ReviewResult[]
+              setReviews(enriched)
+              setSelected(new Set(enriched.map((_: ReviewResult, i: number) => i)))
+              enrichedFromServer = true
             } else if (event.type === 'error') {
               toast.error(event.content)
             }
@@ -163,17 +170,19 @@ export default function ReviewSearchPage() {
         }
       }
 
-      // Parse the accumulated text
-      const parsed = parseJsonFromText(accumulated)
-      if (parsed && parsed.length > 0) {
-        setReviews(parsed)
-        setSelected(new Set(parsed.map((_, i) => i)))
-      } else if (accumulated.trim()) {
-        setParseError(
-          'No se pudo extraer un JSON válido de la respuesta. Revisá el texto de Claude abajo.'
-        )
-      } else {
-        setParseError('Claude no devolvió resultados.')
+      // If server already sent enriched results, skip client-side parsing
+      if (!enrichedFromServer) {
+        const parsed = parseJsonFromText(accumulated)
+        if (parsed && parsed.length > 0) {
+          setReviews(parsed)
+          setSelected(new Set(parsed.map((_, i) => i)))
+        } else if (accumulated.trim()) {
+          setParseError(
+            'No se pudo extraer un JSON válido de la respuesta. Revisá el texto de Claude abajo.'
+          )
+        } else {
+          setParseError('Claude no devolvió resultados.')
+        }
       }
     } catch (err) {
       toast.error('Error de conexión')

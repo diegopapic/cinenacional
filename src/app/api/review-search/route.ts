@@ -1,5 +1,6 @@
 // src/app/api/review-search/route.ts
-// Streams Claude's web search results for movie reviews.
+// Streams Claude's web search results for movie reviews,
+// then enriches results by fetching pages to extract missing authors.
 
 import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
@@ -8,6 +9,13 @@ import { createLogger } from '@/lib/logger'
 import { prisma } from '@/lib/prisma'
 
 const log = createLogger('api:review-search')
+
+interface ReviewResult {
+  medio: string
+  autor: string | null
+  link: string
+  pelicula: string
+}
 
 function buildSystemPrompt(outlets: { name: string; url: string }[]): string {
   const outletList = outlets.map((o) => `- ${o.url} (${o.name})`).join('\n')
@@ -40,6 +48,176 @@ Para cada crítica encontrada, devolvé ÚNICAMENTE un JSON array con este forma
   }
 ]
 Si un texto aparece replicado en varios sitios, incluí solo una instancia.`
+}
+
+/**
+ * Fetches a review page and extracts the author from HTML metadata.
+ * Checks JSON-LD, meta tags, and common byline patterns.
+ */
+async function extractAuthorFromPage(url: string): Promise<string | null> {
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 8000)
+
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (compatible; CineNacionalBot/1.0; +https://cinenacional.com)',
+        Accept: 'text/html'
+      }
+    })
+
+    clearTimeout(timeout)
+
+    if (!res.ok) return null
+
+    const html = await res.text()
+
+    // 1. JSON-LD: look for author in structured data
+    const jsonLdMatches = html.matchAll(
+      /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+    )
+    for (const match of jsonLdMatches) {
+      try {
+        const data = JSON.parse(match[1])
+        const author = extractAuthorFromJsonLd(data)
+        if (author) return author
+      } catch {
+        // malformed JSON-LD, skip
+      }
+    }
+
+    // 2. Meta tags: og:article:author, author, citation_author
+    const metaPatterns = [
+      /< *meta[^>]*(?:name|property)=["'](?:author|article:author|og:article:author|citation_author|dc\.creator)["'][^>]*content=["']([^"']+)["']/i,
+      /< *meta[^>]*content=["']([^"']+)["'][^>]*(?:name|property)=["'](?:author|article:author|og:article:author|citation_author|dc\.creator)["']/i
+    ]
+    for (const pattern of metaPatterns) {
+      const match = html.match(pattern)
+      if (match?.[1]) {
+        const name = match[1].trim()
+        if (name && name.length < 100 && !name.includes('<')) return name
+      }
+    }
+
+    // 3. Common byline patterns in HTML
+    const bylinePatterns = [
+      /<[^>]*class=["'][^"']*(?:byline|author-name|post-author|entry-author|article-author|writer)[^"']*["'][^>]*>([^<]{2,80})<\//i,
+      /<a[^>]*class=["'][^"']*author[^"']*["'][^>]*>([^<]{2,80})<\/a>/i,
+      /<[^>]*rel=["']author["'][^>]*>([^<]{2,80})<\//i
+    ]
+    for (const pattern of bylinePatterns) {
+      const match = html.match(pattern)
+      if (match?.[1]) {
+        const name = match[1].trim()
+        // Filter out common false positives
+        if (
+          name &&
+          name.length > 2 &&
+          name.length < 80 &&
+          !name.includes('{') &&
+          !name.includes('<') &&
+          !/^\d+$/.test(name)
+        ) {
+          return name
+        }
+      }
+    }
+
+    return null
+  } catch (err) {
+    log.debug(`Failed to fetch author from ${url}: ${err}`)
+    return null
+  }
+}
+
+function extractAuthorFromJsonLd(data: unknown): string | null {
+  if (!data || typeof data !== 'object') return null
+
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      const result = extractAuthorFromJsonLd(item)
+      if (result) return result
+    }
+    return null
+  }
+
+  const obj = data as Record<string, unknown>
+
+  // Direct author field
+  if (obj.author) {
+    if (typeof obj.author === 'string') return obj.author
+    if (Array.isArray(obj.author)) {
+      const first = obj.author[0]
+      if (typeof first === 'string') return first
+      if (first && typeof first === 'object' && 'name' in first) {
+        return (first as { name: string }).name
+      }
+    }
+    if (typeof obj.author === 'object' && 'name' in obj.author) {
+      return (obj.author as { name: string }).name
+    }
+  }
+
+  // Check @graph array (common in Yoast SEO, etc.)
+  if (obj['@graph'] && Array.isArray(obj['@graph'])) {
+    for (const node of obj['@graph']) {
+      if (
+        node &&
+        typeof node === 'object' &&
+        '@type' in node &&
+        (node as Record<string, unknown>)['@type'] === 'Person' &&
+        'name' in node
+      ) {
+        return (node as { name: string }).name
+      }
+    }
+    // Fallback: look for Article type with author reference
+    for (const node of obj['@graph']) {
+      const result = extractAuthorFromJsonLd(node)
+      if (result) return result
+    }
+  }
+
+  return null
+}
+
+/**
+ * For reviews with null author, fetch the page and try to extract the author.
+ */
+async function enrichReviewsWithAuthors(
+  reviews: ReviewResult[]
+): Promise<ReviewResult[]> {
+  const needsEnrichment = reviews.filter((r) => !r.autor)
+  if (needsEnrichment.length === 0) return reviews
+
+  log.info(
+    `Enriching ${needsEnrichment.length} reviews with missing authors...`
+  )
+
+  // Fetch pages in parallel (max 5 concurrent)
+  const CONCURRENCY = 5
+  const results = new Map<string, string | null>()
+
+  for (let i = 0; i < needsEnrichment.length; i += CONCURRENCY) {
+    const batch = needsEnrichment.slice(i, i + CONCURRENCY)
+    const promises = batch.map(async (review) => {
+      const author = await extractAuthorFromPage(review.link)
+      results.set(review.link, author)
+    })
+    await Promise.all(promises)
+  }
+
+  return reviews.map((review) => {
+    if (review.autor) return review
+    const extracted = results.get(review.link)
+    if (extracted) {
+      log.info(`Extracted author "${extracted}" from ${review.link}`)
+      return { ...review, autor: extracted }
+    }
+    return review
+  })
 }
 
 export async function POST(request: NextRequest) {
@@ -99,15 +277,34 @@ export async function POST(request: NextRequest) {
     const readable = new ReadableStream({
       async start(controller) {
         try {
+          let accumulated = ''
+
           for await (const event of stream) {
             if (event.type === 'content_block_delta') {
               const delta = event.delta as unknown as Record<string, unknown>
               if (delta.type === 'text_delta' && typeof delta.text === 'string') {
+                accumulated += delta.text
                 controller.enqueue(
                   encoder.encode(`data: ${JSON.stringify({ type: 'text', content: delta.text })}\n\n`)
                 )
               }
             } else if (event.type === 'message_stop') {
+              // Before sending 'done', try to enrich reviews with missing authors
+              try {
+                const parsed = parseJsonFromText(accumulated)
+                if (parsed && parsed.length > 0) {
+                  const enriched = await enrichReviewsWithAuthors(parsed)
+                  // Send enriched results as a separate event
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({ type: 'enriched', content: enriched })}\n\n`
+                    )
+                  )
+                }
+              } catch (err) {
+                log.error('Error enriching reviews', err)
+              }
+
               controller.enqueue(
                 encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`)
               )
@@ -140,4 +337,27 @@ export async function POST(request: NextRequest) {
       headers: { 'Content-Type': 'application/json' }
     })
   }
+}
+
+/** Extract JSON array from Claude's text output */
+function parseJsonFromText(text: string): ReviewResult[] | null {
+  try {
+    const parsed = JSON.parse(text.trim())
+    if (Array.isArray(parsed)) return parsed
+  } catch {
+    // continue
+  }
+
+  const firstBracket = text.indexOf('[')
+  const lastBracket = text.lastIndexOf(']')
+  if (firstBracket !== -1 && lastBracket > firstBracket) {
+    try {
+      const parsed = JSON.parse(text.slice(firstBracket, lastBracket + 1))
+      if (Array.isArray(parsed)) return parsed
+    } catch {
+      // continue
+    }
+  }
+
+  return null
 }
