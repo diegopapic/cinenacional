@@ -109,15 +109,19 @@ export default function ReviewSearchPage() {
   }
 
   async function enrichMissingAuthors(parsedReviews: ReviewResult[]) {
+    // Claude sometimes returns "null" (string) instead of null (JSON null)
+    const needsAuthor = (r: ReviewResult) =>
+      !r.autor || r.autor === 'null' || r.autor === 'N/A' || r.autor === 'No disponible'
+
     const nullAuthorIndices = parsedReviews
-      .map((r, i) => (!r.autor ? i : -1))
+      .map((r, i) => (needsAuthor(r) ? i : -1))
       .filter((i) => i !== -1)
 
     if (nullAuthorIndices.length === 0) return
 
-    console.log(`[enrich] Starting enrichment for ${nullAuthorIndices.length} reviews with null author`)
     setEnriching(true)
     setEnrichProgress({ done: 0, total: nullAuthorIndices.length })
+    toast(`Buscando autores para ${nullAuthorIndices.length} críticas...`, { icon: '🔍' })
 
     let found = 0
 
@@ -137,29 +141,25 @@ export default function ReviewSearchPage() {
           const { author } = await res.json()
           if (author) {
             found++
-            console.log(`[enrich] Found author "${author}" for ${review.medio}`)
             setReviews((prev) =>
               prev.map((r, idx) =>
                 idx === reviewIndex ? { ...r, autor: author } : r
               )
             )
-          } else {
-            console.log(`[enrich] No author found for ${review.medio} (${review.link})`)
           }
-        } else {
-          console.error(`[enrich] HTTP ${res.status} for ${review.medio}: ${review.link}`)
         }
-      } catch (err) {
-        console.error(`[enrich] Error fetching author for ${review.medio}:`, err)
+      } catch {
+        // ignore fetch errors
       }
 
       setEnrichProgress({ done: i + 1, total: nullAuthorIndices.length })
     }
 
-    console.log(`[enrich] Done. Found ${found} authors out of ${nullAuthorIndices.length} missing.`)
     setEnriching(false)
     if (found > 0) {
       toast.success(`${found} autor(es) encontrado(s) automáticamente`)
+    } else {
+      toast(`No se encontraron autores adicionales`, { icon: 'ℹ️' })
     }
   }
 
@@ -224,16 +224,18 @@ export default function ReviewSearchPage() {
       // Parse the accumulated text
       const parsed = parseJsonFromText(accumulated)
       if (parsed && parsed.length > 0) {
+        // Normalize "null" strings to actual null
+        for (const r of parsed) {
+          if (r.autor === 'null' || r.autor === 'N/A' || r.autor === 'No disponible') {
+            r.autor = null
+          }
+        }
         setReviews(parsed)
         setSelected(new Set(parsed.map((_, i) => i)))
         setSearching(false)
 
         // Enrich reviews with missing authors
-        const nullCount = parsed.filter(r => !r.autor).length
-        console.log(`[handleSearch] Parsed ${parsed.length} reviews, ${nullCount} with null author. Starting enrichment...`)
-        enrichMissingAuthors(parsed).catch(err => {
-          console.error('[handleSearch] enrichMissingAuthors crashed:', err)
-        })
+        enrichMissingAuthors(parsed).catch(() => {})
       } else if (accumulated.trim()) {
         setParseError(
           'No se pudo extraer un JSON válido de la respuesta. Revisá el texto de Claude abajo.'
@@ -437,7 +439,7 @@ export default function ReviewSearchPage() {
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900">{review.medio}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">
-                          {review.autor || '—'}
+                          {review.autor && review.autor !== 'null' ? review.autor : '—'}
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <a
