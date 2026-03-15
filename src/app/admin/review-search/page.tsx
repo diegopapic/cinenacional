@@ -109,6 +109,8 @@ export default function ReviewSearchPage() {
   }
 
   async function enrichMissingAuthors(parsedReviews: ReviewResult[]) {
+    console.log('[enrichMissingAuthors] ENTERED, reviews:', parsedReviews.length)
+
     // Claude sometimes returns "null" (string) instead of null (JSON null)
     const needsAuthor = (r: ReviewResult) =>
       !r.autor || r.autor === 'null' || r.autor === 'N/A' || r.autor === 'No disponible'
@@ -117,11 +119,16 @@ export default function ReviewSearchPage() {
       .map((r, i) => (needsAuthor(r) ? i : -1))
       .filter((i) => i !== -1)
 
-    if (nullAuthorIndices.length === 0) return
+    console.log('[enrichMissingAuthors] nullAuthorIndices:', nullAuthorIndices.length, nullAuthorIndices)
+
+    if (nullAuthorIndices.length === 0) {
+      console.log('[enrichMissingAuthors] No reviews need authors, returning')
+      return
+    }
 
     setEnriching(true)
     setEnrichProgress({ done: 0, total: nullAuthorIndices.length })
-    toast(`Buscando autores para ${nullAuthorIndices.length} críticas...`, { icon: '🔍' })
+    toast(`Buscando autores para ${nullAuthorIndices.length} críticas...`)
 
     let found = 0
 
@@ -237,8 +244,17 @@ export default function ReviewSearchPage() {
         setSelected(new Set(parsed.map((_, i) => i)))
         setSearching(false)
 
-        // Enrich reviews with missing authors
-        enrichMissingAuthors(parsed).catch(() => {})
+        // Enrich reviews with missing authors — awaited with visible error handling
+        const nullCount = parsed.filter(r => !r.autor).length
+        console.log(`[search] Parsed ${parsed.length} reviews, ${nullCount} with null author`)
+        if (nullCount > 0) {
+          try {
+            await enrichMissingAuthors(parsed)
+          } catch (enrichErr) {
+            console.error('[search] enrichMissingAuthors CRASHED:', enrichErr)
+            toast.error(`Error buscando autores: ${enrichErr instanceof Error ? enrichErr.message : String(enrichErr)}`)
+          }
+        }
       } else if (accumulated.trim()) {
         setParseError(
           'No se pudo extraer un JSON válido de la respuesta. Revisá el texto de Claude abajo.'
