@@ -305,7 +305,8 @@ async function getMovieData(slug: string) {
                 id: true,
                 name: true,
                 url: true,
-                language: true
+                language: true,
+                country: true
               }
             }
           },

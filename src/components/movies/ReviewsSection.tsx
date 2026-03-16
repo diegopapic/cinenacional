@@ -16,6 +16,7 @@ interface ReviewMediaOutlet {
   name: string;
   url?: string | null;
   language?: string | null;
+  country?: string | null;
 }
 
 interface Review {
@@ -82,6 +83,7 @@ export function ReviewsSection({ reviews, movieSlug }: ReviewsSectionProps) {
             const publishDate = formatPublishDate(review.publishYear, review.publishMonth, review.publishDay);
             const outletLang = review.mediaOutlet?.language;
             const languageLabel = outletLang && outletLang !== 'es' ? LANGUAGE_LABELS[outletLang] || outletLang.toUpperCase() : null;
+            const outletCountry = review.mediaOutlet?.country || null;
 
             return (
               <article key={review.id} className="flex flex-col gap-1.5">
@@ -146,11 +148,11 @@ export function ReviewsSection({ reviews, movieSlug }: ReviewsSectionProps) {
                         </span>
                       )}
 
-                      {languageLabel && (
+                      {(outletCountry || languageLabel) && (
                         <>
                           <span className="text-[12px] text-muted-foreground/30 md:text-[13px]">·</span>
                           <span className="text-[10px] uppercase tracking-wider text-muted-foreground/40 md:text-[11px]">
-                            {languageLabel}
+                            {[outletCountry, languageLabel].filter(Boolean).join(' · ')}
                           </span>
                         </>
                       )}

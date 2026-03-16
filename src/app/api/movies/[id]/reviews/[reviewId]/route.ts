@@ -23,7 +23,8 @@ const REVIEW_INCLUDE = {
       id: true,
       name: true,
       url: true,
-      language: true
+      language: true,
+      country: true
     }
   }
 }

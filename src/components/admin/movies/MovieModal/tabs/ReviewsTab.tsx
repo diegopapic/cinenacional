@@ -31,6 +31,7 @@ interface ReviewMediaOutlet {
   name: string
   url?: string | null
   language?: string | null
+  country?: string | null
 }
 
 interface Review {
@@ -56,6 +57,7 @@ interface MediaOutletOption {
   name: string
   url?: string | null
   language?: string | null
+  country?: string | null
 }
 
 const EMPTY_REVIEW: Omit<Review, 'id'> = {
@@ -532,10 +534,12 @@ export default function ReviewsTab() {
                     {review.publishYear && (
                       <span>{formatDate(review.publishYear, review.publishMonth, review.publishDay)}</span>
                     )}
-                    {review.mediaOutlet?.language && review.mediaOutlet.language !== 'es' && (
+                    {(review.mediaOutlet?.country || (review.mediaOutlet?.language && review.mediaOutlet.language !== 'es')) && (
                       <>
                         <span className="text-gray-300">|</span>
-                        <span className="uppercase">{review.mediaOutlet.language}</span>
+                        <span className="uppercase">
+                          {[review.mediaOutlet.country, review.mediaOutlet.language !== 'es' ? review.mediaOutlet.language : null].filter(Boolean).join(' · ')}
+                        </span>
                       </>
                     )}
                   </div>
