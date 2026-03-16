@@ -9,8 +9,12 @@ import { createLogger } from '@/lib/logger'
 import { splitFullName } from '@/lib/people/nameUtils'
 import { generatePersonSlug } from '@/lib/people/peopleUtils'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 const log = createLogger('api:resolve-authors')
+
+const ACCENTS_FROM = 'áéíóúàèìòùâêîôûäëïöüãõñÁÉÍÓÚÀÈÌÒÙÂÊÎÔÛÄËÏÖÜÃÕÑ'
+const ACCENTS_TO = 'aeiouaeiouaeiouaeiouaonAEIOUAEIOUAEIOUAEIOUAON'
 
 const resolveAuthorsSchema = z.object({
   names: z.array(z.string().min(1)).min(1).max(100)
@@ -22,6 +26,47 @@ interface ResolvedAuthor {
   firstName: string | null
   lastName: string | null
   created: boolean
+}
+
+/**
+ * Finds a person by exact first+last name match (accent and case insensitive).
+ * Uses PostgreSQL translate() + lower() for accent-insensitive matching.
+ */
+async function findPersonByName(
+  firstName: string | null,
+  lastName: string | null
+): Promise<{ id: number; firstName: string | null; lastName: string | null } | null> {
+  if (firstName && lastName) {
+    const results = await prisma.$queryRaw<Array<{ id: number; first_name: string | null; last_name: string | null }>>(
+      Prisma.sql`
+        SELECT id, first_name, last_name FROM people
+        WHERE lower(translate(first_name, ${ACCENTS_FROM}, ${ACCENTS_TO})) = lower(translate(${firstName}, ${ACCENTS_FROM}, ${ACCENTS_TO}))
+          AND lower(translate(last_name, ${ACCENTS_FROM}, ${ACCENTS_TO})) = lower(translate(${lastName}, ${ACCENTS_FROM}, ${ACCENTS_TO}))
+        LIMIT 1
+      `
+    )
+    if (results.length > 0) {
+      return { id: results[0].id, firstName: results[0].first_name, lastName: results[0].last_name }
+    }
+  } else if (lastName && !firstName) {
+    // Single word name - could be in firstName or lastName
+    const results = await prisma.$queryRaw<Array<{ id: number; first_name: string | null; last_name: string | null }>>(
+      Prisma.sql`
+        SELECT id, first_name, last_name FROM people
+        WHERE (
+          (first_name IS NULL AND lower(translate(last_name, ${ACCENTS_FROM}, ${ACCENTS_TO})) = lower(translate(${lastName}, ${ACCENTS_FROM}, ${ACCENTS_TO})))
+          OR
+          (last_name IS NULL AND lower(translate(first_name, ${ACCENTS_FROM}, ${ACCENTS_TO})) = lower(translate(${lastName}, ${ACCENTS_FROM}, ${ACCENTS_TO})))
+        )
+        LIMIT 1
+      `
+    )
+    if (results.length > 0) {
+      return { id: results[0].id, firstName: results[0].first_name, lastName: results[0].last_name }
+    }
+  }
+
+  return null
 }
 
 export async function POST(request: NextRequest) {
@@ -36,59 +81,13 @@ export async function POST(request: NextRequest) {
     const uniqueNames = [...new Set(names.map(n => n.trim()).filter(Boolean))]
     const results: ResolvedAuthor[] = []
 
-    // Normalize for comparison
-    const normalize = (s: string) =>
-      s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-
     for (const name of uniqueNames) {
       try {
         // 1. Split name into first/last
         const { firstName, lastName } = await splitFullName(name, prisma)
 
-        // 2. Search for exact match in DB
-        const normalizedFirst = firstName ? normalize(firstName) : null
-        const normalizedLast = lastName ? normalize(lastName) : null
-
-        let existingPerson = null
-
-        if (normalizedFirst && normalizedLast) {
-          // Both first and last name - search for exact match
-          const candidates = await prisma.person.findMany({
-            where: {
-              AND: [
-                { firstName: { not: null } },
-                { lastName: { not: null } }
-              ]
-            },
-            select: { id: true, firstName: true, lastName: true },
-            take: 500
-          })
-
-          existingPerson = candidates.find(p => {
-            const pFirst = p.firstName ? normalize(p.firstName) : null
-            const pLast = p.lastName ? normalize(p.lastName) : null
-            return pFirst === normalizedFirst && pLast === normalizedLast
-          })
-        } else if (normalizedLast && !normalizedFirst) {
-          // Single word (went to lastName)
-          const candidates = await prisma.person.findMany({
-            where: {
-              OR: [
-                { lastName: { not: null }, firstName: null },
-                { firstName: { not: null }, lastName: null }
-              ]
-            },
-            select: { id: true, firstName: true, lastName: true },
-            take: 500
-          })
-
-          existingPerson = candidates.find(p => {
-            const pLast = p.lastName ? normalize(p.lastName) : null
-            const pFirst = p.firstName ? normalize(p.firstName) : null
-            return (pFirst === null && pLast === normalizedLast) ||
-                   (pLast === null && pFirst === normalizedLast)
-          })
-        }
+        // 2. Search for exact match in DB (accent + case insensitive)
+        const existingPerson = await findPersonByName(firstName, lastName)
 
         if (existingPerson) {
           results.push({
@@ -146,7 +145,6 @@ export async function POST(request: NextRequest) {
         log.info(`Created author "${name}" → new person ID ${newPerson.id} (${firstName || ''} ${lastName || ''}, gender: ${gender || 'unknown'})`)
       } catch (err) {
         log.error(`Error resolving author "${name}"`, err)
-        // Skip this author but continue with others
       }
     }
 

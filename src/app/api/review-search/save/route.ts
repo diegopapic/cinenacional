@@ -9,6 +9,7 @@ import { createLogger } from '@/lib/logger'
 import { splitFullName } from '@/lib/people/nameUtils'
 import { generatePersonSlug } from '@/lib/people/peopleUtils'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 const log = createLogger('api:review-search-save')
 
@@ -133,75 +134,61 @@ export async function POST(request: NextRequest) {
   }
 }
 
+const ACCENTS_FROM = 'áéíóúàèìòùâêîôûäëïöüãõñÁÉÍÓÚÀÈÌÒÙÂÊÎÔÛÄËÏÖÜÃÕÑ'
+const ACCENTS_TO = 'aeiouaeiouaeiouaeiouaonAEIOUAEIOUAEIOUAEIOUAON'
+
 // Cache to avoid re-resolving the same author within one request
 const authorCache = new Map<string, number>()
 
 /**
  * Resolves an author name to a Person ID.
- * Searches for exact match first, creates new Person if not found.
+ * Searches for exact match (accent+case insensitive) first, creates new Person if not found.
  */
 async function resolveAuthorByName(name: string): Promise<number | null> {
   const trimmed = name.trim()
   if (!trimmed) return null
 
-  const normalize = (s: string) =>
-    s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-
-  const normalizedName = normalize(trimmed)
+  const cacheKey = trimmed.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
 
   // Check cache first
-  if (authorCache.has(normalizedName)) {
-    return authorCache.get(normalizedName)!
+  if (authorCache.has(cacheKey)) {
+    return authorCache.get(cacheKey)!
   }
 
   try {
     // Split name
     const { firstName, lastName } = await splitFullName(trimmed, prisma)
-    const normalizedFirst = firstName ? normalize(firstName) : null
-    const normalizedLast = lastName ? normalize(lastName) : null
 
-    // Search for exact match
-    let existingPerson = null
+    // Search for exact match using PostgreSQL translate() for accent-insensitive matching
+    let existingPerson: { id: number } | null = null
 
-    if (normalizedFirst && normalizedLast) {
-      const candidates = await prisma.person.findMany({
-        where: {
-          AND: [
-            { firstName: { not: null } },
-            { lastName: { not: null } }
-          ]
-        },
-        select: { id: true, firstName: true, lastName: true },
-        take: 500
-      })
-
-      existingPerson = candidates.find(p => {
-        const pFirst = p.firstName ? normalize(p.firstName) : null
-        const pLast = p.lastName ? normalize(p.lastName) : null
-        return pFirst === normalizedFirst && pLast === normalizedLast
-      })
-    } else if (normalizedLast && !normalizedFirst) {
-      const candidates = await prisma.person.findMany({
-        where: {
-          OR: [
-            { lastName: { not: null }, firstName: null },
-            { firstName: { not: null }, lastName: null }
-          ]
-        },
-        select: { id: true, firstName: true, lastName: true },
-        take: 500
-      })
-
-      existingPerson = candidates.find(p => {
-        const pLast = p.lastName ? normalize(p.lastName) : null
-        const pFirst = p.firstName ? normalize(p.firstName) : null
-        return (pFirst === null && pLast === normalizedLast) ||
-               (pLast === null && pFirst === normalizedLast)
-      })
+    if (firstName && lastName) {
+      const results = await prisma.$queryRaw<Array<{ id: number }>>(
+        Prisma.sql`
+          SELECT id FROM people
+          WHERE lower(translate(first_name, ${ACCENTS_FROM}, ${ACCENTS_TO})) = lower(translate(${firstName}, ${ACCENTS_FROM}, ${ACCENTS_TO}))
+            AND lower(translate(last_name, ${ACCENTS_FROM}, ${ACCENTS_TO})) = lower(translate(${lastName}, ${ACCENTS_FROM}, ${ACCENTS_TO}))
+          LIMIT 1
+        `
+      )
+      if (results.length > 0) existingPerson = results[0]
+    } else if (lastName && !firstName) {
+      const results = await prisma.$queryRaw<Array<{ id: number }>>(
+        Prisma.sql`
+          SELECT id FROM people
+          WHERE (
+            (first_name IS NULL AND lower(translate(last_name, ${ACCENTS_FROM}, ${ACCENTS_TO})) = lower(translate(${lastName}, ${ACCENTS_FROM}, ${ACCENTS_TO})))
+            OR
+            (last_name IS NULL AND lower(translate(first_name, ${ACCENTS_FROM}, ${ACCENTS_TO})) = lower(translate(${lastName}, ${ACCENTS_FROM}, ${ACCENTS_TO})))
+          )
+          LIMIT 1
+        `
+      )
+      if (results.length > 0) existingPerson = results[0]
     }
 
     if (existingPerson) {
-      authorCache.set(normalizedName, existingPerson.id)
+      authorCache.set(cacheKey, existingPerson.id)
       log.info(`Resolved author "${trimmed}" → existing person ID ${existingPerson.id}`)
       return existingPerson.id
     }
@@ -239,7 +226,7 @@ async function resolveAuthorByName(name: string): Promise<number | null> {
       }
     })
 
-    authorCache.set(normalizedName, newPerson.id)
+    authorCache.set(cacheKey, newPerson.id)
     log.info(`Created author "${trimmed}" → new person ID ${newPerson.id} (${firstName || ''} ${lastName || ''}, gender: ${gender || 'unknown'})`)
     return newPerson.id
   } catch (err) {
