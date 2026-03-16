@@ -350,8 +350,10 @@ function extractFromByline(html: string): string | null {
     /<a[^>]*rel=["']author["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i,
     // Author link with class containing "author"
     /<a[^>]*class=["'][^"']*\bauthor\b[^"']*["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i,
-    // Author div/span with "Por" text followed by a link (Drupal/Agencia Paco Urondo pattern)
-    /<[^>]*class=["'][^"']*\bauthor\b[^"']*["'][^>]*>[\s\S]*?<a[^>]*>\s*([^<]{2,80})\s*<\/a>/i,
+    // "author" or "autor" (Spanish) in container class, with <a> child containing the name
+    /<[^>]*class=["'][^"']*\b(?:author|autor)\b[^"']*["'][^>]*>[\s\S]*?<a[^>]*>\s*([^<]{2,80})\s*<\/a>/i,
+    // "autor" class with direct text (no <a>)
+    /<[^>]*class=["'][^"']*\b(?:autor)\b[^"']*["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*</i,
     // WordPress-style author vcard
     /<[^>]*class=["'][^"']*\bvcard\b[^"']*["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*</i,
     // Author container with img alt (Escribiendo Cine "columnistas-noticia" pattern)
