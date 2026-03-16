@@ -22,7 +22,9 @@ import * as path from 'path'
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const dotenv = require('dotenv')
-  dotenv.config({ path: path.resolve(__dirname, '../.env') })
+  // override: true porque la variable puede existir vacía en el entorno del sistema
+  dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true })
+  dotenv.config({ path: path.resolve(__dirname, '../.env.local'), override: true })
 } catch { /* no dotenv in prod */ }
 
 // ─── CLI flags ─────────────────────────────────────────────────────
@@ -110,7 +112,7 @@ const pool = new Pool({
   keepAlive: true,
   keepAliveInitialDelayMillis: 30_000,
 })
-pool.on('error', (err) => log('ERROR', `Pool error: ${err.message}`))
+pool.on('error', (err: Error) => log('ERROR', `Pool error: ${err.message}`))
 
 // ─── Anthropic clients ────────────────────────────────────────────
 const apiKey = process.env.ANTHROPIC_API_KEY
