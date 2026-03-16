@@ -38,6 +38,7 @@ const COUNTRIES = [
   'Uruguay',
   'Colombia',
   'Brasil',
+  'Perú',
   'Francia',
   'Italia',
   'Alemania',
