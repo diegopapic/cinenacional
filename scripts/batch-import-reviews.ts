@@ -147,6 +147,9 @@ interface MovieRow {
   id: number
   title: string
   year: number | null
+  release_year: number | null
+  release_month: number | null
+  release_day: number | null
   director_name: string | null
   review_count: number
 }
@@ -994,12 +997,15 @@ async function main() {
   )
   log('INFO', `Medios con URL cargados: ${outlets.length}`)
 
-  // Get movies ordered by year DESC, then by id DESC
+  // Get movies with release date, ordered by release date DESC
   const { rows: movies } = await pool.query<MovieRow>(`
     SELECT
       m.id,
       m.title,
       m.year,
+      m.release_year,
+      m.release_month,
+      m.release_day,
       (
         SELECT string_agg(
           COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, ''), ', '
@@ -1010,8 +1016,9 @@ async function main() {
       ) AS director_name,
       (SELECT COUNT(*)::int FROM movie_reviews mr WHERE mr.movie_id = m.id) AS review_count
     FROM movies m
-    WHERE ($1 = 9999 OR COALESCE(m.year, 0) <= $1)
-    ORDER BY COALESCE(m.year, 0) DESC, m.id DESC
+    WHERE m.release_year IS NOT NULL
+      AND ($1 = 9999 OR m.release_year <= $1)
+    ORDER BY m.release_year DESC, COALESCE(m.release_month, 0) DESC, COALESCE(m.release_day, 0) DESC, m.id DESC
   `, [START_YEAR])
 
   log('INFO', `Películas a procesar: ${movies.length}\n`)
@@ -1026,7 +1033,8 @@ async function main() {
     }
 
     stats.moviesProcessed++
-    const movieLabel = `${movie.title} (${movie.year || 'S/A'})${movie.director_name ? ` — ${movie.director_name.trim()}` : ''}`
+    const releaseDateStr = [movie.release_year, movie.release_month?.toString().padStart(2, '0'), movie.release_day?.toString().padStart(2, '0')].filter(Boolean).join('-')
+    const movieLabel = `${movie.title} (${movie.year || 'S/A'}) [estreno: ${releaseDateStr}]${movie.director_name ? ` — ${movie.director_name.trim()}` : ''}`
     log('INFO', `\n[${stats.moviesProcessed}] ${movieLabel} (reviews existentes: ${movie.review_count})`)
 
     // 1. Search reviews with Claude
