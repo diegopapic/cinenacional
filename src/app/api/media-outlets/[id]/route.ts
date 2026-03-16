@@ -10,7 +10,9 @@ export const { GET, PUT, DELETE } = createItemHandlers({
   regenerateSlugOnUpdate: true,
   buildUpdateData: (body) => ({
     name: body.name?.trim(),
-    url: body.url || null
+    url: body.url || null,
+    country: body.country || null,
+    language: body.language || null
   }),
   deleteCheck: {
     relation: 'reviews',

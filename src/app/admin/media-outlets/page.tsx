@@ -20,9 +20,35 @@ import {
 import { toast } from 'react-hot-toast'
 import { getCsrfHeaders } from '@/lib/csrf-client'
 
+const LANGUAGES = [
+  { value: 'es', label: 'Castellano' },
+  { value: 'en', label: 'Inglés' },
+  { value: 'pt', label: 'Portugués' },
+  { value: 'fr', label: 'Francés' },
+  { value: 'it', label: 'Italiano' },
+  { value: 'de', label: 'Alemán' }
+]
+
+const COUNTRIES = [
+  'Argentina',
+  'España',
+  'México',
+  'Estados Unidos',
+  'Chile',
+  'Uruguay',
+  'Colombia',
+  'Brasil',
+  'Francia',
+  'Italia',
+  'Alemania',
+  'Reino Unido'
+]
+
 const mediaOutletFormSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido').max(255),
-  url: z.string().url('URL inválida').optional().or(z.literal(''))
+  url: z.string().url('URL inválida').optional().or(z.literal('')),
+  country: z.string().max(100).optional().or(z.literal('')),
+  language: z.string().max(10).optional().or(z.literal(''))
 })
 
 type MediaOutletFormData = z.infer<typeof mediaOutletFormSchema>
@@ -32,6 +58,8 @@ interface MediaOutlet {
   slug: string
   name: string
   url?: string | null
+  country?: string | null
+  language?: string | null
   reviewCount?: number
   createdAt: string
 }
@@ -92,7 +120,9 @@ export default function AdminMediaOutletsPage() {
         headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({
           name: data.name,
-          url: data.url || null
+          url: data.url || null,
+          country: data.country || null,
+          language: data.language || null
         })
       })
 
@@ -115,6 +145,8 @@ export default function AdminMediaOutletsPage() {
     setEditingOutlet(outlet)
     setValue('name', outlet.name)
     setValue('url', outlet.url || '')
+    setValue('country', outlet.country || '')
+    setValue('language', outlet.language || '')
     setShowModal(true)
   }
 
@@ -147,6 +179,9 @@ export default function AdminMediaOutletsPage() {
     reset()
     setShowModal(true)
   }
+
+  const getLanguageLabel = (code: string) =>
+    LANGUAGES.find((l) => l.value === code)?.label || code
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -233,6 +268,12 @@ export default function AdminMediaOutletsPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       URL
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      País
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Idioma
+                    </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Críticas
                     </th>
@@ -271,6 +312,20 @@ export default function AdminMediaOutletsPage() {
                         ) : (
                           <span className="text-sm text-gray-400">-</span>
                         )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-900">
+                          {outlet.country || <span className="text-gray-400">-</span>}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-900">
+                          {outlet.language ? (
+                            getLanguageLabel(outlet.language)
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span className="text-sm font-medium text-gray-900">
@@ -357,6 +412,43 @@ export default function AdminMediaOutletsPage() {
                 {errors.url && (
                   <p className="mt-1 text-sm text-red-600">{errors.url.message}</p>
                 )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    País
+                  </label>
+                  <input
+                    type="text"
+                    {...register('country')}
+                    list="country-options"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    placeholder="Ej: Argentina"
+                  />
+                  <datalist id="country-options">
+                    {COUNTRIES.map((c) => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Idioma
+                  </label>
+                  <select
+                    {...register('language')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  >
+                    <option value="">Sin especificar</option>
+                    {LANGUAGES.map((lang) => (
+                      <option key={lang.value} value={lang.value}>
+                        {lang.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4">

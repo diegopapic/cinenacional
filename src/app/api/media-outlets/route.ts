@@ -11,7 +11,9 @@ export const { GET, POST } = createListAndCreateHandlers({
   sort: { defaultField: 'name', defaultOrder: 'asc' },
   buildCreateData: (body) => ({
     name: body.name.trim(),
-    url: body.url || null
+    url: body.url || null,
+    country: body.country || null,
+    language: body.language || null
   }),
   formatResponse: (items) =>
     items.map((outlet) => ({

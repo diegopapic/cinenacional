@@ -830,6 +830,8 @@ model MediaOutlet {
   slug      String   @unique @db.VarChar(255)
   name      String   @db.VarChar(255)
   url       String?  @db.VarChar(500)
+  country   String?  @db.VarChar(100)
+  language  String?  @db.VarChar(10)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
