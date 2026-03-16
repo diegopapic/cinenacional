@@ -2,9 +2,10 @@
 'use client'
 
 import React, { useState, useRef, useCallback } from 'react'
-import { Search, Loader2, Save, ExternalLink, CheckSquare, Square, AlertCircle, UserSearch, Copy, FileText, ChevronDown, ChevronUp } from 'lucide-react'
+import { Search, Loader2, Save, ExternalLink, CheckSquare, Square, AlertCircle, UserSearch, Copy, FileText, ChevronDown, ChevronUp, UserCheck, UserPlus, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCsrfHeaders } from '@/lib/csrf-client'
+import PersonSearchInput from '@/components/admin/shared/PersonSearchInput'
 
 interface ReviewResult {
   medio: string
@@ -14,6 +15,7 @@ interface ReviewResult {
   link: string
   pelicula: string
   summary?: string | null
+  authorId?: number | null
 }
 
 interface MovieOption {
@@ -45,6 +47,9 @@ export default function ReviewSearchPage() {
   const [summarizing, setSummarizing] = useState(false)
   const [summarizeProgress, setSummarizeProgress] = useState({ done: 0, total: 0 })
   const [expandedSummary, setExpandedSummary] = useState<number | null>(null)
+
+  // Author assignment modal
+  const [editingAuthorIndex, setEditingAuthorIndex] = useState<number | null>(null)
 
   // Movie selection
   const [movieQuery, setMovieQuery] = useState('')
@@ -186,9 +191,6 @@ export default function ReviewSearchPage() {
           }
 
           // Pass 3: slug essence subset — one's meaningful words are fully contained in the other's
-          // Catches: venecia-2025-critica-de-nuestra-tierra-de-lucrecia-martel-fuera-de-competicion
-          //      vs: estrenos-critica-de-nuestra-tierra-de-lucrecia-martel
-          // Both essences: [nuestra, tierra, lucrecia, martel] — identical
           const essenceA = getSlugEssence(revs[idxA].link)
           const essenceB = getSlugEssence(revs[idxB].link)
           if (essenceA.length >= 2 && essenceB.length >= 2) {
@@ -240,6 +242,67 @@ export default function ReviewSearchPage() {
     }
 
     return null
+  }
+
+  /**
+   * Auto-resolve authors: search DB for each unique author name,
+   * assign authorId when an exact match (firstName + lastName) is found.
+   */
+  async function resolveAuthors() {
+    // Collect unique author names → review indices
+    const authorNames = new Map<string, number[]>()
+
+    setReviews((currentReviews) => {
+      for (let i = 0; i < currentReviews.length; i++) {
+        const r = currentReviews[i]
+        if (r.autor && !r.authorId && !duplicates.has(i) && !nonReviewFlags.has(i)) {
+          const name = r.autor.trim()
+          if (!authorNames.has(name)) authorNames.set(name, [])
+          authorNames.get(name)!.push(i)
+        }
+      }
+      return currentReviews
+    })
+
+    if (authorNames.size === 0) return
+
+    const updates = new Map<number, number>() // review index → personId
+    const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+
+    for (const [name, indices] of authorNames) {
+      try {
+        const res = await fetch(`/api/people?search=${encodeURIComponent(name)}&limit=5`)
+        if (!res.ok) continue
+        const data = await res.json()
+        const people = data.data || data || []
+        if (!Array.isArray(people)) continue
+
+        // Find exact match by full name
+        const exactMatch = people.find((p: { firstName?: string | null; lastName?: string | null }) => {
+          const fullName = [p.firstName, p.lastName].filter(Boolean).join(' ')
+          return normalize(fullName) === normalize(name)
+        })
+
+        if (exactMatch) {
+          for (const idx of indices) {
+            updates.set(idx, exactMatch.id)
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (updates.size > 0) {
+      setReviews((prev) =>
+        prev.map((r, idx) => {
+          const personId = updates.get(idx)
+          return personId ? { ...r, authorId: personId } : r
+        })
+      )
+      const uniqueAuthors = new Set(updates.values()).size
+      toast.success(`${uniqueAuthors} autor(es) resuelto(s) automáticamente`)
+    }
   }
 
   async function enrichReviews(parsedReviews: ReviewResult[]) {
@@ -361,6 +424,11 @@ export default function ReviewSearchPage() {
       }
       return currentFlags
     })
+
+    // Auto-resolve authors against the DB
+    // Small delay to let state settle after enrichment updates
+    await new Promise((r) => setTimeout(r, 100))
+    await resolveAuthors()
   }
 
   async function handleSummarize() {
@@ -430,6 +498,7 @@ export default function ReviewSearchPage() {
     setEnriching(false)
     setDuplicates(new Set())
     setNonReviewFlags(new Map())
+    setEditingAuthorIndex(null)
 
     try {
       const res = await fetch('/api/review-search', {
@@ -593,6 +662,9 @@ export default function ReviewSearchPage() {
     }
   }
 
+  // Author assignment modal helpers
+  const editingReview = editingAuthorIndex !== null ? reviews[editingAuthorIndex] : null
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
@@ -748,6 +820,7 @@ export default function ReviewSearchPage() {
                     const isNonReview = nonReviewFlags.has(i)
                     const hasSummary = !!review.summary
                     const isExpanded = expandedSummary === i
+                    const hasAuthorId = !!review.authorId
                     return (
                       <React.Fragment key={i}>
                         <tr
@@ -770,8 +843,34 @@ export default function ReviewSearchPage() {
                           <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate" title={review.titulo || ''}>
                             {review.titulo || '—'}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">
-                            {review.autor && review.autor !== 'null' ? review.autor : '—'}
+                          <td className="px-4 py-3 text-sm">
+                            {review.autor && review.autor !== 'null' ? (
+                              <button
+                                onClick={() => setEditingAuthorIndex(i)}
+                                className={`inline-flex items-center gap-1.5 text-left hover:underline ${
+                                  hasAuthorId
+                                    ? 'text-green-700'
+                                    : 'text-amber-700'
+                                }`}
+                                title={hasAuthorId ? `Autor asignado (ID: ${review.authorId})` : 'Click para asignar autor en la BD'}
+                              >
+                                {hasAuthorId ? (
+                                  <UserCheck className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                                ) : (
+                                  <UserPlus className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                                )}
+                                <span>{review.autor}</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setEditingAuthorIndex(i)}
+                                className="inline-flex items-center gap-1 text-gray-400 hover:text-gray-600 hover:underline"
+                                title="Click para asignar autor"
+                              >
+                                <UserPlus className="h-3.5 w-3.5 shrink-0" />
+                                <span>Sin autor</span>
+                              </button>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
                             {review.fecha || '—'}
@@ -886,6 +985,73 @@ export default function ReviewSearchPage() {
           </div>
         )}
       </main>
+
+      {/* Author assignment modal */}
+      {editingAuthorIndex !== null && editingReview && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Asignar autor</h3>
+              <button
+                onClick={() => setEditingAuthorIndex(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-4 text-sm text-gray-600 space-y-1">
+              <p><span className="font-medium text-gray-700">Medio:</span> {editingReview.medio}</p>
+              {editingReview.titulo && (
+                <p><span className="font-medium text-gray-700">Título:</span> {editingReview.titulo}</p>
+              )}
+              {editingReview.autor && (
+                <p><span className="font-medium text-gray-700">Autor detectado:</span> {editingReview.autor}</p>
+              )}
+            </div>
+
+            <div className="mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Buscar o crear persona
+              </label>
+              <PersonSearchInput
+                value={editingReview.authorId || undefined}
+                initialPersonName={editingReview.authorId ? (editingReview.autor || '') : undefined}
+                onChange={(personId, personName) => {
+                  if (personId) {
+                    const idx = editingAuthorIndex
+                    setReviews((prev) =>
+                      prev.map((r, j) =>
+                        j === idx ? { ...r, authorId: personId, autor: personName || r.autor } : r
+                      )
+                    )
+                    setEditingAuthorIndex(null)
+                  }
+                }}
+                placeholder={editingReview.autor ? `Buscar "${editingReview.autor}"...` : 'Buscar persona...'}
+                showAlternativeNames={false}
+              />
+            </div>
+
+            {editingReview.authorId && (
+              <button
+                onClick={() => {
+                  const idx = editingAuthorIndex
+                  setReviews((prev) =>
+                    prev.map((r, j) =>
+                      j === idx ? { ...r, authorId: null } : r
+                    )
+                  )
+                  setEditingAuthorIndex(null)
+                }}
+                className="mt-3 text-sm text-red-600 hover:text-red-800 hover:underline"
+              >
+                Desasignar autor
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
