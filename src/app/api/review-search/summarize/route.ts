@@ -27,6 +27,7 @@ Ejemplos:
 
 EXPRESIONES PARA USAR:
 - "película" en lugar de "film"
+- Mantener en inglés los términos técnicos y de género que se usan así en castellano: true crime, found footage, coming of age, slow burn, thriller, gore, slasher, body horror, mockumentary, road movie, western, noir, giallo, exploitation, grindhouse, camp, queer, etc. No traducirlos nunca (no "crímenes reales", no "metraje encontrado")
 
 Tener la extensión necesaria y no más: si la valoración es simple, el párrafo puede ser breve. No rellenes ni alargues.
 
