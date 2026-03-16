@@ -404,15 +404,15 @@ function extractFromMetaTags(html: string): string | null {
 
 function extractFromByline(html: string): string | null {
   const patterns = [
-    /<[^>]*class=["'][^"']*\b(?:byline|author-name|post-author-name|entry-author-name|article-author-name|author__name|writer-name|reviewer-name)\b[^"']*["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*</i,
-    /<a[^>]*rel=["']author["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i,
-    /<a[^>]*class=["'][^"']*\bauthor\b[^"']*["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i,
+    /<[^>]*class=["'][^"']*\b(?:byline|author-name|post-author-name|entry-author-name|article-author-name|author__name|writer-name|reviewer-name)\b[^"']*["'][^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*</i,
+    /<a[^>]*rel=["']author["'][^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i,
+    /<a[^>]*class=["'][^"']*\bauthor\b[^"']*["'][^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i,
     // "author" or "autor" (Spanish) in container class, with <a> child containing the name
     // Limited to 200 chars to avoid crossing into unrelated page sections (tags, nav)
     /<[^>]*class=["'][^"']*\b(?:author|autor)\b[^"']*["'][^>]*>[\s\S]{0,200}?<a[^>]*>\s*([^<]{2,80})\s*<\/a>/i,
     // "autor" class with direct text (no <a>)
-    /<[^>]*class=["'][^"']*\b(?:autor)\b[^"']*["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*</i,
-    /<[^>]*class=["'][^"']*\bvcard\b[^"']*["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*</i,
+    /<[^>]*class=["'][^"']*\b(?:autor)\b[^"']*["'][^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*</i,
+    /<[^>]*class=["'][^"']*\bvcard\b[^"']*["'][^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*</i,
     /<[^>]*class=["'][^"']*columnista[^"']*["'][^>]*>[\s\S]{0,500}?<img[^>]*alt=["']([^"']{2,80})["']/i,
     /<img[^>]*class=["'][^"']*(?:author|avatar)[^"']*["'][^>]*alt=["']([^"']{2,80})["']/i,
     /<img[^>]*alt=["']([^"']{2,80})["'][^>]*class=["'][^"']*(?:author|avatar)[^"']*["']/i,
