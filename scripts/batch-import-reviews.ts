@@ -267,6 +267,21 @@ async function fetchWithTimeout(url: string, timeoutMs = 15000): Promise<Respons
 }
 
 // ─── HTML extraction (ported from extract-author/route.ts) ─────────
+/** Decode common HTML entities in extracted text (titles, author names) */
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&quot;/gi, '"')
+    .replace(/&apos;/gi, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&ldquo;|&rdquo;|&laquo;|&raquo;/gi, '"')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))
+}
+
 function stripHtmlToText(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, '')
@@ -294,6 +309,14 @@ function isValidAuthorName(name: string): boolean {
   if (/^\d+$/.test(name)) return false
   if (/^(Photo|Image|Credit|Courtesy|Foto|Crédito|Imagen|Illustration|Getty|Shutterstock|AP Photo|Reuters|AFP)[\s:]/i.test(name)) return false
   if (/^(Share|Tweet|Email|Print|Comment|Read|More|View|Posted|Written|Admin|Editor|Redacción|Texto por)$/i.test(name)) return false
+  // Reject common junk: fragments, articles as first word, generic labels
+  if (/^(el|la|los|las|un|una|del|al|por|con|en|de|su|se|lo|le|no|es|pero)\s/i.test(name)) return false
+  // Reject names that start lowercase (likely sentence fragments)
+  if (/^[a-záéíóúñ]/.test(name)) return false
+  // Reject if it contains common non-name words suggesting it's a sentence fragment
+  if (/\b(correo|electr[oó]nic|suscri|newsletter|cookie|privacidad|contacto|copyright|derechos|reservados)\b/i.test(name)) return false
+  // Must contain at least one letter
+  if (!/[a-záéíóúñA-ZÁÉÍÓÚÑ]/.test(name)) return false
   return true
 }
 
@@ -447,9 +470,9 @@ function extractTitle(html: string, movieTitle?: string): string | null {
 
   if (movieTitle && pageTitle && isTitleJustMovieName(pageTitle, movieTitle)) {
     const reviewHeadline = extractReviewHeadline(html)
-    if (reviewHeadline) return reviewHeadline
+    if (reviewHeadline) return decodeHtmlEntities(reviewHeadline)
   }
-  return pageTitle
+  return pageTitle ? decodeHtmlEntities(pageTitle) : null
 }
 
 function normalizeForComparison(s: string): string {
@@ -906,7 +929,8 @@ async function enrichReview(review: ReviewResult, movieTitle: string): Promise<E
     if (!res.ok) return { ...review, htmlAuthor: null, htmlTitle: null, htmlFecha: null, nonReviewSignals: [], fetchFailed: true }
 
     const html = await res.text()
-    const author = extractFromJsonLd(html) || extractFromMetaTags(html) || extractFromByline(html)
+    const rawAuthor = extractFromJsonLd(html) || extractFromMetaTags(html) || extractFromByline(html)
+    const author = rawAuthor ? decodeHtmlEntities(rawAuthor) : null
     const title = extractTitle(html, movieTitle)
     const fecha = extractPublishDate(html)
     const nonReviewSignals = detectNonReviewSignals(html)
