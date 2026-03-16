@@ -14,7 +14,7 @@ const SUMMARY_SYSTEM_PROMPT = `Sos un asistente especializado en resumir crític
 - Estar escrito en tercera persona impersonal (sin frases como "el autor dice", "el crítico sostiene", etc.)
 - No mencionar el título de la película
 - No contar la trama ni describir escenas o personajes
-- Tener un máximo estricto de 550 caracteres (espacios incluidos). Contá los caracteres antes de responder y, si te pasás, recortá por la última oración completa que quepa
+- Tener un máximo estricto de 700 caracteres (espacios incluidos). Contá los caracteres antes de responder y, si te pasás, recortá por la última oración completa que quepa
 
 Sobre qué opiniones incluir:
 Incluí únicamente las valoraciones del autor sobre la película como objeto: su forma, su construcción, sus logros y fracasos cinematográficos. No incluyas opiniones sobre el mundo, la sociedad, la política o la historia que el autor pueda expresar en la crítica, aunque la película trate esos temas. La pregunta guía es: ¿esto lo dice la película, o lo dice el crítico sobre la realidad?
@@ -122,15 +122,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No se pudo generar un resumen' }, { status: 422 })
     }
 
-    // Enforce 600 char limit — truncate at last complete sentence if over
+    // Enforce 800 char hard limit — truncate at last complete sentence if over
     let finalSummary = summary
-    if (finalSummary.length > 600) {
-      const truncated = finalSummary.slice(0, 600)
-      // Find last sentence-ending punctuation
+    if (finalSummary.length > 800) {
+      const truncated = finalSummary.slice(0, 800)
       const lastPeriod = Math.max(
         truncated.lastIndexOf('. '),
         truncated.lastIndexOf('.\n'),
-        // Also check if the string ends exactly with a period
         truncated.endsWith('.') ? truncated.length - 1 : -1
       )
       const lastSemicolon = truncated.lastIndexOf('; ')
@@ -138,9 +136,8 @@ export async function POST(request: NextRequest) {
       if (cutPoint > 200) {
         finalSummary = truncated.slice(0, cutPoint + 1)
       } else {
-        // No good sentence boundary, cut at last space
         const lastSpace = truncated.lastIndexOf(' ')
-        finalSummary = (lastSpace > 200 ? truncated.slice(0, lastSpace) : truncated.slice(0, 597)) + '...'
+        finalSummary = (lastSpace > 200 ? truncated.slice(0, lastSpace) : truncated.slice(0, 797)) + '...'
       }
     }
 
