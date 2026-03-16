@@ -2,10 +2,9 @@
 'use client'
 
 import React, { useState, useRef, useCallback } from 'react'
-import { Search, Loader2, Save, ExternalLink, CheckSquare, Square, AlertCircle, UserSearch, Copy, FileText, ChevronDown, ChevronUp, UserCheck, UserPlus, X } from 'lucide-react'
+import { Search, Loader2, Save, ExternalLink, CheckSquare, Square, AlertCircle, UserSearch, Copy, FileText, ChevronDown, ChevronUp, UserCheck } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCsrfHeaders } from '@/lib/csrf-client'
-import PersonSearchInput from '@/components/admin/shared/PersonSearchInput'
 
 interface ReviewResult {
   medio: string
@@ -48,8 +47,8 @@ export default function ReviewSearchPage() {
   const [summarizeProgress, setSummarizeProgress] = useState({ done: 0, total: 0 })
   const [expandedSummary, setExpandedSummary] = useState<number | null>(null)
 
-  // Author assignment modal
-  const [editingAuthorIndex, setEditingAuthorIndex] = useState<number | null>(null)
+  // Author auto-resolution
+  const [resolvingAuthors, setResolvingAuthors] = useState(false)
 
   // Movie selection
   const [movieQuery, setMovieQuery] = useState('')
@@ -245,11 +244,10 @@ export default function ReviewSearchPage() {
   }
 
   /**
-   * Auto-resolve authors: search DB for each unique author name,
-   * assign authorId when an exact match (firstName + lastName) is found.
+   * Auto-resolve authors: calls server endpoint that finds or creates Person records.
    */
   async function resolveAuthors() {
-    // Collect unique author names → review indices
+    // Collect unique author names from non-duplicate, non-flagged reviews without authorId
     const authorNames = new Map<string, number[]>()
 
     setReviews((currentReviews) => {
@@ -257,8 +255,10 @@ export default function ReviewSearchPage() {
         const r = currentReviews[i]
         if (r.autor && !r.authorId && !duplicates.has(i) && !nonReviewFlags.has(i)) {
           const name = r.autor.trim()
-          if (!authorNames.has(name)) authorNames.set(name, [])
-          authorNames.get(name)!.push(i)
+          if (name && name !== 'null') {
+            if (!authorNames.has(name)) authorNames.set(name, [])
+            authorNames.get(name)!.push(i)
+          }
         }
       }
       return currentReviews
@@ -266,42 +266,54 @@ export default function ReviewSearchPage() {
 
     if (authorNames.size === 0) return
 
-    const updates = new Map<number, number>() // review index → personId
-    const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
+    setResolvingAuthors(true)
+    try {
+      const res = await fetch('/api/review-search/resolve-authors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
+        body: JSON.stringify({ names: [...authorNames.keys()] })
+      })
 
-    for (const [name, indices] of authorNames) {
-      try {
-        const res = await fetch(`/api/people?search=${encodeURIComponent(name)}&limit=5`)
-        if (!res.ok) continue
-        const data = await res.json()
-        const people = data.data || data || []
-        if (!Array.isArray(people)) continue
+      if (!res.ok) {
+        toast.error('Error al resolver autores')
+        return
+      }
 
-        // Find exact match by full name
-        const exactMatch = people.find((p: { firstName?: string | null; lastName?: string | null }) => {
-          const fullName = [p.firstName, p.lastName].filter(Boolean).join(' ')
-          return normalize(fullName) === normalize(name)
-        })
+      const data = await res.json()
+      const resultMap = new Map<string, number>()
+      for (const r of data.results) {
+        resultMap.set(r.name, r.personId)
+      }
 
-        if (exactMatch) {
+      // Apply resolved IDs to reviews
+      const updates = new Map<number, number>()
+      for (const [name, indices] of authorNames) {
+        const personId = resultMap.get(name)
+        if (personId) {
           for (const idx of indices) {
-            updates.set(idx, exactMatch.id)
+            updates.set(idx, personId)
           }
         }
-      } catch {
-        // ignore
       }
-    }
 
-    if (updates.size > 0) {
-      setReviews((prev) =>
-        prev.map((r, idx) => {
-          const personId = updates.get(idx)
-          return personId ? { ...r, authorId: personId } : r
-        })
-      )
-      const uniqueAuthors = new Set(updates.values()).size
-      toast.success(`${uniqueAuthors} autor(es) resuelto(s) automáticamente`)
+      if (updates.size > 0) {
+        setReviews((prev) =>
+          prev.map((r, idx) => {
+            const personId = updates.get(idx)
+            return personId ? { ...r, authorId: personId } : r
+          })
+        )
+      }
+
+      if (data.summary.created > 0 || data.summary.resolved > 0) {
+        toast.success(
+          `Autores: ${data.summary.resolved} existente(s), ${data.summary.created} creado(s)`
+        )
+      }
+    } catch {
+      toast.error('Error de conexión al resolver autores')
+    } finally {
+      setResolvingAuthors(false)
     }
   }
 
@@ -498,7 +510,7 @@ export default function ReviewSearchPage() {
     setEnriching(false)
     setDuplicates(new Set())
     setNonReviewFlags(new Map())
-    setEditingAuthorIndex(null)
+    setResolvingAuthors(false)
 
     try {
       const res = await fetch('/api/review-search', {
@@ -662,9 +674,6 @@ export default function ReviewSearchPage() {
     }
   }
 
-  // Author assignment modal helpers
-  const editingReview = editingAuthorIndex !== null ? reviews[editingAuthorIndex] : null
-
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
@@ -769,8 +778,14 @@ export default function ReviewSearchPage() {
                 </h2>
                 {enriching && (
                   <span className="inline-flex items-center gap-1.5 text-sm text-blue-600">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Enriqueciendo ({enrichProgress.done}/{enrichProgress.total})...
+                  </span>
+                )}
+                {resolvingAuthors && (
+                  <span className="inline-flex items-center gap-1.5 text-sm text-green-600">
                     <UserSearch className="h-4 w-4 animate-pulse" />
-                    Buscando autores ({enrichProgress.done}/{enrichProgress.total})...
+                    Resolviendo autores...
                   </span>
                 )}
                 {summarizing && (
@@ -845,31 +860,21 @@ export default function ReviewSearchPage() {
                           </td>
                           <td className="px-4 py-3 text-sm">
                             {review.autor && review.autor !== 'null' ? (
-                              <button
-                                onClick={() => setEditingAuthorIndex(i)}
-                                className={`inline-flex items-center gap-1.5 text-left hover:underline ${
+                              <span
+                                className={`inline-flex items-center gap-1.5 ${
                                   hasAuthorId
                                     ? 'text-green-700'
-                                    : 'text-amber-700'
+                                    : 'text-gray-700'
                                 }`}
-                                title={hasAuthorId ? `Autor asignado (ID: ${review.authorId})` : 'Click para asignar autor en la BD'}
+                                title={hasAuthorId ? `Autor asignado (ID: ${review.authorId})` : 'Autor pendiente de resolución'}
                               >
-                                {hasAuthorId ? (
+                                {hasAuthorId && (
                                   <UserCheck className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                                ) : (
-                                  <UserPlus className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                                 )}
                                 <span>{review.autor}</span>
-                              </button>
+                              </span>
                             ) : (
-                              <button
-                                onClick={() => setEditingAuthorIndex(i)}
-                                className="inline-flex items-center gap-1 text-gray-400 hover:text-gray-600 hover:underline"
-                                title="Click para asignar autor"
-                              >
-                                <UserPlus className="h-3.5 w-3.5 shrink-0" />
-                                <span>Sin autor</span>
-                              </button>
+                              <span className="text-gray-400">Sin autor</span>
                             )}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
@@ -986,72 +991,6 @@ export default function ReviewSearchPage() {
         )}
       </main>
 
-      {/* Author assignment modal */}
-      {editingAuthorIndex !== null && editingReview && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Asignar autor</h3>
-              <button
-                onClick={() => setEditingAuthorIndex(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="mb-4 text-sm text-gray-600 space-y-1">
-              <p><span className="font-medium text-gray-700">Medio:</span> {editingReview.medio}</p>
-              {editingReview.titulo && (
-                <p><span className="font-medium text-gray-700">Título:</span> {editingReview.titulo}</p>
-              )}
-              {editingReview.autor && (
-                <p><span className="font-medium text-gray-700">Autor detectado:</span> {editingReview.autor}</p>
-              )}
-            </div>
-
-            <div className="mb-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Buscar o crear persona
-              </label>
-              <PersonSearchInput
-                value={editingReview.authorId || undefined}
-                initialPersonName={editingReview.authorId ? (editingReview.autor || '') : undefined}
-                onChange={(personId, personName) => {
-                  if (personId) {
-                    const idx = editingAuthorIndex
-                    setReviews((prev) =>
-                      prev.map((r, j) =>
-                        j === idx ? { ...r, authorId: personId, autor: personName || r.autor } : r
-                      )
-                    )
-                    setEditingAuthorIndex(null)
-                  }
-                }}
-                placeholder={editingReview.autor ? `Buscar "${editingReview.autor}"...` : 'Buscar persona...'}
-                showAlternativeNames={false}
-              />
-            </div>
-
-            {editingReview.authorId && (
-              <button
-                onClick={() => {
-                  const idx = editingAuthorIndex
-                  setReviews((prev) =>
-                    prev.map((r, j) =>
-                      j === idx ? { ...r, authorId: null } : r
-                    )
-                  )
-                  setEditingAuthorIndex(null)
-                }}
-                className="mt-3 text-sm text-red-600 hover:text-red-800 hover:underline"
-              >
-                Desasignar autor
-              </button>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
