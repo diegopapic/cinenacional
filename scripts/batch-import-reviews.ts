@@ -315,6 +315,8 @@ function isValidAuthorName(name: string): boolean {
   if (/^[a-záéíóúñ]/.test(name)) return false
   // Reject if it contains common non-name words suggesting it's a sentence fragment
   if (/\b(correo|electr[oó]nic|suscri|newsletter|cookie|privacidad|contacto|copyright|derechos|reservados)\b/i.test(name)) return false
+  // Reject ALL-CAPS single words (likely section headers: "FESTIVALES", "ESTRENOS", etc.)
+  if (/^[A-ZÁÉÍÓÚÑ\s]+$/.test(name) && name.split(/\s+/).length <= 2) return false
   // Must contain at least one letter
   if (!/[a-záéíóúñA-ZÁÉÍÓÚÑ]/.test(name)) return false
   return true
@@ -406,7 +408,8 @@ function extractFromByline(html: string): string | null {
     /<a[^>]*rel=["']author["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i,
     /<a[^>]*class=["'][^"']*\bauthor\b[^"']*["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i,
     // "author" or "autor" (Spanish) in container class, with <a> child containing the name
-    /<[^>]*class=["'][^"']*\b(?:author|autor)\b[^"']*["'][^>]*>[\s\S]*?<a[^>]*>\s*([^<]{2,80})\s*<\/a>/i,
+    // Limited to 200 chars to avoid crossing into unrelated page sections (tags, nav)
+    /<[^>]*class=["'][^"']*\b(?:author|autor)\b[^"']*["'][^>]*>[\s\S]{0,200}?<a[^>]*>\s*([^<]{2,80})\s*<\/a>/i,
     // "autor" class with direct text (no <a>)
     /<[^>]*class=["'][^"']*\b(?:autor)\b[^"']*["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*</i,
     /<[^>]*class=["'][^"']*\bvcard\b[^"']*["'][^>]*>(?:<[^>]*>)*\s*([^<]{2,80})\s*</i,
@@ -421,8 +424,7 @@ function extractFromByline(html: string): string | null {
     const match = html.match(pattern)
     if (match?.[1]) {
       const name = match[1].trim()
-      if (name.length > 2 && name.length < 80 && !name.includes('{') && !name.includes('<') && !name.includes('http') && !/^\d+$/.test(name) && !/^(Share|Tweet|Email|Print|Comment|Read|More|View|Posted|Written)$/i.test(name))
-        return name
+      if (isValidAuthorName(name)) return name
     }
   }
   return null
