@@ -828,6 +828,30 @@ async function resolveMediaOutlet(name: string, reviewUrl: string): Promise<numb
   return newId
 }
 
+// ─── JSON extraction ────────────────────────────────────────────────
+/** Extract the first top-level JSON array from text using bracket-depth matching.
+ *  Handles brackets inside strings correctly. */
+function extractFirstJsonArray(text: string): string | null {
+  const startIdx = text.indexOf('[')
+  if (startIdx === -1) return null
+  let depth = 0
+  let inString = false
+  let escape = false
+  for (let i = startIdx; i < text.length; i++) {
+    const ch = text[i]
+    if (escape) { escape = false; continue }
+    if (ch === '\\' && inString) { escape = true; continue }
+    if (ch === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (ch === '[') depth++
+    else if (ch === ']') {
+      depth--
+      if (depth === 0) return text.substring(startIdx, i + 1)
+    }
+  }
+  return null
+}
+
 // ─── Claude: web search for reviews ────────────────────────────────
 async function searchReviews(movieTitle: string, year: number | null, director: string | null, outlets: { name: string; url: string }[]): Promise<ReviewResult[]> {
   const systemPrompt = buildSearchSystemPrompt(outlets)
@@ -857,14 +881,14 @@ async function searchReviews(movieTitle: string, year: number | null, director: 
     const textBlocks = response.content.filter((b): b is Anthropic.TextBlock => b.type === 'text')
     const fullText = textBlocks.map(b => b.text).join('')
 
-    // Parse JSON array from the text
-    const jsonMatch = fullText.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) {
+    // Parse JSON array from the text using bracket-depth matching
+    const jsonStr = extractFirstJsonArray(fullText)
+    if (!jsonStr) {
       log('WARN', `  No JSON array found in Claude response for "${movieTitle}"`)
       return []
     }
 
-    const parsed = JSON.parse(jsonMatch[0]) as ReviewResult[]
+    const parsed = JSON.parse(jsonStr) as ReviewResult[]
     if (!Array.isArray(parsed)) return []
     return parsed.filter(r => r.link && r.medio)
   } catch (err) {
