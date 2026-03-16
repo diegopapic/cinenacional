@@ -850,7 +850,6 @@ model MovieReview {
   summary       String?
   url           String?  @db.VarChar(1000)
   content       String?
-  language      String   @default("es") @db.VarChar(10)
   hasPaywall    Boolean  @default(false) @map("has_paywall")
   score         Int?     @db.SmallInt
   publishYear   Int?     @map("publish_year")

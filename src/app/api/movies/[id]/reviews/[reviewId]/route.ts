@@ -22,7 +22,8 @@ const REVIEW_INCLUDE = {
     select: {
       id: true,
       name: true,
-      url: true
+      url: true,
+      language: true
     }
   }
 }
@@ -62,7 +63,6 @@ export async function PUT(
         summary: data.summary || null,
         url: data.url || null,
         content: data.content || null,
-        language: data.language || 'es',
         hasPaywall: data.hasPaywall || false,
         score: data.score ?? null,
         authorId: data.authorId || null,

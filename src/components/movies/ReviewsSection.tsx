@@ -15,6 +15,7 @@ interface ReviewMediaOutlet {
   id: number;
   name: string;
   url?: string | null;
+  language?: string | null;
 }
 
 interface Review {
@@ -23,7 +24,6 @@ interface Review {
   summary?: string | null;
   url?: string | null;
   content?: string | null;
-  language: string;
   hasPaywall: boolean;
   score?: number | null;
   publishYear?: number | null;
@@ -80,7 +80,8 @@ export function ReviewsSection({ reviews, movieSlug }: ReviewsSectionProps) {
           {reviews.map((review) => {
             const authorName = review.author ? formatAuthorName(review.author) : null;
             const publishDate = formatPublishDate(review.publishYear, review.publishMonth, review.publishDay);
-            const languageLabel = review.language !== 'es' ? LANGUAGE_LABELS[review.language] || review.language.toUpperCase() : null;
+            const outletLang = review.mediaOutlet?.language;
+            const languageLabel = outletLang && outletLang !== 'es' ? LANGUAGE_LABELS[outletLang] || outletLang.toUpperCase() : null;
 
             return (
               <article key={review.id} className="flex flex-col gap-1.5">

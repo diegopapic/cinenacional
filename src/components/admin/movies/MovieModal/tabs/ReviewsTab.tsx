@@ -30,6 +30,7 @@ interface ReviewMediaOutlet {
   id: number
   name: string
   url?: string | null
+  language?: string | null
 }
 
 interface Review {
@@ -38,7 +39,6 @@ interface Review {
   summary?: string | null
   url?: string | null
   content?: string | null
-  language: string
   hasPaywall: boolean
   score?: number | null
   authorId?: number | null
@@ -55,6 +55,7 @@ interface MediaOutletOption {
   id: number
   name: string
   url?: string | null
+  language?: string | null
 }
 
 const EMPTY_REVIEW: Omit<Review, 'id'> = {
@@ -62,7 +63,6 @@ const EMPTY_REVIEW: Omit<Review, 'id'> = {
   summary: '',
   url: '',
   content: '',
-  language: 'es',
   hasPaywall: false,
   score: null,
   authorId: null,
@@ -72,15 +72,6 @@ const EMPTY_REVIEW: Omit<Review, 'id'> = {
   publishDay: null,
   sortOrder: 0
 }
-
-const LANGUAGES = [
-  { value: 'es', label: 'Castellano' },
-  { value: 'en', label: 'Inglés' },
-  { value: 'pt', label: 'Portugués' },
-  { value: 'fr', label: 'Francés' },
-  { value: 'it', label: 'Italiano' },
-  { value: 'de', label: 'Alemán' }
-]
 
 export default function ReviewsTab() {
   const { editingMovie } = useMovieModalContext()
@@ -145,7 +136,6 @@ export default function ReviewsTab() {
       summary: review.summary || '',
       url: review.url || '',
       content: review.content || '',
-      language: review.language,
       hasPaywall: review.hasPaywall,
       score: review.score,
       authorId: review.authorId,
@@ -383,20 +373,6 @@ export default function ReviewsTab() {
               />
             </div>
 
-            {/* Idioma */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Idioma</label>
-              <select
-                value={formData.language}
-                onChange={(e) => setFormData(prev => ({ ...prev, language: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {LANGUAGES.map(lang => (
-                  <option key={lang.value} value={lang.value}>{lang.label}</option>
-                ))}
-              </select>
-            </div>
-
             {/* Puntaje */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Puntaje (1-10)</label>
@@ -556,10 +532,10 @@ export default function ReviewsTab() {
                     {review.publishYear && (
                       <span>{formatDate(review.publishYear, review.publishMonth, review.publishDay)}</span>
                     )}
-                    {review.language && review.language !== 'es' && (
+                    {review.mediaOutlet?.language && review.mediaOutlet.language !== 'es' && (
                       <>
                         <span className="text-gray-300">|</span>
-                        <span className="uppercase">{review.language}</span>
+                        <span className="uppercase">{review.mediaOutlet.language}</span>
                       </>
                     )}
                   </div>

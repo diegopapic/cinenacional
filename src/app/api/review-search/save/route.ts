@@ -92,9 +92,15 @@ export async function POST(request: NextRequest) {
           if (parts[2]) publishDay = parseInt(parts[2], 10) || null
         }
 
-        // Detect language from URL domain
-        const urlDomain = new URL(review.link).hostname
-        const isSpanish = /\.ar$|\.es$|\.com\.ar|pagina12|lanacion|escribiendocine|asalallena|otroscines|micropsia|reencuadre|agenciapacourondo|cineargentinohoy|laestatuilla|elcontraplano/i.test(urlDomain)
+        // Detect language from URL domain and update media outlet if it has no language set
+        if (!mediaOutlet.language) {
+          const urlDomain = new URL(review.link).hostname
+          const isSpanish = /\.ar$|\.es$|\.com\.ar|pagina12|lanacion|escribiendocine|asalallena|otroscines|micropsia|reencuadre|agenciapacourondo|cineargentinohoy|laestatuilla|elcontraplano/i.test(urlDomain)
+          await prisma.mediaOutlet.update({
+            where: { id: mediaOutlet.id },
+            data: { language: isSpanish ? 'es' : 'en' }
+          })
+        }
 
         // Resolve author: use provided authorId, or auto-resolve from name
         let resolvedAuthorId: number | null = review.authorId || null
@@ -111,7 +117,6 @@ export async function POST(request: NextRequest) {
             title: review.titulo || null,
             summary: review.summary || null,
             url: review.link,
-            language: isSpanish ? 'es' : 'en',
             publishYear,
             publishMonth,
             publishDay

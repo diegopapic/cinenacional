@@ -144,7 +144,6 @@ export const movieReviewSchema = z.object({
   summary: z.string().optional().nullable(),
   url: z.string().max(1000).optional().nullable(),
   content: z.string().optional().nullable(),
-  language: z.string().max(10).optional().default('es'),
   hasPaywall: z.boolean().optional().default(false),
   score: z.preprocess(
     (val) => {

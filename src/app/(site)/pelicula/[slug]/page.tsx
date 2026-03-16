@@ -286,7 +286,6 @@ async function getMovieData(slug: string) {
             summary: true,
             url: true,
             content: true,
-            language: true,
             hasPaywall: true,
             score: true,
             publishYear: true,
@@ -305,7 +304,8 @@ async function getMovieData(slug: string) {
               select: {
                 id: true,
                 name: true,
-                url: true
+                url: true,
+                language: true
               }
             }
           },
