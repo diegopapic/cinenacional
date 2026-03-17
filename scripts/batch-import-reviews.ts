@@ -9,6 +9,7 @@
  *   npx ts-node scripts/batch-import-reviews.ts
  *   npx ts-node scripts/batch-import-reviews.ts --hours 8
  *   npx ts-node scripts/batch-import-reviews.ts --start-year 2020
+ *   npx ts-node scripts/batch-import-reviews.ts --release-from 2025-01-15  (solo pelis estrenadas desde esa fecha)
  *   npx ts-node scripts/batch-import-reviews.ts --skip-existing   (saltar pelis con reviews)
  *   npx ts-node scripts/batch-import-reviews.ts --dry-run          (no guarda nada)
  */
@@ -35,6 +36,7 @@ function getFlag(name: string, defaultVal: string): string {
 }
 const MAX_HOURS = parseFloat(getFlag('hours', '8'))
 const START_YEAR = parseInt(getFlag('start-year', '9999'), 10)
+const RELEASE_FROM = getFlag('release-from', '')  // YYYY-MM-DD, YYYY-MM, or YYYY
 const SKIP_EXISTING = args.includes('--skip-existing')
 const DRY_RUN = args.includes('--dry-run')
 const CONCURRENCY_ENRICHMENT = 3  // parallel URL fetches per movie
@@ -1114,6 +1116,42 @@ async function main() {
   )
   log('INFO', `Medios con URL cargados: ${outlets.length}`)
 
+  // Parse --release-from into year/month/day components
+  let rfYear = 0, rfMonth = 0, rfDay = 0
+  if (RELEASE_FROM) {
+    const parts = RELEASE_FROM.split('-').map(Number)
+    rfYear = parts[0] || 0
+    rfMonth = parts[1] || 0
+    rfDay = parts[2] || 0
+    if (rfYear < 1890 || rfYear > 2100) {
+      log('ERROR', `--release-from inválido: ${RELEASE_FROM}`)
+      process.exit(1)
+    }
+    log('INFO', `Filtro release-from: ${RELEASE_FROM} (año=${rfYear}, mes=${rfMonth}, día=${rfDay})`)
+  }
+
+  // Build date filter SQL
+  let releaseDateFilter = ''
+  if (rfYear && rfMonth && rfDay) {
+    releaseDateFilter = `
+      AND (
+        m.release_year > ${rfYear}
+        OR (m.release_year = ${rfYear} AND m.release_month > ${rfMonth})
+        OR (m.release_year = ${rfYear} AND m.release_month = ${rfMonth} AND m.release_day >= ${rfDay})
+        OR (m.release_year = ${rfYear} AND m.release_month = ${rfMonth} AND m.release_day IS NULL)
+        OR (m.release_year = ${rfYear} AND m.release_month IS NULL)
+      )`
+  } else if (rfYear && rfMonth) {
+    releaseDateFilter = `
+      AND (
+        m.release_year > ${rfYear}
+        OR (m.release_year = ${rfYear} AND m.release_month >= ${rfMonth})
+        OR (m.release_year = ${rfYear} AND m.release_month IS NULL)
+      )`
+  } else if (rfYear) {
+    releaseDateFilter = `AND m.release_year >= ${rfYear}`
+  }
+
   // Get movies with release date, ordered by release date DESC
   const { rows: movies } = await pool.query<MovieRow>(`
     SELECT
@@ -1135,6 +1173,7 @@ async function main() {
     FROM movies m
     WHERE m.release_year IS NOT NULL
       AND ($1 = 9999 OR m.release_year <= $1)
+      ${releaseDateFilter}
     ORDER BY m.release_year DESC, COALESCE(m.release_month, 0) DESC, COALESCE(m.release_day, 0) DESC, m.id DESC
   `, [START_YEAR])
 
