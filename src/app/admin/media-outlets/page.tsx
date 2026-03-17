@@ -264,6 +264,9 @@ export default function AdminMediaOutletsPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Medio
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -286,6 +289,9 @@ export default function AdminMediaOutletsPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {outlets.map((outlet) => (
                     <tr key={outlet.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-500">{outlet.id}</span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <Newspaper className="w-5 h-5 text-gray-400 mr-3" />
