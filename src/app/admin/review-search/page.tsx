@@ -55,7 +55,6 @@ export default function ReviewSearchPage() {
   const [movieOptions, setMovieOptions] = useState<MovieOption[]>([])
   const [selectedMovie, setSelectedMovie] = useState<MovieOption | null>(null)
   const [loadingMovies, setLoadingMovies] = useState(false)
-  const [releaseDateFrom, setReleaseDateFrom] = useState<string>('')
   const movieSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const searchMovies = useCallback((query: string) => {
@@ -67,11 +66,7 @@ export default function ReviewSearchPage() {
     movieSearchTimeout.current = setTimeout(async () => {
       setLoadingMovies(true)
       try {
-        let url = `/api/movies?search=${encodeURIComponent(query)}&limit=10`
-        if (releaseDateFrom) {
-          url += `&releaseDateFrom=${encodeURIComponent(releaseDateFrom)}`
-        }
-        const res = await fetch(url)
+        const res = await fetch(`/api/movies?search=${encodeURIComponent(query)}&limit=10`)
         if (res.ok) {
           const data = await res.json()
           const items = data.movies || data.items || (Array.isArray(data) ? data : [])
@@ -99,7 +94,7 @@ export default function ReviewSearchPage() {
         setLoadingMovies(false)
       }
     }, 300)
-  }, [releaseDateFrom])
+  }, [])
 
   /**
    * Find duplicate reviews using 3 passes (all require same domain + same author):
@@ -693,25 +688,9 @@ export default function ReviewSearchPage() {
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Search section */}
         <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex gap-4 items-end mb-3">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Película
-              </label>
-            </div>
-            <div className="w-44">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Estreno desde
-              </label>
-              <input
-                type="date"
-                value={releaseDateFrom}
-                onChange={(e) => setReleaseDateFrom(e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900"
-                disabled={searching}
-              />
-            </div>
-          </div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Película
+          </label>
           <div className="flex gap-3">
             <div className="relative flex-1">
               <input

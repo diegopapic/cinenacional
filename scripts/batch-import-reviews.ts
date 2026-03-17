@@ -1130,26 +1130,26 @@ async function main() {
     log('INFO', `Filtro release-from: ${RELEASE_FROM} (año=${rfYear}, mes=${rfMonth}, día=${rfDay})`)
   }
 
-  // Build date filter SQL
+  // Build date filter SQL (release date <= specified date, to skip newer movies already processed)
   let releaseDateFilter = ''
   if (rfYear && rfMonth && rfDay) {
     releaseDateFilter = `
       AND (
-        m.release_year > ${rfYear}
-        OR (m.release_year = ${rfYear} AND m.release_month > ${rfMonth})
-        OR (m.release_year = ${rfYear} AND m.release_month = ${rfMonth} AND m.release_day >= ${rfDay})
+        m.release_year < ${rfYear}
+        OR (m.release_year = ${rfYear} AND m.release_month < ${rfMonth})
+        OR (m.release_year = ${rfYear} AND m.release_month = ${rfMonth} AND m.release_day <= ${rfDay})
         OR (m.release_year = ${rfYear} AND m.release_month = ${rfMonth} AND m.release_day IS NULL)
         OR (m.release_year = ${rfYear} AND m.release_month IS NULL)
       )`
   } else if (rfYear && rfMonth) {
     releaseDateFilter = `
       AND (
-        m.release_year > ${rfYear}
-        OR (m.release_year = ${rfYear} AND m.release_month >= ${rfMonth})
+        m.release_year < ${rfYear}
+        OR (m.release_year = ${rfYear} AND m.release_month <= ${rfMonth})
         OR (m.release_year = ${rfYear} AND m.release_month IS NULL)
       )`
   } else if (rfYear) {
-    releaseDateFilter = `AND m.release_year >= ${rfYear}`
+    releaseDateFilter = `AND m.release_year <= ${rfYear}`
   }
 
   // Get movies with release date, ordered by release date DESC
