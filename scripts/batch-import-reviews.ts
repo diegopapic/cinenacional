@@ -454,6 +454,23 @@ const siteRules: { domain: string; extract: SiteExtractor }[] = [
       const m = html.match(/<(?:strong|b|em)>\s*(?:Por|By)\s+<a[^>]*>\s*([^<]{2,80})\s*<\/a>/i)
       return m?.[1]?.trim() && isValidAuthorName(m[1].trim()) ? m[1].trim() : null
     }
+  },
+  {
+    // Author in <div class="... autor"><a><i class=""></i>Name</a> — the <i> tag
+    // inside <a> breaks generic byline patterns, which then match comment-author instead
+    domain: 'otroscines.com',
+    extract: (html) => {
+      const m = html.match(/<[^>]*class=["'][^"']*\bautor\b[^"']*["'][^>]*>[\s\S]{0,200}?<a[^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i)
+      return m?.[1]?.trim() && isValidAuthorName(m[1].trim()) ? m[1].trim() : null
+    }
+  },
+  {
+    // Blogger site — no author meta tags. Author signs at end of article: "Firma: Name.<br"
+    domain: 'terrorweekend.com',
+    extract: (html) => {
+      const m = html.match(/Firma:\s*([^<]{2,80}?)\.\s*<br/i)
+      return m?.[1]?.trim() && isValidAuthorName(m[1].trim()) ? m[1].trim() : null
+    }
   }
 ]
 
