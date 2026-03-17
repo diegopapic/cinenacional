@@ -55,7 +55,7 @@ export default function ReviewSearchPage() {
   const [movieOptions, setMovieOptions] = useState<MovieOption[]>([])
   const [selectedMovie, setSelectedMovie] = useState<MovieOption | null>(null)
   const [loadingMovies, setLoadingMovies] = useState(false)
-  const [yearFrom, setYearFrom] = useState<string>('')
+  const [releaseDateFrom, setReleaseDateFrom] = useState<string>('')
   const movieSearchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const searchMovies = useCallback((query: string) => {
@@ -68,8 +68,8 @@ export default function ReviewSearchPage() {
       setLoadingMovies(true)
       try {
         let url = `/api/movies?search=${encodeURIComponent(query)}&limit=10`
-        if (yearFrom && /^\d{4}$/.test(yearFrom)) {
-          url += `&yearFrom=${yearFrom}`
+        if (releaseDateFrom) {
+          url += `&releaseDateFrom=${encodeURIComponent(releaseDateFrom)}`
         }
         const res = await fetch(url)
         if (res.ok) {
@@ -99,7 +99,7 @@ export default function ReviewSearchPage() {
         setLoadingMovies(false)
       }
     }, 300)
-  }, [yearFrom])
+  }, [releaseDateFrom])
 
   /**
    * Find duplicate reviews using 3 passes (all require same domain + same author):
@@ -699,20 +699,14 @@ export default function ReviewSearchPage() {
                 Película
               </label>
             </div>
-            <div className="w-28">
+            <div className="w-44">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Desde año
+                Estreno desde
               </label>
               <input
-                type="text"
-                inputMode="numeric"
-                maxLength={4}
-                value={yearFrom}
-                onChange={(e) => {
-                  const v = e.target.value.replace(/\D/g, '').slice(0, 4)
-                  setYearFrom(v)
-                }}
-                placeholder="2024"
+                type="date"
+                value={releaseDateFrom}
+                onChange={(e) => setReleaseDateFrom(e.target.value)}
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900"
                 disabled={searching}
               />

@@ -49,6 +49,7 @@ function generateCacheKey(searchParams: URLSearchParams): string {
     'year',
     'yearFrom',
     'yearTo',
+    'releaseDateFrom',
     'stage',
     'sortBy',
     'sortOrder',
@@ -133,7 +134,18 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') || 'desc' as 'asc' | 'desc'
     const yearFrom = searchParams.get('yearFrom') || ''
     const yearTo = searchParams.get('yearTo') || ''
+    const releaseDateFrom = searchParams.get('releaseDateFrom') || ''
     const upcoming = searchParams.get('upcoming') || ''
+
+    // Parse releaseDateFrom for SQL raw query
+    let rdfYear = 0, rdfMonth = 0, rdfDay = 0
+    if (releaseDateFrom) {
+      const parts = releaseDateFrom.split('-').map(Number)
+      rdfYear = parts[0] || 0
+      rdfMonth = parts[1] || 0
+      rdfDay = parts[2] || 0
+    }
+    const hasDateFilter = rdfYear >= YEARS.MIN && rdfYear <= YEARS.MAX && !year && !yearFrom
 
     // Si hay búsqueda, usar query SQL con unaccent
     if (search) {
@@ -142,7 +154,16 @@ export async function GET(request: NextRequest) {
         const searchPattern = `%${searchQuery}%`
         const skip = (page - 1) * limit
 
-        const movies = await prisma.$queryRaw<any[]>`
+        // Build date filter SQL
+        const dateFilterSQL = hasDateFilter
+          ? (rdfMonth && rdfDay
+            ? `AND (release_year > ${rdfYear} OR (release_year = ${rdfYear} AND release_month > ${rdfMonth}) OR (release_year = ${rdfYear} AND release_month = ${rdfMonth} AND release_day >= ${rdfDay}) OR (release_year = ${rdfYear} AND release_month = ${rdfMonth} AND release_day IS NULL) OR (release_year = ${rdfYear} AND release_month IS NULL))`
+            : rdfMonth
+              ? `AND (release_year > ${rdfYear} OR (release_year = ${rdfYear} AND release_month >= ${rdfMonth}) OR (release_year = ${rdfYear} AND release_month IS NULL))`
+              : `AND release_year >= ${rdfYear}`)
+          : ''
+
+        const movies = await prisma.$queryRawUnsafe<any[]>(`
           SELECT
             id,
             slug,
@@ -158,25 +179,27 @@ export async function GET(request: NextRequest) {
             imdb_id as "imdbId"
           FROM movies
           WHERE
-            unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
+            unaccent(LOWER(title)) LIKE unaccent($1)
+            ${dateFilterSQL}
           ORDER BY
             CASE
-              WHEN unaccent(LOWER(title)) = unaccent(${searchQuery}) THEN 0
-              WHEN unaccent(LOWER(title)) LIKE unaccent(${searchQuery + '%'}) THEN 1
+              WHEN unaccent(LOWER(title)) = unaccent($2) THEN 0
+              WHEN unaccent(LOWER(title)) LIKE unaccent($3) THEN 1
               ELSE 2
             END,
             LENGTH(title) ASC,
             title ASC
-          LIMIT ${limit}
-          OFFSET ${skip}
-        `
+          LIMIT $4
+          OFFSET $5
+        `, searchPattern, searchQuery, searchQuery + '%', limit, skip)
 
-        const totalResult = await prisma.$queryRaw<{ count: number }[]>`
+        const totalResult = await prisma.$queryRawUnsafe<{ count: number }[]>(`
           SELECT COUNT(*)::int as count
           FROM movies
-          WHERE 
-            unaccent(LOWER(title)) LIKE unaccent(${searchPattern})
-        `
+          WHERE
+            unaccent(LOWER(title)) LIKE unaccent($1)
+            ${dateFilterSQL}
+        `, searchPattern)
 
         const total = totalResult[0]?.count || 0
         const movieIds = movies.map(m => m.id)
@@ -320,6 +343,36 @@ export async function GET(request: NextRequest) {
       where.releaseYear = {
         gte: parseIntClamped(yearFrom, YEARS.MIN, YEARS.MIN, YEARS.MAX),
         lte: parseIntClamped(yearTo, YEARS.MAX, YEARS.MIN, YEARS.MAX)
+      }
+    }
+
+    // Filtro por fecha exacta de estreno (YYYY-MM-DD o YYYY-MM o YYYY)
+    if (releaseDateFrom && !year && !yearFrom) {
+      const dateParts = releaseDateFrom.split('-').map(Number)
+      const [rdfYear, rdfMonth, rdfDay] = dateParts
+      if (rdfYear && rdfYear >= YEARS.MIN && rdfYear <= YEARS.MAX) {
+        if (rdfMonth && rdfDay) {
+          // Fecha completa: películas con fecha >= YYYY-MM-DD
+          where.OR = [
+            { releaseYear: { gt: rdfYear } },
+            { releaseYear: rdfYear, releaseMonth: { gt: rdfMonth } },
+            { releaseYear: rdfYear, releaseMonth: rdfMonth, releaseDay: { gte: rdfDay } },
+            // Fechas parciales del mismo año/mes (sin día) se incluyen
+            { releaseYear: rdfYear, releaseMonth: rdfMonth, releaseDay: null },
+            // Fechas parciales del mismo año (sin mes) se incluyen
+            { releaseYear: rdfYear, releaseMonth: null }
+          ]
+        } else if (rdfMonth) {
+          // Solo año-mes: películas con fecha >= YYYY-MM
+          where.OR = [
+            { releaseYear: { gt: rdfYear } },
+            { releaseYear: rdfYear, releaseMonth: { gte: rdfMonth } },
+            { releaseYear: rdfYear, releaseMonth: null }
+          ]
+        } else {
+          // Solo año: equivale a yearFrom
+          where.releaseYear = { gte: rdfYear }
+        }
       }
     }
 
