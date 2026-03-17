@@ -435,10 +435,38 @@ function extractPorFromTitle(title: string): string | null {
   return null
 }
 
+// ---------------------------------------------------------------------------
+// Site-specific extraction rules
+// ---------------------------------------------------------------------------
+
+type SiteExtractor = (html: string) => string | null
+
+const siteRules: { domain: string; extract: SiteExtractor }[] = [
+  {
+    domain: 'hacerselacritica.com',
+    extract: (html) => extractAuthorFromHeadline(html)
+  },
+  {
+    domain: 'cinefreaks.net',
+    extract: (html) => {
+      const m = html.match(/<(?:strong|b|em)>\s*(?:Por|By)\s+<a[^>]*>\s*([^<]{2,80})\s*<\/a>/i)
+      return m?.[1]?.trim() && isValidAuthorName(m[1].trim()) ? m[1].trim() : null
+    }
+  }
+]
+
+function findSiteRule(url: string): SiteExtractor | null {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, '')
+    for (const rule of siteRules) {
+      if (hostname === rule.domain || hostname.endsWith('.' + rule.domain)) return rule.extract
+    }
+  } catch { /* bad URL */ }
+  return null
+}
+
 function extractFromByline(html: string): string | null {
   const patterns = [
-    // "Por <a>Name</a>" inside <strong>/<b>/<em> in article content (highest priority)
-    /<(?:strong|b|em)>\s*(?:Por|By)\s+<a[^>]*>\s*([^<]{2,80})\s*<\/a>\s*<\/(?:strong|b|em)>/i,
     /<[^>]*class=["'][^"']*\b(?:byline|author-name|post-author-name|entry-author-name|article-author-name|author__name|writer-name|reviewer-name)\b[^"']*["'][^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*</i,
     /<a[^>]*rel=["']author["'][^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i,
     /<a[^>]*class=["'][^"']*\bauthor\b[^"']*["'][^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i,
@@ -993,7 +1021,8 @@ async function enrichReview(review: ReviewResult, movieTitle: string): Promise<E
     if (!res.ok) return { ...review, htmlAuthor: null, htmlTitle: null, htmlFecha: null, nonReviewSignals: [], fetchFailed: true }
 
     const html = await res.text()
-    const rawAuthor = extractFromJsonLd(html) || extractAuthorFromHeadline(html) || extractFromMetaTags(html) || extractFromByline(html)
+    const siteExtract = findSiteRule(review.link)
+    const rawAuthor = (siteExtract ? siteExtract(html) : null) || extractFromJsonLd(html) || extractFromMetaTags(html) || extractFromByline(html)
     const author = rawAuthor ? decodeHtmlEntities(rawAuthor) : null
     const title = extractTitle(html, movieTitle)
     const fecha = extractPublishDate(html)

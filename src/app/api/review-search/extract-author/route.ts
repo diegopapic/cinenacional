@@ -111,6 +111,49 @@ function detectNonReviewSignals(html: string): string[] {
   return signals
 }
 
+// ---------------------------------------------------------------------------
+// Site-specific extraction rules
+// Each rule targets a specific media outlet whose HTML doesn't follow
+// generic patterns (bad JSON-LD, shared WordPress accounts, etc.).
+// Rules are checked BEFORE the generic pipeline; first match wins.
+// ---------------------------------------------------------------------------
+
+type SiteExtractor = (html: string) => string | null
+
+const siteRules: { domain: string; extract: SiteExtractor }[] = [
+  {
+    // Hacerse la Crítica: WordPress author is a username ("joseluisvis").
+    // The real critic name is in the headline: "TÍTULO, POR NOMBRE AUTOR"
+    domain: 'hacerselacritica.com',
+    extract: (html) => extractAuthorFromHeadline(html)
+  },
+  {
+    // CineFreaks: uses a shared "Colaboradores Cinefreaks" WP account.
+    // The real author is in the first paragraph: <strong>Por <a>Name</a></strong>
+    domain: 'cinefreaks.net',
+    extract: (html) => {
+      const m = html.match(/<(?:strong|b|em)>\s*(?:Por|By)\s+<a[^>]*>\s*([^<]{2,80})\s*<\/a>/i)
+      return m?.[1]?.trim() && isValidAuthorName(m[1].trim()) ? m[1].trim() : null
+    }
+  }
+]
+
+function findSiteRule(url: string): SiteExtractor | null {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, '')
+    for (const rule of siteRules) {
+      if (hostname === rule.domain || hostname.endsWith('.' + rule.domain)) {
+        return rule.extract
+      }
+    }
+  } catch { /* bad URL */ }
+  return null
+}
+
+// ---------------------------------------------------------------------------
+// Main extraction pipeline
+// ---------------------------------------------------------------------------
+
 async function extractAuthorFromPage(url: string, movieTitle?: string): Promise<ExtractionResult> {
   try {
     const controller = new AbortController()
@@ -146,6 +189,19 @@ async function extractAuthorFromPage(url: string, movieTitle?: string): Promise<
       log.info(`Non-review signals for ${url}: ${nonReviewSignals.join('; ')}`)
     }
 
+    // --- Step 0: site-specific rules (override generic pipeline) ---
+    const siteExtract = findSiteRule(url)
+    if (siteExtract) {
+      const siteAuthor = siteExtract(html)
+      if (siteAuthor) {
+        log.info(`Found author "${siteAuthor}" via site-specific rule in ${url}`)
+        return { author: siteAuthor, title, fecha, method: 'site-rule', debug: `HTML ${htmlLen} chars`, nonReviewSignals }
+      }
+      // If site rule didn't find anything, fall through to generic pipeline
+    }
+
+    // --- Generic pipeline ---
+
     // 1. JSON-LD structured data
     const jsonLdAuthor = extractFromJsonLd(html)
     if (jsonLdAuthor) {
@@ -153,21 +209,14 @@ async function extractAuthorFromPage(url: string, movieTitle?: string): Promise<
       return { author: jsonLdAuthor, title, fecha, method: 'json-ld', debug: `HTML ${htmlLen} chars`, nonReviewSignals }
     }
 
-    // 2. Headline "POR AUTHOR" pattern (e.g. Hacerse la Crítica: "TÍTULO, POR JOSÉ LUIS VISCONTI")
-    const headlineAuthor = extractAuthorFromHeadline(html)
-    if (headlineAuthor) {
-      log.info(`Found author "${headlineAuthor}" via headline in ${url}`)
-      return { author: headlineAuthor, title, fecha, method: 'headline', debug: `HTML ${htmlLen} chars`, nonReviewSignals }
-    }
-
-    // 3. Meta tags
+    // 2. Meta tags
     const metaAuthor = extractFromMetaTags(html)
     if (metaAuthor) {
       log.info(`Found author "${metaAuthor}" via meta tag in ${url}`)
       return { author: metaAuthor, title, fecha, method: 'meta', debug: `HTML ${htmlLen} chars`, nonReviewSignals }
     }
 
-    // 4. HTML byline patterns
+    // 3. HTML byline patterns
     const bylineAuthor = extractFromByline(html)
     if (bylineAuthor) {
       log.info(`Found author "${bylineAuthor}" via byline in ${url}`)
@@ -405,10 +454,6 @@ function extractPorFromTitle(title: string): string | null {
 
 function extractFromByline(html: string): string | null {
   const patterns = [
-    // "Por <a>Name</a>" inside <strong>/<b>/<em> in article content
-    // (CineFreaks guest posts: <p><strong>Por <a href="...">Patricio Ferro</a></strong></p>)
-    // Highest priority: this is an explicit inline byline, more specific than theme/sidebar elements
-    /<(?:strong|b|em)>\s*(?:Por|By)\s+<a[^>]*>\s*([^<]{2,80})\s*<\/a>\s*<\/(?:strong|b|em)>/i,
     // Class-based byline patterns
     /<[^>]*class=["'][^"']*\b(?:byline|author-name|post-author-name|entry-author-name|article-author-name|author__name|writer-name|reviewer-name)\b[^"']*["'][^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*</i,
     // Author link with rel="author"
