@@ -308,7 +308,7 @@ function isValidAuthorName(name: string): boolean {
   if (name.includes('@') && name.includes('.')) return false
   if (/^\d+$/.test(name)) return false
   if (/^(Photo|Image|Credit|Courtesy|Foto|Crédito|Imagen|Illustration|Getty|Shutterstock|AP Photo|Reuters|AFP)[\s:]/i.test(name)) return false
-  if (/^(Share|Tweet|Email|Print|Comment|Read|More|View|Posted|Written|Admin|Editor|Redacción|Texto por)$/i.test(name)) return false
+  if (/^(Share|Tweet|Email|Print|Comment|Read|More|View|Posted|Written|Admin|Editor|Redacción|Texto por|Por|By)$/i.test(name)) return false
   // Reject common junk: fragments, articles as first word, generic labels
   if (/^(el|la|los|las|un|una|del|al|por|con|en|de|su|se|lo|le|no|es|pero)\s/i.test(name)) return false
   // Reject names that start lowercase (likely sentence fragments)
@@ -371,7 +371,7 @@ function findAuthorInJsonLd(data: unknown): string | null {
         if (typeof nodeObj.author === 'object' && nodeObj.author !== null && '@id' in nodeObj.author) {
           const authorId = (nodeObj.author as { '@id': string })['@id']
           for (const personNode of obj['@graph'] as Record<string, unknown>[]) {
-            if (personNode && typeof personNode === 'object' && personNode['@id'] === authorId && personNode['@type'] === 'Person' && typeof personNode.name === 'string')
+            if (personNode && typeof personNode === 'object' && personNode['@id'] === authorId && personNode['@type'] === 'Person' && typeof personNode.name === 'string' && isValidAuthorName(personNode.name))
               return personNode.name
           }
         }
@@ -380,7 +380,7 @@ function findAuthorInJsonLd(data: unknown): string | null {
     for (const node of obj['@graph']) {
       if (!node || typeof node !== 'object') continue
       const nodeObj = node as Record<string, unknown>
-      if (nodeObj['@type'] === 'Person' && typeof nodeObj.name === 'string') return nodeObj.name
+      if (nodeObj['@type'] === 'Person' && typeof nodeObj.name === 'string' && isValidAuthorName(nodeObj.name)) return nodeObj.name
     }
   }
   return null
@@ -402,8 +402,43 @@ function extractFromMetaTags(html: string): string | null {
   return null
 }
 
+/**
+ * Extract author from article headline/h1 ending with "POR AUTHOR NAME".
+ * Common in Hacerse la Crítica: "TÍTULO: SUBTÍTULO, POR JOSÉ LUIS VISCONTI"
+ */
+function extractAuthorFromHeadline(html: string): string | null {
+  const headlineMatch = html.match(/"headline"\s*:\s*"([^"]{2,500})"/i)
+  if (headlineMatch?.[1]) {
+    const author = extractPorFromTitle(headlineMatch[1])
+    if (author) return author
+  }
+  const h1Patterns = [
+    /<h1[^>]*>\s*([^<]{2,500})\s*<\/h1>/i,
+    /<h1[^>]*class=["'][^"']*entry-title[^"']*["'][^>]*>\s*([^<]{2,500})\s*<\/h1>/i
+  ]
+  for (const pattern of h1Patterns) {
+    const match = html.match(pattern)
+    if (match?.[1]) { const author = extractPorFromTitle(match[1]); if (author) return author }
+  }
+  return null
+}
+
+function extractPorFromTitle(title: string): string | null {
+  const match = title.match(/[,;:]\s*(?:POR|Por|por)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.\s]+?)\s*$/)
+  if (match?.[1]) {
+    const name = match[1].trim()
+    const normalized = /^[A-ZÁÉÍÓÚÑ\s.]+$/.test(name)
+      ? name.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+      : name
+    if (isValidAuthorName(normalized)) return normalized
+  }
+  return null
+}
+
 function extractFromByline(html: string): string | null {
   const patterns = [
+    // "Por <a>Name</a>" inside <strong>/<b>/<em> in article content (highest priority)
+    /<(?:strong|b|em)>\s*(?:Por|By)\s+<a[^>]*>\s*([^<]{2,80})\s*<\/a>\s*<\/(?:strong|b|em)>/i,
     /<[^>]*class=["'][^"']*\b(?:byline|author-name|post-author-name|entry-author-name|article-author-name|author__name|writer-name|reviewer-name)\b[^"']*["'][^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*</i,
     /<a[^>]*rel=["']author["'][^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i,
     /<a[^>]*class=["'][^"']*\bauthor\b[^"']*["'][^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i,
@@ -958,7 +993,7 @@ async function enrichReview(review: ReviewResult, movieTitle: string): Promise<E
     if (!res.ok) return { ...review, htmlAuthor: null, htmlTitle: null, htmlFecha: null, nonReviewSignals: [], fetchFailed: true }
 
     const html = await res.text()
-    const rawAuthor = extractFromJsonLd(html) || extractFromMetaTags(html) || extractFromByline(html)
+    const rawAuthor = extractFromJsonLd(html) || extractAuthorFromHeadline(html) || extractFromMetaTags(html) || extractFromByline(html)
     const author = rawAuthor ? decodeHtmlEntities(rawAuthor) : null
     const title = extractTitle(html, movieTitle)
     const fecha = extractPublishDate(html)

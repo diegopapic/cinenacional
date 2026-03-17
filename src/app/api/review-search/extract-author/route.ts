@@ -153,14 +153,21 @@ async function extractAuthorFromPage(url: string, movieTitle?: string): Promise<
       return { author: jsonLdAuthor, title, fecha, method: 'json-ld', debug: `HTML ${htmlLen} chars`, nonReviewSignals }
     }
 
-    // 2. Meta tags
+    // 2. Headline "POR AUTHOR" pattern (e.g. Hacerse la Crítica: "TÍTULO, POR JOSÉ LUIS VISCONTI")
+    const headlineAuthor = extractAuthorFromHeadline(html)
+    if (headlineAuthor) {
+      log.info(`Found author "${headlineAuthor}" via headline in ${url}`)
+      return { author: headlineAuthor, title, fecha, method: 'headline', debug: `HTML ${htmlLen} chars`, nonReviewSignals }
+    }
+
+    // 3. Meta tags
     const metaAuthor = extractFromMetaTags(html)
     if (metaAuthor) {
       log.info(`Found author "${metaAuthor}" via meta tag in ${url}`)
       return { author: metaAuthor, title, fecha, method: 'meta', debug: `HTML ${htmlLen} chars`, nonReviewSignals }
     }
 
-    // 3. HTML byline patterns
+    // 4. HTML byline patterns
     const bylineAuthor = extractFromByline(html)
     if (bylineAuthor) {
       log.info(`Found author "${bylineAuthor}" via byline in ${url}`)
@@ -253,7 +260,8 @@ function findAuthorInJsonLd(data: unknown): string | null {
               typeof personNode === 'object' &&
               personNode['@id'] === authorId &&
               personNode['@type'] === 'Person' &&
-              typeof personNode.name === 'string'
+              typeof personNode.name === 'string' &&
+              isValidAuthorName(personNode.name)
             ) {
               return personNode.name
             }
@@ -266,7 +274,7 @@ function findAuthorInJsonLd(data: unknown): string | null {
     for (const node of obj['@graph']) {
       if (!node || typeof node !== 'object') continue
       const nodeObj = node as Record<string, unknown>
-      if (nodeObj['@type'] === 'Person' && typeof nodeObj.name === 'string') {
+      if (nodeObj['@type'] === 'Person' && typeof nodeObj.name === 'string' && isValidAuthorName(nodeObj.name)) {
         return nodeObj.name
       }
     }
@@ -286,7 +294,7 @@ function isValidAuthorName(name: string): boolean {
   if (/^\d+$/.test(name)) return false
   // Reject photo/image credits
   if (/^(Photo|Image|Credit|Courtesy|Foto|Crédito|Imagen|Illustration|Getty|Shutterstock|AP Photo|Reuters|AFP)[\s:]/i.test(name)) return false
-  if (/^(Share|Tweet|Email|Print|Comment|Read|More|View|Posted|Written|Admin|Editor|Redacción|Texto por)$/i.test(name)) return false
+  if (/^(Share|Tweet|Email|Print|Comment|Read|More|View|Posted|Written|Admin|Editor|Redacción|Texto por|Por|By)$/i.test(name)) return false
   // Reject common junk: fragments, articles as first word, generic labels
   if (/^(el|la|los|las|un|una|del|al|por|con|en|de|su|se|lo|le|no|es|pero)\s/i.test(name)) return false
   // Reject names that start lowercase (likely sentence fragments)
@@ -350,8 +358,57 @@ function extractFromMetaTags(html: string): string | null {
   return null
 }
 
+/**
+ * Extract author from article headline/h1 that ends with "POR AUTHOR NAME".
+ * Common pattern in Hacerse la Crítica: "TÍTULO: SUBTÍTULO, POR JOSÉ LUIS VISCONTI"
+ */
+function extractAuthorFromHeadline(html: string): string | null {
+  // Try JSON-LD headline first
+  const headlineMatch = html.match(/"headline"\s*:\s*"([^"]{2,500})"/i)
+  if (headlineMatch?.[1]) {
+    const author = extractPorFromTitle(headlineMatch[1])
+    if (author) return author
+  }
+
+  // Try <h1> tags
+  const h1Patterns = [
+    /<h1[^>]*>\s*([^<]{2,500})\s*<\/h1>/i,
+    /<h1[^>]*class=["'][^"']*entry-title[^"']*["'][^>]*>\s*([^<]{2,500})\s*<\/h1>/i
+  ]
+  for (const pattern of h1Patterns) {
+    const match = html.match(pattern)
+    if (match?.[1]) {
+      const author = extractPorFromTitle(match[1])
+      if (author) return author
+    }
+  }
+
+  return null
+}
+
+/**
+ * Extract author name from a title string ending with ", POR AUTHOR" or " POR AUTHOR".
+ */
+function extractPorFromTitle(title: string): string | null {
+  // Match "POR AUTHOR" at end of title, after comma or colon separator
+  const match = title.match(/[,;:]\s*(?:POR|Por|por)\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.\s]+?)\s*$/)
+  if (match?.[1]) {
+    const name = match[1].trim()
+    // Normalize: if ALL CAPS, convert to Title Case (split by spaces to handle accents)
+    const normalized = /^[A-ZÁÉÍÓÚÑ\s.]+$/.test(name)
+      ? name.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+      : name
+    if (isValidAuthorName(normalized)) return normalized
+  }
+  return null
+}
+
 function extractFromByline(html: string): string | null {
   const patterns = [
+    // "Por <a>Name</a>" inside <strong>/<b>/<em> in article content
+    // (CineFreaks guest posts: <p><strong>Por <a href="...">Patricio Ferro</a></strong></p>)
+    // Highest priority: this is an explicit inline byline, more specific than theme/sidebar elements
+    /<(?:strong|b|em)>\s*(?:Por|By)\s+<a[^>]*>\s*([^<]{2,80})\s*<\/a>\s*<\/(?:strong|b|em)>/i,
     // Class-based byline patterns
     /<[^>]*class=["'][^"']*\b(?:byline|author-name|post-author-name|entry-author-name|article-author-name|author__name|writer-name|reviewer-name)\b[^"']*["'][^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*</i,
     // Author link with rel="author"
