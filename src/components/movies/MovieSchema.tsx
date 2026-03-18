@@ -1,3 +1,14 @@
+interface ReviewForSchema {
+  title?: string | null
+  summary?: string | null
+  score?: number | null
+  publishYear?: number | null
+  publishMonth?: number | null
+  publishDay?: number | null
+  author?: { firstName?: string | null; lastName?: string | null } | null
+  mediaOutlet?: { name: string; url?: string | null } | null
+}
+
 interface MovieSchemaProps {
   title: string
   slug: string
@@ -11,6 +22,7 @@ interface MovieSchemaProps {
   cast: { name: string }[]
   countries: { name: string }[]
   alternativeTitles: { title: string }[]
+  reviews?: ReviewForSchema[]
 }
 
 function formatDurationISO(minutes: number): string {
@@ -22,6 +34,21 @@ function formatDurationISO(minutes: number): string {
 }
 
 const BASE_URL = 'https://cinenacional.com'
+
+function formatReviewDate(year?: number | null, month?: number | null, day?: number | null): string | null {
+  if (!year) return null
+  const y = String(year)
+  if (month && day) return `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  if (month) return `${y}-${String(month).padStart(2, '0')}`
+  return y
+}
+
+function formatAuthorName(author: { firstName?: string | null; lastName?: string | null }): string {
+  const parts: string[] = []
+  if (author.firstName) parts.push(author.firstName)
+  if (author.lastName) parts.push(author.lastName)
+  return parts.join(' ')
+}
 
 export function MovieSchema({
   title,
@@ -36,6 +63,7 @@ export function MovieSchema({
   cast,
   countries,
   alternativeTitles,
+  reviews = [],
 }: MovieSchemaProps) {
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -93,6 +121,60 @@ export function MovieSchema({
       jsonLd.alternativeHeadline = alternativeTitles[0].title
     } else {
       jsonLd.alternativeHeadline = alternativeTitles.map(t => t.title)
+    }
+  }
+
+  if (reviews.length > 0) {
+    const schemaReviews = reviews.map(r => {
+      const review: Record<string, unknown> = {
+        '@type': 'Review',
+      }
+
+      if (r.title) review.name = r.title
+
+      if (r.summary) review.reviewBody = r.summary
+
+      if (r.author) {
+        const name = formatAuthorName(r.author)
+        if (name) review.author = { '@type': 'Person', name }
+      }
+
+      if (r.mediaOutlet) {
+        const publisher: Record<string, unknown> = {
+          '@type': 'Organization',
+          name: r.mediaOutlet.name,
+        }
+        if (r.mediaOutlet.url) publisher.url = r.mediaOutlet.url
+        review.publisher = publisher
+      }
+
+      const dateStr = formatReviewDate(r.publishYear, r.publishMonth, r.publishDay)
+      if (dateStr) review.datePublished = dateStr
+
+      if (r.score) {
+        review.reviewRating = {
+          '@type': 'Rating',
+          ratingValue: r.score,
+          bestRating: 10,
+          worstRating: 1,
+        }
+      }
+
+      return review
+    })
+
+    jsonLd.review = schemaReviews
+
+    const scoredReviews = reviews.filter(r => r.score && r.score > 0)
+    if (scoredReviews.length > 0) {
+      const sum = scoredReviews.reduce((acc, r) => acc + r.score!, 0)
+      jsonLd.aggregateRating = {
+        '@type': 'AggregateRating',
+        ratingValue: Math.round((sum / scoredReviews.length) * 10) / 10,
+        bestRating: 10,
+        worstRating: 1,
+        ratingCount: scoredReviews.length,
+      }
     }
   }
 

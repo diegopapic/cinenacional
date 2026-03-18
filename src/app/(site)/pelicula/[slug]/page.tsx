@@ -696,6 +696,7 @@ export default async function MoviePage({ params }: PageProps) {
       cast={allCast}
       countries={schemaCountries}
       alternativeTitles={movie.alternativeTitles || []}
+      reviews={movie.reviews || []}
     />
     <MoviePageClient
       movie={{
