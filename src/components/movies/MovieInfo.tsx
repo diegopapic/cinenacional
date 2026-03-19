@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
@@ -42,14 +42,12 @@ interface MovieInfoProps {
 }
 
 export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProps) {
-  const [directors, setDirectors] = useState<Director[]>([]);
+  const directors = useMemo<Director[]>(() => {
+    if (!movie.crew || !Array.isArray(movie.crew) || movie.crew.length === 0) return [];
 
-  useEffect(() => {
-    if (movie.crew && Array.isArray(movie.crew) && movie.crew.length > 0) {
-      // Filtrar todos los miembros del crew que sean directores (roleId === 2)
-      const directorsCrew = movie.crew.filter(member => member.roleId === 2);
-
-      const directorsData = directorsCrew.map(directorCrew => {
+    return movie.crew
+      .filter(member => member.roleId === 2)
+      .map(directorCrew => {
         if (directorCrew?.person) {
           const { id, firstName, lastName, slug, photoUrl } = directorCrew.person;
           const fullName = [firstName, lastName].filter(Boolean).join(' ');
@@ -61,11 +59,9 @@ export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProp
           };
         }
         return null;
-      }).filter(Boolean) as Director[];
-
-      setDirectors(directorsData);
-    }
-  }, [movie]);
+      })
+      .filter((d): d is Director => d !== null);
+  }, [movie.crew]);
 
   // Sanitizar la sinopsis para prevenir XSS
   const sanitizedSynopsis = movie.synopsis

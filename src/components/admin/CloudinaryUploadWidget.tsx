@@ -35,6 +35,7 @@ export function CloudinaryUploadWidget({
   maxDisplayHeight
 }: CloudinaryUploadWidgetProps) {
   const [imageUrl, setImageUrl] = useState(value || '')
+  const [prevValue, setPrevValue] = useState(value)
   const [isUploading, setIsUploading] = useState(false)
 
   // Ref para controlar el widget y evitar múltiples instancias
@@ -45,10 +46,11 @@ export function CloudinaryUploadWidget({
   // Ref para saber si el widget efectivamente abrió
   const widgetDidOpenRef = useRef(false)
 
-  // Sincronizar con el valor externo
-  useEffect(() => {
+  // Sincronizar con el valor externo (patrón "ajustar estado durante render")
+  if (value !== prevValue) {
+    setPrevValue(value)
     setImageUrl(value || '')
-  }, [value])
+  }
 
   // Limpiar al desmontar el componente
   useEffect(() => {

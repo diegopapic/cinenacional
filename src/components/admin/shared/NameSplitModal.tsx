@@ -1,6 +1,6 @@
 // src/components/admin/shared/NameSplitModal.tsx
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { X, UserCircle, Check } from 'lucide-react'
 import GenderSelector from './GenderSelector'
 
@@ -26,20 +26,19 @@ export default function NameSplitModal({
   onConfirm,
   onCancel
 }: NameSplitModalProps) {
-  const [words, setWords] = useState<string[]>([])
   const [firstNameWordCount, setFirstNameWordCount] = useState(1)
   const [step, setStep] = useState<'name' | 'gender'>('name')
+  const [prevFullName, setPrevFullName] = useState(fullName)
 
-  // Parsear palabras cuando cambia fullName
-  useEffect(() => {
-    if (fullName) {
-      // Tokenizar respetando apodos entre comillas
-      const tokens = tokenizeName(fullName.trim())
-      setWords(tokens)
-      setFirstNameWordCount(1)
-      setStep('name')
-    }
-  }, [fullName])
+  // Derivar words del prop
+  const words = useMemo(() => fullName ? tokenizeName(fullName.trim()) : [], [fullName])
+
+  // Reset al cambiar fullName (patrón "ajustar estado durante render")
+  if (fullName !== prevFullName) {
+    setPrevFullName(fullName)
+    setFirstNameWordCount(1)
+    setStep('name')
+  }
 
   if (!isOpen) return null
 

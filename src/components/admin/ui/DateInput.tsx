@@ -12,6 +12,37 @@ interface DateInputProps {
     className?: string;
 }
 
+// Convertir ISO (YYYY-MM-DD) a display (DD/MM/AAAA)
+function isoToDisplay(isoDate: string): string {
+    if (!isoDate) return '';
+    const parts = isoDate.split('-');
+    if (parts.length !== 3) return '';
+    const [year, month, day] = parts;
+    return `${day}/${month}/${year}`;
+}
+
+// Convertir display (DD/MM/AAAA) a ISO (YYYY-MM-DD)
+function displayToIso(displayDate: string): string {
+    if (!displayDate) return '';
+    const parts = displayDate.split('/');
+    if (parts.length !== 3) return '';
+    const [day, month, year] = parts;
+    if (!day || !month || !year) return '';
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+}
+
+// Validar si una fecha es válida
+function isValidDate(day: number, month: number, year: number): boolean {
+    if (year < 1800 || year > 2100) return false;
+    if (month < 1 || month > 12) return false;
+    if (day < 1 || day > 31) return false;
+
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year &&
+           date.getMonth() === month - 1 &&
+           date.getDate() === day;
+}
+
 /**
  * Componente de fecha personalizado que:
  * - Muestra el formato DD/MM/AAAA
@@ -19,49 +50,20 @@ interface DateInputProps {
  * - Permite seleccionar desde un calendario
  */
 export function DateInput({ value, onChange, placeholder = 'DD/MM/AAAA', className = '' }: DateInputProps) {
-    const [displayValue, setDisplayValue] = useState('');
+    const [displayValue, setDisplayValue] = useState(() => isoToDisplay(value));
+    const [prevValue, setPrevValue] = useState(value);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const calendarRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const hiddenDateRef = useRef<HTMLInputElement>(null);
 
-    // Convertir ISO (YYYY-MM-DD) a display (DD/MM/AAAA)
-    const isoToDisplay = (isoDate: string): string => {
-        if (!isoDate) return '';
-        const parts = isoDate.split('-');
-        if (parts.length !== 3) return '';
-        const [year, month, day] = parts;
-        return `${day}/${month}/${year}`;
-    };
-
-    // Convertir display (DD/MM/AAAA) a ISO (YYYY-MM-DD)
-    const displayToIso = (displayDate: string): string => {
-        if (!displayDate) return '';
-        const parts = displayDate.split('/');
-        if (parts.length !== 3) return '';
-        const [day, month, year] = parts;
-        if (!day || !month || !year) return '';
-        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    };
-
-    // Validar si una fecha es válida
-    const isValidDate = (day: number, month: number, year: number): boolean => {
-        if (year < 1800 || year > 2100) return false;
-        if (month < 1 || month > 12) return false;
-        if (day < 1 || day > 31) return false;
-
-        const date = new Date(year, month - 1, day);
-        return date.getFullYear() === year &&
-               date.getMonth() === month - 1 &&
-               date.getDate() === day;
-    };
-
-    // Sincronizar valor externo con display
-    useEffect(() => {
+    // Sincronizar valor externo con display (patrón "ajustar estado durante render")
+    if (value !== prevValue) {
+        setPrevValue(value);
         setDisplayValue(isoToDisplay(value));
-    }, [value]);
+    }
 
-    // Cerrar calendario al hacer clic fuera
+    // Cerrar calendario al hacer clic fuera (DOM_SYNC - legítimo)
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {

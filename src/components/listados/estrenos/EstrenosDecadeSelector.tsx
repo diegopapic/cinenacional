@@ -28,8 +28,8 @@ export default function EstrenosDecadeSelector({ value, onChange }: EstrenosDeca
     setMounted(true);
   }, []);
   
-  useEffect(() => {
-    if (isOpen && buttonRef.current) {
+  const updateDropdownPosition = () => {
+    if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       setDropdownPosition({
         top: rect.bottom + window.scrollY + 8,
@@ -37,8 +37,8 @@ export default function EstrenosDecadeSelector({ value, onChange }: EstrenosDeca
         width: rect.width
       });
     }
-  }, [isOpen]);
-  
+  };
+
   // ✅ Cerrar dropdown al hacer clic fuera - CORREGIDO
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -96,7 +96,10 @@ export default function EstrenosDecadeSelector({ value, onChange }: EstrenosDeca
     <>
       <button
         ref={buttonRef}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!isOpen) updateDropdownPosition();
+          setIsOpen(!isOpen);
+        }}
         className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors min-w-[140px] justify-between"
       >
         <span className="font-medium">{getCurrentLabel()}</span>

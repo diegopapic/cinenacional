@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import LocationTreeNode from './LocationTreeNode'
 import { Search, Loader2, RefreshCw } from 'lucide-react'
@@ -26,7 +26,6 @@ interface LocationNode {
 export default function LocationTree() {
   const router = useRouter()
   const [locations, setLocations] = useState<LocationNode[]>([])
-  const [filteredLocations, setFilteredLocations] = useState<LocationNode[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [deleteModal, setDeleteModal] = useState<{ id: number; name: string } | null>(null)
@@ -35,14 +34,9 @@ export default function LocationTree() {
     loadLocationTree()
   }, [])
 
-  useEffect(() => {
-    filterLocations()
-  }, [searchTerm, locations])
-
   const loadLocationTree = async () => {
     setIsLoading(true)
     try {
-      // Agregar timestamp para evitar caché
       const response = await fetch(`/api/locations/tree?t=${Date.now()}`, {
         cache: 'no-store',
         headers: {
@@ -61,40 +55,27 @@ export default function LocationTree() {
     }
   }
 
-  const filterLocations = () => {
-    if (!searchTerm.trim()) {
-      setFilteredLocations(locations)
-      return
-    }
+  const filteredLocations = useMemo(() => {
+    if (!searchTerm.trim()) return locations
 
     const term = searchTerm.toLowerCase()
-    
+
     const filterNode = (node: LocationNode): LocationNode | null => {
-      // Verificar si el nodo actual coincide
       const nodeMatches = node.name.toLowerCase().includes(term)
-      
-      // Filtrar recursivamente los hijos
       const filteredChildren = node.children
         .map(child => filterNode(child))
         .filter((child): child is LocationNode => child !== null)
-      
-      // Incluir el nodo si coincide o si tiene hijos que coinciden
+
       if (nodeMatches || filteredChildren.length > 0) {
-        return {
-          ...node,
-          children: filteredChildren
-        }
+        return { ...node, children: filteredChildren }
       }
-      
       return null
     }
-    
-    const filtered = locations
+
+    return locations
       .map(node => filterNode(node))
       .filter((node): node is LocationNode => node !== null)
-    
-    setFilteredLocations(filtered)
-  }
+  }, [searchTerm, locations])
 
   const handleDelete = async (id: number, name: string) => {
     setDeleteModal({ id, name })

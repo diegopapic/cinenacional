@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { getCsrfHeaders } from '@/lib/csrf-client';
@@ -28,20 +28,23 @@ export default function ReviewNamesPage() {
   // Form state
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  // Track para sincronizar form con caso actual
+  const prevCaseIdRef = useRef<number | null>(null);
 
   // Cargar casos al montar
   useEffect(() => {
     loadCases();
   }, []);
 
-  // Actualizar form cuando cambia el caso actual
-  useEffect(() => {
-    if (cases.length > 0 && cases[currentIndex]) {
-      const currentCase = cases[currentIndex];
-      setFirstName(currentCase.firstName);
-      setLastName(currentCase.lastName);
+  // Sincronizar form con caso actual (patrón "ajustar estado durante render")
+  const currentCaseId = cases[currentIndex]?.id ?? null;
+  if (currentCaseId !== prevCaseIdRef.current) {
+    prevCaseIdRef.current = currentCaseId;
+    if (cases[currentIndex]) {
+      setFirstName(cases[currentIndex].firstName);
+      setLastName(cases[currentIndex].lastName);
     }
-  }, [currentIndex, cases]);
+  }
 
   const loadCases = async () => {
     try {

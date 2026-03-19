@@ -1,7 +1,7 @@
 // src/components/admin/ScreeningVenueSelector.tsx - VERSIÓN SIMPLIFICADA
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { X, Search, Building, Globe, Tv, Film } from 'lucide-react'
 import { createLogger } from '@/lib/logger'
 
@@ -41,7 +41,6 @@ export default function ScreeningVenueSelector({
     releaseDate
 }: ScreeningVenueSelectorProps) {
     const [venues, setVenues] = useState<ScreeningVenue[]>([])
-    const [filteredVenues, setFilteredVenues] = useState<ScreeningVenue[]>([])
     const [searchTerm, setSearchTerm] = useState('')
     const [showDropdown, setShowDropdown] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -57,27 +56,21 @@ export default function ScreeningVenueSelector({
             const response = await fetch('/api/screening-venues?isActive=true&limit=100')
             const data = await response.json()
             setVenues(data.venues || [])
-            setFilteredVenues(data.venues || [])
         } catch (error) {
             log.error('Error loading screening venues', error)
             setVenues([])
-            setFilteredVenues([])
         } finally {
             setLoading(false)
         }
     }
 
-    // Filtrar pantallas según búsqueda
-    useEffect(() => {
-        if (searchTerm) {
-            const filtered = venues.filter(venue =>
-                venue.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                venueTypeLabels[venue.type as keyof typeof venueTypeLabels]?.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-            setFilteredVenues(filtered)
-        } else {
-            setFilteredVenues(venues)
-        }
+    // Filtrar pantallas según búsqueda (derivado)
+    const filteredVenues = useMemo(() => {
+        if (!searchTerm) return venues
+        return venues.filter(venue =>
+            venue.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            venueTypeLabels[venue.type as keyof typeof venueTypeLabels]?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
     }, [searchTerm, venues])
 
     // Agregar pantalla

@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Search, X, Film, User, Loader2, ArrowRight } from 'lucide-react'
 import { useGlobalSearch } from '@/hooks/useGlobalSearch'
 import { useRouter } from 'next/navigation'
@@ -56,14 +56,11 @@ export default function SearchBar() {
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
 
-    // Mostrar resultados cuando hay query
-    useEffect(() => {
-        if (query.length >= 2) {
-            setShowResults(true)
-        } else {
-            setShowResults(false)
-        }
-    }, [query])
+    // Actualizar query y mostrar/ocultar resultados
+    const handleQueryChange = useCallback((value: string) => {
+        setQuery(value)
+        setShowResults(value.length >= 2)
+    }, [setQuery])
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
@@ -93,7 +90,7 @@ export default function SearchBar() {
                         ref={inputRef}
                         type="text"
                         value={query}
-                        onChange={(e) => setQuery(e.target.value)}
+                        onChange={(e) => handleQueryChange(e.target.value)}
                         onFocus={() => query.length >= 2 && setShowResults(true)}
                         placeholder="Buscar películas o personas..."
                         className="w-full pl-10 pr-10 py-2 bg-zinc-800 border border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent focus:bg-zinc-700 transition-all"

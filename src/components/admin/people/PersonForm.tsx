@@ -48,12 +48,15 @@ export function PersonForm({
     // Estado para nacionalidades
     const [nationalities, setNationalities] = useState<number[]>([]);
 
-    // Usar ref para evitar loops infinitos
+    // Refs para inicialización one-shot
+    const initialDataApplied = useRef(false);
     const nationalitiesInitialized = useRef(false);
 
-    // Si hay datos iniciales y no es edición, cargarlos
+    // Si hay datos iniciales y no es edición, cargarlos (one-shot via useEffect)
+    // Necesita useEffect porque updateFields modifica estado de otro hook
     useEffect(() => {
-        if (initialData && !personId) {
+        if (initialData && !personId && !initialDataApplied.current) {
+            initialDataApplied.current = true;
             updateFields({
                 firstName: initialData.firstName || '',
                 lastName: initialData.lastName || '',
@@ -61,13 +64,10 @@ export function PersonForm({
                 gender: initialData.gender || '',
             });
 
-            // Cargar nacionalidades si existen
             if (initialData.nationalities) {
                 const nationalityIds = initialData.nationalities.map((n: any) => {
                     if (typeof n === 'number') return n;
-                    if (typeof n === 'object' && n !== null) {
-                        return n.locationId;
-                    }
+                    if (typeof n === 'object' && n !== null) return n.locationId;
                     return null;
                 }).filter((id): id is number => id !== null);
                 setNationalities(nationalityIds);
@@ -75,20 +75,17 @@ export function PersonForm({
         }
     }, [initialData, personId, updateFields]);
 
-    // Cargar nacionalidades cuando se edita una persona existente
-    useEffect(() => {
-        if (isEdit && formData.nationalities && formData.nationalities.length > 0 && !nationalitiesInitialized.current) {
-            const nationalityIds = Array.isArray(formData.nationalities)
-                ? formData.nationalities.map((n: any) => {
-                    const id = typeof n === 'object' ? n.locationId : n;
-                    return id;
-                })
-                : [];
-
-            setNationalities(nationalityIds);
-            nationalitiesInitialized.current = true;
-        }
-    }, [isEdit, formData.nationalities]);
+    // Cargar nacionalidades cuando se edita (one-shot, ajuste durante render)
+    if (isEdit && formData.nationalities && formData.nationalities.length > 0 && !nationalitiesInitialized.current) {
+        nationalitiesInitialized.current = true;
+        const nationalityIds = Array.isArray(formData.nationalities)
+            ? formData.nationalities.map((n: any) => {
+                const id = typeof n === 'object' ? n.locationId : n;
+                return id;
+            })
+            : [];
+        setNationalities(nationalityIds);
+    }
 
     // Función para manejar el cambio de nacionalidades
     const handleNationalitiesChange = (newNationalities: number[]) => {
