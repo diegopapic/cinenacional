@@ -32,15 +32,15 @@ Cambios mecánicos: eliminar `useEffect` + `setState` y reemplazar por `useMemo`
 
 Mover la lógica al event handler que dispara el cambio de estado.
 
-- [ ] `hooks/useRoles.ts:105` — reset página al cambiar filtros → hacer `setPage(1)` dentro de `updateFilter()`
-- [ ] `hooks/useListPage.ts:148` — cambiar limit según viewMode → hacer en `setViewMode()`
-- [ ] `components/admin/TriviaManager.tsx:25` — notificar onChange → llamar en `handleAdd`/`handleDelete`
-- [ ] `components/admin/AlternativeTitlesManager.tsx:29` — notificar onChange → llamar en handlers
-- [ ] `app/admin/roles/page.tsx:44,48,53,58` — 4 useEffects sincronizando filtros → llamar `updateFilter` en onChange
-- [ ] `app/(site)/listados/obituarios/ObituariosContent.tsx:53` — reset página al cambiar año → hacer en handler
-- [ ] `app/(site)/listados/obituarios/ObituariosContent.tsx:65` — actualizar URL → hacer en handler
-- [ ] `components/layout/Header.tsx:48` — Escape cierra búsqueda → mover a onKeyDown del input
-- [ ] `components/layout/Header.tsx:60` — click outside → usar `useClickOutside` hook reutilizable
+- [x] `hooks/useRoles.ts:105` — eliminado useEffect redundante (updateFilter ya resetea page)
+- [x] `hooks/useListPage.ts:148` — viewMode → limit movido a `setViewMode()` wrapper
+- [x] `components/admin/TriviaManager.tsx:25` — onChange llamado en handleAdd/handleDelete/handleMoveUp/handleMoveDown
+- [x] `components/admin/AlternativeTitlesManager.tsx:29` — onChange llamado en handleAdd/handleDelete
+- [x] `app/admin/roles/page.tsx:44,48,53,58` — 3 useEffects eliminados (department, isActive, isMainRole → onChange directo). 1 retenido (debouncedSearch, necesario por timer async). Eliminado estado local redundante.
+- [x] `app/(site)/listados/obituarios/ObituariosContent.tsx:53` — reset página movido a handleYearChange
+- [x] `app/(site)/listados/obituarios/ObituariosContent.tsx:65` — actualización URL movida a handleYearChange
+- [x] `components/layout/Header.tsx:48` — Escape movido a onKeyDown del input de búsqueda
+- [ ] `components/layout/Header.tsx:60` — click outside → pasa a Fase 6 (requiere crear `useClickOutside` reutilizable)
 
 ---
 

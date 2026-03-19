@@ -44,18 +44,6 @@ export default function Header() {
     }
   }, [searchOpen])
 
-  // Escape key closes desktop search
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && desktopSearchExpanded) {
-        setDesktopSearchExpanded(false)
-        clearSearch()
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [desktopSearchExpanded, clearSearch])
-
   // Click outside closes desktop search
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -133,6 +121,12 @@ export default function Header() {
                     type="search"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        setDesktopSearchExpanded(false)
+                        clearSearch()
+                      }
+                    }}
                     placeholder="Películas, personas..."
                     className="h-9 w-64 border-b border-accent/40 bg-transparent pl-9 pr-8 font-sans text-sm text-nav-foreground placeholder:text-nav-foreground/30 focus:outline-none lg:w-72"
                     aria-label="Buscar películas y personas"

@@ -101,13 +101,6 @@ export function useRoles(): UseRolesReturn {
     loadRoles();
   }, [loadRoles]);
 
-  // Reset a página 1 cuando cambien filtros (excepto page)
-  useEffect(() => {
-    if (filters.page !== 1) {
-      setFilters(prev => ({ ...prev, page: 1 }));
-    }
-  }, [debouncedSearch, filters.department, filters.isActive, filters.isMainRole]);
-
   const deleteRole = useCallback(async (id: number) => {
     await rolesService.delete(id);
     await loadRoles(); // Recargar lista

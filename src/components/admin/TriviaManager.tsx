@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Plus, X, Edit2, Save, GripVertical } from 'lucide-react'
 
 interface TriviaItem {
@@ -22,22 +22,20 @@ export default function TriviaManager({
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [currentContent, setCurrentContent] = useState('')
 
-  useEffect(() => {
-    onChange(items)
-  }, [items])
-
   const handleAdd = () => {
     if (!currentContent.trim()) return
 
+    let newItems: TriviaItem[]
     if (editingIndex !== null) {
-      const updated = [...items]
-      updated[editingIndex] = { ...updated[editingIndex], content: currentContent.trim() }
-      setItems(updated)
+      newItems = [...items]
+      newItems[editingIndex] = { ...newItems[editingIndex], content: currentContent.trim() }
       setEditingIndex(null)
     } else {
-      setItems([...items, { content: currentContent.trim() }])
+      newItems = [...items, { content: currentContent.trim() }]
     }
 
+    setItems(newItems)
+    onChange(newItems)
     setCurrentContent('')
     setShowForm(false)
   }
@@ -49,7 +47,9 @@ export default function TriviaManager({
   }
 
   const handleDelete = (index: number) => {
-    setItems(items.filter((_, i) => i !== index))
+    const newItems = items.filter((_, i) => i !== index)
+    setItems(newItems)
+    onChange(newItems)
   }
 
   const handleCancel = () => {
@@ -63,6 +63,7 @@ export default function TriviaManager({
     const updated = [...items]
     ;[updated[index - 1], updated[index]] = [updated[index], updated[index - 1]]
     setItems(updated)
+    onChange(updated)
   }
 
   const handleMoveDown = (index: number) => {
@@ -70,6 +71,7 @@ export default function TriviaManager({
     const updated = [...items]
     ;[updated[index], updated[index + 1]] = [updated[index + 1], updated[index]]
     setItems(updated)
+    onChange(updated)
   }
 
   return (

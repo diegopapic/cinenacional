@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Plus, X, Edit2, Save } from 'lucide-react'
 
 interface AlternativeTitle {
@@ -26,22 +26,20 @@ export default function AlternativeTitlesManager({
     description: ''
   })
 
-  useEffect(() => {
-    onChange(titles)
-  }, [titles])
-
   const handleAdd = () => {
     if (!currentTitle.title.trim()) return
-    
+
+    let newTitles: AlternativeTitle[]
     if (editingIndex !== null) {
-      const updatedTitles = [...titles]
-      updatedTitles[editingIndex] = currentTitle
-      setTitles(updatedTitles)
+      newTitles = [...titles]
+      newTitles[editingIndex] = currentTitle
       setEditingIndex(null)
     } else {
-      setTitles([...titles, currentTitle])
+      newTitles = [...titles, currentTitle]
     }
-    
+
+    setTitles(newTitles)
+    onChange(newTitles)
     setCurrentTitle({ title: '', description: '' })
     setShowForm(false)
   }
@@ -53,7 +51,9 @@ export default function AlternativeTitlesManager({
   }
 
   const handleDelete = (index: number) => {
-    setTitles(titles.filter((_, i) => i !== index))
+    const newTitles = titles.filter((_, i) => i !== index)
+    setTitles(newTitles)
+    onChange(newTitles)
   }
 
   const handleCancel = () => {

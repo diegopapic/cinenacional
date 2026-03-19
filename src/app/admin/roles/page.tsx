@@ -2,22 +2,19 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Download, Filter } from 'lucide-react';
 import { useRoles } from '@/hooks/useRoles';
 import { RoleModal } from '@/components/admin/roles/RoleModal';
 import { RoleCard } from '@/components/admin/roles/RoleCard';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Department, getDepartmentOptions } from '@/lib/roles/rolesTypes';
+import { getDepartmentOptions } from '@/lib/roles/rolesTypes';
 import toast from 'react-hot-toast';
 
 export default function RolesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState<'all' | Department>('all');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  const [mainRoleFilter, setMainRoleFilter] = useState<'all' | 'main' | 'regular'>('all');
 
   const debouncedSearch = useDebounce(searchTerm, 300);
 
@@ -40,25 +37,10 @@ export default function RolesPage() {
     seedDefault
   } = useRoles();
 
-  // Aplicar filtros cuando cambien los valores
-  React.useEffect(() => {
+  // Sincronizar búsqueda debounceada con el filtro del hook
+  useEffect(() => {
     updateFilter('search', debouncedSearch);
   }, [debouncedSearch, updateFilter]);
-
-  React.useEffect(() => {
-    const deptValue = departmentFilter === 'all' ? '' : departmentFilter;
-    updateFilter('department', deptValue);
-  }, [departmentFilter, updateFilter]);
-
-  React.useEffect(() => {
-    const isActiveValue = activeFilter === 'all' ? '' : activeFilter === 'active';
-    updateFilter('isActive', isActiveValue);
-  }, [activeFilter, updateFilter]);
-
-  React.useEffect(() => {
-    const isMainValue = mainRoleFilter === 'all' ? '' : mainRoleFilter === 'main';
-    updateFilter('isMainRole', isMainValue);
-  }, [mainRoleFilter, updateFilter]);
 
   const handleCreateNew = () => {
     setEditingRole(null);
@@ -178,8 +160,8 @@ export default function RolesPage() {
           </div>
           
           <select
-            value={departmentFilter}
-            onChange={(e) => setDepartmentFilter(e.target.value as any)}
+            value={filters.department || 'all'}
+            onChange={(e) => updateFilter('department', e.target.value === 'all' ? '' : e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm"
           >
             <option value="all">Todos los departamentos</option>
@@ -191,8 +173,11 @@ export default function RolesPage() {
           </select>
 
           <select
-            value={activeFilter}
-            onChange={(e) => setActiveFilter(e.target.value as any)}
+            value={filters.isActive === '' ? 'all' : filters.isActive ? 'active' : 'inactive'}
+            onChange={(e) => {
+              const val = e.target.value;
+              updateFilter('isActive', val === 'all' ? '' : val === 'active');
+            }}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm"
           >
             <option value="all">Todos</option>
@@ -201,8 +186,11 @@ export default function RolesPage() {
           </select>
 
           <select
-            value={mainRoleFilter}
-            onChange={(e) => setMainRoleFilter(e.target.value as any)}
+            value={filters.isMainRole === '' ? 'all' : filters.isMainRole ? 'main' : 'regular'}
+            onChange={(e) => {
+              const val = e.target.value;
+              updateFilter('isMainRole', val === 'all' ? '' : val === 'main');
+            }}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm"
           >
             <option value="all">Todos los tipos</option>
@@ -229,8 +217,8 @@ export default function RolesPage() {
         <div className="bg-white p-4 rounded-lg border">
           <p className="text-sm text-gray-600">Departamento</p>
           <p className="text-sm font-medium">
-            {departmentFilter === 'all' ? 'Todos' : 
-             departmentOptions.find(d => d.value === departmentFilter)?.label}
+            {!filters.department ? 'Todos' :
+             departmentOptions.find(d => d.value === filters.department)?.label}
           </p>
         </div>
       </div>

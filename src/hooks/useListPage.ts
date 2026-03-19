@@ -80,7 +80,7 @@ export function useListPage<
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingFilters, setIsLoadingFilters] = useState(true)
   const [isInitialized, setIsInitialized] = useState(false)
-  const [viewMode, setViewMode] = useState<ViewMode>('compact')
+  const [viewMode, setViewModeState] = useState<ViewMode>('compact')
   const [showFilters, setShowFilters] = useState(false)
 
   // Cargar opciones de filtros al montar
@@ -144,14 +144,15 @@ export function useListPage<
     router.replace(newUrl, { scroll: false })
   }, [filters, router, isInitialized]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Limit dinámico según viewMode
-  useEffect(() => {
-    const newLimit = viewMode === 'compact' ? 24 : 12
+  // setViewMode con limit dinámico (reemplaza useEffect de viewMode → limit)
+  const setViewMode = useCallback((mode: ViewMode) => {
+    setViewModeState(mode)
+    const newLimit = mode === 'compact' ? 24 : 12
     setFilters(prev => {
       if (prev.limit === newLimit) return prev
       return { ...prev, limit: newLimit, page: 1 }
     })
-  }, [viewMode])
+  }, [])
 
   const handleFilterChange = useCallback(<K extends keyof TFilters>(
     key: K,

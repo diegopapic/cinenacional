@@ -49,30 +49,11 @@ export default function ObituariosContent() {
     setIsInitialized(true);
   }, []);
 
-  // Resetear a página 1 cuando cambia el año
-  useEffect(() => {
-    if (!isInitialized) return;
-    setCurrentPage(1);
-  }, [selectedYear]);
-
   // Cargar personas cuando cambian filtros o página
   useEffect(() => {
     if (!isInitialized) return;
     loadPeople();
-  }, [selectedYear, currentPage, isInitialized]);
-
-  // Actualizar URL cuando cambia el año
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    const params = new URLSearchParams();
-    params.set('year', selectedYear.toString());
-
-    const queryString = params.toString();
-    const newUrl = `/listados/obituarios?${queryString}`;
-
-    router.replace(newUrl, { scroll: false });
-  }, [selectedYear, router, isInitialized]);
+  }, [selectedYear, currentPage, isInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadAvailableYears = async () => {
     try {
@@ -123,6 +104,11 @@ export default function ObituariosContent() {
 
   const handleYearChange = (year: number) => {
     setSelectedYear(year);
+    setCurrentPage(1);
+
+    const params = new URLSearchParams();
+    params.set('year', year.toString());
+    router.replace(`/listados/obituarios?${params}`, { scroll: false });
   };
 
   const handlePageChange = (page: number) => {
