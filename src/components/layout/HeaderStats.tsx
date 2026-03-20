@@ -1,9 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createLogger } from '@/lib/logger'
-
-const log = createLogger('HeaderStats')
+import { useQuery } from '@tanstack/react-query'
 
 interface Stats {
   peliculas: number
@@ -15,30 +12,25 @@ interface Stats {
   trailers: number
 }
 
+const defaultStats: Stats = {
+  peliculas: 0, personas: 0, efemerides: 0,
+  afiches: 0, fotos: 0, imagenes: 0, trailers: 0,
+}
+
 function formatNumber(num: number): string {
   return num.toLocaleString('es-AR')
 }
 
 export default function HeaderStats() {
-  const [stats, setStats] = useState<Stats>({
-    peliculas: 0,
-    personas: 0,
-    efemerides: 0,
-    afiches: 0,
-    fotos: 0,
-    imagenes: 0,
-    trailers: 0,
+  const { data: stats = defaultStats } = useQuery<Stats>({
+    queryKey: ['public-stats'],
+    queryFn: async () => {
+      const res = await fetch('/api/stats')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
+    },
+    staleTime: 5 * 60 * 1000, // 5min
   })
-
-  useEffect(() => {
-    fetch('/api/stats')
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json()
-      })
-      .then(data => setStats(data))
-      .catch(err => log.error('Error loading stats', err))
-  }, [])
 
   const statsDisplay = [
     { label: 'fichas técnicas', value: formatNumber(stats.peliculas) },

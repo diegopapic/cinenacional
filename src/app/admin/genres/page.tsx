@@ -1,7 +1,8 @@
 // src/app/admin/genres/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Plus,
   Search,
@@ -25,8 +26,7 @@ interface Genre {
 }
 
 export default function AdminGenresPage() {
-  const [genres, setGenres] = useState<Genre[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingGenre, setEditingGenre] = useState<Genre | null>(null)
@@ -43,28 +43,15 @@ export default function AdminGenresPage() {
   })
 
   // Cargar géneros
-  const fetchGenres = async () => {
-    try {
-      setLoading(true)
+  const { data: genres = [], isLoading: loading } = useQuery<Genre[]>({
+    queryKey: ['admin-genres'],
+    queryFn: async () => {
       const response = await fetch('/api/genres')
-      
-      if (!response.ok) {
-        throw new Error('Error al cargar los géneros')
-      }
-      
+      if (!response.ok) throw new Error('Error al cargar los géneros')
       const data = await response.json()
-      setGenres(Array.isArray(data) ? data : [])
-    } catch (error) {
-      toast.error('Error al cargar los géneros')
-      setGenres([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchGenres()
-  }, [])
+      return Array.isArray(data) ? data : []
+    },
+  })
 
   // Filtrar géneros
   const filteredGenres = genres.filter(genre =>
@@ -122,7 +109,7 @@ export default function AdminGenresPage() {
       toast.success(editingGenre ? 'Género actualizado' : 'Género creado')
       setShowModal(false)
       resetForm()
-      fetchGenres()
+      queryClient.invalidateQueries({ queryKey: ['admin-genres'] })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al guardar')
     } finally {
@@ -163,7 +150,7 @@ export default function AdminGenresPage() {
       }
 
       toast.success('Género eliminado')
-      fetchGenres()
+      queryClient.invalidateQueries({ queryKey: ['admin-genres'] })
     } catch (error) {
       toast.error('Error al eliminar el género')
     } finally {

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Plus,
   Search,
@@ -25,8 +26,7 @@ interface Calificacion {
 }
 
 export default function AdminCalificacionesPage() {
-  const [calificaciones, setCalificaciones] = useState<Calificacion[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingCalif, setEditingCalif] = useState<Calificacion | null>(null)
@@ -45,28 +45,15 @@ export default function AdminCalificacionesPage() {
   })
 
   // Cargar calificaciones
-  const fetchCalif = async () => {
-    try {
-      setLoading(true)
+  const { data: calificaciones = [], isLoading: loading } = useQuery<Calificacion[]>({
+    queryKey: ['admin-calificaciones'],
+    queryFn: async () => {
       const response = await fetch('/api/calificaciones')
-      
-      if (!response.ok) {
-        throw new Error('Error al cargar las calificaciones')
-      }
-      
+      if (!response.ok) throw new Error('Error al cargar las calificaciones')
       const data = await response.json()
-      setCalificaciones(Array.isArray(data) ? data : [])
-    } catch (error) {
-      toast.error('Error al cargar las calificaciones')
-      setCalificaciones([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchCalif()
-  }, [])
+      return Array.isArray(data) ? data : []
+    },
+  })
 
   // Filtrar calificaciones
   const filteredCalif = calificaciones.filter(calificacion =>
@@ -130,7 +117,7 @@ export default function AdminCalificacionesPage() {
       toast.success(editingCalif ? 'Calificación actualizada' : 'Calificación creada')
       setShowModal(false)
       resetForm()
-      fetchCalif()
+      queryClient.invalidateQueries({ queryKey: ['admin-calificaciones'] })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al guardar')
     } finally {
@@ -172,7 +159,7 @@ export default function AdminCalificacionesPage() {
       }
 
       toast.success('Calificación eliminada')
-      fetchCalif()
+      queryClient.invalidateQueries({ queryKey: ['admin-calificaciones'] })
     } catch (error) {
       toast.error('Error al eliminar la calificación')
     } finally {

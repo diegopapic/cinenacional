@@ -1,7 +1,8 @@
 // src/app/admin/themes/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -38,8 +39,7 @@ interface Theme {
 }
 
 export default function AdminThemesPage() {
-  const [themes, setThemes] = useState<Theme[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('name')
   const [showModal, setShowModal] = useState(false)
@@ -58,9 +58,9 @@ export default function AdminThemesPage() {
   })
 
   // Cargar themes
-  const fetchThemes = async () => {
-    try {
-      setLoading(true)
+  const { data: themes = [], isLoading: loading } = useQuery<Theme[]>({
+    queryKey: ['admin-themes', searchTerm, sortBy],
+    queryFn: async () => {
       const params = new URLSearchParams({
         search: searchTerm,
         sortBy: sortBy,
@@ -70,19 +70,9 @@ export default function AdminThemesPage() {
       const response = await fetch(`/api/themes?${params}`)
       if (!response.ok) throw new Error('Error al cargar los themes')
 
-      const data = await response.json()
-      setThemes(data || [])
-    } catch (error) {
-      toast.error('Error al cargar los themes')
-      setThemes([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchThemes()
-  }, [searchTerm, sortBy])
+      return response.json()
+    },
+  })
 
   // Crear o actualizar theme
   const onSubmit = async (data: ThemeFormData) => {
@@ -107,7 +97,7 @@ export default function AdminThemesPage() {
       setShowModal(false)
       reset()
       setEditingTheme(null)
-      fetchThemes()
+      queryClient.invalidateQueries({ queryKey: ['admin-themes'] })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al guardar')
     }
@@ -138,7 +128,7 @@ export default function AdminThemesPage() {
       }
 
       toast.success('Theme eliminado')
-      fetchThemes()
+      queryClient.invalidateQueries({ queryKey: ['admin-themes'] })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al eliminar')
     } finally {

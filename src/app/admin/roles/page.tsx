@@ -8,7 +8,7 @@ import { useRoles } from '@/hooks/useRoles';
 import { RoleModal } from '@/components/admin/roles/RoleModal';
 import { RoleCard } from '@/components/admin/roles/RoleCard';
 import { useDebounce } from '@/hooks/useDebounce';
-import { getDepartmentOptions } from '@/lib/roles/rolesTypes';
+import { getDepartmentOptions, type Department } from '@/lib/roles/rolesTypes';
 import toast from 'react-hot-toast';
 
 export default function RolesPage() {
@@ -161,7 +161,7 @@ export default function RolesPage() {
           
           <select
             value={filters.department || 'all'}
-            onChange={(e) => updateFilter('department', e.target.value === 'all' ? '' : e.target.value)}
+            onChange={(e) => updateFilter('department', e.target.value === 'all' ? '' : e.target.value as Department)}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm"
           >
             <option value="all">Todos los departamentos</option>

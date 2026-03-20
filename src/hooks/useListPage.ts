@@ -3,11 +3,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import type { ViewMode } from '@/components/shared/ViewToggle'
 import type { PaginationState } from '@/lib/shared/listTypes'
-import { createLogger } from '@/lib/logger'
-
-const log = createLogger('hook:listPage')
 
 export interface ListPageConfig<TFilters, TItem, TFiltersData> {
   /** Base URL for the list page (e.g. '/listados/peliculas') */
@@ -62,89 +60,54 @@ export function useListPage<
   const searchParams = useSearchParams()
 
   // Estado de filtros
-  const [filters, setFilters] = useState<TFilters>({
-    ...config.defaultFilters,
-    limit: 24
-  } as TFilters)
-  const [filtersData, setFiltersData] = useState<TFiltersData | null>(null)
-
-  // Estado de datos
-  const [items, setItems] = useState<TItem[]>([])
-  const [pagination, setPagination] = useState<PaginationState>({
-    page: 1,
-    totalPages: 1,
-    totalCount: 0
+  const [filters, setFilters] = useState<TFilters>(() => {
+    const urlFilters = config.searchParamsToFilters(searchParams)
+    return { ...urlFilters, limit: 24 } as TFilters
   })
 
   // Estado de UI
-  const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingFilters, setIsLoadingFilters] = useState(true)
-  const [isInitialized, setIsInitialized] = useState(false)
   const [viewMode, setViewModeState] = useState<ViewMode>('compact')
   const [showFilters, setShowFilters] = useState(false)
 
-  // Cargar opciones de filtros al montar
-  useEffect(() => {
-    const loadFiltersData = async () => {
-      setIsLoadingFilters(true)
-      try {
-        const response = await fetch(config.filtersEndpoint)
-        if (!response.ok) throw new Error('Error al cargar filtros')
-        const data = await response.json()
-        setFiltersData(data)
-      } catch (error) {
-        log.error('Failed to load filters', error)
-      } finally {
-        setIsLoadingFilters(false)
-      }
-    }
-    loadFiltersData()
-  }, [config.filtersEndpoint])
+  // Query: opciones de filtros (se carga una sola vez)
+  const { data: filtersData = null, isLoading: isLoadingFilters } = useQuery<TFiltersData>({
+    queryKey: ['list-filters', config.filtersEndpoint],
+    queryFn: async () => {
+      const response = await fetch(config.filtersEndpoint)
+      if (!response.ok) throw new Error('Error al cargar filtros')
+      return response.json()
+    },
+    staleTime: 5 * 60 * 1000, // 5min cache para filtros
+  })
 
-  // Inicializar filtros desde URL
-  useEffect(() => {
-    const urlFilters = config.searchParamsToFilters(searchParams)
-    setFilters(prev => ({ ...urlFilters, limit: prev.limit } as TFilters))
-    setIsInitialized(true)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  // Query: items
+  const apiParams = config.filtersToApiParams(filters)
+  const { data: itemsData, isLoading } = useQuery({
+    queryKey: ['list-items', config.listEndpoint, apiParams],
+    queryFn: async () => {
+      const params = new URLSearchParams(apiParams)
+      const response = await fetch(`${config.listEndpoint}?${params}`)
+      if (!response.ok) throw new Error('Error al cargar datos')
+      return response.json()
+    },
+  })
 
-  // Cargar items cuando cambian los filtros
-  useEffect(() => {
-    if (!isInitialized) return
-    const loadItems = async () => {
-      setIsLoading(true)
-      try {
-        const apiParams = config.filtersToApiParams(filters)
-        const params = new URLSearchParams(apiParams)
-        const response = await fetch(`${config.listEndpoint}?${params}`)
-        if (!response.ok) throw new Error('Error al cargar datos')
-        const data = await response.json()
-        setItems(data.data || [])
-        setPagination({
-          page: data.page || 1,
-          totalPages: data.totalPages || 1,
-          totalCount: data.totalCount || 0
-        })
-      } catch (error) {
-        log.error('Failed to load items', error)
-        setItems([])
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    loadItems()
-  }, [filters, isInitialized]) // eslint-disable-line react-hooks/exhaustive-deps
+  const items: TItem[] = itemsData?.data ?? []
+  const pagination: PaginationState = {
+    page: itemsData?.page ?? 1,
+    totalPages: itemsData?.totalPages ?? 1,
+    totalCount: itemsData?.totalCount ?? 0,
+  }
 
   // Actualizar URL cuando cambian los filtros
   useEffect(() => {
-    if (!isInitialized) return
     const params = config.filtersToSearchParams(filters)
     const queryString = params.toString()
     const newUrl = queryString ? `${config.basePath}?${queryString}` : config.basePath
     router.replace(newUrl, { scroll: false })
-  }, [filters, router, isInitialized]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filters, router]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // setViewMode con limit dinámico (reemplaza useEffect de viewMode → limit)
+  // setViewMode con limit dinámico
   const setViewMode = useCallback((mode: ViewMode) => {
     setViewModeState(mode)
     const newLimit = mode === 'compact' ? 24 : 12
@@ -199,7 +162,7 @@ export function useListPage<
 
   return {
     filters,
-    filtersData,
+    filtersData: filtersData as TFiltersData | null,
     items,
     pagination,
     isLoading,

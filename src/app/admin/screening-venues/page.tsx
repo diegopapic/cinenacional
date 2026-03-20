@@ -1,7 +1,8 @@
 // src/app/admin/screening-venues/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Plus,
   Search,
@@ -52,13 +53,11 @@ const venueTypeIcons = {
 }
 
 export default function AdminScreeningVenuesPage() {
-  const [venues, setVenues] = useState<ScreeningVenue[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterActive, setFilterActive] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
   const [showModal, setShowModal] = useState(false)
   const [editingVenue, setEditingVenue] = useState<ScreeningVenue | null>(null)
   const [deletingVenueId, setDeletingVenueId] = useState<number | null>(null)
@@ -91,9 +90,9 @@ export default function AdminScreeningVenuesPage() {
   }
 
   // Cargar pantallas
-  const fetchVenues = async () => {
-    try {
-      setLoading(true)
+  const { data: venuesData, isLoading: loading } = useQuery({
+    queryKey: ['admin-screening-venues', currentPage, searchTerm, filterType, filterActive],
+    queryFn: async () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '20',
@@ -108,21 +107,12 @@ export default function AdminScreeningVenuesPage() {
         throw new Error('Error al cargar las pantallas de estreno')
       }
 
-      const data = await response.json()
-      setVenues(data.venues || [])
-      setTotalPages(data.pagination?.totalPages || 1)
-    } catch (error) {
-      showToast('Error al cargar las pantallas de estreno', 'error')
-      setVenues([])
-      setTotalPages(1)
-    } finally {
-      setLoading(false)
-    }
-  }
+      return response.json()
+    },
+  })
 
-  useEffect(() => {
-    fetchVenues()
-  }, [currentPage, searchTerm, filterType, filterActive])
+  const venues: ScreeningVenue[] = venuesData?.venues || []
+  const totalPages: number = venuesData?.pagination?.totalPages || 1
 
   // Validar formulario
   const validateForm = () => {
@@ -197,7 +187,7 @@ export default function AdminScreeningVenuesPage() {
       setShowModal(false)
       resetForm()
       setEditingVenue(null)
-      fetchVenues()
+      queryClient.invalidateQueries({ queryKey: ['admin-screening-venues'] })
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Error al guardar', 'error')
     } finally {
@@ -263,7 +253,7 @@ export default function AdminScreeningVenuesPage() {
       }
 
       showToast('Pantalla eliminada', 'success')
-      fetchVenues()
+      queryClient.invalidateQueries({ queryKey: ['admin-screening-venues'] })
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Error al eliminar', 'error')
     } finally {

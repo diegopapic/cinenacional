@@ -1,7 +1,8 @@
 // src/app/admin/stats/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { ArrowUpDown, BarChart3, Film, Users, RefreshCw } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -35,30 +36,19 @@ type SortField = 'viewsWeek' | 'viewsMonth' | 'viewsYear' | 'viewsTotal' | 'titl
 type SortOrder = 'asc' | 'desc'
 
 export default function StatsPage() {
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [sortField, setSortField] = useState<SortField>('viewsMonth')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
 
-  const fetchStats = async () => {
-    setLoading(true)
-    setError(null)
-    try {
+  const { data: stats = null, isLoading: loading, error: queryError, refetch } = useQuery<Stats>({
+    queryKey: ['admin-stats'],
+    queryFn: async () => {
       const response = await fetch('/api/admin/stats')
       if (!response.ok) throw new Error('Error al cargar estadísticas')
-      const data = await response.json()
-      setStats(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido')
-    } finally {
-      setLoading(false)
-    }
-  }
+      return response.json()
+    },
+  })
 
-  useEffect(() => {
-    fetchStats()
-  }, [])
+  const error = queryError instanceof Error ? queryError.message : queryError ? 'Error desconocido' : null
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -123,7 +113,7 @@ export default function StatsPage() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-600">{error}</p>
           <button
-            onClick={fetchStats}
+            onClick={() => refetch()}
             className="mt-2 text-sm text-red-600 underline hover:no-underline"
           >
             Reintentar
@@ -138,7 +128,7 @@ export default function StatsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Estadísticas</h1>
         <button
-          onClick={fetchStats}
+          onClick={() => refetch()}
           className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 rounded-lg text-sm shadow"
         >
           <RefreshCw className="w-4 h-4" />

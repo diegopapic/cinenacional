@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useDebounce } from './useDebounce'
 
 export interface SearchResult {
@@ -38,60 +39,38 @@ interface UseGlobalSearchReturn {
   hasResults: boolean
 }
 
+async function fetchSearch(q: string): Promise<SearchResult> {
+  const response = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=8`)
+  if (!response.ok) throw new Error('Error en la búsqueda')
+  return response.json()
+}
+
 export function useGlobalSearch(minChars: number = 2): UseGlobalSearchReturn {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<SearchResult | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
-
   const debouncedQuery = useDebounce(query, 300)
 
-  const search = useCallback(async (searchQuery: string) => {
-    if (searchQuery.length < minChars) {
-      setResults(null)
-      return
-    }
+  const enabled = debouncedQuery.length >= minChars
 
-    setLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}&limit=8`)
-      
-      if (!response.ok) {
-        throw new Error('Error en la búsqueda')
-      }
-
-      const data = await response.json()
-      setResults(data)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Error desconocido'))
-      setResults(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [minChars])
-
-  useEffect(() => {
-    if (debouncedQuery) {
-      search(debouncedQuery)
-    } else {
-      setResults(null)
-    }
-  }, [debouncedQuery, search])
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['global-search', debouncedQuery],
+    queryFn: () => fetchSearch(debouncedQuery),
+    enabled,
+    staleTime: 10 * 1000, // 10s cache para búsquedas
+    gcTime: 60 * 1000,
+  })
 
   const clearSearch = useCallback(() => {
     setQuery('')
-    setResults(null)
-    setError(null)
   }, [])
+
+  const results = enabled ? (data ?? null) : null
 
   return {
     query,
     setQuery,
     results,
-    loading,
-    error,
+    loading: enabled && isLoading,
+    error: error instanceof Error ? error : null,
     clearSearch,
     hasResults: !!(results && results.total > 0)
   }

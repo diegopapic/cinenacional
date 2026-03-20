@@ -1,5 +1,6 @@
 // src/components/admin/movies/MovieModal/tabs/ReviewsTab.tsx
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   Plus,
   Trash2,
@@ -79,9 +80,26 @@ export default function ReviewsTab() {
   const { editingMovie } = useMovieModalContext()
   const movieId = editingMovie?.id
 
-  const [reviews, setReviews] = useState<Review[]>([])
-  const [loading, setLoading] = useState(false)
-  const [mediaOutlets, setMediaOutlets] = useState<MediaOutletOption[]>([])
+  const { data: reviews = [], isLoading: loading, refetch: refetchReviews } = useQuery({
+    queryKey: ['movie-reviews', movieId],
+    queryFn: async () => {
+      const response = await fetch(`/api/movies/${movieId}/reviews`)
+      if (!response.ok) throw new Error('Error al cargar críticas')
+      return response.json() as Promise<Review[]>
+    },
+    enabled: !!movieId,
+  })
+
+  const { data: mediaOutlets = [] } = useQuery({
+    queryKey: ['media-outlets'],
+    queryFn: async () => {
+      const response = await fetch('/api/media-outlets?sortBy=name&sortOrder=asc')
+      if (!response.ok) return []
+      return response.json() as Promise<MediaOutletOption[]>
+    },
+    enabled: !!movieId,
+    staleTime: 5 * 60 * 1000,
+  })
 
   // Form state
   const [showForm, setShowForm] = useState(false)
@@ -89,40 +107,6 @@ export default function ReviewsTab() {
   const [formData, setFormData] = useState<Omit<Review, 'id'>>(EMPTY_REVIEW)
   const [submitting, setSubmitting] = useState(false)
   const [authorName, setAuthorName] = useState('')
-
-  const fetchReviews = useCallback(async () => {
-    if (!movieId) return
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/movies/${movieId}/reviews`)
-      if (!response.ok) throw new Error('Error al cargar críticas')
-      const data = await response.json()
-      setReviews(data)
-    } catch (error) {
-      log.error('Error fetching reviews', error)
-      toast.error('Error al cargar las críticas')
-    } finally {
-      setLoading(false)
-    }
-  }, [movieId])
-
-  const fetchMediaOutlets = useCallback(async () => {
-    try {
-      const response = await fetch('/api/media-outlets?sortBy=name&sortOrder=asc')
-      if (!response.ok) return
-      const data = await response.json()
-      setMediaOutlets(data)
-    } catch (error) {
-      log.error('Error fetching media outlets', error)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (movieId) {
-      fetchReviews()
-      fetchMediaOutlets()
-    }
-  }, [movieId, fetchReviews, fetchMediaOutlets])
 
   const handleNew = () => {
     setEditingReview(null)
@@ -201,7 +185,7 @@ export default function ReviewsTab() {
 
       toast.success(editingReview ? 'Crítica actualizada' : 'Crítica agregada')
       handleCancel()
-      fetchReviews()
+      refetchReviews()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al guardar la crítica')
     } finally {
@@ -225,7 +209,7 @@ export default function ReviewsTab() {
       }
 
       toast.success('Crítica eliminada')
-      fetchReviews()
+      refetchReviews()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al eliminar')
     }

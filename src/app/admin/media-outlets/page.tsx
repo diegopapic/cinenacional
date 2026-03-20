@@ -1,7 +1,8 @@
 // src/app/admin/media-outlets/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -66,8 +67,7 @@ interface MediaOutlet {
 }
 
 export default function AdminMediaOutletsPage() {
-  const [outlets, setOutlets] = useState<MediaOutlet[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingOutlet, setEditingOutlet] = useState<MediaOutlet | null>(null)
@@ -83,9 +83,9 @@ export default function AdminMediaOutletsPage() {
     resolver: zodResolver(mediaOutletFormSchema)
   })
 
-  const fetchOutlets = async () => {
-    try {
-      setLoading(true)
+  const { data: outlets = [], isLoading: loading } = useQuery<MediaOutlet[]>({
+    queryKey: ['admin-media-outlets', searchTerm],
+    queryFn: async () => {
       const params = new URLSearchParams({
         search: searchTerm,
         sortBy: 'name',
@@ -95,19 +95,9 @@ export default function AdminMediaOutletsPage() {
       const response = await fetch(`/api/media-outlets?${params}`)
       if (!response.ok) throw new Error('Error al cargar los medios')
 
-      const data = await response.json()
-      setOutlets(data || [])
-    } catch {
-      toast.error('Error al cargar los medios')
-      setOutlets([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchOutlets()
-  }, [searchTerm])
+      return response.json()
+    },
+  })
 
   const onSubmit = async (data: MediaOutletFormData) => {
     try {
@@ -136,7 +126,7 @@ export default function AdminMediaOutletsPage() {
       setShowModal(false)
       reset()
       setEditingOutlet(null)
-      fetchOutlets()
+      queryClient.invalidateQueries({ queryKey: ['admin-media-outlets'] })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al guardar')
     }
@@ -167,7 +157,7 @@ export default function AdminMediaOutletsPage() {
       }
 
       toast.success('Medio eliminado')
-      fetchOutlets()
+      queryClient.invalidateQueries({ queryKey: ['admin-media-outlets'] })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al eliminar')
     } finally {

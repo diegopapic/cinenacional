@@ -1,17 +1,14 @@
 // src/hooks/useRoles.ts
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rolesService } from '@/services/roles.service';
-import type { 
-  Role, 
-  RoleFilters, 
+import type {
+  Role,
+  RoleFilters,
   PaginatedRolesResponse,
-  Department 
 } from '@/lib/roles/rolesTypes';
 import { useDebounce } from './useDebounce';
-import { createLogger } from '@/lib/logger'
-
-const log = createLogger('hook:roles')
 
 interface UseRolesReturn {
   // Datos
@@ -21,23 +18,23 @@ interface UseRolesReturn {
   hasMore: boolean;
   currentPage: number;
   pageSize: number;
-  
+
   // Estado
   loading: boolean;
   error: Error | null;
   filters: RoleFilters;
-  
+
   // Acciones principales
   loadRoles: () => Promise<void>;
   deleteRole: (id: number) => Promise<void>;
   exportToCSV: () => Promise<void>;
   seedDefault: () => Promise<{ created: number; skipped: number }>;
-  
+
   // Gestión de filtros
   updateFilter: <K extends keyof RoleFilters>(key: K, value: RoleFilters[K]) => void;
   updateFilters: (filters: Partial<RoleFilters>) => void;
   resetFilters: () => void;
-  
+
   // Navegación
   goToPage: (page: number) => void;
   goToNextPage: () => void;
@@ -56,55 +53,42 @@ const defaultFilters: RoleFilters = {
 };
 
 export function useRoles(): UseRolesReturn {
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<RoleFilters>(defaultFilters);
 
   // Debounce search para evitar requests excesivos
   const debouncedSearch = useDebounce(filters.search || '', 300);
 
-  const loadRoles = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const filtersToSend = {
-        ...filters,
-        search: debouncedSearch
-      };
-      
-      const response: PaginatedRolesResponse = await rolesService.getAll(filtersToSend);
-      
-      setRoles(response.data);
-      setTotalCount(response.totalCount);
-      setTotalPages(response.totalPages);
-      setHasMore(response.hasMore);
-      
-    } catch (err) {
-      log.error('Failed to load roles', err);
-      setError(err instanceof Error ? err : new Error('Error desconocido'));
-      setRoles([]);
-      setTotalCount(0);
-      setTotalPages(0);
-      setHasMore(false);
-    } finally {
-      setLoading(false);
-    }
-  }, [filters, debouncedSearch]);
+  // Query principal
+  const { data, isLoading: loading, error, refetch } = useQuery<PaginatedRolesResponse>({
+    queryKey: ['roles', { ...filters, search: debouncedSearch }],
+    queryFn: () => rolesService.getAll({ ...filters, search: debouncedSearch }),
+  });
 
-  // Cargar roles cuando cambien los filtros
-  useEffect(() => {
-    loadRoles();
-  }, [loadRoles]);
+  const roles = data?.data ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const totalPages = data?.totalPages ?? 0;
+  const hasMore = data?.hasMore ?? false;
+
+  // Mutación: eliminar rol
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => rolesService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+    },
+  });
+
+  // Mutación: seed defaults
+  const seedMutation = useMutation({
+    mutationFn: () => rolesService.seedDefault(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+    },
+  });
 
   const deleteRole = useCallback(async (id: number) => {
-    await rolesService.delete(id);
-    await loadRoles(); // Recargar lista
-  }, [loadRoles]);
+    await deleteMutation.mutateAsync(id);
+  }, [deleteMutation]);
 
   const exportToCSV = useCallback(async () => {
     const blob = await rolesService.exportToCSV(filters);
@@ -119,19 +103,16 @@ export function useRoles(): UseRolesReturn {
   }, [filters]);
 
   const seedDefault = useCallback(async () => {
-    const result = await rolesService.seedDefault();
-    await loadRoles(); // Recargar lista
-    return result;
-  }, [loadRoles]);
+    return seedMutation.mutateAsync();
+  }, [seedMutation]);
 
   const updateFilter = useCallback(<K extends keyof RoleFilters>(
-    key: K, 
+    key: K,
     value: RoleFilters[K]
   ) => {
     setFilters(prev => ({
       ...prev,
       [key]: value,
-      // Reset page cuando no sea un cambio de página
       ...(key !== 'page' ? { page: 1 } : {})
     }));
   }, []);
@@ -140,7 +121,7 @@ export function useRoles(): UseRolesReturn {
     setFilters(prev => ({
       ...prev,
       ...newFilters,
-      page: 1 // Reset page en cambios múltiples
+      page: 1
     }));
   }, []);
 
@@ -172,31 +153,22 @@ export function useRoles(): UseRolesReturn {
   const pageSize = filters.limit || 20;
 
   return {
-    // Datos
     roles,
     totalCount,
     totalPages,
     hasMore,
     currentPage,
     pageSize,
-    
-    // Estado
     loading,
-    error,
+    error: error instanceof Error ? error : null,
     filters,
-    
-    // Acciones principales
-    loadRoles,
+    loadRoles: async () => { refetch() },
     deleteRole,
     exportToCSV,
     seedDefault,
-    
-    // Gestión de filtros
     updateFilter,
     updateFilters,
     resetFilters,
-    
-    // Navegación
     goToPage,
     goToNextPage,
     goToPreviousPage,

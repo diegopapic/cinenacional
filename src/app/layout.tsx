@@ -1,6 +1,7 @@
 // /src/app/layout.tsx
 import type { Metadata } from 'next'
 import { ReactNode } from 'react'
+import QueryProvider from '@/components/providers/QueryProvider'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -16,7 +17,9 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        {children}
+        <QueryProvider>
+          {children}
+        </QueryProvider>
       </body>
     </html>
   )

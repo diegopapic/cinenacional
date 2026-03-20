@@ -1,7 +1,8 @@
 // src/components/admin/ScreeningVenueSelector.tsx - VERSIÓN SIMPLIFICADA
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { X, Search, Building, Globe, Tv, Film } from 'lucide-react'
 import { createLogger } from '@/lib/logger'
 
@@ -40,29 +41,19 @@ export default function ScreeningVenueSelector({
     onChange,
     releaseDate
 }: ScreeningVenueSelectorProps) {
-    const [venues, setVenues] = useState<ScreeningVenue[]>([])
     const [searchTerm, setSearchTerm] = useState('')
     const [showDropdown, setShowDropdown] = useState(false)
-    const [loading, setLoading] = useState(false)
 
     // Cargar todas las pantallas activas
-    useEffect(() => {
-        fetchVenues()
-    }, [])
-
-    const fetchVenues = async () => {
-        try {
-            setLoading(true)
+    const { data: venues = [], isLoading: loading } = useQuery({
+        queryKey: ['screening-venues-active'],
+        queryFn: async () => {
             const response = await fetch('/api/screening-venues?isActive=true&limit=100')
             const data = await response.json()
-            setVenues(data.venues || [])
-        } catch (error) {
-            log.error('Error loading screening venues', error)
-            setVenues([])
-        } finally {
-            setLoading(false)
-        }
-    }
+            return (data.venues || []) as ScreeningVenue[]
+        },
+        staleTime: 5 * 60 * 1000,
+    })
 
     // Filtrar pantallas según búsqueda (derivado)
     const filteredVenues = useMemo(() => {

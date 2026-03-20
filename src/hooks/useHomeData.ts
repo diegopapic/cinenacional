@@ -1,9 +1,6 @@
 // src/hooks/useHomeData.ts
-import { useState, useEffect } from 'react';
-import { MovieWithRelease, SimpleMovie, SimplePerson, HomeDataResponse } from '@/types/home.types';
-import { createLogger } from '@/lib/logger'
-
-const log = createLogger('hook:homeData')
+import { useQuery } from '@tanstack/react-query'
+import { MovieWithRelease, SimpleMovie, SimplePerson, HomeDataResponse } from '@/types/home.types'
 
 interface UseHomeDataReturn {
   ultimosEstrenos: MovieWithRelease[];
@@ -17,91 +14,45 @@ interface UseHomeDataReturn {
   retry: () => void;
 }
 
-export function useHomeData(): UseHomeDataReturn {
-  const [ultimosEstrenos, setUltimosEstrenos] = useState<MovieWithRelease[]>([]);
-  const [proximosEstrenos, setProximosEstrenos] = useState<MovieWithRelease[]>([]);
-  const [ultimasPeliculas, setUltimasPeliculas] = useState<SimpleMovie[]>([]);
-  const [ultimasPersonas, setUltimasPersonas] = useState<SimplePerson[]>([]);
-  const [loadingEstrenos, setLoadingEstrenos] = useState(true);
-  const [loadingProximos, setLoadingProximos] = useState(true);
-  const [loadingRecientes, setLoadingRecientes] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+async function fetchHomeData(): Promise<HomeDataResponse> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 20000)
 
-  const fetchHomeData = async (attempt = 1) => {
-    try {
-      log.debug('Loading home data', { attempt });
-      setError(null);
+  try {
+    const response = await fetch('/api/movies/home-feed', {
+      signal: controller.signal,
+      cache: 'no-store'
+    })
+    clearTimeout(timeoutId)
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        log.warn('Home data fetch timeout, aborting');
-        controller.abort();
-      }, 20000);
-
-      const response = await fetch('/api/movies/home-feed', {
-        signal: controller.signal,
-        cache: 'no-store'
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      const data: HomeDataResponse = await response.json();
-
-      setUltimosEstrenos(data.ultimosEstrenos || []);
-      setProximosEstrenos(data.proximosEstrenos || []);
-      setUltimasPeliculas(data.ultimasPeliculas || []);
-      setUltimasPersonas(data.ultimasPersonas || []);
-      setError(null);
-
-    } catch (error: any) {
-      log.error('Failed to load home data', error, { attempt });
-
-      if (error.name === 'AbortError') {
-        setError('La carga tardó demasiado. Intentando de nuevo...');
-      } else {
-        setError(`Error al cargar datos: ${error.message}`);
-      }
-
-      if (attempt < 3) {
-        const delay = attempt * 2000;
-        log.debug('Retrying home data fetch', { delayMs: delay });
-        setTimeout(() => fetchHomeData(attempt + 1), delay);
-      } else {
-        setError('No se pudieron cargar los datos después de varios intentos.');
-        setUltimasPeliculas([]);
-        setUltimasPersonas([]);
-      }
-    } finally {
-      setLoadingEstrenos(false);
-      setLoadingProximos(false);
-      setLoadingRecientes(false);
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`)
     }
-  };
 
-  useEffect(() => {
-    fetchHomeData();
-  }, []);
+    return response.json()
+  } catch (error) {
+    clearTimeout(timeoutId)
+    throw error
+  }
+}
 
-  const retry = () => {
-    setLoadingEstrenos(true);
-    setLoadingProximos(true);
-    setLoadingRecientes(true);
-    fetchHomeData();
-  };
+export function useHomeData(): UseHomeDataReturn {
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['home-feed'],
+    queryFn: fetchHomeData,
+    staleTime: 60 * 1000, // 1 min
+    retry: 2,
+  })
 
   return {
-    ultimosEstrenos,
-    proximosEstrenos,
-    ultimasPeliculas,
-    ultimasPersonas,
-    loadingEstrenos,
-    loadingProximos,
-    loadingRecientes,
-    error,
-    retry
-  };
+    ultimosEstrenos: data?.ultimosEstrenos ?? [],
+    proximosEstrenos: data?.proximosEstrenos ?? [],
+    ultimasPeliculas: data?.ultimasPeliculas ?? [],
+    ultimasPersonas: data?.ultimasPersonas ?? [],
+    loadingEstrenos: isLoading,
+    loadingProximos: isLoading,
+    loadingRecientes: isLoading,
+    error: error ? (error instanceof Error ? error.message : 'Error desconocido') : null,
+    retry: () => { refetch() },
+  }
 }

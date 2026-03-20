@@ -2,7 +2,8 @@
 
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { X } from 'lucide-react'
@@ -43,7 +44,6 @@ export default function LocationForm({ location }: LocationFormProps) {
   const [selectedParent, setSelectedParent] = useState<Location | null>(null)
   const [suggestions, setSuggestions] = useState<Location[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [isSearching, setIsSearching] = useState(false)
   const autocompleteRef = useRef<HTMLDivElement>(null)
   
   // Usar el hook useDebounce para el término de búsqueda
@@ -66,15 +66,34 @@ export default function LocationForm({ location }: LocationFormProps) {
     }
   }, [])
 
-  // Efecto para buscar cuando cambia el término debounced
+  // Buscar ubicaciones con debounce
+  const { data: searchSuggestions, isFetching: isSearching } = useQuery({
+    queryKey: ['location-search', debouncedSearchTerm, location?.id],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        q: debouncedSearchTerm,
+        limit: '10'
+      })
+      if (location?.id) {
+        params.append('excludeId', location.id.toString())
+      }
+      const response = await fetch(`/api/locations/search?${params}`)
+      if (!response.ok) throw new Error('Error searching locations')
+      return response.json() as Promise<Location[]>
+    },
+    enabled: debouncedSearchTerm.length >= 2,
+    staleTime: 30 * 1000,
+  })
+
   useEffect(() => {
-    if (debouncedSearchTerm.length >= 2) {
-      searchLocations(debouncedSearchTerm)
+    if (searchSuggestions) {
+      setSuggestions(searchSuggestions)
+      setShowSuggestions(true)
     } else if (debouncedSearchTerm.length === 0) {
       setSuggestions([])
       setShowSuggestions(false)
     }
-  }, [debouncedSearchTerm])
+  }, [searchSuggestions, debouncedSearchTerm])
 
   // Manejar clics fuera del autocomplete
   useEffect(() => {
@@ -135,32 +154,6 @@ export default function LocationForm({ location }: LocationFormProps) {
       log.error('Error checking slug', error)
     } finally {
       setIsCheckingSlug(false)
-    }
-  }
-
-  // Función de búsqueda
-  const searchLocations = async (searchTerm: string) => {
-    setIsSearching(true)
-    try {
-      const params = new URLSearchParams({
-        q: searchTerm,
-        limit: '10'
-      })
-      
-      if (location?.id) {
-        params.append('excludeId', location.id.toString())
-      }
-
-      const response = await fetch(`/api/locations/search?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        setSuggestions(data)
-        setShowSuggestions(true)
-      }
-    } catch (error) {
-      log.error('Error searching locations', error)
-    } finally {
-      setIsSearching(false)
     }
   }
 

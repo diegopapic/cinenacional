@@ -1,5 +1,6 @@
 // src/components/admin/shared/PersonSearchInput.tsx
 import { useState, useEffect, useRef } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { User, X, Plus, ArrowRight } from 'lucide-react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { peopleService } from '@/services/people.service'
@@ -185,8 +186,6 @@ export default function PersonSearchInput({
 }: PersonSearchInputProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [people, setPeople] = useState<Person[]>([])
-  const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
   const [selectedAlternativeNameId, setSelectedAlternativeNameId] = useState<number | null>(alternativeNameId || null)
@@ -206,31 +205,35 @@ export default function PersonSearchInput({
   const debouncedSearch = useDebounce(searchTerm, 300)
 
   // Cargar persona seleccionada si existe
+  const { data: loadedPerson } = useQuery({
+    queryKey: ['person', value],
+    queryFn: () => peopleService.getById(value!) as Promise<any>,
+    enabled: !!value && value > 0 && !initialPersonName,
+    staleTime: 5 * 60 * 1000,
+  })
+
   useEffect(() => {
-    if (value && value > 0) {
-      if (initialPersonName) {
-        setSearchTerm(initialPersonName)
-        return
-      }
-      
-      peopleService.getById(value)
-        .then((person: any) => {
-          let displayName = person.name || `${person.firstName || ''} ${person.lastName || ''}`.trim()
-          
-          if (alternativeNameId && person.alternativeNames) {
-            const altName = person.alternativeNames.find((an: any) => an.id === alternativeNameId)
-            if (altName) {
-              displayName = altName.fullName
-            }
-          }
-          
-          setSelectedPerson(person)
-          setSearchTerm(displayName)
-          setSelectedAlternativeNameId(alternativeNameId || null)
-        })
-        .catch(err => log.error('Error loading person', err))
+    if (value && value > 0 && initialPersonName) {
+      setSearchTerm(initialPersonName)
     }
-  }, [value, alternativeNameId, initialPersonName])
+  }, [value, initialPersonName])
+
+  useEffect(() => {
+    if (loadedPerson) {
+      let displayName = loadedPerson.name || `${loadedPerson.firstName || ''} ${loadedPerson.lastName || ''}`.trim()
+
+      if (alternativeNameId && loadedPerson.alternativeNames) {
+        const altName = loadedPerson.alternativeNames.find((an: any) => an.id === alternativeNameId)
+        if (altName) {
+          displayName = altName.fullName
+        }
+      }
+
+      setSelectedPerson(loadedPerson)
+      setSearchTerm(displayName)
+      setSelectedAlternativeNameId(alternativeNameId || null)
+    }
+  }, [loadedPerson, alternativeNameId])
 
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
@@ -245,41 +248,22 @@ export default function PersonSearchInput({
   }, [])
 
   // Buscar personas
-  useEffect(() => {
-    const searchPeople = async () => {
-      if (!debouncedSearch || debouncedSearch.length < 2) {
-        setPeople([])
-        return
-      }
+  const { data: searchResults, isFetching: searchLoading } = useQuery({
+    queryKey: ['person-search', debouncedSearch],
+    queryFn: async () => {
+      const response = await fetch(`/api/people?search=${encodeURIComponent(debouncedSearch)}&limit=10`)
+      const result = await response.json()
 
-      setLoading(true)
-      try {
-        const response = await fetch(`/api/people?search=${encodeURIComponent(debouncedSearch)}&limit=10`)
-        const result = await response.json()
-        
-        let peopleData: Person[] = []
-        
-        if (Array.isArray(result)) {
-          peopleData = result
-        } else if (result.data && Array.isArray(result.data)) {
-          peopleData = result.data
-        } else {
-          peopleData = []
-        }
-        
-        setPeople(peopleData)
-      } catch (error) {
-        log.error('Error searching people', error)
-        setPeople([])
-      } finally {
-        setLoading(false)
-      }
-    }
+      if (Array.isArray(result)) return result as Person[]
+      if (result.data && Array.isArray(result.data)) return result.data as Person[]
+      return [] as Person[]
+    },
+    enabled: isOpen && !!debouncedSearch && debouncedSearch.length >= 2,
+    staleTime: 30 * 1000,
+  })
 
-    if (isOpen) {
-      searchPeople()
-    }
-  }, [debouncedSearch, isOpen])
+  const people = searchResults ?? []
+  const loading = searchLoading
 
   // Seleccionar nombre principal de la persona
   const handleSelectPerson = (person: Person, useAlternativeName?: { id: number; name: string }) => {

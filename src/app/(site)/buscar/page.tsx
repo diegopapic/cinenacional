@@ -2,17 +2,15 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Film, User, Calendar, Search, Loader2 } from 'lucide-react'
 import { formatPartialDate } from '@/lib/shared/dateUtils'
 import DOMPurify from 'dompurify'
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
-import { createLogger } from '@/lib/logger'
-
-const log = createLogger('page:buscar')
 
 /**
  * Sanitiza HTML permitiendo solo tags de formato básico.
@@ -96,37 +94,19 @@ function getDisplayYear(movie: { year?: number; releaseYear?: number }): number 
 export default function SearchPage() {
   const searchParams = useSearchParams()
   const query = searchParams.get('q') || ''
-  const [results, setResults] = useState<SearchPageResult | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'people'>('all')
 
-  useEffect(() => {
-    if (!query) return
+  const { data: results = null, isLoading: loading, error: queryError } = useQuery<SearchPageResult>({
+    queryKey: ['search-full', query],
+    queryFn: async () => {
+      const response = await fetch(`/api/search/full?q=${encodeURIComponent(query)}`)
+      if (!response.ok) throw new Error('Error en la búsqueda')
+      return response.json()
+    },
+    enabled: !!query,
+  })
 
-    const searchFullResults = async () => {
-      setLoading(true)
-      setError(null)
-
-      try {
-        const response = await fetch(`/api/search/full?q=${encodeURIComponent(query)}`)
-        
-        if (!response.ok) {
-          throw new Error('Error en la búsqueda')
-        }
-
-        const data = await response.json()
-        setResults(data)
-      } catch (err) {
-        setError('Error al realizar la búsqueda. Por favor, intenta de nuevo.')
-        log.error('Search failed', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    searchFullResults()
-  }, [query])
+  const error = queryError ? 'Error al realizar la búsqueda. Por favor, intenta de nuevo.' : null
 
   const getDirectorName = (movie: any) => {
     const director = movie.directors?.[0]?.person

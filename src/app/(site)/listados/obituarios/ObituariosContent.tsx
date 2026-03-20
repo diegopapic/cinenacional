@@ -1,106 +1,64 @@
 // src/app/listados/obituarios/ObituariosContent.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { ChevronDown } from 'lucide-react';
 import ObituariosGrid from '@/app/(site)/listados/obituarios/ObituariosGrid';
-import { PersonWithDeath, ObituariosPagination } from '@/lib/obituarios/obituariosTypes';
+import { PersonWithDeath } from '@/lib/obituarios/obituariosTypes';
 import { getCurrentYear, filtersToApiParams } from '@/lib/obituarios/obituariosUtils';
 import Pagination from '@/components/shared/Pagination';
-import { createLogger } from '@/lib/logger'
-
-const log = createLogger('page:obituarios')
 
 export default function ObituariosContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Estado
-  const [selectedYear, setSelectedYear] = useState<number>(getCurrentYear());
-  const [availableYears, setAvailableYears] = useState<number[]>([]);
-  const [people, setPeople] = useState<PersonWithDeath[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [pagination, setPagination] = useState<ObituariosPagination>({
-    page: 1,
-    totalPages: 1,
-    total: 0
+  // Initialize year from URL params
+  const [selectedYear, setSelectedYear] = useState<number>(() => {
+    const yearParam = searchParams.get('year');
+    if (yearParam) {
+      const year = parseInt(yearParam);
+      if (!isNaN(year)) return year;
+    }
+    return getCurrentYear();
   });
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Cargar años disponibles al montar
-  useEffect(() => {
-    loadAvailableYears();
-  }, []);
-
-  // Inicializar desde URL params - SOLO UNA VEZ
-  useEffect(() => {
-    const yearParam = searchParams.get('year');
-
-    if (yearParam) {
-      const year = parseInt(yearParam);
-      if (!isNaN(year)) {
-        setSelectedYear(year);
-      }
-    }
-
-    // Marcar como inicializado
-    setIsInitialized(true);
-  }, []);
-
-  // Cargar personas cuando cambian filtros o página
-  useEffect(() => {
-    if (!isInitialized) return;
-    loadPeople();
-  }, [selectedYear, currentPage, isInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const loadAvailableYears = async () => {
-    try {
+  // Fetch available years
+  const { data: availableYears = [] } = useQuery<number[]>({
+    queryKey: ['obituarios-years'],
+    queryFn: async () => {
       const response = await fetch('/api/people/death-years');
-
-      if (!response.ok) {
-        throw new Error('Error al cargar años');
-      }
-
+      if (!response.ok) throw new Error('Error al cargar años');
       const data = await response.json();
-      setAvailableYears(data.years || []);
-    } catch (error) {
-      log.error('Failed to load death years', error);
-      setAvailableYears([]);
-    }
-  };
+      return data.years || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-  const loadPeople = async () => {
-    setIsLoading(true);
-
-    try {
+  // Fetch people for selected year
+  const { data: peopleData, isLoading } = useQuery({
+    queryKey: ['obituarios', selectedYear, currentPage],
+    queryFn: async () => {
       const apiParams = filtersToApiParams(selectedYear, currentPage, 90);
       const params = new URLSearchParams(apiParams);
-
       const response = await fetch(`/api/people?${params}`);
-
-      if (!response.ok) {
-        throw new Error('Error al cargar obituarios');
-      }
-
+      if (!response.ok) throw new Error('Error al cargar obituarios');
       const data = await response.json();
+      return {
+        people: (data.data || []) as PersonWithDeath[],
+        pagination: {
+          page: data.page || 1,
+          totalPages: data.totalPages || 1,
+          total: data.totalCount || 0,
+        },
+      };
+    },
+  });
 
-      setPeople(data.data || []);
-
-      setPagination({
-        page: data.page || 1,
-        totalPages: data.totalPages || 1,
-        total: data.totalCount || 0
-      });
-
-    } catch (error) {
-      log.error('Failed to load obituaries', error);
-      setPeople([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const people = peopleData?.people || [];
+  const pagination = peopleData?.pagination || { page: 1, totalPages: 1, total: 0 };
 
   const handleYearChange = (year: number) => {
     setSelectedYear(year);

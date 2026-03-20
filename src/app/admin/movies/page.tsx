@@ -1,7 +1,8 @@
 // src/app/admin/movies/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
 import MoviesFilters, { type MovieFilters } from '@/components/admin/movies/MoviesFilters'
 import MoviesPagination from '@/components/admin/movies/MoviesPagination'
@@ -15,9 +16,7 @@ import { moviesService } from '@/services'
 import { type Movie } from '@/lib/movies/movieTypes'
 
 export default function AdminMoviesPage() {
-  const [movies, setMovies] = useState<Movie[]>([])
-  const [loading, setLoading] = useState(true)
-  const [totalPages, setTotalPages] = useState(1)
+  const queryClient = useQueryClient()
   const [showModal, setShowModal] = useState(false)
   const [editingMovie, setEditingMovie] = useState<Movie | null>(null)
 
@@ -34,24 +33,13 @@ export default function AdminMoviesPage() {
   }
 
   // Cargar películas
-  const fetchMovies = async () => {
-    try {
-      setLoading(true)
-      const { movies, pagination } = await moviesService.getAll(filters)
-      setMovies(movies)
-      setTotalPages(pagination.totalPages)
-    } catch (error) {
-      toast.error('Error al cargar las películas')
-      setMovies([])
-      setTotalPages(1)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: moviesData, isLoading: loading } = useQuery({
+    queryKey: ['admin-movies', filters],
+    queryFn: () => moviesService.getAll(filters),
+  })
 
-  useEffect(() => {
-    fetchMovies()
-  }, [filters])
+  const movies: Movie[] = moviesData?.movies || []
+  const totalPages: number = moviesData?.pagination?.totalPages || 1
 
   // Editar película
   const handleEdit = async (movie: Movie) => {
@@ -62,7 +50,7 @@ export default function AdminMoviesPage() {
   // Eliminar película
   const handleDelete = async (id: number) => {
     await moviesService.delete(id)
-    fetchMovies()
+    queryClient.invalidateQueries({ queryKey: ['admin-movies'] })
   }
 
   // Abrir modal para nueva película
@@ -75,7 +63,7 @@ export default function AdminMoviesPage() {
   const handleMovieSuccess = (movie: Movie) => {
     setShowModal(false)
     setEditingMovie(null)
-    fetchMovies()
+    queryClient.invalidateQueries({ queryKey: ['admin-movies'] })
     
     // Toast específico según la acción
     if (editingMovie) {

@@ -1,6 +1,7 @@
 // src/hooks/useMovieForm.ts
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useForm } from 'react-hook-form'
+import { useQuery } from '@tanstack/react-query'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'react-hot-toast'
 import {
@@ -160,9 +161,10 @@ export function useMovieForm({
     const [tipoDuracionDisabled, setTipoDuracionDisabled] = useState(false)
     const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
 
-    // Estados de metadata
+    // Metadata via React Query (reemplaza useEffect de metadata)
     const [availableRatings, setAvailableRatings] = useState<any[]>([])
     const [availableColorTypes, setAvailableColorTypes] = useState<any[]>([])
+    const metadataInitRef = useRef(false)
 
     // Estados de relaciones
     const [movieRelations, setMovieRelations] = useState<{
@@ -204,38 +206,35 @@ export function useMovieForm({
 
     const { watch, setValue, reset } = form
 
-    // Cargar metadata (ratings y color types)
+    // Cargar metadata (ratings y color types) via React Query
+    const { data: metadataResult } = useQuery({
+        queryKey: ['movie-metadata'],
+        queryFn: async () => {
+            const [ratingsRes, colorTypesRes] = await Promise.all([
+                fetch('/api/calificaciones'),
+                fetch('/api/color-types')
+            ])
+            const ratings = ratingsRes.ok ? await ratingsRes.json() : []
+            const colorTypes = colorTypesRes.ok ? await colorTypesRes.json() : []
+            return { ratings, colorTypes }
+        },
+        staleTime: 5 * 60 * 1000,
+    })
+
+    // Sincronizar metadata al estado local cuando llegan datos
     useEffect(() => {
-        const loadMetadata = async () => {
-            try {
-                const [ratingsRes, colorTypesRes] = await Promise.all([
-                    fetch('/api/calificaciones'),
-                    fetch('/api/color-types')
-                ])
-
-                if (ratingsRes.ok) {
-                    const ratings = await ratingsRes.json()
-                    setAvailableRatings(ratings)
+        if (metadataResult && !metadataInitRef.current) {
+            metadataInitRef.current = true
+            setAvailableRatings(metadataResult.ratings)
+            setAvailableColorTypes(metadataResult.colorTypes)
+            if (!editingMovie) {
+                const colorDefault = metadataResult.colorTypes.find((ct: any) => ct.name === 'Color')
+                if (colorDefault) {
+                    setValue('colorTypeId', colorDefault.id)
                 }
-
-                if (colorTypesRes.ok) {
-                    const colorTypes = await colorTypesRes.json()
-                    setAvailableColorTypes(colorTypes)
-                    // Setear "Color" como valor por defecto para películas nuevas
-                    if (!editingMovie) {
-                        const colorDefault = colorTypes.find((ct: any) => ct.name === 'Color')
-                        if (colorDefault) {
-                            setValue('colorTypeId', colorDefault.id)
-                        }
-                    }
-                }
-            } catch (error) {
-                log.error('Failed to load metadata', error)
             }
         }
-
-        loadMetadata()
-    }, [])
+    }, [metadataResult, editingMovie, setValue])
 
     // Efecto para observar cambios en duración
     useEffect(() => {

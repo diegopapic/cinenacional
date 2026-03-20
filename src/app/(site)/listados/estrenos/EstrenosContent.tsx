@@ -1,12 +1,10 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { FilmReleasesByYear, type ReleaseEntry } from '@/components/FilmReleasesByYear'
 import type { MovieWithRelease } from '@/types/home.types'
 import type { EstrenosMode } from '@/lib/estrenos/estrenosTypes'
-import { createLogger } from '@/lib/logger'
-
-const log = createLogger('page:estrenos')
 
 interface EstrenosContentProps {
   mode: EstrenosMode
@@ -14,12 +12,10 @@ interface EstrenosContentProps {
 
 export default function EstrenosContent({ mode }: EstrenosContentProps) {
   const isUpcoming = mode.type === 'upcoming'
-  const [movies, setMovies] = useState<MovieWithRelease[]>([])
-  const [isLoading, setIsLoading] = useState(true)
 
-  const loadMovies = useCallback(async (upcoming: boolean) => {
-    setIsLoading(true)
-    try {
+  const { data: movies = [], isLoading } = useQuery<MovieWithRelease[]>({
+    queryKey: ['estrenos', isUpcoming],
+    queryFn: async () => {
       const params = new URLSearchParams({
         page: '1',
         limit: '10000',
@@ -27,7 +23,7 @@ export default function EstrenosContent({ mode }: EstrenosContentProps) {
         sortOrder: 'asc',
       })
 
-      if (upcoming) {
+      if (isUpcoming) {
         params.set('upcoming', 'true')
       }
 
@@ -35,22 +31,12 @@ export default function EstrenosContent({ mode }: EstrenosContentProps) {
       if (!response.ok) throw new Error('Error al cargar estrenos')
 
       const data = await response.json()
-      setMovies(
-        (data.movies || []).filter(
-          (m: MovieWithRelease) => m.releaseYear,
-        ),
+      return (data.movies || []).filter(
+        (m: MovieWithRelease) => m.releaseYear,
       )
-    } catch (error) {
-      log.error('Failed to load releases', error)
-      setMovies([])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    loadMovies(isUpcoming)
-  }, [isUpcoming, loadMovies])
+    },
+    staleTime: 60 * 1000,
+  })
 
   // Convertir MovieWithRelease[] → ReleaseEntry[]
   const entries: ReleaseEntry[] = useMemo(() => {

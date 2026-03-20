@@ -1,16 +1,14 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Efemeride } from '@/types/home.types'
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
 import Pagination from '@/components/shared/Pagination'
-import { createLogger } from '@/lib/logger'
-
-const log = createLogger('page:efemerides')
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
@@ -31,62 +29,46 @@ const MONTHS = [
 
 const PER_PAGE = 20
 
+function parseDateFromParams(dateParam: string | string[] | undefined): { month: number; day: number } {
+  if (dateParam && Array.isArray(dateParam) && dateParam.length > 0) {
+    const dateStr = dateParam[0]
+    const [m, d] = dateStr.split('-').map(Number)
+    if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+      return { month: m, day: d }
+    }
+  }
+  const today = new Date()
+  return { month: today.getMonth() + 1, day: today.getDate() }
+}
+
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function EfemeridesPage() {
   const router = useRouter()
   const params = useParams()
 
-  const parseDateFromParams = () => {
-    if (params.date && Array.isArray(params.date) && params.date.length > 0) {
-      const dateStr = params.date[0]
-      const [m, d] = dateStr.split('-').map(Number)
-      if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
-        return { month: m, day: d }
-      }
-    }
-    const today = new Date()
-    return { month: today.getMonth() + 1, day: today.getDate() }
-  }
-
-  const initialDate = parseDateFromParams()
-
-  const [month, setMonth] = useState(initialDate.month)
-  const [day, setDay] = useState(initialDate.day)
+  // Derive month/day from URL params (single source of truth)
+  const { month, day } = parseDateFromParams(params.date)
   const [page, setPage] = useState(1)
-  const [efemerides, setEfemerides] = useState<Efemeride[]>([])
-  const [loading, setLoading] = useState(true)
 
   const monthInfo = MONTHS[month - 1]
   const maxDay = monthInfo.days
 
-  // Sync state from URL params
-  useEffect(() => {
-    const dateFromUrl = parseDateFromParams()
-    setMonth(dateFromUrl.month)
-    setDay(dateFromUrl.day)
-    setPage(1)
-    fetchEfemerides(dateFromUrl.month, dateFromUrl.day)
-  }, [params.date])
-
-  const fetchEfemerides = async (mes: number, dia: number) => {
-    setLoading(true)
-    try {
-      const response = await fetch(`/api/efemerides?month=${mes}&day=${dia}`)
+  // Fetch efemerides via React Query
+  const { data: efemerides = [], isLoading: loading } = useQuery<Efemeride[]>({
+    queryKey: ['efemerides', month, day],
+    queryFn: async () => {
+      const response = await fetch(`/api/efemerides?month=${month}&day=${day}`)
       if (!response.ok) throw new Error('Error fetching data')
       const result = await response.json()
-      setEfemerides(result.efemerides || [])
-    } catch (error) {
-      log.error('Failed to fetch efemerides', error)
-      setEfemerides([])
-    } finally {
-      setLoading(false)
-    }
-  }
+      return result.efemerides || []
+    },
+  })
 
   // ── Navigation helpers ──────────────────────────────────────────────────
 
   const navigateToDate = (m: number, d: number) => {
+    setPage(1)
     const monthStr = String(m).padStart(2, '0')
     const dayStr = String(d).padStart(2, '0')
     router.push(`/efemerides/${monthStr}-${dayStr}`)

@@ -2,7 +2,8 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { Plus, Edit, Trash2, Calendar, ChevronRight, Search, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -23,35 +24,24 @@ interface FestivalListItem {
 }
 
 export default function FestivalsPage() {
-  const [festivals, setFestivals] = useState<FestivalListItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
-  const [total, setTotal] = useState(0)
 
-  useEffect(() => {
-    loadFestivals()
-  }, [search])
-
-  const loadFestivals = async () => {
-    setIsLoading(true)
-    try {
+  const { data: festivalsData, isLoading } = useQuery({
+    queryKey: ['admin-festivals', search],
+    queryFn: async () => {
       const params = new URLSearchParams()
       if (search) params.set('search', search)
       params.set('limit', '50')
 
       const response = await fetch(`/api/festivals?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        setFestivals(data.data)
-        setTotal(data.total)
-      }
-    } catch (error) {
-      log.error('Failed to load festivals', error)
-      toast.error('Error al cargar festivales')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+      if (!response.ok) throw new Error('Error al cargar festivales')
+      return response.json()
+    },
+  })
+
+  const festivals: FestivalListItem[] = festivalsData?.data || []
+  const total: number = festivalsData?.total || 0
 
   const handleDelete = async (id: number, name: string) => {
     if (!confirm(`¿Eliminar el festival "${name}"?`)) return
@@ -68,7 +58,7 @@ export default function FestivalsPage() {
       }
 
       toast.success('Festival eliminado')
-      loadFestivals()
+      queryClient.invalidateQueries({ queryKey: ['admin-festivals'] })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al eliminar')
     }

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { getCsrfHeaders } from '@/lib/csrf-client';
@@ -20,51 +21,36 @@ interface CaseToReview {
 
 export default function ReviewNamesPage() {
   const router = useRouter();
-  const [cases, setCases] = useState<CaseToReview[]>([]);
+  const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+  const [removedIds, setRemovedIds] = useState<Set<number>>(new Set());
+
   // Form state
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  // Track para sincronizar form con caso actual
-  const prevCaseIdRef = useRef<number | null>(null);
 
   // Cargar casos al montar
-  useEffect(() => {
-    loadCases();
-  }, []);
-
-  // Sincronizar form con caso actual (patrón "ajustar estado durante render")
-  const currentCaseId = cases[currentIndex]?.id ?? null;
-  if (currentCaseId !== prevCaseIdRef.current) {
-    prevCaseIdRef.current = currentCaseId;
-    if (cases[currentIndex]) {
-      setFirstName(cases[currentIndex].firstName);
-      setLastName(cases[currentIndex].lastName);
-    }
-  }
-
-  const loadCases = async () => {
-    try {
-      setLoading(true);
+  const { data: queryData, isLoading: loading } = useQuery<{ cases: CaseToReview[] }>({
+    queryKey: ['admin-review-names'],
+    queryFn: async () => {
       const response = await fetch('/api/people/review-names');
-      const data = await response.json();
-      
-      if (data.cases) {
-        setCases(data.cases);
-        if (data.cases.length === 0) {
-          toast.success('¡No hay casos para revisar!');
-        }
-      }
-    } catch (error) {
-      log.error('Failed to load cases', error);
-      toast.error('Error al cargar casos');
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (!response.ok) throw new Error('Error al cargar casos');
+      return response.json();
+    },
+  });
+
+  // Derive cases from query data, filtering out removed ones
+  const cases = (queryData?.cases || []).filter(c => !removedIds.has(c.id));
+
+  // Sync form fields when current case changes
+  const currentCaseForSync = cases[currentIndex];
+  const currentCaseFirstName = currentCaseForSync?.firstName ?? '';
+  const currentCaseLastName = currentCaseForSync?.lastName ?? '';
+  useEffect(() => {
+    setFirstName(currentCaseFirstName);
+    setLastName(currentCaseLastName);
+  }, [currentCaseFirstName, currentCaseLastName]);
 
   const handleSave = async () => {
     if (!cases[currentIndex]) return;
@@ -90,18 +76,18 @@ export default function ReviewNamesPage() {
       }
 
       toast.success('Cambios guardados');
-      
+
       // Remover caso actual de la lista
-      const newCases = cases.filter((_, index) => index !== currentIndex);
-      setCases(newCases);
-      
+      setRemovedIds(prev => new Set(prev).add(cases[currentIndex].id));
+      const remainingCount = cases.length - 1;
+
       // Ajustar índice si es necesario
-      if (currentIndex >= newCases.length && newCases.length > 0) {
-        setCurrentIndex(newCases.length - 1);
+      if (currentIndex >= remainingCount && remainingCount > 0) {
+        setCurrentIndex(remainingCount - 1);
       }
 
       // Si no quedan más casos
-      if (newCases.length === 0) {
+      if (remainingCount === 0) {
         toast.success('¡Todos los casos revisados!');
       }
 
@@ -115,17 +101,17 @@ export default function ReviewNamesPage() {
 
   const handleSkip = () => {
     // Remover caso actual (marcarlo como correcto)
-    const newCases = cases.filter((_, index) => index !== currentIndex);
-    setCases(newCases);
-    
+    setRemovedIds(prev => new Set(prev).add(cases[currentIndex].id));
+    const remainingCount = cases.length - 1;
+
     // Ajustar índice
-    if (currentIndex >= newCases.length && newCases.length > 0) {
-      setCurrentIndex(newCases.length - 1);
+    if (currentIndex >= remainingCount && remainingCount > 0) {
+      setCurrentIndex(remainingCount - 1);
     }
 
     toast.success('Caso marcado como correcto');
 
-    if (newCases.length === 0) {
+    if (remainingCount === 0) {
       toast.success('¡Todos los casos revisados!');
     }
   };
@@ -175,7 +161,7 @@ export default function ReviewNamesPage() {
     );
   }
 
-  const currentCase = cases[currentIndex];
+  const currentCaseDisplay = cases[currentIndex];
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -225,13 +211,13 @@ export default function ReviewNamesPage() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-lg font-medium text-gray-900 mb-2">
-                  ID: {currentCase.id}
+                  ID: {currentCaseDisplay.id}
                 </h2>
                 <div className="space-y-1 text-sm text-gray-600">
-                  <p>Slug: <span className="font-mono">{currentCase.slug}</span></p>
-                  <p>Roles en películas: <span className="font-semibold">{currentCase.totalRoles}</span></p>
+                  <p>Slug: <span className="font-mono">{currentCaseDisplay.slug}</span></p>
+                  <p>Roles en películas: <span className="font-semibold">{currentCaseDisplay.totalRoles}</span></p>
                   <p>
-                    Palabras: {currentCase.firstNameWords} (nombre) / {currentCase.lastNameWords} (apellido)
+                    Palabras: {currentCaseDisplay.firstNameWords} (nombre) / {currentCaseDisplay.lastNameWords} (apellido)
                   </p>
                 </div>
               </div>

@@ -2,6 +2,7 @@
 'use client';
 
 import { useHomeData } from '@/hooks/useHomeData';
+import { useQuery } from '@tanstack/react-query';
 import HeroSection from '@/components/home/HeroSection';
 import MoviesGrid from '@/components/home/MoviesGrid';
 import RecentMoviesSection from '@/components/home/RecentMoviesSection';
@@ -9,14 +10,27 @@ import RecentPeopleSection from '@/components/home/RecentPeopleSection';
 import ObituariosSection from '@/components/home/ObituariosSection';
 import EfemeridesSection from '@/components/home/EfemeridesSection';
 import ErrorMessage from '@/components/home/ErrorMessage';
-import { HeroMovie, Efemeride } from '@/types/home.types';
-import { formatPartialDate } from '@/lib/shared/dateUtils';
-import { useState, useEffect } from 'react';
+import { Efemeride } from '@/types/home.types';
 import Image from 'next/image';
 import Link from 'next/link';
-import { createLogger } from '@/lib/logger'
 
-const log = createLogger('page:home')
+function calcularFechaEfectivaPersona(person: any, type: 'birth' | 'death') {
+  const prefix = type === 'birth' ? 'birth' : 'death';
+  const year = person[`${prefix}Year`];
+  const month = person[`${prefix}Month`] || 12;
+  const day = person[`${prefix}Day`] || new Date(year, month, 0).getDate();
+  return new Date(year, month - 1, day);
+}
+
+function pickRandomEfemerides(efemerides: Efemeride[], count: number): Efemeride[] {
+  if (efemerides.length <= count) return efemerides;
+  const shuffled = [...efemerides];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, count);
+}
 
 export default function HomePage() {
   const {
@@ -31,131 +45,46 @@ export default function HomePage() {
     retry
   } = useHomeData();
 
-  const [obituarios, setObituarios] = useState<any[]>([]);
-  const [loadingObituarios, setLoadingObituarios] = useState(true);
-  const [efemerides, setEfemerides] = useState<Efemeride[]>([]);
-  const [loadingEfemerides, setLoadingEfemerides] = useState(true);
+  // Hero images
+  const { data: heroImages = [], isLoading: loadingHero } = useQuery({
+    queryKey: ['hero-images'],
+    queryFn: async () => {
+      const response = await fetch('/api/images/hero');
+      if (!response.ok) throw new Error('Error al cargar imágenes del hero');
+      const data = await response.json();
+      return data.images || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-  // Estado para imágenes del hero
-  const [heroImages, setHeroImages] = useState<any[]>([]);
-  const [loadingHero, setLoadingHero] = useState(true);
+  // Obituarios
+  const { data: obituarios = [], isLoading: loadingObituarios } = useQuery({
+    queryKey: ['home-obituarios'],
+    queryFn: async () => {
+      const params = { limit: '50', hasDeathDate: 'true', sortBy: 'deathDate', sortOrder: 'desc' };
+      const response = await fetch(`/api/people?${new URLSearchParams(params)}`);
+      if (!response.ok) throw new Error('Error al cargar obituarios');
+      const data = await response.json();
+      const conFecha = (data.data || []).filter((p: any) => p.deathYear);
+      const ordenadas = conFecha.sort((a: any, b: any) => {
+        return calcularFechaEfectivaPersona(b, 'death').getTime() - calcularFechaEfectivaPersona(a, 'death').getTime();
+      });
+      return ordenadas.slice(0, 3);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-  // Función para calcular fecha efectiva de personas
-  const calcularFechaEfectivaPersona = (person: any, type: 'birth' | 'death') => {
-    const prefix = type === 'birth' ? 'birth' : 'death';
-    const year = person[`${prefix}Year`];
-    const month = person[`${prefix}Month`] || 12;
-    const day = person[`${prefix}Day`] || new Date(year, month, 0).getDate();
-
-    return new Date(year, month - 1, day);
-  };
-
-  // Fetch imágenes del hero
-  useEffect(() => {
-    const fetchHeroImages = async () => {
-      try {
-        setLoadingHero(true);
-        const response = await fetch('/api/images/hero');
-
-        if (!response.ok) {
-          throw new Error('Error al cargar imágenes del hero');
-        }
-
-        const data = await response.json();
-        setHeroImages(data.images || []);
-      } catch (error) {
-        log.error('Failed to fetch hero images', error);
-        setHeroImages([]);
-      } finally {
-        setLoadingHero(false);
-      }
-    };
-
-    fetchHeroImages();
-  }, []);
-
-  // Fetch obituarios
-  useEffect(() => {
-    const fetchObituarios = async () => {
-      try {
-        setLoadingObituarios(true);
-
-        const params = {
-          limit: '50',
-          hasDeathDate: 'true',
-          sortBy: 'deathDate',
-          sortOrder: 'desc'
-        };
-
-        const response = await fetch(`/api/people?${new URLSearchParams(params)}`);
-
-        if (!response.ok) {
-          throw new Error('Error al cargar obituarios');
-        }
-
-        const data = await response.json();
-
-        const personasConFecha = data.data.filter((person: any) => person.deathYear);
-
-        const personasOrdenadas = personasConFecha.sort((a: any, b: any) => {
-          const dateA = calcularFechaEfectivaPersona(a, 'death');
-          const dateB = calcularFechaEfectivaPersona(b, 'death');
-          return dateB.getTime() - dateA.getTime();
-        });
-
-        setObituarios(personasOrdenadas.slice(0, 3));
-      } catch (error) {
-        log.error('Failed to fetch obituarios', error);
-        setObituarios([]);
-      } finally {
-        setLoadingObituarios(false);
-      }
-    };
-
-    fetchObituarios();
-  }, []);
-
-  // Fetch efemérides
-  useEffect(() => {
-    const fetchEfemerides = async () => {
-      try {
-        setLoadingEfemerides(true);
-
-        const response = await fetch('/api/efemerides');
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.efemerides && data.efemerides.length > 0) {
-          if (data.efemerides.length <= 3) {
-            setEfemerides(data.efemerides);
-          } else {
-            const shuffled = [...data.efemerides];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-              const j = Math.floor(Math.random() * (i + 1));
-              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-
-            const tresAleatorias = shuffled.slice(0, 3);
-            setEfemerides(tresAleatorias);
-          }
-        } else {
-          setEfemerides([]);
-        }
-      } catch (error) {
-        log.error('Failed to fetch efemerides', error);
-        setEfemerides([]);
-      } finally {
-        setLoadingEfemerides(false);
-      }
-    };
-
-    fetchEfemerides();
-  }, []);
-
+  // Efemérides
+  const { data: efemerides = [] } = useQuery({
+    queryKey: ['home-efemerides'],
+    queryFn: async () => {
+      const response = await fetch('/api/efemerides');
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      return pickRandomEfemerides(data.efemerides || [], 3);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Formateador para fechas de estrenos (sin año, solo para la home)
   const formatearFechaEstreno = (movie: any): string => {

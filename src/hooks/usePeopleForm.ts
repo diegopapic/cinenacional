@@ -1,7 +1,8 @@
 // src/hooks/usePeopleForm.ts
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { peopleService, ExternalIdConflictError } from '@/services/people.service';
 import {
     PersonFormData,
@@ -25,6 +26,35 @@ import { createLogger } from '@/lib/logger'
 
 const log = createLogger('hook:peopleForm')
 
+function formatPersonForForm(person: PersonWithRelations, personId: number): PersonFormData {
+    const formattedData = formatPersonDataForForm(person);
+    formattedData.id = personId;
+
+    if (person.photoPublicId) {
+        formattedData.photoPublicId = person.photoPublicId;
+    }
+    if (person.links) {
+        formattedData.links = person.links;
+    }
+    if (person.alternativeNames) {
+        formattedData.alternativeNames = person.alternativeNames;
+    }
+    if (person.trivia) {
+        formattedData.trivia = person.trivia;
+    }
+    if (person.nationalities && Array.isArray(person.nationalities)) {
+        formattedData.nationalities = person.nationalities.map((n: any) => {
+            if (typeof n === 'number') return n;
+            if (typeof n === 'object' && n !== null) return n.locationId || n;
+            return n;
+        });
+    } else {
+        formattedData.nationalities = [];
+    }
+
+    return formattedData;
+}
+
 interface UsePeopleFormProps {
     personId?: number;
     onSuccess?: (person: PersonWithRelations) => void;
@@ -32,74 +62,47 @@ interface UsePeopleFormProps {
 
 export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) {
     const router = useRouter();
-    const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [formData, setFormData] = useState<PersonFormData>(DEFAULT_PERSON_FORM_VALUES);
     const [errors, setErrors] = useState<string[]>([]);
     const [isDirty, setIsDirty] = useState(false);
+    const formPopulatedRef = useRef(false);
 
-    // Cargar datos de la persona si es edición
+    // Query para cargar persona en edición
+    const { isLoading: loading, refetch: reloadQuery } = useQuery({
+        queryKey: ['person-form', personId],
+        queryFn: async () => {
+            const person = await peopleService.getById(personId!);
+            log.debug('Person loaded for editing');
+            return person;
+        },
+        enabled: !!personId,
+    });
+
+    // Poblar form cuando llegan los datos del query (solo una vez por personId)
+    const { data: personData } = useQuery({
+        queryKey: ['person-form', personId],
+        queryFn: async () => peopleService.getById(personId!),
+        enabled: !!personId,
+    });
+
     useEffect(() => {
-        if (personId) {
-            loadPerson();
+        if (personData && personId && !formPopulatedRef.current) {
+            formPopulatedRef.current = true;
+            setFormData(formatPersonForForm(personData, personId));
         }
+    }, [personData, personId]);
+
+    // Reset ref cuando cambia personId
+    useEffect(() => {
+        formPopulatedRef.current = false;
     }, [personId]);
 
-    // Cargar persona existente
     const loadPerson = async () => {
         if (!personId) return;
-
-        try {
-            setLoading(true);
-            const person = await peopleService.getById(personId);
-            log.debug('Person loaded for editing');
-            const formattedData = formatPersonDataForForm(person);
-
-            // NUEVO: Agregar el ID al formData para saber que es edición
-            formattedData.id = personId;
-
-            // NUEVO: Preservar el photoPublicId si existe
-            if (person.photoPublicId) {
-                formattedData.photoPublicId = person.photoPublicId;
-            }
-
-            // Si la persona tiene links, cargarlos también
-            if (person.links) {
-                formattedData.links = person.links;
-            }
-
-            // Si la persona tiene nombres alternativos, cargarlos también
-            if (person.alternativeNames) {
-                formattedData.alternativeNames = person.alternativeNames;
-            }
-
-            // Si la persona tiene trivia, cargarla
-            if (person.trivia) {
-                formattedData.trivia = person.trivia;
-            }
-
-            // Si la persona tiene nacionalidades, cargarlas como array de IDs
-            if (person.nationalities && Array.isArray(person.nationalities)) {
-                formattedData.nationalities = person.nationalities.map((n: any) => {
-                    if (typeof n === 'number') {
-                        return n;
-                    }
-                    if (typeof n === 'object' && n !== null) {
-                        const id = n.locationId || n;
-                        return id;
-                    }
-                    return n;
-                });
-            } else {
-                formattedData.nationalities = [];
-            }
-
-            setFormData(formattedData);
-        } catch (error) {
-            log.error('Failed to load person', error);
-            toast.error('No se pudo cargar la información de la persona');
-        } finally {
-            setLoading(false);
+        const { data } = await reloadQuery();
+        if (data) {
+            setFormData(formatPersonForForm(data, personId));
         }
     };
 
