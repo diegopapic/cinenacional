@@ -15,6 +15,7 @@ import { PersonSchema } from '@/components/people/PersonSchema'
 import { PageViewTracker } from '@/components/people/PageViewTracker'
 import { PersonFilmography } from '@/components/people/PersonFilmography'
 import type { AllRolesItem, RoleSection } from '@/components/people/PersonFilmography'
+import { PersonReviews } from '@/components/people/PersonReviews'
 
 const log = createLogger('page:persona')
 
@@ -144,6 +145,51 @@ async function getFilmographyData(personId: number) {
   } catch (error) {
     log.error('Failed to fetch filmography', error)
     return { castRoles: [], crewRoles: [] }
+  }
+}
+
+async function getPersonReviews(personId: number) {
+  try {
+    return await prisma.movieReview.findMany({
+      where: { authorId: personId },
+      select: {
+        id: true,
+        title: true,
+        summary: true,
+        url: true,
+        content: true,
+        publishYear: true,
+        publishMonth: true,
+        publishDay: true,
+        movie: {
+          select: {
+            slug: true,
+            title: true,
+            year: true,
+            releaseYear: true,
+            crew: {
+              where: { role: { department: 'DIRECTING' } },
+              select: {
+                person: { select: { firstName: true, lastName: true } }
+              },
+              orderBy: { billingOrder: 'asc' },
+              take: 1
+            }
+          }
+        },
+        mediaOutlet: {
+          select: { name: true }
+        }
+      },
+      orderBy: [
+        { publishYear: 'desc' },
+        { publishMonth: 'desc' },
+        { publishDay: 'desc' }
+      ]
+    })
+  } catch (error) {
+    log.error('Failed to fetch person reviews', error)
+    return []
   }
 }
 
@@ -458,8 +504,11 @@ export default async function PersonPage({ params }: PageProps) {
     notFound()
   }
 
-  // Fetch filmography
-  const { castRoles, crewRoles } = await getFilmographyData(person.id)
+  // Fetch filmography and reviews
+  const [{ castRoles, crewRoles }, personReviews] = await Promise.all([
+    getFilmographyData(person.id),
+    getPersonReviews(person.id)
+  ])
 
   // Build gallery images
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
@@ -822,6 +871,9 @@ export default async function PersonPage({ params }: PageProps) {
         allRolesList={allRolesList}
         roleSections={roleSections}
       />
+
+      {/* Reviews Section */}
+      <PersonReviews reviews={personReviews} />
 
       {/* External Links */}
       {person.links && person.links.length > 0 && (
