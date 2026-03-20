@@ -127,11 +127,20 @@ Migrar fetch manuales (`useEffect` + `useState` loading/data/error) a `useQuery`
 
 ## Fase 8: Validación final
 
-- [ ] Ejecutar `npm run lint` — sin warnings nuevos
-- [ ] Ejecutar `npm run build` — sin errores
+- [x] Ejecutar `npm run lint` — sin warnings nuevos (todos preexistentes: `no-explicit-any`, `no-unescaped-entities`)
+- [x] Ejecutar `npm run build` — sin errores
 - [ ] Test manual del admin (movies modal, people form, festivals)
 - [ ] Test manual del sitio público (home, búsqueda, listados, fichas)
 - [ ] Verificar que no hay loops infinitos ni re-renders innecesarios (React DevTools Profiler)
+
+### Resultado del refactor
+
+- **useEffect totales**: 46 (en 31 archivos)
+  - 5 en hooks de infraestructura (`useMountEffect`, `useClickOutside`, `useEscapeKey`, `useDebounce`)
+  - 41 restantes son efectos legítimos (focus, scroll sync, keyboard handlers, prop-sync necesarios)
+- **Eliminados**: ~60 useEffects innecesarios a lo largo de las 7 fases
+- **Hooks reutilizables creados**: `useMountEffect`, `useClickOutside`, `useEscapeKey`
+- **Infraestructura agregada**: QueryProvider + TanStack React Query v5
 
 ---
 
