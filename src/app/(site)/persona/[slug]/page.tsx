@@ -168,7 +168,7 @@ async function getPersonReviews(personId: number) {
             year: true,
             releaseYear: true,
             crew: {
-              where: { role: { department: 'DIRECTING' } },
+              where: { role: { department: 'DIRECCION' } },
               select: {
                 person: { select: { firstName: true, lastName: true } }
               },
