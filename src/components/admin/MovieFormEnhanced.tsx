@@ -1,7 +1,8 @@
 // src/components/admin/MovieFormEnhanced.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
+import { useMountEffect } from '@/hooks/useMountEffect'
 import {
   Plus,
   X,
@@ -88,8 +89,6 @@ export default function MovieFormEnhanced({
 
   const [availableRoles, setAvailableRoles] = useState<any[]>([])
 
-  const [dataReady, setDataReady] = useState(false)
-
   // Estado para nuevo actor/crew
   const [newPerson, setNewPerson] = useState({
     personId: 0,
@@ -98,31 +97,23 @@ export default function MovieFormEnhanced({
     billingOrder: 0
   })
 
-  const [isInitialized, setIsInitialized] = useState(false)
-
   // Cargar datos iniciales
-  useEffect(() => {
+  useMountEffect(() => {
     fetchInitialData()
-  }, [])
+  })
 
-  useEffect(() => {
-    setIsInitialized(false)  // Resetear cuando cambia initialData
-  }, [initialData])
-
-  // Inicializar con datos existentes - CORREGIDO
-  useEffect(() => {
-    if (initialData && !isInitialized) {
+  // Sincronizar initialData → estado local (patrón "ajustar durante render")
+  const prevInitialDataRef = useRef(initialData)
+  if (initialData !== prevInitialDataRef.current) {
+    prevInitialDataRef.current = initialData
+    if (initialData) {
       log.debug('Initializing with data')
       if (initialData.genres) {
-        const genreIds = initialData.genres.map(g => {
-          return g.genre?.id || g.genreId || g.id
-        })
-
+        const genreIds = initialData.genres.map(g => g.genre?.id || g.genreId || g.id)
         setSelectedGenres(genreIds)
+        onGenresChange(genreIds)
       }
-
       if (initialData.cast) {
-        // ✅ SOLUCIÓN: normalizar antes de guardar
         const normalizedCast = initialData.cast.map((member: any) => ({
           personId: member.personId || member.person?.id,
           person: member.person,
@@ -131,99 +122,101 @@ export default function MovieFormEnhanced({
           isPrincipal: member.isPrincipal,
           notes: member.notes
         }))
-
         setCast(normalizedCast)
+        onCastChange(normalizedCast)
       }
-
       if (initialData.crew) {
         setCrew(initialData.crew)
+        onCrewChange(initialData.crew)
       }
-
       if (initialData.screeningVenues) {
         setScreeningVenues(initialData.screeningVenues)
+        onScreeningVenuesChange(initialData.screeningVenues)
       }
-
-      // CORRECCIÓN IMPORTANTE: Manejar correctamente los países
       if (initialData.countries) {
         const countryIds = initialData.countries.map(c => {
-          // Manejar diferentes estructuras posibles
           if (typeof c === 'number') return c
-          if (c.countryId) return c.countryId  // Si viene de movieCountries
+          if (c.countryId) return c.countryId
           if (c.id) return c.id
           if (c.country && c.country.id) return c.country.id
           return null
         }).filter(id => id !== null)
-
         setSelectedCountries(countryIds)
+        onCountriesChange(countryIds)
       }
-
       if (initialData.productionCompanies) {
         const companyIds = initialData.productionCompanies.map(c => c.companyId || c.id || c.company?.id)
         setSelectedProductionCompanies(companyIds)
+        onProductionCompaniesChange(companyIds)
       }
-
       if (initialData.distributionCompanies) {
         const companyIds = initialData.distributionCompanies.map(c => c.companyId || c.id || c.company?.id)
         setSelectedDistributionCompanies(companyIds)
+        onDistributionCompaniesChange(companyIds)
       }
-
       if (initialData.themes) {
         const themeIds = initialData.themes.map(t => t.themeId || t.id)
         setSelectedThemes(themeIds)
+        onThemesChange(themeIds)
       }
-
-      setIsInitialized(true)
     }
-  }, [initialData, isInitialized])
+  }
 
-  // Notificar cambios al componente padre
-  useEffect(() => {
-    if (isInitialized || !initialData) {
-      onGenresChange(selectedGenres)
-    }
-  }, [selectedGenres, onGenresChange, isInitialized, initialData])
+  // Wrappers que actualizan estado local + notifican al padre en un solo paso
+  const updateGenres = useCallback((updater: (prev: number[]) => number[]) => {
+    setSelectedGenres(prev => {
+      const next = updater(prev)
+      onGenresChange(next)
+      return next
+    })
+  }, [onGenresChange])
 
-  useEffect(() => {
-    if (isInitialized) {
-      onScreeningVenuesChange(screeningVenues)
-    }
-  }, [screeningVenues, onScreeningVenuesChange, isInitialized])
+  const updateCountries = useCallback((updater: (prev: number[]) => number[]) => {
+    setSelectedCountries(prev => {
+      const next = updater(prev)
+      onCountriesChange(next)
+      return next
+    })
+  }, [onCountriesChange])
 
-  useEffect(() => {
-    if (isInitialized && initialData) {
-      onCastChange(cast)
-    }
-  }, [cast, onCastChange, isInitialized, initialData])
+  const updateProductionCompanies = useCallback((updater: (prev: number[]) => number[]) => {
+    setSelectedProductionCompanies(prev => {
+      const next = updater(prev)
+      onProductionCompaniesChange(next)
+      return next
+    })
+  }, [onProductionCompaniesChange])
 
-  useEffect(() => {
-    if (isInitialized) {
-      onCrewChange(crew)
-    }
-  }, [crew, onCrewChange, isInitialized])
+  const updateDistributionCompanies = useCallback((updater: (prev: number[]) => number[]) => {
+    setSelectedDistributionCompanies(prev => {
+      const next = updater(prev)
+      onDistributionCompaniesChange(next)
+      return next
+    })
+  }, [onDistributionCompaniesChange])
 
-  useEffect(() => {
-    if (isInitialized || !initialData) {
-      onCountriesChange(selectedCountries)
-    }
-  }, [selectedCountries, onCountriesChange, isInitialized, initialData])
+  const updateThemes = useCallback((updater: (prev: number[]) => number[]) => {
+    setSelectedThemes(prev => {
+      const next = updater(prev)
+      onThemesChange(next)
+      return next
+    })
+  }, [onThemesChange])
 
-  useEffect(() => {
-    if (isInitialized) {
-      onProductionCompaniesChange(selectedProductionCompanies)
-    }
-  }, [selectedProductionCompanies, onProductionCompaniesChange, isInitialized])
+  const updateCast = useCallback((newCast: any[]) => {
+    setCast(newCast)
+    onCastChange(newCast)
+  }, [onCastChange])
 
-  useEffect(() => {
-    if (isInitialized) {
-      onDistributionCompaniesChange(selectedDistributionCompanies)
-    }
-  }, [selectedDistributionCompanies, onDistributionCompaniesChange, isInitialized])
+  const updateCrew = useCallback((newCrew: any[]) => {
+    setCrew(newCrew)
+    onCrewChange(newCrew)
+  }, [onCrewChange])
 
-  useEffect(() => {
-    if (isInitialized) {
-      onThemesChange(selectedThemes)
-    }
-  }, [selectedThemes, onThemesChange, isInitialized])
+  const updateScreeningVenues = useCallback((newVenues: any[]) => {
+    setScreeningVenues(newVenues)
+    onScreeningVenuesChange(newVenues)
+  }, [onScreeningVenuesChange])
 
   // Cargar datos de la API
   const fetchInitialData = async () => {
@@ -308,11 +301,11 @@ export default function MovieFormEnhanced({
         isPrincipal: cast.length < 5
       }
       const newCast = [...cast, newMember]
-      setCast(newCast)
+      updateCast(newCast)
     } else if (addingType === 'crew') {
       const selectedRole = availableRoles.find(r => r.id === newPerson.roleId)
 
-      setCrew([...crew, {
+      updateCrew([...crew, {
         personId: newPerson.personId,
         person: selectedPerson,
         roleId: newPerson.roleId,
@@ -376,9 +369,9 @@ export default function MovieFormEnhanced({
                   checked={selectedGenres.includes(genre.id)}
                   onChange={(e) => {
                     if (e.target.checked) {
-                      setSelectedGenres([...selectedGenres, genre.id])
+                      updateGenres(prev => [...prev, genre.id])
                     } else {
-                      setSelectedGenres(selectedGenres.filter(id => id !== genre.id))
+                      updateGenres(prev => prev.filter(id => id !== genre.id))
                     }
                   }}
                 />
@@ -409,7 +402,7 @@ export default function MovieFormEnhanced({
                     {country.name}
                     <button
                       type="button"
-                      onClick={() => setSelectedCountries(selectedCountries.filter(id => id !== country.id))}
+                      onClick={() => updateCountries(prev => prev.filter(id => id !== country.id))}
                       className="ml-1 hover:text-blue-600"
                     >
                       <X className="w-3 h-3" />
@@ -445,7 +438,7 @@ export default function MovieFormEnhanced({
                     key={country.id}
                     type="button"
                     onClick={() => {
-                      setSelectedCountries([...selectedCountries, country.id])
+                      updateCountries(prev => [...prev, country.id])
                       setCountrySearch('')
                     }}
                     className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
@@ -475,7 +468,7 @@ export default function MovieFormEnhanced({
           <ScreeningVenueSelector
             selectedVenueIds={screeningVenues}
             onChange={(venues) => {
-              setScreeningVenues(venues)
+              updateScreeningVenues(venues)
             }}
           />
           <p className="mt-1 text-sm text-gray-500">
@@ -504,7 +497,7 @@ export default function MovieFormEnhanced({
                       {theme.name}
                       <button
                         type="button"
-                        onClick={() => setSelectedThemes(selectedThemes.filter(id => id !== theme.id))}
+                        onClick={() => updateThemes(prev => prev.filter(id => id !== theme.id))}
                         className="ml-1 hover:text-purple-600"
                       >
                         <X className="w-3 h-3" />
@@ -540,7 +533,7 @@ export default function MovieFormEnhanced({
                       key={theme.id}
                       type="button"
                       onClick={() => {
-                        setSelectedThemes([...selectedThemes, theme.id])
+                        updateThemes(prev => [...prev, theme.id])
                         setThemeSearch('')
                       }}
                       className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
@@ -580,7 +573,7 @@ export default function MovieFormEnhanced({
 
           {/* ✅ NUEVO COMPONENTE CON DRAG & DROP */}
           <div className="mb-4">
-            <CastList cast={cast} onCastChange={setCast} />
+            <CastList cast={cast} onCastChange={updateCast} />
           </div>
 
           <button
@@ -756,7 +749,7 @@ export default function MovieFormEnhanced({
                     </div>
                     <button
                       type="button"
-                      onClick={() => setCrew(crew.filter((_, i) => i !== index))}
+                      onClick={() => updateCrew(crew.filter((_, i) => i !== index))}
                       className="text-red-600 hover:text-red-800"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -926,7 +919,7 @@ export default function MovieFormEnhanced({
             value={selectedProductionCompanies.map(String)}
             onChange={(e) => {
               const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value))
-              setSelectedProductionCompanies(selected)
+              updateProductionCompanies(() => selected)
             }}
           >
             {availableProductionCompanies.map((company: any) => (
@@ -952,7 +945,7 @@ export default function MovieFormEnhanced({
             value={selectedDistributionCompanies.map(String)}
             onChange={(e) => {
               const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value))
-              setSelectedDistributionCompanies(selected)
+              updateDistributionCompanies(() => selected)
             }}
           >
             {availableDistributionCompanies.map((company: any) => (
@@ -990,9 +983,9 @@ export default function MovieFormEnhanced({
                 checked={selectedGenres.includes(genre.id)}
                 onChange={(e) => {
                   if (e.target.checked) {
-                    setSelectedGenres([...selectedGenres, genre.id])
+                    updateGenres(prev => [...prev, genre.id])
                   } else {
-                    setSelectedGenres(selectedGenres.filter(id => id !== genre.id))
+                    updateGenres(prev => prev.filter(id => id !== genre.id))
                   }
                 }}
               />
@@ -1023,7 +1016,7 @@ export default function MovieFormEnhanced({
                 </div>
                 <button
                   type="button"
-                  onClick={() => setCast(cast.filter((_, i) => i !== index))}
+                  onClick={() => updateCast(cast.filter((_, i) => i !== index))}
                   className="text-red-600 hover:text-red-800"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -1066,7 +1059,7 @@ export default function MovieFormEnhanced({
                 </div>
                 <button
                   type="button"
-                  onClick={() => setCrew(crew.filter((_, i) => i !== index))}
+                  onClick={() => updateCrew(crew.filter((_, i) => i !== index))}
                   className="text-red-600 hover:text-red-800"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -1102,9 +1095,9 @@ export default function MovieFormEnhanced({
               type="button"
               onClick={() => {
                 if (selectedCountries.includes(country.id)) {
-                  setSelectedCountries(selectedCountries.filter(id => id !== country.id))
+                  updateCountries(prev => prev.filter(id => id !== country.id))
                 } else {
-                  setSelectedCountries([...selectedCountries, country.id])
+                  updateCountries(prev => [...prev, country.id])
                 }
               }}
               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${selectedCountries.includes(country.id)
@@ -1140,7 +1133,7 @@ export default function MovieFormEnhanced({
                     {theme.name}
                     <button
                       type="button"
-                      onClick={() => setSelectedThemes(selectedThemes.filter(id => id !== theme.id))}
+                      onClick={() => updateThemes(prev => prev.filter(id => id !== theme.id))}
                       className="ml-1 hover:text-purple-600"
                     >
                       <X className="w-3 h-3" />
@@ -1176,7 +1169,7 @@ export default function MovieFormEnhanced({
                     key={theme.id}
                     type="button"
                     onClick={() => {
-                      setSelectedThemes([...selectedThemes, theme.id])
+                      updateThemes(prev => [...prev, theme.id])
                       setThemeSearch('')
                     }}
                     className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
@@ -1213,7 +1206,7 @@ export default function MovieFormEnhanced({
           value={selectedProductionCompanies.map(String)}
           onChange={(e) => {
             const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value))
-            setSelectedProductionCompanies(selected)
+            updateProductionCompanies(() => selected)
           }}
         >
           {availableProductionCompanies.map((company: any) => (
@@ -1239,7 +1232,7 @@ export default function MovieFormEnhanced({
           value={selectedDistributionCompanies.map(String)}
           onChange={(e) => {
             const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value))
-            setSelectedDistributionCompanies(selected)
+            updateDistributionCompanies(() => selected)
           }}
         >
           {availableDistributionCompanies.map((company: any) => (

@@ -117,9 +117,11 @@ Migrar fetch manuales (`useEffect` + `useState` loading/data/error) a `useQuery`
 
 ## Fase 7: Caso especial — `MovieFormEnhanced.tsx`
 
-11 useEffects (líneas 104-222), la mayor concentración del proyecto. Todos sincronizan props → estado local.
+11 useEffects eliminados (0 restantes).
 
-- [ ] Refactorizar a componente controlado usando primitivas de React Hook Form (`watch`, `setValue` en callbacks)
+- [x] Mount fetch (`fetchInitialData`) → `useMountEffect`
+- [x] 2 useEffects de initialData sync → patrón "ajustar durante render" con `prevInitialDataRef`
+- [x] 8 useEffects de parent notification → wrappers (`updateGenres`, `updateCast`, etc.) que hacen setState + onChange en un solo paso
 
 ---
 
