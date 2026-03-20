@@ -69,20 +69,13 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
     const formPopulatedRef = useRef(false);
 
     // Query para cargar persona en edición
-    const { isLoading: loading, refetch: reloadQuery } = useQuery({
+    const { data: personData, isLoading: loading, refetch: reloadQuery } = useQuery({
         queryKey: ['person-form', personId],
         queryFn: async () => {
             const person = await peopleService.getById(personId!);
             log.debug('Person loaded for editing');
             return person;
         },
-        enabled: !!personId,
-    });
-
-    // Poblar form cuando llegan los datos del query (solo una vez por personId)
-    const { data: personData } = useQuery({
-        queryKey: ['person-form', personId],
-        queryFn: async () => peopleService.getById(personId!),
         enabled: !!personId,
     });
 

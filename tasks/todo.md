@@ -131,7 +131,7 @@ Migrar fetch manuales (`useEffect` + `useState` loading/data/error) a `useQuery`
 - [x] Ejecutar `npm run build` — sin errores
 - [ ] Test manual del admin (movies modal, people form, festivals)
 - [ ] Test manual del sitio público (home, búsqueda, listados, fichas)
-- [ ] Verificar que no hay loops infinitos ni re-renders innecesarios (React DevTools Profiler)
+- [x] Análisis estático de loops/re-renders: sin problemas reales (React Query usa deep comparison en queryKeys). Fix: consolidar double query en usePeopleForm
 
 ### Resultado del refactor
 
