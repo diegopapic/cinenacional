@@ -1,7 +1,8 @@
 // src/components/ads/AdBanner.tsx
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
+import { useMountEffect } from '@/hooks/useMountEffect'
 import { createLogger } from '@/lib/logger'
 
 const log = createLogger('AdBanner')
@@ -49,28 +50,24 @@ const FORMAT_CONFIG: Record<AdFormat, {
   }
 }
 
-export default function AdBanner({ 
-  slot, 
+export default function AdBanner({
+  slot,
   format = 'horizontal',
   className = ''
 }: AdBannerProps) {
-  // Si los ads están deshabilitados globalmente, no renderizar
-  if (!ADS_ENABLED) {
-    return null
-  }
-
   const adRef = useRef<HTMLModElement>(null)
   const isLoaded = useRef(false)
 
-  useEffect(() => {
+  useMountEffect(() => {
+    if (!ADS_ENABLED) return
     // Evitar cargar el mismo anuncio dos veces
     if (isLoaded.current) return
-    
+
     // Pequeño delay para asegurar que el DOM esté listo
     const timer = setTimeout(() => {
       try {
         if (adRef.current && adRef.current.offsetWidth > 0) {
-          // @ts-ignore
+          // @ts-expect-error adsbygoogle is injected by the AdSense script
           (window.adsbygoogle = window.adsbygoogle || []).push({})
           isLoaded.current = true
         }
@@ -80,7 +77,12 @@ export default function AdBanner({
     }, 100)
 
     return () => clearTimeout(timer)
-  }, [])
+  })
+
+  // Si los ads están deshabilitados globalmente, no renderizar
+  if (!ADS_ENABLED) {
+    return null
+  }
 
   const config = FORMAT_CONFIG[format]
 

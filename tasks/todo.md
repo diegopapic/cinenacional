@@ -50,55 +50,60 @@ Migrar fetch manuales (`useEffect` + `useState` loading/data/error) a `useQuery`
 
 ### 4a. Hooks compartidos (máximo impacto)
 
-- [ ] `hooks/useHomeData.ts:85` — carga datos del home
-- [ ] `hooks/useGlobalSearch.ts:75` — búsqueda global con debounce
-- [ ] `hooks/useListPage.ts:87,112` — carga filtros e items
-- [ ] `hooks/usePeople.ts:106,219,256` — carga personas, búsqueda, fetch individual
-- [ ] `hooks/usePeopleForm.ts:42` — carga persona para edición
-- [ ] `hooks/useRoles.ts:100` — carga roles
-- [ ] `hooks/useMovieForm.ts:208` — carga metadata (ratings, color types)
-- [ ] `contexts/MovieModalContext.tsx:124` — auto-load movie data
+- [x] `hooks/useHomeData.ts` — useQuery para datos del home
+- [x] `hooks/useGlobalSearch.ts` — useQuery con debounce + enabled
+- [x] `hooks/useListPage.ts` — useQuery para filtros e items
+- [x] `hooks/usePeople.ts` — useQuery + useMutation (3 hooks)
+- [x] `hooks/usePeopleForm.ts` — useQuery para carga de persona
+- [x] `hooks/useRoles.ts` — useQuery + useMutation
+- [x] `hooks/useMovieForm.ts` — useQuery para metadata
+- [ ] `contexts/MovieModalContext.tsx:124` — auto-load movie data (diferido a Fase 5, es prop-sync no data fetch)
 
-### 4b. Componentes admin
+### 4b. Componentes
 
-- [ ] `components/layout/HeaderStats.tsx:33` — fetch stats
-- [ ] `components/admin/shared/PersonSearchInput.tsx:209,248` — carga persona y búsqueda
-- [ ] `components/admin/locations/LocationForm.tsx:70` — busca ubicaciones padre
-- [ ] `components/admin/movies/MovieModal/tabs/ReviewsTab.tsx:120` — carga críticas
-- [ ] `components/admin/ScreeningVenueSelector.tsx:50` — carga venues
+- [x] `components/layout/HeaderStats.tsx` — useQuery para stats públicas
+- [x] `components/admin/shared/PersonSearchInput.tsx` — useQuery para búsqueda
+- [x] `components/admin/locations/LocationForm.tsx` — useQuery para ubicaciones padre
+- [x] `components/admin/movies/MovieModal/tabs/ReviewsTab.tsx` — useQuery para críticas
+- [x] `components/admin/ScreeningVenueSelector.tsx` — useQuery para venues
 
 ### 4c. Páginas admin
 
-- [ ] `app/admin/themes/page.tsx:83` — carga themes
-- [ ] `app/admin/stats/page.tsx:59` — carga estadísticas
-- [ ] `app/admin/screening-venues/page.tsx:123` — carga venues con filtros
-- [ ] `app/admin/movies/page.tsx:52` — carga películas
-- [ ] `app/admin/genres/page.tsx:65` — carga géneros
-- [ ] `app/admin/media-outlets/page.tsx:108` — carga medios
-- [ ] `app/admin/festivals/page.tsx:31` — carga festivales
-- [ ] `app/admin/calificaciones/page.tsx:67` — carga calificaciones
-- [ ] `app/admin/maintenance/review-names/page.tsx:33` — carga casos
+- [x] `app/admin/themes/page.tsx` — useQuery + invalidación
+- [x] `app/admin/stats/page.tsx` — useQuery + refetch
+- [x] `app/admin/screening-venues/page.tsx` — useQuery con filtros
+- [x] `app/admin/movies/page.tsx` — useQuery + invalidación
+- [x] `app/admin/genres/page.tsx` — useQuery + invalidación
+- [x] `app/admin/media-outlets/page.tsx` — useQuery + invalidación
+- [x] `app/admin/festivals/page.tsx` — useQuery
+- [x] `app/admin/calificaciones/page.tsx` — useQuery + invalidación
+- [x] `app/admin/maintenance/review-names/page.tsx` — useQuery + local state para filtrado
 
 ### 4d. Páginas públicas
 
-- [ ] `app/(site)/page.tsx:54,78` — carga hero images y obituarios
-- [ ] `app/(site)/buscar/page.tsx:104` — búsqueda
-- [ ] `app/(site)/efemerides/[...date]/page.tsx:64` — carga efemérides
-- [ ] `app/(site)/listados/obituarios/ObituariosContent.tsx:59` — carga personas
-- [ ] `app/(site)/listados/estrenos/EstrenosContent.tsx:51` — carga películas
+- [x] `app/(site)/page.tsx` — 3 useQuery (hero, obituarios, efemérides)
+- [x] `app/(site)/buscar/page.tsx` — useQuery con enabled
+- [x] `app/(site)/efemerides/[...date]/page.tsx` — useQuery + URL-derived state
+- [x] `app/(site)/listados/obituarios/ObituariosContent.tsx` — 2 useQuery (años + personas)
+- [x] `app/(site)/listados/estrenos/EstrenosContent.tsx` — useQuery
+
+### Infraestructura
+
+- [x] Crear `QueryProvider` en `src/components/providers/QueryProvider.tsx`
+- [x] Agregar QueryProvider al root layout (`src/app/layout.tsx`)
 
 ---
 
 ## Fase 5: MOUNT_EFFECT → wrappear con `useMountEffect`
 
-- [ ] `hooks/usePeople.ts:97` — cleanup al desmontar
-- [ ] `hooks/useListPage.ts:105` — inicializar filtros desde URL
-- [ ] `components/ads/AdBanner.tsx:65` — push ad a AdSense
-- [ ] `components/listados/estrenos/EstrenosDecadeSelector.tsx:27` — flag mounted para hydration
-- [ ] `components/admin/CloudinaryUploadWidget.tsx:54` — cleanup al desmontar
-- [ ] `components/admin/locations/LocationTree.tsx:34` — carga árbol
-- [ ] `components/admin/locations/LocationForm.tsx:63` — carga padre inicial
-- [ ] `app/(site)/listados/obituarios/ObituariosContent.tsx:33,38` — carga años y parsea URL
+- [x] `components/ads/AdBanner.tsx` — push ad a AdSense + fix hooks condicionales
+- [x] `components/listados/estrenos/EstrenosDecadeSelector.tsx` — flag mounted para hydration
+- [x] `components/admin/CloudinaryUploadWidget.tsx` — cleanup al desmontar
+- [x] `components/admin/locations/LocationTree.tsx` — carga árbol
+- [x] `components/admin/locations/LocationForm.tsx` — carga padre inicial
+- [N/A] `hooks/usePeople.ts` — ya migrado a React Query en Fase 4
+- [N/A] `hooks/useListPage.ts:105` — no es mount effect (tiene deps `[filters, router]`)
+- [N/A] `app/(site)/listados/obituarios/ObituariosContent.tsx` — ya migrado a React Query en Fase 4
 
 ---
 

@@ -3,6 +3,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useMountEffect } from '@/hooks/useMountEffect'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -60,11 +61,11 @@ export default function LocationForm({ location }: LocationFormProps) {
   })
 
   // Cargar el lugar padre si existe
-  useEffect(() => {
+  useMountEffect(() => {
     if (location?.parent || urlParentId) {
       loadInitialParent()
     }
-  }, [])
+  })
 
   // Buscar ubicaciones con debounce
   const { data: searchSuggestions, isFetching: isSearching } = useQuery({

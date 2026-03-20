@@ -5,6 +5,7 @@ import { DecadePeriod } from '@/lib/estrenos/estrenosTypes';
 import { generateDecades } from '@/lib/estrenos/estrenosUtils';
 import { ChevronDown } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { useMountEffect } from '@/hooks/useMountEffect';
 import { createPortal } from 'react-dom';
 import { createLogger } from '@/lib/logger';
 
@@ -24,9 +25,9 @@ export default function EstrenosDecadeSelector({ value, onChange }: EstrenosDeca
   
   const decades = generateDecades();
   
-  useEffect(() => {
+  useMountEffect(() => {
     setMounted(true);
-  }, []);
+  });
   
   const updateDropdownPosition = () => {
     if (buttonRef.current) {

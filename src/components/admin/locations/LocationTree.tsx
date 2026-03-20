@@ -2,7 +2,8 @@
 
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
+import { useMountEffect } from '@/hooks/useMountEffect'
 import { useRouter } from 'next/navigation'
 import LocationTreeNode from './LocationTreeNode'
 import { Search, Loader2, RefreshCw } from 'lucide-react'
@@ -30,9 +31,9 @@ export default function LocationTree() {
   const [searchTerm, setSearchTerm] = useState('')
   const [deleteModal, setDeleteModal] = useState<{ id: number; name: string } | null>(null)
 
-  useEffect(() => {
+  useMountEffect(() => {
     loadLocationTree()
-  }, [])
+  })
 
   const loadLocationTree = async () => {
     setIsLoading(true)

@@ -2,7 +2,8 @@
 'use client'
 
 import { CldUploadWidget } from 'next-cloudinary'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
+import { useMountEffect } from '@/hooks/useMountEffect'
 import { Upload, X, ImageIcon } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { createLogger } from '@/lib/logger'
@@ -53,7 +54,7 @@ export function CloudinaryUploadWidget({
   }
 
   // Limpiar al desmontar el componente
-  useEffect(() => {
+  useMountEffect(() => {
     return () => {
       // Restaurar el scroll al desmontar
       document.body.style.overflow = ''
@@ -68,7 +69,7 @@ export function CloudinaryUploadWidget({
         safetyTimeoutRef.current = null
       }
     }
-  }, [])
+  })
 
   // Configuración según el tipo de imagen
   const getUploadPreset = () => {
