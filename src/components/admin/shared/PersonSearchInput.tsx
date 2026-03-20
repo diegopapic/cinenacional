@@ -1,5 +1,6 @@
 // src/components/admin/shared/PersonSearchInput.tsx
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useClickOutside } from '@/hooks/useClickOutside'
 import { useQuery } from '@tanstack/react-query'
 import { User, X, Plus, ArrowRight } from 'lucide-react'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -236,16 +237,7 @@ export default function PersonSearchInput({
   }, [loadedPerson, alternativeNameId])
 
   // Cerrar dropdown al hacer click fuera
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  useClickOutside(containerRef, useCallback(() => setIsOpen(false), []))
 
   // Buscar personas
   const { data: searchResults, isFetching: searchLoading } = useQuery({

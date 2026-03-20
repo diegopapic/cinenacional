@@ -1,5 +1,6 @@
 // components/admin/RoleSelector.tsx
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useClickOutside } from '@/hooks/useClickOutside'
 import { useDebounce } from '@/hooks/useDebounce'
 import { Search, X } from 'lucide-react'
 import { rolesService } from '@/services/roles.service'
@@ -51,16 +52,7 @@ export default function RoleSelector({
   }, [value])
 
   // Cerrar dropdown al hacer click fuera
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  useClickOutside(containerRef, useCallback(() => setIsOpen(false), []))
 
   // Buscar roles - MEJORADO para usar el servicio correctamente
   useEffect(() => {

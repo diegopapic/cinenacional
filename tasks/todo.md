@@ -109,9 +109,9 @@ Migrar fetch manuales (`useEffect` + `useState` loading/data/error) a `useQuery`
 
 ## Fase 6: DOM_SYNC — extraer hooks reutilizables
 
-- [ ] Crear `useClickOutside(ref, callback)` y reemplazar en: Header, SearchBar, DateInput, PersonSearchInput, LocationForm, EstrenosDecadeSelector
-- [ ] Crear `useEscapeKey(callback)` y reemplazar en: Header, MovieHero
-- [ ] Revisar scroll-to-element effects (FilmReleasesByYear, EstrenosYearBar) — considerar `scrollIntoView()` en click handler
+- [x] Crear `useClickOutside(refs, callback, enabled)` y reemplazar en: Header, SearchBar, DateInput, PersonSearchInput, LocationForm, EstrenosDecadeSelector, RoleSelector
+- [x] Crear `useEscapeKey(callback, enabled)` y reemplazar en: MovieHero (Header usa onKeyDown inline, ImageGallery maneja múltiples teclas)
+- [x] Revisar scroll-to-element effects (FilmReleasesByYear, EstrenosYearBar) — son reacciones legítimas a cambios de estado, se mantienen como useEffect
 
 ---
 

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 import Link from 'next/link';
 import { Play, X } from 'lucide-react';
 import { MOVIE_STAGES } from '@/lib/movies/movieConstants';
@@ -146,14 +147,7 @@ export function MovieHero({
   }, []);
 
   // Escape cierra modal
-  useEffect(() => {
-    if (!trailerOpen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeTrailer();
-    };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [trailerOpen, closeTrailer]);
+  useEscapeKey(closeTrailer, trailerOpen);
 
   const showPosterPlaceholder = !posterUrl || posterError;
 

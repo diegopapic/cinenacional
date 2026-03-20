@@ -2,7 +2,8 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { Calendar } from 'lucide-react';
 
 interface DateInputProps {
@@ -63,17 +64,8 @@ export function DateInput({ value, onChange, placeholder = 'DD/MM/AAAA', classNa
         setDisplayValue(isoToDisplay(value));
     }
 
-    // Cerrar calendario al hacer clic fuera (DOM_SYNC - legítimo)
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
-                setIsCalendarOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    // Cerrar calendario al hacer clic fuera
+    useClickOutside(calendarRef, useCallback(() => setIsCalendarOpen(false), []));
 
     // Manejar cambio en el input de texto
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

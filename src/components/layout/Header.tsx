@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { useClickOutside } from '@/hooks/useClickOutside'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Search, Menu, X } from 'lucide-react'
@@ -45,21 +46,11 @@ export default function Header() {
   }, [searchOpen])
 
   // Click outside closes desktop search
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        desktopSearchWrapperRef.current &&
-        !desktopSearchWrapperRef.current.contains(e.target as Node)
-      ) {
-        setDesktopSearchExpanded(false)
-        clearSearch()
-      }
-    }
-    if (desktopSearchExpanded) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [desktopSearchExpanded, clearSearch])
+  const handleClickOutsideSearch = useCallback(() => {
+    setDesktopSearchExpanded(false)
+    clearSearch()
+  }, [clearSearch])
+  useClickOutside(desktopSearchWrapperRef, handleClickOutsideSearch, desktopSearchExpanded)
 
   const handleResultSelect = () => {
     setDesktopSearchExpanded(false)

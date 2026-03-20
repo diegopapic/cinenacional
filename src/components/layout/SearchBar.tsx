@@ -2,7 +2,8 @@
 
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
+import { useClickOutside } from '@/hooks/useClickOutside'
 import { Search, X, Film, User, Loader2, ArrowRight } from 'lucide-react'
 import { useGlobalSearch } from '@/hooks/useGlobalSearch'
 import { useRouter } from 'next/navigation'
@@ -45,16 +46,7 @@ export default function SearchBar() {
     } = useGlobalSearch(2)
 
     // Cerrar el dropdown cuando se hace clic fuera
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-                setShowResults(false)
-            }
-        }
-
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [])
+    useClickOutside(searchRef, useCallback(() => setShowResults(false), []))
 
     // Actualizar query y mostrar/ocultar resultados
     const handleQueryChange = useCallback((value: string) => {

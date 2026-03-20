@@ -2,8 +2,9 @@
 
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useMountEffect } from '@/hooks/useMountEffect'
+import { useClickOutside } from '@/hooks/useClickOutside'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -97,16 +98,7 @@ export default function LocationForm({ location }: LocationFormProps) {
   }, [searchSuggestions, debouncedSearchTerm])
 
   // Manejar clics fuera del autocomplete
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  useClickOutside(autocompleteRef, useCallback(() => setShowSuggestions(false), []))
 
   // Verificar slug cuando cambia el nombre
   useEffect(() => {

@@ -4,8 +4,9 @@
 import { DecadePeriod } from '@/lib/estrenos/estrenosTypes';
 import { generateDecades } from '@/lib/estrenos/estrenosUtils';
 import { ChevronDown } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useMountEffect } from '@/hooks/useMountEffect';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { createPortal } from 'react-dom';
 import { createLogger } from '@/lib/logger';
 
@@ -40,30 +41,9 @@ export default function EstrenosDecadeSelector({ value, onChange }: EstrenosDeca
     }
   };
 
-  // ✅ Cerrar dropdown al hacer clic fuera - CORREGIDO
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as Node;
-      
-      if (
-        dropdownRef.current && 
-        !dropdownRef.current.contains(target) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(target)
-      ) {
-        setIsOpen(false);
-      }
-    }
-    
-    if (isOpen) {
-      // Usar setTimeout para evitar que el evento se dispare inmediatamente
-      setTimeout(() => {
-        document.addEventListener('mousedown', handleClickOutside);
-      }, 0);
-      
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
+  // Cerrar dropdown al hacer clic fuera
+  const closeDropdown = useCallback(() => setIsOpen(false), []);
+  useClickOutside([dropdownRef, buttonRef], closeDropdown, isOpen);
   
   useEffect(() => {
     function handleScroll() {
