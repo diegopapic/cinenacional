@@ -1,6 +1,8 @@
 // src/components/admin/people/PersonFormFields/LocationFields.tsx
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { PersonFormData } from '@/lib/people/peopleTypes';
 import { MapPin, Search, X, Loader2 } from 'lucide-react';
 import { createLogger } from '@/lib/logger';
@@ -57,40 +59,31 @@ function LocationAutocomplete({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Cargar el valor inicial si existe
-  useEffect(() => {
-    if (value) {
-      fetchLocationById(value);
-    }
-  }, [value]);
+  // Cargar ubicación por ID via React Query
+  const { data: locationData } = useQuery({
+    queryKey: ['location-by-id', value],
+    queryFn: async () => {
+      const response = await fetch(`/api/locations/${value}`);
+      if (!response.ok) throw new Error('Error fetching location');
+      return response.json();
+    },
+    enabled: !!value && value > 0,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  // Obtener ubicación por ID
-  const fetchLocationById = async (locationId: number) => {
-    try {
-      const response = await fetch(`/api/locations/${locationId}`);
-      if (response.ok) {
-        const location = await response.json();
-        // Usar el path completo que ya viene del API
-        const formatted = location.path || formatLocationDisplay(location);
-        setDisplayValue(formatted);
-        setSearchTerm(formatted);
-      }
-    } catch (error) {
-      log.error('Error fetching location', error);
+  // Sync locationData → display (adjust during render)
+  const prevLocationDataRef = useRef(locationData);
+  if (locationData !== prevLocationDataRef.current) {
+    prevLocationDataRef.current = locationData;
+    if (locationData) {
+      const formatted = locationData.path || formatLocationDisplay(locationData);
+      setDisplayValue(formatted);
+      setSearchTerm(formatted);
     }
-  };
+  }
 
-  // Cerrar dropdown al hacer clic fuera
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // Click outside
+  useClickOutside(dropdownRef, useCallback(() => setIsOpen(false), []));
 
   // Buscar ubicaciones (debounce manual)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

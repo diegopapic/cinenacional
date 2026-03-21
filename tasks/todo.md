@@ -175,13 +175,12 @@ Solo deben quedar los 5 useEffect dentro de hooks de infraestructura (`useMountE
 
 ### 9d. DATA_FETCH → React Query
 
-- [ ] `admin/festivals/FestivalForm.tsx:77` — busca locations por debounce. Usar `useQuery`
-- [ ] `admin/festivals/FestivalScreeningForm.tsx:115` — busca movies por debounce. Usar `useQuery`
-- [ ] `admin/movies/MovieModal/tabs/ImagesTab/index.tsx:37` — carga imágenes y personas por movieId. Usar `useQuery`
-- [ ] `admin/movies/RoleSelector.tsx:43` — carga rol por ID. Usar `useQuery`
-- [ ] `admin/movies/RoleSelector.tsx:58` — busca roles. Usar `useQuery`
-- [ ] `admin/people/PersonFormFields/LocationFields.tsx:61` — carga location por ID. Usar `useQuery`
-- [ ] `contexts/MovieModalContext.tsx:124` — carga datos de película. Usar `useQuery`
+- [x] `admin/festivals/FestivalForm.tsx` — useQuery para location search + useClickOutside (3 useEffects eliminados)
+- [x] `admin/festivals/FestivalScreeningForm.tsx` — useQuery para venues + movie search + useClickOutside (3 useEffects eliminados)
+- [x] `admin/movies/MovieModal/tabs/ImagesTab/index.tsx` — useQuery para imágenes y personas (1 useEffect eliminado)
+- [x] `admin/movies/RoleSelector.tsx` — useQuery para load + search roles (2 useEffects eliminados)
+- [x] `admin/people/PersonFormFields/LocationFields.tsx` — useQuery para location por ID + useClickOutside (2 useEffects eliminados)
+- [x] `contexts/MovieModalContext.tsx` — adjust-during-render con fire-and-forget async (1 useEffect eliminado)
 
 ### 9e. MOUNT_EFFECT → useMountEffect
 

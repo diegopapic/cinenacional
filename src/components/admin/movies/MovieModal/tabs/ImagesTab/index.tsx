@@ -1,7 +1,8 @@
 // src/components/admin/movies/MovieModal/tabs/ImagesTab/index.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { ImageIcon, Loader2 } from 'lucide-react'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import { ImageWithRelations } from '@/lib/images/imageTypes'
@@ -26,96 +27,66 @@ interface MoviePerson {
 export default function ImagesTab() {
     const { editingMovie, watch } = useMovieModalContext()
 
-    const [images, setImages] = useState<ImageWithRelations[]>([])
-    const [loading, setLoading] = useState(false)
+    const [localImages, setLocalImages] = useState<ImageWithRelations[] | null>(null)
     const [editingImage, setEditingImage] = useState<ImageWithRelations | null>(null)
-    const [moviePeople, setMoviePeople] = useState<MoviePerson[]>([])
 
     const movieId = editingMovie?.id
 
-    // Cargar imágenes de la película
-    useEffect(() => {
-        if (movieId) {
-            loadImages()
-            loadMoviePeople()
-        }
-    }, [movieId])
+    // Cargar imágenes via React Query
+    const { data: queryImages, isLoading: loading } = useQuery<ImageWithRelations[]>({
+        queryKey: ['movie-images', movieId],
+        queryFn: () => imagesService.getByMovieId(movieId!),
+        enabled: !!movieId,
+    })
 
-    const loadImages = async () => {
-        if (!movieId) return
-        setLoading(true)
-        try {
-            const data = await imagesService.getByMovieId(movieId)
-            setImages(data)
-        } catch (error) {
-            log.error('Error loading images', error)
-            toast.error('Error al cargar imágenes')
-        } finally {
-            setLoading(false)
-        }
-    }
+    // Local override for optimistic updates after upload/edit/delete
+    const images = localImages ?? queryImages ?? []
 
-    // Obtener personas del cast y crew de la película
-    // Obtener personas del cast y crew de la película
-    const loadMoviePeople = async () => {
-        if (!movieId) return
-
-        try {
+    // Cargar personas del cast+crew via React Query
+    const { data: moviePeople = [] } = useQuery<MoviePerson[]>({
+        queryKey: ['movie-people', movieId],
+        queryFn: async () => {
             const response = await fetch(`/api/movies/${movieId}`)
             const movie = await response.json()
-
-            log.debug('Loading movie people', { movieId })
 
             const people: MoviePerson[] = []
             const seenIds = new Set<number>()
 
-            // Agregar cast - la estructura es { person: { id, firstName, lastName } }
             if (movie.cast && Array.isArray(movie.cast)) {
                 movie.cast.forEach((c: any) => {
                     if (c.person && c.person.id && !seenIds.has(c.person.id)) {
                         seenIds.add(c.person.id)
                         people.push({
                             personId: c.person.id,
-                            person: {
-                                id: c.person.id,
-                                firstName: c.person.firstName,
-                                lastName: c.person.lastName
-                            }
+                            person: { id: c.person.id, firstName: c.person.firstName, lastName: c.person.lastName }
                         })
                     }
                 })
             }
 
-            // Agregar crew - misma estructura
             if (movie.crew && Array.isArray(movie.crew)) {
                 movie.crew.forEach((c: any) => {
                     if (c.person && c.person.id && !seenIds.has(c.person.id)) {
                         seenIds.add(c.person.id)
                         people.push({
                             personId: c.person.id,
-                            person: {
-                                id: c.person.id,
-                                firstName: c.person.firstName,
-                                lastName: c.person.lastName
-                            }
+                            person: { id: c.person.id, firstName: c.person.firstName, lastName: c.person.lastName }
                         })
                     }
                 })
             }
 
-            // Ordenar alfabéticamente
             people.sort((a, b) => {
                 const nameA = `${a.person.firstName || ''} ${a.person.lastName || ''}`.trim()
                 const nameB = `${b.person.firstName || ''} ${b.person.lastName || ''}`.trim()
                 return nameA.localeCompare(nameB)
             })
 
-            log.debug('Movie people loaded', { count: people.length })
-            setMoviePeople(people)
-        } catch (error) {
-            log.error('Error loading movie people', error)
-        }
-    }
+            return people
+        },
+        enabled: !!movieId,
+        staleTime: 60 * 1000,
+    })
 
     // Manejar subida masiva
     const handleUploadComplete = async (publicIds: string[]) => {
@@ -123,7 +94,7 @@ export default function ImagesTab() {
 
         try {
             const newImages = await imagesService.createBulk(movieId, publicIds, 'STILL')
-            setImages(prev => [...newImages, ...prev])
+            setLocalImages(prev => [...newImages, ...prev])
         } catch (error) {
             log.error('Error saving images', error)
             toast.error('Error al guardar algunas imágenes')
@@ -132,7 +103,7 @@ export default function ImagesTab() {
 
     // Manejar actualización de imagen
     const handleImageSave = (updatedImage: ImageWithRelations) => {
-        setImages(prev => prev.map(img =>
+        setLocalImages(prev => prev.map(img =>
             img.id === updatedImage.id ? updatedImage : img
         ))
         setEditingImage(null)
@@ -140,7 +111,7 @@ export default function ImagesTab() {
 
     // Manejar eliminación de imagen
     const handleImageDelete = (imageId: number) => {
-        setImages(prev => prev.filter(img => img.id !== imageId))
+        setLocalImages(prev => prev.filter(img => img.id !== imageId))
         setEditingImage(null)
     }
 

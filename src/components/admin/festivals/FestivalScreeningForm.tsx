@@ -2,11 +2,13 @@
 
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { X, Loader2, Search } from 'lucide-react'
 import { useDebounce } from '@/hooks/useDebounce'
+import { useClickOutside } from '@/hooks/useClickOutside'
 import {
   FestivalScreening,
   FestivalScreeningFormData,
@@ -96,73 +98,50 @@ export default function FestivalScreeningForm({
   // Movie search
   const [movieSearch, setMovieSearch] = useState(screening?.movie?.title || '')
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(screening?.movie || null)
-  const [movieSuggestions, setMovieSuggestions] = useState<Movie[]>([])
   const [showMovieSuggestions, setShowMovieSuggestions] = useState(false)
-  const [isSearchingMovies, setIsSearchingMovies] = useState(false)
   const movieAutocompleteRef = useRef<HTMLDivElement>(null)
-
-  // Venues
-  const [venues, setVenues] = useState<Venue[]>([])
 
   const debouncedMovieSearch = useDebounce(movieSearch, 300)
 
-  // Load venues
-  useEffect(() => {
-    loadVenues()
-  }, [])
+  // Load venues via React Query
+  const { data: venuesData } = useQuery<Venue[]>({
+    queryKey: ['screening-venues-list'],
+    queryFn: async () => {
+      const response = await fetch('/api/screening-venues?limit=100')
+      if (!response.ok) throw new Error('Error loading venues')
+      const data = await response.json()
+      return data.venues || data.data || []
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+  const venues = venuesData ?? []
 
-  // Search movies - only if no movie is already selected
-  useEffect(() => {
-    if (debouncedMovieSearch.length >= 2 && !selectedMovie) {
-      searchMovies(debouncedMovieSearch)
-    } else {
-      setMovieSuggestions([])
-      setShowMovieSuggestions(false)
-    }
-  }, [debouncedMovieSearch, selectedMovie])
+  // Search movies via React Query
+  const { data: movieSearchResults, isFetching: isSearchingMovies } = useQuery<Movie[]>({
+    queryKey: ['festival-movie-search', debouncedMovieSearch],
+    queryFn: async () => {
+      const response = await fetch(`/api/movies?search=${encodeURIComponent(debouncedMovieSearch)}&limit=10`)
+      if (!response.ok) throw new Error('Error searching movies')
+      const data = await response.json()
+      return data.movies || data.data || []
+    },
+    enabled: debouncedMovieSearch.length >= 2 && !selectedMovie,
+    staleTime: 30 * 1000,
+  })
+
+  // Derive suggestions from query
+  const movieSuggestions = movieSearchResults ?? []
+  const prevMovieResultsRef = useRef(movieSearchResults)
+  if (movieSearchResults !== prevMovieResultsRef.current) {
+    prevMovieResultsRef.current = movieSearchResults
+    if (movieSearchResults) setShowMovieSuggestions(true)
+  }
+  if ((debouncedMovieSearch.length < 2 || selectedMovie) && showMovieSuggestions) {
+    setShowMovieSuggestions(false)
+  }
 
   // Click outside handler
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (movieAutocompleteRef.current && !movieAutocompleteRef.current.contains(event.target as Node)) {
-        setShowMovieSuggestions(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-
-  const loadVenues = async () => {
-    try {
-      const response = await fetch('/api/screening-venues?limit=100')
-      if (response.ok) {
-        const data = await response.json()
-        // API returns { venues, pagination }
-        setVenues(data.venues || data.data || [])
-      }
-    } catch (error) {
-      log.error('Error loading venues', error)
-    }
-  }
-
-  const searchMovies = async (searchTerm: string) => {
-    setIsSearchingMovies(true)
-    try {
-      const response = await fetch(`/api/movies?search=${encodeURIComponent(searchTerm)}&limit=10`)
-      if (response.ok) {
-        const data = await response.json()
-        // API returns { movies, pagination }
-        setMovieSuggestions(data.movies || data.data || [])
-        setShowMovieSuggestions(true)
-      }
-    } catch (error) {
-      log.error('Error searching movies', error)
-    } finally {
-      setIsSearchingMovies(false)
-    }
-  }
+  useClickOutside(movieAutocompleteRef, useCallback(() => setShowMovieSuggestions(false), []))
 
   const handleMovieSearchChange = (value: string) => {
     setMovieSearch(value)
@@ -170,8 +149,7 @@ export default function FestivalScreeningForm({
     setFormData(prev => ({ ...prev, movieId: undefined }))
 
     if (!value.trim()) {
-      setMovieSuggestions([])
-      setShowMovieSuggestions(false)
+        setShowMovieSuggestions(false)
     }
   }
 
@@ -180,14 +158,12 @@ export default function FestivalScreeningForm({
     setMovieSearch(movie.title)
     setFormData(prev => ({ ...prev, movieId: movie.id }))
     setShowMovieSuggestions(false)
-    setMovieSuggestions([])
   }
 
   const handleClearMovie = () => {
     setSelectedMovie(null)
     setMovieSearch('')
     setFormData(prev => ({ ...prev, movieId: undefined }))
-    setMovieSuggestions([])
   }
 
   const handleChange = (field: keyof FestivalScreeningFormData, value: any) => {

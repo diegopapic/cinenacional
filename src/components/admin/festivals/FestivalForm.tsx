@@ -2,11 +2,13 @@
 
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { X, Loader2 } from 'lucide-react'
 import { useDebounce } from '@/hooks/useDebounce'
+import { useClickOutside } from '@/hooks/useClickOutside'
 import { Festival, FestivalFormData, festivalFormSchema } from '@/lib/festivals/festivalTypes'
 import { getCsrfHeaders } from '@/lib/csrf-client'
 import toast from 'react-hot-toast'
@@ -56,36 +58,38 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(
     festival?.location || null
   )
-  const [suggestions, setSuggestions] = useState<Location[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [isSearching, setIsSearching] = useState(false)
   const autocompleteRef = useRef<HTMLDivElement>(null)
 
   const debouncedSearchTerm = useDebounce(locationSearch, 300)
 
   // (slug auto-generation moved to handleChange)
 
-  // Search locations
-  useEffect(() => {
-    if (debouncedSearchTerm.length >= 2) {
-      searchLocations(debouncedSearchTerm)
-    } else {
-      setSuggestions([])
-      setShowSuggestions(false)
-    }
-  }, [debouncedSearchTerm])
+  // Search locations via React Query
+  const { data: searchResults, isFetching: isSearching } = useQuery<Location[]>({
+    queryKey: ['festival-location-search', debouncedSearchTerm],
+    queryFn: async () => {
+      const response = await fetch(`/api/locations/search?q=${encodeURIComponent(debouncedSearchTerm)}&limit=10`)
+      if (!response.ok) throw new Error('Error searching locations')
+      return response.json()
+    },
+    enabled: debouncedSearchTerm.length >= 2,
+    staleTime: 30 * 1000,
+  })
+
+  // Derive suggestions from query data
+  const suggestions = searchResults ?? []
+  const prevSearchResultsRef = useRef(searchResults)
+  if (searchResults !== prevSearchResultsRef.current) {
+    prevSearchResultsRef.current = searchResults
+    if (searchResults) setShowSuggestions(true)
+  }
+  if (debouncedSearchTerm.length < 2 && showSuggestions) {
+    setShowSuggestions(false)
+  }
 
   // Click outside handler
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  useClickOutside(autocompleteRef, useCallback(() => setShowSuggestions(false), []))
 
   // Load initial location (adjust during render)
   const prevFestivalRef = useRef(festival)
@@ -97,30 +101,13 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
     }
   }
 
-  const searchLocations = async (searchTerm: string) => {
-    setIsSearching(true)
-    try {
-      const response = await fetch(`/api/locations/search?q=${encodeURIComponent(searchTerm)}&limit=10`)
-      if (response.ok) {
-        const data = await response.json()
-        setSuggestions(data)
-        setShowSuggestions(true)
-      }
-    } catch (error) {
-      log.error('Error searching locations', error)
-    } finally {
-      setIsSearching(false)
-    }
-  }
-
   const handleLocationSearchChange = (value: string) => {
     setLocationSearch(value)
     setSelectedLocation(null)
     setFormData(prev => ({ ...prev, locationId: undefined }))
 
     if (!value.trim()) {
-      setSuggestions([])
-      setShowSuggestions(false)
+        setShowSuggestions(false)
     }
   }
 
@@ -129,14 +116,12 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
     setLocationSearch(location.name)
     setFormData(prev => ({ ...prev, locationId: location.id }))
     setShowSuggestions(false)
-    setSuggestions([])
   }
 
   const handleClearLocation = () => {
     setSelectedLocation(null)
     setLocationSearch('')
     setFormData(prev => ({ ...prev, locationId: undefined }))
-    setSuggestions([])
   }
 
   const handleChange = (field: keyof FestivalFormData, value: any) => {

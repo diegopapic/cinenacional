@@ -1,6 +1,7 @@
 // components/admin/RoleSelector.tsx
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useClickOutside } from '@/hooks/useClickOutside'
+import { useQuery } from '@tanstack/react-query'
 import { useDebounce } from '@/hooks/useDebounce'
 import { Search, X } from 'lucide-react'
 import { rolesService } from '@/services/roles.service'
@@ -32,64 +33,51 @@ export default function RoleSelector({
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDepartment, setSelectedDepartment] = useState<Department | ''>('')
-  const [roles, setRoles] = useState<Role[]>([])
-  const [loading, setLoading] = useState(false)
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
-  
+
   const containerRef = useRef<HTMLDivElement>(null)
   const debouncedSearch = useDebounce(searchTerm, 300)
 
-  // Cargar rol seleccionado si existe
-  useEffect(() => {
-    if (value && value > 0) {
-      rolesService.getById(value)
-        .then(role => {
-          setSelectedRole(role)
-          setSearchTerm(role.name)
-        })
-        .catch(err => log.error('Error loading role', err))
+  // Cargar rol seleccionado por ID
+  const { data: loadedRole } = useQuery({
+    queryKey: ['role-by-id', value],
+    queryFn: () => rolesService.getById(value!),
+    enabled: !!value && value > 0,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // Sync loadedRole → local state (adjust during render)
+  const prevLoadedRoleRef = useRef(loadedRole)
+  if (loadedRole !== prevLoadedRoleRef.current) {
+    prevLoadedRoleRef.current = loadedRole
+    if (loadedRole) {
+      setSelectedRole(loadedRole)
+      setSearchTerm(loadedRole.name)
     }
-  }, [value])
+  }
 
   // Cerrar dropdown al hacer click fuera
   useClickOutside(containerRef, useCallback(() => setIsOpen(false), []))
 
-  // Buscar roles - MEJORADO para usar el servicio correctamente
-  useEffect(() => {
-    const searchRoles = async () => {
-      if (!isOpen) return
-      
-      setLoading(true)
-      try {
-        // Si hay búsqueda, usar el método search del servicio
-        if (debouncedSearch && debouncedSearch.length >= 2) {
-          const results = await rolesService.search(
-            debouncedSearch, 
-            selectedDepartment || undefined,
-            50
-          )
-          setRoles(results)
-        } else {
-          // Si no hay búsqueda, obtener todos con filtros
-          const filters: RoleFilters = {
-            department: selectedDepartment || undefined,
-            isActive: true,
-            limit: 100
-          }
-          
-          const response = await rolesService.getAll(filters)
-          setRoles(response.data)
-        }
-      } catch (error) {
-        log.error('Error searching roles', error)
-        setRoles([])
-      } finally {
-        setLoading(false)
+  // Buscar roles via React Query
+  const { data: rolesData, isLoading: loading } = useQuery<Role[]>({
+    queryKey: ['role-search', debouncedSearch, selectedDepartment],
+    queryFn: async () => {
+      if (debouncedSearch && debouncedSearch.length >= 2) {
+        return rolesService.search(debouncedSearch, selectedDepartment || undefined, 50)
       }
-    }
-
-    searchRoles()
-  }, [debouncedSearch, selectedDepartment, isOpen])
+      const filters: RoleFilters = {
+        department: selectedDepartment || undefined,
+        isActive: true,
+        limit: 100
+      }
+      const response = await rolesService.getAll(filters)
+      return response.data
+    },
+    enabled: isOpen,
+    staleTime: 30 * 1000,
+  })
+  const roles = rolesData ?? []
 
   const handleSelectRole = (role: Role) => {
     setSelectedRole(role)
