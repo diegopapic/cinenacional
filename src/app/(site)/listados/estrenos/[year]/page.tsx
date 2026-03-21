@@ -1,10 +1,13 @@
+// src/app/listados/estrenos/[year]/page.tsx — Server Component
 import { notFound } from 'next/navigation'
-import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import type { EstrenosMode } from '@/lib/estrenos/estrenosTypes'
+import { getEstrenos } from '@/lib/queries/estrenos'
 import { prisma } from '@/lib/prisma'
 import { EstrenosSchema } from '@/components/listados/estrenos/EstrenosSchema'
-import EstrenosContent from '../EstrenosContent'
+import { FilmReleasesByYear } from '@/components/FilmReleasesByYear'
+
+export const revalidate = 3600 // 1h
 
 interface PageProps {
   params: Promise<{ year: string }>
@@ -64,10 +67,11 @@ export default async function EstrenosYearPage({ params }: PageProps) {
   const parsed = parseYearParam(year)
   if (!parsed) notFound()
 
-  // Fetch movies server-side for JSON-LD (only for year pages)
-  const schemaMovies =
+  // Fetch releases + schema movies in parallel
+  const [entries, schemaMovies] = await Promise.all([
+    getEstrenos(parsed),
     parsed.type === 'year'
-      ? await prisma.movie.findMany({
+      ? prisma.movie.findMany({
           where: { releaseYear: parsed.value },
           select: {
             title: true,
@@ -82,27 +86,15 @@ export default async function EstrenosYearPage({ params }: PageProps) {
             { title: 'asc' },
           ],
         })
-      : []
+      : Promise.resolve([]),
+  ])
 
   return (
     <>
       {parsed.type === 'year' && (
         <EstrenosSchema year={parsed.value} movies={schemaMovies} />
       )}
-      <Suspense
-        fallback={
-          <div className="mx-auto flex min-h-[60vh] w-full max-w-7xl items-center justify-center px-4">
-            <div className="text-center">
-              <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-accent" />
-              <p className="text-[13px] text-muted-foreground/40">
-                Cargando estrenos…
-              </p>
-            </div>
-          </div>
-        }
-      >
-        <EstrenosContent mode={parsed} />
-      </Suspense>
+      <FilmReleasesByYear entries={entries} mode={parsed} />
     </>
   )
 }

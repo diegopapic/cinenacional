@@ -292,17 +292,17 @@ Funciones reutilizables en `src/lib/queries/` que encapsulan las queries Prisma 
 
 ---
 
-### Fase 4: Estrenos (`/listados/estrenos/[year]`)
+### Fase 4: Estrenos (`/listados/estrenos/[year]`) ✅
 
-Ya es híbrida (server wrapper + client content). Completar la conversión moviendo el fetch del client al server.
+- [x] Mover fetch de `EstrenosContent.tsx` al page server component `[year]/page.tsx`.
+- [x] Llamar a `getEstrenos(mode)` server-side — transformación a `ReleaseEntry[]` en server.
+- [x] Pasar `entries` como prop directo a `FilmReleasesByYear` (eliminando capa intermedia).
+- [x] `FilmReleasesByYear` mantiene `'use client'` (decade selector, year bar, pagination interactiva).
+- [x] Eliminar `EstrenosContent.tsx` (lógica de fetch movida al page).
+- [x] JSON-LD schema y `generateMetadata()` existentes siguen funcionando — ahora fetch en paralelo con `Promise.all`.
+- [x] Agregar `revalidate = 3600` (1h ISR). Eliminar `Suspense` wrapper (data disponible al renderizar).
 
-- [ ] Mover fetch de `EstrenosContent.tsx` (useQuery a `/api/movies`) al page server component `[year]/page.tsx`.
-- [ ] Llamar a `getEstrenos(year)` de `lib/queries/estrenos.ts` — la transformación a `ReleaseEntry[]` se hace server-side.
-- [ ] Pasar `releases` como prop a `EstrenosContent` (que se convierte en presentacional).
-- [ ] Evaluar si `EstrenosContent` puede dejar de ser `'use client'` — depende de si tiene interactividad (decade selector, year bar). Si sí, mantener client pero sin fetch propio.
-- [ ] El JSON-LD schema ya se genera server-side — verificar que sigue funcionando.
-- [ ] Agregar `revalidate = 3600` (1h).
-- [ ] Verificar `generateMetadata()` existente.
+**Resultado:** Estrenos bundle bajó de 13.2 kB a 12.6 kB First Load. React Query y fetch client-side eliminados. Fetch de releases + schema en paralelo.
 
 ---
 
