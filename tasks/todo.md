@@ -182,16 +182,16 @@ Solo deben quedar los 5 useEffect dentro de hooks de infraestructura (`useMountE
 - [x] `admin/people/PersonFormFields/LocationFields.tsx` — useQuery para location por ID + useClickOutside (2 useEffects eliminados)
 - [x] `contexts/MovieModalContext.tsx` — adjust-during-render con fire-and-forget async (1 useEffect eliminado)
 
-### 9e. MOUNT_EFFECT → useMountEffect
+### 9e. MOUNT_EFFECT → useMountEffect / useQuery
 
-- [ ] `admin/festivals/FestivalScreeningForm.tsx:110` — `loadVenues()`. Usar `useMountEffect`
-- [ ] `admin/people/PersonFormFields/NationalitiesField.tsx:34` — `loadCountries()`. Usar `useMountEffect`
+- [N/A] `admin/festivals/FestivalScreeningForm.tsx` — ya migrado a useQuery en 9d
+- [x] `admin/people/PersonFormFields/NationalitiesField.tsx` — loadCountries → useQuery
 
 ### 9f. DOM_SYNC → usar hooks existentes
 
-- [ ] `admin/festivals/FestivalForm.tsx:87` — click outside. Usar `useClickOutside`
-- [ ] `admin/festivals/FestivalScreeningForm.tsx:125` — click outside. Usar `useClickOutside`
-- [ ] `admin/people/PersonFormFields/LocationFields.tsx:84` — click outside. Usar `useClickOutside`
+- [N/A] `admin/festivals/FestivalForm.tsx` — ya migrado a useClickOutside en 9d
+- [N/A] `admin/festivals/FestivalScreeningForm.tsx` — ya migrado a useClickOutside en 9d
+- [N/A] `admin/people/PersonFormFields/LocationFields.tsx` — ya migrado a useClickOutside en 9d
 
 ### 9g. DOM_SYNC → extraer o mantener (focus, scroll, keyboard)
 

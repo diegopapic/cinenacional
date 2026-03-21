@@ -1,11 +1,9 @@
 // src/components/admin/people/PersonFormFields/NationalitiesField.tsx
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { apiClient } from '@/services/api-client'
-import { createLogger } from '@/lib/logger'
-
-const log = createLogger('NationalitiesField')
 
 interface Location {
   id: number
@@ -24,30 +22,21 @@ export default function NationalitiesField({
   onChange,
   disabled = false
 }: NationalitiesFieldProps) {
-  const [countries, setCountries] = useState<Location[]>([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [isSearching, setIsSearching] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
 
-  // Cargar países (locations sin parent)
-  useEffect(() => {
-    loadCountries()
-  }, [])
+  // Cargar países via React Query
+  const { data: countries = [] } = useQuery<Location[]>({
+    queryKey: ['countries'],
+    queryFn: () => apiClient.get<Location[]>('/locations/countries'),
+    staleTime: 5 * 60 * 1000,
+  })
 
   // Derivar países seleccionados de value + countries
   const selectedCountries = useMemo(
     () => countries.filter(c => value.includes(c.id)),
     [value, countries]
   )
-
-  const loadCountries = async () => {
-    try {
-      const response = await apiClient.get<Location[]>('/locations/countries')
-      setCountries(response)
-    } catch (error) {
-      log.error('Error loading countries', error)
-    }
-  }
 
   const filteredCountries = countries.filter(
     country => 
