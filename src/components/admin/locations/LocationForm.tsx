@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useMountEffect } from '@/hooks/useMountEffect'
 import { useClickOutside } from '@/hooks/useClickOutside'
 import { useQuery } from '@tanstack/react-query'
@@ -39,7 +39,7 @@ export default function LocationForm({ location }: LocationFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [slug, setSlug] = useState(location?.slug || '')
-  const [isCheckingSlug, setIsCheckingSlug] = useState(false)
+  // isCheckingSlug is derived from the slug-check query below
   
   // Estados para el autocomplete
   const [parentSearch, setParentSearch] = useState('')
@@ -49,6 +49,7 @@ export default function LocationForm({ location }: LocationFormProps) {
   
   // Usar el hook useDebounce para el término de búsqueda
   const debouncedSearchTerm = useDebounce(parentSearch, 300)
+  const debouncedName = useDebounce(formData.name, 500)
   
   // Obtener parentId de la URL si existe
   const urlParentId = searchParams.get('parentId')
@@ -102,16 +103,26 @@ export default function LocationForm({ location }: LocationFormProps) {
   // Manejar clics fuera del autocomplete
   useClickOutside(autocompleteRef, useCallback(() => setShowSuggestions(false), []))
 
-  // Verificar slug cuando cambia el nombre
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (formData.name && formData.name !== location?.name) {
-        checkSlugAvailability()
-      }
-    }, 500)
-
-    return () => clearTimeout(timeoutId)
-  }, [formData.name])
+  // Verificar slug cuando cambia el nombre (via useQuery + useDebounce)
+  const { isFetching: isCheckingSlugQuery } = useQuery({
+    queryKey: ['location-slug-check', debouncedName, location?.id],
+    queryFn: async () => {
+      const response = await fetch('/api/locations/check-slug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
+        body: JSON.stringify({
+          name: debouncedName,
+          excludeId: location?.id
+        })
+      })
+      if (!response.ok) throw new Error('Error checking slug')
+      const data = await response.json()
+      setSlug(data.slug)
+      return data
+    },
+    enabled: !!debouncedName && debouncedName !== location?.name,
+    staleTime: 30 * 1000,
+  })
 
   const loadInitialParent = async () => {
     try {
@@ -126,29 +137,6 @@ export default function LocationForm({ location }: LocationFormProps) {
       }
     } catch (error) {
       log.error('Error loading parent location', error)
-    }
-  }
-
-  const checkSlugAvailability = async () => {
-    setIsCheckingSlug(true)
-    try {
-      const response = await fetch('/api/locations/check-slug', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
-        body: JSON.stringify({
-          name: formData.name,
-          excludeId: location?.id
-        })
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        setSlug(data.slug)
-      }
-    } catch (error) {
-      log.error('Error checking slug', error)
-    } finally {
-      setIsCheckingSlug(false)
     }
   }
 
@@ -240,7 +228,7 @@ export default function LocationForm({ location }: LocationFormProps) {
         />
         {slug && (
           <p className="mt-1 text-sm text-gray-500">
-            Slug: {slug} {isCheckingSlug && '(verificando...)'}
+            Slug: {slug} {isCheckingSlugQuery && '(verificando...)'}
           </p>
         )}
       </div>

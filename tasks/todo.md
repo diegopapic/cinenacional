@@ -169,9 +169,9 @@ Solo deben quedar los 5 useEffect dentro de hooks de infraestructura (`useMountE
 
 ### 9c. EVENT_SYNC → mover a handlers
 
-- [ ] `app/admin/roles/page.tsx:41` — `updateFilter('search', debouncedSearch)`. Pasar debouncedSearch al hook directamente
-- [ ] `hooks/useListPage.ts:103` — sincroniza `filters` → URL via `router.replace`. Mover a cada función que modifica filtros
-- [ ] `admin/locations/LocationForm.tsx:104` — debounce de slug check. Usar `useDebounce` + React Query
+- [x] `app/admin/roles/page.tsx` — eliminado useEffect+useDebounce duplicado, sync directo en handleSearchChange
+- [x] `hooks/useListPage.ts` — URL sync movido a `setFiltersAndSync` helper, eliminado useEffect
+- [x] `admin/locations/LocationForm.tsx` — slug check reemplazado por useQuery + useDebounce, eliminados checkSlugAvailability + isCheckingSlug state
 
 ### 9d. DATA_FETCH → React Query
 

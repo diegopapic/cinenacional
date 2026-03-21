@@ -2,12 +2,11 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Search, Download, Filter } from 'lucide-react';
 import { useRoles } from '@/hooks/useRoles';
 import { RoleModal } from '@/components/admin/roles/RoleModal';
 import { RoleCard } from '@/components/admin/roles/RoleCard';
-import { useDebounce } from '@/hooks/useDebounce';
 import { getDepartmentOptions, type Department } from '@/lib/roles/rolesTypes';
 import toast from 'react-hot-toast';
 
@@ -15,8 +14,6 @@ export default function RolesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-
-  const debouncedSearch = useDebounce(searchTerm, 300);
 
   const {
     roles,
@@ -37,10 +34,11 @@ export default function RolesPage() {
     seedDefault
   } = useRoles();
 
-  // Sincronizar búsqueda debounceada con el filtro del hook
-  useEffect(() => {
-    updateFilter('search', debouncedSearch);
-  }, [debouncedSearch, updateFilter]);
+  // Sincronizar búsqueda con el filtro del hook (el hook debouncea internamente)
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    updateFilter('search', value);
+  };
 
   const handleCreateNew = () => {
     setEditingRole(null);
@@ -148,7 +146,7 @@ export default function RolesPage() {
             type="text"
             placeholder="Buscar roles..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>

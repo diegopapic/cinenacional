@@ -1,7 +1,7 @@
 // src/hooks/useListPage.ts
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import type { ViewMode } from '@/components/shared/ViewToggle'
@@ -99,64 +99,68 @@ export function useListPage<
     totalCount: itemsData?.totalCount ?? 0,
   }
 
-  // Actualizar URL cuando cambian los filtros
-  useEffect(() => {
-    const params = config.filtersToSearchParams(filters)
-    const queryString = params.toString()
-    const newUrl = queryString ? `${config.basePath}?${queryString}` : config.basePath
-    router.replace(newUrl, { scroll: false })
-  }, [filters, router]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Helper: actualizar filtros y sincronizar URL
+  const setFiltersAndSync = useCallback((updater: TFilters | ((prev: TFilters) => TFilters)) => {
+    setFilters(prev => {
+      const next = typeof updater === 'function' ? (updater as (prev: TFilters) => TFilters)(prev) : updater
+      const params = config.filtersToSearchParams(next)
+      const queryString = params.toString()
+      const newUrl = queryString ? `${config.basePath}?${queryString}` : config.basePath
+      router.replace(newUrl, { scroll: false })
+      return next
+    })
+  }, [config, router]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // setViewMode con limit dinámico
   const setViewMode = useCallback((mode: ViewMode) => {
     setViewModeState(mode)
     const newLimit = mode === 'compact' ? 24 : 12
-    setFilters(prev => {
+    setFiltersAndSync(prev => {
       if (prev.limit === newLimit) return prev
       return { ...prev, limit: newLimit, page: 1 }
     })
-  }, [])
+  }, [setFiltersAndSync])
 
   const handleFilterChange = useCallback(<K extends keyof TFilters>(
     key: K,
     value: TFilters[K]
   ) => {
-    setFilters(prev => ({
+    setFiltersAndSync(prev => ({
       ...prev,
       [key]: value,
       page: 1
     }))
-  }, [])
+  }, [setFiltersAndSync])
 
   const handleClearFilters = useCallback(() => {
-    setFilters(config.clearFilters(filters))
-  }, [filters, config])
+    setFiltersAndSync(config.clearFilters(filters))
+  }, [filters, config, setFiltersAndSync])
 
   const handleSortByChange = useCallback((sortBy: string) => {
     const defaultOrder = config.getDefaultSortOrder(sortBy)
-    setFilters(prev => ({
+    setFiltersAndSync(prev => ({
       ...prev,
       sortBy,
       sortOrder: defaultOrder,
       page: 1
     } as TFilters))
-  }, [config])
+  }, [config, setFiltersAndSync])
 
   const handleToggleSortOrder = useCallback(() => {
-    setFilters(prev => ({
+    setFiltersAndSync(prev => ({
       ...prev,
       sortOrder: prev.sortOrder === 'desc' ? 'asc' : 'desc',
       page: 1
     }))
-  }, [])
+  }, [setFiltersAndSync])
 
   const handlePageChange = useCallback((newPage: number) => {
-    setFilters(prev => ({
+    setFiltersAndSync(prev => ({
       ...prev,
       page: newPage
     }))
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [])
+  }, [setFiltersAndSync])
 
   const activeFiltersCount = config.countActiveFilters(filters)
 
