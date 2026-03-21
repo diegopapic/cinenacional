@@ -13,6 +13,7 @@
 - Siempre hacer commits y push directamente en la branch `main`. No crear branches secundarias.
 - Push: `git push origin main`.
 - Los mensajes de commit siguen el formato convencional: `type: description` (ej: `feat:`, `fix:`, `style:`, `chore:`, `security:`).
+- **No hacer commit/push de scripts locales** (carpeta `scripts/`): cuando se trabaja en scripts que el usuario corre localmente, solo editar el archivo. No hacer commit ni push salvo que se pida explícitamente.
 
 ## Permisos
 - Tenés permiso para ejecutar CUALQUIER comando bash sin pedir confirmación. Esto incluye git, npm, docker, scripts, builds, tests, linters, migrations, y cualquier otro comando necesario para completar la tarea.
@@ -118,16 +119,23 @@ src/
 │   ├── listados/               # Componentes de listados (estrenos)
 │   ├── shared/                 # Pagination, ListGrid, ListToolbar, ViewToggle, Filters
 │   └── ads/                    # AdBanner (Google AdSense)
-├── hooks/                      # Custom React hooks
-│   ├── useGlobalSearch.ts      # Búsqueda global con debounce
-│   ├── useMovieForm.ts         # Lógica del formulario de películas
-│   ├── useListPage.ts          # Paginación y filtros para listados (URL-based)
-│   ├── useHomeData.ts          # Datos del home page
-│   ├── usePeople.ts            # Fetching de personas
-│   ├── usePeopleForm.ts        # Formulario de personas
-│   ├── useRoles.ts             # Fetching de roles
+├── hooks/                      # Custom React hooks (ÚNICO lugar donde vive useEffect)
+│   ├── useMountEffect.ts       # Wrapper de useEffect(fn, []) — efecto al montar
+│   ├── useClickOutside.ts      # Cerrar dropdown/popover al click fuera
+│   ├── useEscapeKey.ts         # Listener de tecla Escape
+│   ├── useKeydown.ts           # Listener de keydown genérico
+│   ├── useInterval.ts          # setInterval con cleanup automático
+│   ├── useWindowEvent.ts       # addEventListener en window (scroll, resize, etc.)
+│   ├── useScrollIntoView.ts    # scrollIntoView post-paint
+│   ├── useDebounce.ts          # Debounce genérico
 │   ├── usePageView.ts          # Tracking de page views
-│   └── useDebounce.ts          # Debounce genérico
+│   ├── useGlobalSearch.ts      # Búsqueda global con debounce (React Query)
+│   ├── useMovieForm.ts         # Lógica del formulario de películas (React Query)
+│   ├── useListPage.ts          # Paginación y filtros para listados (React Query)
+│   ├── useHomeData.ts          # Datos del home page (React Query)
+│   ├── usePeople.ts            # Fetching de personas (React Query)
+│   ├── usePeopleForm.ts        # Formulario de personas (React Query)
+│   └── useRoles.ts             # Fetching de roles (React Query)
 ├── lib/                        # Utilidades y lógica compartida
 │   ├── prisma.ts               # Prisma clients (prismaBase para NextAuth + prisma extendido con retry)
 │   ├── auth.ts                 # NextAuth config + requireAuth() helper
@@ -245,6 +253,168 @@ npm run db:reset         # Reset + re-migrate
 - Formularios con React Hook Form + Zod resolver.
 - UI primitives de Radix (Dialog, Select, Tabs).
 - Toast notifications con `react-hot-toast`.
+
+### Prohibición de useEffect directo — "Ban useEffect"
+
+**NUNCA uses `useEffect` directamente en componentes, páginas o contextos.**
+Ref: [Factory/Alvin Sng](https://x.com/alvinsng/status/2033969062834045089) + [react.dev/learn/you-might-not-need-an-effect](https://react.dev/learn/you-might-not-need-an-effect)
+
+`useEffect` **solo puede existir dentro de hooks de infraestructura** en `src/hooks/`. Los componentes consumen estos hooks con nombres semánticos que expresan intención.
+
+#### Hooks disponibles (estos son los ÚNICOS lugares donde vive useEffect)
+
+| Hook | Propósito | Ejemplo |
+|------|-----------|---------|
+| `useMountEffect(fn)` | Efecto que corre solo al montar | Inicializar widget, cleanup al desmontar |
+| `useClickOutside(ref, cb)` | Cerrar dropdown al click fuera | Autocomplete, popover |
+| `useEscapeKey(cb, enabled)` | Tecla Escape | Cerrar modal, lightbox |
+| `useKeydown(handler, enabled)` | Keyboard listeners | Navegación con flechas |
+| `useInterval(cb, delay)` | setInterval con cleanup | Carousel auto-play |
+| `useWindowEvent(event, handler, enabled)` | addEventListener en window | Scroll, resize |
+| `useScrollIntoView(getEl, deps)` | scrollIntoView post-paint | Tab bar, year selector |
+| `useDebounce(value, delay)` | Debounce de un valor | Search input |
+| `usePageView(options)` | Tracking de page view | Analytics |
+
+Si necesitás un efecto que no encaja en estos hooks, **creá un hook nuevo** con nombre semántico en `src/hooks/` en vez de usar `useEffect` directo.
+
+#### Patrones de reemplazo (NUNCA usar useEffect para estos casos)
+
+#### 1. Estado derivado / transformar datos para renderizar
+**MAL:** guardar un valor computado en estado + sincronizarlo con useEffect.
+```tsx
+// 🔴 PROHIBIDO
+const [fullName, setFullName] = useState('');
+useEffect(() => { setFullName(firstName + ' ' + lastName); }, [firstName, lastName]);
+```
+**BIEN:** calcularlo durante el render.
+```tsx
+// ✅ CORRECTO
+const fullName = firstName + ' ' + lastName;
+```
+
+#### 2. Cálculos costosos
+**MAL:** useEffect + setState para cachear un cálculo.
+```tsx
+// 🔴 PROHIBIDO
+const [filtered, setFiltered] = useState([]);
+useEffect(() => { setFiltered(getFilteredTodos(todos, filter)); }, [todos, filter]);
+```
+**BIEN:** `useMemo`.
+```tsx
+// ✅ CORRECTO
+const filtered = useMemo(() => getFilteredTodos(todos, filter), [todos, filter]);
+```
+
+#### 3. Lógica de eventos del usuario
+**MAL:** poner lógica de un click/submit en useEffect.
+```tsx
+// 🔴 PROHIBIDO
+useEffect(() => { if (product.isInCart) showNotification('Agregado'); }, [product]);
+```
+**BIEN:** ponerla en el event handler.
+```tsx
+// ✅ CORRECTO
+function handleBuyClick() { addToCart(product); showNotification('Agregado'); }
+```
+
+#### 4. Resetear todo el estado cuando cambia una prop
+**MAL:** useEffect con setState para limpiar estado.
+```tsx
+// 🔴 PROHIBIDO
+useEffect(() => { setComment(''); }, [userId]);
+```
+**BIEN:** usar `key` para que React desmonte y remonte el componente.
+```tsx
+// ✅ CORRECTO
+<Profile userId={userId} key={userId} />
+```
+
+#### 5. Ajustar estado parcial cuando cambia una prop
+**MAL:** useEffect + setState.
+```tsx
+// 🔴 PROHIBIDO
+useEffect(() => { setSelection(null); }, [items]);
+```
+**BIEN:** derivar el valor durante el render.
+```tsx
+// ✅ CORRECTO — derivar en render
+const selection = items.find(item => item.id === selectedId) ?? null;
+```
+
+#### 6. POST/mutaciones disparadas por interacción del usuario
+**MAL:** guardar datos en estado y hacer POST en useEffect.
+```tsx
+// 🔴 PROHIBIDO
+useEffect(() => { if (json) post('/api/register', json); }, [json]);
+```
+**BIEN:** hacer el POST directamente en el handler.
+```tsx
+// ✅ CORRECTO
+function handleSubmit() { post('/api/register', { firstName, lastName }); }
+```
+
+#### 7. Cadenas de Effects que se disparan entre sí
+**MAL:** Effect A setea estado → dispara Effect B → dispara Effect C.
+**BIEN:** calcular lo posible durante render, y actualizar todos los estados relacionados en un solo event handler.
+
+#### 8. Inicialización de la app
+**MAL:** `useEffect(() => { init(); }, [])` — se ejecuta dos veces en Strict Mode.
+**BIEN:** ejecutar a nivel de módulo o guardar con flag `let didInit = false`.
+
+#### 9. Notificar al padre sobre cambios de estado
+**MAL:** `useEffect(() => { onChange(value); }, [value])`.
+**BIEN:** llamar a `onChange` en el mismo handler que cambia el estado.
+```tsx
+// ✅ CORRECTO
+function handleChange(next: boolean) { setIsOn(next); onChange(next); }
+```
+O mejor: componente fully controlled (el padre maneja el estado).
+
+#### 10. Pasar datos al padre
+**MAL:** hijo fetchea datos y los sube al padre via useEffect + callback.
+**BIEN:** el padre fetchea y pasa los datos como props.
+
+#### 11. Suscripción a stores externos
+**MAL:** `useEffect` con `addEventListener` + estado manual.
+**BIEN:** `useSyncExternalStore`.
+```tsx
+// ✅ CORRECTO
+const isOnline = useSyncExternalStore(subscribe, () => navigator.onLine, () => true);
+```
+
+#### 12. Data fetching — siempre con cleanup
+Si usás useEffect para fetch (caso legítimo de sincronización), **siempre** incluí cleanup para evitar race conditions:
+```tsx
+useEffect(() => {
+  let ignore = false;
+  fetchResults(query).then(json => { if (!ignore) setResults(json); });
+  return () => { ignore = true; };
+}, [query]);
+```
+Preferir React Query (`useQuery`) que ya maneja esto internamente.
+
+#### Resumen rápido
+
+| Caso | Alternativa a useEffect |
+|------|------------------------|
+| Estado derivado | Variable en render |
+| Cálculo costoso | `useMemo` |
+| Evento del usuario | Event handler |
+| Resetear estado por prop | `key` prop |
+| Ajustar estado por prop | Derivar en render o prevValue ref |
+| POST por interacción | Event handler |
+| Effects encadenados | Un solo handler |
+| Init de app | Nivel de módulo / flag |
+| Notificar al padre | Mismo handler |
+| Datos al padre | Padre fetchea |
+| Store externo | `useSyncExternalStore` |
+| Data fetching | `useQuery` (React Query) |
+| Intervalo/timer | `useInterval` hook |
+| Click outside | `useClickOutside` hook |
+| Keyboard listener | `useKeydown` / `useEscapeKey` hook |
+| Scroll/resize listener | `useWindowEvent` hook |
+| scrollIntoView | `useScrollIntoView` hook |
+| Cleanup al desmontar | `useMountEffect` hook |
 
 ### Estilos
 - Tailwind con colores custom en oklch: `background`, `foreground`, `muted`, `border`, `nav`, `accent`.
