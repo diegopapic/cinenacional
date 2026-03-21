@@ -306,16 +306,27 @@ Funciones reutilizables en `src/lib/queries/` que encapsulan las queries Prisma 
 
 ---
 
-### Fase 5: Limpieza y verificación
+### Fase 5: Limpieza y verificación ✅
 
-- [ ] Eliminar imports de React Query (`useQuery`) de los componentes públicos convertidos.
-- [ ] Verificar que `QueryProvider` ya no se necesita en el layout público — si solo lo usa el admin, moverlo al layout de admin. Si alguna página pública todavía lo necesita (búsqueda, listados de películas/personas), dejarlo.
-- [ ] Ejecutar `npm run build` — verificar que no hay errores.
-- [ ] Ejecutar `npm run lint` — verificar que no hay warnings nuevos.
-- [ ] Comparar bundle size antes/después con `npx @next/bundle-analyzer` o similar.
-- [ ] Test manual: home, efemérides (navegar fechas), obituarios (cambiar año, paginar), estrenos (cambiar año/década).
-- [ ] Verificar que las API routes siguen funcionando para el admin y otros consumidores.
-- [ ] Opcional: refactorear API routes de home-feed, efemerides, people para que importen las funciones de `lib/queries/` en vez de duplicar queries.
+- [x] Verificar que `useQuery` ya no se usa en componentes públicos convertidos (home, efemérides, obituarios, estrenos).
+- [x] `QueryProvider` se queda en root layout — `/buscar` y `HeaderStats.tsx` todavía usan React Query.
+- [x] `npm run build` — sin errores. Todas las rutas públicas compilan correctamente.
+- [x] `npm run lint` — sin errores nuevos en archivos modificados (solo warnings preexistentes de `<img>`).
+- [x] Bundle size comparado (ver tabla abajo).
+- [ ] Test manual pendiente: home, efemérides, obituarios, estrenos.
+- [x] API routes no fueron modificados — siguen funcionando para admin y otros consumidores.
+- [ ] Opcional (futuro): refactorear API routes para importar funciones de `lib/queries/` en vez de duplicar queries.
+
+**Bundle size final (First Load JS por página):**
+
+| Página | Antes | Después | Reducción |
+|--------|-------|---------|-----------|
+| `/` (home) | ~14 kB | 4.35 kB | -69% |
+| `/efemerides` | 5.24 kB | 1.78 kB | -66% |
+| `/listados/obituarios` | 6.34 kB | 1.44 kB | -77% |
+| `/listados/estrenos/[year]` | 13.2 kB | 12.6 kB | -5% |
+
+**Eliminado del bundle público:** React Query fetch calls (4 en home, 1 en efemérides, 1 en obituarios, 1 en estrenos), `useHomeData`, `EstrenosContent`, `ObituariosContent`, hooks de estado (useState, useMemo) en páginas convertidas.
 
 ---
 
