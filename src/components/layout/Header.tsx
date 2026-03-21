@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useClickOutside } from '@/hooks/useClickOutside'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -32,19 +32,22 @@ export default function Header() {
     hasResults,
   } = useGlobalSearch(2)
 
-  // Focus desktop search input when expanded
-  useEffect(() => {
-    if (desktopSearchExpanded && desktopSearchRef.current) {
-      desktopSearchRef.current.focus()
-    }
-  }, [desktopSearchExpanded])
+  // Focus helpers — called from event handlers instead of useEffect
+  const expandDesktopSearch = useCallback(() => {
+    setDesktopSearchExpanded(true)
+    // requestAnimationFrame ensures the input is rendered before focusing
+    requestAnimationFrame(() => desktopSearchRef.current?.focus())
+  }, [])
 
-  // Focus mobile search input when opened
-  useEffect(() => {
-    if (searchOpen && mobileSearchInputRef.current) {
-      mobileSearchInputRef.current.focus()
-    }
-  }, [searchOpen])
+  const toggleMobileSearch = useCallback(() => {
+    setSearchOpen(prev => {
+      const next = !prev
+      if (next) {
+        requestAnimationFrame(() => mobileSearchInputRef.current?.focus())
+      }
+      return next
+    })
+  }, [])
 
   // Click outside closes desktop search
   const handleClickOutsideSearch = useCallback(() => {
@@ -152,7 +155,7 @@ export default function Header() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => setDesktopSearchExpanded(true)}
+                  onClick={expandDesktopSearch}
                   className="flex h-9 items-center gap-2 border-b border-transparent px-1 font-sans text-nav-foreground/30 transition-colors hover:border-nav-foreground/15 hover:text-nav-foreground/60"
                   aria-label="Abrir búsqueda"
                 >
@@ -166,7 +169,7 @@ export default function Header() {
             <button
               type="button"
               onClick={() => {
-                setSearchOpen(!searchOpen)
+                toggleMobileSearch()
                 if (!searchOpen) clearSearch()
                 if (mobileMenuOpen) setMobileMenuOpen(false)
               }}

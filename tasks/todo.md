@@ -195,11 +195,10 @@ Solo deben quedar los 5 useEffect dentro de hooks de infraestructura (`useMountE
 
 ### 9g. DOM_SYNC → extraer o mantener (focus, scroll, keyboard)
 
-- [ ] `layout/Header.tsx:35` — focus input desktop al expandir. Mover a callback de `setDesktopSearchExpanded`
-- [ ] `layout/Header.tsx:42` — focus input mobile al abrir. Mover a callback de `setSearchOpen`
-- [ ] `listados/estrenos/EstrenosDecadeSelector.tsx:48` — cierra dropdown on scroll. Crear `useScrollClose` o inline
-- [ ] `movies/ImageGallery.tsx:74` — scroll/resize listeners para overflow check. Mantener (DOM setup/cleanup legítimo)
-- [ ] `movies/ImageGallery.tsx:122` — Escape + flechas en lightbox. Crear `useKeyboardNavigation` o mantener
+- [x] `layout/Header.tsx` — 2 focus useEffects eliminados, movidos a `expandDesktopSearch` y `toggleMobileSearch` callbacks con rAF
+- [LEGIT] `listados/estrenos/EstrenosDecadeSelector.tsx:48` — scroll close: DOM event listener setup/cleanup, legítimo
+- [LEGIT] `movies/ImageGallery.tsx:74` — scroll/resize overflow check: DOM setup/cleanup legítimo
+- [LEGIT] `movies/ImageGallery.tsx:122` — keyboard nav en lightbox: DOM event listener, legítimo
 
 ### 9h. LEGITIMATE — mantener como useEffect
 
