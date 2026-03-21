@@ -283,7 +283,7 @@ export async function getHomeFeed(): Promise<HomeData> {
 
 // ─── Hero Images ──────────────────────────────────────────────────
 
-async function getHeroImages() {
+export async function getHeroImages() {
   // Step 1: Get 5 movies with most recent images
   const moviesWithLatestImage = await prisma.$queryRaw<{ movie_id: number }[]>`
     SELECT movie_id FROM images
