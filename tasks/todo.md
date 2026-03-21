@@ -276,20 +276,19 @@ Funciones reutilizables en `src/lib/queries/` que encapsulan las queries Prisma 
 
 ---
 
-### Fase 3: Obituarios (`/listados/obituarios`)
+### Fase 3: Obituarios (`/listados/obituarios`) ✅
 
-Tiene selector de año y paginación. Ambos se manejan con searchParams.
+- [x] Convertir `page.tsx` de `'use client'` a Server Component async.
+- [x] Mover lógica de `ObituariosContent.tsx` al page — eliminar `ObituariosContent.tsx`.
+- [x] Leer `searchParams.year` y `searchParams.page` (Next.js 15 Promises).
+- [x] Llamar a `getDeathYears()` + `getObituarios(year, page)` en paralelo.
+- [x] Crear `ObituariosYearSelector` client component (select año con `router.push`).
+- [x] Paginación con `ServerPagination` (Links, 0 JS).
+- [x] Agregar `generateMetadata()` con año dinámico.
+- [x] Agregar `revalidate = 3600` (1h ISR, reemplaza `force-dynamic`).
+- [x] Eliminar `'use client'` innecesario de `PersonCard` y `ObituariosGrid`.
 
-- [ ] Convertir `src/app/(site)/listados/obituarios/page.tsx` a Server Component async.
-- [ ] Mover lógica de `ObituariosContent.tsx` al page server component.
-- [ ] Leer `searchParams.year` y `searchParams.page` — si no hay year, usar el año actual.
-- [ ] Llamar a `getDeathYears()` + `getObituarios(year, page)` en paralelo.
-- [ ] Extraer selector de año a `ObituariosYearSelector` client component — usa `router.push` o `<Link>` para cambiar año.
-- [ ] Paginación con `<Link>` + searchParams (RSC puro, sin JS para paginar).
-- [ ] Agregar `generateMetadata()` con el año seleccionado.
-- [ ] `revalidate`: 3600 (1h) para año actual, 86400 (24h) para años pasados. Usar `dynamic = 'force-dynamic'` si no se puede diferenciar en build time, o condicional en el fetch.
-
-**Nota:** La página actual hace `force-dynamic`. Evaluar si se puede usar ISR con revalidate condicional.
+**Resultado:** Obituarios JS bundle bajó de 6.34 kB a 1.44 kB First Load. Eliminados: React Query, useState, Suspense wrapper, ObituariosContent.
 
 ---
 

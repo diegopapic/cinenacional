@@ -1,6 +1,4 @@
 // src/components/home/PersonCard.tsx
-'use client';
-
 import Link from 'next/link';
 import Image from 'next/image';
 import { User } from 'lucide-react';

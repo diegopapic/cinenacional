@@ -1,6 +1,4 @@
 // src/components/listados/obituarios/ObituariosGrid.tsx
-'use client';
-
 import PersonCard from '@/components/home/PersonCard';
 import { PersonWithDeath } from '@/lib/obituarios/obituariosTypes';
 
