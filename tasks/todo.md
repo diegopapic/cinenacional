@@ -315,7 +315,11 @@ Funciones reutilizables en `src/lib/queries/` que encapsulan las queries Prisma 
 - [x] Bundle size comparado (ver tabla abajo).
 - [ ] Test manual pendiente: home, efemérides, obituarios, estrenos.
 - [x] API routes no fueron modificados — siguen funcionando para admin y otros consumidores.
-- [ ] Opcional (futuro): refactorear API routes para importar funciones de `lib/queries/` en vez de duplicar queries.
+- [x] Refactorear API routes para importar funciones de `lib/queries/` (+160/-873 líneas):
+  - `/api/movies/home-feed` → `getHomeFeed()` de `lib/queries/home.ts`
+  - `/api/efemerides` → `getEfemerides()` de `lib/queries/efemerides.ts`
+  - `/api/images/hero` → `getHeroImages()` de `lib/queries/home.ts`
+  - Cache Redis + memory preservado en cada API route.
 
 **Bundle size final (First Load JS por página):**
 
