@@ -1,6 +1,6 @@
 // src/hooks/usePeopleForm.ts
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { peopleService, ExternalIdConflictError } from '@/services/people.service';
@@ -79,17 +79,16 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
         enabled: !!personId,
     });
 
-    useEffect(() => {
-        if (personData && personId && !formPopulatedRef.current) {
-            formPopulatedRef.current = true;
-            setFormData(formatPersonForForm(personData, personId));
-        }
-    }, [personData, personId]);
-
-    // Reset ref cuando cambia personId
-    useEffect(() => {
+    // Sync personData → formData (adjust during render)
+    const prevPersonIdRef = useRef(personId);
+    if (personId !== prevPersonIdRef.current) {
+        prevPersonIdRef.current = personId;
         formPopulatedRef.current = false;
-    }, [personId]);
+    }
+    if (personData && personId && !formPopulatedRef.current) {
+        formPopulatedRef.current = true;
+        setFormData(formatPersonForForm(personData, personId));
+    }
 
     const loadPerson = async () => {
         if (!personId) return;

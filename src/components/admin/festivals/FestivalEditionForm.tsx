@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
@@ -35,18 +35,18 @@ export default function FestivalEditionForm({ festivalId, festivalName, edition 
     isPublished: edition?.isPublished ?? false,
   })
 
-  // Auto-set year when dates change
-  useEffect(() => {
-    if (formData.startDate) {
-      const year = new Date(formData.startDate).getFullYear()
-      if (year !== formData.year) {
-        setFormData(prev => ({ ...prev, year }))
-      }
-    }
-  }, [formData.startDate])
-
   const handleChange = (field: keyof FestivalEditionFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData(prev => {
+      const next = { ...prev, [field]: value }
+      // Auto-set year when startDate changes
+      if (field === 'startDate' && typeof value === 'string' && value) {
+        const year = new Date(value).getFullYear()
+        if (year !== prev.year) {
+          next.year = year
+        }
+      }
+      return next
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

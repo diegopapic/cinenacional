@@ -1,6 +1,6 @@
 // src/components/admin/people/PersonFormFields/NationalitiesField.tsx
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { X } from 'lucide-react'
 import { apiClient } from '@/services/api-client'
 import { createLogger } from '@/lib/logger'
@@ -28,20 +28,17 @@ export default function NationalitiesField({
   const [searchTerm, setSearchTerm] = useState('')
   const [isSearching, setIsSearching] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
-  const [selectedCountries, setSelectedCountries] = useState<Location[]>([])
 
   // Cargar países (locations sin parent)
   useEffect(() => {
     loadCountries()
   }, [])
 
-  // Cargar países seleccionados
-  useEffect(() => {
-    if (value.length > 0 && countries.length > 0) {
-      const selected = countries.filter(c => value.includes(c.id))
-      setSelectedCountries(selected)
-    }
-  }, [value, countries])
+  // Derivar países seleccionados de value + countries
+  const selectedCountries = useMemo(
+    () => countries.filter(c => value.includes(c.id)),
+    [value, countries]
+  )
 
   const loadCountries = async () => {
     try {
@@ -59,17 +56,13 @@ export default function NationalitiesField({
   )
 
   const handleAddCountry = (country: Location) => {
-    const newValue = [...value, country.id]
-    onChange(newValue)
-    setSelectedCountries([...selectedCountries, country])
+    onChange([...value, country.id])
     setSearchTerm('')
     setShowDropdown(false)
   }
 
   const handleRemoveCountry = (countryId: number) => {
-    const newValue = value.filter(id => id !== countryId)
-    onChange(newValue)
-    setSelectedCountries(selectedCountries.filter(c => c.id !== countryId))
+    onChange(value.filter(id => id !== countryId))
   }
 
   return (

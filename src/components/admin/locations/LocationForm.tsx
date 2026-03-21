@@ -44,7 +44,6 @@ export default function LocationForm({ location }: LocationFormProps) {
   // Estados para el autocomplete
   const [parentSearch, setParentSearch] = useState('')
   const [selectedParent, setSelectedParent] = useState<Location | null>(null)
-  const [suggestions, setSuggestions] = useState<Location[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const autocompleteRef = useRef<HTMLDivElement>(null)
   
@@ -87,15 +86,18 @@ export default function LocationForm({ location }: LocationFormProps) {
     staleTime: 30 * 1000,
   })
 
-  useEffect(() => {
+  // Derive suggestions from query; show dropdown when data arrives
+  const suggestions = searchSuggestions ?? []
+  const prevSuggestionsRef = useRef(searchSuggestions)
+  if (searchSuggestions !== prevSuggestionsRef.current) {
+    prevSuggestionsRef.current = searchSuggestions
     if (searchSuggestions) {
-      setSuggestions(searchSuggestions)
       setShowSuggestions(true)
-    } else if (debouncedSearchTerm.length === 0) {
-      setSuggestions([])
-      setShowSuggestions(false)
     }
-  }, [searchSuggestions, debouncedSearchTerm])
+  }
+  if (debouncedSearchTerm.length < 2 && showSuggestions) {
+    setShowSuggestions(false)
+  }
 
   // Manejar clics fuera del autocomplete
   useClickOutside(autocompleteRef, useCallback(() => setShowSuggestions(false), []))

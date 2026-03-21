@@ -63,15 +63,7 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
 
   const debouncedSearchTerm = useDebounce(locationSearch, 300)
 
-  // Auto-generate slug when name changes
-  useEffect(() => {
-    if (formData.name && !festival) {
-      setFormData(prev => ({
-        ...prev,
-        slug: generateSlug(formData.name || '')
-      }))
-    }
-  }, [formData.name, festival])
+  // (slug auto-generation moved to handleChange)
 
   // Search locations
   useEffect(() => {
@@ -148,7 +140,14 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
   }
 
   const handleChange = (field: keyof FestivalFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData(prev => {
+      const next = { ...prev, [field]: value }
+      // Auto-generate slug when name changes (only for new festivals)
+      if (field === 'name' && !festival && typeof value === 'string') {
+        next.slug = generateSlug(value)
+      }
+      return next
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

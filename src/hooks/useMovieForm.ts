@@ -221,20 +221,18 @@ export function useMovieForm({
         staleTime: 5 * 60 * 1000,
     })
 
-    // Sincronizar metadata al estado local cuando llegan datos
-    useEffect(() => {
-        if (metadataResult && !metadataInitRef.current) {
-            metadataInitRef.current = true
-            setAvailableRatings(metadataResult.ratings)
-            setAvailableColorTypes(metadataResult.colorTypes)
-            if (!editingMovie) {
-                const colorDefault = metadataResult.colorTypes.find((ct: any) => ct.name === 'Color')
-                if (colorDefault) {
-                    setValue('colorTypeId', colorDefault.id)
-                }
+    // Sincronizar metadata al estado local (adjust during render)
+    if (metadataResult && !metadataInitRef.current) {
+        metadataInitRef.current = true
+        setAvailableRatings(metadataResult.ratings)
+        setAvailableColorTypes(metadataResult.colorTypes)
+        if (!editingMovie) {
+            const colorDefault = metadataResult.colorTypes.find((ct: any) => ct.name === 'Color')
+            if (colorDefault) {
+                setValue('colorTypeId', colorDefault.id)
             }
         }
-    }, [metadataResult, editingMovie, setValue])
+    }
 
     // Efecto para observar cambios en duración
     useEffect(() => {

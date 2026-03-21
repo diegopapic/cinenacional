@@ -160,13 +160,12 @@ Solo deben quedar los 5 useEffect dentro de hooks de infraestructura (`useMountE
 
 ### 9b. DERIVED_STATE → useMemo / cómputo inline
 
-- [ ] `admin/festivals/FestivalEditionForm.tsx:39` — deriva `year` de `startDate`. Mover a `handleChange`
-- [ ] `admin/festivals/FestivalForm.tsx:67` — deriva `slug` de `name`. Mover a `handleChange`
-- [ ] `admin/locations/LocationForm.tsx:90` — sincroniza `searchSuggestions` (query) → estado local `suggestions`. Usar datos del query directamente
-- [ ] `admin/people/PersonFormFields/NationalitiesField.tsx:39` — filtra `countries` por `value`. Usar `useMemo`
-- [ ] `hooks/useMovieForm.ts:225` — sincroniza `metadataResult` → estado local. Usar patrón prevValue ref
-- [ ] `hooks/usePeopleForm.ts:82` — sincroniza `personData` → formData. Usar patrón prevValue ref
-- [ ] `hooks/usePeopleForm.ts:90` — reset de ref cuando cambia personId. Consolidar con el anterior
+- [x] `admin/festivals/FestivalEditionForm.tsx` — year derivado inline en handleChange
+- [x] `admin/festivals/FestivalForm.tsx` — slug derivado inline en handleChange
+- [x] `admin/locations/LocationForm.tsx` — eliminado estado `suggestions`, derivado del query
+- [x] `admin/people/PersonFormFields/NationalitiesField.tsx` — selectedCountries derivado con useMemo
+- [x] `hooks/useMovieForm.ts` — metadataResult sync con adjust-during-render
+- [x] `hooks/usePeopleForm.ts` — 2 useEffects consolidados en adjust-during-render
 
 ### 9c. EVENT_SYNC → mover a handlers
 
