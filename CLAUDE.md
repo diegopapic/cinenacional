@@ -132,7 +132,6 @@ src/
 │   ├── useGlobalSearch.ts      # Búsqueda global con debounce (React Query)
 │   ├── useMovieForm.ts         # Lógica del formulario de películas (React Query)
 │   ├── useListPage.ts          # Paginación y filtros para listados (React Query)
-│   ├── useHomeData.ts          # Datos del home page (React Query)
 │   ├── usePeople.ts            # Fetching de personas (React Query)
 │   ├── usePeopleForm.ts        # Formulario de personas (React Query)
 │   └── useRoles.ts             # Fetching de roles (React Query)

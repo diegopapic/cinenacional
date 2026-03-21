@@ -1,4 +1,6 @@
 // src/components/home/RecentPeopleSection.tsx
+'use client';
+
 import Link from 'next/link';
 import { SimplePerson } from '@/types/home.types';
 import SkeletonLoader from './SkeletonLoader';

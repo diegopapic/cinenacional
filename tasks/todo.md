@@ -246,20 +246,18 @@ Funciones reutilizables en `src/lib/queries/` que encapsulan las queries Prisma 
 
 ---
 
-### Fase 1: Home page (`/`)
+### Fase 1: Home page (`/`) ✅
 
-La home tiene 4 secciones de datos independientes (hero, películas, personas, efemérides, obituarios). Todas son read-only sin interactividad de filtros.
+- [x] Convertir `src/app/(site)/page.tsx` de `'use client'` a Server Component async.
+- [x] Llamar a `getHomeFeed()` con `Promise.all` interno (7 queries paralelas).
+- [x] Pasar datos como props a los componentes de sección.
+- [x] HeroSection ya es `'use client'` (useState + useInterval) — no requirió cambios.
+- [x] Agregar `'use client'` a RecentMoviesSection y RecentPeopleSection (onError handlers en `<img>`).
+- [x] Eliminar `useHomeData` hook y las 3 llamadas `useQuery` del home.
+- [x] Agregar `export const revalidate = 300` (5 min ISR).
+- [x] Verificar componentes: MoviesGrid, MovieCard, ObituariosSection, EfemeridesSection → server-compatible, sin `'use client'`.
 
-- [ ] Convertir `src/app/(site)/page.tsx` de `'use client'` a Server Component async.
-- [ ] Llamar a las funciones de `lib/queries/home.ts` con `Promise.all` para fetch paralelo.
-- [ ] Pasar datos como props a los componentes de sección (HeroSection, MoviesSection, PeopleSection, etc.).
-- [ ] HeroSection: el carousel con autoplay necesita `'use client'` — extraer a `HeroCarousel` client component que recibe `images` como prop.
-- [ ] Eliminar `useHomeData` hook y las 3 llamadas `useQuery` del home actual.
-- [ ] Agregar `export const revalidate = 300` (5 min, igual al cache actual de home-feed).
-- [ ] Agregar `generateMetadata()` (hoy el home no tiene metadata dinámica, pero es buena práctica tenerlo listo).
-- [ ] Verificar que los componentes de sección no tengan `'use client'` innecesario. Solo el carousel (HeroSection) y los componentes con event handlers (links hover, etc.) necesitan ser client.
-
-**Impacto estimado en bundle:** Elimina React Query, useHomeData, y 3 fetch calls del bundle JS del home.
+**Resultado:** Home JS bundle bajó a 4.35 kB (First Load). React Query, useHomeData, y 4 fetch calls eliminados del bundle público.
 
 ---
 

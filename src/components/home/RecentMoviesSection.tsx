@@ -1,4 +1,6 @@
 // src/components/home/RecentMoviesSection.tsx
+'use client';
+
 import Link from 'next/link';
 import { SimpleMovie } from '@/types/home.types';
 import SkeletonLoader from './SkeletonLoader';

@@ -3,12 +3,12 @@
 // Extracts Prisma queries from /api/movies/home-feed and /api/images/hero.
 
 import { prisma } from '@/lib/prisma'
-import type { Efemeride } from '@/types/home.types'
+import type { Efemeride, DirectorInfo, SimpleMovie, SimplePerson } from '@/types/home.types'
 import { formatearEfemeride } from '@/lib/utils/efemerides'
-import type { DirectorInfo } from '@/types/home.types'
 
 // ─── Types ────────────────────────────────────────────────────────
 
+// HomeMovie type matches MovieWithRelease shape expected by MoviesGrid/MovieCard
 export interface HomeMovie {
   id: number
   slug: string
@@ -17,28 +17,11 @@ export interface HomeMovie {
   releaseMonth: number | null
   releaseDay: number | null
   posterUrl: string | null
-  genres: { name: string }[]
+  genres: { genre: { name: string } }[]
   crew: {
     roleId: number
     person: { firstName: string | null; lastName: string | null }
   }[]
-}
-
-export interface HomeSimpleMovie {
-  id: number
-  slug: string
-  title: string
-  posterUrl: string | null
-}
-
-export interface HomePerson {
-  id: number
-  slug: string
-  firstName: string | null
-  lastName: string | null
-  photoUrl: string | null
-  gender: string | null
-  role: string
 }
 
 // HeroImage type is inferred from getHeroImages return type (exported below)
@@ -60,8 +43,8 @@ export interface HomeObituario {
 export interface HomeData {
   ultimosEstrenos: HomeMovie[]
   proximosEstrenos: HomeMovie[]
-  ultimasPeliculas: HomeSimpleMovie[]
-  ultimasPersonas: HomePerson[]
+  ultimasPeliculas: SimpleMovie[]
+  ultimasPersonas: SimplePerson[]
   heroImages: Awaited<ReturnType<typeof getHeroImages>>
   obituarios: HomeObituario[]
   efemerides: Efemeride[]
@@ -252,15 +235,12 @@ export async function getHomeFeed(): Promise<HomeData> {
     getHomeEfemerides(),
   ])
 
-  // Format últimos/próximos estrenos
+  // Cast Prisma results to HomeMovie (shapes match since we don't flatten genres)
   const formatMovies = (movies: typeof ultimosEstrenosRaw): HomeMovie[] =>
-    movies.map(movie => ({
-      ...movie,
-      genres: movie.genres.map(g => ({ name: g.genre.name })),
-    }))
+    movies as unknown as HomeMovie[]
 
   // Format personas con rol
-  const ultimasPersonas: HomePerson[] = ultimasPersonasRaw.map(person => {
+  const ultimasPersonas: SimplePerson[] = ultimasPersonasRaw.map(person => {
     const { _count, crewRoles, ...personData } = person
 
     let role: string
@@ -287,13 +267,13 @@ export async function getHomeFeed(): Promise<HomeData> {
       role = 'Profesional del cine'
     }
 
-    return { ...personData, gender: personData.gender as string | null, role }
+    return { ...personData, role } as SimplePerson
   })
 
   return {
     ultimosEstrenos: formatMovies(ultimosEstrenosRaw),
     proximosEstrenos: formatMovies(proximosEstrenosRaw),
-    ultimasPeliculas,
+    ultimasPeliculas: ultimasPeliculas as SimpleMovie[],
     ultimasPersonas,
     heroImages: heroImagesRaw,
     obituarios: obituariosRaw,
