@@ -195,19 +195,25 @@ Solo deben quedar los 5 useEffect dentro de hooks de infraestructura (`useMountE
 
 ### 9g. DOM_SYNC → extraer o mantener (focus, scroll, keyboard)
 
-- [x] `layout/Header.tsx` — 2 focus useEffects eliminados, movidos a `expandDesktopSearch` y `toggleMobileSearch` callbacks con rAF
-- [LEGIT] `listados/estrenos/EstrenosDecadeSelector.tsx:48` — scroll close: DOM event listener setup/cleanup, legítimo
-- [LEGIT] `movies/ImageGallery.tsx:74` — scroll/resize overflow check: DOM setup/cleanup legítimo
-- [LEGIT] `movies/ImageGallery.tsx:122` — keyboard nav en lightbox: DOM event listener, legítimo
+- [x] `layout/Header.tsx` — 2 focus useEffects eliminados, movidos a callbacks con rAF
+- [x] `listados/estrenos/EstrenosDecadeSelector.tsx` — scroll close extraído a `useWindowEvent`
+- [x] `movies/ImageGallery.tsx` — overflow check extraído a `useMountEffect` + `useWindowEvent`, keyboard a `useKeydown`
 
-### 9h. LEGITIMATE — mantener como useEffect
+### 9h. DOM_SYNC restantes → extraer a hooks custom
 
-- [ ] `home/HeroSection.tsx:235` — interval de rotación de carousel. Legítimo (timer setup/cleanup)
-- [ ] `FilmReleasesByYear.tsx:130` — scroll-into-view de elemento activo. Legítimo (DOM post-paint)
-- [ ] `listados/estrenos/EstrenosYearBar.tsx:26` — scroll-into-view. Legítimo (DOM post-paint)
-- [ ] `hooks/usePageView.ts:105` — tracking de page view. Legítimo (fire-and-forget side effect)
-- [ ] `hooks/useMovieForm.ts:240` — watch subscription de RHF. Legítimo (external subscription setup/cleanup)
-- [ ] `admin/movies/MovieModal/tabs/ImagesTab/MultiImageUpload.tsx:41` — cleanup de timeout. Legítimo (infrastructure cleanup)
+- [x] `home/HeroSection.tsx` — carousel interval extraído a `useInterval`
+- [x] `FilmReleasesByYear.tsx` — scroll-into-view extraído a `useScrollIntoView`
+- [x] `listados/estrenos/EstrenosYearBar.tsx` — scroll-into-view extraído a `useScrollIntoView`
+- [x] `admin/movies/MovieModal/tabs/ImagesTab/MultiImageUpload.tsx` — cleanup extraído a `useMountEffect`
+- [OK] `hooks/usePageView.ts` — ya es hook custom, useEffect encapsulado
+- [OK] `hooks/useMovieForm.ts` — ya es hook custom, useEffect encapsulado
+
+### Resultado final
+
+**0 useEffect directos en componentes, páginas o contextos.**
+
+useEffect solo existe dentro de 10 hooks de infraestructura:
+`useMountEffect`, `useClickOutside`, `useEscapeKey`, `useDebounce`, `useInterval`, `useWindowEvent`, `useKeydown`, `useScrollIntoView`, `usePageView`, `useMovieForm`
 
 ---
 

@@ -1,8 +1,11 @@
 // src/components/movies/ImageGallery.tsx
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useMountEffect } from '@/hooks/useMountEffect';
+import { useWindowEvent } from '@/hooks/useWindowEvent';
+import { useKeydown } from '@/hooks/useKeydown';
 import { generateImageCaption } from '@/lib/images/imageUtils';
 
 interface GalleryImage {
@@ -71,17 +74,15 @@ export function ImageGallery({ images, movieTitle }: ImageGalleryProps) {
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
   }, []);
 
-  useEffect(() => {
+  // Initial overflow check + scroll listener on the container element
+  useMountEffect(() => {
     const el = desktopRef.current;
     if (!el) return;
     checkDesktopOverflow();
     el.addEventListener('scroll', checkDesktopOverflow, { passive: true });
-    window.addEventListener('resize', checkDesktopOverflow);
-    return () => {
-      el.removeEventListener('scroll', checkDesktopOverflow);
-      window.removeEventListener('resize', checkDesktopOverflow);
-    };
-  }, [checkDesktopOverflow]);
+    return () => el.removeEventListener('scroll', checkDesktopOverflow);
+  });
+  useWindowEvent('resize', checkDesktopOverflow);
 
   // Desktop scroll with loop
   const scrollDesktop = (direction: 'left' | 'right') => {
@@ -118,19 +119,14 @@ export function ImageGallery({ images, movieTitle }: ImageGalleryProps) {
     setLightbox({ index: newIndex });
   }, [lightbox, images.length]);
 
-  // Keyboard
-  useEffect(() => {
-    if (!lightbox) return;
-    const handleKey = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case 'Escape': closeLightbox(); break;
-        case 'ArrowLeft': e.preventDefault(); navigateLightbox('prev'); break;
-        case 'ArrowRight': e.preventDefault(); navigateLightbox('next'); break;
-      }
-    };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [lightbox, closeLightbox, navigateLightbox]);
+  // Keyboard navigation in lightbox
+  useKeydown(useCallback((e: KeyboardEvent) => {
+    switch (e.key) {
+      case 'Escape': closeLightbox(); break;
+      case 'ArrowLeft': e.preventDefault(); navigateLightbox('prev'); break;
+      case 'ArrowRight': e.preventDefault(); navigateLightbox('next'); break;
+    }
+  }, [closeLightbox, navigateLightbox]), !!lightbox);
 
   if (images.length === 0) return null;
 

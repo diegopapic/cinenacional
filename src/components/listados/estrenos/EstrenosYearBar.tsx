@@ -1,7 +1,8 @@
 // src/components/listados/estrenos/EstrenosYearBar.tsx
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useRef, useCallback } from 'react';
+import { useScrollIntoView } from '@/hooks/useScrollIntoView';
 import { getDecadeById, getCurrentYear, generateDecades } from '@/lib/estrenos/estrenosUtils';
 import { DecadePeriod } from '@/lib/estrenos/estrenosTypes';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -22,21 +23,14 @@ export default function EstrenosYearBar({
     // ✅ HOOKS PRIMERO - ANTES DE CUALQUIER RETURN
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    // ✅ Hacer scroll al año seleccionado cuando cambie
-    useEffect(() => {
-        if (scrollContainerRef.current && period !== 'all' && period !== 'upcoming') {
-            const elementId = selectedYear === null ? 'decade-button' : `year-${selectedYear}`;
-            const element = document.getElementById(elementId);
-            
-            if (element) {
-                element.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'center'
-                });
-            }
-        }
-    }, [selectedYear, period]);
+    // Scroll al año seleccionado cuando cambie
+    const getYearElement = useCallback(() => {
+        if (!scrollContainerRef.current || period === 'all' || period === 'upcoming') return null;
+        const elementId = selectedYear === null ? 'decade-button' : `year-${selectedYear}`;
+        return document.getElementById(elementId);
+    }, [period, selectedYear]);
+
+    useScrollIntoView(getYearElement, [selectedYear, period]);
 
     // AHORA SÍ LOS RETURNS CONDICIONALES
     if (period === 'all' || period === 'upcoming') {

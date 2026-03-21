@@ -2,7 +2,8 @@
 'use client'
 
 import { CldUploadWidget } from 'next-cloudinary'
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
+import { useMountEffect } from '@/hooks/useMountEffect'
 import { ImagePlus } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { createLogger } from '@/lib/logger'
@@ -38,11 +39,11 @@ export function MultiImageUpload({
   }, [])
 
   // Limpiar al desmontar
-  useEffect(() => {
+  useMountEffect(() => {
     return () => {
       clearSafetyTimeout()
     }
-  }, [clearSafetyTimeout])
+  })
 
   const handleOpen = useCallback(() => {
     log.debug('Widget opened')

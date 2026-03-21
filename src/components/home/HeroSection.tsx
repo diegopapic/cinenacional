@@ -1,7 +1,8 @@
 // src/components/home/HeroSection.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useInterval } from '@/hooks/useInterval';
 import Link from 'next/link';
 
 interface HeroImage {
@@ -232,15 +233,10 @@ const fadeMaskStyle: React.CSSProperties = {
 export default function HeroSection({ images }: HeroSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  useEffect(() => {
-    if (images.length <= 1) return;
-
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % images.length);
-    }, 6000);
-
-    return () => clearInterval(interval);
-  }, [images.length]);
+  useInterval(
+    () => setCurrentIndex((prev) => (prev + 1) % images.length),
+    images.length > 1 ? 6000 : null
+  );
 
   if (!images || images.length === 0) return null;
 

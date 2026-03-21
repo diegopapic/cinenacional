@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
+import { useScrollIntoView } from '@/hooks/useScrollIntoView'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight, CalendarClock } from 'lucide-react'
@@ -127,19 +128,13 @@ export function FilmReleasesByYear({ entries, mode }: FilmReleasesByYearProps) {
   const years = Array.from({ length: 10 }, (_, i) => decade.start + i)
 
   // Scroll al botón activo dentro de la barra
-  useEffect(() => {
-    requestAnimationFrame(() => {
-      const container = scrollRef.current
-      if (!container) return
-      const activeBtn = container.querySelector('[data-active="true"]') as HTMLElement | null
-      if (!activeBtn) return
-      const containerRect = container.getBoundingClientRect()
-      const btnRect = activeBtn.getBoundingClientRect()
-      const offset = btnRect.left - containerRect.left + container.scrollLeft
-      const left = offset - container.clientWidth / 2 + btnRect.width / 2
-      container.scrollTo({ left, behavior: 'smooth' })
-    })
-  }, [selectedYear, decadeIndex, isDecadeView])
+  const getActiveButton = useCallback(() => {
+    const container = scrollRef.current
+    if (!container) return null
+    return container.querySelector('[data-active="true"]') as HTMLElement | null
+  }, [])
+
+  useScrollIntoView(getActiveButton, [selectedYear, decadeIndex, isDecadeView])
 
   // Filtrar entries por modo
   const filtered = useMemo(() => {

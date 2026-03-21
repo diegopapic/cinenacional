@@ -2,7 +2,6 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { PersonForm } from '@/components/admin/people/PersonForm';

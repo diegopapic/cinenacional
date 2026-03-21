@@ -4,9 +4,10 @@
 import { DecadePeriod } from '@/lib/estrenos/estrenosTypes';
 import { generateDecades } from '@/lib/estrenos/estrenosUtils';
 import { ChevronDown } from 'lucide-react';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useMountEffect } from '@/hooks/useMountEffect';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useWindowEvent } from '@/hooks/useWindowEvent';
 import { createPortal } from 'react-dom';
 import { createLogger } from '@/lib/logger';
 
@@ -45,18 +46,7 @@ export default function EstrenosDecadeSelector({ value, onChange }: EstrenosDeca
   const closeDropdown = useCallback(() => setIsOpen(false), []);
   useClickOutside([dropdownRef, buttonRef], closeDropdown, isOpen);
   
-  useEffect(() => {
-    function handleScroll() {
-      if (isOpen) {
-        setIsOpen(false);
-      }
-    }
-    
-    if (isOpen) {
-      window.addEventListener('scroll', handleScroll);
-      return () => window.removeEventListener('scroll', handleScroll);
-    }
-  }, [isOpen]);
+  useWindowEvent('scroll', useCallback(() => setIsOpen(false), []), isOpen);
   
   const getCurrentLabel = () => {
     if (value === 'all') return 'Todos';
