@@ -1,38 +1,29 @@
-'use client'
-
-import { useState, useMemo } from 'react'
-import { useRouter, useParams } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
+// src/app/(site)/efemerides/[[...date]]/page.tsx — Server Component
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Efemeride } from '@/types/home.types'
+import { Metadata } from 'next'
+import { getEfemerides } from '@/lib/queries/efemerides'
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
-import Pagination from '@/components/shared/Pagination'
+import EfemeridesDateSelector from '@/components/efemerides/EfemeridesDateSelector'
+import ServerPagination from '@/components/shared/ServerPagination'
+import type { Efemeride } from '@/types/home.types'
+
+export const revalidate = 86400 // 24h
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
 const MONTHS = [
-  { label: 'Enero', days: 31 },
-  { label: 'Febrero', days: 29 },
-  { label: 'Marzo', days: 31 },
-  { label: 'Abril', days: 30 },
-  { label: 'Mayo', days: 31 },
-  { label: 'Junio', days: 30 },
-  { label: 'Julio', days: 31 },
-  { label: 'Agosto', days: 31 },
-  { label: 'Septiembre', days: 30 },
-  { label: 'Octubre', days: 31 },
-  { label: 'Noviembre', days: 30 },
-  { label: 'Diciembre', days: 31 },
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
 
 const PER_PAGE = 20
 
-function parseDateFromParams(dateParam: string | string[] | undefined): { month: number; day: number } {
-  if (dateParam && Array.isArray(dateParam) && dateParam.length > 0) {
-    const dateStr = dateParam[0]
-    const [m, d] = dateStr.split('-').map(Number)
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function parseDateFromParams(dateParam: string[] | undefined): { month: number; day: number } {
+  if (dateParam && dateParam.length > 0) {
+    const [m, d] = dateParam[0].split('-').map(Number)
     if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
       return { month: m, day: d }
     }
@@ -41,200 +32,122 @@ function parseDateFromParams(dateParam: string | string[] | undefined): { month:
   return { month: today.getMonth() + 1, day: today.getDate() }
 }
 
-// ── Component ───────────────────────────────────────────────────────────────
+function buildDatePath(month: number, day: number): string {
+  return `/efemerides/${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
 
-export default function EfemeridesPage() {
-  const router = useRouter()
-  const params = useParams()
+// ── Director links (server-rendered) ────────────────────────────────────────
 
-  // Derive month/day from URL params (single source of truth)
-  const { month, day } = parseDateFromParams(params.date)
-  const [page, setPage] = useState(1)
+function DirectorLinks({ efemeride }: { efemeride: Efemeride }) {
+  const directors = efemeride.directors
 
-  const monthInfo = MONTHS[month - 1]
-  const maxDay = monthInfo.days
-
-  // Fetch efemerides via React Query
-  const { data: efemerides = [], isLoading: loading } = useQuery<Efemeride[]>({
-    queryKey: ['efemerides', month, day],
-    queryFn: async () => {
-      const response = await fetch(`/api/efemerides?month=${month}&day=${day}`)
-      if (!response.ok) throw new Error('Error fetching data')
-      const result = await response.json()
-      return result.efemerides || []
-    },
-  })
-
-  // ── Navigation helpers ──────────────────────────────────────────────────
-
-  const navigateToDate = (m: number, d: number) => {
-    setPage(1)
-    const monthStr = String(m).padStart(2, '0')
-    const dayStr = String(d).padStart(2, '0')
-    router.push(`/efemerides/${monthStr}-${dayStr}`)
-  }
-
-  const goPrev = () => {
-    let newDay = day - 1
-    let newMonth = month
-    if (newDay < 1) {
-      newMonth = month === 1 ? 12 : month - 1
-      newDay = MONTHS[newMonth - 1].days
-    }
-    navigateToDate(newMonth, newDay)
-  }
-
-  const goNext = () => {
-    let newDay = day + 1
-    let newMonth = month
-    if (newDay > MONTHS[month - 1].days) {
-      newMonth = month === 12 ? 1 : month + 1
-      newDay = 1
-    }
-    navigateToDate(newMonth, newDay)
-  }
-
-  const goToday = () => {
-    router.push('/efemerides')
-  }
-
-  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newMonth = parseInt(e.target.value)
-    const clampedDay = Math.min(day, MONTHS[newMonth - 1].days)
-    setPage(1)
-    navigateToDate(newMonth, clampedDay)
-  }
-
-  const handleDayChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setPage(1)
-    navigateToDate(month, parseInt(e.target.value))
-  }
-
-  // ── Sorting & pagination ────────────────────────────────────────────────
-
-  const entries = useMemo(() => {
-    return [...efemerides].sort((a, b) => {
-      const yearA = (typeof a.fecha === 'string' ? new Date(a.fecha) : a.fecha).getFullYear()
-      const yearB = (typeof b.fecha === 'string' ? new Date(b.fecha) : b.fecha).getFullYear()
-      return yearA - yearB
-    })
-  }, [efemerides])
-
-  const totalPages = Math.max(1, Math.ceil(entries.length / PER_PAGE))
-  const safePage = Math.min(page, totalPages)
-  const paged = entries.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE)
-
-  const handlePageChange = (p: number) => {
-    setPage(p)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  // ── Director links ──────────────────────────────────────────────────────
-
-  const renderDirectorLinks = (efemeride: Efemeride) => {
-    const directors = efemeride.directors
-
-    if (!directors || directors.length === 0) {
-      if (efemeride.director && efemeride.directorSlug) {
-        return (
+  if (!directors || directors.length === 0) {
+    if (efemeride.director && efemeride.directorSlug) {
+      return (
+        <span>
+          , de{' '}
           <Link
             href={`/persona/${efemeride.directorSlug}`}
             className="text-foreground/80 transition-colors hover:text-accent"
           >
             {efemeride.director}
           </Link>
-        )
-      }
-      return null
+        </span>
+      )
     }
-
-    return directors.map((director, idx) => (
-      <span key={director.slug}>
-        <Link
-          href={`/persona/${director.slug}`}
-          className="text-foreground/80 transition-colors hover:text-accent"
-        >
-          {director.name}
-        </Link>
-        {idx < directors.length - 2 && ', '}
-        {idx === directors.length - 2 && ' y '}
-      </span>
-    ))
+    return null
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────
+  return (
+    <span>
+      , de{' '}
+      {directors.map((director, idx) => (
+        <span key={director.slug}>
+          <Link
+            href={`/persona/${director.slug}`}
+            className="text-foreground/80 transition-colors hover:text-accent"
+          >
+            {director.name}
+          </Link>
+          {idx < directors.length - 2 && ', '}
+          {idx === directors.length - 2 && ' y '}
+        </span>
+      ))}
+    </span>
+  )
+}
+
+// ── Metadata ────────────────────────────────────────────────────────────────
+
+type PageProps = {
+  params: Promise<{ date?: string[] }>
+  searchParams: Promise<{ page?: string }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { date } = await params
+  const { month, day } = parseDateFromParams(date)
+  const monthName = MONTHS[month - 1].toLowerCase()
+
+  return {
+    title: `Efemérides del ${day} de ${monthName} — CineNacional`,
+    description: `Efemérides del cine argentino del ${day} de ${monthName}: estrenos, nacimientos y más.`,
+  }
+}
+
+// ── Page ────────────────────────────────────────────────────────────────────
+
+const VERBOS: Record<string, string> = {
+  estreno: 'Se estrenó',
+  inicio_rodaje: 'Empezó el rodaje de',
+  fin_rodaje: 'Terminó el rodaje de',
+  nacimiento: 'Nació',
+  muerte: 'Murió',
+}
+
+export default async function EfemeridesPage({ params, searchParams }: PageProps) {
+  const { date } = await params
+  const { page: pageParam } = await searchParams
+
+  const { month, day } = parseDateFromParams(date)
+  const page = Math.max(1, Number(pageParam) || 1)
+  const monthName = MONTHS[month - 1]
+
+  // Fetch server-side
+  const { efemerides } = await getEfemerides(month, day)
+
+  // Sort by year ascending (oldest first)
+  const entries = [...efemerides].sort((a, b) => {
+    const yearA = (typeof a.fecha === 'string' ? new Date(a.fecha) : a.fecha).getFullYear()
+    const yearB = (typeof b.fecha === 'string' ? new Date(b.fecha) : b.fecha).getFullYear()
+    return yearA - yearB
+  })
+
+  // Paginate
+  const totalPages = Math.max(1, Math.ceil(entries.length / PER_PAGE))
+  const safePage = Math.min(page, totalPages)
+  const paged = entries.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE)
+
+  const datePath = buildDatePath(month, day)
+  const buildPageHref = (p: number) => p === 1 ? datePath : `${datePath}?page=${p}`
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 md:py-14 lg:px-6">
       {/* Title & count */}
       <h1 className="font-serif text-2xl tracking-tight text-foreground md:text-3xl lg:text-4xl">
-        Efemérides del {day} de {monthInfo.label.toLowerCase()}
+        Efemérides del {day} de {monthName.toLowerCase()}
       </h1>
       <p className="mt-1 text-[12px] text-muted-foreground/40 md:text-[13px]">
         {entries.length} {entries.length === 1 ? 'efeméride' : 'efemérides'}
       </p>
 
-      {/* Date selector */}
-      <div className="mt-6 flex items-center gap-2 border-b border-border/10 pb-4 md:gap-3">
-        {/* Prev day */}
-        <button
-          onClick={goPrev}
-          className="flex h-9 w-9 shrink-0 items-center justify-center text-muted-foreground/40 transition-colors hover:text-accent"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-
-        {/* Day select */}
-        <select
-          value={day}
-          onChange={handleDayChange}
-          className="h-8 tabular-nums border border-border/30 bg-background px-2 text-[13px] text-muted-foreground/60 outline-none transition-colors focus:border-accent/30 [&_option]:bg-background [&_option]:text-foreground"
-        >
-          {Array.from({ length: maxDay }, (_, i) => i + 1).map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-
-        {/* Month select */}
-        <select
-          value={month}
-          onChange={handleMonthChange}
-          className="h-8 border border-border/30 bg-background px-2 text-[13px] text-muted-foreground/60 outline-none transition-colors focus:border-accent/30 [&_option]:bg-background [&_option]:text-foreground"
-        >
-          {MONTHS.map((m, idx) => (
-            <option key={idx + 1} value={idx + 1}>
-              {m.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Next day */}
-        <button
-          onClick={goNext}
-          className="flex h-9 w-9 shrink-0 items-center justify-center text-muted-foreground/40 transition-colors hover:text-accent"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-
-        {/* Today button */}
-        <button
-          onClick={goToday}
-          className="ml-auto h-8 border border-border/30 px-3 text-[11px] tracking-wide text-muted-foreground/40 transition-colors hover:border-accent/30 hover:text-accent"
-        >
-          HOY
-        </button>
-      </div>
+      {/* Date selector (client component) */}
+      <EfemeridesDateSelector month={month} day={day} />
 
       {/* Content */}
-      {loading ? (
-        <div className="flex h-40 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-accent" />
-        </div>
-      ) : paged.length === 0 ? (
+      {paged.length === 0 ? (
         <div className="flex h-40 items-center justify-center text-[13px] text-muted-foreground/30">
-          No hay efemerides para este dia
+          No hay efemérides para este día
         </div>
       ) : (
         <div className="mt-2 flex flex-col">
@@ -251,15 +164,7 @@ export default function EfemeridesPage() {
                 : efemeride.fecha
             const year = fechaObj.getFullYear()
 
-            let verbo = ''
-            if (efemeride.tipoEvento === 'estreno') verbo = 'Se estrenó'
-            else if (efemeride.tipoEvento === 'inicio_rodaje')
-              verbo = 'Empezó el rodaje de'
-            else if (efemeride.tipoEvento === 'fin_rodaje')
-              verbo = 'Terminó el rodaje de'
-            else if (efemeride.tipoEvento === 'nacimiento') verbo = 'Nació'
-            else if (efemeride.tipoEvento === 'muerte') verbo = 'Murió'
-
+            const verbo = VERBOS[efemeride.tipoEvento || ''] || ''
             const hasLink = !!efemeride.slug
 
             return (
@@ -267,7 +172,7 @@ export default function EfemeridesPage() {
                 key={efemeride.id}
                 className="flex items-center gap-4 border-b border-border/10 py-3.5 last:border-b-0 md:gap-5"
               >
-                {/* Image column (fixed width) */}
+                {/* Image column */}
                 <div className="flex h-16 w-14 shrink-0 items-center justify-center md:h-[72px] md:w-16">
                   {imageUrl ? (
                     isPelicula ? (
@@ -342,23 +247,7 @@ export default function EfemeridesPage() {
                         >
                           {efemeride.titulo}
                         </Link>
-                        {isPelicula && efemeride.directors && efemeride.directors.length > 0 && (
-                          <span>, de {renderDirectorLinks(efemeride)}</span>
-                        )}
-                        {isPelicula &&
-                          !efemeride.directors?.length &&
-                          efemeride.director &&
-                          efemeride.directorSlug && (
-                            <span>
-                              , de{' '}
-                              <Link
-                                href={`/persona/${efemeride.directorSlug}`}
-                                className="text-foreground/80 transition-colors hover:text-accent"
-                              >
-                                {efemeride.director}
-                              </Link>
-                            </span>
-                          )}
+                        {isPelicula && <DirectorLinks efemeride={efemeride} />}
                       </>
                     ) : (
                       efemeride.evento || `${verbo} ${efemeride.titulo || ''}`.trim()
@@ -371,11 +260,11 @@ export default function EfemeridesPage() {
         </div>
       )}
 
-      {/* Pagination */}
-      <Pagination
+      {/* Pagination (server-rendered with Links) */}
+      <ServerPagination
         currentPage={safePage}
         totalPages={totalPages}
-        onPageChange={handlePageChange}
+        buildHref={buildPageHref}
       />
     </div>
   )

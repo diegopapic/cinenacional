@@ -261,20 +261,18 @@ Funciones reutilizables en `src/lib/queries/` que encapsulan las queries Prisma 
 
 ---
 
-### Fase 2: Efemérides (`/efemerides/[[...date]]`)
+### Fase 2: Efemérides (`/efemerides/[[...date]]`) ✅
 
-La página tiene selectores de mes/día interactivos. Estrategia: `searchParams` para mes/día, server component fetchea datos, client component para los selectores.
+- [x] Convertir `page.tsx` de `'use client'` a Server Component async.
+- [x] Leer mes/día de `params.date` y `searchParams.page` (Next.js 15 Promises).
+- [x] Llamar a `getEfemerides(month, day)` server-side (5 queries paralelas).
+- [x] Paginar server-side (slice sobre resultados ordenados por año).
+- [x] Crear `EfemeridesDateSelector` client component (select mes/día, prev/next, hoy).
+- [x] Crear `ServerPagination` reutilizable con `<Link>` (0 JS, sin `'use client'`).
+- [x] Agregar `generateMetadata()` con fecha dinámica.
+- [x] Agregar `revalidate = 86400` (24h).
 
-- [ ] Convertir `src/app/(site)/efemerides/[[...date]]/page.tsx` a Server Component async.
-- [ ] Leer mes/día de los params de la URL (`params.date` array) — la lógica de parsing ya existe.
-- [ ] Llamar a `getEfemerides(month, day)` de `lib/queries/efemerides.ts`.
-- [ ] Paginar server-side (recibir `searchParams.page`, calcular slice).
-- [ ] Extraer selectores de fecha a `EfemeridesDateSelector` client component — usa `router.push` para navegar a nueva fecha.
-- [ ] Extraer paginación a `EfemeridePagination` client component (o reutilizar `Pagination` existente con links `<Link>`).
-- [ ] Agregar `generateMetadata()` con la fecha actual.
-- [ ] Agregar `revalidate = 86400` (24h, igual al cache actual).
-
-**Decisión clave:** La paginación puede ser con `<Link>` (server-side navigation) o `router.push` (client-side). Usar `<Link>` con `searchParams.page` para que sea RSC puro.
+**Resultado:** Efemérides JS bundle bajó de 5.24 kB a 1.78 kB First Load. React Query, useState, useMemo eliminados. Paginación con Links (0 JS).
 
 ---
 
