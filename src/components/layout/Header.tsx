@@ -12,6 +12,7 @@ import { useGlobalSearch } from '@/hooks/useGlobalSearch'
 const navLinks = [
   { href: '/listados/peliculas', label: 'Películas' },
   { href: '/listados/personas', label: 'Personas' },
+  { href: '/listados/estrenos/proximos', label: 'Estrenos' },
 ]
 
 export default function Header() {
