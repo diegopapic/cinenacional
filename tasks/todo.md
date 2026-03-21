@@ -1,339 +1,288 @@
-# Refactor: Eliminar useEffect innecesarios
+# Migración a React 19.2 / Next.js 16.2
 
-Basado en la recomendación de [Factory (Alvin Sng)](https://x.com/alvinsng/status/2033969062834045089): ban de `useEffect` directo. Preparación para migración a Next.js 16.2 / React 19.2.
+Estado actual: **Next.js 15.5.12** + **React 18.3.x** + **NextAuth v4** → Objetivo: **Next.js 16.2.x** + **React 19.2.x** + **Auth.js v5**
 
----
-
-## Fase 1: Crear helper `useMountEffect`
-
-- [x] Crear `src/hooks/useMountEffect.ts` — wrapper de `useEffect(fn, [])` con eslint-disable
-
----
-
-## Fase 2: DERIVED_STATE → `useMemo` / cómputo inline
-
-Cambios mecánicos: eliminar `useEffect` + `setState` y reemplazar por `useMemo` o cálculo directo.
-
-- [x] `components/movies/MovieInfo.tsx` — filtrar directores → `useMemo`
-- [x] `components/layout/SearchBar.tsx` — showResults → mover a `handleQueryChange`
-- [x] `components/admin/shared/NameSplitModal.tsx` — words → `useMemo` + reset en render
-- [x] `components/admin/locations/LocationTree.tsx` — filtrar ubicaciones → `useMemo`
-- [x] `components/admin/ScreeningVenueSelector.tsx` — filtrar venues → `useMemo`
-- [x] `components/admin/ui/DateInput.tsx` — sincronizar displayValue → patrón render + helpers extraídos
-- [x] `components/admin/CloudinaryUploadWidget.tsx` — sincronizar imageUrl → patrón render
-- [x] `components/listados/estrenos/EstrenosDecadeSelector.tsx` — posición dropdown → calcular en click handler
-- [x] `app/admin/maintenance/review-names/page.tsx` — form con caso actual → patrón render con ref
-- [x] `components/admin/people/PersonForm.tsx` — nacionalidades → patrón render (initialData queda en useEffect por depender de estado externo)
-- [x] `hooks/useMovieForm.ts:241` — ya usa watch subscription de RHF correctamente, no requiere cambio
+Fuentes:
+- [Guía oficial de upgrade a Next.js 16](https://nextjs.org/docs/app/guides/upgrading/version-16)
+- [React 19 Upgrade Guide](https://react.dev/blog/2024/04/25/react-19-upgrade-guide)
+- [NextAuth + Next.js 16 issue](https://github.com/nextauthjs/next-auth/issues/13302)
+- [Migrating to Auth.js v5](https://authjs.dev/getting-started/migrating-to-v5)
 
 ---
 
-## Fase 3: EVENT_SYNC → mover a handlers
+## Fase 0: Preparación y auditoría pre-migración
 
-Mover la lógica al event handler que dispara el cambio de estado.
+Antes de tocar dependencias, verificar que todo está limpio.
 
-- [x] `hooks/useRoles.ts:105` — eliminado useEffect redundante (updateFilter ya resetea page)
-- [x] `hooks/useListPage.ts:148` — viewMode → limit movido a `setViewMode()` wrapper
-- [x] `components/admin/TriviaManager.tsx:25` — onChange llamado en handleAdd/handleDelete/handleMoveUp/handleMoveDown
-- [x] `components/admin/AlternativeTitlesManager.tsx:29` — onChange llamado en handleAdd/handleDelete
-- [x] `app/admin/roles/page.tsx:44,48,53,58` — 3 useEffects eliminados (department, isActive, isMainRole → onChange directo). 1 retenido (debouncedSearch, necesario por timer async). Eliminado estado local redundante.
-- [x] `app/(site)/listados/obituarios/ObituariosContent.tsx:53` — reset página movido a handleYearChange
-- [x] `app/(site)/listados/obituarios/ObituariosContent.tsx:65` — actualización URL movida a handleYearChange
-- [x] `components/layout/Header.tsx:48` — Escape movido a onKeyDown del input de búsqueda
-- [ ] `components/layout/Header.tsx:60` — click outside → pasa a Fase 6 (requiere crear `useClickOutside` reutilizable)
+- [ ] Ejecutar `npm run build` y `npm run lint` — confirmar que el proyecto compila sin errores.
+- [ ] Hacer commit de cualquier cambio pendiente en `main`.
+- [ ] Crear backup del `package.json` y `package-lock.json` actuales.
+- [ ] Revisar `tasks/lessons.md` para contexto.
 
 ---
 
-## Fase 4: DATA_FETCH → React Query
+## Fase 1: NextAuth v4 → Auth.js v5
 
-Migrar fetch manuales (`useEffect` + `useState` loading/data/error) a `useQuery`/`useMutation` de TanStack Query v5.
+**Hacer PRIMERO, todavía en Next.js 15 + React 18.** Así se debuggea contra un stack conocido.
 
-### 4a. Hooks compartidos (máximo impacto)
+NextAuth v4 (4.24.11) declara peer dependency `next@"^12 || ^13 || ^14 || ^15"` — no incluye Next.js 16. Más allá del peer dep, hay reportes de errores de runtime con React 19 en componentes client-side de next-auth (hooks internos de `SessionProvider`). Aunque este proyecto no usa `SessionProvider`, es preferible no arriesgarse y migrar primero.
 
-- [x] `hooks/useHomeData.ts` — useQuery para datos del home
-- [x] `hooks/useGlobalSearch.ts` — useQuery con debounce + enabled
-- [x] `hooks/useListPage.ts` — useQuery para filtros e items
-- [x] `hooks/usePeople.ts` — useQuery + useMutation (3 hooks)
-- [x] `hooks/usePeopleForm.ts` — useQuery para carga de persona
-- [x] `hooks/useRoles.ts` — useQuery + useMutation
-- [x] `hooks/useMovieForm.ts` — useQuery para metadata
-- [ ] `contexts/MovieModalContext.tsx:124` — auto-load movie data (diferido a Fase 5, es prop-sync no data fetch)
+Auth.js v5 requiere Next.js ≥14, así que se puede migrar sin problemas en el stack actual.
 
-### 4b. Componentes
+### 1a. Instalar Auth.js v5
 
-- [x] `components/layout/HeaderStats.tsx` — useQuery para stats públicas
-- [x] `components/admin/shared/PersonSearchInput.tsx` — useQuery para búsqueda
-- [x] `components/admin/locations/LocationForm.tsx` — useQuery para ubicaciones padre
-- [x] `components/admin/movies/MovieModal/tabs/ReviewsTab.tsx` — useQuery para críticas
-- [x] `components/admin/ScreeningVenueSelector.tsx` — useQuery para venues
+- [ ] `npm install next-auth@5` (reemplaza v4).
+- [ ] `npm install @auth/prisma-adapter` (reemplaza `@next-auth/prisma-adapter`).
+- [ ] `npm uninstall @next-auth/prisma-adapter`.
 
-### 4c. Páginas admin
+### 1b. Reestructurar auth config
 
-- [x] `app/admin/themes/page.tsx` — useQuery + invalidación
-- [x] `app/admin/stats/page.tsx` — useQuery + refetch
-- [x] `app/admin/screening-venues/page.tsx` — useQuery con filtros
-- [x] `app/admin/movies/page.tsx` — useQuery + invalidación
-- [x] `app/admin/genres/page.tsx` — useQuery + invalidación
-- [x] `app/admin/media-outlets/page.tsx` — useQuery + invalidación
-- [x] `app/admin/festivals/page.tsx` — useQuery
-- [x] `app/admin/calificaciones/page.tsx` — useQuery + invalidación
-- [x] `app/admin/maintenance/review-names/page.tsx` — useQuery + local state para filtrado
+- [ ] Crear `src/auth.ts` (o `auth.ts` en raíz) con el nuevo formato:
+  ```ts
+  import NextAuth from "next-auth"
+  import { authConfig } from "./lib/auth-config"
+  export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)
+  ```
+- [ ] Migrar `src/lib/auth.ts` → `src/lib/auth-config.ts`:
+  - `authOptions` → exportar como config object para `NextAuth()`.
+  - Cambiar `CredentialsProvider` import de `next-auth/providers/credentials` → `@auth/core/providers/credentials` (o el equivalente v5).
+  - Adaptar callbacks (jwt, session) al nuevo formato si cambió.
+- [ ] Actualizar `src/app/api/auth/[...nextauth]/route.ts`:
+  - Reemplazar handler manual por `export const { GET, POST } = handlers` importado de `src/auth.ts`.
 
-### 4d. Páginas públicas
+### 1c. Actualizar `requireAuth()`
 
-- [x] `app/(site)/page.tsx` — 3 useQuery (hero, obituarios, efemérides)
-- [x] `app/(site)/buscar/page.tsx` — useQuery con enabled
-- [x] `app/(site)/efemerides/[...date]/page.tsx` — useQuery + URL-derived state
-- [x] `app/(site)/listados/obituarios/ObituariosContent.tsx` — 2 useQuery (años + personas)
-- [x] `app/(site)/listados/estrenos/EstrenosContent.tsx` — useQuery
+- [ ] En `src/lib/auth.ts` (o donde quede el helper):
+  - Reemplazar `getServerSession(authOptions)` → `auth()` de Auth.js v5.
+  - `auth()` retorna la sesión directamente, sin necesidad de pasar config.
+- [ ] Buscar todos los archivos que importan `requireAuth` o `getServerSession` — verificar que siguen funcionando.
 
-### Infraestructura
+### 1d. Actualizar middleware (todavía `middleware.ts` en esta fase)
 
-- [x] Crear `QueryProvider` en `src/components/providers/QueryProvider.tsx`
-- [x] Agregar QueryProvider al root layout (`src/app/layout.tsx`)
+- [ ] `getToken()` de `next-auth/jwt` → verificar si el import y la API cambiaron en v5.
+- [ ] Auth.js v5 opcionalmente exporta un `auth` middleware wrapper — evaluar si conviene usarlo o mantener el check manual con `getToken`.
 
----
+### 1e. Actualizar client-side
 
-## Fase 5: MOUNT_EFFECT → wrappear con `useMountEffect`
+- [ ] `signIn()` de `next-auth/react` → verificar si cambia el import en v5.
+- [ ] `src/app/admin/login/page.tsx` — actualizar llamada a `signIn("credentials", ...)`.
 
-- [x] `components/ads/AdBanner.tsx` — push ad a AdSense + fix hooks condicionales
-- [x] `components/listados/estrenos/EstrenosDecadeSelector.tsx` — flag mounted para hydration
-- [x] `components/admin/CloudinaryUploadWidget.tsx` — cleanup al desmontar
-- [x] `components/admin/locations/LocationTree.tsx` — carga árbol
-- [x] `components/admin/locations/LocationForm.tsx` — carga padre inicial
-- [N/A] `hooks/usePeople.ts` — ya migrado a React Query en Fase 4
-- [N/A] `hooks/useListPage.ts:105` — no es mount effect (tiene deps `[filters, router]`)
-- [N/A] `app/(site)/listados/obituarios/ObituariosContent.tsx` — ya migrado a React Query en Fase 4
+### 1f. Verificación
+
+- [ ] `npm run build` sin errores.
+- [ ] Test manual: login con credenciales, acceso a `/admin/*`, logout.
+- [ ] Verificar que `requireAuth()` funcione en API routes y server components.
+- [ ] Verificar que el middleware siga protegiendo `/admin/*`.
 
 ---
 
-## Fase 6: DOM_SYNC — extraer hooks reutilizables
+## Fase 2: Actualizar React 18 → 19 y tipos
 
-- [x] Crear `useClickOutside(refs, callback, enabled)` y reemplazar en: Header, SearchBar, DateInput, PersonSearchInput, LocationForm, EstrenosDecadeSelector, RoleSelector
-- [x] Crear `useEscapeKey(callback, enabled)` y reemplazar en: MovieHero (Header usa onKeyDown inline, ImageGallery maneja múltiples teclas)
-- [x] Revisar scroll-to-element effects (FilmReleasesByYear, EstrenosYearBar) — son reacciones legítimas a cambios de estado, se mantienen como useEffect
+### 2a. Actualizar dependencias core
 
----
+- [ ] `npm install react@latest react-dom@latest`
+- [ ] `npm install -D @types/react@latest @types/react-dom@latest`
 
-## Fase 7: Caso especial — `MovieFormEnhanced.tsx`
+### 2b. Verificar breaking changes de React 19
 
-11 useEffects eliminados (0 restantes).
+El codebase ya está limpio de APIs deprecated (no usa PropTypes, defaultProps, string refs, forwardRef, legacy context, ReactDOM.render). Los cambios que sí aplican:
 
-- [x] Mount fetch (`fetchInitialData`) → `useMountEffect`
-- [x] 2 useEffects de initialData sync → patrón "ajustar durante render" con `prevInitialDataRef`
-- [x] 8 useEffects de parent notification → wrappers (`updateGenres`, `updateCast`, etc.) que hacen setState + onChange en un solo paso
+- [ ] **TypeScript**: `@types/react@19` elimina tipos implícitos de children en `React.FC`. Buscar todos los `React.FC` y `React.FunctionComponent` — agregar `children` explícitamente donde corresponda al tipo de props.
+- [ ] **`ref` como prop**: React 19 pasa `ref` como prop regular. No usamos `forwardRef` así que no hay cambio, pero verificar que ningún componente tenga conflictos con prop `ref`.
+- [ ] **`useRef` requiere argumento**: `useRef()` sin argumento ahora es error de tipos. Buscar todos los `useRef()` y agregar `useRef(null)` donde falte.
+- [ ] **Cleanup en `ref` callbacks**: React 19 soporta retornar cleanup de ref callbacks. Verificar que ningún ref callback retorne algo accidentalmente.
+- [ ] **`useDeferredValue` initialValue**: Si se usa, verificar la nueva firma. (Probablemente no aplica.)
+- [ ] Ejecutar `npm run build` — corregir errores de tipos que surjan.
 
----
+### 2c. Verificar librerías de terceros con React 19
 
-## Fase 8: Validación final
-
-- [x] Ejecutar `npm run lint` — sin warnings nuevos (todos preexistentes: `no-explicit-any`, `no-unescaped-entities`)
-- [x] Ejecutar `npm run build` — sin errores
-- [ ] Test manual del admin (movies modal, people form, festivals)
-- [ ] Test manual del sitio público (home, búsqueda, listados, fichas)
-- [x] Análisis estático de loops/re-renders: sin problemas reales (React Query usa deep comparison en queryKeys). Fix: consolidar double query en usePeopleForm
-
-### Resultado del refactor
-
-- **useEffect totales**: 46 (en 31 archivos)
-  - 5 en hooks de infraestructura (`useMountEffect`, `useClickOutside`, `useEscapeKey`, `useDebounce`)
-  - 41 restantes son efectos legítimos (focus, scroll sync, keyboard handlers, prop-sync necesarios)
-- **Eliminados**: ~60 useEffects innecesarios a lo largo de las 7 fases
-- **Hooks reutilizables creados**: `useMountEffect`, `useClickOutside`, `useEscapeKey`
-- **Infraestructura agregada**: QueryProvider + TanStack React Query v5
+- [ ] **react-hot-toast ^2.5.2**: Verificar compatibilidad con React 19. Si hay problemas, buscar alternativa (sonner, react-toastify) o fijar versión con override.
+- [ ] **@radix-ui/react-dialog, react-select, react-tabs**: Verificar que las versiones actuales soporten React 19. Actualizar si es necesario.
+- [ ] **@tanstack/react-query ^5.80.6**: Soporta React 19 — solo verificar que no haya warnings.
+- [ ] **@hookform/resolvers + react-hook-form ^7.57**: Verificar compatibilidad.
+- [ ] **@dnd-kit/core, sortable, utilities**: Verificar compatibilidad.
+- [ ] **next-cloudinary ^6.16**: Verificar compatibilidad.
+- [ ] **lucide-react ^0.513**: Verificar compatibilidad.
+- [ ] **isomorphic-dompurify ^2.28**: Verificar compatibilidad.
+- [ ] Ejecutar `npm run build` y `npm run lint` — corregir cualquier issue.
 
 ---
 
-## Fase 9: Eliminar useEffects restantes (46 → 5 infraestructura)
+## Fase 3: Actualizar Next.js 15 → 16
 
-Solo deben quedar los 5 useEffect dentro de hooks de infraestructura (`useMountEffect`, `useClickOutside`, `useEscapeKey`, `useDebounce`).
+### 3a. Actualizar dependencia
 
-### 9a. PROP_SYNC → ajustar durante render
+- [ ] `npm install next@latest`
+- [ ] `npm install -D eslint-config-next@latest`
 
-- [x] `admin/maintenance/review-names/page.tsx` — prevValue ref para currentCase sync
-- [x] `admin/festivals/FestivalForm.tsx` — prevValue ref para festival.location
-- [x] `admin/movies/MovieModal/tabs/ImagesTab/ImageEditModal.tsx` — useState initializer + prevValue ref
-- [x] `admin/people/PersonForm.tsx` — adjust during render con ref flag
-- [x] `admin/people/PersonFormFields/BasicInfoFields.tsx` — prevValue ref para partial dates
-- [x] `admin/shared/PersonSearchInput.tsx` — prevValue ref para initialPersonName y loadedPerson (2 useEffects eliminados)
-- [x] `admin/roles/RoleModal.tsx` — prevValue ref para role → RHF reset()
+### 3b. Async Request APIs (ya resuelto)
 
-### 9b. DERIVED_STATE → useMemo / cómputo inline
+El codebase **ya usa async** para `headers()`, `params`, `searchParams` y `generateMetadata()`. Verificación rápida:
 
-- [x] `admin/festivals/FestivalEditionForm.tsx` — year derivado inline en handleChange
-- [x] `admin/festivals/FestivalForm.tsx` — slug derivado inline en handleChange
-- [x] `admin/locations/LocationForm.tsx` — eliminado estado `suggestions`, derivado del query
-- [x] `admin/people/PersonFormFields/NationalitiesField.tsx` — selectedCountries derivado con useMemo
-- [x] `hooks/useMovieForm.ts` — metadataResult sync con adjust-during-render
-- [x] `hooks/usePeopleForm.ts` — 2 useEffects consolidados en adjust-during-render
+- [ ] Buscar `cookies()` sin `await` — no debería haber ninguno (no se usa).
+- [ ] Buscar `headers()` sin `await` — ya es async en `layout.tsx`.
+- [ ] Buscar acceso sincrónico a `params` en pages/layouts/routes — ya son `Promise<...>`.
+- [ ] Buscar acceso sincrónico a `searchParams` — ya son `Promise<...>`.
+- [ ] Opcionalmente ejecutar el codemod como verificación: `npx @next/codemod@canary upgrade latest`.
 
-### 9c. EVENT_SYNC → mover a handlers
+### 3c. Middleware → Proxy (breaking change)
 
-- [x] `app/admin/roles/page.tsx` — eliminado useEffect+useDebounce duplicado, sync directo en handleSearchChange
-- [x] `hooks/useListPage.ts` — URL sync movido a `setFiltersAndSync` helper, eliminado useEffect
-- [x] `admin/locations/LocationForm.tsx` — slug check reemplazado por useQuery + useDebounce, eliminados checkSlugAvailability + isCheckingSlug state
+Next.js 16 depreca `middleware.ts` y la renombra a `proxy.ts`.
 
-### 9d. DATA_FETCH → React Query
+- [ ] Renombrar `src/middleware.ts` → `src/proxy.ts`.
+- [ ] Renombrar la función exportada `middleware()` → `proxy()`.
+- [ ] Renombrar el `export const config` si usa `matcher` — el formato se mantiene igual pero verificar.
+- [ ] En `next.config.js`: si usa `skipMiddlewareUrlNormalize`, cambiar a `skipProxyUrlNormalize`. (No lo usamos actualmente.)
+- [ ] Verificar que `getToken` de Auth.js v5 sigue funcionando en proxy context.
+- [ ] Verificar que el CSRF, rate limiting, CSP y demás lógica funcione igual en `proxy.ts`.
 
-- [x] `admin/festivals/FestivalForm.tsx` — useQuery para location search + useClickOutside (3 useEffects eliminados)
-- [x] `admin/festivals/FestivalScreeningForm.tsx` — useQuery para venues + movie search + useClickOutside (3 useEffects eliminados)
-- [x] `admin/movies/MovieModal/tabs/ImagesTab/index.tsx` — useQuery para imágenes y personas (1 useEffect eliminado)
-- [x] `admin/movies/RoleSelector.tsx` — useQuery para load + search roles (2 useEffects eliminados)
-- [x] `admin/people/PersonFormFields/LocationFields.tsx` — useQuery para location por ID + useClickOutside (2 useEffects eliminados)
-- [x] `contexts/MovieModalContext.tsx` — adjust-during-render con fire-and-forget async (1 useEffect eliminado)
+### 3d. Turbopack como default (breaking change)
 
-### 9e. MOUNT_EFFECT → useMountEffect / useQuery
+Next.js 16 usa Turbopack por defecto para `next dev` y `next build`. Nuestro `next.config.js` tiene configuración `webpack` custom.
 
-- [N/A] `admin/festivals/FestivalScreeningForm.tsx` — ya migrado a useQuery en 9d
-- [x] `admin/people/PersonFormFields/NationalitiesField.tsx` — loadCountries → useQuery
+- [ ] **Evaluar la config webpack actual**:
+  - `config.optimization.minimize = true` — Turbopack maneja esto internamente, no hace falta.
+  - `config.resolve.fallback = { fs: false, path: false, crypto: false }` — Migrar a `turbopack.resolveAlias` o verificar si realmente algún código client-side importa estos módulos.
+- [ ] **Opción A (recomendada)**: Migrar a Turbopack completo.
+  - Eliminar la función `webpack()` de `next.config.js`.
+  - Si es necesario, agregar `turbopack.resolveAlias` para los fallbacks:
+    ```js
+    turbopack: {
+      resolveAlias: {
+        fs: { browser: './empty.ts' },
+        path: { browser: './empty.ts' },
+        crypto: { browser: './empty.ts' },
+      }
+    }
+    ```
+  - Testear con `next dev` y `next build`.
+- [ ] **Opción B (fallback)**: Usar `--webpack` flag temporalmente.
+  - Actualizar scripts en `package.json`: `"build": "prisma generate && next build --webpack"`.
+  - Planificar migración a Turbopack después.
+- [ ] Actualizar `package.json` scripts — remover `--turbopack` si existe (ya es default).
 
-### 9f. DOM_SYNC → usar hooks existentes
+### 3e. Cambios en next.config.js
 
-- [N/A] `admin/festivals/FestivalForm.tsx` — ya migrado a useClickOutside en 9d
-- [N/A] `admin/festivals/FestivalScreeningForm.tsx` — ya migrado a useClickOutside en 9d
-- [N/A] `admin/people/PersonFormFields/LocationFields.tsx` — ya migrado a useClickOutside en 9d
+- [ ] **`experimental.serverActions`**: Mover `serverActions.bodySizeLimit` fuera de `experimental` si Next.js 16 lo promueve a estable. Verificar docs.
+- [ ] **`experimental.workerThreads` y `cpus`**: Verificar si siguen siendo válidos o fueron removidos.
+- [ ] **`turbopack` config**: Si había algo en `experimental.turbopack`, moverlo al nivel superior.
+- [ ] **`typescript.ignoreBuildErrors: true`**: Mantener por ahora, pero evaluar si conviene desactivar.
+- [ ] **`images` config**: Verificar cambios de defaults:
+  - `minimumCacheTTL` ahora es 14400s (4h) por default — OK para nuestro caso.
+  - `imageSizes` ya no incluye 16px — OK.
+  - `qualities` ahora es `[75]` por default — OK.
+- [ ] **`eslint` key removida del config**: Verificar que no la tengamos (no la tenemos).
+- [ ] Ejecutar `npm run build` — corregir errores.
 
-### 9g. DOM_SYNC → extraer o mantener (focus, scroll, keyboard)
+### 3f. ESLint: `next lint` removido
 
-- [x] `layout/Header.tsx` — 2 focus useEffects eliminados, movidos a callbacks con rAF
-- [x] `listados/estrenos/EstrenosDecadeSelector.tsx` — scroll close extraído a `useWindowEvent`
-- [x] `movies/ImageGallery.tsx` — overflow check extraído a `useMountEffect` + `useWindowEvent`, keyboard a `useKeydown`
+Next.js 16 elimina el comando `next lint`. Hay que usar ESLint directamente.
 
-### 9h. DOM_SYNC restantes → extraer a hooks custom
-
-- [x] `home/HeroSection.tsx` — carousel interval extraído a `useInterval`
-- [x] `FilmReleasesByYear.tsx` — scroll-into-view extraído a `useScrollIntoView`
-- [x] `listados/estrenos/EstrenosYearBar.tsx` — scroll-into-view extraído a `useScrollIntoView`
-- [x] `admin/movies/MovieModal/tabs/ImagesTab/MultiImageUpload.tsx` — cleanup extraído a `useMountEffect`
-- [OK] `hooks/usePageView.ts` — ya es hook custom, useEffect encapsulado
-- [OK] `hooks/useMovieForm.ts` — ya es hook custom, useEffect encapsulado
-
-### Resultado final
-
-**0 useEffect directos en componentes, páginas o contextos.**
-
-useEffect solo existe dentro de 10 hooks de infraestructura:
-`useMountEffect`, `useClickOutside`, `useEscapeKey`, `useDebounce`, `useInterval`, `useWindowEvent`, `useKeydown`, `useScrollIntoView`, `usePageView`, `useMovieForm`
-
----
-
-## Conversión de páginas públicas a Server Components
-
-Objetivo: mover el data fetching de React Query (client) a Prisma directo (server) en las 4 páginas públicas que todavía son client components. Esto elimina waterfalls client→API→DB, reduce bundle JS público, y prepara para React 19.2 / Next.js 16.2.
-
-**Principios:**
-- Cada fase es independiente y deployable por separado.
-- Las API routes siguen funcionando (el admin y otros consumidores las usan).
-- Interactividad (selectores, paginación) se maneja con `searchParams` + client components pequeños.
-- Caching: `revalidate` de Next.js reemplaza Redis/memory cache para estas páginas.
-- Metadata (`generateMetadata`) se genera server-side en todas las páginas convertidas.
+- [ ] Actualizar `package.json`:
+  - Cambiar `"lint": "next lint"` → `"lint": "eslint ."` (flat config no necesita `--ext`).
+- [ ] Ya tenemos `eslint.config.mjs` con flat config — verificar que funcione con `eslint-config-next@latest`.
+- [ ] La config usa `FlatCompat` para extender `next/core-web-vitals` y `next/typescript` — verificar que `@next/eslint-plugin-next` sigue funcionando.
+- [ ] Si ESLint 9+ cambia algo, actualizar la config.
+- [ ] Ejecutar el nuevo comando lint y corregir errores.
 
 ---
 
-### Fase 0: Infraestructura — funciones de data fetching server-side ✅
+## Fase 4: Tailwind CSS 3 → 4 (opcional, recomendado)
 
-Funciones reutilizables en `src/lib/queries/` que encapsulan las queries Prisma de los API routes.
+Tailwind CSS 4 no es requerido por Next.js 16, pero trae mejoras de build performance (3-10x faster) y es el camino forward.
 
-- [x] `src/lib/queries/home.ts` — `getHomeFeed()`: 7 queries en paralelo (últimos/próximos estrenos, últimas películas, últimas personas, hero images, obituarios recientes, efemérides del día).
-- [x] `src/lib/queries/efemerides.ts` — `getEfemerides(month, day)`: 5 queries paralelas (estrenos, rodajes inicio/fin, nacimientos, muertes) + `formatearEfemeride()`.
-- [x] `src/lib/queries/obituarios.ts` — `getDeathYears()` + `getObituarios(year, page, limit)`: años únicos + personas paginadas.
-- [x] `src/lib/queries/estrenos.ts` — `getEstrenos(mode)`: query por año/década/upcoming + transformación a `ReleaseEntry[]`.
+### 4a. Evaluar viabilidad
 
-**Notas:**
-- Reutilizar los `select` y `where` exactos de los API routes para no cambiar la forma de los datos.
-- Las funciones reciben parámetros tipados y retornan tipos explícitos (no `any`).
-- No duplicar lógica: los API routes pueden importar estas mismas funciones para evitar drift.
+- [ ] Verificar que los browsers target (Chrome 111+, Safari 16.4+) son compatibles con Tailwind v4.
+- [ ] Revisar plugins: `@tailwindcss/typography` — verificar si hay versión v4.
+- [ ] Revisar colores oklch custom — Tailwind v4 soporta oklch nativamente, potencialmente simplifica la config.
 
----
+### 4b. Ejecutar migración automática
 
-### Fase 1: Home page (`/`) ✅
-
-- [x] Convertir `src/app/(site)/page.tsx` de `'use client'` a Server Component async.
-- [x] Llamar a `getHomeFeed()` con `Promise.all` interno (7 queries paralelas).
-- [x] Pasar datos como props a los componentes de sección.
-- [x] HeroSection ya es `'use client'` (useState + useInterval) — no requirió cambios.
-- [x] Agregar `'use client'` a RecentMoviesSection y RecentPeopleSection (onError handlers en `<img>`).
-- [x] Eliminar `useHomeData` hook y las 3 llamadas `useQuery` del home.
-- [x] Agregar `export const revalidate = 300` (5 min ISR).
-- [x] Verificar componentes: MoviesGrid, MovieCard, ObituariosSection, EfemeridesSection → server-compatible, sin `'use client'`.
-
-**Resultado:** Home JS bundle bajó a 4.35 kB (First Load). React Query, useHomeData, y 4 fetch calls eliminados del bundle público.
+- [ ] `npx @tailwindcss/upgrade` — migra clases y config automáticamente.
+- [ ] Revisar cambios manuales necesarios:
+  - `tailwind.config.js` → migrar a CSS-first config con `@theme` directive en `globals.css`.
+  - `postcss.config.js` → simplificar (Tailwind v4 incluye su propio PostCSS plugin).
+  - Colores oklch custom con alpha → migrar a `@theme` en CSS.
+  - Fuentes custom → migrar a `@theme`.
+  - Animaciones custom (fade-in, shimmer, stats-scroll) → migrar a CSS.
+- [ ] Verificar que `tailwind-merge` sigue funcionando con v4 class names.
+- [ ] Eliminar `autoprefixer` del `postcss.config.js` (Tailwind v4 lo incluye internamente).
+- [ ] Ejecutar `npm run build` y verificar visualmente las páginas.
 
 ---
 
-### Fase 2: Efemérides (`/efemerides/[[...date]]`) ✅
+## Fase 5: Limpieza y optimización post-migración
 
-- [x] Convertir `page.tsx` de `'use client'` a Server Component async.
-- [x] Leer mes/día de `params.date` y `searchParams.page` (Next.js 15 Promises).
-- [x] Llamar a `getEfemerides(month, day)` server-side (5 queries paralelas).
-- [x] Paginar server-side (slice sobre resultados ordenados por año).
-- [x] Crear `EfemeridesDateSelector` client component (select mes/día, prev/next, hoy).
-- [x] Crear `ServerPagination` reutilizable con `<Link>` (0 JS, sin `'use client'`).
-- [x] Agregar `generateMetadata()` con fecha dinámica.
-- [x] Agregar `revalidate = 86400` (24h).
+### 5a. Activar React Compiler (opcional)
 
-**Resultado:** Efemérides JS bundle bajó de 5.24 kB a 1.78 kB First Load. React Query, useState, useMemo eliminados. Paginación con Links (0 JS).
+Next.js 16 tiene soporte estable para React Compiler. Memoización automática.
 
----
+- [ ] `npm install -D babel-plugin-react-compiler`
+- [ ] Agregar `reactCompiler: true` en `next.config.js`.
+- [ ] Testear performance — puede aumentar tiempos de build.
+- [ ] Si hay problemas, deshabilitar y evaluar caso por caso.
 
-### Fase 3: Obituarios (`/listados/obituarios`) ✅
+### 5b. Explorar nuevas APIs de React 19.2
 
-- [x] Convertir `page.tsx` de `'use client'` a Server Component async.
-- [x] Mover lógica de `ObituariosContent.tsx` al page — eliminar `ObituariosContent.tsx`.
-- [x] Leer `searchParams.year` y `searchParams.page` (Next.js 15 Promises).
-- [x] Llamar a `getDeathYears()` + `getObituarios(year, page)` en paralelo.
-- [x] Crear `ObituariosYearSelector` client component (select año con `router.push`).
-- [x] Paginación con `ServerPagination` (Links, 0 JS).
-- [x] Agregar `generateMetadata()` con año dinámico.
-- [x] Agregar `revalidate = 3600` (1h ISR, reemplaza `force-dynamic`).
-- [x] Eliminar `'use client'` innecesario de `PersonCard` y `ObituariosGrid`.
+- [ ] **`useEffectEvent`**: Evaluar si alguno de nuestros hooks de infraestructura se beneficia (especialmente `useInterval`, `useWindowEvent`).
+- [ ] **View Transitions**: Evaluar para transiciones de navegación en el sitio público.
+- [ ] **Activity**: Evaluar para el admin (mantener estado de tabs/modals en background).
 
-**Resultado:** Obituarios JS bundle bajó de 6.34 kB a 1.44 kB First Load. Eliminados: React Query, useState, Suspense wrapper, ObituariosContent.
+### 5c. Explorar nuevas APIs de Next.js 16
 
----
+- [ ] **`updateTag`**: Evaluar para mutaciones del admin (revalidación inmediata post-edit).
+- [ ] **`refresh()`**: Evaluar para Server Actions.
+- [ ] **`cacheLife` / `cacheTag`**: Evaluar si nuestras páginas con `revalidate` se benefician.
+- [ ] **`cacheComponents`**: Evaluar PPR para páginas mixtas (shell estático + datos dinámicos).
 
-### Fase 4: Estrenos (`/listados/estrenos/[year]`) ✅
+### 5d. Verificación final
 
-- [x] Mover fetch de `EstrenosContent.tsx` al page server component `[year]/page.tsx`.
-- [x] Llamar a `getEstrenos(mode)` server-side — transformación a `ReleaseEntry[]` en server.
-- [x] Pasar `entries` como prop directo a `FilmReleasesByYear` (eliminando capa intermedia).
-- [x] `FilmReleasesByYear` mantiene `'use client'` (decade selector, year bar, pagination interactiva).
-- [x] Eliminar `EstrenosContent.tsx` (lógica de fetch movida al page).
-- [x] JSON-LD schema y `generateMetadata()` existentes siguen funcionando — ahora fetch en paralelo con `Promise.all`.
-- [x] Agregar `revalidate = 3600` (1h ISR). Eliminar `Suspense` wrapper (data disponible al renderizar).
-
-**Resultado:** Estrenos bundle bajó de 13.2 kB a 12.6 kB First Load. React Query y fetch client-side eliminados. Fetch de releases + schema en paralelo.
+- [ ] `npm run build` sin errores ni warnings nuevos.
+- [ ] `npm run lint` limpio.
+- [ ] Test manual del sitio público: home, búsqueda, fichas, listados, efemérides.
+- [ ] Test manual del admin: login, CRUD películas, personas, festivales, locations.
+- [ ] Test manual de proxy: CSRF, rate limiting, CSP, auth guards.
+- [ ] Verificar Docker build: `docker compose build app` exitoso.
+- [ ] Verificar performance con Lighthouse en páginas clave.
 
 ---
 
-### Fase 5: Limpieza y verificación ✅
+## Notas técnicas
 
-- [x] Verificar que `useQuery` ya no se usa en componentes públicos convertidos (home, efemérides, obituarios, estrenos).
-- [x] `QueryProvider` se queda en root layout — `/buscar` y `HeaderStats.tsx` todavía usan React Query.
-- [x] `npm run build` — sin errores. Todas las rutas públicas compilan correctamente.
-- [x] `npm run lint` — sin errores nuevos en archivos modificados (solo warnings preexistentes de `<img>`).
-- [x] Bundle size comparado (ver tabla abajo).
-- [ ] Test manual pendiente: home, efemérides, obituarios, estrenos.
-- [x] API routes no fueron modificados — siguen funcionando para admin y otros consumidores.
-- [x] Refactorear API routes para importar funciones de `lib/queries/` (+160/-873 líneas):
-  - `/api/movies/home-feed` → `getHomeFeed()` de `lib/queries/home.ts`
-  - `/api/efemerides` → `getEfemerides()` de `lib/queries/efemerides.ts`
-  - `/api/images/hero` → `getHeroImages()` de `lib/queries/home.ts`
-  - Cache Redis + memory preservado en cada API route.
+### Lo que ya está resuelto (no requiere cambios)
 
-**Bundle size final (First Load JS por página):**
+- **Async Request APIs**: Todos los `params`, `searchParams`, `headers()` ya usan `await` + `Promise<...>`.
+- **No hay APIs deprecated**: Sin PropTypes, defaultProps, string refs, forwardRef, legacy context, ReactDOM.render/hydrate, next/amp, serverRuntimeConfig, next/legacy/image.
+- **useEffect ban**: 0 useEffects directos en componentes — solo en 10 hooks de infraestructura.
+- **ESLint flat config**: Ya migrado a `eslint.config.mjs`.
+- **No hay parallel routes**: No necesitamos agregar `default.js` files.
+- **`images.remotePatterns`**: Ya usamos el formato moderno (no `images.domains`).
 
-| Página | Antes | Después | Reducción |
-|--------|-------|---------|-----------|
-| `/` (home) | ~14 kB | 4.35 kB | -69% |
-| `/efemerides` | 5.24 kB | 1.78 kB | -66% |
-| `/listados/obituarios` | 6.34 kB | 1.44 kB | -77% |
-| `/listados/estrenos/[year]` | 13.2 kB | 12.6 kB | -5% |
+### Riesgos identificados
 
-**Eliminado del bundle público:** React Query fetch calls (4 en home, 1 en efemérides, 1 en obituarios, 1 en estrenos), `useHomeData`, `EstrenosContent`, `ObituariosContent`, hooks de estado (useState, useMemo) en páginas convertidas.
+| Riesgo | Impacto | Mitigación |
+|--------|---------|------------|
+| NextAuth v4 incompatible con Next.js 16 | **Alto** | Migrar a Auth.js v5 PRIMERO (Fase 1) |
+| Webpack config custom vs Turbopack | **Medio** | Evaluar si los fallbacks son necesarios; usar `--webpack` como escape |
+| react-hot-toast con React 19 | **Bajo** | Versión 2.5.x es reciente, probablemente compatible |
+| Tailwind v4 con colores oklch custom | **Bajo** | Tailwind v4 soporta oklch nativamente |
+| `typescript.ignoreBuildErrors: true` oculta errores | **Medio** | Ideal: desactivar y corregir errores de tipos |
 
----
+### Orden de ejecución
 
-### Post-conversión: Migración a React 19.2 / Next.js 16.2
+```
+Fase 0 (preparación)
+  ↓
+Fase 1 (NextAuth v4 → Auth.js v5) ← PRIMERO, contra stack conocido (Next 15 + React 18)
+  ↓
+Fase 2 (React 18 → 19)
+  ↓
+Fase 3 (Next.js 15 → 16) ← React 19 + Auth.js v5 ya están listos
+  ↓
+Fase 4 (Tailwind 3 → 4) ← opcional, independiente
+  ↓
+Fase 5 (optimización) ← post-migración
+```
 
-- [ ] Migrar a React 19.2 / Next.js 16.2 (scope separado)
+Cada fase es deployable independientemente. La Fase 1 se puede deployar y validar en producción antes de continuar con las demás.
