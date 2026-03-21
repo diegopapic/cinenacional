@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Save, Loader2, AlertCircle } from 'lucide-react';
 import { usePeopleForm } from '@/hooks/usePeopleForm';
 import { PersonWithRelations } from '@/lib/people/peopleTypes';
@@ -52,28 +52,25 @@ export function PersonForm({
     const initialDataApplied = useRef(false);
     const nationalitiesInitialized = useRef(false);
 
-    // Si hay datos iniciales y no es edición, cargarlos (one-shot via useEffect)
-    // Necesita useEffect porque updateFields modifica estado de otro hook
-    useEffect(() => {
-        if (initialData && !personId && !initialDataApplied.current) {
-            initialDataApplied.current = true;
-            updateFields({
-                firstName: initialData.firstName || '',
-                lastName: initialData.lastName || '',
-                realName: initialData.realName || '',
-                gender: initialData.gender || '',
-            });
+    // Si hay datos iniciales y no es edición, cargarlos (one-shot, adjust during render)
+    if (initialData && !personId && !initialDataApplied.current) {
+        initialDataApplied.current = true;
+        updateFields({
+            firstName: initialData.firstName || '',
+            lastName: initialData.lastName || '',
+            realName: initialData.realName || '',
+            gender: initialData.gender || '',
+        });
 
-            if (initialData.nationalities) {
-                const nationalityIds = initialData.nationalities.map((n: any) => {
-                    if (typeof n === 'number') return n;
-                    if (typeof n === 'object' && n !== null) return n.locationId;
-                    return null;
-                }).filter((id): id is number => id !== null);
-                setNationalities(nationalityIds);
-            }
+        if (initialData.nationalities) {
+            const nationalityIds = initialData.nationalities.map((n: any) => {
+                if (typeof n === 'number') return n;
+                if (typeof n === 'object' && n !== null) return n.locationId;
+                return null;
+            }).filter((id): id is number => id !== null);
+            setNationalities(nationalityIds);
         }
-    }, [initialData, personId, updateFields]);
+    }
 
     // Cargar nacionalidades cuando se edita (one-shot, ajuste durante render)
     if (isEdit && formData.nationalities && formData.nationalities.length > 0 && !nationalitiesInitialized.current) {

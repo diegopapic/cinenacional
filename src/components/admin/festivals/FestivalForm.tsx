@@ -95,13 +95,15 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Load initial location
-  useEffect(() => {
+  // Load initial location (adjust during render)
+  const prevFestivalRef = useRef(festival)
+  if (festival !== prevFestivalRef.current) {
+    prevFestivalRef.current = festival
     if (festival?.location) {
       setSelectedLocation(festival.location)
       setLocationSearch(festival.location.name)
     }
-  }, [festival])
+  }
 
   const searchLocations = async (searchTerm: string) => {
     setIsSearching(true)

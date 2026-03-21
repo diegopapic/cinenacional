@@ -1,7 +1,7 @@
 // src/components/admin/movies/MovieModal/tabs/ImagesTab/ImageEditModal.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { X, Save, Trash2, GripVertical } from 'lucide-react'
 import { 
   ImageWithRelations, 
@@ -50,23 +50,34 @@ export function ImageEditModal({
   const [photoDate, setPhotoDate] = useState(image.photoDate?.split('T')[0] || '')
   const [photographerCredit, setPhotographerCredit] = useState(image.photographerCredit || '')
   const [eventName, setEventName] = useState(image.eventName || '')
-  const [selectedPeople, setSelectedPeople] = useState<SelectedPerson[]>([])
+  const [selectedPeople, setSelectedPeople] = useState<SelectedPerson[]>(() => {
+    if (!image.people) return []
+    return image.people.map(ip => ({
+      personId: ip.personId,
+      position: ip.position,
+      name: ip.person
+        ? `${ip.person.firstName || ''} ${ip.person.lastName || ''}`.trim()
+        : `Persona ${ip.personId}`
+    })).sort((a, b) => a.position - b.position)
+  })
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  // Inicializar personas seleccionadas
-  useEffect(() => {
+  // Re-sync si cambia la imagen (adjust during render)
+  const prevImageRef = useRef(image)
+  if (image !== prevImageRef.current) {
+    prevImageRef.current = image
     if (image.people) {
       const people = image.people.map(ip => ({
         personId: ip.personId,
         position: ip.position,
-        name: ip.person 
+        name: ip.person
           ? `${ip.person.firstName || ''} ${ip.person.lastName || ''}`.trim()
           : `Persona ${ip.personId}`
-      }))
-      setSelectedPeople(people.sort((a, b) => a.position - b.position))
+      })).sort((a, b) => a.position - b.position)
+      setSelectedPeople(people)
     }
-  }, [image])
+  }
 
   // Generar preview del caption
   const previewCaption = generateImageCaption({

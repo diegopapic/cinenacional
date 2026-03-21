@@ -150,14 +150,13 @@ Solo deben quedar los 5 useEffect dentro de hooks de infraestructura (`useMountE
 
 ### 9a. PROP_SYNC → ajustar durante render
 
-- [ ] `admin/maintenance/review-names/page.tsx:50` — sincroniza `currentCaseFirstName`/`lastName` → estado local. Usar patrón prevValue ref
-- [ ] `admin/festivals/FestivalForm.tsx:99` — sincroniza `festival.location` → estado local. Usar patrón prevValue ref
-- [ ] `admin/movies/MovieModal/tabs/ImagesTab/ImageEditModal.tsx:58` — inicializa selectedPeople desde `image.people`. Usar `useMemo`
-- [ ] `admin/people/PersonForm.tsx:57` — inicializa campos desde `initialData`. Usar patrón prevValue ref
-- [ ] `admin/people/PersonFormFields/BasicInfoFields.tsx:41` — sincroniza `formData` parcial → estado local. Usar patrón prevValue ref
-- [ ] `admin/shared/PersonSearchInput.tsx:216` — sincroniza `initialPersonName` → searchTerm. Usar useState initializer o prevValue ref
-- [ ] `admin/shared/PersonSearchInput.tsx:222` — sincroniza `loadedPerson` → estado local. Usar patrón prevValue ref
-- [ ] `admin/roles/RoleModal.tsx:71` — sincroniza prop `role` → RHF `reset()`. Usar patrón prevValue ref
+- [x] `admin/maintenance/review-names/page.tsx` — prevValue ref para currentCase sync
+- [x] `admin/festivals/FestivalForm.tsx` — prevValue ref para festival.location
+- [x] `admin/movies/MovieModal/tabs/ImagesTab/ImageEditModal.tsx` — useState initializer + prevValue ref
+- [x] `admin/people/PersonForm.tsx` — adjust during render con ref flag
+- [x] `admin/people/PersonFormFields/BasicInfoFields.tsx` — prevValue ref para partial dates
+- [x] `admin/shared/PersonSearchInput.tsx` — prevValue ref para initialPersonName y loadedPerson (2 useEffects eliminados)
+- [x] `admin/roles/RoleModal.tsx` — prevValue ref para role → RHF reset()
 
 ### 9b. DERIVED_STATE → useMemo / cómputo inline
 

@@ -1,5 +1,5 @@
 // src/components/admin/shared/PersonSearchInput.tsx
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useClickOutside } from '@/hooks/useClickOutside'
 import { useQuery } from '@tanstack/react-query'
 import { User, X, Plus, ArrowRight } from 'lucide-react'
@@ -213,13 +213,19 @@ export default function PersonSearchInput({
     staleTime: 5 * 60 * 1000,
   })
 
-  useEffect(() => {
+  // Sync initialPersonName → searchTerm (adjust during render)
+  const prevInitialNameRef = useRef(initialPersonName)
+  if (initialPersonName !== prevInitialNameRef.current) {
+    prevInitialNameRef.current = initialPersonName
     if (value && value > 0 && initialPersonName) {
       setSearchTerm(initialPersonName)
     }
-  }, [value, initialPersonName])
+  }
 
-  useEffect(() => {
+  // Sync loadedPerson → local state (adjust during render)
+  const prevLoadedPersonRef = useRef(loadedPerson)
+  if (loadedPerson !== prevLoadedPersonRef.current) {
+    prevLoadedPersonRef.current = loadedPerson
     if (loadedPerson) {
       let displayName = loadedPerson.name || `${loadedPerson.firstName || ''} ${loadedPerson.lastName || ''}`.trim()
 
@@ -234,7 +240,7 @@ export default function PersonSearchInput({
       setSearchTerm(displayName)
       setSelectedAlternativeNameId(alternativeNameId || null)
     }
-  }, [loadedPerson, alternativeNameId])
+  }
 
   // Cerrar dropdown al hacer click fuera
   useClickOutside(containerRef, useCallback(() => setIsOpen(false), []))

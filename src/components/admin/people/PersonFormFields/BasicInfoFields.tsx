@@ -4,7 +4,7 @@
 
 import { PersonFormData, PersonAlternativeName } from '@/lib/people/peopleTypes';
 import { Calendar, Plus, Trash2, User } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { PartialDate } from '@/lib/shared/dateUtils';
 import { DateInput } from '@/components/admin/ui/DateInput';
 
@@ -37,17 +37,18 @@ export function BasicInfoFields({
         day: null
     });
 
-    // Cargar estados de fechas parciales desde formData
-    useEffect(() => {
-        if (formData.isPartialBirthDate) {
-            setIsPartialBirthDate(true);
-            setPartialBirthDate(formData.partialBirthDate || { year: null, month: null, day: null });
-        }
-        if (formData.isPartialDeathDate) {
-            setIsPartialDeathDate(true);
-            setPartialDeathDate(formData.partialDeathDate || { year: null, month: null, day: null });
-        }
-    }, [formData.isPartialBirthDate, formData.isPartialDeathDate, formData.partialBirthDate, formData.partialDeathDate]);
+    // Cargar estados de fechas parciales desde formData (adjust during render)
+    const prevPartialRef = useRef({ birth: formData.isPartialBirthDate, death: formData.isPartialDeathDate });
+    if (formData.isPartialBirthDate && !prevPartialRef.current.birth) {
+        prevPartialRef.current.birth = true;
+        setIsPartialBirthDate(true);
+        setPartialBirthDate(formData.partialBirthDate || { year: null, month: null, day: null });
+    }
+    if (formData.isPartialDeathDate && !prevPartialRef.current.death) {
+        prevPartialRef.current.death = true;
+        setIsPartialDeathDate(true);
+        setPartialDeathDate(formData.partialDeathDate || { year: null, month: null, day: null });
+    }
 
     // Manejar cambios en fechas parciales
     const handlePartialBirthDateChange = (field: keyof PartialDate, value: any) => {

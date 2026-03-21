@@ -67,8 +67,10 @@ export function RoleModal({
     }
   });
 
-  // Cargar datos al editar
-  React.useEffect(() => {
+  // Cargar datos al editar (adjust during render)
+  const prevRoleRef = React.useRef(role);
+  if (role !== prevRoleRef.current) {
+    prevRoleRef.current = role;
     if (isEdit && role) {
       reset({
         name: role.name,
@@ -86,7 +88,7 @@ export function RoleModal({
         isActive: true
       });
     }
-  }, [role, isEdit, reset]);
+  }
 
   const onSubmit = async (data: RoleFormData) => {
     try {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -43,14 +43,16 @@ export default function ReviewNamesPage() {
   // Derive cases from query data, filtering out removed ones
   const cases = (queryData?.cases || []).filter(c => !removedIds.has(c.id));
 
-  // Sync form fields when current case changes
+  // Sync form fields when current case changes (adjust during render)
   const currentCaseForSync = cases[currentIndex];
   const currentCaseFirstName = currentCaseForSync?.firstName ?? '';
   const currentCaseLastName = currentCaseForSync?.lastName ?? '';
-  useEffect(() => {
+  const prevCaseRef = useRef({ firstName: '', lastName: '' });
+  if (prevCaseRef.current.firstName !== currentCaseFirstName || prevCaseRef.current.lastName !== currentCaseLastName) {
+    prevCaseRef.current = { firstName: currentCaseFirstName, lastName: currentCaseLastName };
     setFirstName(currentCaseFirstName);
     setLastName(currentCaseLastName);
-  }, [currentCaseFirstName, currentCaseLastName]);
+  }
 
   const handleSave = async () => {
     if (!cases[currentIndex]) return;
