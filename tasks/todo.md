@@ -144,6 +144,77 @@ Migrar fetch manuales (`useEffect` + `useState` loading/data/error) a `useQuery`
 
 ---
 
+## Fase 9: Eliminar useEffects restantes (46 → 5 infraestructura)
+
+Solo deben quedar los 5 useEffect dentro de hooks de infraestructura (`useMountEffect`, `useClickOutside`, `useEscapeKey`, `useDebounce`).
+
+### 9a. PROP_SYNC → ajustar durante render
+
+- [ ] `admin/maintenance/review-names/page.tsx:50` — sincroniza `currentCaseFirstName`/`lastName` → estado local. Usar patrón prevValue ref
+- [ ] `admin/festivals/FestivalForm.tsx:99` — sincroniza `festival.location` → estado local. Usar patrón prevValue ref
+- [ ] `admin/movies/MovieModal/tabs/ImagesTab/ImageEditModal.tsx:58` — inicializa selectedPeople desde `image.people`. Usar `useMemo`
+- [ ] `admin/people/PersonForm.tsx:57` — inicializa campos desde `initialData`. Usar patrón prevValue ref
+- [ ] `admin/people/PersonFormFields/BasicInfoFields.tsx:41` — sincroniza `formData` parcial → estado local. Usar patrón prevValue ref
+- [ ] `admin/shared/PersonSearchInput.tsx:216` — sincroniza `initialPersonName` → searchTerm. Usar useState initializer o prevValue ref
+- [ ] `admin/shared/PersonSearchInput.tsx:222` — sincroniza `loadedPerson` → estado local. Usar patrón prevValue ref
+- [ ] `admin/roles/RoleModal.tsx:71` — sincroniza prop `role` → RHF `reset()`. Usar patrón prevValue ref
+
+### 9b. DERIVED_STATE → useMemo / cómputo inline
+
+- [ ] `admin/festivals/FestivalEditionForm.tsx:39` — deriva `year` de `startDate`. Mover a `handleChange`
+- [ ] `admin/festivals/FestivalForm.tsx:67` — deriva `slug` de `name`. Mover a `handleChange`
+- [ ] `admin/locations/LocationForm.tsx:90` — sincroniza `searchSuggestions` (query) → estado local `suggestions`. Usar datos del query directamente
+- [ ] `admin/people/PersonFormFields/NationalitiesField.tsx:39` — filtra `countries` por `value`. Usar `useMemo`
+- [ ] `hooks/useMovieForm.ts:225` — sincroniza `metadataResult` → estado local. Usar patrón prevValue ref
+- [ ] `hooks/usePeopleForm.ts:82` — sincroniza `personData` → formData. Usar patrón prevValue ref
+- [ ] `hooks/usePeopleForm.ts:90` — reset de ref cuando cambia personId. Consolidar con el anterior
+
+### 9c. EVENT_SYNC → mover a handlers
+
+- [ ] `app/admin/roles/page.tsx:41` — `updateFilter('search', debouncedSearch)`. Pasar debouncedSearch al hook directamente
+- [ ] `hooks/useListPage.ts:103` — sincroniza `filters` → URL via `router.replace`. Mover a cada función que modifica filtros
+- [ ] `admin/locations/LocationForm.tsx:104` — debounce de slug check. Usar `useDebounce` + React Query
+
+### 9d. DATA_FETCH → React Query
+
+- [ ] `admin/festivals/FestivalForm.tsx:77` — busca locations por debounce. Usar `useQuery`
+- [ ] `admin/festivals/FestivalScreeningForm.tsx:115` — busca movies por debounce. Usar `useQuery`
+- [ ] `admin/movies/MovieModal/tabs/ImagesTab/index.tsx:37` — carga imágenes y personas por movieId. Usar `useQuery`
+- [ ] `admin/movies/RoleSelector.tsx:43` — carga rol por ID. Usar `useQuery`
+- [ ] `admin/movies/RoleSelector.tsx:58` — busca roles. Usar `useQuery`
+- [ ] `admin/people/PersonFormFields/LocationFields.tsx:61` — carga location por ID. Usar `useQuery`
+- [ ] `contexts/MovieModalContext.tsx:124` — carga datos de película. Usar `useQuery`
+
+### 9e. MOUNT_EFFECT → useMountEffect
+
+- [ ] `admin/festivals/FestivalScreeningForm.tsx:110` — `loadVenues()`. Usar `useMountEffect`
+- [ ] `admin/people/PersonFormFields/NationalitiesField.tsx:34` — `loadCountries()`. Usar `useMountEffect`
+
+### 9f. DOM_SYNC → usar hooks existentes
+
+- [ ] `admin/festivals/FestivalForm.tsx:87` — click outside. Usar `useClickOutside`
+- [ ] `admin/festivals/FestivalScreeningForm.tsx:125` — click outside. Usar `useClickOutside`
+- [ ] `admin/people/PersonFormFields/LocationFields.tsx:84` — click outside. Usar `useClickOutside`
+
+### 9g. DOM_SYNC → extraer o mantener (focus, scroll, keyboard)
+
+- [ ] `layout/Header.tsx:35` — focus input desktop al expandir. Mover a callback de `setDesktopSearchExpanded`
+- [ ] `layout/Header.tsx:42` — focus input mobile al abrir. Mover a callback de `setSearchOpen`
+- [ ] `listados/estrenos/EstrenosDecadeSelector.tsx:48` — cierra dropdown on scroll. Crear `useScrollClose` o inline
+- [ ] `movies/ImageGallery.tsx:74` — scroll/resize listeners para overflow check. Mantener (DOM setup/cleanup legítimo)
+- [ ] `movies/ImageGallery.tsx:122` — Escape + flechas en lightbox. Crear `useKeyboardNavigation` o mantener
+
+### 9h. LEGITIMATE — mantener como useEffect
+
+- [ ] `home/HeroSection.tsx:235` — interval de rotación de carousel. Legítimo (timer setup/cleanup)
+- [ ] `FilmReleasesByYear.tsx:130` — scroll-into-view de elemento activo. Legítimo (DOM post-paint)
+- [ ] `listados/estrenos/EstrenosYearBar.tsx:26` — scroll-into-view. Legítimo (DOM post-paint)
+- [ ] `hooks/usePageView.ts:105` — tracking de page view. Legítimo (fire-and-forget side effect)
+- [ ] `hooks/useMovieForm.ts:240` — watch subscription de RHF. Legítimo (external subscription setup/cleanup)
+- [ ] `admin/movies/MovieModal/tabs/ImagesTab/MultiImageUpload.tsx:41` — cleanup de timeout. Legítimo (infrastructure cleanup)
+
+---
+
 ## Post-refactor: Migración a Next.js 16.2 / React 19.2
 
 - [ ] Migrar a React 19.2 / Next.js 16.2
