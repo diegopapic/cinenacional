@@ -160,13 +160,14 @@ Migrado de Tailwind CSS 3.4.13 → 4.2.2 via `npx @tailwindcss/upgrade`.
 
 Opción B elegida: loader custom pass-through (las URLs ya incluyen transforms de Cloudinary).
 
-- [x] Creado `src/lib/images/cloudinaryLoader.ts` — loader pass-through.
-- [x] Configurado `images.loader='custom'` + `loaderFile` en `next.config.js`. Removido `remotePatterns`.
+- [x] Creado `cloudinaryLoader.js` — extrae public ID y aplica `w_{width},c_limit,q_auto,f_auto`.
+- [x] Loader como prop `loader={cloudinaryLoader}` en cada `<Image>` (32 archivos, ~50 instancias). `loaderFile` en config no funcionaba con Next.js 16 Turbopack.
+- [x] `remotePatterns` restaurado en `next.config.js` (necesario sin `loader: 'custom'` en config).
 - [x] Migrados 31 `<img>` → `<Image>` en 23 componentes (14 público + 9 admin).
 - [x] `priority` agregado a LCP images: MovieHero backdrop, MoviePoster, HeroSection.
-- [x] `fill` prop para imágenes en containers sized (aspect-*, fixed w/h).
+- [x] `fill` + `sizes` para imágenes en containers sized. Hero usa `width/height` explícito para preservar mask blur.
 - [x] Re-habilitada regla `@next/next/no-img-element` — 0 violaciones.
-- [ ] Verificar Lighthouse LCP en páginas clave (post-deploy).
+- [x] Lighthouse verificado: imágenes Cloudinary de 6,337 KiB → 360 KiB (−94%), LCP 7.4s → 5.3s.
 
 ### 6e. Verificación final
 
