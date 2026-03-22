@@ -1,6 +1,7 @@
 // components/admin/RoleSelector.tsx
 import { useState, useRef, useCallback } from 'react'
 import { useClickOutside } from '@/hooks/useClickOutside'
+import { useValueChange } from '@/hooks/useValueChange'
 import { useQuery } from '@tanstack/react-query'
 import { useDebounce } from '@/hooks/useDebounce'
 import { Search, X } from 'lucide-react'
@@ -45,15 +46,13 @@ export default function RoleSelector({
     staleTime: 5 * 60 * 1000,
   })
 
-  // Sync loadedRole → local state (adjust during render)
-  const prevLoadedRoleRef = useRef(loadedRole)
-  if (loadedRole !== prevLoadedRoleRef.current) {
-    prevLoadedRoleRef.current = loadedRole
-    if (loadedRole) {
-      setSelectedRole(loadedRole)
-      setSearchTerm(loadedRole.name)
+  // Sync loadedRole → local state
+  useValueChange(loadedRole, (role) => {
+    if (role) {
+      setSelectedRole(role)
+      setSearchTerm(role.name)
     }
-  }
+  })
 
   // Cerrar dropdown al hacer click fuera
   useClickOutside(containerRef, useCallback(() => setIsOpen(false), []))

@@ -1,6 +1,7 @@
 // src/contexts/MovieModalContext.tsx
-import React, { createContext, useContext, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { useMovieForm } from '@/hooks/useMovieForm';
+import { useValueChange } from '@/hooks/useValueChange';
 import type { Movie } from '@/lib/movies/movieTypes';
 import { createLogger } from '@/lib/logger'
 
@@ -116,26 +117,15 @@ export function MovieModalProvider({
     onError
   });
 
-  // Trackear la última película cargada para detectar cambios
-  const lastEditingMovieRef = useRef<Movie | null>(null);
-  const loadCounterRef = useRef(0);
+  // Cargar datos cuando cambia editingMovie
+  useValueChange(editingMovie, (movie, prevMovie) => {
+    if (movie) {
+      log.debug('Loading movie data for editing', { id: movie.id })
 
-  // Cargar datos cuando cambia editingMovie (adjust during render + fire-and-forget async)
-  if (editingMovie !== lastEditingMovieRef.current) {
-    const prevMovie = lastEditingMovieRef.current;
-    lastEditingMovieRef.current = editingMovie;
-
-    if (editingMovie) {
-      loadCounterRef.current += 1;
-      const currentLoad = loadCounterRef.current;
-
-      log.debug('Loading movie data for editing', { id: editingMovie.id, loadNumber: currentLoad })
-
-      // Fire-and-forget: loadMovieData is async but we detect the change synchronously
-      movieFormData.loadMovieData(editingMovie).then(() => {
-        log.debug('Movie data loaded successfully', { id: editingMovie.id, loadNumber: currentLoad })
+      movieFormData.loadMovieData(movie).then(() => {
+        log.debug('Movie data loaded successfully', { id: movie.id })
       }).catch(error => {
-        log.error('Failed to load movie data', error, { loadNumber: currentLoad })
+        log.error('Failed to load movie data', error)
         if (onError) {
           onError(error instanceof Error ? error : new Error('Error loading movie data'))
         }
@@ -144,7 +134,7 @@ export function MovieModalProvider({
       log.debug('Resetting form, no editing movie')
       movieFormData.resetForNewMovie()
     }
-  }
+  });
 
   return (
     <MovieModalContext.Provider value={{

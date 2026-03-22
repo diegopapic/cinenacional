@@ -2,9 +2,11 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Save, Loader2, AlertCircle } from 'lucide-react';
 import { usePeopleForm } from '@/hooks/usePeopleForm';
+import { useMountEffect } from '@/hooks/useMountEffect';
+import { useValueChange } from '@/hooks/useValueChange';
 import { PersonWithRelations } from '@/lib/people/peopleTypes';
 import NationalitiesField from './PersonFormFields/NationalitiesField'
 import { CloudinaryUploadWidget } from '@/components/admin/CloudinaryUploadWidget';
@@ -48,41 +50,39 @@ export function PersonForm({
     // Estado para nacionalidades
     const [nationalities, setNationalities] = useState<number[]>([]);
 
-    // Refs para inicialización one-shot
-    const initialDataApplied = useRef(false);
-    const nationalitiesInitialized = useRef(false);
+    // Aplicar datos iniciales al montar (solo en create, no en edit)
+    useMountEffect(() => {
+        if (initialData && !personId) {
+            updateFields({
+                firstName: initialData.firstName || '',
+                lastName: initialData.lastName || '',
+                realName: initialData.realName || '',
+                gender: initialData.gender || '',
+            });
 
-    // Si hay datos iniciales y no es edición, cargarlos (one-shot, adjust during render)
-    if (initialData && !personId && !initialDataApplied.current) {
-        initialDataApplied.current = true;
-        updateFields({
-            firstName: initialData.firstName || '',
-            lastName: initialData.lastName || '',
-            realName: initialData.realName || '',
-            gender: initialData.gender || '',
-        });
+            if (initialData.nationalities) {
+                const nationalityIds = initialData.nationalities.map((n: any) => {
+                    if (typeof n === 'number') return n;
+                    if (typeof n === 'object' && n !== null) return n.locationId;
+                    return null;
+                }).filter((id): id is number => id !== null);
+                setNationalities(nationalityIds);
+            }
+        }
+    });
 
-        if (initialData.nationalities) {
-            const nationalityIds = initialData.nationalities.map((n: any) => {
-                if (typeof n === 'number') return n;
-                if (typeof n === 'object' && n !== null) return n.locationId;
-                return null;
-            }).filter((id): id is number => id !== null);
+    // Cargar nacionalidades cuando formData las trae del server (edit mode)
+    useValueChange(formData.nationalities, (nats) => {
+        if (isEdit && nats && nats.length > 0) {
+            const nationalityIds = Array.isArray(nats)
+                ? nats.map((n: any) => {
+                    const id = typeof n === 'object' ? n.locationId : n;
+                    return id;
+                })
+                : [];
             setNationalities(nationalityIds);
         }
-    }
-
-    // Cargar nacionalidades cuando se edita (one-shot, ajuste durante render)
-    if (isEdit && formData.nationalities && formData.nationalities.length > 0 && !nationalitiesInitialized.current) {
-        nationalitiesInitialized.current = true;
-        const nationalityIds = Array.isArray(formData.nationalities)
-            ? formData.nationalities.map((n: any) => {
-                const id = typeof n === 'object' ? n.locationId : n;
-                return id;
-            })
-            : [];
-        setNationalities(nationalityIds);
-    }
+    });
 
     // Función para manejar el cambio de nacionalidades
     const handleNationalitiesChange = (newNationalities: number[]) => {
