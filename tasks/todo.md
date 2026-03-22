@@ -145,9 +145,9 @@ Migrado de Tailwind CSS 3.4.13 → 4.2.2 via `npx @tailwindcss/upgrade`.
 
 ### 6b. Explorar nuevas APIs de React 19.2
 
-- [ ] **`useEffectEvent`**: Evaluar si alguno de nuestros hooks de infraestructura se beneficia (especialmente `useInterval`, `useWindowEvent`).
-- [ ] **View Transitions**: Evaluar para transiciones de navegación en el sitio público.
-- [ ] **Activity**: Evaluar para el admin (mantener estado de tabs/modals en background).
+- [x] **`useEffectEvent`**: Adoptado en 6 hooks de infraestructura (`useInterval`, `useWindowEvent`, `useKeydown`, `useEscapeKey`, `useClickOutside`, `usePageView`). Eliminó refs manuales y todos los `eslint-disable-next-line` de `exhaustive-deps`. (commit 69e08b5)
+- [x] **View Transitions**: No disponible en React 19.2 stable (`unstable_ViewTransition` no exportado). Pendiente para cuando se estabilice.
+- [x] **Activity**: No disponible en React 19.2 stable (`unstable_Activity` no exportado). Pendiente para cuando se estabilice.
 
 ### 6c. Explorar nuevas APIs de Next.js 16
 
