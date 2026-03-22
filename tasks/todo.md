@@ -91,28 +91,19 @@ Nuevos warnings del React compiler lint (25): `react-hooks/refs`, `static-compon
 
 ---
 
-## Fase 4: Tailwind CSS 3 → 4 (opcional, recomendado)
+## Fase 4: Tailwind CSS 3 → 4 ✅ (commit d17a588)
 
-Tailwind CSS 4 no es requerido por Next.js 16, pero trae mejoras de build performance (3-10x faster) y es el camino forward.
+Migrado de Tailwind CSS 3.4.13 → 4.2.2 via `npx @tailwindcss/upgrade`.
 
-### 4a. Evaluar viabilidad
-
-- [ ] Verificar que los browsers target (Chrome 111+, Safari 16.4+) son compatibles con Tailwind v4.
-- [ ] Revisar plugins: `@tailwindcss/typography` — verificar si hay versión v4.
-- [ ] Revisar colores oklch custom — Tailwind v4 soporta oklch nativamente, potencialmente simplifica la config.
-
-### 4b. Ejecutar migración automática
-
-- [ ] `npx @tailwindcss/upgrade` — migra clases y config automáticamente.
-- [ ] Revisar cambios manuales necesarios:
-  - `tailwind.config.js` → migrar a CSS-first config con `@theme` directive en `globals.css`.
-  - `postcss.config.js` → simplificar (Tailwind v4 incluye su propio PostCSS plugin).
-  - Colores oklch custom con alpha → migrar a `@theme` en CSS.
-  - Fuentes custom → migrar a `@theme`.
-  - Animaciones custom (fade-in, shimmer, stats-scroll) → migrar a CSS.
-- [ ] Verificar que `tailwind-merge` sigue funcionando con v4 class names.
-- [ ] Eliminar `autoprefixer` del `postcss.config.js` (Tailwind v4 lo incluye internamente).
-- [ ] Ejecutar `npm run build` y verificar visualmente las páginas.
+- [x] **4a**: Viabilidad OK — browsers compatibles, `@tailwindcss/typography` soporta v4 via `@plugin`.
+- [x] **4b**: Migración automática ejecutada (112 archivos):
+  - `tailwind.config.js` eliminado → colores/fonts/animaciones migrados a `@theme` en `globals.css`.
+  - `@tailwind base/components/utilities` → `@import 'tailwindcss'`.
+  - Plugin: `require("@tailwindcss/typography")` → `@plugin '@tailwindcss/typography'`.
+  - `postcss.config.mjs` eliminado → `postcss.config.js` con `@tailwindcss/postcss`.
+  - `autoprefixer` eliminado (built-in en v4).
+  - ~100 templates: class renames automáticos (`shadow-sm`→`shadow-xs`, `outline-none`→`outline-hidden`, `ring-offset`→`ring-offset-*`).
+  - Build OK, lint sin errores nuevos.
 
 ---
 
@@ -240,9 +231,9 @@ Fase 2 (React 18 → 19) ✅
   ↓
 Fase 3 (Next.js 15 → 16) ✅ ← React 19 + Auth.js v5 ya están listos
   ↓
-Fase 4 (Tailwind 3 → 4) ← opcional, independiente
+Fase 4 (Tailwind 3 → 4) ✅
   ↓
-Fase 5 (React compiler lint warnings) ← prerequisito para React Compiler
+Fase 5 (React compiler lint warnings) ← PRÓXIMO, prerequisito para React Compiler
   ↓
 Fase 6 (React Compiler + optimización + migrar <img> a next/image) ← post-migración
 ```
