@@ -40,7 +40,7 @@ const nextConfig = {
   
   images: {
     loader: 'custom',
-    loaderFile: './src/lib/images/cloudinaryLoader.ts',
+    loaderFile: './src/lib/images/cloudinaryLoader.js',
   },
   
   experimental: {
