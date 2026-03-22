@@ -107,6 +107,7 @@ export default function ObituariosSection({ obituarios, loading = false, noPaddi
                       src={getPersonPhotoUrl(persona.photoUrl, 'sm')!}
                       alt={formatearNombre(persona)}
                       fill
+                      sizes="(min-width: 768px) 80px, 64px"
                       className="object-cover grayscale transition-all duration-500 group-hover:grayscale-0"
                     />
                   ) : (

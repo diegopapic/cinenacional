@@ -353,6 +353,7 @@ export function CloudinaryUploadWidget({
                         src={imageUrl}
                         alt={label || 'Imagen'}
                         fill
+                        sizes="300px"
                         className="object-cover"
                         style={{
                           objectFit: maxDisplayHeight ? 'contain' : 'cover'

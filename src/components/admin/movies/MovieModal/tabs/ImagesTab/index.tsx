@@ -167,6 +167,7 @@ export default function ImagesTab() {
                                     src={imagePresets.card(image.cloudinaryPublicId)}
                                     alt={generateImageCaption(image)}
                                     fill
+                                    sizes="200px"
                                     className="object-cover"
                                 />
 

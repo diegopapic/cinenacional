@@ -65,6 +65,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
                           src={pelicula.posterUrl}
                           alt={pelicula.title}
                           fill
+                          sizes="112px"
                           className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
@@ -103,6 +104,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
                           src={pelicula.posterUrl}
                           alt={pelicula.title}
                           fill
+                          sizes="(min-width: 1024px) 16vw, 20vw"
                           className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';

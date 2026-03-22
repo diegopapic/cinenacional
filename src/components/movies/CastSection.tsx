@@ -61,6 +61,7 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
             src={getPersonPhotoUrl(actor.image, 'sm')!}
             alt={actor.name}
             fill
+            sizes={size === 'sm' ? '80px' : '112px'}
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (

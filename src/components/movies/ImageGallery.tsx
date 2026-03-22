@@ -156,6 +156,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                     src={image.url}
                     alt={getCaption(image)}
                     fill
+                    sizes="100vw"
                     className="object-cover"
                   />
                 </div>
@@ -203,6 +204,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                       src={image.url}
                       alt={getCaption(image)}
                       fill
+                      sizes="400px"
                       className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
                     />
                   </div>

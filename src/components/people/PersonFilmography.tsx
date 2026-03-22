@@ -113,6 +113,7 @@ function MovieItem({ item, showRoles, showCharacter, index }: {
                 src={movie.posterUrl}
                 alt={movie.title}
                 fill
+                sizes="44px"
                 className="object-cover"
               />
             ) : (

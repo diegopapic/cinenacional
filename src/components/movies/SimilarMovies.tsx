@@ -35,6 +35,7 @@ export function SimilarMovies({ movies }: SimilarMoviesProps) {
                     src={movie.posterUrl}
                     alt={`Poster de ${movie.title}`}
                     fill
+                    sizes="(min-width: 1024px) 16vw, (min-width: 768px) 25vw, 50vw"
                     className="object-cover"
                   />
                 ) : (

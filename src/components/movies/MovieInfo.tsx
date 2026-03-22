@@ -102,6 +102,7 @@ export function MovieInfo({ movie, onShareClick }: MovieInfoProps) {
                         src={getPersonPhotoUrl(director.photoUrl, 'sm')!}
                         alt={director.name}
                         fill
+                        sizes="48px"
                         className="object-cover rounded-full"
                       />
                     ) : (

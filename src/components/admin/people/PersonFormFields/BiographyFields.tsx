@@ -66,6 +66,7 @@ export function BiographyFields({ formData, updateField }: BiographyFieldsProps)
               src={formData.photoUrl}
               alt="Vista previa"
               fill
+              sizes="128px"
               className="object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;

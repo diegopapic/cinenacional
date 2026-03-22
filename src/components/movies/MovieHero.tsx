@@ -160,6 +160,7 @@ export function MovieHero({
           src={posterUrl!}
           alt={`Poster de ${title}`}
           fill
+          sizes="(max-width: 768px) 128px, (max-width: 1024px) 224px, 256px"
           className="object-cover"
           priority
           onError={() => setPosterError(true)}
@@ -274,6 +275,7 @@ export function MovieHero({
               src={heroBackgroundImage}
               alt=""
               fill
+              sizes="100vw"
               className="object-cover object-center"
               priority
               onError={() => setHeroImageError(true)}

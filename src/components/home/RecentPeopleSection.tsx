@@ -72,6 +72,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
                         src={getPersonPhotoUrl(persona.photoUrl, 'sm')!}
                         alt={formatPersonName(persona)}
                         fill
+                        sizes="80px"
                         className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
@@ -112,6 +113,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
                         src={getPersonPhotoUrl(persona.photoUrl, 'sm')!}
                         alt={formatPersonName(persona)}
                         fill
+                        sizes="(min-width: 1024px) 10vw, 12.5vw"
                         className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';

@@ -278,6 +278,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
                             src={imageUrl}
                             alt={item.titulo || ''}
                             fill
+                            sizes="80px"
                             className="object-cover"
                           />
                         ) : (
@@ -308,6 +309,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
                             src={imageUrl}
                             alt={item.titulo || ''}
                             fill
+                            sizes="80px"
                             className="object-cover"
                           />
                         ) : (
