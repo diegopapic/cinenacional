@@ -54,58 +54,18 @@ Estos NO se arreglan ahora. Son deuda técnica que se ataca incrementalmente pos
 
 ---
 
-## Fase 1: NextAuth v4 → Auth.js v5
+## Fase 1: NextAuth v4 → Auth.js v5 ✅ (commit c2402f4)
 
-**Hacer PRIMERO, todavía en Next.js 15 + React 18.** Así se debuggea contra un stack conocido.
+Migrado a `next-auth@5.0.0-beta.30` + `@auth/prisma-adapter@2.11.1`, todavía sobre Next.js 15 + React 18.
 
-NextAuth v4 (4.24.11) declara peer dependency `next@"^12 || ^13 || ^14 || ^15"` — no incluye Next.js 16. Más allá del peer dep, hay reportes de errores de runtime con React 19 en componentes client-side de next-auth (hooks internos de `SessionProvider`). Aunque este proyecto no usa `SessionProvider`, es preferible no arriesgarse y migrar primero.
+- [x] **1a**: Instalado `next-auth@5`, `@auth/prisma-adapter`, removido `@next-auth/prisma-adapter`.
+- [x] **1b**: Creado `src/auth.ts` como punto central (`{ auth, handlers, signIn, signOut }`). `src/lib/auth.ts` solo exporta `requireAuth()` que usa `auth()`.
+- [x] **1c**: `requireAuth()` usa `auth()` en vez de `getServerSession(authOptions)`.
+- [x] **1d**: Middleware actualizado: `getToken` con `cookieName: 'authjs.session-token'`, secret con fallback `AUTH_SECRET ?? NEXTAUTH_SECRET`.
+- [x] **1e**: Client-side (`signIn` de `next-auth/react`) no requirió cambios — API igual en v5.
+- [x] **1f**: Build OK, lint OK (400 errores, solo `no-explicit-any`). Middleware bajó de 57.6kB a 48.1kB.
 
-Auth.js v5 requiere Next.js ≥14, así que se puede migrar sin problemas en el stack actual.
-
-### 1a. Instalar Auth.js v5
-
-- [ ] `npm install next-auth@5` (reemplaza v4).
-- [ ] `npm install @auth/prisma-adapter` (reemplaza `@next-auth/prisma-adapter`).
-- [ ] `npm uninstall @next-auth/prisma-adapter`.
-
-### 1b. Reestructurar auth config
-
-- [ ] Crear `src/auth.ts` (o `auth.ts` en raíz) con el nuevo formato:
-  ```ts
-  import NextAuth from "next-auth"
-  import { authConfig } from "./lib/auth-config"
-  export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)
-  ```
-- [ ] Migrar `src/lib/auth.ts` → `src/lib/auth-config.ts`:
-  - `authOptions` → exportar como config object para `NextAuth()`.
-  - Cambiar `CredentialsProvider` import de `next-auth/providers/credentials` → `@auth/core/providers/credentials` (o el equivalente v5).
-  - Adaptar callbacks (jwt, session) al nuevo formato si cambió.
-- [ ] Actualizar `src/app/api/auth/[...nextauth]/route.ts`:
-  - Reemplazar handler manual por `export const { GET, POST } = handlers` importado de `src/auth.ts`.
-
-### 1c. Actualizar `requireAuth()`
-
-- [ ] En `src/lib/auth.ts` (o donde quede el helper):
-  - Reemplazar `getServerSession(authOptions)` → `auth()` de Auth.js v5.
-  - `auth()` retorna la sesión directamente, sin necesidad de pasar config.
-- [ ] Buscar todos los archivos que importan `requireAuth` o `getServerSession` — verificar que siguen funcionando.
-
-### 1d. Actualizar middleware (todavía `middleware.ts` en esta fase)
-
-- [ ] `getToken()` de `next-auth/jwt` → verificar si el import y la API cambiaron en v5.
-- [ ] Auth.js v5 opcionalmente exporta un `auth` middleware wrapper — evaluar si conviene usarlo o mantener el check manual con `getToken`.
-
-### 1e. Actualizar client-side
-
-- [ ] `signIn()` de `next-auth/react` → verificar si cambia el import en v5.
-- [ ] `src/app/admin/login/page.tsx` — actualizar llamada a `signIn("credentials", ...)`.
-
-### 1f. Verificación
-
-- [ ] `npm run build` sin errores.
-- [ ] Test manual: login con credenciales, acceso a `/admin/*`, logout.
-- [ ] Verificar que `requireAuth()` funcione en API routes y server components.
-- [ ] Verificar que el middleware siga protegiendo `/admin/*`.
+**Nota de deploy**: Las sesiones existentes se invalidan por cambio de cookie name. Los usuarios deben re-loguearse. Agregar `AUTH_SECRET` como env var (puede ser el mismo valor que `NEXTAUTH_SECRET`).
 
 ---
 
@@ -330,9 +290,9 @@ Fase 0.5a (lint: prefer-const, unused-vars, unescaped-entities) ✅
   ↓
 Fase 0.5b (lint: img-element, accesibilidad, otros menores) ✅
   ↓
-Fase 1 (NextAuth v4 → Auth.js v5) ← PRÓXIMO, contra stack conocido (Next 15 + React 18)
+Fase 1 (NextAuth v4 → Auth.js v5) ✅
   ↓
-Fase 2 (React 18 → 19)
+Fase 2 (React 18 → 19) ← PRÓXIMO
   ↓
 Fase 3 (Next.js 15 → 16) ← React 19 + Auth.js v5 ya están listos
   ↓
