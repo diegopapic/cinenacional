@@ -2,7 +2,8 @@
 'use client';
 
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useValueChange } from '@/hooks/useValueChange';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X } from 'lucide-react';
@@ -54,7 +55,7 @@ export function RoleModal({
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
-    watch,
+    control,
   } = useForm<RoleFormData>({
     resolver: zodResolver(roleSchema),
     defaultValues: {
@@ -66,10 +67,8 @@ export function RoleModal({
     }
   });
 
-  // Cargar datos al editar (adjust during render)
-  const prevRoleRef = React.useRef(role);
-  if (role !== prevRoleRef.current) {
-    prevRoleRef.current = role;
+  // Cargar datos al editar
+  useValueChange(role, () => {
     if (isEdit && role) {
       reset({
         name: role.name,
@@ -87,7 +86,7 @@ export function RoleModal({
         isActive: true
       });
     }
-  }
+  });
 
   const onSubmit = async (data: RoleFormData) => {
     try {
@@ -117,7 +116,9 @@ export function RoleModal({
     }
   };
 
-  const selectedDepartment = watch('department');
+  const selectedDepartment = useWatch({ control, name: 'department' });
+  const watchedName = useWatch({ control, name: 'name' });
+  const watchedIsMainRole = useWatch({ control, name: 'isMainRole' });
   const selectedDepartmentColor = getDepartmentColor(selectedDepartment as Department);
 
   if (!isOpen) return null;
@@ -241,9 +242,9 @@ export function RoleModal({
                 {departmentOptions.find(d => d.value === selectedDepartment)?.label}
               </span>
               <span className="font-medium">
-                {watch('name') || 'Nombre del rol'}
+                {watchedName || 'Nombre del rol'}
               </span>
-              {watch('isMainRole') && (
+              {watchedIsMainRole && (
                 <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-sm">
                   Principal
                 </span>
