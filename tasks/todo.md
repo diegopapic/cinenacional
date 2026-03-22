@@ -69,35 +69,12 @@ Migrado a `next-auth@5.0.0-beta.30` + `@auth/prisma-adapter@2.11.1`, todavía so
 
 ---
 
-## Fase 2: Actualizar React 18 → 19 y tipos
+## Fase 2: Actualizar React 18 → 19 ✅ (commit 29f2b91)
 
-### 2a. Actualizar dependencias core
-
-- [ ] `npm install react@latest react-dom@latest`
-- [ ] `npm install -D @types/react@latest @types/react-dom@latest`
-
-### 2b. Verificar breaking changes de React 19
-
-El codebase ya está limpio de APIs deprecated (no usa PropTypes, defaultProps, string refs, forwardRef, legacy context, ReactDOM.render). Los cambios que sí aplican:
-
-- [ ] **TypeScript**: `@types/react@19` elimina tipos implícitos de children en `React.FC`. Buscar todos los `React.FC` y `React.FunctionComponent` — agregar `children` explícitamente donde corresponda al tipo de props.
-- [ ] **`ref` como prop**: React 19 pasa `ref` como prop regular. No usamos `forwardRef` así que no hay cambio, pero verificar que ningún componente tenga conflictos con prop `ref`.
-- [ ] **`useRef` requiere argumento**: `useRef()` sin argumento ahora es error de tipos. Buscar todos los `useRef()` y agregar `useRef(null)` donde falte.
-- [ ] **Cleanup en `ref` callbacks**: React 19 soporta retornar cleanup de ref callbacks. Verificar que ningún ref callback retorne algo accidentalmente.
-- [ ] **`useDeferredValue` initialValue**: Si se usa, verificar la nueva firma. (Probablemente no aplica.)
-- [ ] Ejecutar `npm run build` — corregir errores de tipos que surjan.
-
-### 2c. Verificar librerías de terceros con React 19
-
-- [ ] **react-hot-toast ^2.5.2**: Verificar compatibilidad con React 19. Si hay problemas, buscar alternativa (sonner, react-toastify) o fijar versión con override.
-- [ ] **@radix-ui/react-dialog, react-select, react-tabs**: Verificar que las versiones actuales soporten React 19. Actualizar si es necesario.
-- [ ] **@tanstack/react-query ^5.80.6**: Soporta React 19 — solo verificar que no haya warnings.
-- [ ] **@hookform/resolvers + react-hook-form ^7.57**: Verificar compatibilidad.
-- [ ] **@dnd-kit/core, sortable, utilities**: Verificar compatibilidad.
-- [ ] **next-cloudinary ^6.16**: Verificar compatibilidad.
-- [ ] **lucide-react ^0.513**: Verificar compatibilidad.
-- [ ] **isomorphic-dompurify ^2.28**: Verificar compatibilidad.
-- [ ] Ejecutar `npm run build` y `npm run lint` — corregir cualquier issue.
+- [x] **2a**: react@19.2.4, react-dom@19.2.4, @types/react@19.2.14, @types/react-dom@19.2.3
+- [x] **2b**: No se necesitaron cambios de código — el codebase no tenía React.FC, useRef() sin args, forwardRef, ni APIs deprecadas.
+- [x] **2c**: Todas las librerías de terceros compatibles sin cambios (radix-ui, tanstack, hook-form, dnd-kit, lucide, etc.)
+- Build y lint OK (400 errores, solo no-explicit-any).
 
 ---
 
@@ -292,7 +269,7 @@ Fase 0.5b (lint: img-element, accesibilidad, otros menores) ✅
   ↓
 Fase 1 (NextAuth v4 → Auth.js v5) ✅
   ↓
-Fase 2 (React 18 → 19) ← PRÓXIMO
+Fase 2 (React 18 → 19) ✅
   ↓
 Fase 3 (Next.js 15 → 16) ← React 19 + Auth.js v5 ya están listos
   ↓
