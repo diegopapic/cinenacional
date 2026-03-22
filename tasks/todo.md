@@ -1,227 +1,189 @@
-# Migración a React 19.2 / Next.js 16.2
+# Eliminar `no-explicit-any` — 400 errores en 64 archivos
 
-Estado: **✅ MIGRACIÓN CORE COMPLETA** — Next.js 16.2.1 + React 19.2.4 + Auth.js v5 (next-auth@5.0.0-beta.30)
+Objetivo: llevar ESLint a 0 errores eliminando todos los `any` explícitos.
 
-Fuentes:
-- [Guía oficial de upgrade a Next.js 16](https://nextjs.org/docs/app/guides/upgrading/version-16)
-- [React 19 Upgrade Guide](https://react.dev/blog/2024/04/25/react-19-upgrade-guide)
-- [NextAuth + Next.js 16 issue](https://github.com/nextauthjs/next-auth/issues/13302)
-- [Migrating to Auth.js v5](https://authjs.dev/getting-started/migrating-to-v5)
+Estrategia: agrupar por dominio funcional para tipar de forma coherente (los tipos fluyen entre archivos del mismo dominio). Orden de prioridad: primero los tipos base y servicios, después los componentes que los consumen.
 
 ---
 
-## Fase 0: Preparación y auditoría pre-migración ✅
+## Fase A: Tipos base, servicios y API client (34 any)
 
-- [x] Ejecutar `npm run build` y `npm run lint` — build OK, lint tenía 558 errores preexistentes.
-- [x] Hacer commit de cualquier cambio pendiente en `main` (a29d576).
-- [x] Crear backup del `package.json` y `package-lock.json` actuales (`*.bak`).
-- [x] Revisar `tasks/lessons.md` para contexto — OK.
+Archivos de infraestructura que definen tipos consumidos por el resto del codebase. Tiparlos primero desbloquea los demás.
 
----
+### A1. API client y helpers (8 any)
 
-## Fase 0.5: Limpiar errores de ESLint preexistentes
+- [ ] `src/services/api-client.ts` (6): tipar `ApiClient` genérics, respuestas y errores
+- [ ] `src/lib/api/api-handler.ts` (2): tipar `apiHandler` wrapper y `handleApiError`
 
-### 0.5a. Errores auto-fixeables ✅ (commit 50fe685)
+### A2. Services (20 any)
 
-Reducidos de 558 → 433 errores.
+- [ ] `src/services/movies.service.ts` (14): tipar payloads y respuestas de CRUD de películas
+- [ ] `src/services/people.service.ts` (6): tipar payloads y respuestas de CRUD de personas
 
-- [x] **`prefer-const`** (6 → 0): Auto-fix `let` → `const`.
-- [x] **`no-unused-vars`** (89 → 0): Eliminados imports/variables sin usar, bare `catch {}`, configurado `argsIgnorePattern: "^_"` en `eslint.config.mjs`.
-- [x] **`no-unescaped-entities`** (30 → 0): Reemplazado `"` → `&quot;` en JSX text.
+### A3. CRUD factory (36 any)
 
-### 0.5b. Imágenes y accesibilidad ✅ (commit 2dbb702)
+- [ ] `src/lib/api/crud-factory.ts` (36): tipar los generics del factory de rutas CRUD. Es el archivo con más densidad de `any` — definir interfaces genéricas para `ListCreateConfig`, `GetUpdateDeleteConfig`, filtros y respuestas.
 
-Reducidos de 433 → 399 errores.
+### A4. Prisma y auth (4 any)
 
-- [x] **`@next/next/no-img-element`** (29 → 0): Regla desactivada globalmente — todas las imágenes son URLs de Cloudinary con transformaciones dinámicas. Migración a `next/image` + loader planificada en Fase 6d.
-- [x] **`jsx-a11y/alt-text`** (1 → 0): Renombrado import `Image` → `ImageIcon` (lucide) para evitar falso positivo.
-- [x] **`jsx-a11y/role-has-required-aria-props`** (1 → 0): Agregado `aria-controls` al combobox en Header.
-- [x] **`react/jsx-no-comment-textnodes`** (1 → 0): Eliminados `// ✅` inline en JSX.
-- [x] **`@next/next/no-html-link-for-pages`** (1 → 0): Reemplazado `<a>` por `<Link>` en admin dashboard.
-- [x] **`react-hooks/exhaustive-deps`** (1 → 0): `eslint-disable` con justificación en `usePageView`.
+- [ ] `src/lib/prisma.ts` (3): tipar el retry extension y error handling
+- [ ] `src/auth.ts` (1): tipar el cast de `user.role` en el callback JWT
+- [ ] `src/lib/auth.ts` (1): tipar el cast de `session` en `requireAuth()`
 
-### 0.5c. `no-explicit-any` (399) — estrategia incremental
+### A5. Utilidades de dominio (9 any)
 
-Estos NO se arreglan ahora. Son deuda técnica que se ataca incrementalmente post-migración. Razones:
-- La migración puede cambiar tipos (Auth.js v5, React 19 types) → trabajo doble si se tipifican ahora.
-- 399 `any` requieren entender el tipo correcto caso por caso.
-- Se pueden ir resolviendo archivo por archivo después de la migración.
-
-### 0.5d. Verificación ✅
-
-- [x] `npm run build` pasa.
-- [x] `npx eslint src/` muestra solo `no-explicit-any` (399) como errores restantes.
+- [ ] `src/lib/movies/movieUtils.ts` (2): tipar funciones de transformación de películas
+- [ ] `src/lib/people/peopleUtils.ts` (5): tipar funciones de transformación de personas
+- [ ] `src/lib/roles/roleUtils.ts` (2): tipar mapas de departamentos/colores
+- [ ] `src/lib/estrenos/estrenosTypes.ts` (1): tipar tipo de estreno
+- [ ] `src/hooks/usePageView.ts` (1): tipar `extraData` en `PageViewOptions`
 
 ---
 
-## Fase 1: NextAuth v4 → Auth.js v5 ✅ (commit c2402f4)
+## Fase B: API routes de películas (25 any)
 
-Migrado a `next-auth@5.0.0-beta.30` + `@auth/prisma-adapter@2.11.1`, todavía sobre Next.js 15 + React 18.
+### B1. Rutas principales
 
-- [x] **1a**: Instalado `next-auth@5`, `@auth/prisma-adapter`, removido `@next-auth/prisma-adapter`.
-- [x] **1b**: Creado `src/auth.ts` como punto central (`{ auth, handlers, signIn, signOut }`). `src/lib/auth.ts` solo exporta `requireAuth()` que usa `auth()`.
-- [x] **1c**: `requireAuth()` usa `auth()` en vez de `getServerSession(authOptions)`.
-- [x] **1d**: Middleware actualizado: `getToken` con `cookieName: 'authjs.session-token'`, secret con fallback `AUTH_SECRET ?? NEXTAUTH_SECRET`.
-- [x] **1e**: Client-side (`signIn` de `next-auth/react`) no requirió cambios — API igual en v5.
-- [x] **1f**: Build OK, lint OK (400 errores, solo `no-explicit-any`). Middleware bajó de 57.6kB a 48.1kB.
-
-**Nota de deploy**: Las sesiones existentes se invalidan por cambio de cookie name. Los usuarios deben re-loguearse. Agregar `AUTH_SECRET` como env var (puede ser el mismo valor que `NEXTAUTH_SECRET`).
+- [ ] `src/app/api/movies/route.ts` (11): tipar query params, filtros y respuesta de listado
+- [ ] `src/app/api/movies/[id]/route.ts` (10): tipar payload de update, relaciones y cast/crew
+- [ ] `src/app/api/movies/list/route.ts` (4): tipar query params y respuesta
 
 ---
 
-## Fase 2: Actualizar React 18 → 19 ✅ (commit 29f2b91)
+## Fase C: API routes de personas (26 any)
 
-- [x] **2a**: react@19.2.4, react-dom@19.2.4, @types/react@19.2.14, @types/react-dom@19.2.3
-- [x] **2b**: No se necesitaron cambios de código — el codebase no tenía React.FC, useRef() sin args, forwardRef, ni APIs deprecadas.
-- [x] **2c**: Todas las librerías de terceros compatibles sin cambios (radix-ui, tanstack, hook-form, dnd-kit, lucide, etc.)
-- Build y lint OK (400 errores, solo no-explicit-any).
+### C1. Rutas principales
 
----
-
-## Fase 3: Actualizar Next.js 15 → 16 ✅ (commit 397b761)
-
-- [x] **3a**: next@16.2.1, eslint@9.39.4, eslint-config-next@16.2.1
-- [x] **3b**: Async request APIs ya estaban OK — no se necesitaron cambios.
-- [x] **3c**: `middleware.ts` → `proxy.ts`, función `middleware()` → `proxy()`.
-- [x] **3d**: Turbopack default. Eliminada config webpack, agregado `turbopack: {}`.
-- [x] **3e**: `next.config.js` simplificado. `tsconfig.json` auto-updated (jsx: react-jsx).
-- [x] **3f**: `"lint": "next lint"` → `"lint": "eslint src/"`. ESLint config reescrita con imports nativos de `eslint-config-next` (sin FlatCompat). Removido `@eslint/eslintrc`.
-
-Nuevos warnings del React compiler lint (25): `react-hooks/refs`, `static-components`, etc. — legítimos pero no bloquean.
+- [ ] `src/app/api/people/route.ts` (10): tipar query params y respuesta de listado
+- [ ] `src/app/api/people/[id]/route.ts` (7): tipar payload de update y relaciones
+- [ ] `src/app/api/people/list/route.ts` (2): tipar query params
+- [ ] `src/app/api/people/merge/route.ts` (4): tipar payload y lógica de merge
+- [ ] `src/app/api/people/merge/preview/route.ts` (3): tipar respuesta de preview
 
 ---
 
-## Fase 4: Tailwind CSS 3 → 4 ✅ (commit d17a588)
+## Fase D: Otras API routes (25 any)
 
-Migrado de Tailwind CSS 3.4.13 → 4.2.2 via `npx @tailwindcss/upgrade`.
+### D1. Búsqueda
 
-- [x] **4a**: Viabilidad OK — browsers compatibles, `@tailwindcss/typography` soporta v4 via `@plugin`.
-- [x] **4b**: Migración automática ejecutada (112 archivos):
-  - `tailwind.config.js` eliminado → colores/fonts/animaciones migrados a `@theme` en `globals.css`.
-  - `@tailwind base/components/utilities` → `@import 'tailwindcss'`.
-  - Plugin: `require("@tailwindcss/typography")` → `@plugin '@tailwindcss/typography'`.
-  - `postcss.config.mjs` eliminado → `postcss.config.js` con `@tailwindcss/postcss`.
-  - `autoprefixer` eliminado (built-in en v4).
-  - ~100 templates: class renames automáticos (`shadow-sm`→`shadow-xs`, `outline-none`→`outline-hidden`, `ring-offset`→`ring-offset-*`).
-  - Build OK, lint sin errores nuevos.
+- [ ] `src/app/api/search/route.ts` (3): tipar resultados de búsqueda
+- [ ] `src/app/api/search/full/route.ts` (4): tipar resultados de búsqueda full
 
----
+### D2. Festivales y locations
 
-## Fase 5: Corregir warnings del React compiler lint
+- [ ] `src/app/api/festival-editions/[id]/screenings/route.ts` (4): tipar payload de screenings
+- [ ] `src/app/api/festivals/route.ts` (1): tipar creación de festival
+- [ ] `src/app/api/festivals/[id]/editions/route.ts` (1): tipar creación de edición
+- [ ] `src/app/api/locations/route.ts` (2): tipar creación de location
+- [ ] `src/app/api/locations/[id]/route.ts` (1): tipar update de location
+- [ ] `src/app/api/locations/check-slug/route.ts` (1): tipar query params
 
-25 warnings nuevos de las reglas `react-hooks/refs`, `react-hooks/static-components`, `react-hooks/immutability` y `react-hooks/incompatible-library` introducidas por `eslint-config-next@16`. Son patterns que el React compiler no puede optimizar correctamente y que pueden causar bugs si se activa `reactCompiler: true`.
+### D3. Otros
 
-### 5a. `react-hooks/refs` (18 warnings) ✅ (commit 9e9602a)
-
-- [x] Creados hooks `usePrevious` y `useValueChange` en `src/hooks/` — reemplazan el pattern de leer `ref.current` durante render.
-- [x] `RoleSelector.tsx` (2): sync loadedRole via `useValueChange`.
-- [x] `PersonForm.tsx` (4): init via `useMountEffect`, sync nationalities via `useValueChange`.
-- [x] `BasicInfoFields.tsx` (4): sync partial dates via `useValueChange`.
-- [x] `MovieModalContext.tsx` (8): detect editingMovie changes via `useValueChange`.
-
-### 5b. `react-hooks/static-components` (5 warnings) ✅ (commit de97496)
-
-- [x] `src/app/admin/stats/page.tsx` (5): `SortHeader` extraído de inline a componente module-level con props `sortField` y `onSort`.
-
-### 5c. `react-hooks/immutability` (1 warning) ✅ (commit 0cd73c1)
-
-- [x] `ImageGallery.tsx`: Creado hook `useBodyOverflow` — sincroniza `document.body.style.overflow` con estado del lightbox via effect en vez de mutación directa.
-
-### 5d. `react-hooks/incompatible-library` (1 warning) ✅ (commit 6ab098f)
-
-- [x] `RoleModal.tsx`: Reemplazado `watch()` por `useWatch()` de react-hook-form (compatible con memoización). También migrado ref-during-render a `useValueChange`.
-
-**Fase 5 completada.** 25/25 warnings resueltos. Errores restantes: 400 `no-explicit-any` + 8 internos = 408 total. Build OK.
+- [ ] `src/app/api/roles/route.ts` (6): tipar CRUD de roles
+- [ ] `src/app/api/images/route.ts` (2): tipar upload de imágenes
+- [ ] `src/app/api/analytics/pageview/route.ts` (2): tipar payload de analytics
+- [ ] `src/app/api/metrics/database/route.ts` (4): tipar métricas de DB
+- [ ] `src/app/api/people/death-years/route.ts` (1): tipar respuesta
+- [ ] `src/app/api/screening-venues/route.ts` (1): tipar creación de venue
 
 ---
 
-## Fase 6: Limpieza y optimización post-migración
+## Fase E: Movie form system (157 any) ⚠️ la más grande
 
-### 6a. Activar React Compiler ✅ (commit 87a4215)
+El sistema de formulario de películas es el más complejo. Los tipos fluyen entre `useMovieForm` → `MovieModalContext` → `MovieFormEnhanced` → tabs del modal.
 
-- [x] Instalado `babel-plugin-react-compiler`.
-- [x] `reactCompiler: true` en `next.config.js`.
-- [x] Build pasa sin errores. Memoización automática activa para todos los componentes.
+### E1. Hook y context (109 any)
 
-### 6b. Explorar nuevas APIs de React 19.2
+- [ ] `src/hooks/useMovieForm.ts` (78): tipar el hook completo — form state, mutations, handlers de cast/crew/images/media. Es el archivo con más `any` del proyecto.
+- [ ] `src/contexts/MovieModalContext.tsx` (31): tipar el context provider — depende de los tipos de `useMovieForm`
 
-- [x] **`useEffectEvent`**: Adoptado en 6 hooks de infraestructura (`useInterval`, `useWindowEvent`, `useKeydown`, `useEscapeKey`, `useClickOutside`, `usePageView`). Eliminó refs manuales y todos los `eslint-disable-next-line` de `exhaustive-deps`. (commit 69e08b5)
-- [x] **View Transitions**: No disponible en React 19.2 stable (`unstable_ViewTransition` no exportado). Pendiente para cuando se estabilice.
-- [x] **Activity**: No disponible en React 19.2 stable (`unstable_Activity` no exportado). Pendiente para cuando se estabilice.
+### E2. Componentes del formulario (48 any)
 
-### 6c. Explorar nuevas APIs de Next.js 16 ✅ (evaluado, sin cambios de código)
-
-- [x] **`updateTag`**: Disponible pero no justificado ahora. El pattern actual `revalidateTag`/`revalidatePath` en API routes del admin funciona bien. `updateTag` sería útil si necesitáramos revalidación parcial sin purga total.
-- [x] **`refresh()`**: No aplica — no usamos Server Actions. El admin usa API routes + React Query.
-- [x] **`cacheLife` / `cacheTag`**: Disponibles. Podrían reemplazar `export const revalidate` por granularidad a nivel de componente/fetch. No urgente — el ISR actual (5min home, 1h fichas, 24h efemérides) funciona bien.
-- [x] **PPR (`cacheComponents`)**: Requiere opt-in experimental. Útil para páginas con shell estático + datos dinámicos (home, fichas). Evaluar cuando PPR sea stable.
-
-### 6d. Migrar `<img>` a `next/image` con Cloudinary loader ✅ (commit fbc31c3)
-
-Opción B elegida: loader custom pass-through (las URLs ya incluyen transforms de Cloudinary).
-
-- [x] Creado `cloudinaryLoader.js` — extrae public ID y aplica `w_{width},c_limit,q_auto,f_auto`.
-- [x] Loader como prop `loader={cloudinaryLoader}` en cada `<Image>` (32 archivos, ~50 instancias). `loaderFile` en config no funcionaba con Next.js 16 Turbopack.
-- [x] `remotePatterns` restaurado en `next.config.js` (necesario sin `loader: 'custom'` en config).
-- [x] Migrados 31 `<img>` → `<Image>` en 23 componentes (14 público + 9 admin).
-- [x] `priority` agregado a LCP images: MovieHero backdrop, MoviePoster, HeroSection.
-- [x] `fill` + `sizes` para imágenes en containers sized. Hero usa `width/height` explícito para preservar mask blur.
-- [x] Re-habilitada regla `@next/next/no-img-element` — 0 violaciones.
-- [x] Lighthouse verificado: imágenes Cloudinary de 6,337 KiB → 360 KiB (−94%), LCP 7.4s → 5.3s.
-
-### 6e. Verificación final
-
-- [ ] `npm run build` sin errores ni warnings nuevos.
-- [ ] `npm run lint` limpio.
-- [ ] Test manual del sitio público: home, búsqueda, fichas, listados, efemérides.
-- [ ] Test manual del admin: login, CRUD películas, personas, festivales, locations.
-- [ ] Test manual de proxy: CSRF, rate limiting, CSP, auth guards.
-- [ ] Verificar Docker build: `docker compose build app` exitoso.
-- [ ] Verificar performance con Lighthouse en páginas clave.
+- [ ] `src/components/admin/MovieFormEnhanced.tsx` (48): tipar props, handlers y state del formulario legacy
+- [ ] `src/components/admin/movies/MovieModal/tabs/CastTab.tsx` (11): tipar cast entries y handlers
+- [ ] `src/components/admin/movies/MovieModal/tabs/CrewTab.tsx` (6): tipar crew entries y handlers
+- [ ] `src/components/admin/movies/MovieModal/tabs/ImagesTab/index.tsx` (2): tipar image entries
+- [ ] `src/components/admin/movies/MovieModal/tabs/ImagesTab/MultiImageUpload.tsx` (1): tipar upload handler
+- [ ] `src/components/admin/movies/MovieModal/MovieModalFooter.tsx` (1): tipar props
+- [ ] `src/components/admin/movies/MovieModal/index.tsx` (1): tipar modal props
 
 ---
 
-## Notas técnicas
+## Fase F: People form system y admin pages (16 any)
 
-### Lo que ya está resuelto (no requiere cambios)
+### F1. People form
 
-- **Async Request APIs**: Todos los `params`, `searchParams`, `headers()` ya usan `await` + `Promise<...>`.
-- **No hay APIs deprecated**: Sin PropTypes, defaultProps, string refs, forwardRef, legacy context, ReactDOM.render/hydrate, next/amp, serverRuntimeConfig, next/legacy/image.
-- **useEffect ban**: 0 useEffects directos en componentes — solo en 10 hooks de infraestructura.
-- **ESLint flat config**: Ya migrado a `eslint.config.mjs` con `argsIgnorePattern: "^_"`.
-- **No hay parallel routes**: No necesitamos agregar `default.js` files.
-- **`images.remotePatterns`**: Ya usamos el formato moderno (no `images.domains`).
+- [ ] `src/components/admin/people/PersonForm.tsx` (2): tipar form state
+- [ ] `src/components/admin/people/PersonFormFields/BasicInfoFields.tsx` (2): tipar props
+- [ ] `src/components/admin/people/PersonFormFields/LinksSection.tsx` (1): tipar links array
+- [ ] `src/components/admin/people/PeopleTable.tsx` (2): tipar table props
+- [ ] `src/hooks/usePeopleForm.ts` (1): tipar form hook
 
-### Riesgos identificados
+### F2. Admin pages
 
-| Riesgo | Impacto | Mitigación |
-|--------|---------|------------|
-| NextAuth v4 incompatible con Next.js 16 | **Alto** | Migrar a Auth.js v5 PRIMERO (Fase 1) |
-| Webpack config custom vs Turbopack | **Medio** | Evaluar si los fallbacks son necesarios; usar `--webpack` como escape |
-| react-hot-toast con React 19 | **Bajo** | Versión 2.5.x es reciente, probablemente compatible |
-| Tailwind v4 con colores oklch custom | **Bajo** | Tailwind v4 soporta oklch nativamente |
-| `typescript.ignoreBuildErrors: true` oculta errores | **Medio** | Ideal: desactivar y corregir errores de tipos |
+- [ ] `src/app/admin/people/merge/page.tsx` (8): tipar merge state y comparación
+- [ ] `src/app/admin/roles/page.tsx` (1): tipar roles state
 
-### Orden de ejecución
+---
+
+## Fase G: Componentes del sitio público (33 any)
+
+### G1. Página de película
+
+- [ ] `src/app/(site)/pelicula/[slug]/page.tsx` (21): tipar datos del server component (movie, cast, crew, images, reviews)
+- [ ] `src/app/(site)/pelicula/[slug]/MoviePageClient.tsx` (1): tipar props del client component
+
+### G2. Búsqueda y listados
+
+- [ ] `src/app/(site)/buscar/page.tsx` (3): tipar resultados de búsqueda
+- [ ] `src/app/(site)/listados/personas/PersonCardDetailed.tsx` (2): tipar props
+
+### G3. Otros componentes
+
+- [ ] `src/components/home/ObituariosSection.tsx` (3): tipar datos de obituarios
+- [ ] `src/components/admin/shared/PersonSearchInput.tsx` (2): tipar search results
+- [ ] `src/components/admin/CloudinaryUploadWidget.tsx` (2): tipar widget callbacks
+- [ ] `src/components/listados/estrenos/EstrenosYearBar.tsx` (1): tipar props
+- [ ] `src/components/movies/ImageGallery.tsx` (1): tipar image data
+- [ ] `src/components/layout/SearchBar.tsx` (0 — ya migrado, verificar)
+
+### G4. Festival forms
+
+- [ ] `src/app/admin/festival-editions/[id]/sections/new/FestivalSectionForm.tsx` (1): tipar form state
+- [ ] `src/components/admin/festivals/FestivalEditionForm.tsx` (1): tipar form state
+- [ ] `src/components/admin/festivals/FestivalForm.tsx` (1): tipar form state
+- [ ] `src/components/admin/festivals/FestivalScreeningForm.tsx` (1): tipar form state
+
+---
+
+## Resumen por fase
+
+| Fase | Archivos | `any` | Descripción |
+|------|----------|-------|-------------|
+| A | 12 | 34 | Tipos base, servicios, API client |
+| B | 3 | 25 | API routes películas |
+| C | 5 | 26 | API routes personas |
+| D | 14 | 25 | Otras API routes |
+| E | 8 | 157 | Movie form system (⚠️ la más grande) |
+| F | 7 | 16 | People form + admin pages |
+| G | 14 | 33 | Componentes sitio público + festival forms |
+| **Total** | **64** | **400** | |
+
+## Orden recomendado
 
 ```
-Fase 0 (preparación) ✅
+Fase A (tipos base) → desbloquea todo
   ↓
-Fase 0.5a (lint: prefer-const, unused-vars, unescaped-entities) ✅
+Fase B (API movies) + Fase C (API people) ← pueden hacerse en paralelo
   ↓
-Fase 0.5b (lint: img-element, accesibilidad, otros menores) ✅
+Fase D (otras API routes)
   ↓
-Fase 1 (NextAuth v4 → Auth.js v5) ✅
+Fase E (movie form system) ← la más grande, depende de A+B
   ↓
-Fase 2 (React 18 → 19) ✅
+Fase F (people form + admin)
   ↓
-Fase 3 (Next.js 15 → 16) ✅ ← React 19 + Auth.js v5 ya están listos
-  ↓
-Fase 4 (Tailwind 3 → 4) ✅
-  ↓
-Fase 5 (React compiler lint warnings) ✅
-  ↓
-Fase 6 (React Compiler + optimización + migrar <img> a next/image) ← post-migración
+Fase G (sitio público)
 ```
 
-Cada fase es deployable independientemente. La Fase 1 se puede deployar y validar en producción antes de continuar con las demás.
+Cada fase es deployable independientemente. La Fase E es la más compleja y puede subdividirse en E1 (hook+context) y E2 (componentes).
