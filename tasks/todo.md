@@ -78,10 +78,10 @@ También se tipó `src/lib/schemas.ts` (6 `z.array(z.any())` → schemas tipados
 
 El sistema de formulario de películas es el más complejo. Los tipos fluyen entre `useMovieForm` → `MovieModalContext` → `MovieFormEnhanced` → tabs del modal.
 
-### E1. Hook y context (109 any)
+### E1. Hook y context ✅ COMPLETADA
 
-- [ ] `src/hooks/useMovieForm.ts` (78): tipar el hook completo — form state, mutations, handlers de cast/crew/images/media. Es el archivo con más `any` del proyecto.
-- [ ] `src/contexts/MovieModalContext.tsx` (31): tipar el context provider — depende de los tipos de `useMovieForm`
+- [x] `src/hooks/useMovieForm.ts` (78→0): Interfaces exportadas: `CastMemberEntry`, `CrewMemberEntry`, `AlternativeTitleEntry`, `TriviaEntry`, `MovieLinkEntry`. React Hook Form methods tipados via `UseFormReturn<MovieFormData>`. Todas las relaciones, callbacks y estados tipados.
+- [x] `src/contexts/MovieModalContext.tsx` (31→0): Context value tipado con las mismas interfaces. Eliminados todos los `any` de la interfaz del context.
 
 ### E2. Componentes del formulario (48 any)
 

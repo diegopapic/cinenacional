@@ -8,6 +8,7 @@ import {
     movieFormSchema,
     MovieFormData,
     Movie,
+    MovieCompleteData,
     PartialReleaseDate,
     PartialFilmingDate
 } from '@/lib/movies/movieTypes'
@@ -18,6 +19,116 @@ import {
 import { moviesService } from '@/services'
 import { arrayMove } from '@dnd-kit/sortable'
 import { createLogger } from '@/lib/logger'
+import type { UseFormReturn } from 'react-hook-form'
+
+/** Cast member in the movie form state */
+export interface CastMemberEntry {
+  personId: number
+  personName: string
+  alternativeNameId: number | null
+  alternativeName: string | null
+  characterName: string
+  billingOrder: number
+  isPrincipal: boolean
+  isActor: boolean
+  person: { id: number; firstName?: string | null; lastName?: string | null; slug?: string; photoUrl?: string | null; alternativeNames?: Array<{ id: number; fullName: string }> } | null
+}
+
+/** Crew member in the movie form state */
+export interface CrewMemberEntry {
+  personId: number
+  personName: string
+  alternativeNameId: number | null
+  alternativeName: string | null
+  roleId: number | null
+  role: string | { id: number; name: string; department?: string } | null
+  department: string
+  billingOrder: number
+  notes: string
+  person: { id: number; firstName?: string | null; lastName?: string | null; slug?: string; alternativeNames?: Array<{ id: number; fullName: string }> } | null
+}
+
+/** Alternative title entry */
+export interface AlternativeTitleEntry {
+  id?: number
+  title: string
+  description?: string | null
+}
+
+/** Trivia entry */
+export interface TriviaEntry {
+  id?: number
+  content: string
+  sortOrder?: number
+}
+
+/** Movie link entry */
+export interface MovieLinkEntry {
+  id?: number
+  type: string
+  url: string
+  isActive?: boolean
+}
+
+/** Rating option from the API */
+interface RatingOption {
+  id: number
+  name: string
+  abbreviation?: string | null
+}
+
+/** Color type option from the API */
+interface ColorTypeOption {
+  id: number
+  name: string
+}
+
+/** Initial form data for movie relations */
+interface MovieFormInitialData {
+  genres: unknown[]
+  countries: unknown[]
+  productionCompanies: unknown[]
+  distributionCompanies: unknown[]
+  themes: unknown[]
+  screeningVenues: number[]
+}
+
+/** Movie relations state */
+interface MovieRelationsState {
+  genres: number[]
+  cast: CastMemberEntry[]
+  crew: CrewMemberEntry[]
+  countries: number[]
+  productionCompanies: number[]
+  distributionCompanies: number[]
+  themes: number[]
+  screeningVenues: number[]
+}
+
+/** Raw cast entry from API response */
+interface RawCastEntry {
+  personId?: number
+  person?: { id: number; firstName?: string | null; lastName?: string | null; name?: string; slug?: string; photoUrl?: string | null; alternativeNames?: Array<{ id: number; fullName: string }> }
+  alternativeNameId?: number | null
+  alternativeName?: { fullName: string } | string | null
+  characterName?: string
+  billingOrder?: number
+  isPrincipal?: boolean
+  isActor?: boolean
+}
+
+/** Raw crew entry from API response */
+interface RawCrewEntry {
+  personId?: number
+  person?: { id: number; firstName?: string | null; lastName?: string | null; slug?: string; alternativeNames?: Array<{ id: number; fullName: string }> }
+  alternativeNameId?: number | null
+  alternativeName?: { fullName: string } | string | null
+  roleId?: number
+  role?: string | { id: number; name: string; department?: string }
+  department?: string
+  billingOrder?: number
+  notes?: string
+}
 
 const log = createLogger('hook:movieForm')
 
@@ -56,22 +167,22 @@ interface UseMovieFormReturn {
 
     // Estados específicos de UI
     tipoDuracionDisabled: boolean
-    movieFormInitialData: any
-    alternativeTitles: any[]
-    setAlternativeTitles: (titles: any[]) => void
-    trivia: any[]
-    setTrivia: (trivia: any[]) => void
-    movieLinks: any[]
+    movieFormInitialData: MovieFormInitialData | null
+    alternativeTitles: AlternativeTitleEntry[]
+    setAlternativeTitles: (titles: AlternativeTitleEntry[]) => void
+    trivia: TriviaEntry[]
+    setTrivia: (trivia: TriviaEntry[]) => void
+    movieLinks: MovieLinkEntry[]
 
     // Metadata
-    availableRatings: any[]
-    availableColorTypes: any[]
+    availableRatings: RatingOption[]
+    availableColorTypes: ColorTypeOption[]
 
     // Callbacks para relaciones
     handleGenresChange: (genres: number[]) => void
-    handleLinksChange: (links: any[]) => void
-    handleCastChange: (cast: any[]) => void
-    handleCrewChange: (crew: any[]) => void
+    handleLinksChange: (links: MovieLinkEntry[]) => void
+    handleCastChange: (cast: CastMemberEntry[]) => void
+    handleCrewChange: (crew: CrewMemberEntry[]) => void
     handleCountriesChange: (countries: number[]) => void
     handleProductionCompaniesChange: (companies: number[]) => void
     handleDistributionCompaniesChange: (companies: number[]) => void
@@ -79,49 +190,40 @@ interface UseMovieFormReturn {
     handleScreeningVenuesChange: (venues: number[]) => void
 
     // Estado de relaciones (fuente única de verdad para cast/crew)
-    movieRelations: {
-        genres: number[]
-        cast: any[]
-        crew: any[]
-        countries: number[]
-        productionCompanies: number[]
-        distributionCompanies: number[]
-        themes: number[]
-        screeningVenues: number[]
-    }
+    movieRelations: MovieRelationsState
 
     // Mutaciones granulares para cast
-    addCastMember: (overrides?: Partial<any>) => void
+    addCastMember: (overrides?: Partial<CastMemberEntry>) => void
     removeCastMember: (index: number) => void
-    updateCastMember: (index: number, updates: Partial<any>) => void
+    updateCastMember: (index: number, updates: Partial<CastMemberEntry>) => void
     reorderCast: (oldIndex: number, newIndex: number) => void
 
     // Mutaciones granulares para crew
-    addCrewMember: (overrides?: Partial<any>) => void
+    addCrewMember: (overrides?: Partial<CrewMemberEntry>) => void
     removeCrewMember: (index: number) => void
-    updateCrewMember: (index: number, updates: Partial<any>) => void
+    updateCrewMember: (index: number, updates: Partial<CrewMemberEntry>) => void
     reorderCrew: (oldIndex: number, newIndex: number) => void
 
     // Funciones principales
     loadMovieData: (movie: Movie) => Promise<void>
     resetForNewMovie: () => void
 
-    // Form methods (todos como any para evitar problemas de tipos)
-    register: any
-    handleSubmit: any
-    watch: any
-    setValue: any
-    reset: any
-    formState: any
-    control: any
-    getValues: any
-    trigger: any
-    clearErrors: any
-    setError: any
-    setFocus: any
-    getFieldState: any
-    resetField: any
-    unregister: any
+    // Form methods
+    register: UseFormReturn<MovieFormData>['register']
+    handleSubmit: UseFormReturn<MovieFormData>['handleSubmit']
+    watch: UseFormReturn<MovieFormData>['watch']
+    setValue: UseFormReturn<MovieFormData>['setValue']
+    reset: UseFormReturn<MovieFormData>['reset']
+    formState: UseFormReturn<MovieFormData>['formState']
+    control: UseFormReturn<MovieFormData>['control']
+    getValues: UseFormReturn<MovieFormData>['getValues']
+    trigger: UseFormReturn<MovieFormData>['trigger']
+    clearErrors: UseFormReturn<MovieFormData>['clearErrors']
+    setError: UseFormReturn<MovieFormData>['setError']
+    setFocus: UseFormReturn<MovieFormData>['setFocus']
+    getFieldState: UseFormReturn<MovieFormData>['getFieldState']
+    resetField: UseFormReturn<MovieFormData>['resetField']
+    unregister: UseFormReturn<MovieFormData>['unregister']
 }
 
 export function useMovieForm({
@@ -159,24 +261,15 @@ export function useMovieForm({
 
     // Estados específicos de UI
     const [tipoDuracionDisabled, setTipoDuracionDisabled] = useState(false)
-    const [movieFormInitialData, setMovieFormInitialData] = useState<any>(null)
+    const [movieFormInitialData, setMovieFormInitialData] = useState<MovieFormInitialData | null>(null)
 
     // Metadata via React Query (reemplaza useEffect de metadata)
-    const [availableRatings, setAvailableRatings] = useState<any[]>([])
-    const [availableColorTypes, setAvailableColorTypes] = useState<any[]>([])
+    const [availableRatings, setAvailableRatings] = useState<RatingOption[]>([])
+    const [availableColorTypes, setAvailableColorTypes] = useState<ColorTypeOption[]>([])
     const metadataInitRef = useRef(false)
 
     // Estados de relaciones
-    const [movieRelations, setMovieRelations] = useState<{
-        genres: number[];
-        cast: any[];
-        crew: any[];
-        countries: number[];
-        productionCompanies: number[];
-        distributionCompanies: number[];
-        themes: number[];
-        screeningVenues: number[];
-    }>({
+    const [movieRelations, setMovieRelations] = useState<MovieRelationsState>({
         genres: [],
         cast: [],
         crew: [],
@@ -188,9 +281,9 @@ export function useMovieForm({
     })
 
     // Estados adicionales
-    const [alternativeTitles, setAlternativeTitles] = useState<any[]>([])
-    const [trivia, setTrivia] = useState<any[]>([])
-    const [movieLinks, setMovieLinks] = useState<any[]>([])
+    const [alternativeTitles, setAlternativeTitles] = useState<AlternativeTitleEntry[]>([])
+    const [trivia, setTrivia] = useState<TriviaEntry[]>([])
+    const [movieLinks, setMovieLinks] = useState<MovieLinkEntry[]>([])
 
     // React Hook Form
     const form = useForm<MovieFormData>({
@@ -227,7 +320,7 @@ export function useMovieForm({
         setAvailableRatings(metadataResult.ratings)
         setAvailableColorTypes(metadataResult.colorTypes)
         if (!editingMovie) {
-            const colorDefault = metadataResult.colorTypes.find((ct: any) => ct.name === 'Color')
+            const colorDefault = metadataResult.colorTypes.find((ct: ColorTypeOption) => ct.name === 'Color')
             if (colorDefault) {
                 setValue('colorTypeId', colorDefault.id)
             }
@@ -266,7 +359,7 @@ export function useMovieForm({
         setMovieRelations(prev => ({ ...prev, genres: validGenres }))
     }, [])
 
-    const handleLinksChange = useCallback((links: any[]) => {
+    const handleLinksChange = useCallback((links: MovieLinkEntry[]) => {
         setMovieLinks(links)
     }, [])
 
@@ -274,11 +367,11 @@ export function useMovieForm({
         setMovieRelations(prev => ({ ...prev, screeningVenues: venueIds }))
     }, [])
 
-    const handleCastChange = useCallback((cast: any[]) => {
+    const handleCastChange = useCallback((cast: CastMemberEntry[]) => {
         setMovieRelations(prev => ({ ...prev, cast }))
     }, [])
 
-    const handleCrewChange = useCallback((crew: any[]) => {
+    const handleCrewChange = useCallback((crew: CrewMemberEntry[]) => {
         setMovieRelations(prev => ({ ...prev, crew }))
     }, [])
 
@@ -299,7 +392,7 @@ export function useMovieForm({
     }, [])
 
     // ========== MUTACIONES GRANULARES PARA CAST ==========
-    const addCastMember = useCallback((overrides?: Partial<any>) => {
+    const addCastMember = useCallback((overrides?: Partial<CastMemberEntry>) => {
         setMovieRelations(prev => ({
             ...prev,
             cast: [...prev.cast, {
@@ -321,15 +414,15 @@ export function useMovieForm({
         setMovieRelations(prev => ({
             ...prev,
             cast: prev.cast
-                .filter((_: any, i: number) => i !== index)
-                .map((member: any, i: number) => ({ ...member, billingOrder: i + 1 }))
+                .filter((_: CastMemberEntry, i: number) => i !== index)
+                .map((member: CastMemberEntry, i: number) => ({ ...member, billingOrder: i + 1 }))
         }))
     }, [])
 
-    const updateCastMember = useCallback((index: number, updates: Partial<any>) => {
+    const updateCastMember = useCallback((index: number, updates: Partial<CastMemberEntry>) => {
         setMovieRelations(prev => ({
             ...prev,
-            cast: prev.cast.map((member: any, i: number) =>
+            cast: prev.cast.map((member: CastMemberEntry, i: number) =>
                 i === index
                     ? { ...member, ...updates, personId: updates.personId || member.personId || 0 }
                     : member
@@ -342,13 +435,13 @@ export function useMovieForm({
             const reordered = arrayMove(prev.cast, oldIndex, newIndex)
             return {
                 ...prev,
-                cast: reordered.map((member: any, i: number) => ({ ...member, billingOrder: i + 1 }))
+                cast: reordered.map((member: CastMemberEntry, i: number) => ({ ...member, billingOrder: i + 1 }))
             }
         })
     }, [])
 
     // ========== MUTACIONES GRANULARES PARA CREW ==========
-    const addCrewMember = useCallback((overrides?: Partial<any>) => {
+    const addCrewMember = useCallback((overrides?: Partial<CrewMemberEntry>) => {
         setMovieRelations(prev => ({
             ...prev,
             crew: [...prev.crew, {
@@ -371,15 +464,15 @@ export function useMovieForm({
         setMovieRelations(prev => ({
             ...prev,
             crew: prev.crew
-                .filter((_: any, i: number) => i !== index)
-                .map((member: any, i: number) => ({ ...member, billingOrder: i }))
+                .filter((_: CrewMemberEntry, i: number) => i !== index)
+                .map((member: CrewMemberEntry, i: number) => ({ ...member, billingOrder: i }))
         }))
     }, [])
 
-    const updateCrewMember = useCallback((index: number, updates: Partial<any>) => {
+    const updateCrewMember = useCallback((index: number, updates: Partial<CrewMemberEntry>) => {
         setMovieRelations(prev => ({
             ...prev,
-            crew: prev.crew.map((member: any, i: number) =>
+            crew: prev.crew.map((member: CrewMemberEntry, i: number) =>
                 i === index
                     ? { ...member, ...updates, personId: updates.personId || member.personId || 0 }
                     : member
@@ -392,7 +485,7 @@ export function useMovieForm({
             const reordered = arrayMove(prev.crew, oldIndex, newIndex)
             return {
                 ...prev,
-                crew: reordered.map((member: any, i: number) => ({ ...member, billingOrder: i }))
+                crew: reordered.map((member: CrewMemberEntry, i: number) => ({ ...member, billingOrder: i }))
             }
         })
     }, [])
@@ -449,17 +542,19 @@ export function useMovieForm({
 
             // Llenar el formulario con los datos limpios
             Object.keys(cleanedMovie).forEach((key) => {
-                if (key === 'metaKeywords' && Array.isArray(cleanedMovie[key])) {
-                    setValue(key as any, cleanedMovie[key].join(', '))
-                } else if (key === 'releaseDate' && cleanedMovie[key]) {
-                    setValue(key as any, new Date(cleanedMovie[key]).toISOString().split('T')[0])
+                const formKey = key as keyof MovieFormData
+                const movieKey = key as keyof typeof cleanedMovie
+                if (key === 'metaKeywords' && Array.isArray(cleanedMovie[movieKey])) {
+                    setValue(formKey, (cleanedMovie[movieKey] as string[]).join(', '))
+                } else if (key === 'releaseDate' && cleanedMovie[movieKey]) {
+                    setValue(formKey, new Date(cleanedMovie[movieKey] as string).toISOString().split('T')[0])
                     setIsPartialDate(false)
                 } else if (key === 'durationSeconds') {
-                    setValue(key as any, cleanedMovie[key] || 0)
-                } else if (key === 'colorType' && cleanedMovie[key]) {
-                    setValue('colorTypeId' as any, cleanedMovie[key].id)
+                    setValue(formKey, (cleanedMovie[movieKey] as number) || 0)
+                } else if (key === 'colorType' && cleanedMovie[movieKey]) {
+                    setValue('colorTypeId' as keyof MovieFormData, (cleanedMovie[movieKey] as { id: number }).id)
                 } else {
-                    setValue(key as any, cleanedMovie[key])
+                    setValue(formKey, cleanedMovie[movieKey] as MovieFormData[keyof MovieFormData])
                 }
             })
 
@@ -524,7 +619,7 @@ export function useMovieForm({
             if (!cleanedMovie.stage) {
                 setValue('stage', 'COMPLETA')
             }
-            setValue('dataCompleteness', cleanedMovie.dataCompleteness || 'BASIC_PRESS_KIT')
+            setValue('dataCompleteness', (cleanedMovie.dataCompleteness || 'BASIC_PRESS_KIT') as MovieFormData['dataCompleteness'])
 
             if (cleanedMovie.ratingId) {
                 setValue('ratingId', cleanedMovie.ratingId)
@@ -537,7 +632,7 @@ export function useMovieForm({
                 productionCompanies: cleanedMovie.productionCompanies || [],
                 distributionCompanies: cleanedMovie.distributionCompanies || [],
                 themes: cleanedMovie.themes || [],
-                screeningVenues: cleanedMovie.screenings?.map((s: any) => s.venueId) || []
+                screeningVenues: cleanedMovie.screenings?.map((s: { venueId: number }) => s.venueId) || []
             })
 
             if (cleanedMovie.links) {
@@ -546,24 +641,24 @@ export function useMovieForm({
 
             // Configurar relaciones
             setMovieRelations({
-                genres: (cleanedMovie.genres?.map((g: any) => g.genre?.id || g.id) || [])
-                    .filter((g: number) => g != null && g !== 0 && !isNaN(g)),
+                genres: (cleanedMovie.genres?.map((g: { genre?: { id: number }; id?: number }) => g.genre?.id || g.id) || [])
+                    .filter((g: number | undefined): g is number => g != null && g !== 0 && !isNaN(g)),
 
                 // CAST - Enriquecido con campos de display
-                cast: (cleanedMovie.cast?.map((c: any) => {
+                cast: (cleanedMovie.cast?.map((c: RawCastEntry) => {
                     let personName = ''
                     if (c.person) {
                         personName = c.person.name || `${c.person.firstName || ''} ${c.person.lastName || ''}`.trim()
                     }
                     let alternativeName: string | null = null
                     if (c.alternativeNameId && c.alternativeName) {
-                        alternativeName = c.alternativeName.fullName || c.alternativeName
+                        alternativeName = typeof c.alternativeName === 'string' ? c.alternativeName : c.alternativeName.fullName
                     } else if (c.alternativeNameId && c.person?.alternativeNames) {
-                        const altName = c.person.alternativeNames.find((an: any) => an.id === c.alternativeNameId)
+                        const altName = c.person.alternativeNames.find((an: { id: number; fullName: string }) => an.id === c.alternativeNameId)
                         if (altName) alternativeName = altName.fullName
                     }
                     return {
-                        personId: c.personId || c.person?.id,
+                        personId: c.personId || c.person?.id || 0,
                         personName,
                         alternativeNameId: c.alternativeNameId || null,
                         alternativeName,
@@ -571,12 +666,12 @@ export function useMovieForm({
                         billingOrder: c.billingOrder || 0,
                         isPrincipal: c.isPrincipal || false,
                         isActor: c.isActor !== undefined ? c.isActor : true,
-                        person: c.person
+                        person: c.person || null
                     }
-                }) || []).sort((a: any, b: any) => (a.billingOrder || 0) - (b.billingOrder || 0)),
+                }) || []).sort((a: CastMemberEntry, b: CastMemberEntry) => (a.billingOrder || 0) - (b.billingOrder || 0)),
 
                 // CREW - Enriquecido con campos de display
-                crew: (cleanedMovie.crew?.map((c: any) => {
+                crew: (cleanedMovie.crew?.map((c: RawCrewEntry) => {
                     let personName = ''
                     if (c.person) {
                         personName = `${c.person.firstName || ''} ${c.person.lastName || ''}`.trim()
@@ -588,30 +683,30 @@ export function useMovieForm({
                     else if (c.role && typeof c.role === 'object') roleName = c.role.name || ''
                     let alternativeName: string | null = null
                     if (c.alternativeNameId && c.alternativeName) {
-                        alternativeName = c.alternativeName.fullName || c.alternativeName
+                        alternativeName = typeof c.alternativeName === 'string' ? c.alternativeName : c.alternativeName.fullName
                     } else if (c.alternativeNameId && c.person?.alternativeNames) {
-                        const altName = c.person.alternativeNames.find((an: any) => an.id === c.alternativeNameId)
+                        const altName = c.person.alternativeNames.find((an: { id: number; fullName: string }) => an.id === c.alternativeNameId)
                         if (altName) alternativeName = altName.fullName
                     }
                     return {
-                        personId: c.personId || c.person?.id,
+                        personId: c.personId || c.person?.id || 0,
                         personName,
                         alternativeNameId: c.alternativeNameId || null,
                         alternativeName,
                         roleId: roleId || null,
                         role: roleName,
-                        department: c.department || c.role?.department || '',
+                        department: c.department || (typeof c.role === 'object' ? c.role?.department : '') || '',
                         billingOrder: c.billingOrder || 0,
                         notes: c.notes || '',
-                        person: c.person
+                        person: c.person || null
                     }
-                }) || []).sort((a: any, b: any) => (a.billingOrder || 0) - (b.billingOrder || 0)),
+                }) || []).sort((a: CrewMemberEntry, b: CrewMemberEntry) => (a.billingOrder || 0) - (b.billingOrder || 0)),
 
-                countries: cleanedMovie.movieCountries?.map((c: any) => c.countryId) || [],
-                productionCompanies: cleanedMovie.productionCompanies?.map((c: any) => c.companyId) || [],
-                distributionCompanies: cleanedMovie.distributionCompanies?.map((c: any) => c.companyId) || [],
-                themes: cleanedMovie.themes?.map((t: any) => t.themeId) || [],
-                screeningVenues: cleanedMovie.screenings?.map((s: any) => s.venueId) || []
+                countries: cleanedMovie.movieCountries?.map((c: { countryId: number }) => c.countryId) || [],
+                productionCompanies: cleanedMovie.productionCompanies?.map((c: { companyId: number }) => c.companyId) || [],
+                distributionCompanies: cleanedMovie.distributionCompanies?.map((c: { companyId: number }) => c.companyId) || [],
+                themes: cleanedMovie.themes?.map((t: { themeId: number }) => t.themeId) || [],
+                screeningVenues: cleanedMovie.screenings?.map((s: { venueId: number }) => s.venueId) || []
             })
 
         } catch (error) {
@@ -731,23 +826,26 @@ export function useMovieForm({
             delete preparedData.filmingEndDate;
 
             // Construir el objeto completo de datos
-            const movieData: any = {
+            // Type-narrow preparedData for property access
+            const pd = preparedData as Record<string, number | string | boolean | null | undefined | unknown[]>
+
+            const movieData: Record<string, unknown> = {
                 ...preparedData,
                 ...releaseDateData,
                 ...filmingStartDateData,
                 ...filmingEndDateData,
                 // Convertir 0/NaN a null para campos numéricos opcionales
-                year: (!preparedData.year || preparedData.year === 0 || isNaN(preparedData.year)) ? null : preparedData.year,
-                duration: preparedData.duration === 0 ? null : preparedData.duration,
-                durationSeconds: preparedData.durationSeconds === 0 ? null : preparedData.durationSeconds,
-                colorTypeId: (!preparedData.colorTypeId || preparedData.colorTypeId === 0 || isNaN(preparedData.colorTypeId)) ? null : preparedData.colorTypeId,
-                soundType: preparedData.soundType || null,
+                year: (!pd.year || pd.year === 0 || isNaN(pd.year as number)) ? null : pd.year,
+                duration: pd.duration === 0 ? null : pd.duration,
+                durationSeconds: pd.durationSeconds === 0 ? null : pd.durationSeconds,
+                colorTypeId: (!pd.colorTypeId || pd.colorTypeId === 0 || isNaN(pd.colorTypeId as number)) ? null : pd.colorTypeId,
+                soundType: pd.soundType || null,
                 stage: data.stage || 'COMPLETA',
-                ratingId: preparedData.ratingId === '' || preparedData.ratingId === undefined ? null : preparedData.ratingId,
-                metaKeywords: preparedData.metaKeywords
-                    ? Array.isArray(preparedData.metaKeywords)
-                        ? preparedData.metaKeywords
-                        : preparedData.metaKeywords.split(',').map((k: string) => k.trim()).filter((k: string) => k)
+                ratingId: pd.ratingId === '' || pd.ratingId === undefined ? null : pd.ratingId,
+                metaKeywords: pd.metaKeywords
+                    ? Array.isArray(pd.metaKeywords)
+                        ? pd.metaKeywords
+                        : (pd.metaKeywords as string).split(',').map((k: string) => k.trim()).filter((k: string) => k)
                     : [],
 
                 // IMPORTANTE: Usar las relaciones del estado, no del data del formulario
@@ -761,7 +859,7 @@ export function useMovieForm({
 
                         // Si no hay personId directo, intentar obtenerlo del objeto person
                         if (!personId && member.person) {
-                            personId = member.person.id || member.person.personId
+                            personId = member.person.id || (member.person as Record<string, unknown>).personId as number
                         }
 
                         // Solo incluir si hay un personId válido
@@ -785,7 +883,7 @@ export function useMovieForm({
                     .map(member => {
                         let personId = member.personId
                         if (!personId && member.person) {
-                            personId = member.person.id || member.person.personId
+                            personId = member.person.id || (member.person as Record<string, unknown>).personId as number
                         }
 
                         let roleId = member.roleId
@@ -841,7 +939,7 @@ export function useMovieForm({
             const castDuplicates: string[] = []
             for (let ci = 0; ci < movieRelations.cast.length; ci++) {
                 const cm = movieRelations.cast[ci]
-                const pid = cm.personId || cm.person?.id || cm.person?.personId
+                const pid = cm.personId || cm.person?.id
                 if (!pid || pid <= 0) continue
                 const castKey = String(pid)
                 if (seenCastKeys.has(castKey)) {
@@ -861,7 +959,7 @@ export function useMovieForm({
             const crewDuplicates: string[] = []
             for (let ci = 0; ci < movieRelations.crew.length; ci++) {
                 const cm = movieRelations.crew[ci]
-                const pid = cm.personId || cm.person?.id || cm.person?.personId
+                const pid = cm.personId || cm.person?.id
                 const rid = cm.roleId || (cm.role && typeof cm.role === 'object' ? cm.role.id : null)
                 if (!pid || pid <= 0 || !rid || rid <= 0) continue
                 const crewKey = pid + '-' + rid
@@ -881,9 +979,9 @@ export function useMovieForm({
             // Usar el servicio para crear o actualizar
             let result: Movie;
             if (editingMovie) {
-                result = await moviesService.update(editingMovie.id, movieData)
+                result = await moviesService.update(editingMovie.id, movieData as MovieCompleteData)
             } else {
-                result = await moviesService.create(movieData)
+                result = await moviesService.create(movieData as MovieCompleteData)
             }
 
             if (shouldClose) {
@@ -917,7 +1015,7 @@ export function useMovieForm({
     // Reset para nueva película
     const resetForNewMovie = useCallback(() => {
         // Encontrar el ID de "Color" para setear como default
-        const colorDefault = availableColorTypes.find((ct: any) => ct.name === 'Color')
+        const colorDefault = availableColorTypes.find((ct: ColorTypeOption) => ct.name === 'Color')
         reset({
             stage: 'COMPLETA',
             dataCompleteness: 'BASIC_PRESS_KIT',
@@ -1020,7 +1118,7 @@ export function useMovieForm({
         loadMovieData,
         resetForNewMovie,
 
-        // Form methods explícitos (todos como any para evitar problemas de tipos)
+        // Form methods explícitos
         register: form.register,
         handleSubmit: form.handleSubmit,
         watch: form.watch,
