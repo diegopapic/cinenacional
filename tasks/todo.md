@@ -6,37 +6,35 @@ Estrategia: agrupar por dominio funcional para tipar de forma coherente (los tip
 
 ---
 
-## Fase A: Tipos base, servicios y API client (34 any)
+## Fase A: Tipos base, servicios y API client ✅ COMPLETADA
 
-Archivos de infraestructura que definen tipos consumidos por el resto del codebase. Tiparlos primero desbloquea los demás.
+### A1. API client y helpers ✅
 
-### A1. API client y helpers (8 any)
+- [x] `src/services/api-client.ts`: `ApiError.data` → `Record<string, unknown>`, `errorData` tipado, `post/put/patch` data → `unknown`
+- [x] `src/lib/api/api-handler.ts`: `apiHandler` generic constraint con `Parameters<T>`
 
-- [ ] `src/services/api-client.ts` (6): tipar `ApiClient` genérics, respuestas y errores
-- [ ] `src/lib/api/api-handler.ts` (2): tipar `apiHandler` wrapper y `handleApiError`
+### A2. Services ✅
 
-### A2. Services (20 any)
+- [x] `src/services/movies.service.ts`: interfaces `MovieApiPayload`, `MovieApiResponse`, tipado de todos los métodos del service
+- [x] `src/services/people.service.ts`: interface `PersonApiPayload`, `NationalityEntry`, tipado de formatters y error handling
 
-- [ ] `src/services/movies.service.ts` (14): tipar payloads y respuestas de CRUD de películas
-- [ ] `src/services/people.service.ts` (6): tipar payloads y respuestas de CRUD de personas
+### A3. CRUD factory ✅
 
-### A3. CRUD factory (36 any)
+- [x] `src/lib/api/crud-factory.ts`: `PrismaArgs`, `PrismaRecord`, `PrismaInclude`, `PrismaOrderBy` types. 36→1 `any` (el restante es `Record<string, any>` para `PrismaRecord` con eslint-disable justificado — boundary type para Prisma dynamic models)
 
-- [ ] `src/lib/api/crud-factory.ts` (36): tipar los generics del factory de rutas CRUD. Es el archivo con más densidad de `any` — definir interfaces genéricas para `ListCreateConfig`, `GetUpdateDeleteConfig`, filtros y respuestas.
+### A4. Prisma y auth ✅
 
-### A4. Prisma y auth (4 any)
+- [x] `src/lib/prisma.ts`: `declare global` para `BigInt.toJSON`, `lastError: unknown`, Prisma error typed via assertion
+- [x] `src/auth.ts`: `user.role as string` (type augmentation en next-auth.d.ts lo soporta)
+- [x] `src/lib/auth.ts`: explicit session type cast en vez de `as any`
 
-- [ ] `src/lib/prisma.ts` (3): tipar el retry extension y error handling
-- [ ] `src/auth.ts` (1): tipar el cast de `user.role` en el callback JWT
-- [ ] `src/lib/auth.ts` (1): tipar el cast de `session` en `requireAuth()`
+### A5. Utilidades de dominio ✅
 
-### A5. Utilidades de dominio (9 any)
-
-- [ ] `src/lib/movies/movieUtils.ts` (2): tipar funciones de transformación de películas
-- [ ] `src/lib/people/peopleUtils.ts` (5): tipar funciones de transformación de personas
-- [ ] `src/lib/roles/roleUtils.ts` (2): tipar mapas de departamentos/colores
-- [ ] `src/lib/estrenos/estrenosTypes.ts` (1): tipar tipo de estreno
-- [ ] `src/hooks/usePageView.ts` (1): tipar `extraData` en `PageViewOptions`
+- [x] `src/lib/movies/movieUtils.ts`: `prepared: Record<string, unknown>`, `getErrorMessage(error: unknown)`
+- [x] `src/lib/people/peopleUtils.ts`: `LocationWithParent`, `PersonBirthData`, `PersonSummaryData` interfaces, nationality filter typed
+- [x] `src/lib/roles/roleUtils.ts`: `sortRolesByDepartment(roles: Role[])`
+- [x] `src/lib/estrenos/estrenosTypes.ts`: `EstrenoMovie` interface para reemplazar `any[]`
+- [x] `src/hooks/usePageView.ts`: `extraData: Record<string, unknown>`
 
 ---
 

@@ -27,7 +27,7 @@ export const calcularTipoDuracion = (
  * Limpia y prepara los datos del formulario para enviar al backend
  */
 export const prepareMovieData = (data: MovieFormData) => {
-  const prepared: any = {}
+  const prepared: Record<string, unknown> = {}
 
   // Campos de media que deben enviarse como null (no undefined) cuando están vacíos,
   // para que la API efectivamente borre el valor en la base de datos
@@ -104,10 +104,12 @@ export const getStageName = (stage?: string): string => {
 /**
  * Obtiene un mensaje de error legible
  */
-export const getErrorMessage = (error: any): string => {
+export const getErrorMessage = (error: unknown): string => {
   if (!error) return ''
   if (typeof error === 'string') return error
-  if (error?.message) return error.message
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return (error as { message: string }).message
+  }
   return 'Este campo tiene un error'
 }
 

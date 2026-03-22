@@ -2,7 +2,13 @@
 import { PrismaClient } from '@prisma/client'
 
 // Configurar serialización de BigInt globalmente
-(BigInt.prototype as any).toJSON = function() {
+declare global {
+  interface BigInt {
+    toJSON(): string
+  }
+}
+
+BigInt.prototype.toJSON = function() {
   return this.toString()
 }
 
@@ -54,7 +60,7 @@ const createPrismaClient = () => {
         // Retry logic integrado
         let retries = 0
         const maxRetries = 3
-        let lastError: any
+        let lastError: unknown
 
         while (retries < maxRetries) {
           try {
@@ -68,14 +74,15 @@ const createPrismaClient = () => {
             }
 
             return result
-          } catch (error: any) {
+          } catch (error) {
             lastError = error
             retries++
 
             // Solo reintentar en errores de conexión específicos
-            const isRetryable = error?.code === 'P1001' || // Can't reach database
-                              error?.code === 'P1002' || // Database timeout
-                              error?.code === 'P2024'    // Pool timeout
+            const prismaError = error as { code?: string } | undefined
+            const isRetryable = prismaError?.code === 'P1001' || // Can't reach database
+                              prismaError?.code === 'P1002' || // Database timeout
+                              prismaError?.code === 'P2024'    // Pool timeout
 
             if (!isRetryable || retries >= maxRetries) {
               throw error

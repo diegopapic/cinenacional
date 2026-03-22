@@ -4,9 +4,9 @@ import { getCsrfHeaders } from '@/lib/csrf-client'
 
 export class ApiError extends Error {
   status: number
-  data: any
+  data: Record<string, unknown> | undefined
 
-  constructor(message: string, status: number, data?: any) {
+  constructor(message: string, status: number, data?: Record<string, unknown>) {
     super(message)
     this.name = 'ApiError'
     this.status = status
@@ -28,11 +28,11 @@ class ApiClient {
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       let errorMessage = `Error: ${response.status} ${response.statusText}`
-      let errorData: any
+      let errorData: Record<string, unknown> | undefined
 
       try {
-        errorData = await response.json()
-        errorMessage = errorData.error || errorData.message || errorMessage
+        errorData = await response.json() as Record<string, unknown>
+        errorMessage = (errorData.error as string) || (errorData.message as string) || errorMessage
       } catch {
         // Si no se puede parsear el error, usar el mensaje por defecto
       }
@@ -93,7 +93,7 @@ class ApiClient {
     return response.blob()
   }
 
-  async post<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
+  async post<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
     const { params, ...fetchOptions } = options || {}
     const url = this.buildUrl(endpoint, params)
 
@@ -111,7 +111,7 @@ class ApiClient {
     return this.handleResponse<T>(response)
   }
 
-  async put<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
+  async put<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
     const { params, ...fetchOptions } = options || {}
     const url = this.buildUrl(endpoint, params)
 
@@ -129,7 +129,7 @@ class ApiClient {
     return this.handleResponse<T>(response)
   }
 
-  async patch<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
+  async patch<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
     const { params, ...fetchOptions } = options || {}
     const url = this.buildUrl(endpoint, params)
 

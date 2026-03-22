@@ -81,13 +81,13 @@ export function handleApiError(error: unknown, action: string): NextResponse {
  * }, 'obtener X')
  */
 export function apiHandler<
-  T extends (...args: any[]) => Promise<NextResponse | Response>
+  T extends (...args: Parameters<T>) => Promise<NextResponse | Response>
 >(handler: T, action: string): T {
-  return (async (...args: any[]) => {
+  return (async (...args: Parameters<T>) => {
     try {
       return await handler(...args)
     } catch (error) {
       return handleApiError(error, action)
     }
-  }) as T
+  }) as unknown as T
 }

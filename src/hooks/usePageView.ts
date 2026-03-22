@@ -20,7 +20,7 @@ interface PageViewOptions {
   pageType: PageType;
   movieId?: number;
   personId?: number;
-  extraData?: Record<string, any>;
+  extraData?: Record<string, unknown>;
 }
 
 // Generar o recuperar sessionId

@@ -13,6 +13,113 @@ import { createLogger } from '@/lib/logger'
 const log = createLogger('api:crud')
 
 // ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+/** Prisma query arguments (where, include, orderBy, etc.) */
+type PrismaArgs = Record<string, unknown>
+
+/**
+ * Generic record returned by Prisma.
+ * Uses indexed access to allow property reads on dynamic models.
+ * eslint-disable-next-line @typescript-eslint/no-explicit-any --
+ * Prisma delegates are inherently dynamic; we constrain at the factory boundary.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PrismaRecord = Record<string, any>
+
+/** Minimal Prisma model delegate interface used by the factory */
+type PrismaModelDelegate = {
+  findMany: (args?: PrismaArgs) => Promise<PrismaRecord[]>
+  findUnique: (args: PrismaArgs) => Promise<PrismaRecord | null>
+  findFirst: (args: PrismaArgs) => Promise<PrismaRecord | null>
+  create: (args: PrismaArgs) => Promise<PrismaRecord>
+  update: (args: PrismaArgs) => Promise<PrismaRecord>
+  delete: (args: PrismaArgs) => Promise<PrismaRecord>
+  count: (args?: PrismaArgs) => Promise<number>
+}
+
+interface SearchConfig {
+  /** Campos sobre los que buscar (insensitive contains) */
+  fields: string[]
+}
+
+interface SortConfig {
+  defaultField: string
+  defaultOrder: 'asc' | 'desc'
+}
+
+interface PaginationConfig {
+  /** Key name for the items array in the response (e.g., 'venues') */
+  itemsKey: string
+  /** Default limit per page (default: 20) */
+  defaultLimit?: number
+}
+
+/** Prisma include/orderBy — opaque config objects */
+type PrismaInclude = Record<string, unknown>
+type PrismaOrderBy = Record<string, unknown> | Record<string, unknown>[]
+
+export interface ListCreateConfig {
+  /** Nombre del modelo Prisma (e.g., 'genre', 'rating', 'theme') */
+  model: string
+  /** Nombre de la entidad para mensajes de error (e.g., 'el género', 'la calificación') */
+  entityName: string
+  /** Ordenamiento por defecto para GET list */
+  orderBy?: PrismaOrderBy
+  /** Include de Prisma para las queries */
+  include?: PrismaInclude
+  /** Soporte de búsqueda en GET list (vía ?search=) */
+  search?: SearchConfig
+  /** Soporte de sort dinámico en GET list (vía ?sortBy= y ?sortOrder=) */
+  sort?: SortConfig
+  /** Soporte de paginación en GET list (vía ?page= y ?limit=) */
+  pagination?: PaginationConfig
+  /** Filtros extra construidos desde searchParams (e.g., ?type=, ?isActive=) */
+  extraFilters?: (searchParams: URLSearchParams) => Record<string, unknown>
+  /** Transforma el body del POST en los datos para prisma.create() */
+  buildCreateData: (body: PrismaRecord) => Record<string, unknown>
+  /** Include específico para la respuesta del create (default: usa `include`) */
+  includeOnCreate?: PrismaInclude
+  /** Transforma la lista antes de retornarla como JSON */
+  formatResponse?: (items: PrismaRecord[]) => unknown
+  /** Schema Zod para validar POST body. Cuando se provee, reemplaza validateName. */
+  zodSchema?: ZodSchema
+}
+
+export interface ItemConfig {
+  /** Nombre del modelo Prisma */
+  model: string
+  /** Nombre de la entidad para mensajes de error */
+  entityName: string
+  /** Include de Prisma para GET/PUT */
+  include?: PrismaInclude
+  /** Include específico para GET by ID (si difiere del general) */
+  includeOnDetail?: PrismaInclude
+  /** Transforma el body del PUT en datos para prisma.update() */
+  buildUpdateData: (body: PrismaRecord, existing: PrismaRecord) => Record<string, unknown>
+  /** Si true, regenera el slug cuando el nombre cambia en PUT */
+  regenerateSlugOnUpdate?: boolean
+  /** Include específico para la respuesta del update */
+  includeOnUpdate?: PrismaInclude
+  /** Configuración de protección contra borrado */
+  deleteCheck?: {
+    /** Nombre de la relación a contar (e.g., 'movies', 'screenings') */
+    relation: string
+    /** Función que genera el mensaje de error dado el count */
+    message: (count: number) => string
+    /** Status code del error (default: 400) */
+    statusCode?: number
+    /** Extra fields to include in the error response (e.g., { moviesCount: count }) */
+    extraResponse?: (count: number) => Record<string, unknown>
+  }
+  /** Transforma el item antes de retornarlo como JSON en GET */
+  formatResponse?: (item: PrismaRecord) => unknown
+  /** Schema Zod para validar PUT body. Cuando se provee, reemplaza validateName. */
+  zodSchema?: ZodSchema
+}
+
+// ---------------------------------------------------------------------------
 // Helpers (exportados para uso independiente fuera del factory)
 // ---------------------------------------------------------------------------
 
@@ -49,104 +156,14 @@ export async function makeUniqueSlug(
 }
 
 // ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type PrismaModelDelegate = {
-  findMany: (args?: any) => Promise<any[]>
-  findUnique: (args: any) => Promise<any>
-  findFirst: (args: any) => Promise<any>
-  create: (args: any) => Promise<any>
-  update: (args: any) => Promise<any>
-  delete: (args: any) => Promise<any>
-  count: (args?: any) => Promise<number>
-}
-
-interface SearchConfig {
-  /** Campos sobre los que buscar (insensitive contains) */
-  fields: string[]
-}
-
-interface SortConfig {
-  defaultField: string
-  defaultOrder: 'asc' | 'desc'
-}
-
-interface PaginationConfig {
-  /** Key name for the items array in the response (e.g., 'venues') */
-  itemsKey: string
-  /** Default limit per page (default: 20) */
-  defaultLimit?: number
-}
-
-export interface ListCreateConfig {
-  /** Nombre del modelo Prisma (e.g., 'genre', 'rating', 'theme') */
-  model: string
-  /** Nombre de la entidad para mensajes de error (e.g., 'el género', 'la calificación') */
-  entityName: string
-  /** Ordenamiento por defecto para GET list */
-  orderBy?: any
-  /** Include de Prisma para las queries */
-  include?: any
-  /** Soporte de búsqueda en GET list (vía ?search=) */
-  search?: SearchConfig
-  /** Soporte de sort dinámico en GET list (vía ?sortBy= y ?sortOrder=) */
-  sort?: SortConfig
-  /** Soporte de paginación en GET list (vía ?page= y ?limit=) */
-  pagination?: PaginationConfig
-  /** Filtros extra construidos desde searchParams (e.g., ?type=, ?isActive=) */
-  extraFilters?: (searchParams: URLSearchParams) => Record<string, any>
-  /** Transforma el body del POST en los datos para prisma.create() */
-  buildCreateData: (body: any) => Record<string, any>
-  /** Include específico para la respuesta del create (default: usa `include`) */
-  includeOnCreate?: any
-  /** Transforma la lista antes de retornarla como JSON */
-  formatResponse?: (items: any[]) => any
-  /** Schema Zod para validar POST body. Cuando se provee, reemplaza validateName. */
-  zodSchema?: ZodSchema
-}
-
-export interface ItemConfig {
-  /** Nombre del modelo Prisma */
-  model: string
-  /** Nombre de la entidad para mensajes de error */
-  entityName: string
-  /** Include de Prisma para GET/PUT */
-  include?: any
-  /** Include específico para GET by ID (si difiere del general) */
-  includeOnDetail?: any
-  /** Transforma el body del PUT en datos para prisma.update() */
-  buildUpdateData: (body: any, existing: any) => Record<string, any>
-  /** Si true, regenera el slug cuando el nombre cambia en PUT */
-  regenerateSlugOnUpdate?: boolean
-  /** Include específico para la respuesta del update */
-  includeOnUpdate?: any
-  /** Configuración de protección contra borrado */
-  deleteCheck?: {
-    /** Nombre de la relación a contar (e.g., 'movies', 'screenings') */
-    relation: string
-    /** Función que genera el mensaje de error dado el count */
-    message: (count: number) => string
-    /** Status code del error (default: 400) */
-    statusCode?: number
-    /** Extra fields to include in the error response (e.g., { moviesCount: count }) */
-    extraResponse?: (count: number) => Record<string, any>
-  }
-  /** Transforma el item antes de retornarlo como JSON en GET */
-  formatResponse?: (item: any) => any
-  /** Schema Zod para validar PUT body. Cuando se provee, reemplaza validateName. */
-  zodSchema?: ZodSchema
-}
-
-// ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
 function getModel(modelName: string): PrismaModelDelegate {
-  return (prisma as any)[modelName]
+  return (prisma as unknown as Record<string, PrismaModelDelegate>)[modelName]
 }
 
-function validateName(body: any): NextResponse | null {
+function validateName(body: PrismaRecord): NextResponse | null {
   if (!body.name || (typeof body.name === 'string' && !body.name.trim())) {
     return NextResponse.json(
       { error: 'El nombre es requerido' },
@@ -169,7 +186,7 @@ export function createListAndCreateHandlers(config: ListCreateConfig) {
       const searchParams = request.nextUrl.searchParams
 
       // Build where clause (search + extraFilters)
-      const where: any = {}
+      const where: Record<string, unknown> = {}
       if (config.search) {
         const search = searchParams.get('search') || ''
         if (search) {
@@ -184,7 +201,7 @@ export function createListAndCreateHandlers(config: ListCreateConfig) {
       const hasWhere = Object.keys(where).length > 0
 
       // Build orderBy (sort)
-      let orderBy = config.orderBy
+      let orderBy: PrismaOrderBy | undefined = config.orderBy
       if (config.sort) {
         const sortBy = searchParams.get('sortBy') || config.sort.defaultField
         const sortOrder = searchParams.get('sortOrder') || config.sort.defaultOrder
@@ -201,7 +218,7 @@ export function createListAndCreateHandlers(config: ListCreateConfig) {
         take = limit
       }
 
-      const findArgs: any = {
+      const findArgs: PrismaArgs = {
         ...(hasWhere && { where }),
         ...(orderBy && { orderBy }),
         ...(config.include && { include: config.include }),
@@ -242,17 +259,17 @@ export function createListAndCreateHandlers(config: ListCreateConfig) {
     if (auth.error) return auth.error
 
     try {
-      const body = await request.json()
+      const body = await request.json() as PrismaRecord
 
-      let data: any = body
+      let data: PrismaRecord = body
       if (config.zodSchema) {
-        data = config.zodSchema.parse(body)
+        data = config.zodSchema.parse(body) as PrismaRecord
       } else {
         const nameError = validateName(body)
         if (nameError) return nameError
       }
 
-      const slug = await makeUniqueSlug(data.name, model)
+      const slug = await makeUniqueSlug(data.name as string, model)
       const includeForCreate = config.includeOnCreate ?? config.include
 
       const item = await model.create({
@@ -342,11 +359,11 @@ export function createItemHandlers(config: ItemConfig) {
         return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
       }
 
-      const body = await request.json()
+      const body = await request.json() as PrismaRecord
 
-      let data: any = body
+      let data: PrismaRecord = body
       if (config.zodSchema) {
-        data = config.zodSchema.parse(body)
+        data = config.zodSchema.parse(body) as PrismaRecord
       } else {
         const nameError = validateName(body)
         if (nameError) return nameError
@@ -363,7 +380,7 @@ export function createItemHandlers(config: ItemConfig) {
       let updateData = config.buildUpdateData(data, existing)
 
       if (config.regenerateSlugOnUpdate && data.name && data.name !== existing.name) {
-        const slug = await makeUniqueSlug(data.name, model, id)
+        const slug = await makeUniqueSlug(data.name as string, model, id)
         updateData = { ...updateData, slug }
       }
 
@@ -422,7 +439,8 @@ export function createItemHandlers(config: ItemConfig) {
       }
 
       if (config.deleteCheck) {
-        const count = item._count?.[config.deleteCheck.relation] ?? 0
+        const countRecord = item._count as Record<string, number> | undefined
+        const count = countRecord?.[config.deleteCheck.relation] ?? 0
         if (count > 0) {
           const extra = config.deleteCheck.extraResponse?.(count) ?? {}
           return NextResponse.json(

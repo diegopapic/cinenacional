@@ -1,11 +1,11 @@
 // src/services/movies.service.ts
 import { apiClient } from './api-client'
 import { MovieFilters } from '@/components/admin/movies/MoviesFilters'
-import { MovieCompleteData } from '@/lib/movies/movieTypes'
+import { MovieCompleteData, Movie } from '@/lib/movies/movieTypes'
 import { processPartialDateForAPI, processPartialDateFromAPI } from '@/lib/shared/dateUtils'
 
 interface MoviesResponse {
-  movies: any[]
+  movies: Movie[]
   pagination: {
     totalPages: number
     currentPage: number
@@ -17,8 +17,51 @@ interface MoviesResponse {
  * Formatea los datos del formulario de película para enviar a la API
  * Convierte las fechas completas o parciales al formato esperado por el backend
  */
-function formatMovieDataForAPI(data: MovieCompleteData): any {
-  const apiData: any = {
+interface MovieApiPayload extends Record<string, unknown> {
+  title: string
+  year?: number | null
+  duration?: number | null
+  durationSeconds?: number | null
+  tipoDuracion?: string
+  synopsis?: string
+  synopsisLocked?: boolean
+  notes?: string
+  tagline?: string
+  posterUrl?: string
+  trailerUrl?: string
+  imdbId?: string
+  stage?: string
+  colorTypeId?: number | null
+  soundType?: string | null
+  ratingId?: number | null
+  countries?: string[]
+  is_coproduction?: boolean
+  production_type?: string
+  dataCompleteness?: string
+  metaDescription?: string | string[]
+  metaKeywords?: string | string[]
+  genres?: number[]
+  cast?: MovieCompleteData['cast']
+  crew?: MovieCompleteData['crew']
+  productionCompanies?: number[]
+  distributionCompanies?: number[]
+  themes?: number[]
+  movieCountries?: number[]
+  links?: MovieCompleteData['links']
+  screeningVenues?: MovieCompleteData['screeningVenues']
+  releaseYear?: number | null
+  releaseMonth?: number | null
+  releaseDay?: number | null
+  filmingStartYear?: number | null
+  filmingStartMonth?: number | null
+  filmingStartDay?: number | null
+  filmingEndYear?: number | null
+  filmingEndMonth?: number | null
+  filmingEndDay?: number | null
+}
+
+function formatMovieDataForAPI(data: MovieCompleteData): MovieApiPayload {
+  const apiData: MovieApiPayload = {
     title: data.title,
     year: data.year,
     duration: data.duration,
@@ -73,7 +116,51 @@ function formatMovieDataForAPI(data: MovieCompleteData): any {
 /**
  * Convierte los datos de la API al formato del formulario
  */
-function formatMovieFromAPI(movie: any): MovieCompleteData {
+/** Raw movie data as returned by the API (before form conversion) */
+interface MovieApiResponse extends Record<string, unknown> {
+  title?: string
+  year?: number | null
+  duration?: number | null
+  durationSeconds?: number | null
+  tipoDuracion?: string
+  synopsis?: string
+  synopsisLocked?: boolean
+  notes?: string
+  tagline?: string
+  posterUrl?: string
+  trailerUrl?: string
+  imdbId?: string
+  stage?: string
+  colorTypeId?: number | null
+  soundType?: string
+  ratingId?: number | null
+  countries?: string[]
+  is_coproduction?: boolean
+  production_type?: string
+  dataCompleteness?: string
+  metaDescription?: string
+  metaKeywords?: string[]
+  genres?: number[]
+  cast?: MovieCompleteData['cast']
+  crew?: MovieCompleteData['crew']
+  productionCompanies?: number[]
+  distributionCompanies?: number[]
+  themes?: number[]
+  movieCountries?: number[]
+  links?: MovieCompleteData['links']
+  screeningVenues?: MovieCompleteData['screeningVenues']
+  releaseYear?: number | null
+  releaseMonth?: number | null
+  releaseDay?: number | null
+  filmingStartYear?: number | null
+  filmingStartMonth?: number | null
+  filmingStartDay?: number | null
+  filmingEndYear?: number | null
+  filmingEndMonth?: number | null
+  filmingEndDay?: number | null
+}
+
+function formatMovieFromAPI(movie: MovieApiResponse): MovieCompleteData {
   const formData: MovieCompleteData = {
     title: movie.title || '',
     year: movie.year || null,
@@ -88,16 +175,16 @@ function formatMovieFromAPI(movie: any): MovieCompleteData {
     posterUrl: movie.posterUrl || '',
     trailerUrl: movie.trailerUrl || '',
     imdbId: movie.imdbId || '',
-    stage: movie.stage || 'COMPLETA',
+    stage: (movie.stage || 'COMPLETA') as MovieCompleteData['stage'],
     filmingStartDate: '',
     filmingEndDate: '',
-    colorTypeId: movie.colorTypeId || null,
-    soundType: movie.soundType || '',
-    ratingId: movie.ratingId || null,
+    colorTypeId: movie.colorTypeId ?? null,
+    soundType: movie.soundType ?? '',
+    ratingId: movie.ratingId ?? null,
     countries: movie.countries || ['Argentina'],
     is_coproduction: movie.is_coproduction || false,
     production_type: movie.production_type || 'national',
-    dataCompleteness: movie.dataCompleteness || 'BASIC_PRESS_KIT',
+    dataCompleteness: (movie.dataCompleteness || 'BASIC_PRESS_KIT') as MovieCompleteData['dataCompleteness'],
     metaDescription: movie.metaDescription || '',
     metaKeywords: movie.metaKeywords || [],
     genres: movie.genres || [],
@@ -111,21 +198,21 @@ function formatMovieFromAPI(movie: any): MovieCompleteData {
     screeningVenues: movie.screeningVenues || []
   }
 
-  const release = processPartialDateFromAPI(movie.releaseYear, movie.releaseMonth, movie.releaseDay)
+  const release = processPartialDateFromAPI(movie.releaseYear ?? null, movie.releaseMonth ?? null, movie.releaseDay ?? null)
   if (release) {
     formData.releaseDate = release.date
     formData.isPartialReleaseDate = release.isPartial
     if (release.partialDate) formData.partialReleaseDate = release.partialDate
   }
 
-  const filmingStart = processPartialDateFromAPI(movie.filmingStartYear, movie.filmingStartMonth, movie.filmingStartDay)
+  const filmingStart = processPartialDateFromAPI(movie.filmingStartYear ?? null, movie.filmingStartMonth ?? null, movie.filmingStartDay ?? null)
   if (filmingStart) {
     formData.filmingStartDate = filmingStart.date
     formData.isPartialFilmingStartDate = filmingStart.isPartial
     if (filmingStart.partialDate) formData.partialFilmingStartDate = filmingStart.partialDate
   }
 
-  const filmingEnd = processPartialDateFromAPI(movie.filmingEndYear, movie.filmingEndMonth, movie.filmingEndDay)
+  const filmingEnd = processPartialDateFromAPI(movie.filmingEndYear ?? null, movie.filmingEndMonth ?? null, movie.filmingEndDay ?? null)
   if (filmingEnd) {
     formData.filmingEndDate = filmingEnd.date
     formData.isPartialFilmingEndDate = filmingEnd.isPartial
@@ -149,7 +236,7 @@ export const moviesService = {
       sortOrder: 'desc'
     }
 
-    const data = await apiClient.get<any>('/movies', { params })
+    const data = await apiClient.get<MoviesResponse>('/movies', { params })
 
     return {
       movies: data.movies || [],
@@ -160,47 +247,47 @@ export const moviesService = {
   /**
    * Obtiene una película por ID con todas sus relaciones
    */
-  async getById(id: number, fresh = false): Promise<any> {
+  async getById(id: number, fresh = false): Promise<Movie> {
     const options: { params?: Record<string, string>; cache?: RequestCache } = {}
     if (fresh) {
       options.params = { fresh: 'true' }
       options.cache = 'no-store'
     }
-    return apiClient.get<any>(`/movies/${id}`, options)
+    return apiClient.get<Movie>(`/movies/${id}`, options)
   },
 
   /**
    * Obtiene una película por ID en formato de formulario para edición
    */
   async getByIdForEdit(id: number): Promise<MovieCompleteData> {
-    const movie = await apiClient.get<any>(`/movies/${id}`)
+    const movie = await apiClient.get<MovieApiResponse>(`/movies/${id}`)
     return formatMovieFromAPI(movie)
   },
 
   /**
    * Crea una nueva película
    */
-  async create(data: MovieCompleteData): Promise<any> {
-    let formattedData = data;
+  async create(data: MovieCompleteData): Promise<Movie> {
+    let formattedData: MovieCompleteData | MovieApiPayload = data;
 
     if (!('releaseYear' in data) && !('filmingStartYear' in data)) {
       formattedData = formatMovieDataForAPI(data);
     }
 
-    return apiClient.post<any>('/movies', formattedData)
+    return apiClient.post<Movie>('/movies', formattedData)
   },
 
   /**
    * Actualiza una película existente
    */
-  async update(id: number, data: MovieCompleteData): Promise<any> {
-    let formattedData = data;
+  async update(id: number, data: MovieCompleteData): Promise<Movie> {
+    let formattedData: MovieCompleteData | MovieApiPayload = data;
 
     if (!('releaseYear' in data) && !('filmingStartYear' in data)) {
       formattedData = formatMovieDataForAPI(data);
     }
 
-    return apiClient.put<any>(`/movies/${id}`, formattedData)
+    return apiClient.put<Movie>(`/movies/${id}`, formattedData)
   },
 
   /**
@@ -213,8 +300,8 @@ export const moviesService = {
   /**
    * Busca películas por término de búsqueda (autocomplete)
    */
-  async search(term: string, limit: number = 10): Promise<any[]> {
-    return apiClient.get<any[]>('/movies/search', {
+  async search(term: string, limit: number = 10): Promise<Movie[]> {
+    return apiClient.get<Movie[]>('/movies/search', {
       params: { search: term, limit: limit.toString() }
     })
   },

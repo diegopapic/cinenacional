@@ -7,6 +7,7 @@ import {
   PersonWithRelations,
   PersonFormData,
   PersonFilters,
+  PersonLink,
   PaginatedPeopleResponse
 } from '@/lib/people/peopleTypes';
 import { processPartialDateForAPI, processPartialDateFromAPI } from '@/lib/shared/dateUtils';
@@ -37,8 +38,35 @@ interface PersonSearchResult {
 * Formatea los datos del formulario para enviar a la API
 * Convierte las fechas completas o parciales al formato esperado por el backend
 */
-function formatPersonDataForAPI(data: PersonFormData): any {
-  const apiData: any = {
+interface PersonApiPayload extends Record<string, unknown> {
+  firstName?: string | null
+  lastName?: string | null
+  realName?: string | null
+  gender?: string | null
+  hideAge?: boolean
+  isActive?: boolean
+  birthLocationId?: number | null
+  deathLocationId?: number | null
+  biography?: string | null
+  photoUrl?: string | null
+  photoPublicId?: string
+  imdbId?: string | null
+  tmdbId?: number | null
+  birthYear?: number | null
+  birthMonth?: number | null
+  birthDay?: number | null
+  deathYear?: number | null
+  deathMonth?: number | null
+  deathDay?: number | null
+  nationalities?: number[]
+  links?: PersonLink[]
+  alternativeNames?: PersonFormData['alternativeNames']
+  trivia?: PersonFormData['trivia']
+  forceReassign?: boolean
+}
+
+function formatPersonDataForAPI(data: PersonFormData): PersonApiPayload {
+  const apiData: PersonApiPayload = {
     firstName: data.firstName || null,
     lastName: data.lastName || null,
     realName: data.realName || null,
@@ -94,7 +122,15 @@ function formatPersonDataForAPI(data: PersonFormData): any {
 /**
 * Convierte los datos de la API al formato del formulario
 */
-function formatPersonFromAPI(person: any): PersonFormData {
+/** Nationality as returned from the API (various shapes) */
+interface NationalityEntry {
+  locationId?: number
+  location?: { id: number }
+  country?: { id: number }
+  id?: number
+}
+
+function formatPersonFromAPI(person: PersonWithRelations & Record<string, unknown>): PersonFormData {
   const formData: PersonFormData = {
     firstName: person.firstName || '',
     lastName: person.lastName || '',
@@ -113,17 +149,17 @@ function formatPersonFromAPI(person: any): PersonFormData {
     links: person.links || [],
     alternativeNames: person.alternativeNames || [],
     nationalities: [],
-    trivia: person.trivia || []
+    trivia: (person as Record<string, unknown>).trivia as PersonFormData['trivia'] || []
   };
 
-  const birthResult = processPartialDateFromAPI(person.birthYear, person.birthMonth, person.birthDay);
+  const birthResult = processPartialDateFromAPI(person.birthYear ?? null, person.birthMonth ?? null, person.birthDay ?? null);
   if (birthResult) {
     formData.birthDate = birthResult.date;
     formData.isPartialBirthDate = birthResult.isPartial;
     if (birthResult.partialDate) formData.partialBirthDate = birthResult.partialDate;
   }
 
-  const deathResult = processPartialDateFromAPI(person.deathYear, person.deathMonth, person.deathDay);
+  const deathResult = processPartialDateFromAPI(person.deathYear ?? null, person.deathMonth ?? null, person.deathDay ?? null);
   if (deathResult) {
     formData.deathDate = deathResult.date;
     formData.isPartialDeathDate = deathResult.isPartial;
@@ -132,7 +168,7 @@ function formatPersonFromAPI(person: any): PersonFormData {
 
   // Procesar nacionalidades
   if (person.nationalities && Array.isArray(person.nationalities)) {
-    formData.nationalities = person.nationalities.map((n: any) => {
+    formData.nationalities = person.nationalities.map((n: number | NationalityEntry) => {
       // Si es un número directo
       if (typeof n === 'number') {
         return n;
@@ -162,7 +198,7 @@ function formatPersonFromAPI(person: any): PersonFormData {
       }
 
       return null;
-    }).filter((id: any) => id !== null); // Filtrar nulls
+    }).filter((id: number | null): id is number => id !== null);
   }
 
   return formData;
@@ -216,7 +252,7 @@ export const peopleService = {
    * Obtiene una persona por ID en formato de formulario
    */
   async getByIdForEdit(id: number): Promise<PersonFormData> {
-    const person = await apiClient.get<any>(`/people/${id}`);
+    const person = await apiClient.get<PersonWithRelations & Record<string, unknown>>(`/people/${id}`);
     return formatPersonFromAPI(person);
   },
 
@@ -230,7 +266,7 @@ export const peopleService = {
       return await apiClient.post<PersonWithRelations>('/people', formattedData);
     } catch (error) {
       if (error instanceof ApiError && error.status === 409 && error.data?.conflicts) {
-        throw new ExternalIdConflictError(error.data.conflicts);
+        throw new ExternalIdConflictError(error.data.conflicts as ExternalIdConflict[]);
       }
       throw error;
     }
@@ -257,7 +293,7 @@ export const peopleService = {
       return await apiClient.put<PersonWithRelations>(`/people/${id}`, formattedData);
     } catch (error) {
       if (error instanceof ApiError && error.status === 409 && error.data?.conflicts) {
-        throw new ExternalIdConflictError(error.data.conflicts);
+        throw new ExternalIdConflictError(error.data.conflicts as ExternalIdConflict[]);
       }
       throw error;
     }

@@ -20,5 +20,5 @@ export async function requireAuth(): Promise<
     }
   }
 
-  return { session: session as any }
+  return { session: session as { user: { id: string; role: string; email?: string; name?: string } } }
 }

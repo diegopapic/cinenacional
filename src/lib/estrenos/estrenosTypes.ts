@@ -23,8 +23,24 @@ export type EstrenosMode =
   | { type: 'decade'; start: number; end: number; label: string }
   | { type: 'upcoming' }
 
+/** Movie summary for the estrenos (releases) listing */
+export interface EstrenoMovie {
+  id: number
+  slug: string
+  title: string
+  year: number | null
+  releaseYear: number | null
+  releaseMonth: number | null
+  releaseDay: number | null
+  posterUrl: string | null
+  stage: string
+  synopsis: string | null
+  directors: Array<{ id: number; slug: string; name: string }>
+  genres: Array<{ id: number; name: string }>
+}
+
 export interface EstrenosResponse {
-  movies: any[];
+  movies: EstrenoMovie[];
   pagination: {
     page: number;
     limit: number;

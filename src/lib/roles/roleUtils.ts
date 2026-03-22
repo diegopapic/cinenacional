@@ -1,6 +1,7 @@
 // src/lib/roles/roleUtils.ts
 import {
   Department,
+  type Role,
   getDepartmentLabel as getLabel,
   getDepartmentColor as getColor,
   getDepartmentOptions as getOptions
@@ -34,7 +35,7 @@ export const getDepartmentOptions = getOptions;
  * sortRolesByDepartment
  * @TODO Add documentation
  */
-export function sortRolesByDepartment(roles: any[]): any[] {
+export function sortRolesByDepartment(roles: Role[]): Role[] {
   return [...roles].sort((a, b) => {
     // Roles principales primero
     if (a.isMainRole && !b.isMainRole) return -1;

@@ -71,20 +71,27 @@ export function formatPersonFormDataForAPI(data: PersonFormData) {
    };
 }
 
+/** Location with optional parent chain for recursive path building */
+interface LocationWithParent {
+  name: string
+  path?: string
+  parent?: LocationWithParent | null
+}
+
 // Función auxiliar para formatear el path de la ubicación (recursiva para cualquier profundidad)
-function formatLocationPath(location: any): string {
+function formatLocationPath(location: LocationWithParent): string {
    // Si la ubicación ya tiene un path, usarlo
    if (location.path) return location.path;
 
    // Construir el path de forma recursiva
    const parts: string[] = [];
-   let current = location;
-   
+   let current: LocationWithParent | null | undefined = location;
+
    while (current) {
        parts.push(current.name);
        current = current.parent;
    }
-   
+
    return parts.join(', ');
 }
 
@@ -172,8 +179,8 @@ export function formatPersonDataForForm(person?: PersonWithRelations | null): Pe
 
    // Procesar nacionalidades si existen
    if (person.nationalities && Array.isArray(person.nationalities)) {
-       formData.nationalities = person.nationalities.map((n: any) => {
-           // Si es un número directo
+       formData.nationalities = person.nationalities.map((n) => {
+           // Si es un número directo (shouldn't happen from API but handled for safety)
            if (typeof n === 'number') return n;
 
            // Si es un objeto
@@ -181,11 +188,11 @@ export function formatPersonDataForForm(person?: PersonWithRelations | null): Pe
                // Intentar extraer el ID de diferentes estructuras posibles
                if (n.locationId) return n.locationId;
                if (n.location && n.location.id) return n.location.id;
-               if (n.id) return n.id;
+               return null;
            }
 
            return null;
-       }).filter((id: any) => id !== null);
+       }).filter((id): id is number => id !== null);
    }
 
    return formData;
@@ -293,7 +300,18 @@ export function removePersonLink(links: PersonLink[], index: number): PersonLink
 * Genera el texto para mostrar la edad o fecha de nacimiento
 * Actualizada para manejar fechas parciales
 */
-export function formatBirthInfo(person: any): string {
+/** Person data shape needed for birth info formatting */
+interface PersonBirthData {
+  birthYear?: number | null
+  birthMonth?: number | null
+  birthDay?: number | null
+  deathYear?: number | null
+  deathDate?: string | null
+  birthDate?: string | null
+  hideAge?: boolean
+}
+
+export function formatBirthInfo(person: PersonBirthData): string {
    // Si hay campos de fecha parcial
    if ('birthYear' in person && person.birthYear) {
        if (person.hideAge) return 'Fecha oculta';
@@ -368,7 +386,16 @@ export function calculateAge(birthDate: Date, deathDate?: Date): number {
 * Genera un resumen de la persona para mostrar en listas
 * Actualizada para manejar fechas parciales
 */
-export function getPersonSummary(person: any): string {
+/** Person data shape needed for summary generation */
+interface PersonSummaryData {
+  birthYear?: number | null
+  deathYear?: number | null
+  birthDate?: string | null
+  deathDate?: string | null
+  hideAge?: boolean
+}
+
+export function getPersonSummary(person: PersonSummaryData): string {
    const parts = [];
 
    // Manejar fecha de nacimiento
