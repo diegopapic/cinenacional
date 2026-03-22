@@ -2,7 +2,7 @@
 
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Edit, Trash2, Film, Calendar, Clock, MapPin, Star } from 'lucide-react'
+import { ArrowLeft, Edit, Film, Calendar, Clock, MapPin, Star } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { formatDayMonth, formatDayMonthYear, formatWeekdayDayMonth, formatTime, parseLocalDate } from '@/lib/shared/dateUtils'
 import { PremiereTypeLabels } from '@/lib/festivals/festivalTypes'

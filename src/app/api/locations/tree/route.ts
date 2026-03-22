@@ -24,7 +24,7 @@ interface LocationNode {
 }
 
 // GET /api/locations/tree - Obtener estructura de árbol completa
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Obtener todos los lugares
     const locations = await prisma.location.findMany({

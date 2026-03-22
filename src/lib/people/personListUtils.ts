@@ -1,6 +1,6 @@
 // src/lib/people/personListUtils.ts
 
-import { PersonListFilters, DEFAULT_PERSON_FILTERS, PersonWithMovie, LocationFilterOption, FiltersDataResponse, SORT_OPTIONS } from './personListTypes';
+import { PersonListFilters, DEFAULT_PERSON_FILTERS, LocationFilterOption, FiltersDataResponse, SORT_OPTIONS } from './personListTypes';
 import { formatPartialDate as sharedFormatPartialDate, calculateYearsBetween, type PartialDate } from '@/lib/shared/dateUtils';
 import { generateYearOptions } from '@/lib/shared/listUtils';
 import { createFilterHelpers } from '@/lib/shared/filterUtils';

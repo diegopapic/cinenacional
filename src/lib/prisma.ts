@@ -26,7 +26,7 @@ try {
   const url = new URL(DATABASE_URL)
   connectionLimit = parseInt(url.searchParams.get('connection_limit') || '20')
   logger.info('Connection pool configured', { connectionLimit })
-} catch (e) {
+} catch {
   logger.info('Could not parse DATABASE_URL, using default pool of 20')
 }
 

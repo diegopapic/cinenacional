@@ -26,7 +26,7 @@ export default function MoviesTable({
       setDeletingMovieId(id)
       await onDelete(id)
       toast.success('Película eliminada')
-    } catch (error) {
+    } catch {
       toast.error('Error al eliminar la película')
     } finally {
       setDeletingMovieId(null)

@@ -11,7 +11,7 @@ import { rolesService } from '@/services/roles.service';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('RoleModal');
-import { getDepartmentOptions, getDepartmentColor, DEPARTMENTS } from '@/lib/roles/roleUtils';
+import { getDepartmentOptions, getDepartmentColor } from '@/lib/roles/roleUtils';
 import { Department } from '@/lib/roles/rolesTypes';
 
 const roleSchema = z.object({
@@ -55,7 +55,6 @@ export function RoleModal({
     formState: { errors, isSubmitting },
     reset,
     watch,
-    setValue
   } = useForm<RoleFormData>({
     resolver: zodResolver(roleSchema),
     defaultValues: {

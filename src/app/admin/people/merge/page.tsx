@@ -470,7 +470,6 @@ export default function MergePeoplePage() {
                 <h2 className="text-lg font-semibold mb-4">Relaciones a transferir</h2>
                 <StatsDisplay
                   stats={computedStats}
-                  absorbedName={formatName(survivorChoice === 'A' ? preview.personB : preview.personA)}
                   survivorName={formatName(survivorChoice === 'A' ? preview.personA : preview.personB)}
                 />
               </div>
@@ -625,7 +624,7 @@ function FieldRow({
   resolution?: 'A' | 'B';
   onResolve: (choice: 'A' | 'B') => void;
 }) {
-  const { field, label, type, displaySurvivor, displayAbsorbed, absorbedLabel } = displayField;
+  const { field, label, type, displayAbsorbed, absorbedLabel } = displayField;
 
   if (type === 'autofill') {
     // Absorbed has value, survivor doesn't - will be auto-copied
@@ -650,7 +649,7 @@ function FieldRow({
   const isPhoto = field === 'photo';
   const isBiography = field === 'biography';
 
-  function renderValue(display: string, side: string) {
+  function renderValue(display: string, _side: string) {
     if (isPhoto) {
       return display ? (
         <img src={display} alt="" className="w-16 h-16 rounded object-cover mt-1" />
@@ -704,7 +703,7 @@ function FieldRow({
   );
 }
 
-function StatsDisplay({ stats, absorbedName, survivorName }: {
+function StatsDisplay({ stats, survivorName }: {
   stats: {
     sharedCastCount: number;
     sharedCrewCount: number;
@@ -719,7 +718,6 @@ function StatsDisplay({ stats, absorbedName, survivorName }: {
     festivalAwardWinners: number;
     pageViews: number;
   };
-  absorbedName: string;
   survivorName: string;
 }) {
   const deduplicateRows = [

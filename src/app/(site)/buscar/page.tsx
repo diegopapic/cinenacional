@@ -182,7 +182,7 @@ export default function SearchPage() {
           Resultados de búsqueda
         </h1>
         <p className="text-muted-foreground mt-2">
-          Buscando: <span className="font-medium text-foreground">"{query}"</span>
+          Buscando: <span className="font-medium text-foreground">&quot;{query}&quot;</span>
         </p>
         {results && (
           <p className="text-sm text-muted-foreground/60 mt-1">
@@ -379,7 +379,7 @@ export default function SearchPage() {
             No se encontraron resultados
           </h2>
           <p className="text-muted-foreground">
-            No se encontraron películas ni personas que coincidan con "{query}"
+            No se encontraron películas ni personas que coincidan con &quot;{query}&quot;
           </p>
         </div>
       )}

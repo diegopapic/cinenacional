@@ -53,7 +53,7 @@ function isValidDate(day: number, month: number, year: number): boolean {
 export function DateInput({ value, onChange, placeholder = 'DD/MM/AAAA', className = '' }: DateInputProps) {
     const [displayValue, setDisplayValue] = useState(() => isoToDisplay(value));
     const [prevValue, setPrevValue] = useState(value);
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const [, setIsCalendarOpen] = useState(false);
     const calendarRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const hiddenDateRef = useRef<HTMLInputElement>(null);

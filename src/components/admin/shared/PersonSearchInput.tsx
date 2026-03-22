@@ -690,7 +690,7 @@ export default function PersonSearchInput({
             ) : !Array.isArray(people) || people.length === 0 ? (
               <>
                 <div className="p-3 text-center text-gray-500">
-                  No se encontraron personas con "{debouncedSearch}"
+                  No se encontraron personas con &quot;{debouncedSearch}&quot;
                 </div>
                 <div className="border-t border-gray-200">
                   <button
@@ -700,7 +700,7 @@ export default function PersonSearchInput({
                   >
                     <Plus className="h-4 w-4" />
                     <span className="text-sm font-medium">
-                      Crear nueva persona: "{debouncedSearch}"
+                      Crear nueva persona: &quot;{debouncedSearch}&quot;
                     </span>
                   </button>
                 </div>
@@ -717,7 +717,7 @@ export default function PersonSearchInput({
                     onClick={handleCreatePerson}
                   >
                     <Plus className="h-4 w-4" />
-                    <span>¿No encuentras a quien buscas? Crear: "{debouncedSearch}"</span>
+                    <span>¿No encuentras a quien buscas? Crear: &quot;{debouncedSearch}&quot;</span>
                   </button>
                 </div>
               </>

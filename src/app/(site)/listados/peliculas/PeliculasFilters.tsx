@@ -111,6 +111,7 @@ export default function PeliculasFilters({
   filtersData,
   isLoading,
   onFilterChange,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onClearFilters
 }: PeliculasFiltersProps) {
 

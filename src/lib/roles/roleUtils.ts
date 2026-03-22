@@ -1,8 +1,6 @@
 // src/lib/roles/roleUtils.ts
-import { 
-  Department, 
-  DEPARTMENT_LABELS, 
-  DEPARTMENT_COLORS,
+import {
+  Department,
   getDepartmentLabel as getLabel,
   getDepartmentColor as getColor,
   getDepartmentOptions as getOptions

@@ -204,7 +204,7 @@ export default function SearchBar() {
                                     onClick={handleResultClick}
                                     className="flex items-center justify-between px-4 py-3 bg-zinc-800/50 hover:bg-zinc-800 text-sm text-zinc-400 hover:text-white font-medium group transition-colors"
                                 >
-                                    <span>Ver todos los resultados para "{query}"</span>
+                                    <span>Ver todos los resultados para &quot;{query}&quot;</span>
                                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                 </Link>
                             </>
@@ -216,7 +216,7 @@ export default function SearchBar() {
                                 <p className="text-sm text-zinc-400">
                                     No se encontraron resultados para
                                 </p>
-                                <p className="text-sm font-medium text-white">"{query}"</p>
+                                <p className="text-sm font-medium text-white">&quot;{query}&quot;</p>
                             </div>
                         ) : null}
                     </div>

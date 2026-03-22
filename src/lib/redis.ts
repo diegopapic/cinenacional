@@ -60,7 +60,7 @@ class RedisClient {
 
         // Solo mostrar errores una vez
         let errorShown = false;
-        this.instance.on('error', (err) => {
+        this.instance.on('error', () => {
           if (!errorShown) {
             log.warn('Redis unavailable, using memory cache');
             errorShown = true;
@@ -79,39 +79,39 @@ class RedisClient {
           this.instance = null;
         });
 
-      } catch (error) {
+      } catch {
         this.isRedisEnabled = false;
         this.instance = null;
         log.warn('Redis not configured, using memory cache');
       }
     }
-    
+
     return this.isRedisEnabled ? this.instance : null;
   }
 
   static async get(key: string): Promise<string | null> {
     if (!this.isRedisEnabled) return null;
-    
+
     const client = this.getInstance();
     if (!client) return null;
-    
+
     try {
       return await client.get(key);
-    } catch (error) {
+    } catch {
       return null;
     }
   }
 
   static async set(
-    key: string, 
-    value: string, 
+    key: string,
+    value: string,
     expirationInSeconds?: number
   ): Promise<boolean> {
     if (!this.isRedisEnabled) return false;
-    
+
     const client = this.getInstance();
     if (!client) return false;
-    
+
     try {
       if (expirationInSeconds) {
         await client.setex(key, expirationInSeconds, value);
@@ -119,35 +119,35 @@ class RedisClient {
         await client.set(key, value);
       }
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
 
   static async del(key: string): Promise<boolean> {
     if (!this.isRedisEnabled) return false;
-    
+
     const client = this.getInstance();
     if (!client) return false;
-    
+
     try {
       await client.del(key);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
 
   static async flush(): Promise<boolean> {
     if (!this.isRedisEnabled) return false;
-    
+
     const client = this.getInstance();
     if (!client) return false;
-    
+
     try {
       await client.flushdb();
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

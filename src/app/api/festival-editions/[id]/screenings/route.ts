@@ -252,7 +252,7 @@ async function bulkCreateScreenings(editionId: number, screeningsData: any[]) {
           }
         })
         results.push(screening)
-      } catch (err) {
+      } catch {
         errors.push({
           data,
           error: 'Error al crear proyección'

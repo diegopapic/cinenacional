@@ -1,7 +1,7 @@
 // src/lib/api/api-handler.ts
 // Shared error handling for API routes.
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import { createLogger } from '@/lib/logger'
 

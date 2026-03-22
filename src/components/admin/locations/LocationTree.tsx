@@ -161,7 +161,7 @@ export default function LocationTree() {
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Confirmar eliminación</h3>
             <p className="text-gray-600 mb-6">
-              ¿Estás seguro de que quieres eliminar "{deleteModal.name}"?
+              ¿Estás seguro de que quieres eliminar &quot;{deleteModal.name}&quot;?
             </p>
             <div className="flex justify-end gap-3">
               <button

@@ -102,7 +102,7 @@ export default function AdminGenresPage() {
         try {
           const error = await response.json()
           errorMessage = error.error || error.message || errorMessage
-        } catch (e) {}
+        } catch {}
         throw new Error(errorMessage)
       }
 
@@ -151,7 +151,7 @@ export default function AdminGenresPage() {
 
       toast.success('Género eliminado')
       queryClient.invalidateQueries({ queryKey: ['admin-genres'] })
-    } catch (error) {
+    } catch {
       toast.error('Error al eliminar el género')
     } finally {
       setDeletingGenreId(null)

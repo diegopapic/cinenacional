@@ -145,7 +145,6 @@ export async function GET(request: NextRequest) {
     if (search && search.trim().length >= 2) {
       try {
         const searchPattern = `%${search.toLowerCase().trim()}%`;
-        const searchTerms = search.toLowerCase().trim().split(/\s+/);
         const skip = (page - 1) * limit;
         
         // ============================================
@@ -661,7 +660,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     data.lastName = lastName;
   }
 
-  let baseSlug = generatePersonSlug(data.firstName, data.lastName);
+  const baseSlug = generatePersonSlug(data.firstName, data.lastName);
   let slug = baseSlug;
   let counter = 1;
 

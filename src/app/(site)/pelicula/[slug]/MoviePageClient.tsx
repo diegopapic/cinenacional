@@ -12,9 +12,6 @@ import { AdditionalData } from "@/components/movies/AdditionalData";
 import { ReviewsSection } from "@/components/movies/ReviewsSection";
 import { usePageView } from '@/hooks/usePageView';
 
-// Componente de anuncios
-import AdBanner from "@/components/ads/AdBanner";
-
 interface CastMember {
     name: string;
     character: string;
@@ -108,14 +105,6 @@ interface MoviePageClientProps {
     }>;
 }
 
-// Slots de AdSense
-const AD_SLOTS = {
-    POST_INFO: '8509488902',
-    SIDEBAR: '8621169545',
-    CAST_CREW: '7432210959',
-    PRE_TRAILER: '7308087870',
-    MULTIPLEX: '6191938018',
-};
 
 export function MoviePageClient({
     movie,

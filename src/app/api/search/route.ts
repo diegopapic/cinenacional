@@ -107,7 +107,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           LIMIT ${limit}
         `
       }
-    } catch (err) {
+    } catch {
       log.debug('Falling back to standard search for movies')
       // Fallback si unaccent no está instalado
       const movieResults = await prisma.movie.findMany({
@@ -207,7 +207,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           LIMIT ${limit}
         `
       }
-    } catch (err) {
+    } catch {
       log.debug('Falling back to standard search for people')
       // Fallback si unaccent no está instalado
       const peopleResults = await prisma.person.findMany({

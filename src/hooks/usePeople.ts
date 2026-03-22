@@ -5,7 +5,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/useDebounce';
 import { peopleService } from '@/services/people.service';
 import {
-  PersonWithRelations,
   PersonFilters,
 } from '@/lib/people/peopleTypes';
 import { PEOPLE_PAGINATION } from '@/lib/people/peopleConstants';

@@ -175,10 +175,6 @@ async function loadKnownNames(prisma: PrismaClient): Promise<Set<string>> {
  * Verifica si una palabra debe tratarse como parte del nombre
  * (es nombre conocido, apodo, inicial, o preposición seguida de nombre)
  */
-function isFirstNamePart(word: string, knownNames: Set<string>): boolean {
-  return isKnownName(word, knownNames) || isNickname(word) || isInitial(word);
-}
-
 /**
  * Encuentra el índice donde empieza el apellido
  * Apodos e iniciales se tratan como parte del nombre

@@ -174,7 +174,7 @@ async function createSectionsFromTemplates(editionId: number, templateIds: numbe
 
     // Crear secciones
     const sections = await prisma.$transaction(
-      templatesToCreate.map((template, index) =>
+      templatesToCreate.map((template, _index) =>
         prisma.festivalSection.create({
           data: {
             editionId,

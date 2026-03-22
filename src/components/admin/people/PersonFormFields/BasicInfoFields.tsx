@@ -20,7 +20,6 @@ interface BasicInfoFieldsProps {
 export function BasicInfoFields({
     formData,
     updateField,
-    isEdit
 }: BasicInfoFieldsProps) {
     // Estados para fechas parciales
     const [isPartialBirthDate, setIsPartialBirthDate] = useState(false);

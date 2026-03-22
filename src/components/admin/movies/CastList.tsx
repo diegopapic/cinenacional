@@ -1,7 +1,6 @@
 // src/components/admin/movies/CastList.tsx
 'use client'
 
-import { useState } from 'react'
 import { createLogger } from '@/lib/logger'
 
 const log = createLogger('CastList')

@@ -506,7 +506,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         const newLastName = updateData.lastName !== undefined ? updateData.lastName : survivor.lastName;
 
         if (newFirstName !== survivor.firstName || newLastName !== survivor.lastName) {
-          let baseSlug = generatePersonSlug(newFirstName, newLastName);
+          const baseSlug = generatePersonSlug(newFirstName, newLastName);
           let slug = baseSlug;
           let counter = 1;
 

@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { X, Save, Trash2, GripVertical } from 'lucide-react'
+import { X, Save, Trash2 } from 'lucide-react'
 import { 
   ImageWithRelations, 
   ImageType,

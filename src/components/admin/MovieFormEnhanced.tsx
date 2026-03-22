@@ -642,7 +642,7 @@ export default function MovieFormEnhanced({
                           onClick={createNewPerson}
                           className="mt-2 text-sm text-blue-600 hover:text-blue-800"
                         >
-                          Crear nueva persona: "{personSearch}"
+                          Crear nueva persona: &quot;{personSearch}&quot;
                         </button>
                       )}
                     </div>
@@ -823,7 +823,7 @@ export default function MovieFormEnhanced({
                       onClick={createNewPerson}
                       className="mt-2 text-sm text-blue-600 hover:text-blue-800"
                     >
-                      Crear nueva persona: "{personSearch}"
+                      Crear nueva persona: &quot;{personSearch}&quot;
                     </button>
                   )}
                 </div>
@@ -1296,7 +1296,7 @@ export default function MovieFormEnhanced({
                     onClick={createNewPerson}
                     className="mt-2 text-sm text-blue-600 hover:text-blue-800"
                   >
-                    Crear nueva persona: "{personSearch}"
+                    Crear nueva persona: &quot;{personSearch}&quot;
                   </button>
                 )}
               </div>

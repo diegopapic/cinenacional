@@ -169,7 +169,7 @@ export function createListAndCreateHandlers(config: ListCreateConfig) {
       const searchParams = request.nextUrl.searchParams
 
       // Build where clause (search + extraFilters)
-      let where: any = {}
+      const where: any = {}
       if (config.search) {
         const search = searchParams.get('search') || ''
         if (search) {

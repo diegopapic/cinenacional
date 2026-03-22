@@ -3,11 +3,10 @@
 import { Suspense } from 'react'
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 
 function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/admin'
   
@@ -34,7 +33,7 @@ function LoginForm() {
         toast.success('¡Bienvenido!')
         window.location.href = callbackUrl
       }
-    } catch (error) {
+    } catch {
       toast.error('Error al iniciar sesión')
     } finally {
       setLoading(false)

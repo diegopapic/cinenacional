@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { getCsrfHeaders } from '@/lib/csrf-client';
@@ -21,7 +21,6 @@ interface CaseToReview {
 
 export default function ReviewNamesPage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [saving, setSaving] = useState(false);
   const [removedIds, setRemovedIds] = useState<Set<number>>(new Set());
@@ -320,8 +319,8 @@ export default function ReviewNamesPage() {
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h3 className="text-sm font-medium text-blue-900 mb-2">💡 Consejos</h3>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Si el nombre está correcto, haz clic en "Marcar como Correcto"</li>
-            <li>• Los apellidos compuestos (ej: "de la Cruz") son correctos</li>
+            <li>• Si el nombre está correcto, haz clic en &quot;Marcar como Correcto&quot;</li>
+            <li>• Los apellidos compuestos (ej: &quot;de la Cruz&quot;) son correctos</li>
             <li>• Las bandas y grupos pueden tener nombres largos</li>
             <li>• Los cambios se guardan automáticamente</li>
           </ul>

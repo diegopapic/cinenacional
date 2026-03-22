@@ -8,13 +8,12 @@ import { rolesService } from '@/services/roles.service'
 import { createLogger } from '@/lib/logger'
 
 const log = createLogger('RoleSelector')
-import { 
-  Department, 
-  DEPARTMENT_LABELS, 
+import {
+  Department,
   getDepartmentLabel,
   getDepartmentColor,
   type Role,
-  type RoleFilters 
+  type RoleFilters
 } from '@/lib/roles/rolesTypes'
 
 interface RoleSelectorProps {
@@ -262,7 +261,7 @@ export default function RoleSelector({
                   }}
                 >
                   <span className="text-sm">
-                    ¿No encuentras el rol? Solicita agregarlo: "{debouncedSearch}"
+                    ¿No encuentras el rol? Solicita agregarlo: &quot;{debouncedSearch}&quot;
                   </span>
                 </button>
               </div>

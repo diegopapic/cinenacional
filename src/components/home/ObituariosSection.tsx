@@ -1,6 +1,6 @@
 // src/components/home/ObituariosSection.tsx
 import Link from 'next/link';
-import { formatPartialDate, calculateYearsBetween } from '@/lib/shared/dateUtils';
+import { calculateYearsBetween } from '@/lib/shared/dateUtils';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
 interface ObituariosSectionProps {

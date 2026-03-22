@@ -2,7 +2,7 @@
 
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Edit, Trash2, Calendar, Eye, EyeOff, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Plus, Edit, Calendar, Eye, EyeOff, ExternalLink } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { formatDayMonth, formatDayMonthYear } from '@/lib/shared/dateUtils'
 import DeleteEditionButton from './DeleteEditionButton'

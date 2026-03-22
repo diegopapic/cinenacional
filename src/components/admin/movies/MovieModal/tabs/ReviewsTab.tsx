@@ -16,9 +16,6 @@ import { toast } from 'react-hot-toast'
 import { getCsrfHeaders } from '@/lib/csrf-client'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import PersonSearchInput from '@/components/admin/shared/PersonSearchInput'
-import { createLogger } from '@/lib/logger'
-
-const log = createLogger('ReviewsTab')
 
 interface ReviewAuthor {
   id: number

@@ -12,7 +12,6 @@ import {
   Edit,
   Trash2,
   Tag,
-  X,
   Save,
   Loader2,
   Hash

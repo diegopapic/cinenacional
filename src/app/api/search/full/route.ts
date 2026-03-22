@@ -132,7 +132,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         totalPeople: formattedPeople.length
       })
 
-    } catch (err) {
+    } catch {
       log.debug('Unaccent not available, using fallback')
       
       // Fallback: búsqueda estándar sin normalización

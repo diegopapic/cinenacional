@@ -8,7 +8,7 @@ const log = createLogger('api:metrics')
 
 export const dynamic = 'force-dynamic'
 
-export const GET = apiHandler(async (request: NextRequest) => {
+export const GET = apiHandler(async (_request: NextRequest) => {
   const auth = await requireAuth()
   if (auth.error) return auth.error
 
@@ -78,7 +78,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     ` as any[]
 
     queryStats = queryResult
-  } catch (error) {
+  } catch {
     // pg_stat_statements puede no estar habilitado
     log.debug('pg_stat_statements not available')
   }

@@ -19,7 +19,7 @@ export interface EfemerideData {
   directors?: DirectorInfo[]; // Nuevo: array de directores
 }
 
-export function calcularAniosDesde(año: number, mes: number, dia: number): number | null {
+export function calcularAniosDesde(año: number): number | null {
   const hoy = new Date();
   const añosTranscurridos = hoy.getFullYear() - año;
   
@@ -52,7 +52,7 @@ function formatDirectorNames(directors: DirectorInfo[]): string {
 }
 
 export function formatearEfemeride(data: EfemerideData): Efemeride | null {
-  const añosDesde = calcularAniosDesde(data.año, data.mes, data.dia);
+  const añosDesde = calcularAniosDesde(data.año);
   
   // ✅ CORRECCIÓN: <= 0 para excluir año actual
   if (añosDesde === null || añosDesde <= 0) return null;

@@ -232,7 +232,7 @@ export default function CastTab() {
           <h3 className="text-lg font-medium text-gray-900">Reparto</h3>
           {isDocumental && (
             <p className="text-xs text-amber-600 mt-1">
-              Pelicula documental - Las personas se agregan como "si mismos" por defecto
+              Pelicula documental - Las personas se agregan como &quot;si mismos&quot; por defecto
             </p>
           )}
         </div>

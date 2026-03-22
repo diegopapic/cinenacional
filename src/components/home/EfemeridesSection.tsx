@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import Image from 'next/image';
-import { Efemeride, DirectorInfo } from '@/types/home.types';
+import { Efemeride } from '@/types/home.types';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
 interface EfemeridesSectionProps {

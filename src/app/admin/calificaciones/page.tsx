@@ -110,7 +110,7 @@ export default function AdminCalificacionesPage() {
         try {
           const error = await response.json()
           errorMessage = error.error || error.message || errorMessage
-        } catch (e) {}
+        } catch {}
         throw new Error(errorMessage)
       }
 
@@ -160,7 +160,7 @@ export default function AdminCalificacionesPage() {
 
       toast.success('Calificación eliminada')
       queryClient.invalidateQueries({ queryKey: ['admin-calificaciones'] })
-    } catch (error) {
+    } catch {
       toast.error('Error al eliminar la calificación')
     } finally {
       setDeletingCalifId(null)

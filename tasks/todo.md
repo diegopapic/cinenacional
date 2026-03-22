@@ -14,10 +14,47 @@ Fuentes:
 
 Antes de tocar dependencias, verificar que todo está limpio.
 
-- [ ] Ejecutar `npm run build` y `npm run lint` — confirmar que el proyecto compila sin errores.
-- [ ] Hacer commit de cualquier cambio pendiente en `main`.
-- [ ] Crear backup del `package.json` y `package-lock.json` actuales.
-- [ ] Revisar `tasks/lessons.md` para contexto.
+- [x] Ejecutar `npm run build` y `npm run lint` — build OK, lint tiene 437 errores preexistentes (todos `no-explicit-any` y `no-unescaped-entities`). `next lint` está roto por incompatibilidad ESLint 8 flat config — se arregla en Fase 3f.
+- [x] Hacer commit de cualquier cambio pendiente en `main` (a29d576).
+- [x] Crear backup del `package.json` y `package-lock.json` actuales (`*.bak`).
+- [x] Revisar `tasks/lessons.md` para contexto — OK.
+
+---
+
+## Fase 0.5: Limpiar errores de ESLint preexistentes
+
+Reducir ruido antes de la migración. No son blockers pero facilitan detectar errores nuevos introducidos por las migraciones.
+
+### 0.5a. Errores auto-fixeables (rápido)
+
+- [ ] **`prefer-const`** (6): Cambiar `let` → `const` donde no se reasigna. Auto-fix: `eslint --fix --rule 'prefer-const: error'`.
+- [ ] **`no-unused-vars`** (89): Eliminar imports y variables sin usar. Revisar manualmente — algunos pueden ser intencionales (destructuring con omisión, tipos exportados).
+- [ ] **`no-unescaped-entities`** (30): Reemplazar `'` → `&apos;` y `"` → `&quot;` en JSX text, o envolver en `{" "}`.
+
+### 0.5b. Imágenes y accesibilidad
+
+- [ ] **`@next/next/no-img-element`** (29): Evaluar caso por caso:
+  - Imágenes de Cloudinary con URL externa → probablemente intencional, agregar `{/* eslint-disable-next-line */}` con comentario explicando por qué.
+  - Imágenes locales o estáticas → migrar a `next/image`.
+- [ ] **`jsx-a11y/alt-text`** (1): Agregar `alt` faltante.
+- [ ] **`jsx-a11y/role-has-required-aria-props`** (1): Agregar aria props faltantes.
+- [ ] **`react/jsx-no-comment-textnodes`** (1): Mover comentario fuera del JSX text.
+- [ ] **`@next/next/no-html-link-for-pages`** (1): Reemplazar `<a>` por `next/link`.
+- [ ] **`react-hooks/exhaustive-deps`** (1): Agregar dependencia faltante al array.
+
+### 0.5c. `no-explicit-any` (399) — estrategia incremental
+
+Estos NO se arreglan ahora. Son deuda técnica que se ataca incrementalmente post-migración. Razones:
+- La migración puede cambiar tipos (Auth.js v5, React 19 types) → trabajo doble si se tipifican ahora.
+- 399 `any` requieren entender el tipo correcto caso por caso.
+- Se pueden ir resolviendo archivo por archivo después de la Fase 5.
+
+Acción: dejar un comentario `// TODO: type properly` en los más críticos (API handlers, hooks) y planificar como tarea separada post-migración.
+
+### 0.5d. Verificación
+
+- [ ] `npm run build` sigue pasando.
+- [ ] `npx eslint src/` muestra solo los `no-explicit-any` como errores restantes.
 
 ---
 
@@ -273,6 +310,8 @@ Next.js 16 tiene soporte estable para React Compiler. Memoización automática.
 
 ```
 Fase 0 (preparación)
+  ↓
+Fase 0.5 (limpiar ESLint) ← reducir ruido, detectar errores nuevos más fácil
   ↓
 Fase 1 (NextAuth v4 → Auth.js v5) ← PRIMERO, contra stack conocido (Next 15 + React 18)
   ↓

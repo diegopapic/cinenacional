@@ -486,7 +486,7 @@ export const PUT = apiHandler(async (
     } = movieData
 
     // 1. Actualizar datos básicos de la película
-    const updatedMovie = await tx.movie.update({
+    await tx.movie.update({
       where: { id },
       data: {
         ...movieDataClean,
@@ -775,7 +775,7 @@ export const PUT = apiHandler(async (
     revalidatePath('/listados/peliculas');
 
     log.debug('Next.js cache invalidated', { slug: existingMovie.slug });
-  } catch (revalidateError) {
+  } catch {
     log.debug('Next.js revalidation skipped');
   }
 
@@ -868,7 +868,7 @@ export async function DELETE(
       revalidatePath('/listados/peliculas');
 
       log.debug('Next.js cache invalidated', { slug: movie.slug });
-    } catch (revalidateError) {
+    } catch {
       log.debug('Next.js revalidation skipped');
     }
 

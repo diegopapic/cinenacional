@@ -11,7 +11,6 @@ export default function AdvancedTab() {
   // Obtener todos los datos necesarios del context
   const {
     register,
-    watch,
     setValue,
 
     // Filming date states
@@ -36,7 +35,6 @@ export default function AdvancedTab() {
     // Handlers
     handleProductionCompaniesChange,
     handleDistributionCompaniesChange,
-    handleThemesChange,
     handleLinksChange
   } = useMovieModalContext()
 

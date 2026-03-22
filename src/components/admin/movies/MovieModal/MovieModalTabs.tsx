@@ -17,7 +17,7 @@ const TABS = [
   { value: 'advanced', label: 'Avanzado', icon: Settings }
 ]
 
-export default function MovieModalTabs({ activeTab, onTabChange }: MovieModalTabsProps) {
+export default function MovieModalTabs({ activeTab }: MovieModalTabsProps) {
   return (
     <Tabs.List className="flex border-b border-gray-200 px-6 pt-4">
       {TABS.map((tab) => {

@@ -155,7 +155,7 @@ export const GET = apiHandler(async (
     });
 
     // Retornar persona con imágenes transformadas
-    const { imageAppearances, ...personData } = person;
+    const { imageAppearances: _imageAppearances, ...personData } = person;
     const responseData = { ...personData, galleryImages };
 
     // 3. Guardar en Redis

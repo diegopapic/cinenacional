@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { ViewMode } from '@/components/shared/ViewToggle'
 import type { PaginationState } from '@/lib/shared/listTypes'
 
-export interface ListPageConfig<TFilters, TItem, TFiltersData> {
+export interface ListPageConfig<TFilters> {
   /** Base URL for the list page (e.g. '/listados/peliculas') */
   basePath: string
   /** API endpoint for fetching items (e.g. '/api/movies/list') */
@@ -55,7 +55,7 @@ export function useListPage<
   TFilters extends { sortBy?: string; sortOrder?: 'asc' | 'desc'; page?: number; limit?: number },
   TItem,
   TFiltersData
->(config: ListPageConfig<TFilters, TItem, TFiltersData>): ListPageState<TFilters, TItem, TFiltersData> {
+>(config: ListPageConfig<TFilters>): ListPageState<TFilters, TItem, TFiltersData> {
   const router = useRouter()
   const searchParams = useSearchParams()
 

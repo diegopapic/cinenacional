@@ -4,9 +4,6 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { X, Search, Building, Globe, Tv, Film } from 'lucide-react'
-import { createLogger } from '@/lib/logger'
-
-const log = createLogger('ScreeningVenueSelector')
 
 interface ScreeningVenue {
     id: number
@@ -39,7 +36,6 @@ const venueTypeLabels = {
 export default function ScreeningVenueSelector({
     selectedVenueIds,
     onChange,
-    releaseDate
 }: ScreeningVenueSelectorProps) {
     const [searchTerm, setSearchTerm] = useState('')
     const [showDropdown, setShowDropdown] = useState(false)

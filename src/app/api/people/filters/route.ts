@@ -7,7 +7,7 @@ import { apiHandler } from '@/lib/api/api-handler';
 // Esta ruta debe ser dinámica para evitar errores en build
 export const dynamic = 'force-dynamic';
 
-export const GET = apiHandler(async (request: NextRequest) => {
+export const GET = apiHandler(async (_request: NextRequest) => {
   // Ejecutar todas las consultas en paralelo
   const [
     birthLocations,

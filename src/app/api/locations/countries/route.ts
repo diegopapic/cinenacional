@@ -6,7 +6,7 @@ import { apiHandler } from '@/lib/api/api-handler';
 
 export const dynamic = 'force-dynamic'
 
-export const GET = apiHandler(async (request: NextRequest) => {
+export const GET = apiHandler(async (_request: NextRequest) => {
   // Obtener todas las locations que no tienen parent (son países)
   // Quitamos el filtro 'type' que puede no existir
   const countries = await prisma.location.findMany({

@@ -35,7 +35,6 @@ export default function MovieModal({ isOpen, onClose }: MovieModalProps) {
     // UI state
     activeTab,
     setActiveTab,
-    isSubmitting,
 
     // Submit handler
     onSubmit

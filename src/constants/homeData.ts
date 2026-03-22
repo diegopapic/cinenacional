@@ -1,5 +1,5 @@
 // src/constants/homeData.ts
-import { HeroMovie, Efemeride } from '@/types/home.types';
+import { HeroMovie } from '@/types/home.types';
 
 export const PELICULAS_HERO: HeroMovie[] = [
   { 

@@ -28,13 +28,6 @@ interface Location {
   };
 }
 
-// ID conocido de Ciudad de Buenos Aires en la base de datos
-const CABA_LOCATION = {
-  id: 1, // Se buscará dinámicamente
-  name: 'Ciudad de Buenos Aires',
-  path: 'Ciudad de Buenos Aires, Argentina'
-};
-
 // Componente de Autocompletado reutilizable
 function LocationAutocomplete({
   value,
@@ -53,7 +46,6 @@ function LocationAutocomplete({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [displayValue, setDisplayValue] = useState('');
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -77,7 +69,6 @@ function LocationAutocomplete({
     prevLocationDataRef.current = locationData;
     if (locationData) {
       const formatted = locationData.path || formatLocationDisplay(locationData);
-      setDisplayValue(formatted);
       setSearchTerm(formatted);
     }
   }
@@ -133,8 +124,7 @@ function LocationAutocomplete({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
-    setDisplayValue(value);
-    
+
     if (value.length >= 2) {
       setIsOpen(true);
       searchLocations(value);
@@ -149,7 +139,6 @@ function LocationAutocomplete({
     const formatted = formatLocationDisplay(location);
     log.debug('Location selected', { id: location.id });
     setSearchTerm(formatted);
-    setDisplayValue(formatted);
     onChange(location.id, formatted);
     setIsOpen(false);
     setLocations([]);
@@ -158,7 +147,6 @@ function LocationAutocomplete({
   // Limpiar campo
   const handleClear = () => {
     setSearchTerm('');
-    setDisplayValue('');
     onChange(null, '');
     setLocations([]);
     inputRef.current?.focus();
@@ -179,7 +167,6 @@ function LocationAutocomplete({
         if (caba) {
           const formatted = formatLocationDisplay(caba);
           setSearchTerm(formatted);
-          setDisplayValue(formatted);
           onChange(caba.id, formatted);
         }
       }

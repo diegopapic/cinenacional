@@ -25,7 +25,7 @@ interface MoviePerson {
 }
 
 export default function ImagesTab() {
-    const { editingMovie, watch } = useMovieModalContext()
+    const { editingMovie } = useMovieModalContext()
 
     const [localImages, setLocalImages] = useState<ImageWithRelations[] | null>(null)
     const [editingImage, setEditingImage] = useState<ImageWithRelations | null>(null)

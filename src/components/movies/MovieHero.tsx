@@ -68,8 +68,6 @@ export function MovieHero({
   synopsis,
   countries = [],
   trailerUrl,
-  colorType,
-  soundType,
   stage,
   directors = [],
   productionType,
@@ -168,7 +166,7 @@ export function MovieHero({
   );
 
   // Render genre badges inline
-  const renderGenres = (mobile = false) => {
+  const renderGenres = () => {
     if (genres.length === 0) return null;
     return genres.map((g) => (
       <Link
@@ -330,7 +328,7 @@ export function MovieHero({
                     </Link>
                   )}
                   {(duration > 0 || ratingAbbreviation) && genres.length > 0 && <span className="text-muted-foreground/20">|</span>}
-                  {renderGenres(true)}
+                  {renderGenres()}
                 </div>
 
                 {/* Estreno mobile */}

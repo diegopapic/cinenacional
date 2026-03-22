@@ -813,7 +813,7 @@ export function useMovieForm({
                 themes: movieRelations.themes,
 
                 // Screening venues con procesamiento especial
-                screeningVenues: movieRelations.screeningVenues.map((venueId, index) => ({
+                screeningVenues: movieRelations.screeningVenues.map((venueId) => ({
                     venueId,
                     screeningDate: data.releaseDate || new Date().toISOString().split('T')[0],
                     isPremiere: true,

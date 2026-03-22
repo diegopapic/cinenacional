@@ -46,7 +46,7 @@ export function PeopleTable() {
         await deletePerson(deleteId);
         setShowDeleteDialog(false);
         setDeleteId(null);
-      } catch (error) {
+      } catch {
         // El error ya se maneja en el hook
       }
     }

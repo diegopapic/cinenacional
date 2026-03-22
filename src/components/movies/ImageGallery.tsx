@@ -35,7 +35,7 @@ interface ImageGalleryProps {
   movieTitle: string;
 }
 
-export function ImageGallery({ images, movieTitle }: ImageGalleryProps) {
+export function ImageGallery({ images }: ImageGalleryProps) {
   const [lightbox, setLightbox] = useState<{ index: number } | null>(null);
   const [mobileIndex, setMobileIndex] = useState(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false);

@@ -66,14 +66,6 @@ export default function TriviaManager({
     onChange(updated)
   }
 
-  const handleMoveDown = (index: number) => {
-    if (index === items.length - 1) return
-    const updated = [...items]
-    ;[updated[index], updated[index + 1]] = [updated[index + 1], updated[index]]
-    setItems(updated)
-    onChange(updated)
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">

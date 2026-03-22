@@ -41,7 +41,7 @@ interface MovieInfoProps {
   onShareClick?: () => void;
 }
 
-export function MovieInfo({ movie, onTrailerClick, onShareClick }: MovieInfoProps) {
+export function MovieInfo({ movie, onShareClick }: MovieInfoProps) {
   const directors = useMemo<Director[]>(() => {
     if (!movie.crew || !Array.isArray(movie.crew) || movie.crew.length === 0) return [];
 

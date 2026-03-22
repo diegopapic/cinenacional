@@ -126,7 +126,7 @@ export default function LocationForm({ location }: LocationFormProps) {
 
   const loadInitialParent = async () => {
     try {
-      let parentId = location?.parentId || urlParentId
+      const parentId = location?.parentId || urlParentId
       if (!parentId) return
 
       const response = await fetch(`/api/locations/${parentId}`)

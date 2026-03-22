@@ -8,9 +8,6 @@ import Link from 'next/link'
 import { Plus, Edit, Trash2, Calendar, ChevronRight, Search, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCsrfHeaders } from '@/lib/csrf-client'
-import { createLogger } from '@/lib/logger'
-
-const log = createLogger('admin:festivals')
 
 interface FestivalListItem {
   id: number

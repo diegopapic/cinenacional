@@ -41,7 +41,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const locationsWithPath = await Promise.all(
     locations.map(async (location) => {
       let path = location.name;
-      let current = location;
+      const current = location;
 
       while (current.parent) {
         path = `${current.parent.name}, ${path}`;

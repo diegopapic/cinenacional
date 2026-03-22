@@ -234,7 +234,7 @@ export const PUT = apiHandler(async (
 
     if (nameChanged) {
         // Generar nuevo slug si cambió el nombre
-        let baseSlug = generatePersonSlug(data.firstName, data.lastName);
+        const baseSlug = generatePersonSlug(data.firstName, data.lastName);
         slug = baseSlug;
         let counter = 1;
 
@@ -339,7 +339,7 @@ export const PUT = apiHandler(async (
         }
 
         // Actualizar la persona
-        const updatedPerson = await tx.person.update({
+        await tx.person.update({
             where: { id: personId },
             data: updateData,
         });

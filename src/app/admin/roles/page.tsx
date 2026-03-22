@@ -24,7 +24,6 @@ export default function RolesPage() {
     error,
     filters,
     updateFilter,
-    goToPage,
     goToNextPage,
     goToPreviousPage,
     canGoNext,
@@ -55,7 +54,7 @@ export default function RolesPage() {
       try {
         await deleteRole(id);
         toast.success('Rol eliminado correctamente');
-      } catch (error) {
+      } catch {
         toast.error('Error al eliminar el rol');
       }
     }
@@ -65,7 +64,7 @@ export default function RolesPage() {
     try {
       await exportToCSV();
       toast.success('Exportación iniciada');
-    } catch (error) {
+    } catch {
       toast.error('Error al exportar');
     }
   };
@@ -75,7 +74,7 @@ export default function RolesPage() {
       try {
         const result = await seedDefault();
         toast.success(`Se crearon ${result.created} roles nuevos (${result.skipped} ya existían)`);
-      } catch (error) {
+      } catch {
         toast.error('Error al crear roles por defecto');
       }
     }
