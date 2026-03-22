@@ -1,6 +1,7 @@
 // src/components/movies/CloudinaryImage.tsx
 'use client'
 
+import Image from 'next/image'
 import { CldImage } from 'next-cloudinary'
 import { useState } from 'react'
 
@@ -42,16 +43,16 @@ export function CloudinaryImage({
     )
   }
 
-  // Para imágenes que no son de Cloudinary, usar img normal
+  // Para imágenes que no son de Cloudinary, usar next/image
   if (!src.includes('cloudinary')) {
     return (
-      <img
+      <Image
         src={src}
         alt={alt}
         width={width}
         height={height}
         className={className}
-        loading={priority ? 'eager' : 'lazy'}
+        priority={priority}
         onError={() => setError(true)}
       />
     )

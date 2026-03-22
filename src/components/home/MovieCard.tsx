@@ -1,4 +1,5 @@
 // src/components/home/MovieCard.tsx
+import Image from 'next/image';
 import Link from 'next/link';
 import { MovieWithRelease } from '@/types/home.types';
 import { formatPartialDate } from '@/lib/shared/dateUtils';
@@ -76,13 +77,13 @@ export default function MovieCard({
     >
       {/* Poster container */}
       <div className="relative overflow-hidden rounded-xs shadow-lg shadow-black/30">
-        <div className="aspect-2/3 w-full">
+        <div className="relative aspect-2/3 w-full">
           {movie.posterUrl ? (
-            <img
+            <Image
               src={movie.posterUrl}
               alt={movie.title}
-              className="h-full w-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
-              loading="lazy"
+              fill
+              className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
             />
           ) : (
             <PosterPlaceholder className="h-full w-full" />

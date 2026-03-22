@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useMountEffect } from '@/hooks/useMountEffect';
 import { useWindowEvent } from '@/hooks/useWindowEvent';
@@ -151,11 +152,11 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                   className="relative aspect-video w-full shrink-0 snap-center overflow-hidden rounded-xs border border-foreground/4 cursor-pointer"
                   onClick={() => openLightbox(i)}
                 >
-                  <img
+                  <Image
                     src={image.url}
                     alt={getCaption(image)}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
+                    fill
+                    className="object-cover"
                   />
                 </div>
               ))}
@@ -198,11 +199,11 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                     className="relative h-48 lg:h-56 cursor-pointer overflow-hidden rounded-xs border border-foreground/4"
                     onClick={() => openLightbox(i)}
                   >
-                    <img
+                    <Image
                       src={image.url}
                       alt={getCaption(image)}
-                      className="h-full w-auto object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
-                      loading="lazy"
+                      fill
+                      className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
                     />
                   </div>
                   <figcaption className="mt-2 max-w-0 min-w-full">
@@ -264,12 +265,16 @@ export function ImageGallery({ images }: ImageGalleryProps) {
           </button>
 
           {/* Image */}
-          <div onClick={(e) => e.stopPropagation()} className="flex flex-col items-center gap-4">
-            <img
-              src={images[lightbox.index].url}
-              alt={getCaption(images[lightbox.index])}
-              className="h-[60vh] md:h-[75vh] max-w-[90vw] object-contain"
-            />
+          <div onClick={(e) => e.stopPropagation()} className="relative flex flex-col items-center gap-4">
+            <div className="relative h-[60vh] md:h-[75vh] w-[90vw]">
+              <Image
+                src={images[lightbox.index].url}
+                alt={getCaption(images[lightbox.index])}
+                fill
+                className="object-contain"
+                sizes="90vw"
+              />
+            </div>
             <div className="text-center">
               <p className="text-[13px] text-white/50">{getCaption(images[lightbox.index])}</p>
               <p className="text-[11px] text-white/25 mt-1">{lightbox.index + 1} de {images.length}</p>

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Play, X } from 'lucide-react';
 import { MOVIE_STAGES } from '@/lib/movies/movieConstants';
@@ -155,10 +156,12 @@ export function MovieHero({
       {showPosterPlaceholder ? (
         <PosterPlaceholder className="h-full w-full" />
       ) : (
-        <img
+        <Image
           src={posterUrl!}
           alt={`Poster de ${title}`}
-          className="h-full w-full object-cover"
+          fill
+          className="object-cover"
+          priority
           onError={() => setPosterError(true)}
         />
       )}
@@ -267,10 +270,12 @@ export function MovieHero({
         {/* Background image */}
         {hasValidHeroImage ? (
           <>
-            <img
+            <Image
               src={heroBackgroundImage}
               alt=""
-              className="absolute inset-0 h-full w-full object-cover object-center"
+              fill
+              className="object-cover object-center"
+              priority
               onError={() => setHeroImageError(true)}
             />
             <div className="absolute inset-0 bg-linear-to-t from-background via-background/95 to-background/60" />

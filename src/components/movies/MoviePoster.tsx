@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { PosterPlaceholder } from '@/components/film/PosterPlaceholder';
 
 interface MoviePosterProps {
@@ -18,10 +19,13 @@ export function MoviePoster({ imageUrl, title }: MoviePosterProps) {
         {showPlaceholder ? (
           <PosterPlaceholder className="h-[500px] w-auto aspect-2/3 rounded-lg poster-shadow" />
         ) : (
-          <img
+          <Image
             src={imageUrl}
             alt={`Poster de ${title}`}
+            width={333}
+            height={500}
             className="h-[500px] w-auto rounded-lg poster-shadow"
+            priority
             onError={() => setImageError(true)}
           />
         )}

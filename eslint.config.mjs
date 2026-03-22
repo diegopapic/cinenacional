@@ -8,9 +8,6 @@ const eslintConfig = [
   ...nextTypescript,
   {
     rules: {
-      // All images use Cloudinary URLs with dynamic transforms — next/image
-      // would need a custom loader. Disable until we migrate to next/image + loader.
-      "@next/next/no-img-element": "off",
       "@typescript-eslint/no-unused-vars": [
         "warn",
         {

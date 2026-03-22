@@ -3,6 +3,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
@@ -56,11 +57,11 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
     return (
       <div className={`relative ${sizeClasses} overflow-hidden rounded-full ring-1 ring-border/20 group-hover:ring-accent/40 transition-all`}>
         {actor.image ? (
-          <img
+          <Image
             src={getPersonPhotoUrl(actor.image, 'sm')!}
             alt={actor.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            loading="lazy"
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-muted/50">

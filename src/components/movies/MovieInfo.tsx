@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import Image from 'next/image';
 import DOMPurify from 'isomorphic-dompurify';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
@@ -95,12 +96,13 @@ export function MovieInfo({ movie, onShareClick }: MovieInfoProps) {
             <div className="flex flex-wrap gap-4">
               {directors.map((director) => (
                 <div key={director.id} className="flex items-center space-x-3">
-                  <div className="w-12 h-12 rounded-full person-placeholder">
+                  <div className="relative w-12 h-12 rounded-full person-placeholder overflow-hidden">
                     {director.photoUrl ? (
-                      <img
+                      <Image
                         src={getPersonPhotoUrl(director.photoUrl, 'sm')!}
                         alt={director.name}
-                        className="w-full h-full object-cover rounded-full"
+                        fill
+                        className="object-cover rounded-full"
                       />
                     ) : (
                       <svg className="w-6 h-6 text-muted-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">

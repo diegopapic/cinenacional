@@ -39,23 +39,8 @@ const nextConfig = {
   poweredByHeader: false,
   
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'img.youtube.com',
-        pathname: '/**',
-      }
-    ],
+    loader: 'custom',
+    loaderFile: './src/lib/images/cloudinaryLoader.ts',
   },
   
   experimental: {

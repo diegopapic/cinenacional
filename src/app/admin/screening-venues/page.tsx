@@ -2,6 +2,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Plus,
@@ -387,10 +388,12 @@ export default function AdminScreeningVenuesPage() {
                           <div className="flex items-center">
                             <div className="shrink-0 h-10 w-10">
                               {venue.logoUrl ? (
-                                <img
+                                <Image
                                   className="h-10 w-10 rounded-lg object-contain"
                                   src={venue.logoUrl}
                                   alt={venue.name}
+                                  width={40}
+                                  height={40}
                                 />
                               ) : (
                                 <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">

@@ -1,5 +1,6 @@
 // src/components/admin/people/PersonFormFields/BiographyFields.tsx
 
+import Image from 'next/image';
 import { PersonFormData } from '@/lib/people/peopleTypes';
 import { Image as ImageIcon, FileText } from 'lucide-react';
 
@@ -61,10 +62,11 @@ export function BiographyFields({ formData, updateField }: BiographyFieldsProps)
             Vista previa
           </label>
           <div className="relative w-32 h-48 rounded-lg overflow-hidden border border-gray-300">
-            <img
+            <Image
               src={formData.photoUrl}
               alt="Vista previa"
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';

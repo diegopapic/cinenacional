@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import Image from 'next/image'
 import { X, Save, Trash2 } from 'lucide-react'
 import { 
   ImageWithRelations, 
@@ -187,9 +188,11 @@ export function ImageEditModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Preview de imagen */}
             <div>
-              <img
+              <Image
                 src={imagePresets.gallery(image.cloudinaryPublicId)}
                 alt="Preview"
+                width={800}
+                height={600}
                 className="w-full rounded-lg shadow-md"
               />
               {/* Preview del caption */}

@@ -1,6 +1,7 @@
 // src/components/home/RecentPeopleSection.tsx
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { SimplePerson } from '@/types/home.types';
 import SkeletonLoader from './SkeletonLoader';
@@ -67,11 +68,11 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
                 >
                   <div className="relative h-20 w-20 overflow-hidden rounded-full shadow-lg shadow-black/30">
                     {persona.photoUrl ? (
-                      <img
+                      <Image
                         src={getPersonPhotoUrl(persona.photoUrl, 'sm')!}
                         alt={formatPersonName(persona)}
-                        className="h-full w-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
-                        loading="lazy"
+                        fill
+                        className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                           e.currentTarget.parentElement?.classList.add('bg-muted/20');
@@ -107,11 +108,11 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
                 >
                   <div className="relative aspect-square w-full overflow-hidden rounded-full shadow-lg shadow-black/30">
                     {persona.photoUrl ? (
-                      <img
+                      <Image
                         src={getPersonPhotoUrl(persona.photoUrl, 'sm')!}
                         alt={formatPersonName(persona)}
-                        className="h-full w-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
-                        loading="lazy"
+                        fill
+                        className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                           e.currentTarget.parentElement?.classList.add('bg-muted/20');

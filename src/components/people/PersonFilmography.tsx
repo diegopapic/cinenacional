@@ -1,7 +1,8 @@
 'use client'
-/* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { PosterPlaceholder } from '@/components/film/PosterPlaceholder'
 
@@ -106,13 +107,13 @@ function MovieItem({ item, showRoles, showCharacter, index }: {
     <div key={`${movie.id}-${index}`} className="py-3 hover:bg-muted/20 transition-colors group">
       <div className="flex items-center gap-3">
         <Link href={`/pelicula/${movie.slug}`} className="shrink-0">
-          <div className="w-10 md:w-11 aspect-2/3 rounded-xs overflow-hidden">
+          <div className="relative w-10 md:w-11 aspect-2/3 rounded-xs overflow-hidden">
             {movie.posterUrl ? (
-              <img
+              <Image
                 src={movie.posterUrl}
                 alt={movie.title}
-                className="w-full h-full object-cover"
-                loading="lazy"
+                fill
+                className="object-cover"
               />
             ) : (
               <PosterPlaceholder className="w-full h-full" />

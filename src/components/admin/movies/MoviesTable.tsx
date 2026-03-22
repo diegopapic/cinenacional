@@ -1,5 +1,6 @@
 // src/components/admin/movies/MoviesTable.tsx
 import { useState } from 'react'
+import Image from 'next/image'
 import { Film, Edit, Trash2, Eye, Star, Loader2 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { type Movie } from '@/lib/movies/movieTypes'
@@ -112,10 +113,12 @@ function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
         <div className="flex items-center">
           <div className="shrink-0 h-10 w-10">
             {movie.posterUrl ? (
-              <img
+              <Image
                 className="h-10 w-10 rounded-lg object-cover"
                 src={movie.posterUrl}
                 alt={movie.title}
+                width={40}
+                height={40}
               />
             ) : (
               <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">

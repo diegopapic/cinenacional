@@ -1,6 +1,7 @@
 // src/components/home/RecentMoviesSection.tsx
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { SimpleMovie } from '@/types/home.types';
 import SkeletonLoader from './SkeletonLoader';
@@ -58,16 +59,16 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
                   className="group shrink-0"
                 >
                   <div className="relative w-28 overflow-hidden rounded-xs shadow-lg shadow-black/30">
-                    <div className="aspect-2/3">
+                    <div className="relative aspect-2/3">
                       {pelicula.posterUrl ? (
-                        <img
+                        <Image
                           src={pelicula.posterUrl}
                           alt={pelicula.title}
-                          className="h-full w-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
-                          loading="lazy"
+                          fill
+                          className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            (e.currentTarget.nextElementSibling as HTMLElement)?.classList.remove('hidden');
                           }}
                         />
                       ) : null}
@@ -96,16 +97,16 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
                   className="group cursor-pointer"
                 >
                   <div className="relative overflow-hidden rounded-xs shadow-lg shadow-black/30">
-                    <div className="aspect-2/3 w-full">
+                    <div className="relative aspect-2/3 w-full">
                       {pelicula.posterUrl ? (
-                        <img
+                        <Image
                           src={pelicula.posterUrl}
                           alt={pelicula.title}
-                          className="h-full w-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
-                          loading="lazy"
+                          fill
+                          className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            (e.currentTarget.nextElementSibling as HTMLElement)?.classList.remove('hidden');
                           }}
                         />
                       ) : null}

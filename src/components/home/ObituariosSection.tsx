@@ -1,4 +1,5 @@
 // src/components/home/ObituariosSection.tsx
+import Image from 'next/image';
 import Link from 'next/link';
 import { calculateYearsBetween } from '@/lib/shared/dateUtils';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
@@ -102,10 +103,11 @@ export default function ObituariosSection({ obituarios, loading = false, noPaddi
                 {/* Retrato circular */}
                 <div className="relative h-16 w-16 md:h-20 md:w-20 shrink-0 overflow-hidden rounded-full">
                   {persona.photoUrl ? (
-                    <img
+                    <Image
                       src={getPersonPhotoUrl(persona.photoUrl, 'sm')!}
                       alt={formatearNombre(persona)}
-                      className="h-full w-full object-cover grayscale transition-all duration-500 group-hover:grayscale-0"
+                      fill
+                      className="object-cover grayscale transition-all duration-500 group-hover:grayscale-0"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-muted/20">

@@ -3,6 +3,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
@@ -272,9 +273,11 @@ export default function FestivalScreeningForm({
                       className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-3"
                     >
                       {movie.posterUrl && (
-                        <img
+                        <Image
                           src={movie.posterUrl}
                           alt=""
+                          width={32}
+                          height={48}
                           className="w-8 h-12 object-cover rounded-sm"
                         />
                       )}

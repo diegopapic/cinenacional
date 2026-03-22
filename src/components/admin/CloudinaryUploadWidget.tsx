@@ -3,6 +3,7 @@
 
 import { CldUploadWidget } from 'next-cloudinary'
 import { useState, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import { useMountEffect } from '@/hooks/useMountEffect'
 import { Upload, X, ImageIcon } from 'lucide-react'
 import { toast } from 'react-hot-toast'
@@ -348,14 +349,12 @@ export function CloudinaryUploadWidget({
                         maxWidth: '100%'
                       }}
                     >
-                      <img
+                      <Image
                         src={imageUrl}
                         alt={label || 'Imagen'}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                         style={{
-                          display: 'block',
-                          width: '100%',
-                          height: '100%',
                           objectFit: maxDisplayHeight ? 'contain' : 'cover'
                         }}
                       />

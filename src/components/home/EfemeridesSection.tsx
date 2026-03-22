@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { Efemeride } from '@/types/home.types';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
@@ -273,10 +274,11 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
                           : 'h-16 md:h-20 aspect-2/3 rounded-xs'
                       }`}>
                         {imageUrl ? (
-                          <img
+                          <Image
                             src={imageUrl}
                             alt={item.titulo || ''}
-                            className="h-full w-full object-cover"
+                            fill
+                            className="object-cover"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center bg-muted/20">
@@ -302,10 +304,11 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
                           : 'h-16 md:h-20 aspect-2/3 rounded-xs'
                       }`}>
                         {imageUrl ? (
-                          <img
+                          <Image
                             src={imageUrl}
                             alt={item.titulo || ''}
-                            className="h-full w-full object-cover"
+                            fill
+                            className="object-cover"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center bg-muted/20">

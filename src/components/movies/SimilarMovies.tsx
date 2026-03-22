@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 
 interface Movie {
@@ -28,13 +29,13 @@ export function SimilarMovies({ movies }: SimilarMoviesProps) {
               href={`/pelicula/${movieLink}`}
               className="group cursor-pointer block"
             >
-              <div className="aspect-2/3 rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform">
+              <div className="relative aspect-2/3 rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform">
                 {movie.posterUrl ? (
-                  <img 
+                  <Image
                     src={movie.posterUrl}
                     alt={`Poster de ${movie.title}`}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
+                    fill
+                    className="object-cover"
                   />
                 ) : (
                   <div className="placeholder-small w-full h-full">

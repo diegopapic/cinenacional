@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useInterval } from '@/hooks/useInterval';
 import Link from 'next/link';
 
@@ -247,16 +248,15 @@ export default function HeroSection({ images }: HeroSectionProps) {
       {/* Slides */}
       {images.map((image, idx) => {
         const imgElement = (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={getHeroImageUrl(image.cloudinaryPublicId)}
-              alt={generateCaptionText(image)}
-              className="max-w-full max-h-full w-auto h-auto object-contain"
-              style={fadeMaskStyle}
-              {...(idx === 0 ? { fetchPriority: 'high' as const } : {})}
-            />
-          </>
+          <Image
+            src={getHeroImageUrl(image.cloudinaryPublicId)}
+            alt={generateCaptionText(image)}
+            fill
+            className="object-contain"
+            style={fadeMaskStyle}
+            {...(idx === 0 ? { priority: true } : {})}
+            sizes="100vw"
+          />
         );
 
         return (
