@@ -35,6 +35,7 @@ const nextConfig = {
   output: 'standalone',
   
   reactStrictMode: true,
+  reactCompiler: true,
   poweredByHeader: false,
   
   images: {
