@@ -26,9 +26,9 @@ ARG NEXT_PUBLIC_ADS_ENABLED
 ENV NEXT_PUBLIC_ADS_ENABLED=$NEXT_PUBLIC_ADS_ENABLED
 
 # Generar Prisma Client y build
-# --no-turbopack: webpack es ~10x más rápido que Turbopack en 1-CPU Docker builds
+# --webpack: webpack es ~10x más rápido que Turbopack en 1-CPU Docker builds
 RUN npx prisma generate
-RUN npx next build --no-turbopack
+RUN npx next build --webpack
 
 FROM node:20-alpine AS runner
 RUN apk add --no-cache tzdata
