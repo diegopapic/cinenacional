@@ -1,6 +1,6 @@
 # Migración a React 19.2 / Next.js 16.2
 
-Estado actual: **Next.js 15.5.12** + **React 18.3.x** + **NextAuth v4** → Objetivo: **Next.js 16.2.x** + **React 19.2.x** + **Auth.js v5**
+Estado: **✅ MIGRACIÓN CORE COMPLETA** — Next.js 16.2.1 + React 19.2.4 + Auth.js v5 (next-auth@5.0.0-beta.30)
 
 Fuentes:
 - [Guía oficial de upgrade a Next.js 16](https://nextjs.org/docs/app/guides/upgrading/version-16)
@@ -78,82 +78,16 @@ Migrado a `next-auth@5.0.0-beta.30` + `@auth/prisma-adapter@2.11.1`, todavía so
 
 ---
 
-## Fase 3: Actualizar Next.js 15 → 16
+## Fase 3: Actualizar Next.js 15 → 16 ✅ (commit 397b761)
 
-### 3a. Actualizar dependencia
+- [x] **3a**: next@16.2.1, eslint@9.39.4, eslint-config-next@16.2.1
+- [x] **3b**: Async request APIs ya estaban OK — no se necesitaron cambios.
+- [x] **3c**: `middleware.ts` → `proxy.ts`, función `middleware()` → `proxy()`.
+- [x] **3d**: Turbopack default. Eliminada config webpack, agregado `turbopack: {}`.
+- [x] **3e**: `next.config.js` simplificado. `tsconfig.json` auto-updated (jsx: react-jsx).
+- [x] **3f**: `"lint": "next lint"` → `"lint": "eslint src/"`. ESLint config reescrita con imports nativos de `eslint-config-next` (sin FlatCompat). Removido `@eslint/eslintrc`.
 
-- [ ] `npm install next@latest`
-- [ ] `npm install -D eslint-config-next@latest`
-
-### 3b. Async Request APIs (ya resuelto)
-
-El codebase **ya usa async** para `headers()`, `params`, `searchParams` y `generateMetadata()`. Verificación rápida:
-
-- [ ] Buscar `cookies()` sin `await` — no debería haber ninguno (no se usa).
-- [ ] Buscar `headers()` sin `await` — ya es async en `layout.tsx`.
-- [ ] Buscar acceso sincrónico a `params` en pages/layouts/routes — ya son `Promise<...>`.
-- [ ] Buscar acceso sincrónico a `searchParams` — ya son `Promise<...>`.
-- [ ] Opcionalmente ejecutar el codemod como verificación: `npx @next/codemod@canary upgrade latest`.
-
-### 3c. Middleware → Proxy (breaking change)
-
-Next.js 16 depreca `middleware.ts` y la renombra a `proxy.ts`.
-
-- [ ] Renombrar `src/middleware.ts` → `src/proxy.ts`.
-- [ ] Renombrar la función exportada `middleware()` → `proxy()`.
-- [ ] Renombrar el `export const config` si usa `matcher` — el formato se mantiene igual pero verificar.
-- [ ] En `next.config.js`: si usa `skipMiddlewareUrlNormalize`, cambiar a `skipProxyUrlNormalize`. (No lo usamos actualmente.)
-- [ ] Verificar que `getToken` de Auth.js v5 sigue funcionando en proxy context.
-- [ ] Verificar que el CSRF, rate limiting, CSP y demás lógica funcione igual en `proxy.ts`.
-
-### 3d. Turbopack como default (breaking change)
-
-Next.js 16 usa Turbopack por defecto para `next dev` y `next build`. Nuestro `next.config.js` tiene configuración `webpack` custom.
-
-- [ ] **Evaluar la config webpack actual**:
-  - `config.optimization.minimize = true` — Turbopack maneja esto internamente, no hace falta.
-  - `config.resolve.fallback = { fs: false, path: false, crypto: false }` — Migrar a `turbopack.resolveAlias` o verificar si realmente algún código client-side importa estos módulos.
-- [ ] **Opción A (recomendada)**: Migrar a Turbopack completo.
-  - Eliminar la función `webpack()` de `next.config.js`.
-  - Si es necesario, agregar `turbopack.resolveAlias` para los fallbacks:
-    ```js
-    turbopack: {
-      resolveAlias: {
-        fs: { browser: './empty.ts' },
-        path: { browser: './empty.ts' },
-        crypto: { browser: './empty.ts' },
-      }
-    }
-    ```
-  - Testear con `next dev` y `next build`.
-- [ ] **Opción B (fallback)**: Usar `--webpack` flag temporalmente.
-  - Actualizar scripts en `package.json`: `"build": "prisma generate && next build --webpack"`.
-  - Planificar migración a Turbopack después.
-- [ ] Actualizar `package.json` scripts — remover `--turbopack` si existe (ya es default).
-
-### 3e. Cambios en next.config.js
-
-- [ ] **`experimental.serverActions`**: Mover `serverActions.bodySizeLimit` fuera de `experimental` si Next.js 16 lo promueve a estable. Verificar docs.
-- [ ] **`experimental.workerThreads` y `cpus`**: Verificar si siguen siendo válidos o fueron removidos.
-- [ ] **`turbopack` config**: Si había algo en `experimental.turbopack`, moverlo al nivel superior.
-- [ ] **`typescript.ignoreBuildErrors: true`**: Mantener por ahora, pero evaluar si conviene desactivar.
-- [ ] **`images` config**: Verificar cambios de defaults:
-  - `minimumCacheTTL` ahora es 14400s (4h) por default — OK para nuestro caso.
-  - `imageSizes` ya no incluye 16px — OK.
-  - `qualities` ahora es `[75]` por default — OK.
-- [ ] **`eslint` key removida del config**: Verificar que no la tengamos (no la tenemos).
-- [ ] Ejecutar `npm run build` — corregir errores.
-
-### 3f. ESLint: `next lint` removido
-
-Next.js 16 elimina el comando `next lint`. Hay que usar ESLint directamente.
-
-- [ ] Actualizar `package.json`:
-  - Cambiar `"lint": "next lint"` → `"lint": "eslint ."` (flat config no necesita `--ext`).
-- [ ] Ya tenemos `eslint.config.mjs` con flat config — verificar que funcione con `eslint-config-next@latest`.
-- [ ] La config usa `FlatCompat` para extender `next/core-web-vitals` y `next/typescript` — verificar que `@next/eslint-plugin-next` sigue funcionando.
-- [ ] Si ESLint 9+ cambia algo, actualizar la config.
-- [ ] Ejecutar el nuevo comando lint y corregir errores.
+Nuevos warnings del React compiler lint (25): `react-hooks/refs`, `static-components`, etc. — legítimos pero no bloquean.
 
 ---
 
@@ -271,7 +205,7 @@ Fase 1 (NextAuth v4 → Auth.js v5) ✅
   ↓
 Fase 2 (React 18 → 19) ✅
   ↓
-Fase 3 (Next.js 15 → 16) ← React 19 + Auth.js v5 ya están listos
+Fase 3 (Next.js 15 → 16) ✅ ← React 19 + Auth.js v5 ya están listos
   ↓
 Fase 4 (Tailwind 3 → 4) ← opcional, independiente
   ↓
