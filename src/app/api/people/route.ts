@@ -12,12 +12,19 @@ import { createLogger } from '@/lib/logger';
 
 const log = createLogger('api:people');
 
+/** Raw SQL result for person search with alternative names */
+interface RawPersonSearchResult {
+  id: number
+  matched_alternative_id: number | null
+  matched_alternative_name: string | null
+}
+
 // ============================================
 // CACHE CONFIGURATION
 // ============================================
 
 // Cache en memoria como fallback
-const memoryCache = new Map<string, { data: any; timestamp: number }>();
+const memoryCache = new Map<string, { data: unknown; timestamp: number }>();
 const MEMORY_CACHE_TTL = 60 * 60 * 1000; // 1 hora en ms
 
 // TTL diferenciado según tipo de consulta
@@ -152,7 +159,7 @@ export async function GET(request: NextRequest) {
         // ============================================
         // Busca en nombre principal Y en nombres alternativos
         // Retorna información sobre qué nombre hizo match
-        const peopleResults = await prisma.$queryRaw<any[]>`
+        const peopleResults = await prisma.$queryRaw<RawPersonSearchResult[]>`
           WITH search_results AS (
             -- Búsqueda en nombre principal
             SELECT 
@@ -369,7 +376,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Búsqueda normal sin unaccent o cuando no hay búsqueda
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (search && search.trim().length >= 2) {
       // Búsqueda mejorada usando Prisma OR (incluye nombres alternativos)
@@ -418,7 +425,7 @@ export async function GET(request: NextRequest) {
       where.deathYear = null;
     }
 
-    let orderBy: any = {};
+    let orderBy: Record<string, unknown> | Record<string, unknown>[] = {};
     if (sortBy === 'deathDate' || sortBy === 'deathYear') {
       // 🆕 MEJORADO: Ordenar por año de muerte considerando mes y día
       orderBy = [
@@ -712,7 +719,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     );
   }
 
-  const personData: any = {
+  const personData: Record<string, unknown> = {
     slug,
     firstName: data.firstName || null,
     lastName: data.lastName || null,
@@ -753,7 +760,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
     if (data.links && data.links.length > 0) {
       await tx.personLink.createMany({
-        data: data.links.map((link: any, index: number) => ({
+        data: data.links.map((link: { type: string; url: string; displayOrder?: number; isVerified?: boolean; isActive?: boolean }, index: number) => ({
           personId: newPerson.id,
           type: link.type,
           url: link.url,
@@ -777,8 +784,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
     if (data.trivia && data.trivia.length > 0) {
       await tx.personTrivia.createMany({
         data: data.trivia
-          .filter((item: any) => item.content && item.content.trim())
-          .map((item: any, index: number) => ({
+          .filter((item: { content: string }) => item.content && item.content.trim())
+          .map((item: { content: string }, index: number) => ({
             personId: newPerson.id,
             content: item.content.trim(),
             sortOrder: index,
@@ -789,11 +796,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
     // 🆕 Crear nombres alternativos si se enviaron
     if (data.alternativeNames && data.alternativeNames.length > 0) {
       const validNames = data.alternativeNames.filter(
-        (alt: any) => alt.fullName && alt.fullName.trim()
+        (alt: { fullName: string }) => alt.fullName && alt.fullName.trim()
       );
       if (validNames.length > 0) {
         await tx.personAlternativeName.createMany({
-          data: validNames.map((alt: any) => ({
+          data: validNames.map((alt: { fullName: string }) => ({
             personId: newPerson.id,
             fullName: alt.fullName.trim(),
           })),

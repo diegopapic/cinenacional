@@ -11,7 +11,7 @@ import { createLogger } from '@/lib/logger';
 const log = createLogger('api:people:detail');
 
 // Cache en memoria como fallback
-const memoryCache = new Map<string, { data: any; timestamp: number }>();
+const memoryCache = new Map<string, { data: unknown; timestamp: number }>();
 const MEMORY_CACHE_TTL = 60 * 60 * 1000; // 1 hora en ms
 const REDIS_CACHE_TTL = 3600; // 1 hora en segundos
 
@@ -296,7 +296,7 @@ export const PUT = apiHandler(async (
     }
 
     // Preparar datos de actualización con campos de fecha parciales
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
         ...(slug && { slug }),
         firstName: data.firstName || null,
         lastName: data.lastName || null,
@@ -352,7 +352,7 @@ export const PUT = apiHandler(async (
         // Crear nuevos links si existen
         if (data.links && data.links.length > 0) {
             await tx.personLink.createMany({
-                data: data.links.map((link: any, index: number) => ({
+                data: data.links.map((link: { type: string; url: string; displayOrder?: number; isVerified?: boolean; isActive?: boolean }, index: number) => ({
                     personId,
                     type: link.type,
                     url: link.url,
@@ -386,8 +386,8 @@ export const PUT = apiHandler(async (
         if (data.trivia && data.trivia.length > 0) {
             await tx.personTrivia.createMany({
                 data: data.trivia
-                    .filter((item: any) => item.content && item.content.trim())
-                    .map((item: any, index: number) => ({
+                    .filter((item: { content: string }) => item.content && item.content.trim())
+                    .map((item: { content: string }, index: number) => ({
                         personId,
                         content: item.content.trim(),
                         sortOrder: index,
@@ -404,8 +404,8 @@ export const PUT = apiHandler(async (
         if (data.alternativeNames && data.alternativeNames.length > 0) {
             await tx.personAlternativeName.createMany({
                 data: data.alternativeNames
-                    .filter((alt: any) => alt.fullName && alt.fullName.trim() !== '')
-                    .map((alt: any) => ({
+                    .filter((alt: { fullName: string }) => alt.fullName && alt.fullName.trim() !== '')
+                    .map((alt: { fullName: string }) => ({
                         personId,
                         fullName: alt.fullName.trim(),
                     })),

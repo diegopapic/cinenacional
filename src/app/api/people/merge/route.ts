@@ -89,7 +89,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       // Helper: resolve a field - returns the value to set on the survivor
       // 'A' always means personA's value, 'B' always means personB's value
       const personAId_local = personA.id;
-      function resolveValue(field: string, valA: any, valB: any): any {
+      function resolveValue<T>(field: string, valA: T, valB: T): T {
         const choice = resolutions[field];
         if (choice === 'A') return valA;
         if (choice === 'B') return valB;
@@ -103,7 +103,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       }
 
       // 3. Build update data for survivor
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
 
       // Name resolution
       const nameA = [personA.firstName, personA.lastName].filter(Boolean).join(' ');

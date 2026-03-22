@@ -430,7 +430,16 @@ export const GET = apiHandler(async (request: NextRequest) => {
 /**
  * Agrega la película destacada (más reciente) y conteo correcto a cada persona
  */
-async function addFeaturedMovies(people: any[]): Promise<any[]> {
+/** Person record with location includes, as returned by Prisma findMany */
+interface PersonWithLocations {
+  id: number
+  firstName: string | null
+  lastName: string | null
+  realName: string | null
+  [key: string]: unknown
+}
+
+async function addFeaturedMovies(people: PersonWithLocations[]): Promise<Record<string, unknown>[]> {
   if (people.length === 0) return [];
 
   const personIds = people.map(p => p.id);

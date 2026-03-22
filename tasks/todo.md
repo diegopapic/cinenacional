@@ -48,15 +48,13 @@ También se tipó `src/lib/schemas.ts` (6 `z.array(z.any())` → schemas tipados
 
 ---
 
-## Fase C: API routes de personas (26 any)
+## Fase C: API routes de personas ✅ COMPLETADA
 
-### C1. Rutas principales
-
-- [ ] `src/app/api/people/route.ts` (10): tipar query params y respuesta de listado
-- [ ] `src/app/api/people/[id]/route.ts` (7): tipar payload de update y relaciones
-- [ ] `src/app/api/people/list/route.ts` (2): tipar query params
-- [ ] `src/app/api/people/merge/route.ts` (4): tipar payload y lógica de merge
-- [ ] `src/app/api/people/merge/preview/route.ts` (3): tipar respuesta de preview
+- [x] `src/app/api/people/route.ts`: `RawPersonSearchResult` interface, typed where/orderBy, `personData` tipado, callbacks de links/trivia/alternativeNames tipados
+- [x] `src/app/api/people/[id]/route.ts`: typed memory cache, `updateData` tipado, callbacks de links/trivia/alternativeNames tipados
+- [x] `src/app/api/people/list/route.ts`: `PersonWithLocations` interface para `addFeaturedMovies`
+- [x] `src/app/api/people/merge/route.ts`: generic `resolveValue<T>`, `updateData` tipado
+- [x] `src/app/api/people/merge/preview/route.ts`: `LocationNode` interface, `FieldComparison` con `unknown`
 
 ---
 

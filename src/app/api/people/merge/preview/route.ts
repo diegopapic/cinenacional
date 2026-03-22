@@ -127,10 +127,15 @@ export const POST = apiHandler(async (request: NextRequest) => {
     const natIdsSetB = new Set(personB.nationalities.map(n => n.locationId));
 
     // Helper to format location path
-    function formatLocationPath(location: any): string {
+    interface LocationNode {
+      name: string
+      parent?: LocationNode | null
+    }
+
+    function formatLocationPath(location: LocationNode | null): string {
       if (!location) return '';
       const parts: string[] = [];
-      let current = location;
+      let current: LocationNode | null | undefined = location;
       while (current) {
         parts.push(current.name);
         current = current.parent;
@@ -154,8 +159,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
     type FieldComparison = {
       field: string;
       label: string;
-      valueA: any;
-      valueB: any;
+      valueA: unknown;
+      valueB: unknown;
       displayA: string;
       displayB: string;
     };
