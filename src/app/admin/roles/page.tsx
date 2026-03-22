@@ -7,12 +7,12 @@ import { Plus, Search, Download, Filter } from 'lucide-react';
 import { useRoles } from '@/hooks/useRoles';
 import { RoleModal } from '@/components/admin/roles/RoleModal';
 import { RoleCard } from '@/components/admin/roles/RoleCard';
-import { getDepartmentOptions, type Department } from '@/lib/roles/rolesTypes';
+import { getDepartmentOptions, type Department, type Role } from '@/lib/roles/rolesTypes';
 import toast from 'react-hot-toast';
 
 export default function RolesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState(null);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const {
@@ -44,7 +44,7 @@ export default function RolesPage() {
     setIsModalOpen(true);
   };
 
-  const handleEdit = (role: any) => {
+  const handleEdit = (role: Role) => {
     setEditingRole(role);
     setIsModalOpen(true);
   };

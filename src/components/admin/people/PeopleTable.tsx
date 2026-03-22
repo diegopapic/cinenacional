@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { usePeople } from '@/hooks/usePeople';
 import { formatPersonName, formatGender, getPersonSummary } from '@/lib/people/peopleUtils';
+import type { PersonFilters } from '@/lib/people/peopleTypes';
 import { GENDER_OPTIONS, PEOPLE_PAGINATION } from '@/lib/people/peopleConstants';
 
 export function PeopleTable() {
@@ -52,7 +53,7 @@ export function PeopleTable() {
     }
   };
 
-  const handleDeleteClick = (person: any) => {
+  const handleDeleteClick = (person: { id: number; firstName?: string | null; lastName?: string | null }) => {
     setDeleteId(person.id);
     setDeleteName(formatPersonName(person));
     setShowDeleteDialog(true);
@@ -81,7 +82,7 @@ export function PeopleTable() {
         
         <select
           value={filters.gender || ''}
-          onChange={(e) => updateFilter('gender', e.target.value as any)}
+          onChange={(e) => updateFilter('gender', e.target.value as PersonFilters['gender'])}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
         >
           <option value="">Todos los géneros</option>

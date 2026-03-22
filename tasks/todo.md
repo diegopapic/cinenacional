@@ -95,20 +95,20 @@ El sistema de formulario de películas es el más complejo. Los tipos fluyen ent
 
 ---
 
-## Fase F: People form system y admin pages (16 any)
+## Fase F: People form system y admin pages ✅ COMPLETADA
 
-### F1. People form
+### F1. People form ✅
 
-- [ ] `src/components/admin/people/PersonForm.tsx` (2): tipar form state
-- [ ] `src/components/admin/people/PersonFormFields/BasicInfoFields.tsx` (2): tipar props
-- [ ] `src/components/admin/people/PersonFormFields/LinksSection.tsx` (1): tipar links array
-- [ ] `src/components/admin/people/PeopleTable.tsx` (2): tipar table props
-- [ ] `src/hooks/usePeopleForm.ts` (1): tipar form hook
+- [x] `PersonForm.tsx` (2→0): nationality map callbacks tipados
+- [x] `BasicInfoFields.tsx` (2→0): `value: string` en partial date handlers
+- [x] `LinksSection.tsx` (1→0): `PersonLink['type']` cast
+- [x] `PeopleTable.tsx` (2→0): typed delete handler, `PersonFilters['gender']` cast
+- [x] `usePeopleForm.ts` (1→0): typed nationality map, trivia access via Record cast
 
-### F2. Admin pages
+### F2. Admin pages ✅
 
-- [ ] `src/app/admin/people/merge/page.tsx` (8): tipar merge state y comparación
-- [ ] `src/app/admin/roles/page.tsx` (1): tipar roles state
+- [x] `merge/page.tsx` (8→0): location types, `unknown` para field values, typed error handling
+- [x] `roles/page.tsx` (1→0): `Role` type para editingRole state
 
 ---
 

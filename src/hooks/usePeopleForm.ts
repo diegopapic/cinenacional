@@ -39,15 +39,15 @@ function formatPersonForForm(person: PersonWithRelations, personId: number): Per
     if (person.alternativeNames) {
         formattedData.alternativeNames = person.alternativeNames;
     }
-    if (person.trivia) {
-        formattedData.trivia = person.trivia;
+    if ((person as Record<string, unknown>).trivia) {
+        formattedData.trivia = (person as Record<string, unknown>).trivia as PersonFormData['trivia'];
     }
     if (person.nationalities && Array.isArray(person.nationalities)) {
-        formattedData.nationalities = person.nationalities.map((n: any) => {
+        formattedData.nationalities = person.nationalities.map((n) => {
             if (typeof n === 'number') return n;
-            if (typeof n === 'object' && n !== null) return n.locationId || n;
-            return n;
-        });
+            if (typeof n === 'object' && n !== null) return n.locationId;
+            return null;
+        }).filter((id): id is number => id !== null);
     } else {
         formattedData.nationalities = [];
     }

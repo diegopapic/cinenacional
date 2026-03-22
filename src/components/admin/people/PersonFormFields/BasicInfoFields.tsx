@@ -52,13 +52,13 @@ export function BasicInfoFields({
     });
 
     // Manejar cambios en fechas parciales
-    const handlePartialBirthDateChange = (field: keyof PartialDate, value: any) => {
+    const handlePartialBirthDateChange = (field: keyof PartialDate, value: string) => {
         const updated = { ...partialBirthDate, [field]: value ? parseInt(value) : null };
         setPartialBirthDate(updated);
         updateField('partialBirthDate', updated);
     };
 
-    const handlePartialDeathDateChange = (field: keyof PartialDate, value: any) => {
+    const handlePartialDeathDateChange = (field: keyof PartialDate, value: string) => {
         const updated = { ...partialDeathDate, [field]: value ? parseInt(value) : null };
         setPartialDeathDate(updated);
         updateField('partialDeathDate', updated);

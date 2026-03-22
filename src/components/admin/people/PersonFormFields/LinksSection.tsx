@@ -76,7 +76,7 @@ export function LinksSection({
                   </label>
                   <select
                     value={link.type}
-                    onChange={(e) => onUpdateLink(index, { type: e.target.value as any })}
+                    onChange={(e) => onUpdateLink(index, { type: e.target.value as PersonLink['type'] })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   >
                     {Object.entries(LINK_CATEGORIES).map(([key, category]) => (

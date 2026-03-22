@@ -61,7 +61,7 @@ export function PersonForm({
             });
 
             if (initialData.nationalities) {
-                const nationalityIds = initialData.nationalities.map((n: any) => {
+                const nationalityIds = initialData.nationalities.map((n) => {
                     if (typeof n === 'number') return n;
                     if (typeof n === 'object' && n !== null) return n.locationId;
                     return null;
@@ -75,7 +75,7 @@ export function PersonForm({
     useValueChange(formData.nationalities, (nats) => {
         if (isEdit && nats && nats.length > 0) {
             const nationalityIds = Array.isArray(nats)
-                ? nats.map((n: any) => {
+                ? nats.map((n: number | { locationId?: number }) => {
                     const id = typeof n === 'object' ? n.locationId : n;
                     return id;
                 })

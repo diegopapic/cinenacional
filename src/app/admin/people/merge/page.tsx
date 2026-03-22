@@ -26,8 +26,8 @@ interface PersonData {
   deathDay: number | null;
   birthLocationId: number | null;
   deathLocationId: number | null;
-  birthLocation: any;
-  deathLocation: any;
+  birthLocation: { name: string; path?: string } | null;
+  deathLocation: { name: string; path?: string } | null;
   imdbId: string | null;
   tmdbId: number | null;
   alternativeNames: Array<{ id: number; fullName: string }>;
@@ -48,8 +48,8 @@ interface PersonData {
 interface FieldComparison {
   field: string;
   label: string;
-  valueA: any;
-  valueB: any;
+  valueA: unknown;
+  valueB: unknown;
   displayA: string;
   displayB: string;
 }
@@ -94,8 +94,8 @@ interface DisplayField {
   label: string;
   displaySurvivor: string;
   displayAbsorbed: string;
-  valueSurvivor: any;
-  valueAbsorbed: any;
+  valueSurvivor: unknown;
+  valueAbsorbed: unknown;
   survivorLabel: 'A' | 'B';
   absorbedLabel: 'A' | 'B';
   type: 'conflict' | 'autofill' | 'identical';
@@ -227,8 +227,8 @@ export default function MergePeoplePage() {
       }
 
       setStep('preview');
-    } catch (error: any) {
-      toast.error(error.message || 'Error al generar preview');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al generar preview');
     } finally {
       setLoading(false);
     }
@@ -294,8 +294,8 @@ export default function MergePeoplePage() {
       setMergeResult(result);
       setStep('result');
       toast.success('Merge completado exitosamente');
-    } catch (error: any) {
-      toast.error(error.message || 'Error al ejecutar merge');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al ejecutar merge');
     } finally {
       setLoading(false);
     }
