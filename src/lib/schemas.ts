@@ -121,14 +121,38 @@ export const movieSchema = z.object({
     .optional()
     .default([])
     .transform(val => val.filter(v => v > 0 && !isNaN(v))),
-  cast: z.array(z.any()).optional(),
-  crew: z.array(z.any()).optional(),
+  cast: z.array(z.object({
+    personId: z.number(),
+    alternativeNameId: z.number().nullable().optional(),
+    characterName: z.string().nullable().optional(),
+    billingOrder: z.number().optional(),
+    isPrincipal: z.boolean().optional(),
+    isActor: z.boolean().optional(),
+    notes: z.string().nullable().optional()
+  })).optional(),
+  crew: z.array(z.object({
+    personId: z.number(),
+    alternativeNameId: z.number().nullable().optional(),
+    roleId: z.number().optional(),
+    role: z.string().optional(),
+    billingOrder: z.number().optional(),
+    notes: z.string().nullable().optional()
+  })).optional(),
   productionCompanies: z.array(z.number()).optional(),
   distributionCompanies: z.array(z.number()).optional(),
   themes: z.array(z.number()).optional(),
-  alternativeTitles: z.array(z.any()).optional(),
-  trivia: z.array(z.any()).optional(),
-  links: z.array(z.any()).optional(),
+  alternativeTitles: z.array(z.object({
+    title: z.string(),
+    description: z.string().nullable().optional()
+  })).optional(),
+  trivia: z.array(z.object({
+    content: z.string()
+  })).optional(),
+  links: z.array(z.object({
+    type: z.string(),
+    url: z.string(),
+    isActive: z.boolean().optional()
+  })).optional(),
   screeningVenues: z.array(z.object({
     venueId: z.number(),
     screeningDate: z.string().optional().nullable(),

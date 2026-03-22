@@ -38,13 +38,13 @@ Estrategia: agrupar por dominio funcional para tipar de forma coherente (los tip
 
 ---
 
-## Fase B: API routes de películas (25 any)
+## Fase B: API routes de películas ✅ COMPLETADA
 
-### B1. Rutas principales
+También se tipó `src/lib/schemas.ts` (6 `z.array(z.any())` → schemas tipados para cast, crew, alternativeTitles, trivia, links).
 
-- [ ] `src/app/api/movies/route.ts` (11): tipar query params, filtros y respuesta de listado
-- [ ] `src/app/api/movies/[id]/route.ts` (10): tipar payload de update, relaciones y cast/crew
-- [ ] `src/app/api/movies/list/route.ts` (4): tipar query params y respuesta
+- [x] `src/app/api/movies/route.ts`: `RawMovieSearchResult` interface, typed where clause, typed relation map callbacks, `makeUniqueSlug` cast
+- [x] `src/app/api/movies/[id]/route.ts`: typed memory cache, filter callbacks `unknown`, relation map callbacks tipados, DELETE error typed
+- [x] `src/app/api/movies/list/route.ts`: `RawAlphabeticMovie` interface, typed params array, Prisma where casts
 
 ---
 

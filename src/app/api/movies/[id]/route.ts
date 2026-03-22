@@ -14,7 +14,7 @@ import { createLogger } from '@/lib/logger'
 const log = createLogger('api:movies:detail')
 
 // Cache en memoria como fallback
-const memoryCache = new Map<string, { data: any; timestamp: number }>();
+const memoryCache = new Map<string, { data: unknown; timestamp: number }>();
 const MEMORY_CACHE_TTL = 60 * 60 * 1000; // 1 hora en ms
 const REDIS_CACHE_TTL = 3600; // 1 hora en segundos
 
@@ -403,19 +403,19 @@ export const PUT = apiHandler(async (
       ? null
       : Number(body.tmdbId),
     genres: Array.isArray(body.genres)
-      ? body.genres.filter((g: any) => g != null && g !== 0 && !isNaN(Number(g)))
+      ? body.genres.filter((g: unknown) => g != null && g !== 0 && !isNaN(Number(g)))
       : [],
     countries: Array.isArray(body.countries)
-      ? body.countries.filter((c: any) => c != null && c !== 0 && !isNaN(Number(c)))
+      ? body.countries.filter((c: unknown) => c != null && c !== 0 && !isNaN(Number(c)))
       : body.countries || [],
     productionCompanies: Array.isArray(body.productionCompanies)
-      ? body.productionCompanies.filter((pc: any) => pc != null && pc !== 0 && !isNaN(Number(pc)))
+      ? body.productionCompanies.filter((pc: unknown) => pc != null && pc !== 0 && !isNaN(Number(pc)))
       : [],
     distributionCompanies: Array.isArray(body.distributionCompanies)
-      ? body.distributionCompanies.filter((dc: any) => dc != null && dc !== 0 && !isNaN(Number(dc)))
+      ? body.distributionCompanies.filter((dc: unknown) => dc != null && dc !== 0 && !isNaN(Number(dc)))
       : [],
     themes: Array.isArray(body.themes)
-      ? body.themes.filter((t: any) => t != null && t !== 0 && !isNaN(Number(t)))
+      ? body.themes.filter((t: unknown) => t != null && t !== 0 && !isNaN(Number(t)))
       : [],
     metaKeywords: body.metaKeywords
       ? Array.isArray(body.metaKeywords)
@@ -643,7 +643,7 @@ export const PUT = apiHandler(async (
       await tx.movieTrivia.deleteMany({ where: { movieId: id } })
       if (trivia && trivia.length > 0) {
         await tx.movieTrivia.createMany({
-          data: trivia.map((item: any, index: number) => ({
+          data: trivia.map((item: { content: string }, index: number) => ({
             movieId: id,
             content: item.content,
             sortOrder: index
@@ -657,7 +657,7 @@ export const PUT = apiHandler(async (
       await tx.movieLink.deleteMany({ where: { movieId: id } })
       if (links && links.length > 0) {
         await tx.movieLink.createMany({
-          data: links.map((link: any) => ({
+          data: links.map((link: { type: string; url: string; isActive?: boolean }) => ({
             movieId: id,
             type: link.type,
             url: link.url,
@@ -672,7 +672,7 @@ export const PUT = apiHandler(async (
       await tx.movieScreening.deleteMany({ where: { movieId: id } })
       if (screeningVenues && screeningVenues.length > 0) {
         await tx.movieScreening.createMany({
-          data: screeningVenues.map((sv: any) => ({
+          data: screeningVenues.map((sv: { venueId: number; screeningDate?: string | null; isPremiere?: boolean; isExclusive?: boolean }) => ({
             movieId: id,
             venueId: sv.venueId,
             screeningDate: sv.screeningDate ? new Date(sv.screeningDate) : null,
@@ -875,12 +875,13 @@ export async function DELETE(
     log.debug('Caches invalidated', { slug: movie.slug });
 
     return new NextResponse(null, { status: 204 })
-  } catch (error: any) {
+  } catch (error) {
     log.error('Failed to delete movie', error)
 
-    const detail = error?.code === 'P2003'
+    const prismaError = error as { code?: string; message?: string } | undefined
+    const detail = prismaError?.code === 'P2003'
       ? 'La película tiene registros asociados que impiden su eliminación'
-      : error?.message || 'Error desconocido'
+      : prismaError?.message || 'Error desconocido'
 
     return NextResponse.json(
       { error: 'Error al eliminar la película', detail },

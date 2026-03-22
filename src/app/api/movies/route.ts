@@ -11,12 +11,69 @@ import { createLogger } from '@/lib/logger'
 
 const log = createLogger('api:movies')
 
+/** Raw SQL result for movie search query */
+interface RawMovieSearchResult {
+  id: number
+  slug: string
+  title: string
+  year: number | null
+  releaseYear: number | null
+  releaseMonth: number | null
+  releaseDay: number | null
+  duration: number | null
+  posterUrl: string | null
+  stage: string
+  tmdbId: number | null
+  imdbId: string | null
+}
+
+/** Cast entry as received from the request body */
+interface CastEntry {
+  personId: number
+  characterName?: string | null
+  billingOrder?: number
+  isPrincipal?: boolean
+}
+
+/** Crew entry as received from the request body */
+interface CrewEntry {
+  personId: number
+  roleId: number
+  billingOrder?: number
+}
+
+/** Alternative title entry */
+interface AlternativeTitleEntry {
+  title: string
+  description?: string | null
+}
+
+/** Trivia entry */
+interface TriviaEntry {
+  content: string
+}
+
+/** Link entry */
+interface LinkEntry {
+  type: string
+  url: string
+  isActive?: boolean
+}
+
+/** Screening venue entry */
+interface ScreeningVenueEntry {
+  venueId: number
+  screeningDate?: string | null
+  isPremiere?: boolean
+  isExclusive?: boolean
+}
+
 // ============================================
 // CACHE CONFIGURATION
 // ============================================
 
 // Cache en memoria como fallback
-const memoryCache = new Map<string, { data: any; timestamp: number }>();
+const memoryCache = new Map<string, { data: unknown; timestamp: number }>();
 const MEMORY_CACHE_TTL = 60 * 60 * 1000; // 1 hora en ms
 
 // TTL diferenciado según tipo de consulta
@@ -142,7 +199,7 @@ export async function GET(request: NextRequest) {
         const searchPattern = `%${searchQuery}%`
         const skip = (page - 1) * limit
 
-        const movies = await prisma.$queryRaw<any[]>`
+        const movies = await prisma.$queryRaw<RawMovieSearchResult[]>`
           SELECT
             id,
             slug,
@@ -201,7 +258,7 @@ export async function GET(request: NextRequest) {
             })
           ])
 
-          const formattedMovies = movies.map((movie: any) => {
+          const formattedMovies = movies.map((movie) => {
             const movieGenres = genres.filter(g => g.movieId === movie.id)
             const movieCountry = countries.find(c => c.movieId === movie.id)
             const movieCrew = crews.filter(c => c.movieId === movie.id)
@@ -293,7 +350,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Búsqueda estándar sin unaccent
-    const where: any = {}
+    const where: Record<string, unknown> = {}
 
     if (search) {
       where.OR = [
@@ -545,7 +602,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const validatedData = movieSchema.parse(cleanedData)
 
   // Generar slug único con la función actualizada
-  const slug = await makeUniqueSlug(validatedData.title, prisma.movie as any)
+  const slug = await makeUniqueSlug(validatedData.title, prisma.movie as unknown as Parameters<typeof makeUniqueSlug>[1])
 
   // Extraer relaciones y campos especiales
   const {
@@ -620,7 +677,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
       ...(cast && cast.length > 0 && {
         cast: {
-          create: cast.map((item: any) => ({
+          create: cast.map((item: CastEntry) => ({
             personId: item.personId,
             characterName: item.characterName || null,
             billingOrder: item.billingOrder || 0,
@@ -631,7 +688,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
       ...(crew && crew.length > 0 && {
         crew: {
-          create: crew.map((item: any) => ({
+          create: crew.map((item: CrewEntry) => ({
             personId: item.personId,
             roleId: item.roleId,
             billingOrder: item.billingOrder || 0
@@ -676,7 +733,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
       ...(alternativeTitles && alternativeTitles.length > 0 && {
         alternativeTitles: {
-          create: alternativeTitles.map((title: any) => ({
+          create: alternativeTitles.map((title: AlternativeTitleEntry) => ({
             title: title.title,
             description: title.description || null
           }))
@@ -685,7 +742,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
       ...(trivia && trivia.length > 0 && {
         trivia: {
-          create: trivia.map((item: any, index: number) => ({
+          create: trivia.map((item: TriviaEntry, index: number) => ({
             content: item.content,
             sortOrder: index
           }))
@@ -694,7 +751,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
       ...(links && links.length > 0 && {
         links: {
-          create: links.map((link: any) => ({
+          create: links.map((link: LinkEntry) => ({
             type: link.type,
             url: link.url,
             isActive: link.isActive !== false
@@ -704,7 +761,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
       ...(screeningVenues && screeningVenues.length > 0 && {
         screenings: {
-          create: screeningVenues.map((sv: any) => ({
+          create: screeningVenues.map((sv: ScreeningVenueEntry) => ({
             venueId: sv.venueId,
             screeningDate: sv.screeningDate ? new Date(sv.screeningDate) : null,
             isPremiere: sv.isPremiere || false,

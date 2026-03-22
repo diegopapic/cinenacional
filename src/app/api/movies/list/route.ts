@@ -324,7 +324,7 @@ async function getMoviesWithAlphabeticSort(
 ) {
   // Construir WHERE clause para SQL
   const whereClauses: string[] = [];
-  const params: any[] = [];
+  const params: (string | number | null)[] = [];
   let paramIndex = 1;
 
   if (where.title && typeof where.title === 'object' && 'contains' in where.title) {
@@ -353,13 +353,15 @@ async function getMoviesWithAlphabeticSort(
 
   if (where.movieCountries && 'some' in where.movieCountries) {
     whereClauses.push(`EXISTS (SELECT 1 FROM movie_countries mc WHERE mc.movie_id = m.id AND mc.country_id = $${paramIndex})`);
-    params.push((where.movieCountries.some as any).countryId);
+    const movieCountrySome = where.movieCountries.some as { countryId: number };
+    params.push(movieCountrySome.countryId);
     paramIndex++;
   }
 
   if (where.genres && 'some' in where.genres) {
     whereClauses.push(`EXISTS (SELECT 1 FROM movie_genres mg WHERE mg.movie_id = m.id AND mg.genre_id = $${paramIndex})`);
-    params.push((where.genres.some as any).genreId);
+    const genreSome = where.genres.some as { genreId: number };
+    params.push(genreSome.genreId);
     paramIndex++;
   }
 
@@ -430,7 +432,25 @@ async function getMoviesWithAlphabeticSort(
 
   params.push(limit, skip);
 
-  const rawMovies = await prisma.$queryRawUnsafe<any[]>(query, ...params);
+  /** Raw SQL result from alphabetic sort query (snake_case columns) */
+  interface RawAlphabeticMovie {
+    id: number
+    slug: string
+    title: string
+    year: number | null
+    release_year: number | null
+    release_month: number | null
+    release_day: number | null
+    duration: number | null
+    tipo_duracion: string | null
+    poster_url: string | null
+    stage: string
+    sound_type: string | null
+    synopsis: string | null
+    color_type_id: number | null
+  }
+
+  const rawMovies = await prisma.$queryRawUnsafe<RawAlphabeticMovie[]>(query, ...params);
 
   // Obtener IDs para cargar relaciones
   const movieIds = rawMovies.map(m => m.id);
