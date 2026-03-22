@@ -156,24 +156,17 @@ Migrado de Tailwind CSS 3.4.13 → 4.2.2 via `npx @tailwindcss/upgrade`.
 - [x] **`cacheLife` / `cacheTag`**: Disponibles. Podrían reemplazar `export const revalidate` por granularidad a nivel de componente/fetch. No urgente — el ISR actual (5min home, 1h fichas, 24h efemérides) funciona bien.
 - [x] **PPR (`cacheComponents`)**: Requiere opt-in experimental. Útil para páginas con shell estático + datos dinámicos (home, fichas). Evaluar cuando PPR sea stable.
 
-### 6d. Migrar `<img>` a `next/image` con Cloudinary loader
+### 6d. Migrar `<img>` a `next/image` con Cloudinary loader ✅ (commit fbc31c3)
 
-Actualmente todas las imágenes usan `<img>` con URLs de Cloudinary que ya incluyen transformaciones (`f_auto`, `q_auto`, `w_XXX`). Migrar a `next/image` aporta lazy loading automático, `srcset` responsivo, preload de LCP images con `priority`, y formato automático (avif/webp).
+Opción B elegida: loader custom pass-through (las URLs ya incluyen transforms de Cloudinary).
 
-Hacer post-migración porque: (1) la config de `images` cambia en Next.js 16, mejor configurar una sola vez; (2) si se migra Tailwind v4, los breakpoints pueden cambiar y habría que ajustar `sizes`; (3) son ~30 archivos, no bloquea nada.
-
-**Opciones de implementación** (elegir una):
-- **Opción A**: `CldImage` de `next-cloudinary` (ya instalado `^6.16`) — wrapper de `next/image` con soporte nativo de transformaciones Cloudinary.
-- **Opción B**: Loader custom (`cloudinaryLoader`) de ~5 líneas, configurado globalmente via `images.loaderFile` en `next.config.js`. Más liviano, sin dependencia extra.
-
-**Pasos:**
-- [ ] Elegir opción A o B.
-- [ ] Configurar `images.remotePatterns` o `loaderFile` en `next.config.js`.
-- [ ] Migrar `<img>` → `<Image>` / `<CldImage>` en componentes del sitio público (priorizar LCP: hero, posters, fotos de personas).
-- [ ] Migrar `<img>` en componentes del admin (menor prioridad).
-- [ ] Agregar `priority` a imágenes above-the-fold (hero, primer poster).
-- [ ] Verificar Lighthouse LCP en páginas clave.
-- [ ] Re-habilitar regla `@next/next/no-img-element` en `eslint.config.mjs`.
+- [x] Creado `src/lib/images/cloudinaryLoader.ts` — loader pass-through.
+- [x] Configurado `images.loader='custom'` + `loaderFile` en `next.config.js`. Removido `remotePatterns`.
+- [x] Migrados 31 `<img>` → `<Image>` en 23 componentes (14 público + 9 admin).
+- [x] `priority` agregado a LCP images: MovieHero backdrop, MoviePoster, HeroSection.
+- [x] `fill` prop para imágenes en containers sized (aspect-*, fixed w/h).
+- [x] Re-habilitada regla `@next/next/no-img-element` — 0 violaciones.
+- [ ] Verificar Lighthouse LCP en páginas clave (post-deploy).
 
 ### 6e. Verificación final
 
