@@ -253,8 +253,9 @@ export default function HeroSection({ images }: HeroSectionProps) {
             loader={cloudinaryLoader}
             src={getHeroImageUrl(image.cloudinaryPublicId)}
             alt={generateCaptionText(image)}
-            fill
-            className="object-contain"
+            width={1920}
+            height={1080}
+            className="max-w-full max-h-full w-auto h-auto object-contain"
             style={fadeMaskStyle}
             {...(idx === 0 ? { priority: true } : {})}
             sizes="100vw"
