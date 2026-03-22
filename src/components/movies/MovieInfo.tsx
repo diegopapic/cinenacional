@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import DOMPurify from 'isomorphic-dompurify';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
@@ -99,6 +100,7 @@ export function MovieInfo({ movie, onShareClick }: MovieInfoProps) {
                   <div className="relative w-12 h-12 rounded-full person-placeholder overflow-hidden">
                     {director.photoUrl ? (
                       <Image
+                        loader={cloudinaryLoader}
                         src={getPersonPhotoUrl(director.photoUrl, 'sm')!}
                         alt={director.name}
                         fill

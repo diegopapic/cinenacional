@@ -4,6 +4,7 @@
 import { CldUploadWidget } from 'next-cloudinary'
 import { useState, useRef, useCallback } from 'react'
 import Image from 'next/image'
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import { useMountEffect } from '@/hooks/useMountEffect'
 import { Upload, X, ImageIcon } from 'lucide-react'
 import { toast } from 'react-hot-toast'
@@ -350,6 +351,7 @@ export function CloudinaryUploadWidget({
                       }}
                     >
                       <Image
+                        loader={cloudinaryLoader}
                         src={imageUrl}
                         alt={label || 'Imagen'}
                         fill

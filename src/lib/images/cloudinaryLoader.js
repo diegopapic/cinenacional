@@ -1,18 +1,19 @@
 /**
  * Custom loader para next/image con Cloudinary.
  *
- * next/image llama a este loader para cada tamaño del srcset,
- * pasando width y quality. El loader:
+ * Uso: <Image loader={cloudinaryLoader} src={url} ... />
  *
- * 1. URLs de Cloudinary → extrae public ID, aplica w_{width}, f_auto, q_{quality}
- * 2. URLs ya transformadas (contienen w_, h_, etc.) → reemplaza transforms
- * 3. URLs no-Cloudinary → devuelve tal cual
+ * Extrae el public ID de la URL de Cloudinary y aplica transforms
+ * basados en el width/quality que next/image solicita para cada
+ * entrada del srcset.
  */
 
+'use client'
+
 /** @type {import('next/image').ImageLoader} */
-module.exports = function cloudinaryLoader({ src, width, quality }) {
+function cloudinaryLoader({ src, width, quality }) {
   // No es Cloudinary → devolver tal cual
-  if (!src.includes('res.cloudinary.com') && !src.includes('cloudinary')) {
+  if (!src.includes('res.cloudinary.com')) {
     return src
   }
 
@@ -55,3 +56,5 @@ module.exports = function cloudinaryLoader({ src, width, quality }) {
 
   return `${baseUrl}${transforms}/${publicId}`
 }
+
+module.exports = cloudinaryLoader

@@ -3,6 +3,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useMountEffect } from '@/hooks/useMountEffect';
 import { useWindowEvent } from '@/hooks/useWindowEvent';
@@ -153,6 +154,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                   onClick={() => openLightbox(i)}
                 >
                   <Image
+                    loader={cloudinaryLoader}
                     src={image.url}
                     alt={getCaption(image)}
                     fill
@@ -201,6 +203,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                     onClick={() => openLightbox(i)}
                   >
                     <Image
+                      loader={cloudinaryLoader}
                       src={image.url}
                       alt={getCaption(image)}
                       fill
@@ -270,6 +273,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
           <div onClick={(e) => e.stopPropagation()} className="relative flex flex-col items-center gap-4">
             <div className="relative h-[60vh] md:h-[75vh] w-[90vw]">
               <Image
+                loader={cloudinaryLoader}
                 src={images[lightbox.index].url}
                 alt={getCaption(images[lightbox.index])}
                 fill

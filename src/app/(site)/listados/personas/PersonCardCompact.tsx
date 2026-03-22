@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import { User } from 'lucide-react';
 import { PersonWithMovie } from '@/lib/people/personListTypes';
 import { formatPersonName, calculateAge } from '@/lib/people/personListUtils';
@@ -36,6 +37,7 @@ export default function PersonCardCompact({ person }: PersonCardCompactProps) {
       <div className="relative h-20 w-20 overflow-hidden rounded-full md:h-24 md:w-24">
         {photoUrl ? (
           <Image
+            loader={cloudinaryLoader}
             src={photoUrl}
             alt={personName}
             fill

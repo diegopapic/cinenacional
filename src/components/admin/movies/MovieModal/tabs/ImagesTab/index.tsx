@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import { useQuery } from '@tanstack/react-query'
 import { ImageIcon, Loader2 } from 'lucide-react'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
@@ -164,6 +165,7 @@ export default function ImagesTab() {
                                 className="group relative aspect-3/2 rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
                             >
                                 <Image
+                                    loader={cloudinaryLoader}
                                     src={imagePresets.card(image.cloudinaryPublicId)}
                                     alt={generateImageCaption(image)}
                                     fill

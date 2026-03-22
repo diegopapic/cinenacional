@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import Link from 'next/link';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
@@ -58,6 +59,7 @@ export function CastSection({ mainCast, fullCast = [] }: CastSectionProps) {
       <div className={`relative ${sizeClasses} overflow-hidden rounded-full ring-1 ring-border/20 group-hover:ring-accent/40 transition-all`}>
         {actor.image ? (
           <Image
+            loader={cloudinaryLoader}
             src={getPersonPhotoUrl(actor.image, 'sm')!}
             alt={actor.name}
             fill

@@ -2,6 +2,7 @@
 'use client';
 
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import Link from 'next/link';
 import { SimpleMovie } from '@/types/home.types';
 import SkeletonLoader from './SkeletonLoader';
@@ -62,6 +63,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
                     <div className="relative aspect-2/3">
                       {pelicula.posterUrl ? (
                         <Image
+                          loader={cloudinaryLoader}
                           src={pelicula.posterUrl}
                           alt={pelicula.title}
                           fill
@@ -101,6 +103,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
                     <div className="relative aspect-2/3 w-full">
                       {pelicula.posterUrl ? (
                         <Image
+                          loader={cloudinaryLoader}
                           src={pelicula.posterUrl}
                           alt={pelicula.title}
                           fill

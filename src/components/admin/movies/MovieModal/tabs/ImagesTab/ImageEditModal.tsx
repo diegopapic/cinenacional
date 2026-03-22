@@ -3,6 +3,7 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import { X, Save, Trash2 } from 'lucide-react'
 import { 
   ImageWithRelations, 
@@ -189,6 +190,7 @@ export function ImageEditModal({
             {/* Preview de imagen */}
             <div>
               <Image
+                loader={cloudinaryLoader}
                 src={imagePresets.gallery(image.cloudinaryPublicId)}
                 alt="Preview"
                 width={800}

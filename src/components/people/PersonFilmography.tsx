@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import Link from 'next/link'
 import { PosterPlaceholder } from '@/components/film/PosterPlaceholder'
 
@@ -110,6 +111,7 @@ function MovieItem({ item, showRoles, showCharacter, index }: {
           <div className="relative w-10 md:w-11 aspect-2/3 rounded-xs overflow-hidden">
             {movie.posterUrl ? (
               <Image
+                loader={cloudinaryLoader}
                 src={movie.posterUrl}
                 alt={movie.title}
                 fill

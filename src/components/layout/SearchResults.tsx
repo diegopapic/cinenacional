@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import { Loader2 } from 'lucide-react'
 import type { SearchResult } from '@/hooks/useGlobalSearch'
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
@@ -111,6 +112,7 @@ export default function SearchResults({
                   <div className="h-10 w-7 shrink-0 overflow-hidden bg-[oklch(0.22_0.005_250)]">
                     {movie.posterUrl ? (
                       <Image
+                        loader={cloudinaryLoader}
                         src={movie.posterUrl}
                         alt=""
                         width={28}
@@ -161,6 +163,7 @@ export default function SearchResults({
                   <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-[oklch(0.22_0.005_250)]">
                     {person.photoUrl ? (
                       <Image
+                        loader={cloudinaryLoader}
                         src={getPersonPhotoUrl(person.photoUrl, 'sm')!}
                         alt=""
                         width={32}

@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import Link from 'next/link';
 
 interface Movie {
@@ -32,6 +33,7 @@ export function SimilarMovies({ movies }: SimilarMoviesProps) {
               <div className="relative aspect-2/3 rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform">
                 {movie.posterUrl ? (
                   <Image
+                    loader={cloudinaryLoader}
                     src={movie.posterUrl}
                     alt={`Poster de ${movie.title}`}
                     fill

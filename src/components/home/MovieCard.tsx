@@ -1,5 +1,6 @@
 // src/components/home/MovieCard.tsx
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import Link from 'next/link';
 import { MovieWithRelease } from '@/types/home.types';
 import { formatPartialDate } from '@/lib/shared/dateUtils';
@@ -80,6 +81,7 @@ export default function MovieCard({
         <div className="relative aspect-2/3 w-full">
           {movie.posterUrl ? (
             <Image
+              loader={cloudinaryLoader}
               src={movie.posterUrl}
               alt={movie.title}
               fill

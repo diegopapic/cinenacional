@@ -9,6 +9,7 @@ import { useGlobalSearch } from '@/hooks/useGlobalSearch'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
 
 /**
@@ -127,6 +128,7 @@ export default function SearchBar() {
                                                 <div className="shrink-0 w-10 h-14 bg-zinc-800 rounded-sm overflow-hidden mr-3">
                                                     {movie.posterUrl ? (
                                                         <Image
+                                                            loader={cloudinaryLoader}
                                                             src={movie.posterUrl}
                                                             alt={movie.title}
                                                             width={40}
@@ -171,6 +173,7 @@ export default function SearchBar() {
                                                 <div className="shrink-0 w-10 h-10 bg-zinc-800 rounded-full overflow-hidden mr-3">
                                                     {person.photoUrl ? (
                                                         <Image
+                                                            loader={cloudinaryLoader}
                                                             src={getPersonPhotoUrl(person.photoUrl, 'sm')!}
                                                             alt={person.name}
                                                             width={40}

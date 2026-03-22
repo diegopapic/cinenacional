@@ -1,6 +1,7 @@
 // src/components/admin/movies/MoviesTable.tsx
 import { useState } from 'react'
 import Image from 'next/image'
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import { Film, Edit, Trash2, Eye, Star, Loader2 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { type Movie } from '@/lib/movies/movieTypes'
@@ -114,6 +115,7 @@ function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
           <div className="shrink-0 h-10 w-10">
             {movie.posterUrl ? (
               <Image
+                loader={cloudinaryLoader}
                 className="h-10 w-10 rounded-lg object-cover"
                 src={movie.posterUrl}
                 alt={movie.title}

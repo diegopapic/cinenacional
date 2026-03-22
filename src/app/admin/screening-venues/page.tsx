@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Plus,
@@ -389,6 +390,7 @@ export default function AdminScreeningVenuesPage() {
                             <div className="shrink-0 h-10 w-10">
                               {venue.logoUrl ? (
                                 <Image
+                                  loader={cloudinaryLoader}
                                   className="h-10 w-10 rounded-lg object-contain"
                                   src={venue.logoUrl}
                                   alt={venue.name}

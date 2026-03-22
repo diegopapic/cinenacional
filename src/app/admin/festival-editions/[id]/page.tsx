@@ -2,6 +2,7 @@
 
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import Link from 'next/link'
 import { ArrowLeft, Edit, Film, Calendar, Clock, MapPin, Star } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
@@ -232,6 +233,7 @@ export default async function EditionDetailPage({ params }: PageProps) {
                       {/* Poster */}
                       {screening.movie.posterUrl ? (
                         <Image
+                          loader={cloudinaryLoader}
                           src={screening.movie.posterUrl}
                           alt=""
                           width={40}

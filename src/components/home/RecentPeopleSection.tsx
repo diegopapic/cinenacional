@@ -2,6 +2,7 @@
 'use client';
 
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import Link from 'next/link';
 import { SimplePerson } from '@/types/home.types';
 import SkeletonLoader from './SkeletonLoader';
@@ -69,6 +70,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
                   <div className="relative h-20 w-20 overflow-hidden rounded-full shadow-lg shadow-black/30">
                     {persona.photoUrl ? (
                       <Image
+                        loader={cloudinaryLoader}
                         src={getPersonPhotoUrl(persona.photoUrl, 'sm')!}
                         alt={formatPersonName(persona)}
                         fill
@@ -110,6 +112,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
                   <div className="relative aspect-square w-full overflow-hidden rounded-full shadow-lg shadow-black/30">
                     {persona.photoUrl ? (
                       <Image
+                        loader={cloudinaryLoader}
                         src={getPersonPhotoUrl(persona.photoUrl, 'sm')!}
                         alt={formatPersonName(persona)}
                         fill

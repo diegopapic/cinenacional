@@ -1,5 +1,6 @@
 // src/components/home/ObituariosSection.tsx
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import Link from 'next/link';
 import { calculateYearsBetween } from '@/lib/shared/dateUtils';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
@@ -104,6 +105,7 @@ export default function ObituariosSection({ obituarios, loading = false, noPaddi
                 <div className="relative h-16 w-16 md:h-20 md:w-20 shrink-0 overflow-hidden rounded-full">
                   {persona.photoUrl ? (
                     <Image
+                      loader={cloudinaryLoader}
                       src={getPersonPhotoUrl(persona.photoUrl, 'sm')!}
                       alt={formatearNombre(persona)}
                       fill

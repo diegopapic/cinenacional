@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import { PosterPlaceholder } from '@/components/film/PosterPlaceholder';
 
 interface MoviePosterProps {
@@ -20,6 +21,7 @@ export function MoviePoster({ imageUrl, title }: MoviePosterProps) {
           <PosterPlaceholder className="h-[500px] w-auto aspect-2/3 rounded-lg poster-shadow" />
         ) : (
           <Image
+            loader={cloudinaryLoader}
             src={imageUrl}
             alt={`Poster de ${title}`}
             width={333}

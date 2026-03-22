@@ -5,8 +5,9 @@
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { 
-  ArrowLeft, 
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
+import {
+  ArrowLeft,
   Edit, 
   ExternalLink, 
   Calendar,
@@ -98,6 +99,7 @@ export default function PersonDetailPage() {
                 <div className="relative aspect-3/4 w-full overflow-hidden rounded-lg bg-gray-100">
                   {person.photoUrl ? (
                     <Image
+                      loader={cloudinaryLoader}
                       src={person.photoUrl}
                       alt={fullName}
                       fill

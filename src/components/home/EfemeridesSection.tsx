@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import Link from 'next/link';
 import { Efemeride } from '@/types/home.types';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
@@ -275,6 +276,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
                       }`}>
                         {imageUrl ? (
                           <Image
+                            loader={cloudinaryLoader}
                             src={imageUrl}
                             alt={item.titulo || ''}
                             fill
@@ -306,6 +308,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
                       }`}>
                         {imageUrl ? (
                           <Image
+                            loader={cloudinaryLoader}
                             src={imageUrl}
                             alt={item.titulo || ''}
                             fill

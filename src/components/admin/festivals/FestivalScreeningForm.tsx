@@ -4,6 +4,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import Image from 'next/image'
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
@@ -274,6 +275,7 @@ export default function FestivalScreeningForm({
                     >
                       {movie.posterUrl && (
                         <Image
+                          loader={cloudinaryLoader}
                           src={movie.posterUrl}
                           alt=""
                           width={32}

@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import Image from 'next/image'
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import { Film, User, Calendar, Search, Loader2 } from 'lucide-react'
 import { formatPartialDate } from '@/lib/shared/dateUtils'
 import DOMPurify from 'dompurify'
@@ -272,6 +273,7 @@ export default function SearchPage() {
                       <div className="shrink-0 w-20 h-28 bg-muted/50 rounded-sm overflow-hidden">
                         {movie.posterUrl ? (
                           <Image
+                            loader={cloudinaryLoader}
                             src={movie.posterUrl}
                             alt={movie.title}
                             width={80}
@@ -331,6 +333,7 @@ export default function SearchPage() {
                     <div className="shrink-0 w-20 h-20 bg-muted/50 rounded-full overflow-hidden">
                       {person.photoUrl ? (
                         <Image
+                          loader={cloudinaryLoader}
                           src={getPersonPhotoUrl(person.photoUrl, 'sm')!}
                           alt={getPersonName(person)}
                           width={80}

@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import Link from 'next/link';
 import { Play, X } from 'lucide-react';
 import { MOVIE_STAGES } from '@/lib/movies/movieConstants';
@@ -157,6 +158,7 @@ export function MovieHero({
         <PosterPlaceholder className="h-full w-full" />
       ) : (
         <Image
+          loader={cloudinaryLoader}
           src={posterUrl!}
           alt={`Poster de ${title}`}
           fill
@@ -272,6 +274,7 @@ export function MovieHero({
         {hasValidHeroImage ? (
           <>
             <Image
+              loader={cloudinaryLoader}
               src={heroBackgroundImage}
               alt=""
               fill

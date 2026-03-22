@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import { MovieListItem } from '@/lib/movies/movieListTypes';
 import {
   formatDuration,
@@ -52,6 +53,7 @@ export default function MovieCardDetailed({ movie }: MovieCardDetailedProps) {
       <div className="relative aspect-2/3 w-20 shrink-0 overflow-hidden rounded-xs md:w-24">
         {movie.posterUrl ? (
           <Image
+            loader={cloudinaryLoader}
             fill
             src={movie.posterUrl}
             alt={movie.title}

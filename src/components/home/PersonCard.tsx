@@ -1,6 +1,7 @@
 // src/components/home/PersonCard.tsx
 import Link from 'next/link';
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import { User } from 'lucide-react';
 import { PersonWithDeath } from '@/lib/obituarios/obituariosTypes';
 import { formatPersonName, calculateAge, formatDeathDate } from '@/lib/obituarios/obituariosUtils';
@@ -36,6 +37,7 @@ export default function PersonCard({ person }: PersonCardProps) {
       <div className="relative h-20 w-20 overflow-hidden rounded-full md:h-24 md:w-24">
         {photoUrl ? (
           <Image
+            loader={cloudinaryLoader}
             src={photoUrl}
             alt={personName}
             fill

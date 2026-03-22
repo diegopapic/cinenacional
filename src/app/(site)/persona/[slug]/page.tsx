@@ -3,6 +3,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { formatPartialDate, MONTHS } from '@/lib/shared/dateUtils'
@@ -621,6 +622,7 @@ export default async function PersonPage({ params }: PageProps) {
                 <div className="relative aspect-3/4 overflow-hidden rounded-xs shadow-xl shadow-black/40">
                   {photoUrlMd ? (
                     <Image
+                      loader={cloudinaryLoader}
                       src={photoUrlMd}
                       alt={fullName}
                       fill
@@ -746,6 +748,7 @@ export default async function PersonPage({ params }: PageProps) {
               <div className="relative aspect-3/4 overflow-hidden rounded-xs shadow-2xl shadow-black/50">
                 {photoUrlLg ? (
                   <Image
+                    loader={cloudinaryLoader}
                     src={photoUrlLg}
                     alt={fullName}
                     fill

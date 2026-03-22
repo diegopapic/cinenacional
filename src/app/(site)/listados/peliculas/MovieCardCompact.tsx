@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import { MovieListItem } from '@/lib/movies/movieListTypes';
 import { getDisplayYear } from '@/lib/movies/movieListUtils';
 
@@ -23,6 +24,7 @@ export default function MovieCardCompact({ movie }: MovieCardCompactProps) {
       <div className="relative aspect-2/3 w-full overflow-hidden rounded-xs">
         {movie.posterUrl ? (
           <Image
+            loader={cloudinaryLoader}
             fill
             src={movie.posterUrl}
             alt={movie.title}

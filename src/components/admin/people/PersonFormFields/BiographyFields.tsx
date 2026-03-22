@@ -1,6 +1,7 @@
 // src/components/admin/people/PersonFormFields/BiographyFields.tsx
 
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import { PersonFormData } from '@/lib/people/peopleTypes';
 import { Image as ImageIcon, FileText } from 'lucide-react';
 
@@ -63,6 +64,7 @@ export function BiographyFields({ formData, updateField }: BiographyFieldsProps)
           </label>
           <div className="relative w-32 h-48 rounded-lg overflow-hidden border border-gray-300">
             <Image
+              loader={cloudinaryLoader}
               src={formData.photoUrl}
               alt="Vista previa"
               fill

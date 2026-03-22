@@ -1,6 +1,7 @@
 // src/app/(site)/efemerides/[[...date]]/page.tsx — Server Component
 import Link from 'next/link'
 import Image from 'next/image'
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import { Metadata } from 'next'
 import { getEfemerides } from '@/lib/queries/efemerides'
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
@@ -178,6 +179,7 @@ export default async function EfemeridesPage({ params, searchParams }: PageProps
                     isPelicula ? (
                       <div className="relative h-16 w-11 overflow-hidden rounded-[2px] ring-1 ring-border/10 md:h-[72px] md:w-12">
                         <Image
+                          loader={cloudinaryLoader}
                           fill
                           className="object-cover"
                           sizes="48px"
@@ -188,6 +190,7 @@ export default async function EfemeridesPage({ params, searchParams }: PageProps
                     ) : (
                       <div className="relative h-14 w-14 overflow-hidden rounded-full md:h-16 md:w-16">
                         <Image
+                          loader={cloudinaryLoader}
                           fill
                           className="object-cover"
                           sizes="64px"

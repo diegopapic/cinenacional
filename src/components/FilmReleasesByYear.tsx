@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useCallback } from 'react'
 import { useScrollIntoView } from '@/hooks/useScrollIntoView'
 import Link from 'next/link'
 import Image from 'next/image'
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import { ChevronLeft, ChevronRight, CalendarClock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Pagination from '@/components/shared/Pagination'
@@ -324,6 +325,7 @@ function CompactCard({ film, showYear }: { film: ReleaseEntry; showYear: boolean
       <div className="relative aspect-2/3 w-full overflow-hidden rounded-xs">
         {film.posterSrc ? (
           <Image
+            loader={cloudinaryLoader}
             src={film.posterSrc}
             alt={film.title}
             fill

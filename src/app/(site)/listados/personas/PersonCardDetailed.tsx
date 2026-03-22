@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import { User } from 'lucide-react';
 import { PersonWithMovie } from '@/lib/people/personListTypes';
 import { formatPersonName, formatPartialDate } from '@/lib/people/personListUtils';
@@ -47,6 +48,7 @@ export default function PersonCardDetailed({ person }: PersonCardDetailedProps) 
       <Link href={`/persona/${person.slug}`} className="group relative h-28 w-20 shrink-0 overflow-hidden rounded-xs md:h-32 md:w-24">
         {photoUrl ? (
           <Image
+            loader={cloudinaryLoader}
             src={photoUrl}
             alt={personName}
             fill

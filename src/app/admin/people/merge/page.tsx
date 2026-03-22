@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { ArrowLeft, Merge, ArrowRight, CheckCircle2, AlertTriangle, Loader2, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { getCsrfHeaders } from '@/lib/csrf-client';
@@ -576,7 +577,7 @@ function SurvivorCard({
     >
       <div className="flex items-start gap-3">
         {person.photoUrl ? (
-          <Image src={person.photoUrl} alt={name} width={48} height={48} className="w-12 h-12 rounded-full object-cover" />
+          <Image loader={cloudinaryLoader} src={person.photoUrl} alt={name} width={48} height={48} className="w-12 h-12 rounded-full object-cover" />
         ) : (
           <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-lg font-medium">
             {(person.firstName?.[0] || person.lastName?.[0] || '?').toUpperCase()}
@@ -634,7 +635,7 @@ function FieldRow({
         <span className="text-sm font-medium text-gray-700 w-40 shrink-0">{label}</span>
         <span className="text-sm text-green-700">
           Se copiará de {absorbedLabel}: {field === 'photo' ? (
-            <Image src={displayAbsorbed} alt="" width={32} height={32} className="w-8 h-8 rounded-sm inline-block ml-1 object-cover" />
+            <Image loader={cloudinaryLoader} src={displayAbsorbed} alt="" width={32} height={32} className="w-8 h-8 rounded-sm inline-block ml-1 object-cover" />
           ) : (
             <span className="font-medium">{displayAbsorbed}</span>
           )}
@@ -653,7 +654,7 @@ function FieldRow({
   function renderValue(display: string, _side: string) {
     if (isPhoto) {
       return display ? (
-        <Image src={display} alt="" width={64} height={64} className="w-16 h-16 rounded-sm object-cover mt-1" />
+        <Image loader={cloudinaryLoader} src={display} alt="" width={64} height={64} className="w-16 h-16 rounded-sm object-cover mt-1" />
       ) : <span className="text-sm text-gray-400 block">Sin foto</span>;
     }
     if (isBiography) {

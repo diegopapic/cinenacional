@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import { useInterval } from '@/hooks/useInterval';
 import Link from 'next/link';
 
@@ -249,6 +250,7 @@ export default function HeroSection({ images }: HeroSectionProps) {
       {images.map((image, idx) => {
         const imgElement = (
           <Image
+            loader={cloudinaryLoader}
             src={getHeroImageUrl(image.cloudinaryPublicId)}
             alt={generateCaptionText(image)}
             fill
