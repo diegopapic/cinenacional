@@ -33,6 +33,25 @@ interface Stats {
 }
 
 type SortField = 'viewsWeek' | 'viewsMonth' | 'viewsYear' | 'viewsTotal' | 'title'
+
+function SortHeader({ field, label, sortField, onSort }: {
+  field: SortField
+  label: string
+  sortField: SortField
+  onSort: (field: SortField) => void
+}) {
+  return (
+    <th
+      className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+      onClick={() => onSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        <ArrowUpDown className={`w-4 h-4 ${sortField === field ? 'text-blue-600' : 'text-gray-400'}`} />
+      </div>
+    </th>
+  )
+}
 type SortOrder = 'asc' | 'desc'
 
 export default function StatsPage() {
@@ -69,18 +88,6 @@ export default function StatsPage() {
     const bVal = b[sortField] || 0
     return sortOrder === 'asc' ? aVal - bVal : bVal - aVal
   }) || []
-
-  const SortHeader = ({ field, label }: { field: SortField; label: string }) => (
-    <th
-      className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort(field)}
-    >
-      <div className="flex items-center gap-1">
-        {label}
-        <ArrowUpDown className={`w-4 h-4 ${sortField === field ? 'text-blue-600' : 'text-gray-400'}`} />
-      </div>
-    </th>
-  )
 
   const getPageTypeLabel = (pageType: string) => {
     const labels: Record<string, string> = {
@@ -189,11 +196,11 @@ export default function StatsPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                   #
                 </th>
-                <SortHeader field="title" label="Película" />
-                <SortHeader field="viewsWeek" label="7 días" />
-                <SortHeader field="viewsMonth" label="30 días" />
-                <SortHeader field="viewsYear" label="365 días" />
-                <SortHeader field="viewsTotal" label="Total" />
+                <SortHeader field="title" label="Película" sortField={sortField} onSort={handleSort} />
+                <SortHeader field="viewsWeek" label="7 días" sortField={sortField} onSort={handleSort} />
+                <SortHeader field="viewsMonth" label="30 días" sortField={sortField} onSort={handleSort} />
+                <SortHeader field="viewsYear" label="365 días" sortField={sortField} onSort={handleSort} />
+                <SortHeader field="viewsTotal" label="Total" sortField={sortField} onSort={handleSort} />
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
