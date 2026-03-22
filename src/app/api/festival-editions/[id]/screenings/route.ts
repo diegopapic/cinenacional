@@ -34,7 +34,7 @@ export const GET = apiHandler(async (request: NextRequest, { params }: RoutePara
   const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX)
   const limit = parseIntClamped(searchParams.get('limit'), 50, LIMITS.MIN, LIMITS.MAX)
 
-  const where: any = { editionId }
+  const where: Record<string, unknown> = { editionId }
 
   if (sectionId) {
     const parsedSectionId = parsePositiveInt(sectionId)
@@ -217,10 +217,10 @@ export const POST = apiHandler(async (request: NextRequest, { params }: RoutePar
   return NextResponse.json(screening, { status: 201 })
 }, 'crear proyección')
 
-async function bulkCreateScreenings(editionId: number, screeningsData: any[]) {
+async function bulkCreateScreenings(editionId: number, screeningsData: Record<string, unknown>[]) {
   try {
-    const results: any[] = []
-    const errors: any[] = []
+    const results: { id: number }[] = []
+    const errors: { data: Record<string, unknown>; error: string; fieldErrors?: Record<string, string[]> }[] = []
 
     for (const data of screeningsData) {
       const dataToValidate = { ...data, editionId }

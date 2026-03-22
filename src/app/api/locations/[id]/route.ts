@@ -138,7 +138,7 @@ export const PUT = apiHandler(async (
 
   let slug = currentLocation.slug
   if (currentLocation.name !== name) {
-    slug = await makeUniqueSlug(name, prisma.location as any, id)
+    slug = await makeUniqueSlug(name, prisma.location as unknown as Parameters<typeof makeUniqueSlug>[1], id)
   }
 
   const location = await prisma.location.update({

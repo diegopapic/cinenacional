@@ -28,7 +28,7 @@ export const { GET, POST } = createListAndCreateHandlers({
   search: { fields: ['name', 'description'] },
   pagination: { itemsKey: 'venues', defaultLimit: 20 },
   extraFilters: (params) => {
-    const filters: Record<string, any> = {}
+    const filters: Record<string, unknown> = {}
     const type = params.get('type')
     if (type) filters.type = type
     const isActive = params.get('isActive')

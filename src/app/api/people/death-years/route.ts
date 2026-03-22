@@ -10,7 +10,7 @@ const log = createLogger('api:people:death-years');
 export const dynamic = 'force-dynamic';
 
 // Cache en memoria como fallback
-const memoryCache = new Map<string, { data: any; timestamp: number }>();
+const memoryCache = new Map<string, { data: unknown; timestamp: number }>();
 const MEMORY_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 horas en ms
 
 /**

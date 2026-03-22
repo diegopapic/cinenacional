@@ -14,7 +14,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const limit = parseIntClamped(searchParams.get('limit'), LIMITS.DEFAULT, LIMITS.MIN, LIMITS.MAX)
   const skip = (page - 1) * limit
 
-  const where: any = {}
+  const where: Record<string, unknown> = {}
   if (movieId) {
     const parsedMovieId = parsePositiveInt(movieId)
     if (parsedMovieId) where.movieId = parsedMovieId
@@ -130,8 +130,8 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(image, { status: 201 })
-  } catch (error: any) {
-    if (error?.code === 'P2002') {
+  } catch (error) {
+    if ((error as { code?: string })?.code === 'P2002') {
       return NextResponse.json(
         { error: 'Ya existe una imagen con ese ID de Cloudinary' },
         { status: 409 }

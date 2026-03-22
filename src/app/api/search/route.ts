@@ -55,7 +55,16 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
     // Búsqueda de películas con normalización de acentos
     // Cada palabra del query debe aparecer en el título (en cualquier orden)
-    let movies: any[] = []
+    interface MovieSearchRow {
+      id: number
+      slug: string
+      title: string
+      year: number | null
+      releaseYear: number | null
+      posterUrl: string | null
+    }
+
+    let movies: MovieSearchRow[] = []
     try {
       if (searchTerms.length <= 1) {
         movies = await prisma.$queryRaw`
@@ -134,7 +143,18 @@ export const GET = apiHandler(async (request: NextRequest) => {
     }
 
     // Búsqueda de personas con normalización de acentos
-    let people: any[] = []
+    interface PersonSearchRow {
+      id: number
+      slug: string
+      first_name: string | null
+      last_name: string | null
+      real_name: string | null
+      photo_url: string | null
+      birth_year: number | null
+      death_year: number | null
+    }
+
+    let people: PersonSearchRow[] = []
     
     try {
       if (searchTerms.length === 1) {
@@ -247,7 +267,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     }
 
     // Formatear resultados
-    const formattedMovies = movies.map((movie: any) => ({
+    const formattedMovies = movies.map((movie: MovieSearchRow) => ({
       id: movie.id,
       slug: movie.slug,
       title: movie.title,

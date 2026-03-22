@@ -31,9 +31,21 @@ export const GET = apiHandler(async (request: NextRequest) => {
     try {
       // Búsqueda de películas con normalización
       // Multi-term: cada palabra del query debe aparecer en el título
-      let movies: any[]
+      interface FullMovieSearchRow {
+        id: number
+        slug: string
+        title: string
+        year: number | null
+        releaseYear: number | null
+        releaseMonth: number | null
+        releaseDay: number | null
+        posterUrl: string | null
+        synopsis: string | null
+      }
+
+      let movies: FullMovieSearchRow[]
       if (searchTerms.length <= 1) {
-        movies = await prisma.$queryRaw<any[]>`
+        movies = await prisma.$queryRaw<FullMovieSearchRow[]>`
           SELECT
             id,
             slug,
@@ -57,7 +69,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           Prisma.sql`unaccent(LOWER(title)) LIKE unaccent(${`%${t}%`})`
         )
         const whereClause = Prisma.join(termConditions, ' AND ')
-        movies = await prisma.$queryRaw<any[]>`
+        movies = await prisma.$queryRaw<FullMovieSearchRow[]>`
           SELECT
             id,
             slug,
@@ -82,7 +94,24 @@ export const GET = apiHandler(async (request: NextRequest) => {
       }
 
       // Búsqueda de personas con normalización
-      const people = await prisma.$queryRaw<any[]>`
+      interface FullPersonSearchRow {
+        id: number
+        slug: string
+        firstName: string | null
+        lastName: string | null
+        photoUrl: string | null
+        birthYear: number | null
+        birthMonth: number | null
+        birthDay: number | null
+        deathYear: number | null
+        deathMonth: number | null
+        deathDay: number | null
+        biography: string | null
+        cast_roles: number
+        crew_roles: number
+      }
+
+      const people = await prisma.$queryRaw<FullPersonSearchRow[]>`
         SELECT 
           p.id,
           p.slug,

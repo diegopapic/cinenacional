@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit
 
     // Build extra filters (reutilizado en ambos paths)
-    function buildExtraWhere(where: any) {
+    function buildExtraWhere(where: Record<string, unknown>) {
       if (department && Object.values(Department).includes(department)) {
         where.department = department
       }
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Búsqueda normal sin unaccent
-    const where: any = {}
+    const where: Record<string, unknown> = {}
 
     if (search) {
       where.OR = [
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Sort por campo directo — podemos usar orderBy + skip/take de Prisma
-    let orderBy: any
+    let orderBy: Record<string, string> | Record<string, string>[]
     if (sortBy === 'name') {
       orderBy = { name: sortOrder }
     } else if (sortBy === 'department') {
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const data = roleSchema.parse(body)
 
-    const slug = await makeUniqueSlug(data.name, prisma.role as any)
+    const slug = await makeUniqueSlug(data.name, prisma.role as unknown as Parameters<typeof makeUniqueSlug>[1])
 
     const role = await prisma.role.create({
       data: {
@@ -186,7 +186,17 @@ interface RespondOpts {
   exportFormat: string | null
 }
 
-function respondWithRoles(roles: any[], opts: RespondOpts) {
+interface RoleWithCount {
+  id: number
+  name: string
+  department: string
+  description: string | null
+  isMainRole: boolean
+  isActive: boolean
+  _count: { crewRoles: number }
+}
+
+function respondWithRoles(roles: RoleWithCount[], opts: RespondOpts) {
   // Sort in memory
   if (opts.sortBy === 'usage') {
     roles.sort((a, b) => {
@@ -219,7 +229,7 @@ function respondWithRoles(roles: any[], opts: RespondOpts) {
   })
 }
 
-function buildCsvResponse(roles: any[]) {
+function buildCsvResponse(roles: RoleWithCount[]) {
   const csv = [
     'ID,Nombre,Departamento,Descripción,Principal,Activo,Usos',
     ...roles.map(role =>

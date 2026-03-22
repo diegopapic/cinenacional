@@ -13,7 +13,7 @@ export const GET = apiHandler(async (_request: NextRequest) => {
   if (auth.error) return auth.error
 
   // Obtener métricas de Prisma
-  const metrics = (prisma as any).getMetrics()
+  const metrics = (prisma as unknown as { getMetrics: () => unknown }).getMetrics()
 
   // Intentar obtener métricas de PostgreSQL
   let pgStats = null
@@ -32,7 +32,7 @@ export const GET = apiHandler(async (_request: NextRequest) => {
         tup_deleted as rows_deleted
       FROM pg_stat_database
       WHERE datname = current_database()
-    ` as any[]
+    ` as { active_connections: number; committed_transactions: number; rolled_back_transactions: number; blocks_read: number; blocks_hit: number; rows_returned: number; rows_fetched: number; rows_inserted: number; rows_updated: number; rows_deleted: number }[]
 
     pgStats = result[0]
   } catch (error) {
@@ -53,7 +53,7 @@ export const GET = apiHandler(async (_request: NextRequest) => {
         count(*) as total
       FROM pg_stat_activity
       WHERE datname = current_database()
-    ` as any[]
+    ` as { active: number; idle: number; idle_in_transaction: number; idle_aborted: number; fastpath: number; disabled: number; total: number }[]
 
     poolStats = poolResult[0]
   } catch (error) {
@@ -75,7 +75,7 @@ export const GET = apiHandler(async (_request: NextRequest) => {
       WHERE query NOT LIKE '%pg_stat%'
       ORDER BY mean_exec_time DESC
       LIMIT 10
-    ` as any[]
+    ` as { calls: number; total_exec_time: number; mean_exec_time: number; max_exec_time: number; min_exec_time: number; query: string }[]
 
     queryStats = queryResult
   } catch {

@@ -30,7 +30,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const search = searchParams.get('search')
   const includeChildren = searchParams.get('includeChildren') === 'true'
 
-  const where: any = {}
+  const where: Record<string, unknown> = {}
 
   if (parentId === 'null') {
     where.parentId = null
@@ -99,7 +99,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   // Generar slug único
-  const slug = await makeUniqueSlug(name, prisma.location as any)
+  const slug = await makeUniqueSlug(name, prisma.location as unknown as Parameters<typeof makeUniqueSlug>[1])
 
   const location = await prisma.location.create({
     data: {

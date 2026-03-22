@@ -24,7 +24,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX)
   const limit = parseIntClamped(searchParams.get('limit'), LIMITS.DEFAULT, LIMITS.MIN, LIMITS.MAX)
 
-  const where: any = {}
+  const where: Record<string, unknown> = {}
 
   if (search) {
     where.OR = [

@@ -28,7 +28,7 @@ export const GET = apiHandler(async (request: NextRequest, { params }: RoutePara
   const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX)
   const limit = parseIntClamped(searchParams.get('limit'), LIMITS.DEFAULT, LIMITS.MIN, LIMITS.MAX)
 
-  const where: any = { festivalId }
+  const where: Record<string, unknown> = { festivalId }
 
   if (year) {
     const parsedYear = parseIntClamped(year, 0, YEARS.MIN, YEARS.MAX)

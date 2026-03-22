@@ -58,30 +58,19 @@ También se tipó `src/lib/schemas.ts` (6 `z.array(z.any())` → schemas tipados
 
 ---
 
-## Fase D: Otras API routes (25 any)
+## Fase D: Otras API routes ✅ COMPLETADA
 
-### D1. Búsqueda
-
-- [ ] `src/app/api/search/route.ts` (3): tipar resultados de búsqueda
-- [ ] `src/app/api/search/full/route.ts` (4): tipar resultados de búsqueda full
-
-### D2. Festivales y locations
-
-- [ ] `src/app/api/festival-editions/[id]/screenings/route.ts` (4): tipar payload de screenings
-- [ ] `src/app/api/festivals/route.ts` (1): tipar creación de festival
-- [ ] `src/app/api/festivals/[id]/editions/route.ts` (1): tipar creación de edición
-- [ ] `src/app/api/locations/route.ts` (2): tipar creación de location
-- [ ] `src/app/api/locations/[id]/route.ts` (1): tipar update de location
-- [ ] `src/app/api/locations/check-slug/route.ts` (1): tipar query params
-
-### D3. Otros
-
-- [ ] `src/app/api/roles/route.ts` (6): tipar CRUD de roles
-- [ ] `src/app/api/images/route.ts` (2): tipar upload de imágenes
-- [ ] `src/app/api/analytics/pageview/route.ts` (2): tipar payload de analytics
-- [ ] `src/app/api/metrics/database/route.ts` (4): tipar métricas de DB
-- [ ] `src/app/api/people/death-years/route.ts` (1): tipar respuesta
-- [ ] `src/app/api/screening-venues/route.ts` (1): tipar creación de venue
+- [x] `search/route.ts`: `MovieSearchRow`, `PersonSearchRow` interfaces para raw SQL
+- [x] `search/full/route.ts`: `FullMovieSearchRow`, `FullPersonSearchRow` interfaces
+- [x] `festival-editions/[id]/screenings/route.ts`: typed screeningsData y results/errors
+- [x] `festivals/route.ts`, `festivals/[id]/editions/route.ts`: typed body
+- [x] `locations/route.ts`, `locations/[id]/route.ts`, `locations/check-slug/route.ts`: typed where/body, makeUniqueSlug cast
+- [x] `roles/route.ts`: `RoleWithCount` interface, typed orderBy y callbacks
+- [x] `images/route.ts`: typed error handling
+- [x] `analytics/pageview/route.ts`: `Record<string, unknown>` para extraData
+- [x] `metrics/database/route.ts`: interfaces para pg_stat queries
+- [x] `people/death-years/route.ts`: typed memory cache
+- [x] `screening-venues/route.ts`: typed extraFilters
 
 ---
 

@@ -28,7 +28,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   // Buscar un slug disponible
   while (!available) {
-    const where: any = { slug }
+    const where: Record<string, unknown> = { slug }
     if (excludeId) {
       where.NOT = { id: parseInt(excludeId) }
     }

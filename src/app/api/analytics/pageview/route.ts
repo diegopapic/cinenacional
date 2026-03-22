@@ -22,7 +22,7 @@ interface PageViewRequest {
   pageType: PageType;
   movieId?: number;
   personId?: number;
-  extraData?: Record<string, any>;
+  extraData?: Record<string, unknown>;
   sessionId?: string;
 }
 
@@ -125,7 +125,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   dateFrom.setDate(dateFrom.getDate() - days);
 
   // Construir where clause
-  const where: any = {
+  const where: Record<string, unknown> = {
     createdAt: { gte: dateFrom }
   };
 
