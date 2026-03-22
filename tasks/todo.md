@@ -149,12 +149,12 @@ Migrado de Tailwind CSS 3.4.13 → 4.2.2 via `npx @tailwindcss/upgrade`.
 - [x] **View Transitions**: No disponible en React 19.2 stable (`unstable_ViewTransition` no exportado). Pendiente para cuando se estabilice.
 - [x] **Activity**: No disponible en React 19.2 stable (`unstable_Activity` no exportado). Pendiente para cuando se estabilice.
 
-### 6c. Explorar nuevas APIs de Next.js 16
+### 6c. Explorar nuevas APIs de Next.js 16 ✅ (evaluado, sin cambios de código)
 
-- [ ] **`updateTag`**: Evaluar para mutaciones del admin (revalidación inmediata post-edit).
-- [ ] **`refresh()`**: Evaluar para Server Actions.
-- [ ] **`cacheLife` / `cacheTag`**: Evaluar si nuestras páginas con `revalidate` se benefician.
-- [ ] **`cacheComponents`**: Evaluar PPR para páginas mixtas (shell estático + datos dinámicos).
+- [x] **`updateTag`**: Disponible pero no justificado ahora. El pattern actual `revalidateTag`/`revalidatePath` en API routes del admin funciona bien. `updateTag` sería útil si necesitáramos revalidación parcial sin purga total.
+- [x] **`refresh()`**: No aplica — no usamos Server Actions. El admin usa API routes + React Query.
+- [x] **`cacheLife` / `cacheTag`**: Disponibles. Podrían reemplazar `export const revalidate` por granularidad a nivel de componente/fetch. No urgente — el ISR actual (5min home, 1h fichas, 24h efemérides) funciona bien.
+- [x] **PPR (`cacheComponents`)**: Requiere opt-in experimental. Útil para páginas con shell estático + datos dinámicos (home, fichas). Evaluar cuando PPR sea stable.
 
 ### 6d. Migrar `<img>` a `next/image` con Cloudinary loader
 
