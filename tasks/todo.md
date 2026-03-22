@@ -33,7 +33,7 @@ Reducidos de 558 → 433 errores.
 
 Reducidos de 433 → 399 errores.
 
-- [x] **`@next/next/no-img-element`** (29 → 0): Regla desactivada globalmente — todas las imágenes son URLs de Cloudinary con transformaciones dinámicas. Migración a `next/image` + loader planificada en Fase 5d.
+- [x] **`@next/next/no-img-element`** (29 → 0): Regla desactivada globalmente — todas las imágenes son URLs de Cloudinary con transformaciones dinámicas. Migración a `next/image` + loader planificada en Fase 6d.
 - [x] **`jsx-a11y/alt-text`** (1 → 0): Renombrado import `Image` → `ImageIcon` (lucide) para evitar falso positivo.
 - [x] **`jsx-a11y/role-has-required-aria-props`** (1 → 0): Agregado `aria-controls` al combobox en Header.
 - [x] **`react/jsx-no-comment-textnodes`** (1 → 0): Eliminados `// ✅` inline en JSX.
@@ -45,7 +45,7 @@ Reducidos de 433 → 399 errores.
 Estos NO se arreglan ahora. Son deuda técnica que se ataca incrementalmente post-migración. Razones:
 - La migración puede cambiar tipos (Auth.js v5, React 19 types) → trabajo doble si se tipifican ahora.
 - 399 `any` requieren entender el tipo correcto caso por caso.
-- Se pueden ir resolviendo archivo por archivo después de la Fase 5.
+- Se pueden ir resolviendo archivo por archivo después de la migración.
 
 ### 0.5d. Verificación ✅
 
@@ -116,31 +116,64 @@ Tailwind CSS 4 no es requerido por Next.js 16, pero trae mejoras de build perfor
 
 ---
 
-## Fase 5: Limpieza y optimización post-migración
+## Fase 5: Corregir warnings del React compiler lint
 
-### 5a. Activar React Compiler (opcional)
+25 warnings nuevos de las reglas `react-hooks/refs`, `react-hooks/static-components`, `react-hooks/immutability` y `react-hooks/incompatible-library` introducidas por `eslint-config-next@16`. Son patterns que el React compiler no puede optimizar correctamente y que pueden causar bugs si se activa `reactCompiler: true`.
 
-Next.js 16 tiene soporte estable para React Compiler. Memoización automática.
+### 5a. `react-hooks/refs` (18 warnings)
+
+Acceso a `.current` de refs durante render — debe hacerse solo en event handlers o effects.
+
+- [ ] `src/components/admin/movies/RoleSelector.tsx` (2): refs leídos durante render
+- [ ] `src/components/admin/people/PersonForm.tsx` (4): refs leídos durante render
+- [ ] `src/components/admin/people/PersonFormFields/BasicInfoFields.tsx` (4): refs leídos durante render
+- [ ] `src/contexts/MovieModalContext.tsx` (8): refs leídos durante render en el context provider
+
+### 5b. `react-hooks/static-components` (5 warnings)
+
+Componentes creados dentro de render — se recrean en cada render, reseteando su estado.
+
+- [ ] `src/app/admin/stats/page.tsx` (5): componentes definidos inline durante render → extraer a componentes top-level
+
+### 5c. `react-hooks/immutability` (1 warning)
+
+Mutación de variable externa al componente durante render.
+
+- [ ] `src/components/movies/ImageGallery.tsx` (1): variable mutada fuera del scope del componente
+
+### 5d. `react-hooks/incompatible-library` (1 warning)
+
+Uso de API de librería incompatible con memoización del compiler.
+
+- [ ] `src/components/admin/roles/RoleModal.tsx` (1): API que retorna funciones no memoizables → evaluar alternativa o suprimir
+
+---
+
+## Fase 6: Limpieza y optimización post-migración
+
+### 6a. Activar React Compiler
+
+Next.js 16 tiene soporte estable para React Compiler. Memoización automática. **Requisito: completar Fase 5 primero.**
 
 - [ ] `npm install -D babel-plugin-react-compiler`
 - [ ] Agregar `reactCompiler: true` en `next.config.js`.
 - [ ] Testear performance — puede aumentar tiempos de build.
 - [ ] Si hay problemas, deshabilitar y evaluar caso por caso.
 
-### 5b. Explorar nuevas APIs de React 19.2
+### 6b. Explorar nuevas APIs de React 19.2
 
 - [ ] **`useEffectEvent`**: Evaluar si alguno de nuestros hooks de infraestructura se beneficia (especialmente `useInterval`, `useWindowEvent`).
 - [ ] **View Transitions**: Evaluar para transiciones de navegación en el sitio público.
 - [ ] **Activity**: Evaluar para el admin (mantener estado de tabs/modals en background).
 
-### 5c. Explorar nuevas APIs de Next.js 16
+### 6c. Explorar nuevas APIs de Next.js 16
 
 - [ ] **`updateTag`**: Evaluar para mutaciones del admin (revalidación inmediata post-edit).
 - [ ] **`refresh()`**: Evaluar para Server Actions.
 - [ ] **`cacheLife` / `cacheTag`**: Evaluar si nuestras páginas con `revalidate` se benefician.
 - [ ] **`cacheComponents`**: Evaluar PPR para páginas mixtas (shell estático + datos dinámicos).
 
-### 5d. Migrar `<img>` a `next/image` con Cloudinary loader
+### 6d. Migrar `<img>` a `next/image` con Cloudinary loader
 
 Actualmente todas las imágenes usan `<img>` con URLs de Cloudinary que ya incluyen transformaciones (`f_auto`, `q_auto`, `w_XXX`). Migrar a `next/image` aporta lazy loading automático, `srcset` responsivo, preload de LCP images con `priority`, y formato automático (avif/webp).
 
@@ -159,7 +192,7 @@ Hacer post-migración porque: (1) la config de `images` cambia en Next.js 16, me
 - [ ] Verificar Lighthouse LCP en páginas clave.
 - [ ] Re-habilitar regla `@next/next/no-img-element` en `eslint.config.mjs`.
 
-### 5e. Verificación final
+### 6e. Verificación final
 
 - [ ] `npm run build` sin errores ni warnings nuevos.
 - [ ] `npm run lint` limpio.
@@ -209,7 +242,9 @@ Fase 3 (Next.js 15 → 16) ✅ ← React 19 + Auth.js v5 ya están listos
   ↓
 Fase 4 (Tailwind 3 → 4) ← opcional, independiente
   ↓
-Fase 5 (optimización + migrar <img> a next/image) ← post-migración
+Fase 5 (React compiler lint warnings) ← prerequisito para React Compiler
+  ↓
+Fase 6 (React Compiler + optimización + migrar <img> a next/image) ← post-migración
 ```
 
 Cada fase es deployable independientemente. La Fase 1 se puede deployar y validar en producción antes de continuar con las demás.
