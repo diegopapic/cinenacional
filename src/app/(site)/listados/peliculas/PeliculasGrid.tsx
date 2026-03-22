@@ -14,19 +14,19 @@ interface PeliculasGridProps {
 
 const skeletonCompact = (
   <>
-    <div className="aspect-[2/3] rounded-sm bg-muted/30" />
-    <div className="mt-2 h-3 rounded bg-muted/20" />
-    <div className="mt-1 h-2.5 w-2/3 rounded bg-muted/15" />
+    <div className="aspect-2/3 rounded-xs bg-muted/30" />
+    <div className="mt-2 h-3 rounded-sm bg-muted/20" />
+    <div className="mt-1 h-2.5 w-2/3 rounded-sm bg-muted/15" />
   </>
 )
 
 const skeletonDetailed = (
   <div className="flex gap-4 py-4 md:gap-5">
-    <div className="aspect-[2/3] w-20 shrink-0 rounded-sm bg-muted/30 md:w-24" />
+    <div className="aspect-2/3 w-20 shrink-0 rounded-xs bg-muted/30 md:w-24" />
     <div className="flex flex-1 flex-col justify-center gap-2">
-      <div className="h-4 w-3/4 rounded bg-muted/20" />
-      <div className="h-3 w-1/2 rounded bg-muted/15" />
-      <div className="h-3 w-2/3 rounded bg-muted/15" />
+      <div className="h-4 w-3/4 rounded-sm bg-muted/20" />
+      <div className="h-3 w-1/2 rounded-sm bg-muted/15" />
+      <div className="h-3 w-2/3 rounded-sm bg-muted/15" />
     </div>
   </div>
 )

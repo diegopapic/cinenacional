@@ -44,7 +44,7 @@ export default function PersonCardDetailed({ person }: PersonCardDetailedProps) 
   return (
     <div className="flex gap-4 border-b border-border/10 py-4 last:border-b-0 md:gap-5">
       {/* Portrait rectangular */}
-      <Link href={`/persona/${person.slug}`} className="group relative h-28 w-20 shrink-0 overflow-hidden rounded-sm md:h-32 md:w-24">
+      <Link href={`/persona/${person.slug}`} className="group relative h-28 w-20 shrink-0 overflow-hidden rounded-xs md:h-32 md:w-24">
         {photoUrl ? (
           <Image
             src={photoUrl}

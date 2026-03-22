@@ -123,7 +123,7 @@ export default function Header() {
                       }
                     }}
                     placeholder="Películas, personas..."
-                    className="h-9 w-64 border-b border-accent/40 bg-transparent pl-9 pr-8 font-sans text-sm text-nav-foreground placeholder:text-nav-foreground/30 focus:outline-none lg:w-72"
+                    className="h-9 w-64 border-b border-accent/40 bg-transparent pl-9 pr-8 font-sans text-sm text-nav-foreground placeholder:text-nav-foreground/30 focus:outline-hidden lg:w-72"
                     aria-label="Buscar películas y personas"
                     aria-expanded={query.length >= 2}
                     aria-controls="desktop-search-results"
@@ -210,7 +210,7 @@ export default function Header() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Películas, personas..."
-                  className="h-10 w-full border-b border-nav-foreground/10 bg-transparent pl-10 pr-3 font-sans text-base text-nav-foreground placeholder:text-nav-foreground/30 focus:border-accent/40 focus:outline-none"
+                  className="h-10 w-full border-b border-nav-foreground/10 bg-transparent pl-10 pr-3 font-sans text-base text-nav-foreground placeholder:text-nav-foreground/30 focus:border-accent/40 focus:outline-hidden"
                   aria-label="Buscar películas y personas"
                   autoComplete="off"
                 />
@@ -239,7 +239,7 @@ export default function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="group block border-b border-nav-foreground/[0.06] py-4 last:border-b-0"
+                  className="group block border-b border-nav-foreground/6 py-4 last:border-b-0"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <span className="flex items-center justify-center gap-4">

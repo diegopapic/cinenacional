@@ -31,7 +31,7 @@ export default function FilterSelect({
         <select
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
-          className="h-8 w-full cursor-pointer appearance-none border border-border/30 bg-transparent px-2 pr-7 text-[12px] text-muted-foreground/60 outline-none transition-colors focus:border-accent/40 [&>option]:bg-[#0c0d0f] [&>option]:text-[#9a9da2]"
+          className="h-8 w-full cursor-pointer appearance-none border border-border/30 bg-transparent px-2 pr-7 text-[12px] text-muted-foreground/60 outline-hidden transition-colors focus:border-accent/40 [&>option]:bg-[#0c0d0f] [&>option]:text-[#9a9da2]"
         >
           <option value="">{allLabel}</option>
           {options

@@ -48,7 +48,7 @@ export default function PersonCard({ person }: PersonCardProps) {
           </div>
         )}
         {/* Overlay borde interior */}
-        <div className="pointer-events-none absolute inset-0 rounded-full border border-foreground/[0.04]" />
+        <div className="pointer-events-none absolute inset-0 rounded-full border border-foreground/4" />
       </div>
 
       {/* Nombre */}

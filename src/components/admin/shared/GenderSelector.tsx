@@ -58,7 +58,7 @@ export default function GenderSelector({
               type="checkbox"
               checked={saveName}
               onChange={(e) => setSaveName(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500"
             />
             <span className="text-xs text-gray-600">
               Guardar &ldquo;{firstName}&rdquo; para futuras asignaciones automáticas de género

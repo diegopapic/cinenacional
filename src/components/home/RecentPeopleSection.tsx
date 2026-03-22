@@ -85,7 +85,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
                       </div>
                     )}
                     {/* Borde sutil overlay */}
-                    <div className="absolute inset-0 rounded-full border border-foreground/[0.04]" />
+                    <div className="absolute inset-0 rounded-full border border-foreground/4" />
                   </div>
                   <p className="mt-2 w-20 text-center text-[11px] font-medium leading-tight text-foreground/80 group-hover:text-accent">
                     {formatPersonName(persona)}
@@ -125,7 +125,7 @@ export default function RecentPeopleSection({ people, loading }: RecentPeopleSec
                       </div>
                     )}
                     {/* Borde sutil overlay */}
-                    <div className="absolute inset-0 rounded-full border border-foreground/[0.04]" />
+                    <div className="absolute inset-0 rounded-full border border-foreground/4" />
                   </div>
                   <p className="mt-2.5 text-center text-[12px] font-medium leading-tight text-foreground/80 transition-colors group-hover:text-accent">
                     {formatPersonName(persona)}

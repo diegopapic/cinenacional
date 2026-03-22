@@ -269,7 +269,7 @@ export default function SearchPage() {
                       href={`/pelicula/${movie.slug}`}
                       className="bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors p-4 flex gap-4 group"
                     >
-                      <div className="flex-shrink-0 w-20 h-28 bg-muted/50 rounded overflow-hidden">
+                      <div className="shrink-0 w-20 h-28 bg-muted/50 rounded-sm overflow-hidden">
                         {movie.posterUrl ? (
                           <Image
                             src={movie.posterUrl}
@@ -328,7 +328,7 @@ export default function SearchPage() {
                     href={`/persona/${person.slug}`}
                     className="bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors p-4 flex gap-4 group"
                   >
-                    <div className="flex-shrink-0 w-20 h-20 bg-muted/50 rounded-full overflow-hidden">
+                    <div className="shrink-0 w-20 h-20 bg-muted/50 rounded-full overflow-hidden">
                       {person.photoUrl ? (
                         <Image
                           src={getPersonPhotoUrl(person.photoUrl, 'sm')!}

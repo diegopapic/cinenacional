@@ -69,7 +69,7 @@ export default function EstrenosYearBar({
     };
 
     return (
-        <div className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm sticky top-0 z-40">
+        <div className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-xs sticky top-0 z-40">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-center gap-2 py-2">
                     {/* Flecha izquierda - Década anterior */}
@@ -77,7 +77,7 @@ export default function EstrenosYearBar({
                         onClick={handlePreviousDecade}
                         disabled={!hasPreviousDecade}
                         className={`
-                            flex-shrink-0 p-2 rounded-lg transition-all
+                            shrink-0 p-2 rounded-lg transition-all
                             ${hasPreviousDecade
                                 ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'
                                 : 'bg-gray-800/50 text-gray-600 cursor-not-allowed'
@@ -99,7 +99,7 @@ export default function EstrenosYearBar({
                             id="decade-button"
                             onClick={() => onYearChange(null as any)}
                             className={`
-                                flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-all
+                                shrink-0 px-4 py-2 rounded-lg font-medium transition-all
                                 ${selectedYear === null
                                     ? 'bg-orange-600 text-white shadow-lg scale-105' 
                                     : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'
@@ -120,7 +120,7 @@ export default function EstrenosYearBar({
                                     onClick={() => onYearChange(year)}
                                     disabled={isFuture}
                                     className={`
-                                        flex-shrink-0 px-4 py-2 rounded-lg font-medium transition-all
+                                        shrink-0 px-4 py-2 rounded-lg font-medium transition-all
                                         ${isSelected
                                             ? 'bg-orange-600 text-white shadow-lg scale-105'
                                             : isFuture
@@ -140,7 +140,7 @@ export default function EstrenosYearBar({
                         onClick={handleNextDecade}
                         disabled={!hasNextDecade}
                         className={`
-                            flex-shrink-0 p-2 rounded-lg transition-all
+                            shrink-0 p-2 rounded-lg transition-all
                             ${hasNextDecade
                                 ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'
                                 : 'bg-gray-800/50 text-gray-600 cursor-not-allowed'

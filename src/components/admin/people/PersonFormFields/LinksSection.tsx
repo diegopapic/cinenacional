@@ -128,7 +128,7 @@ export function LinksSection({
                       type="checkbox"
                       checked={link.isVerified}
                       onChange={(e) => onUpdateLink(index, { isVerified: e.target.checked })}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-sm"
                     />
                     <span className="ml-2 text-sm text-gray-700">Verificado</span>
                   </label>
@@ -138,7 +138,7 @@ export function LinksSection({
                       type="checkbox"
                       checked={link.isActive}
                       onChange={(e) => onUpdateLink(index, { isActive: e.target.checked })}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-sm"
                     />
                     <span className="ml-2 text-sm text-gray-700">Activo</span>
                   </label>

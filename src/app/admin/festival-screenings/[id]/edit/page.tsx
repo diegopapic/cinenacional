@@ -109,7 +109,7 @@ export default async function EditScreeningPage({ params }: PageProps) {
         </div>
       </div>
 
-      <div className="bg-white shadow rounded-lg p-6">
+      <div className="bg-white shadow-sm rounded-lg p-6">
         <FestivalScreeningForm
           editionId={screening.editionId}
           sections={screening.edition.sections}

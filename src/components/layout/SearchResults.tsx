@@ -56,8 +56,8 @@ export default function SearchResults({
 
   const containerClass =
     variant === 'desktop'
-      ? 'absolute right-0 top-full mt-1 w-80 overflow-hidden border border-[oklch(0.28_0.005_250_/_0.6)] bg-[oklch(0.19_0.005_250)] shadow-xl shadow-black/30 lg:w-96'
-      : 'overflow-hidden border-t border-[oklch(0.28_0.005_250_/_0.2)] bg-[oklch(0.19_0.005_250)]'
+      ? 'absolute right-0 top-full mt-1 w-80 overflow-hidden border border-[oklch(0.28_0.005_250/0.6)] bg-[oklch(0.19_0.005_250)] shadow-xl shadow-black/30 lg:w-96'
+      : 'overflow-hidden border-t border-[oklch(0.28_0.005_250/0.2)] bg-[oklch(0.19_0.005_250)]'
 
   // Loading state
   if (loading) {
@@ -104,7 +104,7 @@ export default function SearchResults({
                 <Link
                   key={movie.id}
                   href={`/pelicula/${movie.slug}`}
-                  className="group flex items-center gap-3 px-4 py-2 transition-colors hover:bg-nav-foreground/[0.06]"
+                  className="group flex items-center gap-3 px-4 py-2 transition-colors hover:bg-nav-foreground/6"
                   onClick={onSelect}
                 >
                   {/* Poster thumbnail */}
@@ -154,7 +154,7 @@ export default function SearchResults({
                 <Link
                   key={person.id}
                   href={`/persona/${person.slug}`}
-                  className="group flex items-center gap-3 px-4 py-2 transition-colors hover:bg-nav-foreground/[0.06]"
+                  className="group flex items-center gap-3 px-4 py-2 transition-colors hover:bg-nav-foreground/6"
                   onClick={onSelect}
                 >
                   {/* Portrait thumbnail */}
@@ -188,10 +188,10 @@ export default function SearchResults({
         )}
 
         {/* Footer link */}
-        <div className="border-t border-nav-foreground/[0.08]">
+        <div className="border-t border-nav-foreground/8">
           <Link
             href={`/buscar?q=${encodeURIComponent(query)}`}
-            className="group flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-nav-foreground/[0.04]"
+            className="group flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-nav-foreground/4"
             onClick={onSelect}
           >
             <span className="text-[12px] tracking-wide text-nav-foreground/40 transition-colors group-hover:text-nav-foreground/70">

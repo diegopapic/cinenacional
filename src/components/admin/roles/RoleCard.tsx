@@ -29,7 +29,7 @@ export function RoleCard({ role, onEdit, onDelete }: RoleCardProps) {
   const usageCount = role._count?.crewRoles || 0;
 
   return (
-    <div className="bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-lg border shadow-xs hover:shadow-md transition-shadow">
       {/* Header con departamento */}
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-2">
@@ -44,7 +44,7 @@ export function RoleCard({ role, onEdit, onDelete }: RoleCardProps) {
               <Star className="w-4 h-4 text-yellow-500 fill-current" />
             )}
             {!role.isActive && (
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-sm">
                 Inactivo
               </span>
             )}
@@ -72,7 +72,7 @@ export function RoleCard({ role, onEdit, onDelete }: RoleCardProps) {
           
           <div className="flex items-center gap-1">
             {role.isMainRole && (
-              <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-medium">
+              <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-sm font-medium">
                 Principal
               </span>
             )}

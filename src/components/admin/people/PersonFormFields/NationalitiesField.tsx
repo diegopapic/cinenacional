@@ -95,7 +95,7 @@ export default function NationalitiesField({
             }}
             onFocus={() => setShowDropdown(true)}
             placeholder="Buscar país para agregar..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:ring-indigo-500 focus:border-indigo-500"
           />
           
           {/* Dropdown de resultados */}
@@ -106,7 +106,7 @@ export default function NationalitiesField({
                   key={country.id}
                   type="button"
                   onClick={() => handleAddCountry(country)}
-                  className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                  className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-hidden"
                 >
                   {country.name}
                 </button>

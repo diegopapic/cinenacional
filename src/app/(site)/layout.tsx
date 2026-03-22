@@ -110,7 +110,7 @@ export default async function SiteLayout({
         
         <Header />
         {/* <AdBanner /> */}
-        <main className="flex-grow">
+        <main className="grow">
           {children}
         </main>
         <Footer />

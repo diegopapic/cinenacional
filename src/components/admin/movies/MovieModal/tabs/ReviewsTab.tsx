@@ -423,7 +423,7 @@ export default function ReviewsTab() {
                 id="hasPaywall"
                 checked={formData.hasPaywall}
                 onChange={(e) => setFormData(prev => ({ ...prev, hasPaywall: e.target.checked }))}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded-sm focus:ring-blue-500"
               />
               <label htmlFor="hasPaywall" className="text-sm text-gray-700">
                 Detrás de paywall
@@ -542,11 +542,11 @@ export default function ReviewsTab() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <button
                     type="button"
                     onClick={() => handleEdit(review)}
-                    className="p-1 text-blue-600 hover:text-blue-800 rounded"
+                    className="p-1 text-blue-600 hover:text-blue-800 rounded-sm"
                     title="Editar"
                   >
                     <Edit className="w-4 h-4" />
@@ -554,7 +554,7 @@ export default function ReviewsTab() {
                   <button
                     type="button"
                     onClick={() => handleDelete(review.id)}
-                    className="p-1 text-red-600 hover:text-red-800 rounded"
+                    className="p-1 text-red-600 hover:text-red-800 rounded-sm"
                     title="Eliminar"
                   >
                     <Trash2 className="w-4 h-4" />

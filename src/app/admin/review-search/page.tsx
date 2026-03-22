@@ -676,7 +676,7 @@ export default function ReviewSearchPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
+      <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <h1 className="text-2xl font-bold text-gray-900">Buscar Críticas</h1>
           <p className="mt-1 text-sm text-gray-500">
@@ -687,7 +687,7 @@ export default function ReviewSearchPage() {
 
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Search section */}
-        <div className="bg-white shadow rounded-lg p-6">
+        <div className="bg-white shadow-sm rounded-lg p-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Película
           </label>
@@ -749,7 +749,7 @@ export default function ReviewSearchPage() {
 
         {/* Streaming output */}
         {(searching || streamText) && (
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-white shadow-sm rounded-lg p-6">
             <h2 className="text-sm font-medium text-gray-700 mb-2">
               {searching ? 'Buscando críticas...' : 'Respuesta de Claude'}
             </h2>
@@ -769,7 +769,7 @@ export default function ReviewSearchPage() {
 
         {/* Results table */}
         {reviews.length > 0 && (
-          <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="bg-white shadow-sm rounded-lg overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <h2 className="text-lg font-medium text-gray-900">

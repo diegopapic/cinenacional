@@ -16,7 +16,7 @@ export function MoviePoster({ imageUrl, title }: MoviePosterProps) {
     <div className="flex justify-center">
       <div className="relative inline-block">
         {showPlaceholder ? (
-          <PosterPlaceholder className="h-[500px] w-auto aspect-[2/3] rounded-lg poster-shadow" />
+          <PosterPlaceholder className="h-[500px] w-auto aspect-2/3 rounded-lg poster-shadow" />
         ) : (
           <img
             src={imageUrl}

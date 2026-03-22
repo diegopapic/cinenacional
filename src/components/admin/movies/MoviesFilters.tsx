@@ -32,7 +32,7 @@ export default function MoviesFilters({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 mb-6">
+    <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Búsqueda */}
         <div className="relative">

@@ -74,7 +74,7 @@ function SortableCastMember({
         {/* Handle para arrastrar */}
         <button
           type="button"
-          className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 rounded touch-none flex-shrink-0"
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-200 rounded-sm touch-none shrink-0"
           {...attributes}
           {...listeners}
           title="Arrastrar para reordenar"
@@ -110,13 +110,13 @@ function SortableCastMember({
         </div>
 
         {/* Checkbox Es Actor */}
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           <input
             type="checkbox"
             id={`isActor-${index}`}
             checked={member.isActor !== false}
             onChange={(e) => updateCastMember(index, { isActor: e.target.checked })}
-            className="rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
+            className="rounded-sm border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
           />
           <label
             htmlFor={`isActor-${index}`}
@@ -128,13 +128,13 @@ function SortableCastMember({
         </div>
 
         {/* Checkbox Principal */}
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           <input
             type="checkbox"
             id={`principal-${index}`}
             checked={member.isPrincipal || false}
             onChange={(e) => updateCastMember(index, { isPrincipal: e.target.checked })}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+            className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
           />
           <label
             htmlFor={`principal-${index}`}
@@ -145,7 +145,7 @@ function SortableCastMember({
         </div>
 
         {/* Orden (read-only) */}
-        <div className="flex-shrink-0" style={{ width: '50px' }}>
+        <div className="shrink-0" style={{ width: '50px' }}>
           <input
             type="number"
             value={member.billingOrder !== undefined ? member.billingOrder : index + 1}
@@ -159,7 +159,7 @@ function SortableCastMember({
         <button
           type="button"
           onClick={() => removeCastMember(index)}
-          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded flex-shrink-0"
+          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-sm shrink-0"
           title="Eliminar"
         >
           <Trash2 className="h-4 w-4" />
@@ -256,13 +256,13 @@ export default function CastTab() {
         <>
           {/* Encabezados de columnas */}
           <div className="flex items-center gap-2 px-3 pb-2 text-xs font-medium text-gray-500 border-b border-gray-200">
-            <div className="w-7 flex-shrink-0"></div>
+            <div className="w-7 shrink-0"></div>
             <div className="flex-1 min-w-0" style={{ maxWidth: '250px' }}>Persona</div>
             <div className="flex-1 min-w-0" style={{ maxWidth: '180px' }}>Personaje</div>
-            <div className="flex-shrink-0 w-14 text-center" title="Marcar si interpreta un personaje">Actor</div>
-            <div className="flex-shrink-0 w-16 text-center">Principal</div>
-            <div className="flex-shrink-0 text-center" style={{ width: '50px' }}>Orden</div>
-            <div className="w-10 flex-shrink-0"></div>
+            <div className="shrink-0 w-14 text-center" title="Marcar si interpreta un personaje">Actor</div>
+            <div className="shrink-0 w-16 text-center">Principal</div>
+            <div className="shrink-0 text-center" style={{ width: '50px' }}>Orden</div>
+            <div className="w-10 shrink-0"></div>
           </div>
 
           <DndContext
@@ -292,7 +292,7 @@ export default function CastTab() {
           <button
             type="button"
             onClick={handleAddCastMember}
-            className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <Plus className="h-4 w-4 mr-1" />
             Agregar Persona

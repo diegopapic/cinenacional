@@ -1,6 +1,78 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@plugin '@tailwindcss/typography';
+
+@theme {
+  --color-cine-dark: #0f1419;
+  --color-cine-gray: #1a2332;
+  --color-cine-accent: #3b82f6;
+  --color-cine-gold: #60a5fa;
+  --color-background: oklch(0.14 0.005 260);
+  --color-foreground: oklch(0.95 0.005 260);
+  --color-muted-foreground: oklch(0.78 0.01 260);
+  --color-muted: oklch(0.25 0.005 260);
+  --color-border: oklch(0.4 0.005 260);
+
+  --color-nav: oklch(0.18 0.005 250);
+  --color-nav-foreground: oklch(0.88 0.005 80);
+
+  --color-stats: oklch(0.14 0.005 250);
+  --color-stats-foreground: oklch(0.55 0.01 80);
+
+  --color-accent: oklch(0.72 0.08 230);
+
+  --font-serif: var(--font-libre-caslon), Georgia, serif;
+  --font-sans: var(--font-libre-franklin), system-ui, sans-serif;
+
+  --animate-fade-in: fadeIn 0.5s ease-in-out;
+  --animate-shimmer: shimmer 2s infinite;
+  --animate-stats-scroll: stats-scroll 20s linear infinite;
+
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes stats-scroll {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
 
 :root {
   --font-sans: var(--font-libre-franklin), system-ui, sans-serif;

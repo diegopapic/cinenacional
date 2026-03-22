@@ -113,7 +113,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Contenido principal */}
       <div className="md:pl-64">
         {/* Header móvil */}
-        <div className="sticky top-0 z-10 md:hidden bg-white shadow">
+        <div className="sticky top-0 z-10 md:hidden bg-white shadow-sm">
           <div className="px-4 py-3">
             <button
               onClick={() => setSidebarOpen(true)}

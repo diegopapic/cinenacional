@@ -15,18 +15,18 @@ interface PersonasGridProps {
 const skeletonCompact = (
   <div className="flex flex-col items-center">
     <div className="h-20 w-20 rounded-full bg-muted/30 md:h-24 md:w-24" />
-    <div className="mx-auto mt-3 h-4 w-20 rounded bg-muted/30" />
-    <div className="mx-auto mt-1 h-3 w-14 rounded bg-muted/30" />
+    <div className="mx-auto mt-3 h-4 w-20 rounded-sm bg-muted/30" />
+    <div className="mx-auto mt-1 h-3 w-14 rounded-sm bg-muted/30" />
   </div>
 )
 
 const skeletonDetailed = (
   <div className="flex gap-4 py-4 md:gap-5">
-    <div className="h-28 w-20 shrink-0 rounded-sm bg-muted/30 md:h-32 md:w-24" />
+    <div className="h-28 w-20 shrink-0 rounded-xs bg-muted/30 md:h-32 md:w-24" />
     <div className="flex flex-1 flex-col justify-center gap-2">
-      <div className="h-5 w-3/4 rounded bg-muted/30" />
-      <div className="h-4 w-1/2 rounded bg-muted/30" />
-      <div className="h-4 w-2/3 rounded bg-muted/30" />
+      <div className="h-5 w-3/4 rounded-sm bg-muted/30" />
+      <div className="h-4 w-1/2 rounded-sm bg-muted/30" />
+      <div className="h-4 w-2/3 rounded-sm bg-muted/30" />
     </div>
   </div>
 )

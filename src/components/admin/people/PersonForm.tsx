@@ -133,7 +133,7 @@ export function PersonForm({
             )}
 
             {/* Información básica - SIN la foto */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-6">
                     Información Personal
                 </h3>
@@ -145,7 +145,7 @@ export function PersonForm({
             </div>
 
             {/* Nacionalidades */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-6">
                     Nacionalidades
                 </h3>
@@ -157,7 +157,7 @@ export function PersonForm({
             </div>
 
             {/* Ubicaciones */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-6">
                     Ubicaciones
                 </h3>
@@ -168,7 +168,7 @@ export function PersonForm({
             </div>
 
             {/* Biografía e información adicional */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-6">
                     Información Adicional
                 </h3>
@@ -179,7 +179,7 @@ export function PersonForm({
             </div>
 
             {/* Links */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-6">
                     Enlaces
                 </h3>
@@ -192,7 +192,7 @@ export function PersonForm({
             </div>
 
             {/* Trivia */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
                 <TriviaManager
                     onChange={(trivia) => updateField('trivia', trivia)}
                     initialTrivia={formData.trivia || []}
@@ -200,7 +200,7 @@ export function PersonForm({
             </div>
 
             {/* FOTO DE PERFIL - MOVIDA AL FINAL */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-6">
                     Foto de Perfil
                 </h3>
@@ -222,7 +222,7 @@ export function PersonForm({
             </div>
 
             {/* Botones de acción */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
                 <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-500">
                         {isDirty && (

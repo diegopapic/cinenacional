@@ -357,7 +357,7 @@ export default function MergePeoplePage() {
 
         {/* Step 1: Select */}
         {step === 'select' && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-lg font-semibold mb-6">Seleccioná las dos personas a mergear</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -394,7 +394,7 @@ export default function MergePeoplePage() {
 
             {personAId && personBId && personAId === personBId && (
               <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <AlertTriangle className="w-4 h-4 shrink-0" />
                 No se puede mergear una persona consigo misma
               </div>
             )}
@@ -420,7 +420,7 @@ export default function MergePeoplePage() {
         {step === 'preview' && preview && (
           <div className="space-y-6">
             {/* Survivor selection */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-lg font-semibold mb-4">Persona que sobrevive</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <SurvivorCard
@@ -447,7 +447,7 @@ export default function MergePeoplePage() {
 
             {/* Conflicts / Data resolution */}
             {survivorChoice && displayFields.length > 0 && (
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Resolución de datos</h2>
                 <div className="space-y-4">
                   {displayFields.map((df) => (
@@ -466,7 +466,7 @@ export default function MergePeoplePage() {
 
             {/* Stats */}
             {survivorChoice && computedStats && (
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white rounded-lg shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Relaciones a transferir</h2>
                 <StatsDisplay
                   stats={computedStats}
@@ -502,7 +502,7 @@ export default function MergePeoplePage() {
 
         {/* Step 3: Result */}
         {step === 'result' && mergeResult && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="text-center mb-6">
               <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
               <h2 className="text-2xl font-semibold text-gray-900">Merge completado</h2>
@@ -583,7 +583,7 @@ function SurvivorCard({
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+            <span className="text-xs font-medium px-1.5 py-0.5 rounded-sm bg-gray-100 text-gray-600">
               {label}
             </span>
             <span className="font-semibold text-gray-900 truncate">{name}</span>
@@ -630,10 +630,10 @@ function FieldRow({
     // Absorbed has value, survivor doesn't - will be auto-copied
     return (
       <div className="flex items-center gap-4 p-3 bg-green-50 rounded-lg">
-        <span className="text-sm font-medium text-gray-700 w-40 flex-shrink-0">{label}</span>
+        <span className="text-sm font-medium text-gray-700 w-40 shrink-0">{label}</span>
         <span className="text-sm text-green-700">
           Se copiará de {absorbedLabel}: {field === 'photo' ? (
-            <img src={displayAbsorbed} alt="" className="w-8 h-8 rounded inline-block ml-1 object-cover" />
+            <img src={displayAbsorbed} alt="" className="w-8 h-8 rounded-sm inline-block ml-1 object-cover" />
           ) : (
             <span className="font-medium">{displayAbsorbed}</span>
           )}
@@ -652,7 +652,7 @@ function FieldRow({
   function renderValue(display: string, _side: string) {
     if (isPhoto) {
       return display ? (
-        <img src={display} alt="" className="w-16 h-16 rounded object-cover mt-1" />
+        <img src={display} alt="" className="w-16 h-16 rounded-sm object-cover mt-1" />
       ) : <span className="text-sm text-gray-400 block">Sin foto</span>;
     }
     if (isBiography) {
@@ -749,7 +749,7 @@ function StatsDisplay({ stats, survivorName }: {
           <h3 className="text-sm font-medium text-gray-500 mb-2">Se eliminan (duplicados)</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {deduplicateRows.map((row) => (
-              <div key={row.label} className="flex justify-between items-center p-2 bg-yellow-50 rounded text-sm">
+              <div key={row.label} className="flex justify-between items-center p-2 bg-yellow-50 rounded-sm text-sm">
                 <span className="text-gray-600">{row.label}</span>
                 <span className="font-semibold text-yellow-600">{row.value}</span>
               </div>
@@ -764,7 +764,7 @@ function StatsDisplay({ stats, survivorName }: {
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {transferRows.map((row) => (
-              <div key={row.label} className="flex justify-between items-center p-2 bg-blue-50 rounded text-sm">
+              <div key={row.label} className="flex justify-between items-center p-2 bg-blue-50 rounded-sm text-sm">
                 <span className="text-gray-600">{row.label}</span>
                 <span className="font-semibold text-blue-600">{row.value}</span>
               </div>

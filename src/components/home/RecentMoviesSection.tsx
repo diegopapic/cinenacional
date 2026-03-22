@@ -57,8 +57,8 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
                   href={`/pelicula/${pelicula.slug}`}
                   className="group shrink-0"
                 >
-                  <div className="relative w-28 overflow-hidden rounded-sm shadow-lg shadow-black/30">
-                    <div className="aspect-[2/3]">
+                  <div className="relative w-28 overflow-hidden rounded-xs shadow-lg shadow-black/30">
+                    <div className="aspect-2/3">
                       {pelicula.posterUrl ? (
                         <img
                           src={pelicula.posterUrl}
@@ -78,7 +78,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
                       </div>
                     </div>
                     {/* Borde sutil overlay */}
-                    <div className="absolute inset-0 rounded-sm border border-foreground/[0.04]" />
+                    <div className="absolute inset-0 rounded-xs border border-foreground/4" />
                   </div>
                   <h3 className="mt-2 w-28 line-clamp-2 text-[12px] font-medium leading-snug text-foreground/80 group-hover:text-accent">
                     {pelicula.title}
@@ -95,8 +95,8 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
                   href={`/pelicula/${pelicula.slug}`}
                   className="group cursor-pointer"
                 >
-                  <div className="relative overflow-hidden rounded-sm shadow-lg shadow-black/30">
-                    <div className="aspect-[2/3] w-full">
+                  <div className="relative overflow-hidden rounded-xs shadow-lg shadow-black/30">
+                    <div className="aspect-2/3 w-full">
                       {pelicula.posterUrl ? (
                         <img
                           src={pelicula.posterUrl}
@@ -116,7 +116,7 @@ export default function RecentMoviesSection({ movies, loading }: RecentMoviesSec
                       </div>
                     </div>
                     {/* Borde sutil overlay */}
-                    <div className="absolute inset-0 rounded-sm border border-foreground/[0.04]" />
+                    <div className="absolute inset-0 rounded-xs border border-foreground/4" />
                   </div>
                   <h3 className="mt-2.5 line-clamp-2 text-[13px] font-medium leading-snug text-foreground/80 transition-colors group-hover:text-accent">
                     {pelicula.title}

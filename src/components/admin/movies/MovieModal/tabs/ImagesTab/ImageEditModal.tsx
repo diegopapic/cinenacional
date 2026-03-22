@@ -173,7 +173,7 @@ export function ImageEditModal({
   )
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
       <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
@@ -275,7 +275,7 @@ export function ImageEditModal({
                     {selectedPeople.map((person, idx) => (
                       <div 
                         key={person.personId}
-                        className="flex items-center gap-2 bg-blue-50 rounded px-2 py-1"
+                        className="flex items-center gap-2 bg-blue-50 rounded-sm px-2 py-1"
                       >
                         <span className="text-xs text-gray-400 w-4">{idx + 1}</span>
                         <span className="flex-1 text-sm">{person.name}</span>

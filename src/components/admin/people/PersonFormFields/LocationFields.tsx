@@ -191,7 +191,7 @@ function LocationAutocomplete({
             type="button"
             onClick={handleSetCaba}
             disabled={loading}
-            className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors disabled:opacity-50"
+            className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-sm hover:bg-blue-100 transition-colors disabled:opacity-50"
             title="Ciudad de Buenos Aires, Argentina"
           >
             CABA
@@ -241,10 +241,10 @@ function LocationAutocomplete({
                     <button
                       type="button"
                       onClick={() => handleSelectLocation(location)}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors"
+                      className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-hidden transition-colors"
                     >
                       <div className="flex items-center">
-                        <MapPin className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                        <MapPin className="h-4 w-4 text-gray-400 mr-2 shrink-0" />
                         <div>
                           <div className="text-sm font-medium text-gray-900">
                             {location.name}

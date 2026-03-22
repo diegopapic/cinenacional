@@ -2203,7 +2203,7 @@ export default function BasicInfoTab() {
           <input
             type="text"
             {...register('title')}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-xs"
           />
           {errors.title && (
             <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>

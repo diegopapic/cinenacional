@@ -92,10 +92,10 @@ export default function PersonDetailPage() {
         <div className="grid gap-6 md:grid-cols-3">
           {/* Columna izquierda - Foto y datos básicos */}
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="space-y-4">
                 {/* Foto */}
-                <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-gray-100">
+                <div className="relative aspect-3/4 w-full overflow-hidden rounded-lg bg-gray-100">
                   {person.photoUrl ? (
                     <Image
                       src={person.photoUrl}
@@ -189,7 +189,7 @@ export default function PersonDetailPage() {
 
             {/* Enlaces */}
             {person.links && person.links.length > 0 && (
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Enlaces</h3>
                 <div className="space-y-2">
                   {person.links
@@ -219,7 +219,7 @@ export default function PersonDetailPage() {
           {/* Columna derecha - Contenido principal */}
           <div className="md:col-span-2 space-y-6">
             {/* Biografía */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Biografía</h3>
               {person.biography ? (
                 <div className="prose prose-sm max-w-none">
@@ -235,7 +235,7 @@ export default function PersonDetailPage() {
             </div>
 
             {/* Filmografía */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
                 <Film className="h-5 w-5" />
                 Filmografía
@@ -268,7 +268,7 @@ export default function PersonDetailPage() {
             </div>
 
             {/* Premios */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
                 <Award className="h-5 w-5" />
                 Premios y Reconocimientos

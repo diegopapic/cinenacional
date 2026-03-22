@@ -201,12 +201,12 @@ export function MovieHero({
     return (
       <div className="mb-3 flex flex-wrap gap-1.5">
         {productionTypeLabel && (
-          <span className="rounded-sm bg-accent/15 px-2.5 py-1 text-[11px] font-medium uppercase tracking-widest text-accent/80">
+          <span className="rounded-xs bg-accent/15 px-2.5 py-1 text-[11px] font-medium uppercase tracking-widest text-accent/80">
             {productionTypeLabel}
           </span>
         )}
         {stageLabel && (
-          <span className="rounded-sm bg-amber-500/15 px-2.5 py-1 text-[11px] font-medium uppercase tracking-widest text-amber-400/80">
+          <span className="rounded-xs bg-amber-500/15 px-2.5 py-1 text-[11px] font-medium uppercase tracking-widest text-amber-400/80">
             {stageLabel}
           </span>
         )}
@@ -273,8 +273,8 @@ export function MovieHero({
               className="absolute inset-0 h-full w-full object-cover object-center"
               onError={() => setHeroImageError(true)}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-background/60" />
-            <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-background via-background/95 to-background/60" />
+            <div className="absolute inset-0 bg-linear-to-r from-background/90 via-background/70 to-transparent" />
           </>
         ) : (
           <div
@@ -295,7 +295,7 @@ export function MovieHero({
 
             <div className="flex gap-4">
               {/* Poster mobile */}
-              {renderPoster('relative aspect-[2/3] w-32 shrink-0 overflow-hidden shadow-xl shadow-black/40')}
+              {renderPoster('relative aspect-2/3 w-32 shrink-0 overflow-hidden shadow-xl shadow-black/40')}
 
               {/* Info mobile */}
               <div className="flex min-w-0 flex-col gap-1.5 py-0.5">
@@ -358,7 +358,7 @@ export function MovieHero({
           {/* ===== DESKTOP LAYOUT ===== */}
           <div className="hidden md:flex md:items-end md:gap-10 lg:gap-14">
             {/* Poster desktop */}
-            {renderPoster('shrink-0 relative aspect-[2/3] w-56 lg:w-64 shadow-2xl shadow-black/50 overflow-hidden')}
+            {renderPoster('shrink-0 relative aspect-2/3 w-56 lg:w-64 shadow-2xl shadow-black/50 overflow-hidden')}
 
             {/* Info desktop */}
             <div className="flex flex-1 flex-col gap-5">
@@ -422,7 +422,7 @@ export function MovieHero({
       {/* Trailer Modal */}
       {trailerOpen && videoId && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95"
+          className="fixed inset-0 z-9999 flex items-center justify-center bg-black/95"
           role="dialog"
           aria-modal="true"
           onClick={closeTrailer}

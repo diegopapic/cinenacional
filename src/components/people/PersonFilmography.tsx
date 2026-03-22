@@ -106,7 +106,7 @@ function MovieItem({ item, showRoles, showCharacter, index }: {
     <div key={`${movie.id}-${index}`} className="py-3 hover:bg-muted/20 transition-colors group">
       <div className="flex items-center gap-3">
         <Link href={`/pelicula/${movie.slug}`} className="shrink-0">
-          <div className="w-10 md:w-11 aspect-[2/3] rounded-sm overflow-hidden">
+          <div className="w-10 md:w-11 aspect-2/3 rounded-xs overflow-hidden">
             {movie.posterUrl ? (
               <img
                 src={movie.posterUrl}
@@ -119,7 +119,7 @@ function MovieItem({ item, showRoles, showCharacter, index }: {
             )}
           </div>
         </Link>
-        <div className="flex-grow min-w-0">
+        <div className="grow min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               href={`/pelicula/${movie.slug}`}

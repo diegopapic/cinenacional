@@ -120,7 +120,7 @@ export function TrailerSection({ trailerUrl, movieTitle, variant = 'fullwidth' }
     return (
       <div className="mt-8">
         <h2 className="text-2xl font-bold text-white mb-4">Trailer</h2>
-        <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-xl p-1">
+        <div className="bg-linear-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-md rounded-xl p-1">
           <div className="bg-black/40 backdrop-blur-xl rounded-lg p-4">
             <div className="relative w-full aspect-video rounded-lg overflow-hidden">
               <iframe

@@ -50,7 +50,7 @@ export default function PeoplePage() {
         {/* Stats Cards (opcional - comentado por ahora) */}
         {/* 
         <div className="grid gap-4 md:grid-cols-3 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Personas</p>
@@ -60,7 +60,7 @@ export default function PeoplePage() {
             </div>
           </div>
           
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Actores</p>
@@ -70,7 +70,7 @@ export default function PeoplePage() {
             </div>
           </div>
           
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Directores</p>
@@ -84,7 +84,7 @@ export default function PeoplePage() {
         
         {/* Tabla */}
         <Suspense fallback={
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="flex items-center justify-center h-64">
               <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
             </div>

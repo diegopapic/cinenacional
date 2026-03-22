@@ -75,8 +75,8 @@ export default function MovieCard({
       className="group cursor-pointer"
     >
       {/* Poster container */}
-      <div className="relative overflow-hidden rounded-sm shadow-lg shadow-black/30">
-        <div className="aspect-[2/3] w-full">
+      <div className="relative overflow-hidden rounded-xs shadow-lg shadow-black/30">
+        <div className="aspect-2/3 w-full">
           {movie.posterUrl ? (
             <img
               src={movie.posterUrl}
@@ -90,18 +90,18 @@ export default function MovieCard({
         </div>
 
         {/* Borde sutil overlay */}
-        <div className="absolute inset-0 rounded-sm border border-foreground/[0.04]" />
+        <div className="absolute inset-0 rounded-xs border border-foreground/4" />
 
         {/* Badge fecha */}
         {showDate && (
-          <div className="absolute left-1.5 top-1.5 rounded-sm bg-black/70 px-1.5 py-0.5 text-[9px] text-foreground/80 backdrop-blur-sm">
+          <div className="absolute left-1.5 top-1.5 rounded-xs bg-black/70 px-1.5 py-0.5 text-[9px] text-foreground/80 backdrop-blur-xs">
             {formatDate(movie)}
           </div>
         )}
 
         {/* Badge formato */}
         {showDate && dateType === 'future' && showFutureBadge && (
-          <div className="absolute right-1.5 top-1.5 rounded-sm bg-black/60 px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-foreground/70 backdrop-blur-sm">
+          <div className="absolute right-1.5 top-1.5 rounded-xs bg-black/60 px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-foreground/70 backdrop-blur-xs">
             Próx.
           </div>
         )}

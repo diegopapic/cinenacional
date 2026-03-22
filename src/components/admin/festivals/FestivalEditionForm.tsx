@@ -103,7 +103,7 @@ export default function FestivalEditionForm({ festivalId, festivalName, edition 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded-sm">
           {error}
         </div>
       )}
@@ -127,7 +127,7 @@ export default function FestivalEditionForm({ festivalId, festivalName, edition 
             onChange={(e) => handleChange('editionNumber', e.target.value ? parseInt(e.target.value) : undefined)}
             required
             min="1"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="25"
           />
           <p className="mt-1 text-sm text-gray-500">
@@ -148,7 +148,7 @@ export default function FestivalEditionForm({ festivalId, festivalName, edition 
             required
             min="1900"
             max="2100"
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
 
@@ -162,7 +162,7 @@ export default function FestivalEditionForm({ festivalId, festivalName, edition 
             id="theme"
             value={formData.theme || ''}
             onChange={(e) => handleChange('theme', e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Cine latinoamericano"
           />
         </div>
@@ -202,7 +202,7 @@ export default function FestivalEditionForm({ festivalId, festivalName, edition 
           value={formData.description || ''}
           onChange={(e) => handleChange('description', e.target.value)}
           rows={4}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
           placeholder="Descripción de esta edición del festival..."
         />
       </div>
@@ -218,7 +218,7 @@ export default function FestivalEditionForm({ festivalId, festivalName, edition 
             id="posterUrl"
             value={formData.posterUrl || ''}
             onChange={(e) => handleChange('posterUrl', e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="https://..."
           />
         </div>
@@ -233,7 +233,7 @@ export default function FestivalEditionForm({ festivalId, festivalName, edition 
             id="websiteUrl"
             value={formData.websiteUrl || ''}
             onChange={(e) => handleChange('websiteUrl', e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="https://..."
           />
         </div>
@@ -246,7 +246,7 @@ export default function FestivalEditionForm({ festivalId, festivalName, edition 
           id="isPublished"
           checked={formData.isPublished}
           onChange={(e) => handleChange('isPublished', e.target.checked)}
-          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-sm"
         />
         <label htmlFor="isPublished" className="ml-2 block text-sm text-gray-900">
           Edición publicada (visible en el sitio público)

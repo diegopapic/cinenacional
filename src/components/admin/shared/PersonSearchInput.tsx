@@ -545,7 +545,7 @@ export default function PersonSearchInput({
             hasMatchedAlternative ? 'bg-gray-50' : ''
           }`}
         >
-          <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <User className="h-4 w-4 text-gray-400 shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="font-medium text-gray-900 truncate">
               {mainName}
@@ -570,7 +570,7 @@ export default function PersonSearchInput({
                   return (
                     <span
                       key={dept}
-                      className="inline-block px-1.5 py-0 text-[10px] leading-4 font-medium rounded-sm text-white"
+                      className="inline-block px-1.5 py-0 text-[10px] leading-4 font-medium rounded-xs text-white"
                       style={{ backgroundColor: info.color }}
                     >
                       {info.label}
@@ -592,7 +592,7 @@ export default function PersonSearchInput({
             })}
             className="w-full text-left px-3 py-2 pl-10 hover:bg-yellow-50 flex items-center space-x-2 transition-colors bg-yellow-25"
           >
-            <ArrowRight className="h-3 w-3 text-yellow-600 flex-shrink-0" />
+            <ArrowRight className="h-3 w-3 text-yellow-600 shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-sm text-yellow-800 truncate">
                 <span className="font-medium">{person.matchedAlternativeName}</span>
@@ -617,7 +617,7 @@ export default function PersonSearchInput({
                   onClick={() => handleSelectPerson(person, { id: alt.id, name: alt.fullName })}
                   className="w-full text-left px-3 py-1.5 pl-10 hover:bg-gray-50 flex items-center space-x-2 transition-colors text-sm"
                 >
-                  <ArrowRight className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                  <ArrowRight className="h-3 w-3 text-gray-400 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <span className="text-gray-600 truncate">
                       {alt.fullName}
@@ -669,7 +669,7 @@ export default function PersonSearchInput({
 
         {/* Indicador de nombre alternativo seleccionado */}
         {selectedAlternativeNameId && selectedPerson && (
-          <div className="mt-1 text-xs text-yellow-700 bg-yellow-50 px-2 py-1 rounded flex items-center">
+          <div className="mt-1 text-xs text-yellow-700 bg-yellow-50 px-2 py-1 rounded-sm flex items-center">
             <ArrowRight className="h-3 w-3 mr-1" />
             <span>Usando nombre alternativo de: {formatPersonName(selectedPerson)}</span>
           </div>

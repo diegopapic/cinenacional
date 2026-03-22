@@ -148,7 +148,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
               {images.map((image, i) => (
                 <div
                   key={image.id}
-                  className="relative aspect-video w-full shrink-0 snap-center overflow-hidden rounded-sm border border-foreground/[0.04] cursor-pointer"
+                  className="relative aspect-video w-full shrink-0 snap-center overflow-hidden rounded-xs border border-foreground/4 cursor-pointer"
                   onClick={() => openLightbox(i)}
                 >
                   <img
@@ -195,7 +195,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                   className="group shrink-0"
                 >
                   <div
-                    className="relative h-48 lg:h-56 cursor-pointer overflow-hidden rounded-sm border border-foreground/[0.04]"
+                    className="relative h-48 lg:h-56 cursor-pointer overflow-hidden rounded-xs border border-foreground/4"
                     onClick={() => openLightbox(i)}
                   >
                     <img
@@ -216,7 +216,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
             {(canScrollLeft || images.length > 3) && (
               <button
                 onClick={() => scrollDesktop('left')}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 flex h-9 w-9 items-center justify-center rounded-full bg-background/80 shadow-lg ring-1 ring-border/20 backdrop-blur-sm text-foreground/70 transition-colors hover:text-foreground"
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 flex h-9 w-9 items-center justify-center rounded-full bg-background/80 shadow-lg ring-1 ring-border/20 backdrop-blur-xs text-foreground/70 transition-colors hover:text-foreground"
                 aria-label="Anterior"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -227,7 +227,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
             {(canScrollRight || images.length > 3) && (
               <button
                 onClick={() => scrollDesktop('right')}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 flex h-9 w-9 items-center justify-center rounded-full bg-background/80 shadow-lg ring-1 ring-border/20 backdrop-blur-sm text-foreground/70 transition-colors hover:text-foreground"
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 flex h-9 w-9 items-center justify-center rounded-full bg-background/80 shadow-lg ring-1 ring-border/20 backdrop-blur-xs text-foreground/70 transition-colors hover:text-foreground"
                 aria-label="Siguiente"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -240,7 +240,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
       {/* ===== LIGHTBOX ===== */}
       {lightbox && (
         <div
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/95"
+          className="fixed inset-0 z-9999 flex flex-col items-center justify-center bg-black/95"
           role="dialog"
           aria-modal="true"
           onClick={closeLightbox}

@@ -188,7 +188,7 @@ export default function ReviewNamesPage() {
         </div>
 
         {/* Progress */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">
               Caso {currentIndex + 1} de {cases.length}
@@ -206,7 +206,7 @@ export default function ReviewNamesPage() {
         </div>
 
         {/* Current Case */}
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-white rounded-lg shadow-sm">
           {/* Case Info */}
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-start justify-between">

@@ -73,7 +73,7 @@ export default async function EditLocationPage({ params }: EditLocationPageProps
         </p>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-lg shadow-xs border border-gray-200 p-6">
         <LocationForm location={locationData} />
       </div>
     </div>

@@ -25,8 +25,8 @@ export default function ObituariosSection({ obituarios, loading = false, noPaddi
               <div key={i} className="flex items-center gap-3 md:gap-4 border-b border-border/10 py-3 last:border-b-0">
                 <div className="h-16 w-16 md:h-20 md:w-20 shrink-0 rounded-full bg-muted/30 animate-pulse" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-muted/30 rounded w-3/4 animate-pulse" />
-                  <div className="h-3 bg-muted/30 rounded w-1/2 animate-pulse" />
+                  <div className="h-4 bg-muted/30 rounded-sm w-3/4 animate-pulse" />
+                  <div className="h-3 bg-muted/30 rounded-sm w-1/2 animate-pulse" />
                 </div>
               </div>
             ))}
@@ -115,7 +115,7 @@ export default function ObituariosSection({ obituarios, loading = false, noPaddi
                     </div>
                   )}
                   {/* Borde sutil overlay */}
-                  <div className="absolute inset-0 rounded-full border border-foreground/[0.04]" />
+                  <div className="absolute inset-0 rounded-full border border-foreground/4" />
                 </div>
 
                 {/* Info */}

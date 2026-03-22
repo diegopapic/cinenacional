@@ -29,7 +29,7 @@ export default function FilterInput({
         onChange={(e) => onChange(e.target.value)}
         min={min}
         max={max}
-        className="h-8 w-full border border-border/30 bg-transparent px-2 text-[12px] text-muted-foreground/60 outline-none transition-colors placeholder:text-muted-foreground/25 focus:border-accent/40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="h-8 w-full border border-border/30 bg-transparent px-2 text-[12px] text-muted-foreground/60 outline-hidden transition-colors placeholder:text-muted-foreground/25 focus:border-accent/40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
     </div>
   )

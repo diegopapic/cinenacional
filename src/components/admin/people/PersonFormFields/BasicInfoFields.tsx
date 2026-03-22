@@ -269,7 +269,7 @@ export function BasicInfoFields({
                             type="checkbox"
                             checked={isPartialBirthDate}
                             onChange={(e) => handleBirthDateTypeChange(e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                         <span className="ml-2 text-sm text-gray-600">
                             Fecha incompleta (solo año o año/mes)
@@ -343,7 +343,7 @@ export function BasicInfoFields({
                             type="checkbox"
                             checked={isPartialDeathDate}
                             onChange={(e) => handleDeathDateTypeChange(e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                         <span className="ml-2 text-sm text-gray-600">
                             Fecha incompleta (solo año o año/mes)
@@ -411,7 +411,7 @@ export function BasicInfoFields({
                         type="checkbox"
                         checked={formData.hideAge || false}
                         onChange={(e) => updateField('hideAge', e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">
                         Ocultar edad en el perfil público
@@ -423,7 +423,7 @@ export function BasicInfoFields({
                         type="checkbox"
                         checked={formData.isActive !== false}
                         onChange={(e) => updateField('isActive', e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">
                         Persona activa (visible en el sitio)

@@ -113,7 +113,7 @@ export function PeopleTable() {
       </div>
 
       {/* Tabla */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -174,7 +174,7 @@ export function PeopleTable() {
                             href={`https://www.themoviedb.org/person/${person.tmdbId}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
+                            className="inline-flex items-center px-1 py-0.5 rounded-sm text-[10px] font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
                             title="Ver en TMDB"
                           >
                             TMDB
@@ -185,7 +185,7 @@ export function PeopleTable() {
                             href={`https://www.imdb.com/name/${person.imdbId}/`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors"
+                            className="inline-flex items-center px-1 py-0.5 rounded-sm text-[10px] font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors"
                             title="Ver en IMDb"
                           >
                             IMDb
@@ -196,7 +196,7 @@ export function PeopleTable() {
                             href={`/persona/${person.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium bg-cyan-100 text-cyan-700 hover:bg-cyan-200 transition-colors"
+                            className="inline-flex items-center px-1 py-0.5 rounded-sm text-[10px] font-medium bg-cyan-100 text-cyan-700 hover:bg-cyan-200 transition-colors"
                             title="Ver en el sitio"
                           >
                             Web
@@ -293,7 +293,7 @@ export function PeopleTable() {
 
       {/* Información y paginación */}
       {people && people.length > 0 && totalPages > 1 && (
-        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow">
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow-sm">
           {/* Vista móvil */}
           <div className="flex-1 flex justify-between sm:hidden">
             <button
@@ -324,7 +324,7 @@ export function PeopleTable() {
               </p>
             </div>
             <div>
-              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+              <nav className="relative z-0 inline-flex rounded-md shadow-xs -space-x-px">
                 <button
                   onClick={goToPreviousPage}
                   disabled={!canGoPrevious || loading}

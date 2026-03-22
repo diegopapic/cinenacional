@@ -194,7 +194,7 @@ export default async function EfemeridesPage({ params, searchParams }: PageProps
                           src={imageUrl}
                           alt={efemeride.titulo || ''}
                         />
-                        <div className="absolute inset-0 rounded-full border border-foreground/[0.04]" />
+                        <div className="absolute inset-0 rounded-full border border-foreground/4" />
                       </div>
                     )
                   ) : isPelicula ? (

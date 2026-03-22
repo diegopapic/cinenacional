@@ -94,7 +94,7 @@ export default function RolesPage() {
           <p className="text-red-600 mb-4">Error al cargar roles</p>
           <button 
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700"
           >
             Intentar de nuevo
           </button>
@@ -225,9 +225,9 @@ export default function RolesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="bg-white p-6 rounded-lg border animate-pulse">
-              <div className="h-4 bg-gray-200 rounded mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded mb-4 w-2/3"></div>
-              <div className="h-8 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded-sm mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded-sm mb-4 w-2/3"></div>
+              <div className="h-8 bg-gray-200 rounded-sm"></div>
             </div>
           ))}
         </div>

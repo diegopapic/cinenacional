@@ -35,7 +35,7 @@ export default function MoviesTable({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
         </div>
@@ -45,7 +45,7 @@ export default function MoviesTable({
 
   if (!movies || movies.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="text-center py-12">
           <Film className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-500">No se encontraron películas</p>
@@ -55,7 +55,7 @@ export default function MoviesTable({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -110,7 +110,7 @@ function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
     <tr className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
-          <div className="flex-shrink-0 h-10 w-10">
+          <div className="shrink-0 h-10 w-10">
             {movie.posterUrl ? (
               <img
                 className="h-10 w-10 rounded-lg object-cover"
@@ -131,7 +131,7 @@ function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
                   href={`https://www.themoviedb.org/movie/${movie.tmdbId}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
+                  className="inline-flex items-center px-1 py-0.5 rounded-sm text-[10px] font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
                   title="Ver en TMDB"
                 >
                   TMDB
@@ -142,7 +142,7 @@ function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
                   href={`https://www.imdb.com/title/${movie.imdbId}/`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors"
+                  className="inline-flex items-center px-1 py-0.5 rounded-sm text-[10px] font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors"
                   title="Ver en IMDb"
                 >
                   IMDb
@@ -153,7 +153,7 @@ function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
                   href={`/pelicula/${movie.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium bg-cyan-100 text-cyan-700 hover:bg-cyan-200 transition-colors"
+                  className="inline-flex items-center px-1 py-0.5 rounded-sm text-[10px] font-medium bg-cyan-100 text-cyan-700 hover:bg-cyan-200 transition-colors"
                   title="Ver en el sitio"
                 >
                   Web

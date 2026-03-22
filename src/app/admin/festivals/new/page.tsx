@@ -17,7 +17,7 @@ export default function NewFestivalPage() {
         <h1 className="text-2xl font-bold text-gray-900">Nuevo Festival</h1>
       </div>
 
-      <div className="bg-white shadow rounded-lg p-6">
+      <div className="bg-white shadow-sm rounded-lg p-6">
         <FestivalForm />
       </div>
     </div>

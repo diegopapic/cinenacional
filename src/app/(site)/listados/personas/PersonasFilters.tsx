@@ -28,8 +28,8 @@ export default function PersonasFilters({
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
           {Array.from({ length: 9 }).map((_, i) => (
             <div key={i}>
-              <div className="mb-1 h-3 w-16 rounded bg-muted/30" />
-              <div className="h-8 rounded bg-muted/30" />
+              <div className="mb-1 h-3 w-16 rounded-sm bg-muted/30" />
+              <div className="h-8 rounded-sm bg-muted/30" />
             </div>
           ))}
         </div>

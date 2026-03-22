@@ -279,7 +279,7 @@ export default function HeroSection({ images }: HeroSectionProps) {
       })}
 
       {/* Gradiente inferior global para el caption */}
-      <div className="absolute inset-0 z-[2] bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 z-2 bg-linear-to-t from-background via-background/40 to-transparent pointer-events-none" />
 
       {/* Caption + dots */}
       <div className="absolute inset-x-0 bottom-0 z-10">

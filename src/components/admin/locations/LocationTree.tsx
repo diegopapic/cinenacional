@@ -119,7 +119,7 @@ export default function LocationTree() {
             placeholder="Buscar lugares..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
         </div>
         <button
@@ -143,7 +143,7 @@ export default function LocationTree() {
           {searchTerm ? 'No se encontraron lugares que coincidan con la búsqueda' : 'No hay lugares cargados'}
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg shadow-xs border border-gray-200">
           {filteredLocations.map((location) => (
             <LocationTreeNode
               key={location.id}

@@ -85,7 +85,7 @@ export default function SearchBar() {
                         onChange={(e) => handleQueryChange(e.target.value)}
                         onFocus={() => query.length >= 2 && setShowResults(true)}
                         placeholder="Buscar películas o personas..."
-                        className="w-full pl-10 pr-10 py-2 bg-zinc-800 border border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent focus:bg-zinc-700 transition-all"
+                        className="w-full pl-10 pr-10 py-2 bg-zinc-800 border border-zinc-700 rounded-full text-white placeholder-zinc-500 focus:outline-hidden focus:ring-2 focus:ring-zinc-500 focus:border-transparent focus:bg-zinc-700 transition-all"
                     />
                     {query && (
                         <button
@@ -124,7 +124,7 @@ export default function SearchBar() {
                                                 onClick={handleResultClick}
                                                 className="flex items-center px-4 py-3 hover:bg-zinc-800 transition-colors group"
                                             >
-                                                <div className="flex-shrink-0 w-10 h-14 bg-zinc-800 rounded overflow-hidden mr-3">
+                                                <div className="shrink-0 w-10 h-14 bg-zinc-800 rounded-sm overflow-hidden mr-3">
                                                     {movie.posterUrl ? (
                                                         <Image
                                                             src={movie.posterUrl}
@@ -168,7 +168,7 @@ export default function SearchBar() {
                                                 onClick={handleResultClick}
                                                 className="flex items-center px-4 py-3 hover:bg-zinc-800 transition-colors group"
                                             >
-                                                <div className="flex-shrink-0 w-10 h-10 bg-zinc-800 rounded-full overflow-hidden mr-3">
+                                                <div className="shrink-0 w-10 h-10 bg-zinc-800 rounded-full overflow-hidden mr-3">
                                                     {person.photoUrl ? (
                                                         <Image
                                                             src={getPersonPhotoUrl(person.photoUrl, 'sm')!}

@@ -26,7 +26,7 @@
 </head>
 <body class="bg-gray-50">
     <!-- Header -->
-    <header class="bg-white shadow-sm border-b border-gray-200">
+    <header class="bg-white shadow-xs border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex items-center justify-between">
                 <h1 class="text-2xl font-bold text-gray-900">Cine Nacional</h1>
@@ -49,25 +49,25 @@
         </div>
 
         <!-- Filters and View Toggle -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="bg-white rounded-lg shadow-xs border border-gray-200 p-4 mb-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <!-- Filters -->
                 <div class="flex flex-wrap gap-3">
-                    <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500">
                         <option>Todos los géneros</option>
                         <option>Drama</option>
                         <option>Comedia</option>
                         <option>Thriller</option>
                         <option>Documental</option>
                     </select>
-                    <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500">
                         <option>Todas las décadas</option>
                         <option>2020s</option>
                         <option>2010s</option>
                         <option>2000s</option>
                         <option>1990s</option>
                     </select>
-                    <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500">
                         <option>Ordenar por: Más recientes</option>
                         <option>Título (A-Z)</option>
                         <option>Título (Z-A)</option>
@@ -92,9 +92,9 @@
         <div id="compactGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 mb-8">
             <!-- Movie Card 1 -->
             <div class="movie-card group cursor-pointer fade-in">
-                <div class="relative aspect-[2/3] bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
+                <div class="relative aspect-2/3 bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
                     <img src="https://via.placeholder.com/300x450/4F46E5/FFFFFF?text=Relatos+Salvajes" alt="Relatos Salvajes" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 <div class="mt-3">
                     <h3 class="font-semibold text-gray-900 line-clamp-1">Relatos Salvajes</h3>
@@ -105,9 +105,9 @@
 
             <!-- Movie Card 2 -->
             <div class="movie-card group cursor-pointer fade-in" style="animation-delay: 0.05s">
-                <div class="relative aspect-[2/3] bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
+                <div class="relative aspect-2/3 bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
                     <img src="https://via.placeholder.com/300x450/10B981/FFFFFF?text=El+Secreto+de+sus+Ojos" alt="El Secreto de sus Ojos" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 <div class="mt-3">
                     <h3 class="font-semibold text-gray-900 line-clamp-1">El Secreto de sus Ojos</h3>
@@ -118,9 +118,9 @@
 
             <!-- Movie Card 3 -->
             <div class="movie-card group cursor-pointer fade-in" style="animation-delay: 0.1s">
-                <div class="relative aspect-[2/3] bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
+                <div class="relative aspect-2/3 bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
                     <img src="https://via.placeholder.com/300x450/F59E0B/FFFFFF?text=Nueve+Reinas" alt="Nueve Reinas" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 <div class="mt-3">
                     <h3 class="font-semibold text-gray-900 line-clamp-1">Nueve Reinas</h3>
@@ -131,9 +131,9 @@
 
             <!-- Movie Card 4 -->
             <div class="movie-card group cursor-pointer fade-in" style="animation-delay: 0.15s">
-                <div class="relative aspect-[2/3] bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
+                <div class="relative aspect-2/3 bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
                     <img src="https://via.placeholder.com/300x450/EF4444/FFFFFF?text=La+Historia+Oficial" alt="La Historia Oficial" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 <div class="mt-3">
                     <h3 class="font-semibold text-gray-900 line-clamp-1">La Historia Oficial</h3>
@@ -144,9 +144,9 @@
 
             <!-- Movie Card 5 -->
             <div class="movie-card group cursor-pointer fade-in" style="animation-delay: 0.2s">
-                <div class="relative aspect-[2/3] bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
+                <div class="relative aspect-2/3 bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
                     <img src="https://via.placeholder.com/300x450/8B5CF6/FFFFFF?text=El+Hijo+de+la+Novia" alt="El Hijo de la Novia" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 <div class="mt-3">
                     <h3 class="font-semibold text-gray-900 line-clamp-1">El Hijo de la Novia</h3>
@@ -157,9 +157,9 @@
 
             <!-- More movie cards... -->
             <div class="movie-card group cursor-pointer fade-in" style="animation-delay: 0.25s">
-                <div class="relative aspect-[2/3] bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
+                <div class="relative aspect-2/3 bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
                     <img src="https://via.placeholder.com/300x450/3B82F6/FFFFFF?text=Medianeras" alt="Medianeras" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 <div class="mt-3">
                     <h3 class="font-semibold text-gray-900 line-clamp-1">Medianeras</h3>
@@ -169,9 +169,9 @@
             </div>
 
             <div class="movie-card group cursor-pointer fade-in" style="animation-delay: 0.3s">
-                <div class="relative aspect-[2/3] bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
+                <div class="relative aspect-2/3 bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
                     <img src="https://via.placeholder.com/300x450/14B8A6/FFFFFF?text=Un+Cuento+Chino" alt="Un Cuento Chino" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 <div class="mt-3">
                     <h3 class="font-semibold text-gray-900 line-clamp-1">Un Cuento Chino</h3>
@@ -181,9 +181,9 @@
             </div>
 
             <div class="movie-card group cursor-pointer fade-in" style="animation-delay: 0.35s">
-                <div class="relative aspect-[2/3] bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
+                <div class="relative aspect-2/3 bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
                     <img src="https://via.placeholder.com/300x450/DC2626/FFFFFF?text=Pizza+Birra+Faso" alt="Pizza, Birra, Faso" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 <div class="mt-3">
                     <h3 class="font-semibold text-gray-900 line-clamp-1">Pizza, Birra, Faso</h3>
@@ -193,9 +193,9 @@
             </div>
 
             <div class="movie-card group cursor-pointer fade-in" style="animation-delay: 0.4s">
-                <div class="relative aspect-[2/3] bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
+                <div class="relative aspect-2/3 bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
                     <img src="https://via.placeholder.com/300x450/7C3AED/FFFFFF?text=Esperando+la+Carroza" alt="Esperando la Carroza" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 <div class="mt-3">
                     <h3 class="font-semibold text-gray-900 line-clamp-1">Esperando la Carroza</h3>
@@ -205,9 +205,9 @@
             </div>
 
             <div class="movie-card group cursor-pointer fade-in" style="animation-delay: 0.45s">
-                <div class="relative aspect-[2/3] bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
+                <div class="relative aspect-2/3 bg-gray-200 rounded-lg overflow-hidden shadow-md group-hover:shadow-xl">
                     <img src="https://via.placeholder.com/300x450/EC4899/FFFFFF?text=Comodines" alt="Comodines" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 <div class="mt-3">
                     <h3 class="font-semibold text-gray-900 line-clamp-1">Comodines</h3>
@@ -220,10 +220,10 @@
         <!-- Movies List - Detail View (Initially Hidden) -->
         <div id="detailList" class="space-y-4 mb-8 hidden">
             <!-- Movie Detail Card 1 -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer fade-in">
+            <div class="bg-white rounded-lg shadow-xs border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer fade-in">
                 <div class="flex flex-col md:flex-row gap-6">
-                    <div class="w-full md:w-32 flex-shrink-0">
-                        <img src="https://via.placeholder.com/200x300/4F46E5/FFFFFF?text=Relatos+Salvajes" alt="Relatos Salvajes" class="w-full md:w-32 h-48 object-cover rounded-lg shadow-sm">
+                    <div class="w-full md:w-32 shrink-0">
+                        <img src="https://via.placeholder.com/200x300/4F46E5/FFFFFF?text=Relatos+Salvajes" alt="Relatos Salvajes" class="w-full md:w-32 h-48 object-cover rounded-lg shadow-xs">
                     </div>
                     <div class="flex-1 space-y-3">
                         <div>
@@ -263,10 +263,10 @@
             </div>
 
             <!-- Movie Detail Card 2 -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer fade-in" style="animation-delay: 0.05s">
+            <div class="bg-white rounded-lg shadow-xs border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer fade-in" style="animation-delay: 0.05s">
                 <div class="flex flex-col md:flex-row gap-6">
-                    <div class="w-full md:w-32 flex-shrink-0">
-                        <img src="https://via.placeholder.com/200x300/10B981/FFFFFF?text=El+Secreto+de+sus+Ojos" alt="El Secreto de sus Ojos" class="w-full md:w-32 h-48 object-cover rounded-lg shadow-sm">
+                    <div class="w-full md:w-32 shrink-0">
+                        <img src="https://via.placeholder.com/200x300/10B981/FFFFFF?text=El+Secreto+de+sus+Ojos" alt="El Secreto de sus Ojos" class="w-full md:w-32 h-48 object-cover rounded-lg shadow-xs">
                     </div>
                     <div class="flex-1 space-y-3">
                         <div>
@@ -306,10 +306,10 @@
             </div>
 
             <!-- Movie Detail Card 3 -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer fade-in" style="animation-delay: 0.1s">
+            <div class="bg-white rounded-lg shadow-xs border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer fade-in" style="animation-delay: 0.1s">
                 <div class="flex flex-col md:flex-row gap-6">
-                    <div class="w-full md:w-32 flex-shrink-0">
-                        <img src="https://via.placeholder.com/200x300/F59E0B/FFFFFF?text=Nueve+Reinas" alt="Nueve Reinas" class="w-full md:w-32 h-48 object-cover rounded-lg shadow-sm">
+                    <div class="w-full md:w-32 shrink-0">
+                        <img src="https://via.placeholder.com/200x300/F59E0B/FFFFFF?text=Nueve+Reinas" alt="Nueve Reinas" class="w-full md:w-32 h-48 object-cover rounded-lg shadow-xs">
                     </div>
                     <div class="flex-1 space-y-3">
                         <div>
@@ -349,10 +349,10 @@
             </div>
 
             <!-- More detail cards... -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer fade-in" style="animation-delay: 0.15s">
+            <div class="bg-white rounded-lg shadow-xs border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer fade-in" style="animation-delay: 0.15s">
                 <div class="flex flex-col md:flex-row gap-6">
-                    <div class="w-full md:w-32 flex-shrink-0">
-                        <img src="https://via.placeholder.com/200x300/EF4444/FFFFFF?text=La+Historia+Oficial" alt="La Historia Oficial" class="w-full md:w-32 h-48 object-cover rounded-lg shadow-sm">
+                    <div class="w-full md:w-32 shrink-0">
+                        <img src="https://via.placeholder.com/200x300/EF4444/FFFFFF?text=La+Historia+Oficial" alt="La Historia Oficial" class="w-full md:w-32 h-48 object-cover rounded-lg shadow-xs">
                     </div>
                     <div class="flex-1 space-y-3">
                         <div>
@@ -391,10 +391,10 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer fade-in" style="animation-delay: 0.2s">
+            <div class="bg-white rounded-lg shadow-xs border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer fade-in" style="animation-delay: 0.2s">
                 <div class="flex flex-col md:flex-row gap-6">
-                    <div class="w-full md:w-32 flex-shrink-0">
-                        <img src="https://via.placeholder.com/200x300/8B5CF6/FFFFFF?text=El+Hijo+de+la+Novia" alt="El Hijo de la Novia" class="w-full md:w-32 h-48 object-cover rounded-lg shadow-sm">
+                    <div class="w-full md:w-32 shrink-0">
+                        <img src="https://via.placeholder.com/200x300/8B5CF6/FFFFFF?text=El+Hijo+de+la+Novia" alt="El Hijo de la Novia" class="w-full md:w-32 h-48 object-cover rounded-lg shadow-xs">
                     </div>
                     <div class="flex-1 space-y-3">
                         <div>

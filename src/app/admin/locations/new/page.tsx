@@ -28,7 +28,7 @@ export default function NewLocationPage() {
         </p>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-lg shadow-xs border border-gray-200 p-6">
         <Suspense fallback={<div>Cargando formulario...</div>}>
           <LocationForm />
         </Suspense>

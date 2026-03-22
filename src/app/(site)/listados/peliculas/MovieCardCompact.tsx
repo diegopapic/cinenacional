@@ -20,7 +20,7 @@ export default function MovieCardCompact({ movie }: MovieCardCompactProps) {
       className="group flex flex-col"
     >
       {/* Poster */}
-      <div className="relative aspect-[2/3] w-full overflow-hidden rounded-sm">
+      <div className="relative aspect-2/3 w-full overflow-hidden rounded-xs">
         {movie.posterUrl ? (
           <Image
             fill
@@ -46,7 +46,7 @@ export default function MovieCardCompact({ movie }: MovieCardCompactProps) {
             </svg>
           </div>
         )}
-        <div className="absolute inset-0 border border-foreground/[0.04]" />
+        <div className="absolute inset-0 border border-foreground/4" />
       </div>
 
       {/* Info */}

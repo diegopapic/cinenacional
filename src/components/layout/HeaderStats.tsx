@@ -68,8 +68,8 @@ export default function HeaderStats() {
       {/* Mobile + tablet: continuous marquee ticker */}
       <div className="relative overflow-hidden py-2 lg:hidden" aria-label="Estadísticas del archivo">
         {/* Fade gradients */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-stats to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-stats to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-linear-to-r from-stats to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-linear-to-l from-stats to-transparent" />
 
         <div className="stats-marquee inline-flex w-max">
           {[0, 1].map((copy) => (

@@ -160,7 +160,7 @@ export default function ImagesTab() {
                             <div
                                 key={image.id}
                                 onClick={() => setEditingImage(image)}
-                                className="group relative aspect-[3/2] rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+                                className="group relative aspect-3/2 rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
                             >
                                 <img
                                     src={imagePresets.card(image.cloudinaryPublicId)}
@@ -169,7 +169,7 @@ export default function ImagesTab() {
                                 />
 
                                 {/* Overlay con info */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                                     <div className="absolute bottom-0 left-0 right-0 p-2">
                                         <p className="text-white text-xs line-clamp-2">
                                             {generateImageCaption(image)}
@@ -179,7 +179,7 @@ export default function ImagesTab() {
 
                                 {/* Badge de personas */}
                                 {image.people && image.people.length > 0 && (
-                                    <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded">
+                                    <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-sm">
                                         {image.people.length}
                                     </div>
                                 )}

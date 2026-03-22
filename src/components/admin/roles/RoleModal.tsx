@@ -150,7 +150,7 @@ export function RoleModal({
               {...register('name')}
               placeholder="Ej: Director, Productor, Gaffer..."
               disabled={isSubmitting}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             />
             {errors.name && (
               <p className="text-sm text-red-600">{errors.name.message}</p>
@@ -165,7 +165,7 @@ export function RoleModal({
             <select
               id="department"
               {...register('department')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               disabled={isSubmitting}
             >
               {departmentOptions.map(dept => (
@@ -190,7 +190,7 @@ export function RoleModal({
               placeholder="Descripción del rol (opcional)..."
               rows={3}
               disabled={isSubmitting}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
             />
             {errors.description && (
               <p className="text-sm text-red-600">{errors.description.message}</p>
@@ -212,7 +212,7 @@ export function RoleModal({
               type="checkbox"
               {...register('isMainRole')}
               disabled={isSubmitting}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-sm"
             />
           </div>
 
@@ -226,7 +226,7 @@ export function RoleModal({
               type="checkbox"
               {...register('isActive')}
               disabled={isSubmitting}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-sm"
             />
           </div>
 
@@ -244,7 +244,7 @@ export function RoleModal({
                 {watch('name') || 'Nombre del rol'}
               </span>
               {watch('isMainRole') && (
-                <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-sm">
                   Principal
                 </span>
               )}

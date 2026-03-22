@@ -270,7 +270,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
                       <div className={`relative overflow-hidden ${
                         isRound
                           ? 'h-16 w-16 md:h-20 md:w-20 rounded-full'
-                          : 'h-16 md:h-20 aspect-[2/3] rounded-sm'
+                          : 'h-16 md:h-20 aspect-2/3 rounded-xs'
                       }`}>
                         {imageUrl ? (
                           <img
@@ -291,7 +291,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
                             )}
                           </div>
                         )}
-                        <div className={`absolute inset-0 ${isRound ? 'rounded-full' : 'rounded-sm'} border border-foreground/[0.04]`} />
+                        <div className={`absolute inset-0 ${isRound ? 'rounded-full' : 'rounded-xs'} border border-foreground/4`} />
                       </div>
                     </Link>
                   ) : (
@@ -299,7 +299,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
                       <div className={`relative overflow-hidden ${
                         isRound
                           ? 'h-16 w-16 md:h-20 md:w-20 rounded-full'
-                          : 'h-16 md:h-20 aspect-[2/3] rounded-sm'
+                          : 'h-16 md:h-20 aspect-2/3 rounded-xs'
                       }`}>
                         {imageUrl ? (
                           <img
@@ -314,7 +314,7 @@ export default function EfemeridesSection({ efemerides, noPadding }: EfemeridesS
                             </svg>
                           </div>
                         )}
-                        <div className={`absolute inset-0 ${isRound ? 'rounded-full' : 'rounded-sm'} border border-foreground/[0.04]`} />
+                        <div className={`absolute inset-0 ${isRound ? 'rounded-full' : 'rounded-xs'} border border-foreground/4`} />
                       </div>
                     </div>
                   )}

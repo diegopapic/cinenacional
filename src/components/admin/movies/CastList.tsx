@@ -102,7 +102,7 @@ function SortableCastItem({
                     )}
                     {/* ✅ Badge visual (opcional) */}
                     {member.isPrincipal && (
-                        <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                        <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-sm">
                             Principal
                         </span>
                     )}
@@ -127,7 +127,7 @@ function SortableCastItem({
                         id={`principal-${member.personId}`}
                         checked={member.isPrincipal || false}
                         onChange={(e) => onPrincipalChange(e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
                     <label 
                         htmlFor={`principal-${member.personId}`}

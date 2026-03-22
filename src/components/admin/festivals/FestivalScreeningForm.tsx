@@ -217,7 +217,7 @@ export default function FestivalScreeningForm({
   const formContent = (
     <>
       {error && (
-        <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded text-sm">
+        <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded-sm text-sm">
           {error}
         </div>
       )}
@@ -237,7 +237,7 @@ export default function FestivalScreeningForm({
               onChange={(e) => handleMovieSearchChange(e.target.value)}
               placeholder="Buscar película..."
               required={!selectedMovie}
-              className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
             />
             {(movieSearch || selectedMovie) && (
               <button
@@ -275,7 +275,7 @@ export default function FestivalScreeningForm({
                         <img
                           src={movie.posterUrl}
                           alt=""
-                          className="w-8 h-12 object-cover rounded"
+                          className="w-8 h-12 object-cover rounded-sm"
                         />
                       )}
                       <div>
@@ -311,7 +311,7 @@ export default function FestivalScreeningForm({
           value={formData.sectionId || ''}
           onChange={(e) => handleChange('sectionId', e.target.value ? parseInt(e.target.value) : undefined)}
           required
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
         >
           <option value="">Seleccionar sección</option>
           {sections.map((section) => (
@@ -344,7 +344,7 @@ export default function FestivalScreeningForm({
             id="screeningTime"
             value={formData.screeningTime || ''}
             onChange={(e) => handleChange('screeningTime', e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
       </div>
@@ -359,7 +359,7 @@ export default function FestivalScreeningForm({
             id="premiereType"
             value={formData.premiereType || 'REGULAR'}
             onChange={(e) => handleChange('premiereType', e.target.value as PremiereType)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
           >
             {Object.entries(PremiereTypeLabels).map(([value, label]) => (
               <option key={value} value={value}>
@@ -378,7 +378,7 @@ export default function FestivalScreeningForm({
             id="venueId"
             value={formData.venueId || ''}
             onChange={(e) => handleChange('venueId', e.target.value ? parseInt(e.target.value) : null)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="">Sin especificar</option>
             {venues.map((venue) => (
@@ -400,7 +400,7 @@ export default function FestivalScreeningForm({
           value={formData.notes || ''}
           onChange={(e) => handleChange('notes', e.target.value)}
           rows={2}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
           placeholder="Presentación del director, subtitulada, etc."
         />
       </div>
@@ -412,7 +412,7 @@ export default function FestivalScreeningForm({
           id="isOfficial"
           checked={formData.isOfficial}
           onChange={(e) => handleChange('isOfficial', e.target.checked)}
-          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-sm"
         />
         <label htmlFor="isOfficial" className="ml-2 block text-sm text-gray-900">
           Proyección oficial

@@ -178,7 +178,7 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded-sm">
           {error}
         </div>
       )}
@@ -195,7 +195,7 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
             value={formData.name || ''}
             onChange={(e) => handleChange('name', e.target.value)}
             required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Festival Internacional de Cine de Mar del Plata"
           />
         </div>
@@ -210,7 +210,7 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
             id="shortName"
             value={formData.shortName || ''}
             onChange={(e) => handleChange('shortName', e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="BAFICI"
           />
         </div>
@@ -227,7 +227,7 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
           value={formData.slug || ''}
           onChange={(e) => handleChange('slug', e.target.value)}
           required
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
           placeholder="festival-mar-del-plata"
         />
         <p className="mt-1 text-sm text-gray-500">
@@ -249,7 +249,7 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
               onChange={(e) => handleLocationSearchChange(e.target.value)}
               placeholder="Buscar ciudad..."
               required={!selectedLocation}
-              className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
             />
             {(locationSearch || selectedLocation) && (
               <button
@@ -317,7 +317,7 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
             onChange={(e) => handleChange('foundedYear', e.target.value ? parseInt(e.target.value) : null)}
             min="1800"
             max={new Date().getFullYear()}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="1985"
           />
         </div>
@@ -332,7 +332,7 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
             id="website"
             value={formData.website || ''}
             onChange={(e) => handleChange('website', e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="https://www.bafici.gob.ar"
           />
         </div>
@@ -348,7 +348,7 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
           value={formData.description || ''}
           onChange={(e) => handleChange('description', e.target.value)}
           rows={4}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
           placeholder="Breve descripción del festival..."
         />
       </div>
@@ -363,7 +363,7 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
           id="logoUrl"
           value={formData.logoUrl || ''}
           onChange={(e) => handleChange('logoUrl', e.target.value)}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500"
           placeholder="https://..."
         />
       </div>
@@ -375,7 +375,7 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
           id="isActive"
           checked={formData.isActive}
           onChange={(e) => handleChange('isActive', e.target.checked)}
-          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-sm"
         />
         <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
           Festival activo

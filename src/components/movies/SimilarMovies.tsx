@@ -28,7 +28,7 @@ export function SimilarMovies({ movies }: SimilarMoviesProps) {
               href={`/pelicula/${movieLink}`}
               className="group cursor-pointer block"
             >
-              <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform">
+              <div className="aspect-2/3 rounded-lg overflow-hidden mb-2 transform group-hover:scale-105 transition-transform">
                 {movie.posterUrl ? (
                   <img 
                     src={movie.posterUrl}

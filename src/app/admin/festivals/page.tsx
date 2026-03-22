@@ -72,7 +72,7 @@ export default function FestivalsPage() {
         </div>
         <Link
           href="/admin/festivals/new"
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-xs text-white bg-indigo-600 hover:bg-indigo-700"
         >
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Festival
@@ -87,7 +87,7 @@ export default function FestivalsPage() {
           placeholder="Buscar festivales..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-hidden focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
         />
       </div>
 
@@ -107,7 +107,7 @@ export default function FestivalsPage() {
             <div className="mt-6">
               <Link
                 href="/admin/festivals/new"
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-xs text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nuevo Festival
@@ -116,7 +116,7 @@ export default function FestivalsPage() {
           )}
         </div>
       ) : (
-        <div className="bg-white shadow overflow-hidden rounded-md">
+        <div className="bg-white shadow-sm overflow-hidden rounded-md">
           <ul className="divide-y divide-gray-200">
             {festivals.map((festival) => (
               <li key={festival.id}>
@@ -135,7 +135,7 @@ export default function FestivalsPage() {
                         </span>
                       )}
                       {!festival.isActive && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-gray-100 text-gray-800">
                           Inactivo
                         </span>
                       )}

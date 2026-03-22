@@ -129,7 +129,7 @@ export default function StatsPage() {
         <h1 className="text-3xl font-bold">Estadísticas</h1>
         <button
           onClick={() => refetch()}
-          className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 rounded-lg text-sm shadow"
+          className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 rounded-lg text-sm shadow-sm"
         >
           <RefreshCw className="w-4 h-4" />
           Actualizar
@@ -138,7 +138,7 @@ export default function StatsPage() {
 
       {/* Resumen general */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center gap-3">
             <BarChart3 className="w-8 h-8 text-blue-500" />
             <div>
@@ -149,7 +149,7 @@ export default function StatsPage() {
         </div>
         
         {stats?.viewsByType?.map((type) => (
-          <div key={type.pageType} className="bg-white rounded-lg shadow p-6">
+          <div key={type.pageType} className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center gap-3">
               {type.pageType === 'MOVIE' ? (
                 <Film className="w-8 h-8 text-green-500" />
@@ -175,7 +175,7 @@ export default function StatsPage() {
       )}
 
       {/* Tabla de películas */}
-      <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Film className="w-5 h-5" />
@@ -240,7 +240,7 @@ export default function StatsPage() {
 
       {/* Tabla de personas */}
       {stats?.topPeople && stats.topPeople.length > 0 && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Users className="w-5 h-5" />

@@ -60,7 +60,7 @@ export default function AdvancedTab() {
                 type="checkbox"
                 checked={isPartialFilmingStartDate}
                 onChange={(e) => setIsPartialFilmingStartDate(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="ml-2 text-sm text-gray-600">
                 Fecha incompleta
@@ -147,7 +147,7 @@ export default function AdvancedTab() {
                 type="checkbox"
                 checked={isPartialFilmingEndDate}
                 onChange={(e) => setIsPartialFilmingEndDate(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="ml-2 text-sm text-gray-600">
                 Fecha incompleta

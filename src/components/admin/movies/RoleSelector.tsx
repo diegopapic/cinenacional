@@ -197,7 +197,7 @@ export default function RoleSelector({
                         style={{ backgroundColor: deptColor }}
                       >
                         <span>{deptLabel}</span>
-                        <span className="bg-white/20 px-1.5 py-0.5 rounded text-xs">
+                        <span className="bg-white/20 px-1.5 py-0.5 rounded-sm text-xs">
                           {deptRoles.length}
                         </span>
                       </div>
@@ -216,7 +216,7 @@ export default function RoleSelector({
                                 {role.name}
                               </span>
                               {role.isMainRole && (
-                                <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded font-medium">
+                                <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-sm font-medium">
                                   Principal
                                 </span>
                               )}
@@ -274,7 +274,7 @@ export default function RoleSelector({
       {selectedRole && !isOpen && (
         <div className="mt-2 flex items-center gap-2">
           <span 
-            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white"
+            className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium text-white"
             style={{ backgroundColor: getDepartmentColor(selectedRole.department) }}
           >
             {getDepartmentLabel(selectedRole.department)}
@@ -283,7 +283,7 @@ export default function RoleSelector({
             {selectedRole.name}
           </span>
           {selectedRole.isMainRole && (
-            <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
+            <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-sm">
               Principal
             </span>
           )}

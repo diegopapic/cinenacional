@@ -204,7 +204,7 @@ export function FilmReleasesByYear({ entries, mode }: FilmReleasesByYearProps) {
           <Link
             href={isUpcoming ? `/listados/estrenos/${CURRENT_YEAR}` : '/listados/estrenos/proximos'}
             className={cn(
-              'mt-1 flex shrink-0 items-center gap-1.5 rounded-sm px-3 py-1.5 text-[12px] transition-colors md:text-[13px]',
+              'mt-1 flex shrink-0 items-center gap-1.5 rounded-xs px-3 py-1.5 text-[12px] transition-colors md:text-[13px]',
               isUpcoming
                 ? 'bg-accent/15 text-accent'
                 : 'text-muted-foreground/50 hover:text-foreground/70',
@@ -321,7 +321,7 @@ function CompactCard({ film, showYear }: { film: ReleaseEntry; showYear: boolean
   return (
     <Link href={film.href} className="group flex flex-col">
       {/* Poster */}
-      <div className="relative aspect-[2/3] w-full overflow-hidden rounded-sm">
+      <div className="relative aspect-2/3 w-full overflow-hidden rounded-xs">
         {film.posterSrc ? (
           <Image
             src={film.posterSrc}
@@ -336,13 +336,13 @@ function CompactCard({ film, showYear }: { film: ReleaseEntry; showYear: boolean
 
         {/* Badge de fecha */}
         {badge && (
-          <span className="absolute left-1 top-1 rounded-sm bg-black/70 px-1.5 py-0.5 text-[8px] text-foreground/80 backdrop-blur-sm md:left-1.5 md:top-1.5 md:text-[9px]">
+          <span className="absolute left-1 top-1 rounded-xs bg-black/70 px-1.5 py-0.5 text-[8px] text-foreground/80 backdrop-blur-xs md:left-1.5 md:top-1.5 md:text-[9px]">
             {badge}
           </span>
         )}
 
         {/* Overlay sutil de borde */}
-        <div className="absolute inset-0 border border-foreground/[0.04]" />
+        <div className="absolute inset-0 border border-foreground/4" />
       </div>
 
       {/* Info */}

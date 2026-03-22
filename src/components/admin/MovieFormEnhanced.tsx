@@ -365,7 +365,7 @@ export default function MovieFormEnhanced({
               >
                 <input
                   type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500"
                   checked={selectedGenres.includes(genre.id)}
                   onChange={(e) => {
                     if (e.target.checked) {
@@ -979,7 +979,7 @@ export default function MovieFormEnhanced({
             >
               <input
                 type="checkbox"
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500"
                 checked={selectedGenres.includes(genre.id)}
                 onChange={(e) => {
                   if (e.target.checked) {

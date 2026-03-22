@@ -49,7 +49,7 @@ export default function MovieCardDetailed({ movie }: MovieCardDetailedProps) {
       className="group flex gap-4 border-b border-border/10 py-4 last:border-b-0 md:gap-5"
     >
       {/* Poster */}
-      <div className="relative aspect-[2/3] w-20 shrink-0 overflow-hidden rounded-sm md:w-24">
+      <div className="relative aspect-2/3 w-20 shrink-0 overflow-hidden rounded-xs md:w-24">
         {movie.posterUrl ? (
           <Image
             fill
@@ -75,7 +75,7 @@ export default function MovieCardDetailed({ movie }: MovieCardDetailedProps) {
             </svg>
           </div>
         )}
-        <div className="absolute inset-0 border border-foreground/[0.04]" />
+        <div className="absolute inset-0 border border-foreground/4" />
       </div>
 
       {/* Content */}
@@ -91,7 +91,7 @@ export default function MovieCardDetailed({ movie }: MovieCardDetailedProps) {
             )}
           </p>
           {stageLabel && (
-            <span className="rounded-sm bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-widest text-amber-400/80">
+            <span className="rounded-xs bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-widest text-amber-400/80">
               {stageLabel}
             </span>
           )}

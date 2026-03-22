@@ -34,8 +34,8 @@ export function FilmReviewHero({
       />
 
       {/* Gradient overlays */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-background/70" />
-      <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-transparent" />
+      <div className="absolute inset-0 bg-linear-to-t from-background via-background/95 to-background/70" />
+      <div className="absolute inset-0 bg-linear-to-r from-background/90 via-background/70 to-transparent" />
 
       {/* Content */}
       <div className="relative mx-auto max-w-7xl px-4 py-6 md:py-10 lg:px-6 lg:py-12">
@@ -52,7 +52,7 @@ export function FilmReviewHero({
         <div className="flex items-center gap-4 md:gap-6">
           {/* Poster */}
           <Link href={filmHref} className="group shrink-0">
-            <div className="relative aspect-[2/3] w-20 overflow-hidden shadow-xl shadow-black/40 transition-transform duration-300 group-hover:scale-[1.02] md:w-28 lg:w-32">
+            <div className="relative aspect-2/3 w-20 overflow-hidden shadow-xl shadow-black/40 transition-transform duration-300 group-hover:scale-[1.02] md:w-28 lg:w-32">
               <Image
                 src={posterSrc}
                 alt={`Afiche de ${title}`}

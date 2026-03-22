@@ -64,7 +64,7 @@ export default async function NewSectionPage({ params }: PageProps) {
         </div>
       </div>
 
-      <div className="bg-white shadow rounded-lg p-6">
+      <div className="bg-white shadow-sm rounded-lg p-6">
         <FestivalSectionForm
           editionId={editionId}
           templates={availableTemplates}

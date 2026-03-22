@@ -28,7 +28,7 @@ export default function AddScreeningSection({ editionId, sections }: AddScreenin
   }
 
   return (
-    <div className="bg-white shadow rounded-lg">
+    <div className="bg-white shadow-sm rounded-lg">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50"

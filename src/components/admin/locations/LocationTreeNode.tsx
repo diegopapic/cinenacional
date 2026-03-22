@@ -94,7 +94,7 @@ export default function LocationTreeNode({ node, level, onDelete }: LocationTree
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <Link
             href={`/admin/locations/new?parentId=${node.id}`}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-sm"
             title="Agregar lugar hijo"
             onClick={(e) => e.stopPropagation()}
           >
@@ -103,7 +103,7 @@ export default function LocationTreeNode({ node, level, onDelete }: LocationTree
           
           <Link
             href={`/admin/locations/${node.id}/edit`}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-sm"
             title="Editar"
             onClick={(e) => e.stopPropagation()}
           >

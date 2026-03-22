@@ -280,7 +280,7 @@ export default function AdminScreeningVenuesPage() {
       )}
 
       {/* Header */}
-      <div className="bg-white shadow">
+      <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-6">
             <h1 className="text-3xl font-bold text-gray-900">
@@ -293,7 +293,7 @@ export default function AdminScreeningVenuesPage() {
       {/* Contenido principal */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filtros y acciones */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {/* Búsqueda */}
             <div className="relative md:col-span-2">
@@ -343,7 +343,7 @@ export default function AdminScreeningVenuesPage() {
         </div>
 
         {/* Lista de pantallas */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
@@ -385,7 +385,7 @@ export default function AdminScreeningVenuesPage() {
                       <tr key={venue.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
+                            <div className="shrink-0 h-10 w-10">
                               {venue.logoUrl ? (
                                 <img
                                   className="h-10 w-10 rounded-lg object-contain"
@@ -478,7 +478,7 @@ export default function AdminScreeningVenuesPage() {
 
         {/* Paginación */}
         {totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow">
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow-sm">
             <div className="flex-1 flex justify-between sm:hidden">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
@@ -503,7 +503,7 @@ export default function AdminScreeningVenuesPage() {
                 </p>
               </div>
               <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <nav className="relative z-0 inline-flex rounded-md shadow-xs -space-x-px" aria-label="Pagination">
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
@@ -732,7 +732,7 @@ export default function AdminScreeningVenuesPage() {
                       type="checkbox"
                       checked={formData.isActive}
                       onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-2"
                     />
                     <span className="text-sm font-medium text-gray-700">
                       Pantalla activa

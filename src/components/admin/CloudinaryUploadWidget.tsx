@@ -321,7 +321,7 @@ export function CloudinaryUploadWidget({
                   type="button"
                   onClick={openWidget}
                   disabled={disabled || isUploading}
-                  className="relative block w-full border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative block w-full border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-gray-400 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Upload className="mx-auto h-12 w-12 text-gray-400" />
                   <p className="mt-2 text-sm font-medium text-gray-900">

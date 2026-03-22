@@ -86,7 +86,7 @@ export default function EfemeridesDateSelector({ month, day }: EfemeridesDateSel
       <select
         value={day}
         onChange={handleDayChange}
-        className="h-8 tabular-nums border border-border/30 bg-background px-2 text-[13px] text-muted-foreground/60 outline-none transition-colors focus:border-accent/30 [&_option]:bg-background [&_option]:text-foreground"
+        className="h-8 tabular-nums border border-border/30 bg-background px-2 text-[13px] text-muted-foreground/60 outline-hidden transition-colors focus:border-accent/30 [&_option]:bg-background [&_option]:text-foreground"
       >
         {Array.from({ length: maxDay }, (_, i) => i + 1).map((d) => (
           <option key={d} value={d}>
@@ -99,7 +99,7 @@ export default function EfemeridesDateSelector({ month, day }: EfemeridesDateSel
       <select
         value={month}
         onChange={handleMonthChange}
-        className="h-8 border border-border/30 bg-background px-2 text-[13px] text-muted-foreground/60 outline-none transition-colors focus:border-accent/30 [&_option]:bg-background [&_option]:text-foreground"
+        className="h-8 border border-border/30 bg-background px-2 text-[13px] text-muted-foreground/60 outline-hidden transition-colors focus:border-accent/30 [&_option]:bg-background [&_option]:text-foreground"
       >
         {MONTHS.map((m, idx) => (
           <option key={idx + 1} value={idx + 1}>

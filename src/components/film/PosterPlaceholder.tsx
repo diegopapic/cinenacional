@@ -6,7 +6,7 @@
 export function PosterPlaceholder({ className }: { className?: string }) {
   return (
     <div
-      className={`flex items-center justify-center bg-gradient-to-b from-border/20 via-background to-border/10 ${className ?? ""}`}
+      className={`flex items-center justify-center bg-linear-to-b from-border/20 via-background to-border/10 ${className ?? ""}`}
     >
       {/* Minimal film-frame icon */}
       <svg

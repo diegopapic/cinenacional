@@ -70,7 +70,7 @@ export function MovieSidebar({
           {/* Mostrar año solo si existe */}
           {displayYear && (
             <div className="flex items-start">
-              <span className="text-gray-400 w-32 flex-shrink-0">Año de producción:</span>
+              <span className="text-gray-400 w-32 shrink-0">Año de producción:</span>
               <span className="ml-2 text-white">{displayYear}</span>
             </div>
           )}
@@ -78,7 +78,7 @@ export function MovieSidebar({
           {/* Duración */}
           {formattedDuration && (
             <div className="flex items-start">
-              <span className="text-gray-400 w-32 flex-shrink-0">Duración:</span>
+              <span className="text-gray-400 w-32 shrink-0">Duración:</span>
               <span className="ml-2 text-white">{formattedDuration}</span>
             </div>
           )}
@@ -86,7 +86,7 @@ export function MovieSidebar({
           {/* Países coproductores - solo si hay */}
           {hasCountries && (
             <div className="flex items-start">
-              <span className="text-gray-400 w-32 flex-shrink-0">
+              <span className="text-gray-400 w-32 shrink-0">
                 Coproducción con:
               </span>
               <span className="ml-2 text-white">
@@ -108,7 +108,7 @@ export function MovieSidebar({
           {/* Calificación por edad - solo si existe */}
           {rating && (
             <div className="flex items-start">
-              <span className="text-gray-400 w-32 flex-shrink-0">Calificación:</span>
+              <span className="text-gray-400 w-32 shrink-0">Calificación:</span>
               <span className="ml-2 text-white">{rating.name}</span>
             </div>
           )}

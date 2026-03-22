@@ -39,7 +39,7 @@ export default async function NewEditionPage({ params }: PageProps) {
         <h1 className="text-2xl font-bold text-gray-900">Nueva Edición</h1>
       </div>
 
-      <div className="bg-white shadow rounded-lg p-6">
+      <div className="bg-white shadow-sm rounded-lg p-6">
         <FestivalEditionForm
           festivalId={festivalId}
           festivalName={festival.name}

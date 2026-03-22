@@ -618,7 +618,7 @@ export default async function PersonPage({ params }: PageProps) {
             <div className="flex gap-4">
               {/* Portrait */}
               <div className="w-28 shrink-0">
-                <div className="relative aspect-[3/4] overflow-hidden rounded-sm shadow-xl shadow-black/40">
+                <div className="relative aspect-3/4 overflow-hidden rounded-xs shadow-xl shadow-black/40">
                   {photoUrlMd ? (
                     <Image
                       src={photoUrlMd}
@@ -743,7 +743,7 @@ export default async function PersonPage({ params }: PageProps) {
           <div className="hidden md:flex md:items-start md:gap-10 lg:gap-14">
             {/* Portrait */}
             <div className="w-48 lg:w-56 shrink-0">
-              <div className="relative aspect-[3/4] overflow-hidden rounded-sm shadow-2xl shadow-black/50">
+              <div className="relative aspect-3/4 overflow-hidden rounded-xs shadow-2xl shadow-black/50">
                 {photoUrlLg ? (
                   <Image
                     src={photoUrlLg}

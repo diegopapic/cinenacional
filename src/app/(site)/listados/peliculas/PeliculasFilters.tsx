@@ -87,7 +87,7 @@ function DateInput({
           onFocus={handleFocus}
           onBlur={handleBlur}
           onChange={handleChange}
-          className="w-full bg-transparent px-2 text-[12px] text-muted-foreground/60 outline-none placeholder:text-muted-foreground/25"
+          className="w-full bg-transparent px-2 text-[12px] text-muted-foreground/60 outline-hidden placeholder:text-muted-foreground/25"
         />
         <div className="relative mr-2 h-3.5 w-3.5 shrink-0">
           <CalendarDays className="h-3.5 w-3.5 text-muted-foreground/40" />
@@ -121,8 +121,8 @@ export default function PeliculasFilters({
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
           {Array.from({ length: 10 }).map((_, i) => (
             <div key={i} className="animate-pulse space-y-1">
-              <div className="h-2.5 w-16 rounded bg-muted/20" />
-              <div className="h-8 rounded bg-muted/15" />
+              <div className="h-2.5 w-16 rounded-sm bg-muted/20" />
+              <div className="h-8 rounded-sm bg-muted/15" />
             </div>
           ))}
         </div>

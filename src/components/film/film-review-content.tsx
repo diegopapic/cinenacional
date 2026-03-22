@@ -84,7 +84,7 @@ export function FilmReviewContent({
           md:prose-h3:text-xl md:prose-h3:mt-10 md:prose-h3:mb-4
           prose-strong:text-foreground/90
           prose-em:text-foreground/70
-          prose-a:text-accent prose-a:no-underline hover:prose-a:underline"
+          prose-a:text-accent prose-a:no-underline prose-a:hover:underline"
         dangerouslySetInnerHTML={{ __html: body }}
       />
     </article>
