@@ -10,11 +10,9 @@ Fuentes:
 
 ---
 
-## Fase 0: Preparación y auditoría pre-migración
+## Fase 0: Preparación y auditoría pre-migración ✅
 
-Antes de tocar dependencias, verificar que todo está limpio.
-
-- [x] Ejecutar `npm run build` y `npm run lint` — build OK, lint tiene 437 errores preexistentes (todos `no-explicit-any` y `no-unescaped-entities`). `next lint` está roto por incompatibilidad ESLint 8 flat config — se arregla en Fase 3f.
+- [x] Ejecutar `npm run build` y `npm run lint` — build OK, lint tenía 558 errores preexistentes.
 - [x] Hacer commit de cualquier cambio pendiente en `main` (a29d576).
 - [x] Crear backup del `package.json` y `package-lock.json` actuales (`*.bak`).
 - [x] Revisar `tasks/lessons.md` para contexto — OK.
@@ -23,18 +21,18 @@ Antes de tocar dependencias, verificar que todo está limpio.
 
 ## Fase 0.5: Limpiar errores de ESLint preexistentes
 
-Reducir ruido antes de la migración. No son blockers pero facilitan detectar errores nuevos introducidos por las migraciones.
+### 0.5a. Errores auto-fixeables ✅ (commit 50fe685)
 
-### 0.5a. Errores auto-fixeables (rápido)
+Reducidos de 558 → 433 errores.
 
-- [ ] **`prefer-const`** (6): Cambiar `let` → `const` donde no se reasigna. Auto-fix: `eslint --fix --rule 'prefer-const: error'`.
-- [ ] **`no-unused-vars`** (89): Eliminar imports y variables sin usar. Revisar manualmente — algunos pueden ser intencionales (destructuring con omisión, tipos exportados).
-- [ ] **`no-unescaped-entities`** (30): Reemplazar `'` → `&apos;` y `"` → `&quot;` en JSX text, o envolver en `{" "}`.
+- [x] **`prefer-const`** (6 → 0): Auto-fix `let` → `const`.
+- [x] **`no-unused-vars`** (89 → 0): Eliminados imports/variables sin usar, bare `catch {}`, configurado `argsIgnorePattern: "^_"` en `eslint.config.mjs`.
+- [x] **`no-unescaped-entities`** (30 → 0): Reemplazado `"` → `&quot;` en JSX text.
 
 ### 0.5b. Imágenes y accesibilidad
 
 - [ ] **`@next/next/no-img-element`** (29): Evaluar caso por caso:
-  - Imágenes de Cloudinary con URL externa → probablemente intencional, agregar `{/* eslint-disable-next-line */}` con comentario explicando por qué.
+  - Imágenes de Cloudinary con URL externa → probablemente intencional, agregar `{/* eslint-disable-next-line */}` con comentario.
   - Imágenes locales o estáticas → migrar a `next/image`.
 - [ ] **`jsx-a11y/alt-text`** (1): Agregar `alt` faltante.
 - [ ] **`jsx-a11y/role-has-required-aria-props`** (1): Agregar aria props faltantes.
@@ -49,12 +47,10 @@ Estos NO se arreglan ahora. Son deuda técnica que se ataca incrementalmente pos
 - 399 `any` requieren entender el tipo correcto caso por caso.
 - Se pueden ir resolviendo archivo por archivo después de la Fase 5.
 
-Acción: dejar un comentario `// TODO: type properly` en los más críticos (API handlers, hooks) y planificar como tarea separada post-migración.
-
 ### 0.5d. Verificación
 
 - [ ] `npm run build` sigue pasando.
-- [ ] `npx eslint src/` muestra solo los `no-explicit-any` como errores restantes.
+- [ ] `npx eslint src/` muestra solo `no-explicit-any` (399) + `no-img-element` (29) + 5 menores como errores restantes.
 
 ---
 
@@ -292,7 +288,7 @@ Next.js 16 tiene soporte estable para React Compiler. Memoización automática.
 - **Async Request APIs**: Todos los `params`, `searchParams`, `headers()` ya usan `await` + `Promise<...>`.
 - **No hay APIs deprecated**: Sin PropTypes, defaultProps, string refs, forwardRef, legacy context, ReactDOM.render/hydrate, next/amp, serverRuntimeConfig, next/legacy/image.
 - **useEffect ban**: 0 useEffects directos en componentes — solo en 10 hooks de infraestructura.
-- **ESLint flat config**: Ya migrado a `eslint.config.mjs`.
+- **ESLint flat config**: Ya migrado a `eslint.config.mjs` con `argsIgnorePattern: "^_"`.
 - **No hay parallel routes**: No necesitamos agregar `default.js` files.
 - **`images.remotePatterns`**: Ya usamos el formato moderno (no `images.domains`).
 
@@ -309,11 +305,13 @@ Next.js 16 tiene soporte estable para React Compiler. Memoización automática.
 ### Orden de ejecución
 
 ```
-Fase 0 (preparación)
+Fase 0 (preparación) ✅
   ↓
-Fase 0.5 (limpiar ESLint) ← reducir ruido, detectar errores nuevos más fácil
+Fase 0.5a (lint: prefer-const, unused-vars, unescaped-entities) ✅
   ↓
-Fase 1 (NextAuth v4 → Auth.js v5) ← PRIMERO, contra stack conocido (Next 15 + React 18)
+Fase 0.5b (lint: img-element, accesibilidad, otros menores) ← PRÓXIMO
+  ↓
+Fase 1 (NextAuth v4 → Auth.js v5) ← contra stack conocido (Next 15 + React 18)
   ↓
 Fase 2 (React 18 → 19)
   ↓
