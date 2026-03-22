@@ -29,16 +29,16 @@ Reducidos de 558 → 433 errores.
 - [x] **`no-unused-vars`** (89 → 0): Eliminados imports/variables sin usar, bare `catch {}`, configurado `argsIgnorePattern: "^_"` en `eslint.config.mjs`.
 - [x] **`no-unescaped-entities`** (30 → 0): Reemplazado `"` → `&quot;` en JSX text.
 
-### 0.5b. Imágenes y accesibilidad
+### 0.5b. Imágenes y accesibilidad ✅ (commit 2dbb702)
 
-- [ ] **`@next/next/no-img-element`** (29): Evaluar caso por caso:
-  - Imágenes de Cloudinary con URL externa → probablemente intencional, agregar `{/* eslint-disable-next-line */}` con comentario.
-  - Imágenes locales o estáticas → migrar a `next/image`.
-- [ ] **`jsx-a11y/alt-text`** (1): Agregar `alt` faltante.
-- [ ] **`jsx-a11y/role-has-required-aria-props`** (1): Agregar aria props faltantes.
-- [ ] **`react/jsx-no-comment-textnodes`** (1): Mover comentario fuera del JSX text.
-- [ ] **`@next/next/no-html-link-for-pages`** (1): Reemplazar `<a>` por `next/link`.
-- [ ] **`react-hooks/exhaustive-deps`** (1): Agregar dependencia faltante al array.
+Reducidos de 433 → 399 errores.
+
+- [x] **`@next/next/no-img-element`** (29 → 0): Regla desactivada globalmente — todas las imágenes son URLs de Cloudinary con transformaciones dinámicas. Migración a `next/image` + loader planificada en Fase 5d.
+- [x] **`jsx-a11y/alt-text`** (1 → 0): Renombrado import `Image` → `ImageIcon` (lucide) para evitar falso positivo.
+- [x] **`jsx-a11y/role-has-required-aria-props`** (1 → 0): Agregado `aria-controls` al combobox en Header.
+- [x] **`react/jsx-no-comment-textnodes`** (1 → 0): Eliminados `// ✅` inline en JSX.
+- [x] **`@next/next/no-html-link-for-pages`** (1 → 0): Reemplazado `<a>` por `<Link>` en admin dashboard.
+- [x] **`react-hooks/exhaustive-deps`** (1 → 0): `eslint-disable` con justificación en `usePageView`.
 
 ### 0.5c. `no-explicit-any` (399) — estrategia incremental
 
@@ -47,10 +47,10 @@ Estos NO se arreglan ahora. Son deuda técnica que se ataca incrementalmente pos
 - 399 `any` requieren entender el tipo correcto caso por caso.
 - Se pueden ir resolviendo archivo por archivo después de la Fase 5.
 
-### 0.5d. Verificación
+### 0.5d. Verificación ✅
 
-- [ ] `npm run build` sigue pasando.
-- [ ] `npx eslint src/` muestra solo `no-explicit-any` (399) + `no-img-element` (29) + 5 menores como errores restantes.
+- [x] `npm run build` pasa.
+- [x] `npx eslint src/` muestra solo `no-explicit-any` (399) como errores restantes.
 
 ---
 
@@ -269,7 +269,26 @@ Next.js 16 tiene soporte estable para React Compiler. Memoización automática.
 - [ ] **`cacheLife` / `cacheTag`**: Evaluar si nuestras páginas con `revalidate` se benefician.
 - [ ] **`cacheComponents`**: Evaluar PPR para páginas mixtas (shell estático + datos dinámicos).
 
-### 5d. Verificación final
+### 5d. Migrar `<img>` a `next/image` con Cloudinary loader
+
+Actualmente todas las imágenes usan `<img>` con URLs de Cloudinary que ya incluyen transformaciones (`f_auto`, `q_auto`, `w_XXX`). Migrar a `next/image` aporta lazy loading automático, `srcset` responsivo, preload de LCP images con `priority`, y formato automático (avif/webp).
+
+Hacer post-migración porque: (1) la config de `images` cambia en Next.js 16, mejor configurar una sola vez; (2) si se migra Tailwind v4, los breakpoints pueden cambiar y habría que ajustar `sizes`; (3) son ~30 archivos, no bloquea nada.
+
+**Opciones de implementación** (elegir una):
+- **Opción A**: `CldImage` de `next-cloudinary` (ya instalado `^6.16`) — wrapper de `next/image` con soporte nativo de transformaciones Cloudinary.
+- **Opción B**: Loader custom (`cloudinaryLoader`) de ~5 líneas, configurado globalmente via `images.loaderFile` en `next.config.js`. Más liviano, sin dependencia extra.
+
+**Pasos:**
+- [ ] Elegir opción A o B.
+- [ ] Configurar `images.remotePatterns` o `loaderFile` en `next.config.js`.
+- [ ] Migrar `<img>` → `<Image>` / `<CldImage>` en componentes del sitio público (priorizar LCP: hero, posters, fotos de personas).
+- [ ] Migrar `<img>` en componentes del admin (menor prioridad).
+- [ ] Agregar `priority` a imágenes above-the-fold (hero, primer poster).
+- [ ] Verificar Lighthouse LCP en páginas clave.
+- [ ] Re-habilitar regla `@next/next/no-img-element` en `eslint.config.mjs`.
+
+### 5e. Verificación final
 
 - [ ] `npm run build` sin errores ni warnings nuevos.
 - [ ] `npm run lint` limpio.
@@ -309,9 +328,9 @@ Fase 0 (preparación) ✅
   ↓
 Fase 0.5a (lint: prefer-const, unused-vars, unescaped-entities) ✅
   ↓
-Fase 0.5b (lint: img-element, accesibilidad, otros menores) ← PRÓXIMO
+Fase 0.5b (lint: img-element, accesibilidad, otros menores) ✅
   ↓
-Fase 1 (NextAuth v4 → Auth.js v5) ← contra stack conocido (Next 15 + React 18)
+Fase 1 (NextAuth v4 → Auth.js v5) ← PRÓXIMO, contra stack conocido (Next 15 + React 18)
   ↓
 Fase 2 (React 18 → 19)
   ↓
@@ -319,7 +338,7 @@ Fase 3 (Next.js 15 → 16) ← React 19 + Auth.js v5 ya están listos
   ↓
 Fase 4 (Tailwind 3 → 4) ← opcional, independiente
   ↓
-Fase 5 (optimización) ← post-migración
+Fase 5 (optimización + migrar <img> a next/image) ← post-migración
 ```
 
 Cada fase es deployable independientemente. La Fase 1 se puede deployar y validar en producción antes de continuar con las demás.
