@@ -55,7 +55,7 @@ export default function ImagesTab() {
             const seenIds = new Set<number>()
 
             if (movie.cast && Array.isArray(movie.cast)) {
-                movie.cast.forEach((c: any) => {
+                movie.cast.forEach((c: { person?: { id: number; firstName?: string | null; lastName?: string | null } }) => {
                     if (c.person && c.person.id && !seenIds.has(c.person.id)) {
                         seenIds.add(c.person.id)
                         people.push({
@@ -67,7 +67,7 @@ export default function ImagesTab() {
             }
 
             if (movie.crew && Array.isArray(movie.crew)) {
-                movie.crew.forEach((c: any) => {
+                movie.crew.forEach((c: { person?: { id: number; firstName?: string | null; lastName?: string | null } }) => {
                     if (c.person && c.person.id && !seenIds.has(c.person.id)) {
                         seenIds.add(c.person.id)
                         people.push({

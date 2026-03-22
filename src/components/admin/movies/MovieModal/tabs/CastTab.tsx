@@ -1,5 +1,6 @@
 // src/components/admin/movies/MovieModal/tabs/CastTab.tsx
 import { useMemo } from 'react'
+import type { CastMemberEntry } from '@/hooks/useMovieForm'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import { Trash2, Plus, GripVertical } from 'lucide-react'
 import PersonSearchInput from '@/components/admin/shared/PersonSearchInput'
@@ -22,18 +23,6 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-interface CastMember {
-  personId: number
-  personName?: string
-  alternativeNameId?: number | null
-  alternativeName?: string | null
-  characterName?: string
-  billingOrder?: number
-  isPrincipal?: boolean
-  isActor?: boolean
-  person?: any
-}
-
 // Componente para cada fila draggable
 function SortableCastMember({
   member,
@@ -41,9 +30,9 @@ function SortableCastMember({
   updateCastMember,
   removeCastMember
 }: {
-  member: CastMember
+  member: CastMemberEntry
   index: number
-  updateCastMember: (index: number, updates: Partial<CastMember>) => void
+  updateCastMember: (index: number, updates: Partial<CastMemberEntry>) => void
   removeCastMember: (index: number) => void
 }) {
   const {
@@ -185,7 +174,7 @@ export default function CastTab() {
   // Detectar si la pelicula es documental basandose en los generos
   const isDocumental = useMemo(() => {
     const genres = movieFormInitialData?.genres || []
-    return genres.some((g: any) => {
+    return genres.some((g: { slug?: string; name?: string; genre?: { slug?: string; name?: string } }) => {
       const slug = g.slug || g.genre?.slug || ''
       const name = g.name || g.genre?.name || ''
       return slug.toLowerCase().includes('documental') ||
@@ -210,8 +199,8 @@ export default function CastTab() {
     const { active, over } = event
 
     if (over && active.id !== over.id) {
-      const oldIndex = cast.findIndex((_: any, i: number) => `cast-${i}` === active.id)
-      const newIndex = cast.findIndex((_: any, i: number) => `cast-${i}` === over.id)
+      const oldIndex = cast.findIndex((_: CastMemberEntry, i: number) => `cast-${i}` === active.id)
+      const newIndex = cast.findIndex((_: CastMemberEntry, i: number) => `cast-${i}` === over.id)
       reorderCast(oldIndex, newIndex)
     }
   }
@@ -222,8 +211,8 @@ export default function CastTab() {
   }
 
   // Contadores para el resumen
-  const actoresCount = cast.filter((c: any) => c.isActor !== false).length
-  const siMismosCount = cast.filter((c: any) => c.isActor === false).length
+  const actoresCount = cast.filter((c: CastMemberEntry) => c.isActor !== false).length
+  const siMismosCount = cast.filter((c: CastMemberEntry) => c.isActor === false).length
 
   return (
     <div className="space-y-4">
@@ -271,11 +260,11 @@ export default function CastTab() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={cast.map((_: any, i: number) => `cast-${i}`)}
+              items={cast.map((_: CastMemberEntry, i: number) => `cast-${i}`)}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-3">
-                {cast.map((member: any, index: number) => (
+                {cast.map((member: CastMemberEntry, index: number) => (
                   <SortableCastMember
                     key={`cast-${index}`}
                     member={member}
@@ -315,9 +304,9 @@ export default function CastTab() {
                 • {siMismosCount} como si mismo{siMismosCount !== 1 ? 's' : ''}
               </span>
             )}
-            {cast.filter((c: any) => c.isPrincipal).length > 0 && (
+            {cast.filter((c: CastMemberEntry) => c.isPrincipal).length > 0 && (
               <span className="ml-2">
-                • {cast.filter((c: any) => c.isPrincipal).length} principal{cast.filter((c: any) => c.isPrincipal).length !== 1 ? 'es' : ''}
+                • {cast.filter((c: CastMemberEntry) => c.isPrincipal).length} principal{cast.filter((c: CastMemberEntry) => c.isPrincipal).length !== 1 ? 'es' : ''}
               </span>
             )}
           </p>

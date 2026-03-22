@@ -2,6 +2,7 @@
 'use client'
 
 import { CldUploadWidget } from 'next-cloudinary'
+import type { CloudinaryUploadWidgetResults } from '@cloudinary-util/types'
 import { useState, useRef, useCallback } from 'react'
 import { useMountEffect } from '@/hooks/useMountEffect'
 import { ImagePlus } from 'lucide-react'
@@ -51,8 +52,8 @@ export function MultiImageUpload({
     clearSafetyTimeout()
   }, [clearSafetyTimeout])
 
-  const handleUploadSuccess = useCallback((result: any) => {
-    if (result.info) {
+  const handleUploadSuccess = useCallback((result: CloudinaryUploadWidgetResults) => {
+    if (result.info && typeof result.info === 'object') {
       const { public_id } = result.info
       log.debug('Image uploaded', { public_id })
       uploadedIdsRef.current.push(public_id)

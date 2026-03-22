@@ -83,15 +83,15 @@ El sistema de formulario de películas es el más complejo. Los tipos fluyen ent
 - [x] `src/hooks/useMovieForm.ts` (78→0): Interfaces exportadas: `CastMemberEntry`, `CrewMemberEntry`, `AlternativeTitleEntry`, `TriviaEntry`, `MovieLinkEntry`. React Hook Form methods tipados via `UseFormReturn<MovieFormData>`. Todas las relaciones, callbacks y estados tipados.
 - [x] `src/contexts/MovieModalContext.tsx` (31→0): Context value tipado con las mismas interfaces. Eliminados todos los `any` de la interfaz del context.
 
-### E2. Componentes del formulario (48 any)
+### E2. Componentes del formulario ✅ COMPLETADA
 
-- [ ] `src/components/admin/MovieFormEnhanced.tsx` (48): tipar props, handlers y state del formulario legacy
-- [ ] `src/components/admin/movies/MovieModal/tabs/CastTab.tsx` (11): tipar cast entries y handlers
-- [ ] `src/components/admin/movies/MovieModal/tabs/CrewTab.tsx` (6): tipar crew entries y handlers
-- [ ] `src/components/admin/movies/MovieModal/tabs/ImagesTab/index.tsx` (2): tipar image entries
-- [ ] `src/components/admin/movies/MovieModal/tabs/ImagesTab/MultiImageUpload.tsx` (1): tipar upload handler
-- [ ] `src/components/admin/movies/MovieModal/MovieModalFooter.tsx` (1): tipar props
-- [ ] `src/components/admin/movies/MovieModal/index.tsx` (1): tipar modal props
+- [x] `MovieFormEnhanced.tsx` (48→0): props tipadas con interfaces de useMovieForm, RHF methods, callbacks
+- [x] `CastTab.tsx` (11→0): usa `CastMemberEntry`, genre filter tipado
+- [x] `CrewTab.tsx` (6→0): usa `CrewMemberEntry`, role type union
+- [x] `ImagesTab/index.tsx` (2→0): typed image/people queries
+- [x] `MultiImageUpload.tsx` (1→0): typed Cloudinary callback
+- [x] `MovieModalFooter.tsx` (1→0): typed formState access
+- [x] `MovieModal/index.tsx` (1→0): typed submit handler
 
 ---
 

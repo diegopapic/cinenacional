@@ -1,4 +1,5 @@
 // src/components/admin/movies/MovieModal/MovieModalFooter.tsx
+import type { FieldError } from 'react-hook-form'
 import { Save, Loader2 } from 'lucide-react'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
 
@@ -32,7 +33,7 @@ export default function MovieModalFooter({ onCancel }: MovieModalFooterProps) {
         <div className="px-6 py-2 bg-red-50 text-red-800 text-sm">
           Errores: {Object.keys(errors).join(', ')}
           <div className="text-xs mt-1">
-            {Object.entries(errors).map(([key, error]: [string, any]) => (
+            {Object.entries(errors).map(([key, error]: [string, FieldError | undefined]) => (
               <div key={key}>
                 {key}: {error?.message || error?.type || 'Error desconocido'}
               </div>

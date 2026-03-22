@@ -1,4 +1,5 @@
 // components/admin/movies/MovieModal/tabs/CrewTab.tsx
+import type { CrewMemberEntry } from '@/hooks/useMovieForm'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import { Trash2, Plus, GripVertical } from 'lucide-react'
 import PersonSearchInput from '@/components/admin/shared/PersonSearchInput'
@@ -22,19 +23,6 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-interface CrewMember {
-  personId: number
-  personName?: string
-  alternativeNameId?: number | null
-  alternativeName?: string | null
-  roleId?: number | null
-  role?: any
-  department?: string
-  billingOrder?: number
-  notes?: string
-  person?: any
-}
-
 // Componente para cada fila draggable
 function SortableCrewMember({
   member,
@@ -42,9 +30,9 @@ function SortableCrewMember({
   updateCrewMember,
   removeCrewMember
 }: {
-  member: CrewMember
+  member: CrewMemberEntry
   index: number
-  updateCrewMember: (index: number, updates: Partial<CrewMember>) => void
+  updateCrewMember: (index: number, updates: Partial<CrewMemberEntry>) => void
   removeCrewMember: (index: number) => void
 }) {
   const {
@@ -213,8 +201,8 @@ export default function CrewTab() {
     const { active, over } = event
 
     if (over && active.id !== over.id) {
-      const oldIndex = crew.findIndex((_: any, i: number) => `crew-${i}` === active.id)
-      const newIndex = crew.findIndex((_: any, i: number) => `crew-${i}` === over.id)
+      const oldIndex = crew.findIndex((_: CrewMemberEntry, i: number) => `crew-${i}` === active.id)
+      const newIndex = crew.findIndex((_: CrewMemberEntry, i: number) => `crew-${i}` === over.id)
       reorderCrew(oldIndex, newIndex)
     }
   }
@@ -247,11 +235,11 @@ export default function CrewTab() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={crew.map((_: any, i: number) => `crew-${i}`)}
+              items={crew.map((_: CrewMemberEntry, i: number) => `crew-${i}`)}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-3">
-                {crew.map((member: any, index: number) => (
+                {crew.map((member: CrewMemberEntry, index: number) => (
                   <SortableCrewMember
                     key={`crew-${index}`}
                     member={member}
