@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useMountEffect } from '@/hooks/useMountEffect';
 import { useWindowEvent } from '@/hooks/useWindowEvent';
 import { useKeydown } from '@/hooks/useKeydown';
+import { useBodyOverflow } from '@/hooks/useBodyOverflow';
 import { generateImageCaption } from '@/lib/images/imageUtils';
 
 interface GalleryImage {
@@ -37,6 +38,7 @@ interface ImageGalleryProps {
 
 export function ImageGallery({ images }: ImageGalleryProps) {
   const [lightbox, setLightbox] = useState<{ index: number } | null>(null);
+  useBodyOverflow(lightbox !== null);
   const [mobileIndex, setMobileIndex] = useState(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -102,12 +104,10 @@ export function ImageGallery({ images }: ImageGalleryProps) {
   // Lightbox
   const openLightbox = (index: number) => {
     setLightbox({ index });
-    document.body.style.overflow = 'hidden';
   };
 
   const closeLightbox = useCallback(() => {
     setLightbox(null);
-    document.body.style.overflow = 'auto';
   }, []);
 
   const navigateLightbox = useCallback((direction: 'prev' | 'next') => {
