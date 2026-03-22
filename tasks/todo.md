@@ -127,11 +127,11 @@ Migrado de Tailwind CSS 3.4.13 → 4.2.2 via `npx @tailwindcss/upgrade`.
 
 - [x] `ImageGallery.tsx`: Creado hook `useBodyOverflow` — sincroniza `document.body.style.overflow` con estado del lightbox via effect en vez de mutación directa.
 
-### 5d. `react-hooks/incompatible-library` (1 warning)
+### 5d. `react-hooks/incompatible-library` (1 warning) ✅ (commit 6ab098f)
 
-Uso de API de librería incompatible con memoización del compiler.
+- [x] `RoleModal.tsx`: Reemplazado `watch()` por `useWatch()` de react-hook-form (compatible con memoización). También migrado ref-during-render a `useValueChange`.
 
-- [ ] `src/components/admin/roles/RoleModal.tsx` (1): API que retorna funciones no memoizables → evaluar alternativa o suprimir
+**Fase 5 completada.** 25/25 warnings resueltos. Errores restantes: 400 `no-explicit-any` + 8 internos = 408 total. Build OK.
 
 ---
 
@@ -228,7 +228,7 @@ Fase 3 (Next.js 15 → 16) ✅ ← React 19 + Auth.js v5 ya están listos
   ↓
 Fase 4 (Tailwind 3 → 4) ✅
   ↓
-Fase 5 (React compiler lint warnings) ← PRÓXIMO, prerequisito para React Compiler
+Fase 5 (React compiler lint warnings) ✅
   ↓
 Fase 6 (React Compiler + optimización + migrar <img> a next/image) ← post-migración
 ```
