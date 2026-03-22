@@ -119,11 +119,9 @@ Migrado de Tailwind CSS 3.4.13 → 4.2.2 via `npx @tailwindcss/upgrade`.
 - [x] `BasicInfoFields.tsx` (4): sync partial dates via `useValueChange`.
 - [x] `MovieModalContext.tsx` (8): detect editingMovie changes via `useValueChange`.
 
-### 5b. `react-hooks/static-components` (5 warnings)
+### 5b. `react-hooks/static-components` (5 warnings) ✅ (commit de97496)
 
-Componentes creados dentro de render — se recrean en cada render, reseteando su estado.
-
-- [ ] `src/app/admin/stats/page.tsx` (5): componentes definidos inline durante render → extraer a componentes top-level
+- [x] `src/app/admin/stats/page.tsx` (5): `SortHeader` extraído de inline a componente module-level con props `sortField` y `onSort`.
 
 ### 5c. `react-hooks/immutability` (1 warning)
 
