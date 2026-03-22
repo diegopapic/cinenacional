@@ -111,14 +111,13 @@ Migrado de Tailwind CSS 3.4.13 → 4.2.2 via `npx @tailwindcss/upgrade`.
 
 25 warnings nuevos de las reglas `react-hooks/refs`, `react-hooks/static-components`, `react-hooks/immutability` y `react-hooks/incompatible-library` introducidas por `eslint-config-next@16`. Son patterns que el React compiler no puede optimizar correctamente y que pueden causar bugs si se activa `reactCompiler: true`.
 
-### 5a. `react-hooks/refs` (18 warnings)
+### 5a. `react-hooks/refs` (18 warnings) ✅ (commit 9e9602a)
 
-Acceso a `.current` de refs durante render — debe hacerse solo en event handlers o effects.
-
-- [ ] `src/components/admin/movies/RoleSelector.tsx` (2): refs leídos durante render
-- [ ] `src/components/admin/people/PersonForm.tsx` (4): refs leídos durante render
-- [ ] `src/components/admin/people/PersonFormFields/BasicInfoFields.tsx` (4): refs leídos durante render
-- [ ] `src/contexts/MovieModalContext.tsx` (8): refs leídos durante render en el context provider
+- [x] Creados hooks `usePrevious` y `useValueChange` en `src/hooks/` — reemplazan el pattern de leer `ref.current` durante render.
+- [x] `RoleSelector.tsx` (2): sync loadedRole via `useValueChange`.
+- [x] `PersonForm.tsx` (4): init via `useMountEffect`, sync nationalities via `useValueChange`.
+- [x] `BasicInfoFields.tsx` (4): sync partial dates via `useValueChange`.
+- [x] `MovieModalContext.tsx` (8): detect editingMovie changes via `useValueChange`.
 
 ### 5b. `react-hooks/static-components` (5 warnings)
 
