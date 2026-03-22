@@ -76,7 +76,7 @@ export async function middleware(request: NextRequest) {
   // que JavaScript pueda leerlo y enviarlo como header en requests de mutación.
   // Se genera temprano para que cualquier `return response` incluya el cookie.
   const existingCsrfToken = request.cookies.get(CSRF_COOKIE_NAME)?.value
-  const csrfSecret = process.env.NEXTAUTH_SECRET
+  const csrfSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET
   if (!existingCsrfToken && csrfSecret) {
     const csrfToken = await generateSignedCsrfToken(csrfSecret)
     response.cookies.set(CSRF_COOKIE_NAME, csrfToken, {
@@ -99,7 +99,8 @@ export async function middleware(request: NextRequest) {
     try {
       const token = await getToken({
         req: request,
-        secret: process.env.NEXTAUTH_SECRET
+        secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+        cookieName: 'authjs.session-token',
       })
 
       if (!token) {
@@ -231,7 +232,7 @@ export async function middleware(request: NextRequest) {
       // CSRF Token: validar signed double-submit cookie
       // El token se genera en el middleware y se setea como cookie no-httpOnly.
       // El cliente lo lee del cookie y lo envía como header X-CSRF-Token.
-      const csrfSecret = process.env.NEXTAUTH_SECRET
+      const csrfSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET
       if (csrfSecret) {
         const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value
         const headerToken = request.headers.get(CSRF_HEADER_NAME)
