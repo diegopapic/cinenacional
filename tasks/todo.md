@@ -137,14 +137,11 @@ Migrado de Tailwind CSS 3.4.13 → 4.2.2 via `npx @tailwindcss/upgrade`.
 
 ## Fase 6: Limpieza y optimización post-migración
 
-### 6a. Activar React Compiler
+### 6a. Activar React Compiler ✅ (commit 87a4215)
 
-Next.js 16 tiene soporte estable para React Compiler. Memoización automática. **Requisito: completar Fase 5 primero.**
-
-- [ ] `npm install -D babel-plugin-react-compiler`
-- [ ] Agregar `reactCompiler: true` en `next.config.js`.
-- [ ] Testear performance — puede aumentar tiempos de build.
-- [ ] Si hay problemas, deshabilitar y evaluar caso por caso.
+- [x] Instalado `babel-plugin-react-compiler`.
+- [x] `reactCompiler: true` en `next.config.js`.
+- [x] Build pasa sin errores. Memoización automática activa para todos los componentes.
 
 ### 6b. Explorar nuevas APIs de React 19.2
 
