@@ -116,6 +116,7 @@ export function usePageView(options: PageViewOptions): void {
     return () => {
       // No reseteamos hasTracked para evitar double-tracking
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Track only on key identity changes, not on every options object reference
   }, [options.pageType, options.movieId, options.personId]);
 }
 

@@ -1052,8 +1052,8 @@ export default function MovieFormEnhanced({
               <div key={index} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                 <div className="flex-1">
                   <span className="font-medium">{member.person?.name || 'Sin nombre'}</span>
-                  <span className="text-gray-500"> - {member.role?.name || 'Sin rol'}</span>  // ✅
-                  {member.role?.department && (  // ✅
+                  <span className="text-gray-500"> - {member.role?.name || 'Sin rol'}</span>
+                  {member.role?.department && (
                     <span className="text-gray-400"> ({member.role.department})</span>
                   )}
                 </div>

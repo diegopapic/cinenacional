@@ -126,6 +126,7 @@ export default function Header() {
                     className="h-9 w-64 border-b border-accent/40 bg-transparent pl-9 pr-8 font-sans text-sm text-nav-foreground placeholder:text-nav-foreground/30 focus:outline-none lg:w-72"
                     aria-label="Buscar películas y personas"
                     aria-expanded={query.length >= 2}
+                    aria-controls="desktop-search-results"
                     aria-haspopup="listbox"
                     role="combobox"
                     autoComplete="off"

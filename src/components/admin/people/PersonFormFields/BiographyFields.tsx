@@ -1,7 +1,7 @@
 // src/components/admin/people/PersonFormFields/BiographyFields.tsx
 
 import { PersonFormData } from '@/lib/people/peopleTypes';
-import { Image, FileText } from 'lucide-react';
+import { Image as ImageIcon, FileText } from 'lucide-react';
 
 interface BiographyFieldsProps {
   formData: PersonFormData;
@@ -37,7 +37,7 @@ export function BiographyFields({ formData, updateField }: BiographyFieldsProps)
       <div>
         <label htmlFor="photoUrl" className="block text-sm font-medium text-gray-700 mb-1">
           <span className="flex items-center gap-2">
-            <Image className="w-4 h-4" />
+            <ImageIcon className="w-4 h-4" />
             URL de Foto
           </span>
         </label>
