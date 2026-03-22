@@ -123,11 +123,9 @@ Migrado de Tailwind CSS 3.4.13 → 4.2.2 via `npx @tailwindcss/upgrade`.
 
 - [x] `src/app/admin/stats/page.tsx` (5): `SortHeader` extraído de inline a componente module-level con props `sortField` y `onSort`.
 
-### 5c. `react-hooks/immutability` (1 warning)
+### 5c. `react-hooks/immutability` (1 warning) ✅ (commit 0cd73c1)
 
-Mutación de variable externa al componente durante render.
-
-- [ ] `src/components/movies/ImageGallery.tsx` (1): variable mutada fuera del scope del componente
+- [x] `ImageGallery.tsx`: Creado hook `useBodyOverflow` — sincroniza `document.body.style.overflow` con estado del lightbox via effect en vez de mutación directa.
 
 ### 5d. `react-hooks/incompatible-library` (1 warning)
 
