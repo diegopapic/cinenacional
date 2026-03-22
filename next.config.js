@@ -65,20 +65,8 @@ const nextConfig = {
     },
   },
   
-  webpack: (config, { isServer }) => {
-    config.optimization.minimize = true;
-    
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        path: false,
-        crypto: false,
-      };
-    }
-    
-    return config;
-  },
+  // Turbopack (default en Next.js 16, reemplaza webpack config anterior)
+  turbopack: {},
   
   productionBrowserSourceMaps: false,
   

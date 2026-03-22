@@ -1,4 +1,4 @@
-// src/middleware.ts
+// src/proxy.ts (renamed from middleware.ts for Next.js 16)
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import {
@@ -57,7 +57,7 @@ if (typeof setInterval !== 'undefined') {
   }, 300000)
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Generar nonce para CSP (per-request)
