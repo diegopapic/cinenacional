@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent } from 'react'
 
 /**
  * Registra un keydown listener en document.
@@ -11,15 +11,12 @@ export function useKeydown(
   handler: (e: KeyboardEvent) => void,
   enabled: boolean = true
 ) {
-  const savedHandler = useRef(handler)
-  savedHandler.current = handler
+  const onKeydown = useEffectEvent(handler)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!enabled) return
 
-    const listener = (e: KeyboardEvent) => savedHandler.current(e)
-    document.addEventListener('keydown', listener)
-    return () => document.removeEventListener('keydown', listener)
+    document.addEventListener('keydown', onKeydown)
+    return () => document.removeEventListener('keydown', onKeydown)
   }, [enabled])
 }

@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from 'react'
+import { useEffect, useEffectEvent, type RefObject } from 'react'
 
 /**
  * Ejecuta un callback cuando se hace clic fuera de uno o más elementos referenciados.
@@ -13,6 +13,8 @@ export function useClickOutside(
   callback: () => void,
   enabled = true,
 ) {
+  const onClickOutside = useEffectEvent(callback)
+
   useEffect(() => {
     if (!enabled) return
 
@@ -22,11 +24,11 @@ export function useClickOutside(
         (ref) => ref.current && !ref.current.contains(event.target as Node),
       )
       if (isOutside) {
-        callback()
+        onClickOutside()
       }
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [refs, callback, enabled])
+  }, [refs, enabled])
 }

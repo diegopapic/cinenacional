@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent } from 'react'
 
 /**
  * Registra un event listener en window (o un elemento).
@@ -15,15 +15,12 @@ export function useWindowEvent<K extends keyof WindowEventMap>(
   enabled: boolean = true,
   options?: boolean | AddEventListenerOptions
 ) {
-  const savedHandler = useRef(handler)
-  savedHandler.current = handler
+  const onEvent = useEffectEvent(handler)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!enabled) return
 
-    const listener = (e: WindowEventMap[K]) => savedHandler.current(e)
-    window.addEventListener(event, listener, options)
-    return () => window.removeEventListener(event, listener, options)
+    window.addEventListener(event, onEvent, options)
+    return () => window.removeEventListener(event, onEvent, options)
   }, [event, enabled, options])
 }

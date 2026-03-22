@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent } from 'react'
 
 /**
  * Ejecuta un callback a intervalos regulares.
@@ -8,16 +8,12 @@ import { useEffect, useRef } from 'react'
  * @param delay - Intervalo en ms (null para pausar)
  */
 export function useInterval(callback: () => void, delay: number | null) {
-  const savedCallback = useRef(callback)
+  const onTick = useEffectEvent(callback)
 
-  // Mantener la referencia al callback actualizada
-  savedCallback.current = callback
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (delay === null) return
 
-    const id = setInterval(() => savedCallback.current(), delay)
+    const id = setInterval(onTick, delay)
     return () => clearInterval(id)
   }, [delay])
 }
