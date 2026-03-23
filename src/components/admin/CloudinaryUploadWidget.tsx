@@ -347,7 +347,8 @@ export function CloudinaryUploadWidget({
                       style={{
                         width: displayWidth,
                         height: displayHeight,
-                        maxWidth: '100%'
+                        maxWidth: '100%',
+                        aspectRatio: !maxDisplayHeight ? aspectRatio : undefined
                       }}
                     >
                       <Image
