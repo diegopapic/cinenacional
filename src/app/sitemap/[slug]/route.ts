@@ -51,6 +51,21 @@ export async function GET(
     )
   }
 
+  if (name === 'genres') {
+    const genres = await prisma.genre.findMany({
+      select: { slug: true },
+      orderBy: { name: 'asc' },
+    })
+
+    const entries: SitemapEntry[] = genres.map((genre) => ({
+      url: `${SITEMAP_BASE_URL}/listados/peliculas/genero/${genre.slug}`,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    }))
+
+    return xmlResponse(buildSitemapXml(entries))
+  }
+
   if (name === 'obituarios') {
     const years: { deathYear: number }[] = await prisma.$queryRaw`
       SELECT DISTINCT death_year AS "deathYear"

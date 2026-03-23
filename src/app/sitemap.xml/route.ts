@@ -21,6 +21,7 @@ export async function GET() {
     { loc: `${SITEMAP_BASE_URL}/sitemap/static.xml` },
     { loc: `${SITEMAP_BASE_URL}/sitemap/estrenos.xml` },
     { loc: `${SITEMAP_BASE_URL}/sitemap/obituarios.xml` },
+    { loc: `${SITEMAP_BASE_URL}/sitemap/genres.xml` },
   ]
 
   for (let i = 0; i < moviePages; i++) {
