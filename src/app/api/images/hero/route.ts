@@ -7,7 +7,7 @@ import { apiHandler } from '@/lib/api/api-handler'
 
 export const dynamic = 'force-dynamic'
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export const GET = apiHandler(async (_request: NextRequest) => {
   const images = await getHeroImages()
   return NextResponse.json({ images })

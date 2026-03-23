@@ -109,7 +109,7 @@ export function useListPage<
       router.replace(newUrl, { scroll: false })
       return next
     })
-  }, [config, router]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [config, router])  
 
   // setViewMode con limit dinámico
   const setViewMode = useCallback((mode: ViewMode) => {

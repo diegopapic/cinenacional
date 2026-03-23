@@ -13,7 +13,7 @@ export function useScrollIntoView(
   deps: DependencyList,
   options: ScrollIntoViewOptions = { behavior: 'smooth', block: 'nearest', inline: 'center' }
 ) {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     requestAnimationFrame(() => {
       const element = getElement()
