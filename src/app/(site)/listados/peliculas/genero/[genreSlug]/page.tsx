@@ -7,6 +7,7 @@ import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import ServerPagination from '@/components/shared/ServerPagination'
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 3600 // 1h
 
 const PAGE_SIZE = 60

@@ -6,6 +6,7 @@ import ObituariosYearSelector from '@/components/listados/obituarios/ObituariosY
 import ObituariosGrid from '@/app/(site)/listados/obituarios/ObituariosGrid'
 import ServerPagination from '@/components/shared/ServerPagination'
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 3600 // 1h
 
 interface PageProps {
