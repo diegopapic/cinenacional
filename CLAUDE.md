@@ -25,6 +25,11 @@
 - Si un script o comando puede tardar mucho tiempo (ej: scraping masivo, migraciones pesadas, builds largos), consultá antes de ejecutarlo.
 - Si hay ambigüedad genuina en los requerimientos y no podés inferir la intención.
 
+## Dev server y verificación
+- **NUNCA iniciar un dev server** (`npm run dev`, `preview_start`, etc.) para probar cambios. Los worktrees no tienen `node_modules` y no se deben instalar dependencias en ellos.
+- El usuario prueba los cambios directamente en producción.
+- Verificar cambios con `npm run lint` solamente (que sí funciona desde el repo principal).
+
 ## Corrección de errores autónoma
 - Cuando recibas un informe de error: simplemente arreglalo. No pidas que te lleven de la mano.
 - Identificá logs, errores o tests que fallan y luego resolvelos.
