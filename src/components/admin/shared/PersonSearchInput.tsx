@@ -186,7 +186,7 @@ export default function PersonSearchInput({
   showAlternativeNames = true
 }: PersonSearchInputProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState(initialPersonName || '')
   const [creating, setCreating] = useState(false)
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
   const [selectedAlternativeNameId, setSelectedAlternativeNameId] = useState<number | null>(alternativeNameId || null)

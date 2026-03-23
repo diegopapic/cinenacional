@@ -71,3 +71,4 @@ venv/
 
 # Logs
 *.log
+logs/

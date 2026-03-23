@@ -272,6 +272,7 @@ async function fetchWithTimeout(url: string, timeoutMs = 15000): Promise<Respons
 /** Decode common HTML entities in extracted text (titles, author names) */
 function decodeHtmlEntities(text: string): string {
   return text
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
     .replace(/&quot;/gi, '"')
     .replace(/&apos;/gi, "'")
     .replace(/&#39;/g, "'")

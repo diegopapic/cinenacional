@@ -10,7 +10,7 @@ import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
 interface CastMember {
   name: string;
-  character: string;
+  character: string | null;
   image?: string;
   personId?: number;
   personSlug?: string;

@@ -775,17 +775,7 @@ export default async function MoviePage({ params }: PageProps) {
       reviews={movie.reviews || []}
     />
     <MoviePageClient
-      movie={{
-        ...movie,
-        hasImages: movie._count.images > 0,
-        hasVideos: movie._count.videos > 0,
-        hasAlternativeTitles: movie._count.alternativeTitles > 0,
-        hasTrivia: movie._count.trivia > 0,
-        hasLinks: movie._count.links > 0,
-        hasAwards: movie._count.awards > 0,
-        imageCount: movie._count.images,
-        videoCount: movie._count.videos
-      }}
+      movie={movie}
       displayYear={displayYear}
       totalDuration={totalDuration}
       genres={genres}

@@ -14,7 +14,7 @@ import { usePageView } from '@/hooks/usePageView';
 
 interface CastMember {
     name: string;
-    character: string;
+    character: string | null;
     image?: string;
     isPrincipal?: boolean;
     billingOrder?: number;

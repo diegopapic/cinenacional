@@ -58,21 +58,22 @@ Permite explorar películas, personas (actores, directores, etc.), estrenos, obi
 
 | Capa | Tecnología |
 |------|------------|
-| Framework | **Next.js 15** (App Router) |
-| Lenguaje | **TypeScript** (strict mode) |
+| Framework | **Next.js 16** (App Router, Turbopack default) |
+| Lenguaje | **TypeScript** (strict mode, zero `any`) |
+| Runtime | **React 19** con **React Compiler** (memoización automática) |
 | Base de datos | **PostgreSQL 15** (via Prisma ORM 6.x) |
 | Cache/Rate limiting | **Redis 7** (ioredis, opcional en dev) |
-| Autenticación | **NextAuth v4** (credentials provider, JWT sessions) |
-| Estilos | **Tailwind CSS 3** con colores oklch |
+| Autenticación | **Auth.js v5** (next-auth@5 beta, credentials provider, JWT sessions) |
+| Estilos | **Tailwind CSS 4** con colores oklch (CSS-first config) |
 | UI Components | **Radix UI** (dialog, select, tabs) |
 | Forms | **React Hook Form** + **Zod** validation |
 | State/Fetching | **TanStack React Query v5** |
-| Imágenes | **Cloudinary** (upload + CDN) |
+| Imágenes | **Cloudinary** (upload + CDN) + **next/image** con custom loader |
 | Drag & Drop | **@dnd-kit** (sortable) |
-| Deploy | **Docker** (standalone) + **Vercel** |
+| Deploy | **Docker** (standalone, webpack build) + **Vercel** |
 | Monitoreo | **Uptime Kuma** (self-hosted) |
 | Analytics | **Google Analytics** (GA4) |
-| Linting | **ESLint** (next/core-web-vitals + next/typescript) |
+| Linting | **ESLint 9** (flat config, next/core-web-vitals + next/typescript) |
 | Git hooks | **Husky** |
 
 ## Estructura del proyecto
@@ -121,20 +122,23 @@ src/
 │   └── ads/                    # AdBanner (Google AdSense)
 ├── hooks/                      # Custom React hooks (ÚNICO lugar donde vive useEffect)
 │   ├── useMountEffect.ts       # Wrapper de useEffect(fn, []) — efecto al montar
+│   ├── useBodyOverflow.ts      # Controlar overflow del body (modales)
 │   ├── useClickOutside.ts      # Cerrar dropdown/popover al click fuera
-│   ├── useEscapeKey.ts         # Listener de tecla Escape
-│   ├── useKeydown.ts           # Listener de keydown genérico
-│   ├── useInterval.ts          # setInterval con cleanup automático
-│   ├── useWindowEvent.ts       # addEventListener en window (scroll, resize, etc.)
-│   ├── useScrollIntoView.ts    # scrollIntoView post-paint
 │   ├── useDebounce.ts          # Debounce genérico
-│   ├── usePageView.ts          # Tracking de page views
+│   ├── useEscapeKey.ts         # Listener de tecla Escape
 │   ├── useGlobalSearch.ts      # Búsqueda global con debounce (React Query)
-│   ├── useMovieForm.ts         # Lógica del formulario de películas (React Query)
+│   ├── useInterval.ts          # setInterval con cleanup automático
+│   ├── useKeydown.ts           # Listener de keydown genérico
 │   ├── useListPage.ts          # Paginación y filtros para listados (React Query)
+│   ├── useMovieForm.ts         # Lógica del formulario de películas (React Query)
+│   ├── usePageView.ts          # Tracking de page views
 │   ├── usePeople.ts            # Fetching de personas (React Query)
 │   ├── usePeopleForm.ts        # Formulario de personas (React Query)
-│   └── useRoles.ts             # Fetching de roles (React Query)
+│   ├── usePrevious.ts          # Guardar valor previo de una variable
+│   ├── useRoles.ts             # Fetching de roles (React Query)
+│   ├── useScrollIntoView.ts    # scrollIntoView post-paint
+│   ├── useValueChange.ts       # Callback cuando un valor cambia
+│   └── useWindowEvent.ts       # addEventListener en window (scroll, resize, etc.)
 ├── lib/                        # Utilidades y lógica compartida
 │   ├── prisma.ts               # Prisma clients (prismaBase para NextAuth + prisma extendido con retry)
 │   ├── auth.ts                 # NextAuth config + requireAuth() helper
@@ -152,7 +156,7 @@ src/
 │   ├── estrenos/               # Release types and utils
 │   ├── obituarios/             # Obituary types and utils
 │   ├── festivals/              # Festival types
-│   ├── images/                 # Image types and utils
+│   ├── images/                 # Image types, utils, cloudinaryLoader.js (next/image loader)
 │   ├── roles/                  # Role types and utils
 │   └── shared/                 # Shared types (listTypes), dateUtils, filterUtils, listUtils
 ├── services/                   # API client layer (frontend → backend)
@@ -265,6 +269,7 @@ Ref: [Factory/Alvin Sng](https://x.com/alvinsng/status/2033969062834045089) + [r
 | Hook | Propósito | Ejemplo |
 |------|-----------|---------|
 | `useMountEffect(fn)` | Efecto que corre solo al montar | Inicializar widget, cleanup al desmontar |
+| `useBodyOverflow(active)` | Controlar overflow del body | Modales, lightbox |
 | `useClickOutside(ref, cb)` | Cerrar dropdown al click fuera | Autocomplete, popover |
 | `useEscapeKey(cb, enabled)` | Tecla Escape | Cerrar modal, lightbox |
 | `useKeydown(handler, enabled)` | Keyboard listeners | Navegación con flechas |
@@ -273,6 +278,8 @@ Ref: [Factory/Alvin Sng](https://x.com/alvinsng/status/2033969062834045089) + [r
 | `useScrollIntoView(getEl, deps)` | scrollIntoView post-paint | Tab bar, year selector |
 | `useDebounce(value, delay)` | Debounce de un valor | Search input |
 | `usePageView(options)` | Tracking de page view | Analytics |
+| `usePrevious(value)` | Guardar valor previo | Comparar props entre renders |
+| `useValueChange(value, cb)` | Callback al cambiar un valor | Reaccionar a cambios de prop |
 
 Si necesitás un efecto que no encaja en estos hooks, **creá un hook nuevo** con nombre semántico en `src/hooks/` en vez de usar `useEffect` directo.
 
@@ -414,12 +421,46 @@ Preferir React Query (`useQuery`) que ya maneja esto internamente.
 | Scroll/resize listener | `useWindowEvent` hook |
 | scrollIntoView | `useScrollIntoView` hook |
 | Cleanup al desmontar | `useMountEffect` hook |
+| Body overflow (modal) | `useBodyOverflow` hook |
+| Valor previo | `usePrevious` hook |
+| Reacción a cambio | `useValueChange` hook |
 
-### Estilos
-- Tailwind con colores custom en oklch: `background`, `foreground`, `muted`, `border`, `nav`, `accent`.
+### TypeScript: zero `any`
+- El codebase tiene **cero `any` explícitos**. Se completó una limpieza exhaustiva de ~400 errores en 64 archivos.
+- La regla `@typescript-eslint/no-explicit-any` está activa como error en ESLint.
+- Usar tipos concretos, genéricos, `unknown`, o `Record<string, unknown>` según corresponda. Nunca `any`.
+
+### React Compiler
+- Habilitado via `reactCompiler: true` en `next.config.ts` + `babel-plugin-react-compiler`.
+- Hace `useMemo`, `useCallback` y `React.memo` innecesarios en la mayoría de los casos — el compilador los agrega automáticamente.
+- **No agregar `useMemo`/`useCallback`/`React.memo` manualmente** salvo casos excepcionales que el compilador no pueda optimizar.
+- Los hooks de infraestructura usan `useEffectEvent` (React 19) para estabilizar callbacks sin necesidad de `useCallback`.
+
+### Auth.js v5 (next-auth@5)
+- Migrado de NextAuth v4 a Auth.js v5 (`next-auth@5.0.0-beta.30`).
+- Config en `src/lib/auth.ts` exporta `{ handlers, auth, signIn, signOut }`.
+- Route handler en `src/app/api/auth/[...nextauth]/route.ts` usa `handlers`.
+- `auth()` reemplaza a `getServerSession()` — se usa directamente sin pasar options.
+- Middleware usa `auth` como wrapper (no `withAuth`).
+- El tipo de session se extiende en `src/types/next-auth.d.ts`.
+
+### Imágenes: next/image + Cloudinary loader
+- Todas las `<img>` fueron migradas a `<Image>` de `next/image`.
+- Custom loader en `src/lib/images/cloudinaryLoader.js` (JS module, no TS).
+- Configurado en `next.config.ts` con `images.loader: 'custom'` y `images.loaderFile`.
+- Todas las `<Image fill>` tienen `sizes` prop para optimizar responsive loading.
+
+### Estilos (Tailwind CSS 4)
+- **Tailwind CSS 4** con configuración CSS-first (no más `tailwind.config.ts`).
+- Colores custom en oklch definidos como CSS custom properties en `globals.css`: `--color-background`, `--color-foreground`, `--color-muted`, `--color-border`, `--color-nav`, `--color-accent`.
 - Fuentes: `Libre Franklin` (sans, variable `--font-libre-franklin`) y `Libre Caslon Display` (serif, variable `--font-libre-caslon`).
 - Dark theme por defecto (fondo: `oklch(0.16 0.005 250)`).
 - Colores brand: `cine-dark` (#0f1419), `cine-gray` (#1a2332), `cine-accent` (#3b82f6).
+
+### ESLint 9 (flat config)
+- Migrado de `.eslintrc.json` a `eslint.config.mjs` (flat config).
+- Usa `@eslint/eslintrc` compat layer para plugins de Next.js.
+- Reglas estrictas: `no-explicit-any` como error, `no-unused-vars` con prefijo `_` permitido.
 
 ### Seguridad (middleware.ts)
 - **CSP**: Nonce-based strict CSP para el sitio público. Admin no usa nonces (incompatible con hydration).
@@ -429,8 +470,13 @@ Preferir React Query (`useQuery`) que ya maneja esto internamente.
 - **Headers**: HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy.
 - **Bot protection**: Bloquea scrapers/crawlers no autorizados en `/api/` (permite Googlebot, Bingbot, etc.).
 
+### Next.js 16 — notas de build
+- Dev usa **Turbopack** por defecto (`next dev --turbopack`).
+- Docker build usa **webpack** (`next build --webpack`) porque Turbopack standalone output todavía tiene issues.
+- Async request APIs: `cookies()`, `headers()`, `searchParams`, `params` son async en Next.js 16 — siempre usar `await`.
+
 ### Prisma Client
-- `prismaBase`: Cliente base para NextAuth (sin extensiones).
+- `prismaBase`: Cliente base para Auth.js (sin extensiones).
 - `prisma`: Cliente extendido con retry automático (3 intentos para errores de conexión) y logging de queries lentas (>1s).
 - Ambos se reusan via `globalForPrisma` en dev para evitar too many connections.
 
