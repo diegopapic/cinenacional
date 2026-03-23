@@ -88,7 +88,7 @@ export default async function HomePage() {
             dateFormatter={formatearFechaEstreno}
             showFutureBadge={false}
             ctaText="Ver más próximos estrenos"
-            ctaHref="/listados/estrenos?period=upcoming"
+            ctaHref="/listados/estrenos/proximos"
           />
 
           {/* Grid de Obituarios y Efemérides */}
