@@ -200,7 +200,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                   className="group shrink-0"
                 >
                   <div
-                    className="relative h-48 lg:h-56 cursor-pointer overflow-hidden rounded-xs border border-foreground/4"
+                    className="relative h-48 w-72 lg:h-56 lg:w-84 cursor-pointer overflow-hidden rounded-xs border border-foreground/4"
                     onClick={() => openLightbox(i)}
                   >
                     <Image
