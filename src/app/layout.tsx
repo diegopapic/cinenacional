@@ -30,8 +30,8 @@ export default function RootLayout({
   children: ReactNode
 }) {
   return (
-    <html lang="es" className={`${libreFranklin.variable} ${libreCaslonDisplay.variable}`}>
-      <body>
+    <html lang="es" className={`h-full ${libreFranklin.variable} ${libreCaslonDisplay.variable}`}>
+      <body className="h-full bg-[oklch(0.16_0.005_250)]">
         <QueryProvider>
           {children}
         </QueryProvider>

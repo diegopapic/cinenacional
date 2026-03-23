@@ -2,7 +2,6 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import Script from 'next/script'
-import '../globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import { Toaster } from 'react-hot-toast'
@@ -61,65 +60,53 @@ export default async function SiteLayout({
   const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-5SGTLPHYYX'
 
   return (
-    <html lang="es" className="h-full">
-      {/* AdSense deshabilitado temporalmente
-      <head>
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4540700730503978"
-          crossOrigin="anonymous"
-          nonce={nonce}
-        />
-      </head> */}
-      <body className="font-sans min-h-full flex flex-col bg-[oklch(0.16_0.005_250)] text-[oklch(0.92_0.01_80)]">
-        {/* Google Analytics */}
-        {GA_MEASUREMENT_ID && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-              strategy="afterInteractive"
-              nonce={nonce}
-            />
-            <Script id="google-analytics" strategy="afterInteractive" nonce={nonce}>
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${GA_MEASUREMENT_ID}', {
-                  page_path: window.location.pathname,
-                });
-              `}
-            </Script>
-          </>
-        )}
-        
-        <Header />
-        {/* <AdBanner /> */}
-        <main className="grow">
-          {children}
-        </main>
-        <Footer />
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
+    <div className="font-sans min-h-screen flex flex-col text-[oklch(0.92_0.01_80)]">
+      {/* Google Analytics */}
+      {GA_MEASUREMENT_ID && (
+        <>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+            strategy="afterInteractive"
+            nonce={nonce}
+          />
+          <Script id="google-analytics" strategy="afterInteractive" nonce={nonce}>
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${GA_MEASUREMENT_ID}', {
+                page_path: window.location.pathname,
+              });
+            `}
+          </Script>
+        </>
+      )}
+
+      <Header />
+      <main className="grow">
+        {children}
+      </main>
+      <Footer />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
             style: {
-              background: '#363636',
-              color: '#fff',
+              background: '#10b981',
             },
-            success: {
-              style: {
-                background: '#10b981',
-              },
+          },
+          error: {
+            style: {
+              background: '#ef4444',
             },
-            error: {
-              style: {
-                background: '#ef4444',
-              },
-            },
-          }}
-        />
-      </body>
-    </html>
+          },
+        }}
+      />
+    </div>
   )
 }
