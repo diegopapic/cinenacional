@@ -463,7 +463,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!person) {
     return {
-      title: 'Persona no encontrada - cinenacional.com',
+      title: 'Persona no encontrada — cinenacional.com',
       description: 'La persona que buscás no existe en la base de datos.'
     }
   }
@@ -472,7 +472,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const photoUrl = person.photoUrl ? getPersonPhotoUrl(person.photoUrl, 'lg') : null
 
   return {
-    title: `${fullName} - cinenacional.com`,
+    title: `${fullName} — cinenacional.com`,
     description: person.biography
       ? person.biography.replace(/<[^>]*>/g, '').substring(0, 160)
       : `${fullName}. Persona del cine argentino.`,

@@ -7,7 +7,7 @@ import Footer from '@/components/layout/Footer'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://cinenacional.com'),
-  title: 'cinenacional.com - Base de datos del cine argentino',
+  title: 'cinenacional.com — Base de datos del cine argentino',
   description: 'La base de datos más completa del cine argentino. Descubrí películas, directores, actores y toda la historia cinematográfica de Argentina.',
   icons: {
     icon: [
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: 'cinenacional.com - Base de datos del cine argentino',
+    title: 'cinenacional.com — Base de datos del cine argentino',
     description: 'La base de datos más completa del cine argentino',
     url: 'https://cinenacional.com',
     siteName: 'cinenacional.com',

@@ -43,19 +43,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   switch (parsed.type) {
     case 'year':
       return {
-        title: `Estrenos de ${parsed.value} | CineNacional`,
+        title: `Estrenos de ${parsed.value} — cinenacional.com`,
         description: `Películas argentinas estrenadas en ${parsed.value}. Listado completo con fechas de estreno, directores y más.`,
         alternates: { canonical: `${baseUrl}/${parsed.value}` },
       }
     case 'decade':
       return {
-        title: `Estrenos de la década de ${parsed.start} | CineNacional`,
+        title: `Estrenos de la década de ${parsed.start} — cinenacional.com`,
         description: `Películas argentinas estrenadas en la década de ${parsed.start}. Listado completo por año.`,
         alternates: { canonical: `${baseUrl}/${parsed.label}` },
       }
     case 'upcoming':
       return {
-        title: 'Próximos estrenos | CineNacional',
+        title: 'Próximos estrenos — cinenacional.com',
         description: 'Próximas películas argentinas por estrenarse. Fechas de estreno confirmadas.',
         alternates: { canonical: `${baseUrl}/proximos` },
       }

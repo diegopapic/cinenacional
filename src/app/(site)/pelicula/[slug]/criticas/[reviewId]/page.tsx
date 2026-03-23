@@ -123,13 +123,13 @@ async function getReviewData(slug: string, reviewId: number) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug, reviewId } = await params
   const id = parseInt(reviewId, 10)
-  if (isNaN(id)) return { title: 'Crítica no encontrada - cinenacional.com' }
+  if (isNaN(id)) return { title: 'Crítica no encontrada — cinenacional.com' }
 
   const review = await getReviewData(slug, id)
 
   if (!review) {
     return {
-      title: 'Crítica no encontrada - cinenacional.com',
+      title: 'Crítica no encontrada — cinenacional.com',
       description: 'La crítica que buscás no existe o fue eliminada.',
     }
   }
@@ -140,7 +140,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     || `Crítica de ${review.movie.title} (${review.movie.year})${authorName ? ` por ${authorName}` : ''}${review.mediaOutlet ? ` en ${review.mediaOutlet.name}` : ''}.`
 
   return {
-    title: `${headline} - ${review.movie.title} (${review.movie.year}) - cinenacional.com`,
+    title: `${headline} - ${review.movie.title} (${review.movie.year}) — cinenacional.com`,
     description,
     openGraph: {
       title: headline,
