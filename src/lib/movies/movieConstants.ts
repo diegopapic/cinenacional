@@ -18,7 +18,7 @@ export const MOVIE_STAGES = [
 ] as const
 
 export const BACKGROUND_PLACEHOLDER = {
-  url: '/images/background-placeholder.jpg'  // ← Agregar esta nueva constante
+  url: '/images/background-placeholder.webp'
 } as const;
 
 export const POSTER_ASPECT_RATIO = 2/3;
