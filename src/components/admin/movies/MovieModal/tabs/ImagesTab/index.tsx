@@ -96,7 +96,7 @@ export default function ImagesTab() {
 
         try {
             const newImages = await imagesService.createBulk(movieId, publicIds, 'STILL')
-            setLocalImages(prev => [...newImages, ...prev])
+            setLocalImages(prev => [...newImages, ...(prev ?? queryImages ?? [])])
         } catch (error) {
             log.error('Error saving images', error)
             toast.error('Error al guardar algunas imágenes')
@@ -105,7 +105,7 @@ export default function ImagesTab() {
 
     // Manejar actualización de imagen
     const handleImageSave = (updatedImage: ImageWithRelations) => {
-        setLocalImages(prev => prev.map(img =>
+        setLocalImages(prev => (prev ?? queryImages ?? []).map(img =>
             img.id === updatedImage.id ? updatedImage : img
         ))
         setEditingImage(null)
@@ -113,7 +113,7 @@ export default function ImagesTab() {
 
     // Manejar eliminación de imagen
     const handleImageDelete = (imageId: number) => {
-        setLocalImages(prev => prev.filter(img => img.id !== imageId))
+        setLocalImages(prev => (prev ?? queryImages ?? []).filter(img => img.id !== imageId))
         setEditingImage(null)
     }
 
