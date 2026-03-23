@@ -591,8 +591,6 @@ export default async function PersonPage({ params }: PageProps) {
   const photoUrlMd = person.photoUrl ? getPersonPhotoUrl(person.photoUrl, 'md') : null
   const photoUrlLg = person.photoUrl ? getPersonPhotoUrl(person.photoUrl, 'lg') : null
 
-  const fullName = [person.firstName, person.lastName].filter(Boolean).join(' ')
-
   return (
     <>
       <BreadcrumbSchema items={[
