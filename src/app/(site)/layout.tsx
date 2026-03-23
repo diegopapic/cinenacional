@@ -18,6 +18,9 @@ export const metadata: Metadata = {
     ],
   },
   keywords: 'cine argentino, películas argentinas, actores argentinos, directores argentinos, base de datos cine',
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     title: 'cinenacional.com - Base de datos del cine argentino',
     description: 'La base de datos más completa del cine argentino',

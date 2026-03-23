@@ -90,9 +90,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { month, day } = parseDateFromParams(date)
   const monthName = MONTHS[month - 1].toLowerCase()
 
+  const datePath = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+
   return {
     title: `Efemérides del ${day} de ${monthName} — CineNacional`,
     description: `Efemérides del cine argentino del ${day} de ${monthName}: estrenos, nacimientos y más.`,
+    alternates: {
+      canonical: `/efemerides/${datePath}`,
+    },
   }
 }
 

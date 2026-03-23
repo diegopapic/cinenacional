@@ -476,6 +476,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: person.biography
       ? person.biography.replace(/<[^>]*>/g, '').substring(0, 160)
       : `${fullName}. Persona del cine argentino.`,
+    alternates: {
+      canonical: `/persona/${slug}`,
+    },
     openGraph: {
       title: fullName,
       description: person.biography

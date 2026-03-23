@@ -361,6 +361,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `${movie.title}${year ? ` (${year})` : ''} - cinenacional.com`,
     description: movie.metaDescription || movie.synopsis?.substring(0, 160) || defaultDescription,
     keywords: movie.metaKeywords?.join(', ') || `${movie.title}, cine argentino, película argentina${genres ? `, ${genres}` : ''}`,
+    alternates: {
+      canonical: `/pelicula/${slug}`,
+    },
     openGraph: {
       title: movie.title,
       description: movie.synopsis?.substring(0, 160) || defaultDescription,
