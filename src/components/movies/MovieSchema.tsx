@@ -13,6 +13,8 @@ interface MovieSchemaProps {
   title: string
   slug: string
   year?: number | null
+  releaseMonth?: number | null
+  releaseDay?: number | null
   duration?: number | null
   synopsis?: string | null
   posterUrl?: string | null
@@ -23,6 +25,10 @@ interface MovieSchemaProps {
   countries: { name: string }[]
   alternativeTitles: { title: string }[]
   reviews?: ReviewForSchema[]
+  imdbId?: string | null
+  trailerUrl?: string | null
+  links?: { type: string; url: string }[]
+  productionCompanies?: { name: string }[]
 }
 
 function formatDurationISO(minutes: number): string {
@@ -54,6 +60,8 @@ export function MovieSchema({
   title,
   slug,
   year,
+  releaseMonth,
+  releaseDay,
   duration,
   synopsis,
   posterUrl,
@@ -64,6 +72,10 @@ export function MovieSchema({
   countries,
   alternativeTitles,
   reviews = [],
+  imdbId,
+  trailerUrl,
+  links = [],
+  productionCompanies = [],
 }: MovieSchemaProps) {
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -73,7 +85,43 @@ export function MovieSchema({
   }
 
   if (year) {
-    jsonLd.dateCreated = String(year)
+    jsonLd.dateCreated = formatReviewDate(year, releaseMonth, releaseDay) || String(year)
+  }
+
+  jsonLd.inLanguage = 'es'
+
+  // sameAs: IMDB + external links
+  const sameAsUrls: string[] = []
+  if (imdbId) sameAsUrls.push(`https://www.imdb.com/title/${imdbId}/`)
+  for (const link of links) {
+    if (link.url) sameAsUrls.push(link.url)
+  }
+  if (sameAsUrls.length > 0) {
+    jsonLd.sameAs = sameAsUrls
+  }
+
+  // trailer
+  if (trailerUrl) {
+    const trailer: Record<string, unknown> = {
+      '@type': 'VideoObject',
+      name: `Trailer de ${title}`,
+      url: trailerUrl,
+    }
+    // YouTube embed URL
+    const ytMatch = trailerUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)
+    if (ytMatch) {
+      trailer.embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}`
+      trailer.thumbnailUrl = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`
+    }
+    jsonLd.trailer = trailer
+  }
+
+  // productionCompany
+  if (productionCompanies.length > 0) {
+    jsonLd.productionCompany = productionCompanies.map(c => ({
+      '@type': 'Organization',
+      name: c.name,
+    }))
   }
 
   if (directors.length > 0) {

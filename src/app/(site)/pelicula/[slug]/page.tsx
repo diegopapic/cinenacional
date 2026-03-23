@@ -771,6 +771,8 @@ export default async function MoviePage({ params }: PageProps) {
       title={movie.title}
       slug={movie.slug}
       year={displayYear}
+      releaseMonth={movie.releaseMonth}
+      releaseDay={movie.releaseDay}
       duration={totalDuration}
       synopsis={movie.synopsis}
       posterUrl={movie.posterUrl}
@@ -781,6 +783,10 @@ export default async function MoviePage({ params }: PageProps) {
       countries={schemaCountries}
       alternativeTitles={movie.alternativeTitles || []}
       reviews={movie.reviews || []}
+      imdbId={movie.imdbId}
+      trailerUrl={movie.trailerUrl}
+      links={movie.links || []}
+      productionCompanies={(movie.productionCompanies || []).map(pc => ({ name: pc.company.name }))}
     />
     <MoviePageClient
       movie={movie}
