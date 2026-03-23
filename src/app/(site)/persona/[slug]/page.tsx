@@ -13,6 +13,7 @@ import { ExternalLinks } from '@/components/shared/ExternalLinks'
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
 import { createLogger } from '@/lib/logger'
 import { PersonSchema } from '@/components/people/PersonSchema'
+import { BreadcrumbSchema } from '@/components/shared/BreadcrumbSchema'
 import { PageViewTracker } from '@/components/people/PageViewTracker'
 import { PersonFilmography } from '@/components/people/PersonFilmography'
 import type { AllRolesItem, RoleSection } from '@/components/people/PersonFilmography'
@@ -590,8 +591,14 @@ export default async function PersonPage({ params }: PageProps) {
   const photoUrlMd = person.photoUrl ? getPersonPhotoUrl(person.photoUrl, 'md') : null
   const photoUrlLg = person.photoUrl ? getPersonPhotoUrl(person.photoUrl, 'lg') : null
 
+  const fullName = [person.firstName, person.lastName].filter(Boolean).join(' ')
+
   return (
     <>
+      <BreadcrumbSchema items={[
+        { name: 'Personas', href: '/listados/personas' },
+        { name: fullName, href: `/persona/${slug}` },
+      ]} />
       <PersonSchema
         firstName={person.firstName}
         lastName={person.lastName}

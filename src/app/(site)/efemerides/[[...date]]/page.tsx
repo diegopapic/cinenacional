@@ -6,6 +6,7 @@ import { Metadata } from 'next'
 import { getEfemerides } from '@/lib/queries/efemerides'
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
 import EfemeridesDateSelector from '@/components/efemerides/EfemeridesDateSelector'
+import { BreadcrumbSchema } from '@/components/shared/BreadcrumbSchema'
 import ServerPagination from '@/components/shared/ServerPagination'
 import type { Efemeride } from '@/types/home.types'
 
@@ -138,6 +139,11 @@ export default async function EfemeridesPage({ params, searchParams }: PageProps
   const buildPageHref = (p: number) => p === 1 ? datePath : `${datePath}?page=${p}`
 
   return (
+    <>
+    <BreadcrumbSchema items={[
+      { name: 'Efemérides', href: '/efemerides' },
+      { name: `${day} de ${monthName}`, href: datePath },
+    ]} />
     <div className="mx-auto w-full max-w-4xl px-4 py-10 md:py-14 lg:px-6">
       {/* Title & count */}
       <h1 className="font-serif text-2xl tracking-tight text-foreground md:text-3xl lg:text-4xl">
@@ -275,5 +281,6 @@ export default async function EfemeridesPage({ params, searchParams }: PageProps
         buildHref={buildPageHref}
       />
     </div>
+    </>
   )
 }

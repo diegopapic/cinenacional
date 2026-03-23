@@ -6,6 +6,7 @@ import { getEstrenos } from '@/lib/queries/estrenos'
 import { prisma } from '@/lib/prisma'
 import { EstrenosSchema } from '@/components/listados/estrenos/EstrenosSchema'
 import { FilmReleasesByYear } from '@/components/FilmReleasesByYear'
+import { BreadcrumbSchema } from '@/components/shared/BreadcrumbSchema'
 
 export const revalidate = 3600 // 1h
 
@@ -89,8 +90,18 @@ export default async function EstrenosYearPage({ params }: PageProps) {
       : Promise.resolve([]),
   ])
 
+  const breadcrumbName = parsed.type === 'year'
+    ? String(parsed.value)
+    : parsed.type === 'decade'
+      ? `Década de ${parsed.start}`
+      : 'Próximos estrenos'
+
   return (
     <>
+      <BreadcrumbSchema items={[
+        { name: 'Estrenos', href: '/listados/estrenos' },
+        { name: breadcrumbName, href: `/listados/estrenos/${year}` },
+      ]} />
       {parsed.type === 'year' && (
         <EstrenosSchema year={parsed.value} movies={schemaMovies} />
       )}

@@ -2,6 +2,7 @@
 import { notFound } from 'next/navigation';
 import { MoviePageClient } from './MoviePageClient';
 import { MovieSchema } from '@/components/movies/MovieSchema';
+import { BreadcrumbSchema } from '@/components/shared/BreadcrumbSchema';
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import { createLogger } from '@/lib/logger'
@@ -762,6 +763,10 @@ export default async function MoviePage({ params }: PageProps) {
 
   return (
     <>
+    <BreadcrumbSchema items={[
+      { name: 'Películas', href: '/listados/peliculas' },
+      { name: movie.title, href: `/pelicula/${movie.slug}` },
+    ]} />
     <MovieSchema
       title={movie.title}
       slug={movie.slug}
