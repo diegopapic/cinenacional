@@ -145,16 +145,16 @@ const nextConfig = {
       },
       
       // =============================================
-      // Obituarios: /obituarios/[año] → /listados/obituarios?year=[año]
+      // Obituarios: /obituarios/[año] → /listados/obituarios/[año]
       // =============================================
       {
         source: '/obituarios/:year(\\d{4})/',
-        destination: '/listados/obituarios?year=:year',
+        destination: '/listados/obituarios/:year',
         permanent: true,
       },
       {
         source: '/obituarios/:year(\\d{4})',
-        destination: '/listados/obituarios?year=:year',
+        destination: '/listados/obituarios/:year',
         permanent: true,
       },
     ];

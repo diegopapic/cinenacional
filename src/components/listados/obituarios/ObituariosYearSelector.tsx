@@ -14,7 +14,7 @@ export default function ObituariosYearSelector({ selectedYear, availableYears }:
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const year = parseInt(e.target.value)
-    router.push(`/listados/obituarios?year=${year}`, { scroll: false })
+    router.push(`/listados/obituarios/${year}`, { scroll: false })
   }
 
   if (availableYears.length === 0) return null

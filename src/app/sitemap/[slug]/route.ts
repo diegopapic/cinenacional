@@ -51,6 +51,23 @@ export async function GET(
     )
   }
 
+  if (name === 'obituarios') {
+    const years: { deathYear: number }[] = await prisma.$queryRaw`
+      SELECT DISTINCT death_year AS "deathYear"
+      FROM people
+      WHERE death_year IS NOT NULL
+      ORDER BY death_year DESC
+    `
+
+    const entries: SitemapEntry[] = years.map((row) => ({
+      url: `${SITEMAP_BASE_URL}/listados/obituarios/${row.deathYear}`,
+      changeFrequency: row.deathYear === new Date().getFullYear() ? 'weekly' : 'yearly',
+      priority: row.deathYear === new Date().getFullYear() ? 0.8 : 0.5,
+    }))
+
+    return xmlResponse(buildSitemapXml(entries))
+  }
+
   if (name === 'estrenos') {
     const currentYear = new Date().getFullYear()
     const entries: SitemapEntry[] = []

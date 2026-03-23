@@ -20,6 +20,7 @@ export async function GET() {
   const sitemaps: { loc: string; lastModified?: Date | null }[] = [
     { loc: `${SITEMAP_BASE_URL}/sitemap/static.xml` },
     { loc: `${SITEMAP_BASE_URL}/sitemap/estrenos.xml` },
+    { loc: `${SITEMAP_BASE_URL}/sitemap/obituarios.xml` },
   ]
 
   for (let i = 0; i < moviePages; i++) {
