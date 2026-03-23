@@ -63,9 +63,9 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  other: {
-    'google-adsense-account': 'ca-pub-4540700730503978',
-  },
+  // other: {
+  //   'google-adsense-account': 'ca-pub-4540700730503978',
+  // },
 }
 
 export default async function SiteLayout({
@@ -78,6 +78,7 @@ export default async function SiteLayout({
 
   return (
     <html lang="es" className={`h-full ${libreFranklin.variable} ${libreCaslonDisplay.variable}`}>
+      {/* AdSense deshabilitado temporalmente
       <head>
         <script
           async
@@ -85,7 +86,7 @@ export default async function SiteLayout({
           crossOrigin="anonymous"
           nonce={nonce}
         />
-      </head>
+      </head> */}
       <body className={`${libreFranklin.className} min-h-full flex flex-col bg-[oklch(0.16_0.005_250)] text-[oklch(0.92_0.01_80)]`}>
         {/* Google Analytics */}
         {GA_MEASUREMENT_ID && (
