@@ -28,9 +28,24 @@ export async function GET(
           priority: 1.0,
         },
         {
-          url: `${SITEMAP_BASE_URL}/estrenos`,
+          url: `${SITEMAP_BASE_URL}/listados/estrenos`,
           changeFrequency: 'weekly',
           priority: 0.9,
+        },
+        {
+          url: `${SITEMAP_BASE_URL}/listados/peliculas`,
+          changeFrequency: 'weekly',
+          priority: 0.8,
+        },
+        {
+          url: `${SITEMAP_BASE_URL}/listados/personas`,
+          changeFrequency: 'weekly',
+          priority: 0.8,
+        },
+        {
+          url: `${SITEMAP_BASE_URL}/listados/obituarios`,
+          changeFrequency: 'weekly',
+          priority: 0.7,
         },
       ])
     )
@@ -42,7 +57,7 @@ export async function GET(
 
     for (let year = 1896; year <= currentYear; year++) {
       entries.push({
-        url: `${SITEMAP_BASE_URL}/estrenos/${year}`,
+        url: `${SITEMAP_BASE_URL}/listados/estrenos/${year}`,
         changeFrequency: year === currentYear ? 'weekly' : 'yearly',
         priority: year === currentYear ? 0.9 : 0.5,
       })

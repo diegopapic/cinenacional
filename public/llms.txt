@@ -1,0 +1,25 @@
+# cinenacional.com
+
+> La base de datos más completa del cine argentino.
+
+cinenacional.com es una base de datos web del cine argentino, similar a IMDb pero enfocada exclusivamente en el cine de Argentina. Cubre películas, directores, actores, técnicos y toda la historia cinematográfica del país desde sus orígenes.
+
+## Contenido principal
+
+- **Películas**: fichas completas con elenco, equipo técnico, sinopsis, datos de estreno, géneros, premios, críticas y galería de imágenes. URL: /pelicula/{slug}
+- **Personas**: perfiles de actores, directores, productores y técnicos del cine argentino con biografía, filmografía, fechas, lugares de nacimiento y links externos. URL: /persona/{slug}
+- **Estrenos**: listado de estrenos del cine argentino por año, desde 1896 hasta la actualidad. URL: /listados/estrenos/{año}
+- **Efemérides**: eventos históricos del cine argentino organizados por día del año. URL: /efemerides/{MM-DD}
+- **Obituarios**: fallecimientos de personalidades del cine argentino por año. URL: /listados/obituarios
+
+## Datos estructurados
+
+Las páginas de películas incluyen Schema.org/Movie con director, cast, duración, géneros, país de origen, críticas y rating agregado.
+Las páginas de personas incluyen Schema.org/Person con fechas, lugares, ocupación y links a perfiles externos.
+
+## Contacto
+
+- Web: https://cinenacional.com
+- Email: info@cinenacional.com
+- X/Twitter: https://x.com/cinenacional
+- Instagram: https://instagram.com/cinenacional

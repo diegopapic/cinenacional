@@ -272,7 +272,12 @@ export async function proxy(request: NextRequest) {
   // ============ PROTECCIÓN CONTRA BOTS ============
   const userAgent = request.headers.get('user-agent') || ''
   const blockedBots = ['bot', 'crawler', 'spider', 'scraper']
-  const allowedBots = ['googlebot', 'bingbot', 'facebookexternalhit', 'twitterbot']
+  const allowedBots = [
+    'googlebot', 'bingbot', 'facebookexternalhit', 'twitterbot',
+    'gptbot', 'oai-searchbot', 'claudebot', 'perplexitybot',
+    'applebot', 'amazonbot', 'duckduckbot', 'linkedinbot',
+    'yandex', 'pinterestbot',
+  ]
   
   const isBlockedBot = blockedBots.some(bot => 
     userAgent.toLowerCase().includes(bot) && 

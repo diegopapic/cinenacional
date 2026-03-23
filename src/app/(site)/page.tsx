@@ -44,6 +44,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <h1 className="sr-only">cinenacional.com — Base de datos del cine argentino</h1>
       {/* Preload LCP image para que el browser la descubra en el HTML inicial */}
       {firstHeroPublicId && (
         <link
@@ -110,7 +111,6 @@ export default async function HomePage() {
                 width={601}
                 height={101}
                 className="w-full h-auto"
-                priority
               />
             </Link>
           </div>

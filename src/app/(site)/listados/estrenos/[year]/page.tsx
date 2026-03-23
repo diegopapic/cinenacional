@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const parsed = parseYearParam(year)
   if (!parsed) return {}
 
-  const baseUrl = 'https://www.cinenacional.com/listados/estrenos'
+  const baseUrl = 'https://cinenacional.com/listados/estrenos'
 
   switch (parsed.type) {
     case 'year':

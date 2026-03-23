@@ -58,8 +58,43 @@ export default async function SiteLayout({
   const nonce = (await headers()).get('x-nonce') ?? ''
   const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-5SGTLPHYYX'
 
+  const websiteJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'cinenacional.com',
+    alternateName: 'CineNacional',
+    url: 'https://cinenacional.com',
+    description: 'La base de datos más completa del cine argentino. Películas, directores, actores y toda la historia cinematográfica de Argentina.',
+    inLanguage: 'es',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: 'https://cinenacional.com/buscar?q={search_term_string}',
+      },
+      'query-input': 'required name=search_term_string',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'cinenacional.com',
+      url: 'https://cinenacional.com',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://cinenacional.com/og-image.jpg',
+      },
+      sameAs: [
+        'https://x.com/cinenacional',
+        'https://instagram.com/cinenacional',
+      ],
+    },
+  }
+
   return (
     <div className="font-sans min-h-screen flex flex-col text-[oklch(0.92_0.01_80)]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
       {/* Google Analytics */}
       {GA_MEASUREMENT_ID && (
         <>
