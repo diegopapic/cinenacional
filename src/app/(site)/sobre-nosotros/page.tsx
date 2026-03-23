@@ -67,10 +67,10 @@ export default async function SobreNosotrosPage() {
       <div className="mt-8 space-y-5 text-[14px] leading-relaxed text-foreground/80 md:text-[15px]">
         <p>
           <strong>cinenacional.com</strong> es el registro más completo y confiable de cine
-          argentino en la web. Nacimos en 2001, cuando internet era otra cosa, el cine argentino era
-          otro y el país también. Desde entonces crecimos sin parar y hoy somos el sitio de
-          referencia para quien quiera saber algo sobre una película, un director o un actor del cine
-          argentino.
+          argentino en la web. Nacimos en 2001, cuando todo era diferente: internet, el cine
+          argentino, el país. Desde entonces crecimos sin parar y hoy somos el sitio de referencia
+          para quien quiera saber algo sobre una película, un director, un actor o cualquier
+          técnico, desde el jefe de producción hasta el último meritorio de vestuario.
         </p>
 
         <p>
@@ -83,8 +83,8 @@ export default async function SobreNosotrosPage() {
           Cubrimos todas las épocas:
           desde <Link href="/pelicula/la-bandera-argentina" className="text-foreground hover:text-accent transition-colors">La bandera argentina</Link>,
           de <Link href="/persona/eugenio-py" className="text-foreground hover:text-accent transition-colors">Eugenio Py</Link> (1897),
-          hasta los estrenos del año en curso. Incluimos largometrajes, mediometrajes y
-          cortometrajes de ficción, documental y animación.
+          hasta los próximos estrenos. Incluimos largometrajes, mediometrajes y cortometrajes de
+          ficción, documental y animación.
         </p>
 
         <p>
