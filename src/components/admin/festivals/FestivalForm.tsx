@@ -121,7 +121,7 @@ export default function FestivalForm({ festival }: FestivalFormProps) {
     setFormData(prev => ({ ...prev, locationId: undefined }))
   }
 
-  const handleChange = (field: keyof FestivalFormData, value: any) => {
+  const handleChange = (field: keyof FestivalFormData, value: FestivalFormData[keyof FestivalFormData]) => {
     setFormData(prev => {
       const next = { ...prev, [field]: value }
       // Auto-generate slug when name changes (only for new festivals)

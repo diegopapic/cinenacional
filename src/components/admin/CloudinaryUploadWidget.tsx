@@ -141,7 +141,7 @@ export function CloudinaryUploadWidget({
   }, [clearSafetyTimeout])
 
   // Handler de éxito - mejorado con cleanup
-  const handleUploadSuccess = useCallback((result: any) => {
+  const handleUploadSuccess = useCallback((result: { info?: { secure_url: string; public_id: string } }) => {
     log.debug('Upload success')
     clearSafetyTimeout()
     if (result.info) {
@@ -171,7 +171,7 @@ export function CloudinaryUploadWidget({
   }, [restoreScroll, clearSafetyTimeout])
 
   // Handler de error - mejorado
-  const handleError = useCallback((error: any) => {
+  const handleError = useCallback((error: unknown) => {
     log.error('Upload error', error)
     clearSafetyTimeout()
     toast.error('Error al subir la imagen')

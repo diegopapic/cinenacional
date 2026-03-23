@@ -47,7 +47,7 @@ export default function FestivalSectionForm({ editionId, templates }: FestivalSe
     displayOrder: 0,
   })
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: string | number | boolean) => {
     setFormData(prev => {
       const updated = { ...prev, [field]: value }
       // Auto-generate slug when name changes

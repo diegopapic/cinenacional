@@ -97,7 +97,7 @@ export default function EstrenosYearBar({
                         {/* Botón de la década completa */}
                         <button
                             id="decade-button"
-                            onClick={() => onYearChange(null as any)}
+                            onClick={() => onYearChange(null)}
                             className={`
                                 shrink-0 px-4 py-2 rounded-lg font-medium transition-all
                                 ${selectedYear === null

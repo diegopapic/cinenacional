@@ -377,7 +377,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 // Función helper para formatear el nombre completo de una persona
-function formatPersonName(person: any): string {
+function formatPersonName(person: { firstName?: string | null; lastName?: string | null; realName?: string | null }): string {
   const parts = [];
   if (person.firstName) parts.push(person.firstName);
   if (person.lastName) parts.push(person.lastName);
@@ -385,7 +385,7 @@ function formatPersonName(person: any): string {
 }
 
 // Función helper para formatear las pantallas de estreno
-function formatPremiereVenues(venues: any[]): string {
+function formatPremiereVenues(venues: ScreeningFromDB[]): string {
   if (!venues || venues.length === 0) return '';
   
   const venueNames = venues.map(v => v.venue.name);
@@ -400,6 +400,82 @@ function formatPremiereVenues(venues: any[]): string {
     const otherVenues = venueNames.slice(0, -1).join(', ');
     return `${otherVenues} y ${lastVenue}`;
   }
+}
+
+// Tipos para los datos que vienen de la query Prisma
+interface PersonBasic {
+  id: number;
+  slug: string;
+  firstName: string | null;
+  lastName: string | null;
+  realName?: string | null;
+  photoUrl?: string | null;
+  gender?: string | null;
+}
+
+interface AlternativeName {
+  id: number;
+  fullName: string;
+}
+
+interface MovieGenreRelation {
+  genre: { id: number; name: string; slug: string };
+}
+
+interface MovieThemeRelation {
+  theme: { id: number; name: string; slug: string };
+}
+
+interface MovieCountryRelation {
+  location: { id: number; name: string; slug: string };
+}
+
+interface MovieCastFromDB {
+  characterName: string | null;
+  isPrincipal: boolean | null;
+  billingOrder: number | null;
+  alternativeNameId: number | null;
+  alternativeName: AlternativeName | null;
+  person: PersonBasic;
+}
+
+interface MovieCrewFromDB {
+  roleId: number;
+  billingOrder: number | null;
+  notes: string | null;
+  alternativeNameId: number | null;
+  alternativeName: AlternativeName | null;
+  person: PersonBasic;
+  role: { id: number; name: string; department: string | null } | null;
+}
+
+interface ScreeningFromDB {
+  venue: { id: number; name: string };
+}
+
+interface CastMember {
+  name: string;
+  character: string | null;
+  isPrincipal: boolean;
+  billingOrder: number;
+  personId: number;
+  personSlug: string;
+  image: string | undefined;
+  creditedAs: string | null;
+  gender: string | null;
+}
+
+interface CrewMember {
+  name: string;
+  role: string;
+  roleId: number;
+  department: string;
+  billingOrder: number;
+  personId: number;
+  personSlug: string;
+  creditedAs: string | null;
+  gender: string | null;
+  notes: string | null;
 }
 
 // Tipo para las imágenes que vienen de la BD
@@ -492,24 +568,24 @@ export default async function MoviePage({ params }: PageProps) {
   const totalDuration = movie.duration || 0;
 
   // Procesar géneros con estructura correcta
-  const genres = movie.genres?.map((g: any) => ({
+  const genres = movie.genres?.map((g: MovieGenreRelation) => ({
     id: g.genre.id,
     name: g.genre.name
   })).filter(Boolean) || [];
 
   // Procesar temas con estructura correcta
-  const themes = movie.themes?.map((t: any) => ({
+  const themes = movie.themes?.map((t: MovieThemeRelation) => ({
     id: t.theme.id,
     name: t.theme.name,
     slug: t.theme.slug
   })).filter(Boolean) || [];
 
   // Procesar países coproductores (excluyendo Argentina si es el único)
-  const countries = movie.movieCountries?.map((c: any) => ({
+  const countries = movie.movieCountries?.map((c: MovieCountryRelation) => ({
     id: c.location.id,
     name: c.location.name
   }))
-    .filter((c: any) => c.name !== 'Argentina' || movie.movieCountries.length > 1) || [];
+    .filter((c: { id: number; name: string }) => c.name !== 'Argentina' || movie.movieCountries.length > 1) || [];
 
   // Procesar pantallas de estreno
   const premiereVenues = formatPremiereVenues(movie.screenings || []);
@@ -540,7 +616,7 @@ export default async function MoviePage({ params }: PageProps) {
   });
 
   // PROCESAR CAST - 🆕 Incluir alternativeName y gender
-  const allCast = movie.cast?.map((c: any) => ({
+  const allCast: CastMember[] = movie.cast?.map((c: MovieCastFromDB) => ({
     name: formatPersonName(c.person),
     character: c.characterName,
     isPrincipal: c.isPrincipal || false,
@@ -553,17 +629,17 @@ export default async function MoviePage({ params }: PageProps) {
     gender: c.person.gender || null
   })) || [];
 
-  log.debug('Movie page data processed', { castCount: allCast.length, principalCount: allCast.filter((c: any) => c.isPrincipal).length, hasHeroImage: !!heroBackgroundImage });
+  log.debug('Movie page data processed', { castCount: allCast.length, principalCount: allCast.filter((c: CastMember) => c.isPrincipal).length, hasHeroImage: !!heroBackgroundImage });
 
   // Separar cast principal del cast completo
-  let mainCast: any[] = [];
-  let fullCast: any[] = [];
+  let mainCast: CastMember[] = [];
+  let fullCast: CastMember[] = [];
 
-  const principalActors = allCast.filter((c: any) => c.isPrincipal === true);
+  const principalActors = allCast.filter((c: CastMember) => c.isPrincipal === true);
 
   if (principalActors.length > 0) {
     mainCast = principalActors;
-    fullCast = allCast.filter((c: any) => !c.isPrincipal);
+    fullCast = allCast.filter((c: CastMember) => !c.isPrincipal);
   } else if (allCast.length > 0) {
     mainCast = allCast.slice(0, Math.min(3, allCast.length));
     if (allCast.length > 3) {
@@ -585,7 +661,7 @@ export default async function MoviePage({ params }: PageProps) {
     641: 'Música'
   };
 
-  const allCrew = movie.crew?.map((c: any) => ({
+  const allCrew: CrewMember[] = movie.crew?.map((c: MovieCrewFromDB) => ({
     name: formatPersonName(c.person),
     role: c.role?.name || 'Sin rol especificado',
     roleId: c.roleId,
@@ -599,7 +675,7 @@ export default async function MoviePage({ params }: PageProps) {
     notes: c.notes || null
   })) || [];
 
-  const basicCrewMembers = allCrew.filter((c: any) => mainCrewRoleIds.includes(c.roleId));
+  const basicCrewMembers = allCrew.filter((c: CrewMember) => mainCrewRoleIds.includes(c.roleId));
 
   const basicCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string; creditedAs?: string | null; gender?: string | null; notes?: string | null }> } = {};
 
@@ -618,7 +694,7 @@ export default async function MoviePage({ params }: PageProps) {
     basicCrewByDepartment[dept] = [];
   });
 
-  basicCrewMembers.forEach((member: any) => {
+  basicCrewMembers.forEach((member: CrewMember) => {
     const dept = mainRoleDepartmentMap[member.roleId] || member.department || 'Otros';
     if (!basicCrewByDepartment[dept]) {
       basicCrewByDepartment[dept] = [];
@@ -642,13 +718,13 @@ export default async function MoviePage({ params }: PageProps) {
   const fullCrewByDepartment: { [department: string]: Array<{ name: string; role: string; personSlug?: string; creditedAs?: string | null; gender?: string | null; notes?: string | null }> } = {};
 
   allCrew
-    .sort((a: any, b: any) => {
+    .sort((a: CrewMember, b: CrewMember) => {
       if (a.department !== b.department) {
         return (a.department || 'Otros').localeCompare(b.department || 'Otros');
       }
       return a.billingOrder - b.billingOrder;
     })
-    .forEach((member: any) => {
+    .forEach((member: CrewMember) => {
       const dept = member.department || mainRoleDepartmentMap[member.roleId] || 'Otros';
 
       if (!fullCrewByDepartment[dept]) {
@@ -667,8 +743,8 @@ export default async function MoviePage({ params }: PageProps) {
 
   // Extraer directores para el hero
   const directors = allCrew
-    .filter((c: any) => c.roleId === 2)
-    .map((c: any) => ({
+    .filter((c: CrewMember) => c.roleId === 2)
+    .map((c: CrewMember) => ({
       id: c.personId,
       name: c.name,
       slug: c.personSlug || '',
@@ -677,7 +753,7 @@ export default async function MoviePage({ params }: PageProps) {
   log.debug('Crew departments processed', { basicDepts: Object.keys(basicCrewByDepartment).length, fullDepts: Object.keys(fullCrewByDepartment).length });
 
   // Países para JSON-LD (incluye Argentina siempre)
-  const schemaCountries = movie.movieCountries?.map((c: any) => ({
+  const schemaCountries = movie.movieCountries?.map((c: MovieCountryRelation) => ({
     name: c.location.name,
   })) || [];
 

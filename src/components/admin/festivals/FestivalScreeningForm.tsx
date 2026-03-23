@@ -165,7 +165,7 @@ export default function FestivalScreeningForm({
     setFormData(prev => ({ ...prev, movieId: undefined }))
   }
 
-  const handleChange = (field: keyof FestivalScreeningFormData, value: any) => {
+  const handleChange = (field: keyof FestivalScreeningFormData, value: FestivalScreeningFormData[keyof FestivalScreeningFormData]) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 

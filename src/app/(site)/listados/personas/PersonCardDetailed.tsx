@@ -23,8 +23,8 @@ export default function PersonCardDetailed({ person }: PersonCardDetailedProps) 
     person.birthDay
   );
 
-  const birthLocationFormatted = (person as any).birthLocationPath || null;
-  const deathLocationFormatted = (person as any).deathLocationPath || null;
+  const birthLocationFormatted = (person as PersonWithMovie & { birthLocationPath?: string }).birthLocationPath || null;
+  const deathLocationFormatted = (person as PersonWithMovie & { deathLocationPath?: string }).deathLocationPath || null;
 
   const isDeceased = !!person.deathYear;
 

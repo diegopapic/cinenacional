@@ -112,33 +112,32 @@ El sistema de formulario de películas es el más complejo. Los tipos fluyen ent
 
 ---
 
-## Fase G: Componentes del sitio público (33 any)
+## Fase G: Componentes del sitio público ✅ COMPLETADA
 
-### G1. Página de película
+### G1. Página de película ✅
 
-- [ ] `src/app/(site)/pelicula/[slug]/page.tsx` (21): tipar datos del server component (movie, cast, crew, images, reviews)
-- [ ] `src/app/(site)/pelicula/[slug]/MoviePageClient.tsx` (1): tipar props del client component
+- [x] `page.tsx` (21→0): interfaces para Prisma query results, typed cast/crew/review shapes
+- [x] `MoviePageClient.tsx` (1→0): typed movie prop interface
 
-### G2. Búsqueda y listados
+### G2. Búsqueda y listados ✅
 
-- [ ] `src/app/(site)/buscar/page.tsx` (3): tipar resultados de búsqueda
-- [ ] `src/app/(site)/listados/personas/PersonCardDetailed.tsx` (2): tipar props
+- [x] `buscar/page.tsx` (3→0): typed callbacks usando `SearchPageResult` indexed access
+- [x] `PersonCardDetailed.tsx` (2→0): intersection type para location paths
 
-### G3. Otros componentes
+### G3. Otros componentes ✅
 
-- [ ] `src/components/home/ObituariosSection.tsx` (3): tipar datos de obituarios
-- [ ] `src/components/admin/shared/PersonSearchInput.tsx` (2): tipar search results
-- [ ] `src/components/admin/CloudinaryUploadWidget.tsx` (2): tipar widget callbacks
-- [ ] `src/components/listados/estrenos/EstrenosYearBar.tsx` (1): tipar props
-- [ ] `src/components/movies/ImageGallery.tsx` (1): tipar image data
-- [ ] `src/components/layout/SearchBar.tsx` (0 — ya migrado, verificar)
+- [x] `ObituariosSection.tsx` (3→0): `ObituarioPerson` interface
+- [x] `PersonSearchInput.tsx` (2→0): typed query result, removed callback `any`
+- [x] `CloudinaryUploadWidget.tsx` (2→0): typed upload result and error callback
+- [x] `EstrenosYearBar.tsx` (1→0): removed `null as any`
+- [x] `ImageGallery.tsx` (1→0): `ImageWithRelations['type']` cast
 
-### G4. Festival forms
+### G4. Festival forms ✅
 
-- [ ] `src/app/admin/festival-editions/[id]/sections/new/FestivalSectionForm.tsx` (1): tipar form state
-- [ ] `src/components/admin/festivals/FestivalEditionForm.tsx` (1): tipar form state
-- [ ] `src/components/admin/festivals/FestivalForm.tsx` (1): tipar form state
-- [ ] `src/components/admin/festivals/FestivalScreeningForm.tsx` (1): tipar form state
+- [x] `FestivalSectionForm.tsx` (1→0): `string | number | boolean` value type
+- [x] `FestivalEditionForm.tsx` (1→0): indexed access value type
+- [x] `FestivalForm.tsx` (1→0): indexed access value type
+- [x] `FestivalScreeningForm.tsx` (1→0): indexed access value type
 
 ---
 

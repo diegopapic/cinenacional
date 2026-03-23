@@ -35,7 +35,7 @@ export default function FestivalEditionForm({ festivalId, festivalName, edition 
     isPublished: edition?.isPublished ?? false,
   })
 
-  const handleChange = (field: keyof FestivalEditionFormData, value: any) => {
+  const handleChange = (field: keyof FestivalEditionFormData, value: FestivalEditionFormData[keyof FestivalEditionFormData]) => {
     setFormData(prev => {
       const next = { ...prev, [field]: value }
       // Auto-set year when startDate changes

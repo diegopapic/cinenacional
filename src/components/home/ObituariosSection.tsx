@@ -5,8 +5,22 @@ import Link from 'next/link';
 import { calculateYearsBetween } from '@/lib/shared/dateUtils';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
+interface ObituarioPerson {
+  id: number
+  slug: string
+  firstName: string | null
+  lastName: string | null
+  photoUrl: string | null
+  birthYear: number | null
+  birthMonth: number | null
+  birthDay: number | null
+  deathYear: number | null
+  deathMonth: number | null
+  deathDay: number | null
+}
+
 interface ObituariosSectionProps {
-  obituarios: any[];
+  obituarios: ObituarioPerson[];
   loading?: boolean;
   noPadding?: boolean;
 }
@@ -44,7 +58,7 @@ export default function ObituariosSection({ obituarios, loading = false, noPaddi
   }
 
   // Función para calcular la edad al fallecer
-  const calcularEdad = (person: any) => {
+  const calcularEdad = (person: ObituarioPerson) => {
     if (!person.birthYear || !person.deathYear) {
       return null;
     }
@@ -65,7 +79,7 @@ export default function ObituariosSection({ obituarios, loading = false, noPaddi
   };
 
   // Función para formatear el nombre completo
-  const formatearNombre = (person: any) => {
+  const formatearNombre = (person: ObituarioPerson) => {
     const parts = [];
     if (person.firstName) parts.push(person.firstName);
     if (person.lastName) parts.push(person.lastName);

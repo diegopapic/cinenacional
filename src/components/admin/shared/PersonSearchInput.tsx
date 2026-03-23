@@ -208,7 +208,7 @@ export default function PersonSearchInput({
   // Cargar persona seleccionada si existe
   const { data: loadedPerson } = useQuery({
     queryKey: ['person', value],
-    queryFn: () => peopleService.getById(value!) as Promise<any>,
+    queryFn: () => peopleService.getById(value!) as Promise<Person>,
     enabled: !!value && value > 0 && !initialPersonName,
     staleTime: 5 * 60 * 1000,
   })
@@ -230,7 +230,7 @@ export default function PersonSearchInput({
       let displayName = loadedPerson.name || `${loadedPerson.firstName || ''} ${loadedPerson.lastName || ''}`.trim()
 
       if (alternativeNameId && loadedPerson.alternativeNames) {
-        const altName = loadedPerson.alternativeNames.find((an: any) => an.id === alternativeNameId)
+        const altName = loadedPerson.alternativeNames.find((an) => an.id === alternativeNameId)
         if (altName) {
           displayName = altName.fullName
         }

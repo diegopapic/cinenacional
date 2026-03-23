@@ -62,7 +62,15 @@ interface Director {
 }
 
 interface MoviePageClientProps {
-    movie: any;
+    movie: {
+        id: number;
+        slug: string;
+        title: string;
+        posterUrl?: string | null;
+        synopsis?: string | null;
+        trailerUrl?: string | null;
+        stage?: string;
+    };
     displayYear: number | null;
     totalDuration: number;
     genres: Array<{ id: number; name: string }>;

@@ -109,13 +109,13 @@ export default function SearchPage() {
 
   const error = queryError ? 'Error al realizar la búsqueda. Por favor, intenta de nuevo.' : null
 
-  const getDirectorName = (movie: any) => {
+  const getDirectorName = (movie: SearchPageResult['movies'][number]) => {
     const director = movie.directors?.[0]?.person
     if (!director) return null
     return `${director.firstName || ''} ${director.lastName || ''}`.trim()
   }
 
-  const getPersonName = (person: any) => {
+  const getPersonName = (person: { firstName?: string; lastName?: string }) => {
     return `${person.firstName || ''} ${person.lastName || ''}`.trim()
   }
 
@@ -125,7 +125,7 @@ export default function SearchPage() {
    * - Nacimiento y muerte: "(19 de abril de 1922-12 de diciembre de 2012)"
    * - Solo muerte: "m. 26 de septiembre de 1943"
    */
-  const getLifeDates = (person: any): string | null => {
+  const getLifeDates = (person: SearchPageResult['people'][number]): string | null => {
     const hasBirth = !!person.birthYear
     const hasDeath = !!person.deathYear
     

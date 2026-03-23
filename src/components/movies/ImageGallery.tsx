@@ -10,6 +10,7 @@ import { useWindowEvent } from '@/hooks/useWindowEvent';
 import { useKeydown } from '@/hooks/useKeydown';
 import { useBodyOverflow } from '@/hooks/useBodyOverflow';
 import { generateImageCaption } from '@/lib/images/imageUtils';
+import type { ImageWithRelations } from '@/lib/images/imageTypes';
 
 interface GalleryImage {
   id: number;
@@ -52,7 +53,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
     const imageForCaption = {
       id: image.id,
       cloudinaryPublicId: image.cloudinaryPublicId,
-      type: image.type as any,
+      type: image.type as ImageWithRelations['type'],
       eventName: image.eventName,
       people: image.people,
       movie: image.movie,
