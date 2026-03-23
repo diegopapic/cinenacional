@@ -38,7 +38,7 @@ async function getMoviesByGenre(genreId: number, page: number) {
         releaseYear: true,
         posterUrl: true,
         crew: {
-          where: { role: { department: 'DIRECTING' } },
+          where: { role: { department: 'DIRECCION' } },
           select: {
             person: {
               select: { firstName: true, lastName: true },
