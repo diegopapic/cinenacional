@@ -103,7 +103,7 @@ export default async function GenrePage({ params, searchParams }: PageProps) {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8 md:py-12 lg:px-12">
       <h1 className="font-serif text-2xl tracking-tight md:text-3xl lg:text-4xl">
-        Películas de {genre.name}
+        Películas de {genre.name} argentinas
       </h1>
 
       {totalCount > 0 && (
@@ -160,7 +160,7 @@ export default async function GenrePage({ params, searchParams }: PageProps) {
         </div>
       ) : (
         <div className="py-16 text-center">
-          <p className="text-lg text-muted-foreground/50">No se encontraron películas de {genre.name.toLowerCase()}</p>
+          <p className="text-lg text-muted-foreground/50">No se encontraron películas de {genre.name.toLowerCase()} argentinas</p>
         </div>
       )}
 
