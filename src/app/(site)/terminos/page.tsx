@@ -19,7 +19,7 @@ export default function TerminosPage() {
       <div className="prose prose-invert prose-sm mt-8 max-w-none text-muted-foreground/80 [&_h2]:font-serif [&_h2]:text-lg [&_h2]:text-foreground/90 [&_h2]:mt-8 [&_h2]:mb-3 [&_p]:leading-relaxed [&_p]:mb-4 [&_ul]:mb-4 [&_li]:mb-1 [&_a]:no-underline [&_strong]:text-inherit">
         <h2>1. Aceptación de los términos</h2>
         <p>
-          Al acceder y utilizar <strong>cinenacional.com</strong> (en adelante, &ldquo;el Sitio&rdquo;), aceptás estos
+          Al acceder y utilizar <strong>cinenacional.com</strong>{' '}(en adelante, &ldquo;el Sitio&rdquo;), aceptás estos
           términos de uso en su totalidad. Si no estás de acuerdo con alguno de ellos, te pedimos
           que no utilices el Sitio.
         </p>
@@ -62,7 +62,7 @@ export default function TerminosPage() {
 
         <h2>6. Enlaces a terceros</h2>
         <p>
-          El Sitio puede contener enlaces a sitios externos (IMDb, YouTube, redes sociales, etc.).
+          El Sitio puede contener enlaces a sitios externos (IMDb, YouTube, redes sociales, etc.).{' '}
           <strong>cinenacional.com</strong> no es responsable del contenido ni de las políticas de privacidad de
           dichos sitios.
         </p>
