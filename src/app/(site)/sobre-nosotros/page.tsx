@@ -64,9 +64,9 @@ export default async function SobreNosotrosPage() {
         Sobre nosotros
       </h1>
 
-      <div className="mt-8 space-y-5 text-sm leading-relaxed text-muted-foreground/80 md:text-[15px]">
+      <div className="prose prose-invert prose-sm mt-8 max-w-none text-muted-foreground/80 [&_p]:leading-relaxed [&_p]:mb-4 [&_a]:no-underline [&_strong]:text-inherit">
         <p>
-          <strong className="font-semibold text-foreground">cinenacional.com</strong> es el registro más completo y confiable de cine
+          <strong>cinenacional.com</strong> es el registro más completo y confiable de cine
           argentino en la web. Nacimos en 2001, cuando todo era diferente: internet, el cine
           argentino, el país. Desde entonces crecimos sin parar y hoy somos el sitio de referencia
           para quien quiera saber algo sobre una película, un director, un actor o cualquier
@@ -93,24 +93,22 @@ export default async function SobreNosotrosPage() {
           estreno, y links a medios con críticas.
         </p>
 
-        <p className="font-medium text-foreground/90">
-          Hoy la base cuenta con:
-        </p>
+        <p>Hoy la base cuenta con:</p>
 
-        <ul className="grid grid-cols-2 gap-x-8 gap-y-2 text-foreground/70">
-          <li>{fmt(stats.peliculas)} películas</li>
-          <li>{fmt(stats.personas)} personas</li>
-          <li>{fmt(stats.efemerides)} efemérides</li>
-          <li>{fmt(stats.afiches)} afiches</li>
-          <li>{fmt(stats.fotos)} retratos</li>
-          <li>{fmt(stats.imagenes)} imágenes</li>
-          <li>{fmt(stats.trailers)} tráilers</li>
+        <ul className="grid grid-cols-2 gap-x-8 gap-y-2 !list-none !pl-0 text-foreground/70">
+          <li className="!pl-0">{fmt(stats.peliculas)} películas</li>
+          <li className="!pl-0">{fmt(stats.personas)} personas</li>
+          <li className="!pl-0">{fmt(stats.efemerides)} efemérides</li>
+          <li className="!pl-0">{fmt(stats.afiches)} afiches</li>
+          <li className="!pl-0">{fmt(stats.fotos)} retratos</li>
+          <li className="!pl-0">{fmt(stats.imagenes)} imágenes</li>
+          <li className="!pl-0">{fmt(stats.trailers)} tráilers</li>
         </ul>
 
         <p>
           El sitio es una creación personal de Diego Papic, periodista y crítico de cine argentino.
           Trabajó en <em>Clarín Espectáculos</em> y <em>La Agenda</em>, y actualmente es editor de
-          la revista <em>Seúl</em>. <strong className="font-semibold text-foreground">cinenacional.com</strong> no es un organismo oficial ni
+          la revista <em>Seúl</em>. <strong>cinenacional.com</strong> no es un organismo oficial ni
           está afiliado al INCAA ni a ninguna institución del Estado.
         </p>
 
