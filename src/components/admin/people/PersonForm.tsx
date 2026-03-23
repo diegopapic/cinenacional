@@ -214,7 +214,7 @@ export function PersonForm({
                         label=""
                         type="person_photo"
                         personId={personId}
-                        aspectRatio="3:4"
+                        aspectRatio="3/4"
                         maxWidth={800}
                         maxDisplayHeight={400}  // NUEVO: limitar altura de display
                     />

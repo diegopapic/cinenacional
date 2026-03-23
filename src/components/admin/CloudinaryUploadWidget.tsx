@@ -232,7 +232,7 @@ export function CloudinaryUploadWidget({
     '1/1'
   )
 
-  const [aspectWidth, aspectHeight] = aspectRatio.split('/').map(Number)
+  const [aspectWidth, aspectHeight] = aspectRatio.split(/[/:]/).map(Number)
 
   const dimensions =
     type === 'poster' ? '500x750px' :
