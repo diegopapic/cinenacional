@@ -19,7 +19,7 @@ export default function PrivacidadPage() {
       <div className="prose prose-invert prose-sm mt-8 max-w-none text-muted-foreground/80 [&_h2]:font-serif [&_h2]:text-lg [&_h2]:text-foreground/90 [&_h2]:mt-8 [&_h2]:mb-3 [&_p]:leading-relaxed [&_p]:mb-4 [&_ul]:mb-4 [&_li]:mb-1 [&_a]:no-underline">
         <h2>1. Información que recopilamos</h2>
         <p>
-          cinenacional.com no requiere registro de usuarios para acceder al contenido público.
+          <strong>cinenacional.com</strong> no requiere registro de usuarios para acceder al contenido público.
           La información que recopilamos se limita a:
         </p>
         <ul>

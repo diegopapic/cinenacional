@@ -19,14 +19,14 @@ export default function TerminosPage() {
       <div className="prose prose-invert prose-sm mt-8 max-w-none text-muted-foreground/80 [&_h2]:font-serif [&_h2]:text-lg [&_h2]:text-foreground/90 [&_h2]:mt-8 [&_h2]:mb-3 [&_p]:leading-relaxed [&_p]:mb-4 [&_ul]:mb-4 [&_li]:mb-1 [&_a]:no-underline">
         <h2>1. Aceptación de los términos</h2>
         <p>
-          Al acceder y utilizar cinenacional.com (en adelante, &ldquo;el Sitio&rdquo;), aceptás estos
+          Al acceder y utilizar <strong>cinenacional.com</strong> (en adelante, &ldquo;el Sitio&rdquo;), aceptás estos
           términos de uso en su totalidad. Si no estás de acuerdo con alguno de ellos, te pedimos
           que no utilices el Sitio.
         </p>
 
         <h2>2. Descripción del servicio</h2>
         <p>
-          cinenacional.com es una base de datos del cine argentino que ofrece información sobre
+          <strong>cinenacional.com</strong> es una base de datos del cine argentino que ofrece información sobre
           películas, personas (actores, directores, técnicos), estrenos, festivales y otros datos
           relacionados con la cinematografía de Argentina. El acceso al contenido público del Sitio
           es gratuito y no requiere registro.
@@ -35,7 +35,7 @@ export default function TerminosPage() {
         <h2>3. Propiedad intelectual</h2>
         <p>
           El diseño, la estructura, la selección y disposición de los contenidos del Sitio son
-          propiedad de cinenacional.com. Las imágenes de películas, fotografías de personas y
+          propiedad de <strong>cinenacional.com</strong>. Las imágenes de películas, fotografías de personas y
           materiales audiovisuales pertenecen a sus respectivos titulares de derechos y se utilizan
           con fines informativos y de archivo.
         </p>
@@ -46,7 +46,7 @@ export default function TerminosPage() {
 
         <h2>4. Exactitud de la información</h2>
         <p>
-          cinenacional.com se esfuerza por mantener la información actualizada y precisa. Sin
+          <strong>cinenacional.com</strong> se esfuerza por mantener la información actualizada y precisa. Sin
           embargo, no garantizamos que todos los datos sean completos o estén libres de errores. Si
           encontrás información incorrecta, podés contactarnos para que la corrijamos.
         </p>
@@ -63,13 +63,13 @@ export default function TerminosPage() {
         <h2>6. Enlaces a terceros</h2>
         <p>
           El Sitio puede contener enlaces a sitios externos (IMDb, YouTube, redes sociales, etc.).
-          cinenacional.com no es responsable del contenido ni de las políticas de privacidad de
+          <strong>cinenacional.com</strong> no es responsable del contenido ni de las políticas de privacidad de
           dichos sitios.
         </p>
 
         <h2>7. Limitación de responsabilidad</h2>
         <p>
-          cinenacional.com se proporciona &ldquo;tal cual&rdquo; y &ldquo;según disponibilidad&rdquo;.
+          <strong>cinenacional.com</strong> se proporciona &ldquo;tal cual&rdquo; y &ldquo;según disponibilidad&rdquo;.
           No garantizamos que el servicio sea ininterrumpido ni libre de errores. En ningún caso
           seremos responsables por daños directos o indirectos derivados del uso del Sitio.
         </p>

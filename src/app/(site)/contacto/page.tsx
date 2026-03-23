@@ -15,7 +15,7 @@ export default function ContactoPage() {
       </h1>
       <p className="mt-4 text-sm leading-relaxed text-muted-foreground/80 md:text-[15px]">
         Si encontraste información incorrecta, querés sugerir una corrección o tenés alguna
-        consulta sobre cinenacional.com, podés contactarnos por los siguientes medios:
+        consulta sobre <strong>cinenacional.com</strong>, podés contactarnos por los siguientes medios:
       </p>
 
       <div className="mt-8 flex flex-col gap-5">
