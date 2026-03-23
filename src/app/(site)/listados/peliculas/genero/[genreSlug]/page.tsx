@@ -48,7 +48,7 @@ async function getMoviesByGenre(genreId: number, page: number) {
           take: 1,
         },
       },
-      orderBy: [{ popularity: 'desc' }, { title: 'asc' }],
+      orderBy: [{ popularity: { sort: 'desc', nulls: 'last' } }, { title: 'asc' }],
       skip,
       take: PAGE_SIZE,
     }),
