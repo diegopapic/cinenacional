@@ -64,7 +64,7 @@ export default async function SobreNosotrosPage() {
         Sobre nosotros
       </h1>
 
-      <div className="mt-8 space-y-5 text-[14px] leading-relaxed text-foreground/80 md:text-[15px]">
+      <div className="mt-8 space-y-5 text-sm leading-relaxed text-muted-foreground/80 md:text-[15px]">
         <p>
           <strong>cinenacional.com</strong> es el registro más completo y confiable de cine
           argentino en la web. Nacimos en 2001, cuando todo era diferente: internet, el cine

@@ -13,7 +13,7 @@ export default function ContactoPage() {
       <h1 className="font-serif text-2xl tracking-tight md:text-3xl lg:text-4xl">
         Contacto
       </h1>
-      <p className="mt-4 text-[14px] leading-relaxed text-foreground/70 md:text-[15px]">
+      <p className="mt-4 text-sm leading-relaxed text-muted-foreground/80 md:text-[15px]">
         Si encontraste información incorrecta, querés sugerir una corrección o tenés alguna
         consulta sobre cinenacional.com, podés contactarnos por los siguientes medios:
       </p>
