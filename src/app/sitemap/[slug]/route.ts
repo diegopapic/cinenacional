@@ -85,8 +85,26 @@ export async function GET(
 
   if (name === 'estrenos') {
     const currentYear = new Date().getFullYear()
+    const currentDecade = Math.floor(currentYear / 10) * 10
     const entries: SitemapEntry[] = []
 
+    // Próximos estrenos
+    entries.push({
+      url: `${SITEMAP_BASE_URL}/listados/estrenos/proximos`,
+      changeFrequency: 'daily',
+      priority: 0.9,
+    })
+
+    // Décadas (1890s a actual)
+    for (let decade = 1890; decade <= currentDecade; decade += 10) {
+      entries.push({
+        url: `${SITEMAP_BASE_URL}/listados/estrenos/${decade}s`,
+        changeFrequency: decade === currentDecade ? 'weekly' : 'yearly',
+        priority: decade === currentDecade ? 0.8 : 0.5,
+      })
+    }
+
+    // Años individuales
     for (let year = 1896; year <= currentYear; year++) {
       entries.push({
         url: `${SITEMAP_BASE_URL}/listados/estrenos/${year}`,
