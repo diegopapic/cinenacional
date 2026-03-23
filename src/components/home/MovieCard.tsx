@@ -85,7 +85,7 @@ export default function MovieCard({
               src={movie.posterUrl}
               alt={movie.title}
               fill
-              sizes="120px"
+              sizes="(min-width: 1024px) 16vw, (min-width: 768px) 20vw, 112px"
               className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:brightness-110"
             />
           ) : (
