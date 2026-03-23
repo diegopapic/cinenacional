@@ -20,6 +20,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   return {
     title: `Obituarios de ${year} — CineNacional`,
     description: `Personas del cine argentino fallecidas en ${year}.`,
+    alternates: { canonical: `https://cinenacional.com/listados/obituarios?year=${year}` },
   }
 }
 
