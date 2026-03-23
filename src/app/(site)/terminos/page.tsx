@@ -16,7 +16,7 @@ export default function TerminosPage() {
         Última actualización: marzo de 2026
       </p>
 
-      <div className="prose prose-invert prose-sm mt-8 max-w-none text-foreground/80 [&_h2]:font-serif [&_h2]:text-lg [&_h2]:text-foreground/90 [&_h2]:mt-8 [&_h2]:mb-3 [&_p]:leading-relaxed [&_p]:mb-4 [&_ul]:mb-4 [&_li]:mb-1">
+      <div className="prose prose-invert prose-sm mt-8 max-w-none text-foreground/80 [&_h2]:font-serif [&_h2]:text-lg [&_h2]:text-foreground/90 [&_h2]:mt-8 [&_h2]:mb-3 [&_p]:leading-relaxed [&_p]:mb-4 [&_ul]:mb-4 [&_li]:mb-1 [&_a]:no-underline">
         <h2>1. Aceptación de los términos</h2>
         <p>
           Al acceder y utilizar cinenacional.com (en adelante, &ldquo;el Sitio&rdquo;), aceptás estos
