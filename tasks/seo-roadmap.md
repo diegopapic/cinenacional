@@ -30,17 +30,40 @@
 - **Qué se hizo:** Unificado a `cinenacional.com` (sin www).
 - **Commit:** `ceb28b8`
 
-### 1.5 Agregar canonicals en todas las páginas públicas
-- **Archivos a modificar:**
+### 1.5 Evaluar qué filtros de listados merecen rutas propias (como se hizo con estrenos)
+- **Contexto:** Los estrenos ya se migraron de `?year=2024` a `/listados/estrenos/2024`, lo que mejoró la indexabilidad. Hay que evaluar si otros filtros merecen el mismo tratamiento.
+- **Filtros actuales por página:**
+  - **Películas** (`/listados/peliculas`): `search`, `genreId`, `tipoDuracion` (largo/medio/corto), `countryId`, `ratingId`, `soundType`, `colorTypeId`, `releaseDateFrom/To`, `productionYearFrom/To`, `sortBy`, `page`
+  - **Personas** (`/listados/personas`): `search`, `gender`, `roleId`, `nationalityId`, `birthLocationId`, `deathLocationId`, `birthYearFrom/To`, `deathYearFrom/To`, `sortBy`, `page`
+  - **Obituarios** (`/listados/obituarios`): `year`, `page`
+- **Criterio para migrar un filtro a ruta propia:** ¿El filtro produce contenido completamente distinto con entidad propia? (ej: "obituarios de 2024" es una página con sentido propio, igual que "estrenos de 2024").
+- **Candidatos probables:**
+  - **Obituarios por año** → `/listados/obituarios/2024` (igual que estrenos, cada año tiene personas distintas)
+  - **Películas por género** → `/listados/peliculas/drama`, `/listados/peliculas/comedia` (contenido totalmente distinto por género, alto volumen de búsqueda)
+  - **Personas por rol** → `/listados/personas/directores`, `/listados/personas/actores` (entidades con sentido propio)
+- **Candidatos dudosos (evaluar):**
+  - Películas por tipo de duración → `/listados/peliculas/cortometrajes` (¿hay búsqueda suficiente?)
+  - Películas por país coproductor → `/listados/peliculas/coproducciones/españa` (¿volumen?)
+  - Personas por género/nacionalidad → probablemente no justifica ruta propia
+- **Decisión:** Definir cuáles migrar antes de implementar canonicals, porque las rutas nuevas cambian cuál es la URL canónica.
+
+### 1.6 Agregar canonicals en todas las páginas públicas
+- **Prerequisito:** Cerrar la decisión del punto 1.5 sobre qué filtros se convierten en rutas.
+- **Páginas de detalle (canonical simple, sin dependencia de 1.5):**
   - `src/app/(site)/page.tsx` — home: `alternates: { canonical: 'https://cinenacional.com' }`
-  - `src/app/(site)/pelicula/[slug]/page.tsx` — en `generateMetadata`: `alternates: { canonical: \`https://cinenacional.com/pelicula/${slug}\` }`
-  - `src/app/(site)/persona/[slug]/page.tsx` — en `generateMetadata`: `alternates: { canonical: \`https://cinenacional.com/persona/${slug}\` }`
-  - `src/app/(site)/efemerides/[[...date]]/page.tsx` — en `generateMetadata`
-  - `src/app/(site)/listados/obituarios/page.tsx` — en `generateMetadata`
-  - `src/app/(site)/pelicula/[slug]/criticas/[reviewId]/page.tsx` — en `generateMetadata`
+  - `src/app/(site)/pelicula/[slug]/page.tsx` — `alternates: { canonical: \`https://cinenacional.com/pelicula/${slug}\` }`
+  - `src/app/(site)/persona/[slug]/page.tsx` — `alternates: { canonical: \`https://cinenacional.com/persona/${slug}\` }`
+  - `src/app/(site)/efemerides/[[...date]]/page.tsx` — canonical a la URL de la fecha
+  - `src/app/(site)/pelicula/[slug]/criticas/[reviewId]/page.tsx` — canonical a la URL de la crítica
+- **Páginas de listados (dependen de 1.5):**
+  - `src/app/(site)/listados/obituarios/page.tsx` — si se migra a `/obituarios/2024`, el canonical apunta ahí
+  - `src/app/(site)/listados/peliculas/page.tsx` — si se crean rutas por género, esas son las canónicas
+  - `src/app/(site)/listados/personas/page.tsx` — idem con roles
+  - Para filtros que NO se migran a ruta propia: el canonical apunta a la URL base sin query params
+- **Búsqueda:** `/buscar` debería tener `noindex` en vez de canonical (no tiene sentido indexar resultados de búsqueda).
 - **Por qué:** Sin canonical, Google puede indexar la misma página con distintos query params como contenido duplicado.
 
-### 1.6 Agregar `generateMetadata` a páginas de listados
+### 1.7 Agregar `generateMetadata` a páginas de listados
 - **Archivos a modificar:**
   - `src/app/(site)/listados/peliculas/page.tsx` — actualmente hereda metadata genérica del layout. Necesita título y descripción propios ("Películas argentinas — cinenacional.com").
   - `src/app/(site)/listados/personas/page.tsx` — idem ("Personas del cine argentino — cinenacional.com").
@@ -51,7 +74,7 @@
   - (B) Usar `export const metadata: Metadata = { ... }` estático (funciona en client pages en Next.js 16).
 - **Por qué:** Sin metadata propia, heredan el título genérico "cinenacional.com - Base de datos del cine argentino" en los SERPs.
 
-### 1.7 Unificar formato de marca en titles
+### 1.8 Unificar formato de marca en titles
 - **Problema:** Se usan 3 formatos distintos:
   - `"... - cinenacional.com"` (home, película, persona)
   - `"... | CineNacional"` (estrenos)
@@ -266,7 +289,7 @@
 
 | Fase | Items | Impacto SEO | Esfuerzo |
 |------|-------|-------------|----------|
-| 1 — Fundamentos | 7 (4 completados) | Crítico | Bajo-Medio |
+| 1 — Fundamentos | 8 (4 completados) | Crítico | Bajo-Alto |
 | 2 — Structured Data | 5 (1 completado) | Alto | Medio |
 | 3 — Content/E-E-A-T | 5 (1 completado) | Alto | Medio-Alto |
 | 4 — AI/GEO | 5 (1 completado) | Alto | Alto |
@@ -274,4 +297,4 @@
 | 6 — Sitemap avanzado | 4 | Bajo-Medio | Bajo |
 | 7 — Nice to have | 6 | Bajo | Bajo |
 
-**Total:** 38 items, 8 completados, 30 pendientes.
+**Total:** 39 items, 8 completados, 31 pendientes.
