@@ -139,8 +139,8 @@
 - **Páginas a crear:**
   - `/sobre-nosotros` — Quién está detrás del sitio. Crítico para E-E-A-T (Trustworthiness).
   - `/contacto` — Formulario o info de contacto.
-  - `/terminos` — Términos de uso.
-  - `/privacidad` — Política de privacidad (obligatorio si se usa Google Analytics).
+  - ~~`/terminos` — Términos de uso.~~ ✅ COMPLETADO (`53567f3`)
+  - ~~`/privacidad` — Política de privacidad.~~ ✅ COMPLETADO (`53567f3`)
 - **Por qué:** Sin estas páginas, el puntaje de Trustworthiness cae significativamente según las Quality Rater Guidelines de Google.
 
 ### 3.4 Fix alt text vacío en SearchResults
