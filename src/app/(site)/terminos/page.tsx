@@ -84,7 +84,7 @@ export default function TerminosPage() {
         <h2>9. Contacto</h2>
         <p>
           Para consultas sobre estos términos, podés escribirnos
-          a <a href="mailto:info@cinenacional.com" className="text-foreground/80 hover:text-accent transition-colors">info@cinenacional.com</a>.
+          a <a href="mailto:info@cinenacional.com" className="text-foreground hover:text-accent transition-colors">info@cinenacional.com</a>.
         </p>
       </div>
     </div>

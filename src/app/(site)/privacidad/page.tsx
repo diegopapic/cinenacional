@@ -45,9 +45,9 @@ export default function PrivacidadPage() {
         <p>
           Google Analytics utiliza cookies propias. Podés obtener más información sobre cómo Google
           gestiona los datos en
-          su <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-foreground/80 hover:text-accent transition-colors">política de privacidad</a> y
+          su <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-foreground hover:text-accent transition-colors">política de privacidad</a> y
           desactivar el seguimiento instalando
-          el <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer" className="text-foreground/80 hover:text-accent transition-colors">complemento de inhabilitación de Google Analytics</a>.
+          el <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer" className="text-foreground hover:text-accent transition-colors">complemento de inhabilitación de Google Analytics</a>.
         </p>
 
         <h2>3. Cómo usamos la información</h2>
@@ -117,7 +117,7 @@ export default function PrivacidadPage() {
         <h2>9. Contacto</h2>
         <p>
           Para consultas sobre privacidad o protección de datos, podés escribirnos
-          a <a href="mailto:info@cinenacional.com" className="text-foreground/80 hover:text-accent transition-colors">info@cinenacional.com</a>.
+          a <a href="mailto:info@cinenacional.com" className="text-foreground hover:text-accent transition-colors">info@cinenacional.com</a>.
         </p>
       </div>
     </div>

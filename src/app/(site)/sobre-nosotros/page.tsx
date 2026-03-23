@@ -81,8 +81,8 @@ export default async function SobreNosotrosPage() {
 
         <p>
           Cubrimos todas las épocas:
-          desde <Link href="/pelicula/la-bandera-argentina" className="text-foreground/80 hover:text-accent transition-colors">La bandera argentina</Link>,
-          de <Link href="/persona/eugenio-py" className="text-foreground/80 hover:text-accent transition-colors">Eugenio Py</Link> (1897),
+          desde <Link href="/pelicula/la-bandera-argentina" className="text-foreground hover:text-accent transition-colors">La bandera argentina</Link>,
+          de <Link href="/persona/eugenio-py" className="text-foreground hover:text-accent transition-colors">Eugenio Py</Link> (1897),
           hasta los estrenos del año en curso. Incluimos largometrajes, mediometrajes y
           cortometrajes de ficción, documental y animación.
         </p>
@@ -116,7 +116,7 @@ export default async function SobreNosotrosPage() {
 
         <p>
           Si encontrás un error o querés colaborar con
-          información, <Link href="/contacto" className="text-foreground/80 hover:text-accent transition-colors">escribinos</Link>.
+          información, <Link href="/contacto" className="text-foreground hover:text-accent transition-colors">escribinos</Link>.
           Esta base de datos se construye con tiempo, cuidado y, a veces, con la ayuda de lectores.
         </p>
       </div>
