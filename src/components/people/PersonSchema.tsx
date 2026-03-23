@@ -17,6 +17,7 @@ interface PersonSchemaProps {
   gender?: string | null
   links?: PersonLink[]
   roleBadges?: string[]
+  nationalities?: { name: string }[]
 }
 
 interface LocationNode {
@@ -95,6 +96,13 @@ function buildPersonJsonLd(props: PersonSchemaProps): Record<string, unknown> | 
   const deathPlaceName = formatLocationName(props.deathLocation)
   if (deathPlaceName) {
     person.deathPlace = { '@type': 'Place', name: deathPlaceName }
+  }
+
+  if (props.nationalities && props.nationalities.length > 0) {
+    person.nationality = props.nationalities.map(n => ({
+      '@type': 'Country',
+      name: n.name,
+    }))
   }
 
   if (props.photoUrl) {

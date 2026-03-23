@@ -614,6 +614,7 @@ export default async function PersonPage({ params }: PageProps) {
         gender={person.gender}
         links={person.links}
         roleBadges={roleBadges}
+        nationalities={(person.nationalities || []).map((nat: { location?: { name?: string | null } | null }) => ({ name: nat.location?.name || '' })).filter((n: { name: string }) => n.name)}
       />
       <div className="min-h-screen">
       <PageViewTracker personId={person.id} />
