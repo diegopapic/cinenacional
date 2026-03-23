@@ -66,7 +66,7 @@ export default async function SobreNosotrosPage() {
 
       <div className="mt-8 space-y-5 text-sm leading-relaxed text-muted-foreground/80 md:text-[15px]">
         <p>
-          <strong>cinenacional.com</strong> es el registro más completo y confiable de cine
+          <strong className="font-semibold text-foreground">cinenacional.com</strong> es el registro más completo y confiable de cine
           argentino en la web. Nacimos en 2001, cuando todo era diferente: internet, el cine
           argentino, el país. Desde entonces crecimos sin parar y hoy somos el sitio de referencia
           para quien quiera saber algo sobre una película, un director, un actor o cualquier
@@ -110,7 +110,7 @@ export default async function SobreNosotrosPage() {
         <p>
           El sitio es una creación personal de Diego Papic, periodista y crítico de cine argentino.
           Trabajó en <em>Clarín Espectáculos</em> y <em>La Agenda</em>, y actualmente es editor de
-          la revista <em>Seúl</em>. <strong>cinenacional.com</strong> no es un organismo oficial ni
+          la revista <em>Seúl</em>. <strong className="font-semibold text-foreground">cinenacional.com</strong> no es un organismo oficial ni
           está afiliado al INCAA ni a ninguna institución del Estado.
         </p>
 
