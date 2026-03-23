@@ -50,6 +50,7 @@
 - Para tareas de más de 3 pasos, escribí el plan en `tasks/todo.md` con elementos verificables antes de implementar.
 - Marcá los elementos como completados a medida que avancés.
 - Al finalizar, añadí una sección de revisión en `tasks/todo.md` con lo que se hizo y cualquier decisión técnica relevante.
+- **Después de cada commit**, si la tarea completada corresponde a un item de `tasks/seo-roadmap.md`, marcarlo como completado (agregar `~~texto~~` + `✅ COMPLETADO` + el hash del commit).
 
 ---
 

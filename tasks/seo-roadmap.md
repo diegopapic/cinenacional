@@ -38,7 +38,7 @@
   - **Obituarios** (`/listados/obituarios`): `year`, `page`
 - **Criterio para migrar un filtro a ruta propia:** ¿El filtro produce contenido completamente distinto con entidad propia? (ej: "obituarios de 2024" es una página con sentido propio, igual que "estrenos de 2024").
 - **Candidatos probables:**
-  - **Obituarios por año** → `/listados/obituarios/2024` (igual que estrenos, cada año tiene personas distintas)
+  - ~~**Obituarios por año** → `/listados/obituarios/2024`~~ ✅ COMPLETADO (`95b6b7a`) — ruta nueva, canonical, sitemap, redirects legacy actualizados
   - **Películas por género** → `/listados/peliculas/drama`, `/listados/peliculas/comedia` (contenido totalmente distinto por género, alto volumen de búsqueda)
   - **Personas por rol** → `/listados/personas/directores`, `/listados/personas/actores` (entidades con sentido propio)
 - **Candidatos dudosos (evaluar):**
