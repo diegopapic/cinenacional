@@ -5,6 +5,7 @@ import Image from 'next/image'
 
 const footerLinks = {
   info: [
+    { href: '/sobre-nosotros', label: 'Sobre nosotros' },
     { href: '/contacto', label: 'Contacto' },
   ],
   legal: [
