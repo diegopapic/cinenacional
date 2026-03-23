@@ -160,6 +160,21 @@ const nextConfig = {
     ];
   },
   
+  // Cache headers para assets estáticos (standalone server no los pone por defecto)
+  async headers() {
+    return [
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ]
+  },
+
   // Security headers se manejan en middleware.ts para evitar duplicación
 }
 
