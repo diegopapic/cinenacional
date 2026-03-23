@@ -257,7 +257,7 @@ export default function HeroSection({ images }: HeroSectionProps) {
             height={1080}
             className="max-w-full max-h-full w-auto h-auto object-contain"
             style={fadeMaskStyle}
-            {...(idx === 0 ? { priority: true } : {})}
+            {...(idx === 0 ? { priority: true, fetchPriority: 'high' as const } : {})}
             sizes="100vw"
           />
         );
