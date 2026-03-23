@@ -287,12 +287,11 @@ export function MovieHero({
             <div className="absolute inset-0 bg-linear-to-r from-background/90 via-background/70 to-transparent" />
           </>
         ) : (
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{
-              backgroundImage: `url(${BACKGROUND_PLACEHOLDER.url})`,
-              filter: 'brightness(0.15)',
-            }}
+          <img
+            src={BACKGROUND_PLACEHOLDER.url}
+            alt=""
+            fetchPriority="high"
+            className="absolute inset-0 h-full w-full object-cover object-center brightness-[0.15]"
           />
         )}
 
