@@ -14,6 +14,7 @@ import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
 import { createLogger } from '@/lib/logger'
 import { PersonSchema } from '@/components/people/PersonSchema'
 import { BreadcrumbSchema } from '@/components/shared/BreadcrumbSchema'
+import { FAQSchema } from '@/components/shared/FAQSchema'
 import { PageViewTracker } from '@/components/people/PageViewTracker'
 import { PersonFilmography } from '@/components/people/PersonFilmography'
 import type { AllRolesItem, RoleSection } from '@/components/people/PersonFilmography'
@@ -691,12 +692,83 @@ export default async function PersonPage({ params }: PageProps) {
 
   const narrativePersonParagraph = narrativePersonParts.join(' ')
 
+  // Build FAQ items
+  const personFaqItems: { question: string; answer: string }[] = []
+
+  // ¿Cuántas películas hizo?
+  if (totalMovies > 0) {
+    personFaqItems.push({
+      question: `¿Cuántas películas hizo ${fullName}?`,
+      answer: `${fullName} participó en ${totalMovies} película${totalMovies > 1 ? 's' : ''} del cine argentino.`,
+    })
+  }
+
+  // ¿Dónde nació?
+  if (person.birthLocation) {
+    const locationParts: string[] = []
+    // Build full location: city, province, country
+    locationParts.push(person.birthLocation.name)
+    if (person.birthLocation.parent) {
+      locationParts.push(person.birthLocation.parent.name)
+      if (person.birthLocation.parent.parent) {
+        locationParts.push(person.birthLocation.parent.parent.name)
+      }
+    }
+    const locationStr = locationParts.join(', ')
+    const yearStr = person.birthYear ? ` en ${person.birthYear}` : ''
+    personFaqItems.push({
+      question: `¿Dónde nació ${fullName}?`,
+      answer: `${fullName} nació en ${locationStr}${yearStr}.`,
+    })
+  }
+
+  // ¿Qué películas hizo? (top 3 by popularity)
+  if (totalMovies > 0) {
+    const allMoviesForFaq = [
+      ...castRoles.map(r => r.movie),
+      ...crewRoles.map(r => r.movie),
+    ]
+    const uniqueMoviesForFaq = new Map<number, typeof allMoviesForFaq[0]>()
+    for (const m of allMoviesForFaq) {
+      if (!uniqueMoviesForFaq.has(m.id)) uniqueMoviesForFaq.set(m.id, m)
+    }
+    const topMovies = [...uniqueMoviesForFaq.values()]
+      .filter(m => m.stage === 'COMPLETA')
+      .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+      .slice(0, 5)
+
+    if (topMovies.length > 0) {
+      const titles = topMovies.map(m => {
+        const y = m.releaseYear || m.year
+        return y ? `${m.title} (${y})` : m.title
+      })
+      personFaqItems.push({
+        question: `¿En qué películas participó ${fullName}?`,
+        answer: `Entre las películas más destacadas de ${fullName} se encuentran ${titles.join(', ')}.`,
+      })
+    }
+  }
+
+  // ¿Cuándo murió? (solo si aplica)
+  if (person.deathYear) {
+    let deathStr = `en ${person.deathYear}`
+    if (person.deathMonth && person.deathDay) {
+      const monthLabel = MONTHS.find(m => m.value === person.deathMonth)?.label || ''
+      deathStr = `el ${person.deathDay} de ${monthLabel.toLowerCase()} de ${person.deathYear}`
+    }
+    personFaqItems.push({
+      question: `¿Cuándo murió ${fullName}?`,
+      answer: `${fullName} falleció ${deathStr}.`,
+    })
+  }
+
   const photoUrlMd = person.photoUrl ? getPersonPhotoUrl(person.photoUrl, 'md') : null
   const photoUrlLg = person.photoUrl ? getPersonPhotoUrl(person.photoUrl, 'lg') : null
 
   return (
     <>
       <p className="sr-only">{narrativePersonParagraph}</p>
+      <FAQSchema items={personFaqItems} />
       <BreadcrumbSchema items={[
         { name: 'Personas', href: '/listados/personas' },
         { name: fullName, href: `/persona/${slug}` },

@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import { MoviePageClient } from './MoviePageClient';
 import { MovieSchema } from '@/components/movies/MovieSchema';
 import { BreadcrumbSchema } from '@/components/shared/BreadcrumbSchema';
+import { FAQSchema } from '@/components/shared/FAQSchema';
+import { MONTHS } from '@/lib/shared/dateUtils';
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import { createLogger } from '@/lib/logger'
@@ -802,9 +804,66 @@ export default async function MoviePage({ params }: PageProps) {
 
   const narrativeParagraph = narrativeParts.join(' ')
 
+  // Build FAQ items
+  const faqItems: { question: string; answer: string }[] = []
+
+  // ¿Quién dirige?
+  if (directors.length > 0) {
+    const dirNames = directors.length === 1
+      ? directors[0].name
+      : `${directors.slice(0, -1).map(d => d.name).join(', ')} y ${directors[directors.length - 1].name}`
+    faqItems.push({
+      question: `¿Quién dirige ${movie.title}?`,
+      answer: `${movie.title} fue dirigida por ${dirNames}.`,
+    })
+  }
+
+  // ¿De qué trata?
+  if (movie.synopsis) {
+    const plainSynopsis = movie.synopsis.replace(/<[^>]*>/g, '').trim()
+    if (plainSynopsis.length > 0) {
+      faqItems.push({
+        question: `¿De qué trata ${movie.title}?`,
+        answer: plainSynopsis.length > 300 ? plainSynopsis.substring(0, 297) + '...' : plainSynopsis,
+      })
+    }
+  }
+
+  // ¿Cuándo se estrenó?
+  if (movie.releaseYear) {
+    let releaseStr: string
+    if (movie.releaseDay && movie.releaseMonth) {
+      const monthLabel = MONTHS.find(m => m.value === movie.releaseMonth)?.label || ''
+      releaseStr = `el ${movie.releaseDay} de ${monthLabel.toLowerCase()} de ${movie.releaseYear}`
+    } else if (movie.releaseMonth) {
+      const monthLabel = MONTHS.find(m => m.value === movie.releaseMonth)?.label || ''
+      releaseStr = `en ${monthLabel.toLowerCase()} de ${movie.releaseYear}`
+    } else {
+      releaseStr = `en ${movie.releaseYear}`
+    }
+    faqItems.push({
+      question: `¿Cuándo se estrenó ${movie.title}?`,
+      answer: `${movie.title} se estrenó ${releaseStr}.`,
+    })
+  }
+
+  // ¿Cuánto dura?
+  if (totalDuration > 0) {
+    const hours = Math.floor(totalDuration / 60)
+    const mins = totalDuration % 60
+    const durationStr = hours > 0
+      ? `${hours} hora${hours > 1 ? 's' : ''}${mins > 0 ? ` y ${mins} minutos` : ''}`
+      : `${mins} minutos`
+    faqItems.push({
+      question: `¿Cuánto dura ${movie.title}?`,
+      answer: `${movie.title} tiene una duración de ${durationStr}.`,
+    })
+  }
+
   return (
     <>
     <p className="sr-only">{narrativeParagraph}</p>
+    <FAQSchema items={faqItems} />
     <BreadcrumbSchema items={[
       { name: 'Películas', href: '/listados/peliculas' },
       { name: movie.title, href: `/pelicula/${movie.slug}` },
