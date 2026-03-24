@@ -145,7 +145,7 @@ async function getFilmographyData(personId: number) {
             select: {
               id: true, slug: true, title: true,
               year: true, releaseYear: true, releaseMonth: true, releaseDay: true,
-              posterUrl: true, stage: true, tipoDuracion: true
+              posterUrl: true, stage: true, tipoDuracion: true, popularity: true
             }
           }
         },
@@ -161,7 +161,7 @@ async function getFilmographyData(personId: number) {
             select: {
               id: true, slug: true, title: true,
               year: true, releaseYear: true, releaseMonth: true, releaseDay: true,
-              posterUrl: true, stage: true, tipoDuracion: true
+              posterUrl: true, stage: true, tipoDuracion: true, popularity: true
             }
           },
           role: true
@@ -664,13 +664,13 @@ export default async function PersonPage({ params }: PageProps) {
       ...castRoles.map(r => r.movie),
       ...crewRoles.map(r => r.movie),
     ]
-    const uniqueMovies = new Map<number, { id: number; title: string; year: number | null; releaseYear: number | null; stage: string | null }>()
+    const uniqueMovies = new Map<number, { id: number; title: string; year: number | null; releaseYear: number | null; stage: string | null; popularity: number | null }>()
     for (const m of allMovies) {
       if (!uniqueMovies.has(m.id)) uniqueMovies.set(m.id, m)
     }
     const sortedMovies = [...uniqueMovies.values()]
       .filter(m => m.stage === 'COMPLETA')
-      .sort((a, b) => (b.releaseYear || b.year || 0) - (a.releaseYear || a.year || 0))
+      .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
       .slice(0, 3)
 
     let moviesPart = `Ha participado en ${totalMovies} películas`
