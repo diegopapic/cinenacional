@@ -173,9 +173,9 @@ export default function PeliculasFilters({
           onChange={(v) => onFilterChange('genreId', v ? parseInt(v) : '')}
         />
 
-        {/* Restricción */}
+        {/* Calificación */}
         <FilterSelect
-          label="Restricción"
+          label="Calificación"
           value={filters.ratingId || ''}
           options={filtersData?.ratings || []}
           onChange={(v) => onFilterChange('ratingId', v ? parseInt(v) : '')}
