@@ -89,8 +89,8 @@ export default function SearchResults({
     )
   }
 
-  const movies = results?.movies ?? []
-  const people = results?.people ?? []
+  const movies = (results?.movies ?? []).slice(0, 5)
+  const people = (results?.people ?? []).slice(0, 5)
 
   return (
     <div className={containerClass} role="listbox" aria-label="Resultados de búsqueda">
@@ -105,7 +105,7 @@ export default function SearchResults({
               <span className="h-px flex-1 bg-nav-foreground/10" aria-hidden="true" />
             </div>
             <div>
-              {movies.slice(0, 5).map((movie, i) => (
+              {movies.map((movie, i) => (
                 <Link
                   key={movie.id}
                   id={`search-result-${i}`}
@@ -158,7 +158,7 @@ export default function SearchResults({
               <span className="h-px flex-1 bg-nav-foreground/10" aria-hidden="true" />
             </div>
             <div>
-              {people.slice(0, 5).map((person, i) => {
+              {people.map((person, i) => {
                 const itemIndex = movies.length + i
                 return (
                 <Link
