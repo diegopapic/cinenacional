@@ -32,7 +32,8 @@ function filtersToSearchParams(filters: MovieFilters, view: ViewMode): string {
   if (filters.productionYearFrom) params.set('productionYearFrom', String(filters.productionYearFrom))
   if (filters.productionYearTo) params.set('productionYearTo', String(filters.productionYearTo))
   if (filters.sortBy && filters.sortBy !== 'popularity') params.set('sortBy', filters.sortBy)
-  if (filters.sortOrder && filters.sortOrder !== 'desc') params.set('sortOrder', filters.sortOrder)
+  const defaultOrder = filters.sortBy === 'title' ? 'asc' : 'desc'
+  if (filters.sortOrder && filters.sortOrder !== defaultOrder) params.set('sortOrder', filters.sortOrder)
   if (view !== 'compact') params.set('view', view)
 
   const qs = params.toString()
