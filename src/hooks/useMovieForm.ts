@@ -8,9 +8,12 @@ import {
     movieFormSchema,
     MovieFormData,
     Movie,
+    MovieDetail,
     MovieCompleteData,
     PartialReleaseDate,
-    PartialFilmingDate
+    PartialFilmingDate,
+    RawCastEntry,
+    RawCrewEntry,
 } from '@/lib/movies/movieTypes'
 import {
     calcularTipoDuracion,
@@ -105,30 +108,6 @@ interface MovieRelationsState {
   screeningVenues: number[]
 }
 
-/** Raw cast entry from API response */
-interface RawCastEntry {
-  personId?: number
-  person?: { id: number; firstName?: string | null; lastName?: string | null; name?: string; slug?: string; photoUrl?: string | null; alternativeNames?: Array<{ id: number; fullName: string }> }
-  alternativeNameId?: number | null
-  alternativeName?: { fullName: string } | string | null
-  characterName?: string
-  billingOrder?: number
-  isPrincipal?: boolean
-  isActor?: boolean
-}
-
-/** Raw crew entry from API response */
-interface RawCrewEntry {
-  personId?: number
-  person?: { id: number; firstName?: string | null; lastName?: string | null; slug?: string; alternativeNames?: Array<{ id: number; fullName: string }> }
-  alternativeNameId?: number | null
-  alternativeName?: { fullName: string } | string | null
-  roleId?: number
-  role?: string | { id: number; name: string; department?: string }
-  department?: string
-  billingOrder?: number
-  notes?: string
-}
 
 const log = createLogger('hook:movieForm')
 
@@ -491,7 +470,7 @@ export function useMovieForm({
     }, [])
 
     // Función para cargar datos de película existente
-    const loadMovieData = useCallback(async (movie: Movie) => {
+    const loadMovieData = useCallback(async (movie: Movie | MovieDetail) => {
         try {
             const fullMovie = await moviesService.getById(movie.id, true)
 
@@ -703,9 +682,9 @@ export function useMovieForm({
                 }) || []).sort((a: CrewMemberEntry, b: CrewMemberEntry) => (a.billingOrder || 0) - (b.billingOrder || 0)),
 
                 countries: cleanedMovie.movieCountries?.map((c: { countryId: number }) => c.countryId) || [],
-                productionCompanies: cleanedMovie.productionCompanies?.map((c: { companyId: number }) => c.companyId) || [],
-                distributionCompanies: cleanedMovie.distributionCompanies?.map((c: { companyId: number }) => c.companyId) || [],
-                themes: cleanedMovie.themes?.map((t: { themeId: number }) => t.themeId) || [],
+                productionCompanies: cleanedMovie.productionCompanies?.map((c) => c.company.id) || [],
+                distributionCompanies: cleanedMovie.distributionCompanies?.map((c) => c.company.id) || [],
+                themes: cleanedMovie.themes?.map((t) => t.theme.id) || [],
                 screeningVenues: cleanedMovie.screenings?.map((s: { venueId: number }) => s.venueId) || []
             })
 

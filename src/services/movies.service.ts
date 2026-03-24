@@ -1,7 +1,7 @@
 // src/services/movies.service.ts
 import { apiClient } from './api-client'
 import { MovieFilters } from '@/components/admin/movies/MoviesFilters'
-import { MovieCompleteData, Movie } from '@/lib/movies/movieTypes'
+import { MovieCompleteData, Movie, MovieDetail } from '@/lib/movies/movieTypes'
 import { processPartialDateForAPI, processPartialDateFromAPI } from '@/lib/shared/dateUtils'
 
 interface MoviesResponse {
@@ -247,13 +247,13 @@ export const moviesService = {
   /**
    * Obtiene una película por ID con todas sus relaciones
    */
-  async getById(id: number, fresh = false): Promise<Movie> {
+  async getById(id: number, fresh = false): Promise<MovieDetail> {
     const options: { params?: Record<string, string>; cache?: RequestCache } = {}
     if (fresh) {
       options.params = { fresh: 'true' }
       options.cache = 'no-store'
     }
-    return apiClient.get<Movie>(`/movies/${id}`, options)
+    return apiClient.get<MovieDetail>(`/movies/${id}`, options)
   },
 
   /**

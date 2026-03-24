@@ -257,6 +257,109 @@ export interface Movie {
   country: string
 }
 
+// ============================================================================
+// MovieDetail — shape completo retornado por GET /api/movies/[id]
+// ============================================================================
+
+/** Persona dentro de una relación cast/crew del API */
+export interface MovieDetailPerson {
+  id: number
+  firstName: string | null
+  lastName: string | null
+  slug: string
+  photoUrl?: string | null
+  alternativeNames?: Array<{ id: number; fullName: string }>
+}
+
+/** Raw cast entry del API */
+export interface RawCastEntry {
+  personId?: number
+  person?: MovieDetailPerson & { name?: string }
+  alternativeNameId?: number | null
+  alternativeName?: { id?: number; fullName: string } | string | null
+  characterName?: string
+  billingOrder?: number
+  isPrincipal?: boolean
+  isActor?: boolean
+  notes?: string | null
+}
+
+/** Raw crew entry del API */
+export interface RawCrewEntry {
+  personId?: number
+  person?: Omit<MovieDetailPerson, 'photoUrl'>
+  alternativeNameId?: number | null
+  alternativeName?: { id?: number; fullName: string } | string | null
+  roleId?: number
+  role?: string | { id: number; name: string; department?: string }
+  department?: string
+  billingOrder?: number
+  notes?: string | null
+}
+
+/** Respuesta completa de GET /api/movies/[id] — incluye todos los campos y relaciones */
+export interface MovieDetail {
+  // Campos básicos
+  id: number
+  slug: string
+  title: string
+  year: number | null
+  duration: number | null
+  durationSeconds: number | null
+  synopsis: string | null
+  synopsisLocked: boolean
+  tagline: string | null
+  notes: string | null
+  posterUrl: string | null
+  posterPublicId: string | null
+  trailerUrl: string | null
+  imdbId: string | null
+  tmdbId: number | null
+  stage: string | null
+  dataCompleteness: string | null
+  tipoDuracion: string | null
+  metaDescription: string | null
+  metaKeywords: string[] | null
+  soundType: string | null
+  rating: number | null
+  ratingId: number | null
+  originalTitle?: string | null
+  aspectRatio?: string | null
+  filmFormat?: string | null
+  certificateNumber?: string | null
+  createdAt: string
+  updatedAt: string
+
+  // Fechas parciales
+  releaseDate?: string | null
+  releaseYear: number | null
+  releaseMonth: number | null
+  releaseDay: number | null
+  filmingStartYear: number | null
+  filmingStartMonth: number | null
+  filmingStartDay: number | null
+  filmingEndYear: number | null
+  filmingEndMonth: number | null
+  filmingEndDay: number | null
+
+  // Relaciones
+  colorType: { id: number; name: string } | null
+  genres: Array<{ genre: { id: number; name: string; slug: string } }>
+  cast: RawCastEntry[]
+  crew: RawCrewEntry[]
+  movieCountries: Array<{ location: { id: number; name: string; slug: string }; countryId: number; isPrimary: boolean }>
+  productionCompanies: Array<{ company: { id: number; name: string } }>
+  distributionCompanies: Array<{ company: { id: number; name: string } }>
+  themes: Array<{ theme: { id: number; name: string; slug: string } }>
+  images: Array<Record<string, unknown>>
+  videos: Array<Record<string, unknown>>
+  awards: Array<Record<string, unknown>>
+  links: Array<{ id?: number; type: string; url: string; isActive?: boolean }>
+  screenings: Array<{ venueId: number; venue?: Record<string, unknown> }>
+  alternativeTitles: Array<{ id: number; title: string; description: string | null }>
+  trivia: Array<{ id: number; content: string; sortOrder: number }>
+}
+
 export interface MovieLink {
   id?: number
   type: string
