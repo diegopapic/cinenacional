@@ -761,8 +761,50 @@ export default async function MoviePage({ params }: PageProps) {
     name: c.location.name,
   })) || [];
 
+  // Build narrative paragraph for LLM citability
+  const narrativeParts: string[] = []
+  const genreNames = genres.map(g => g.name).join(', ')
+  const directorNames = directors.map(d => d.name)
+  const principalCastNames = mainCast.slice(0, 3).map(c => c.name)
+
+  // Opening: "{título} es una película argentina de {género} de {año}"
+  let opening = `${movie.title} es una película argentina`
+  if (genreNames) opening += ` de ${genreNames}`
+  if (displayYear) opening += ` de ${displayYear}`
+  opening += '.'
+  narrativeParts.push(opening)
+
+  // Directors
+  if (directorNames.length === 1) {
+    narrativeParts.push(`Fue dirigida por ${directorNames[0]}.`)
+  } else if (directorNames.length > 1) {
+    const last = directorNames[directorNames.length - 1]
+    const rest = directorNames.slice(0, -1).join(', ')
+    narrativeParts.push(`Fue dirigida por ${rest} y ${last}.`)
+  }
+
+  // Cast
+  if (principalCastNames.length > 0) {
+    const castIntro = principalCastNames.length === 1
+      ? `Está protagonizada por ${principalCastNames[0]}.`
+      : `Está protagonizada por ${principalCastNames.slice(0, -1).join(', ')} y ${principalCastNames[principalCastNames.length - 1]}.`
+    narrativeParts.push(castIntro)
+  }
+
+  // Synopsis (first sentence or up to 200 chars)
+  if (movie.synopsis) {
+    const plainSynopsis = movie.synopsis.replace(/<[^>]*>/g, '').trim()
+    const firstSentence = plainSynopsis.match(/^[^.!?]+[.!?]/)
+    if (firstSentence && firstSentence[0].length <= 200) {
+      narrativeParts.push(firstSentence[0].trim())
+    }
+  }
+
+  const narrativeParagraph = narrativeParts.join(' ')
+
   return (
     <>
+    <p className="sr-only">{narrativeParagraph}</p>
     <BreadcrumbSchema items={[
       { name: 'Películas', href: '/listados/peliculas' },
       { name: movie.title, href: `/pelicula/${movie.slug}` },
