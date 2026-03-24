@@ -71,6 +71,7 @@ interface MoviePageClientProps {
         trailerUrl?: string | null;
         stage?: string;
     };
+    sanitizedSynopsis?: string | null;
     displayYear: number | null;
     totalDuration: number;
     genres: Array<{ id: number; name: string }>;
@@ -116,6 +117,7 @@ interface MoviePageClientProps {
 
 export function MoviePageClient({
     movie,
+    sanitizedSynopsis,
     displayYear,
     totalDuration,
     genres,
@@ -154,7 +156,7 @@ export function MoviePageClient({
                 premiereVenues={premiereVenues}
                 rating={rating}
                 heroBackgroundImage={heroBackgroundImage}
-                synopsis={movie.synopsis}
+                sanitizedSynopsis={sanitizedSynopsis}
                 countries={countries}
                 trailerUrl={movie.trailerUrl}
                 colorType={colorType}

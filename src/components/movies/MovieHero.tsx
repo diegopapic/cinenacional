@@ -7,7 +7,6 @@ import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
 import Link from 'next/link';
 import { Play, X } from 'lucide-react';
 import { MOVIE_STAGES } from '@/lib/movies/movieConstants';
-import DOMPurify from 'isomorphic-dompurify';
 import { BACKGROUND_PLACEHOLDER } from '@/lib/movies/movieConstants';
 import { PosterPlaceholder } from '@/components/film/PosterPlaceholder';
 
@@ -35,7 +34,7 @@ interface MovieHeroProps {
     abbreviation?: string | null;
   } | null;
   heroBackgroundImage?: string | null;
-  synopsis?: string | null;
+  sanitizedSynopsis?: string | null;
   countries?: Array<{ id: number; name: string }>;
   trailerUrl?: string | null;
   colorType?: { id: number; name: string } | null;
@@ -67,7 +66,7 @@ export function MovieHero({
   releaseDate,
   rating,
   heroBackgroundImage,
-  synopsis,
+  sanitizedSynopsis,
   countries = [],
   trailerUrl,
   stage,
@@ -119,15 +118,6 @@ export function MovieHero({
 
   // Badge de estado de producción (solo si no es COMPLETA)
   const stageLabel = stage && stage !== 'COMPLETA' ? getStageLabel(stage) : null;
-
-  // Sanitizar sinopsis
-  const sanitizedSynopsis = synopsis
-    ? DOMPurify.sanitize(synopsis, {
-        ALLOWED_TAGS: ['p', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'b', 'i', 'span'],
-        ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
-        ADD_ATTR: ['target'],
-      })
-    : null;
 
   // YouTube
   const videoId = trailerUrl ? getYouTubeId(trailerUrl) : null;
