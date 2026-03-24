@@ -23,14 +23,14 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, Trash2 } from 'lucide-react'
 
-interface CastMember {
+export interface CastMember {
     personId: number
     person: {
         id: number
-        firstName?: string
-        lastName?: string
+        firstName?: string | null
+        lastName?: string | null
         name?: string
-    }
+    } | null
     characterName?: string
     billingOrder?: number
     isPrincipal?: boolean
@@ -72,8 +72,8 @@ function SortableCastItem({
         opacity: isDragging ? 0.5 : 1,
     }
 
-    const personName = member.person.name ||
-        `${member.person.firstName || ''} ${member.person.lastName || ''}`.trim() ||
+    const personName = member.person?.name ||
+        `${member.person?.firstName || ''} ${member.person?.lastName || ''}`.trim() ||
         'Sin nombre'
 
     return (

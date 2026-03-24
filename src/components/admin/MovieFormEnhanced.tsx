@@ -15,7 +15,7 @@ import {
   Tag
 } from 'lucide-react'
 import ScreeningVenueSelector from './ScreeningVenueSelector'
-import CastList from './movies/CastList'
+import CastList, { type CastMember } from './movies/CastList'
 import { getCsrfHeaders } from '@/lib/csrf-client'
 import { createLogger } from '@/lib/logger'
 
@@ -43,14 +43,8 @@ interface PersonEntity {
 }
 
 /** Cast member as used internally in this component */
-interface LocalCastMember {
-  personId: number
-  person: PersonEntity | null
-  characterName?: string
-  billingOrder?: number
-  isPrincipal?: boolean
-  notes?: string
-}
+/** @deprecated Use CastMember from CastList instead */
+type LocalCastMember = CastMember
 
 /** Crew member as used internally in this component */
 interface LocalCrewMember {
