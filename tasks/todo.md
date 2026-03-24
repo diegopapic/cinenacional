@@ -52,31 +52,34 @@
 
 ## Fase B: Personas (`/listados/personas`)
 
-### B1. Crear funciones de query Prisma para personas
-- [ ] Crear `src/lib/queries/personas.ts` con:
+### ~~B1. Crear funciones de query Prisma para personas~~ ✅ COMPLETADO
+- [x] Crear `src/lib/queries/personas.ts` con:
   - `getPeople(filters, page, limit)` — replicar lógica de `/api/people/list` (búsqueda multi-término, ubicaciones con CTE recursivo, sort con `unaccent`)
   - `getPeopleFilters()` — replicar `/api/people/filters`
 
-### B2. Crear componente client de filtros
-- [ ] Crear `src/components/listados/personas/PersonasFilterBar.tsx` ('use client')
+### ~~B2. Crear componente client de filtros~~ ✅ COMPLETADO
+- [x] Crear `src/components/listados/personas/PersonasFilterBar.tsx` ('use client')
   - Mismo patrón que PeliculasFilterBar
   - Filtros: gender, role, nationality, birth/death location, birth/death year range, sort
 
-### B3. Convertir page.tsx a Server Component
-- [ ] Reescribir `src/app/(site)/listados/personas/page.tsx`:
+### ~~B3. Convertir page.tsx a Server Component~~ ✅ COMPLETADO
+- [x] Reescribir `src/app/(site)/listados/personas/page.tsx`:
   - Mismo patrón que películas
   - Parsear filtros desde searchParams
   - Query Prisma directo
   - `ServerPagination`
-- [ ] Agregar `generateMetadata()` (resuelve 1.7)
-- [ ] Agregar canonical a `/listados/personas` (resuelve 1.6)
+- [x] Agregar `generateMetadata()` (resuelve 1.7)
+- [x] Agregar canonical a `/listados/personas` (resuelve 1.6)
 
-### B4. Limpiar código obsoleto de personas
-- [ ] Eliminar `PersonasContent.tsx`
-- [ ] Verificar `PersonasGrid.tsx` / `PersonCardDetailed.tsx`
+### ~~B4. Limpiar código obsoleto de personas~~ ✅ COMPLETADO
+- [x] Eliminar `PersonasContent.tsx`
+- [x] Eliminar `PersonasFilters.tsx`
+- [x] `PersonasGrid.tsx` / `PersonCardCompact.tsx` / `PersonCardDetailed.tsx` reutilizados tal cual
 
-### B5. Testing personas
-- [ ] Mismas verificaciones que A5
+### ~~B5. Testing personas~~ ✅ COMPLETADO
+- [x] `npm run lint` pasa
+- [x] `npm run build` pasa — `/listados/personas` es `ƒ (Dynamic)`
+- [ ] Verificar en producción — *pendiente deploy*
 
 ---
 
