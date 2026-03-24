@@ -114,7 +114,7 @@ export default function SearchResults({
                       <Image
                         loader={cloudinaryLoader}
                         src={movie.posterUrl}
-                        alt=""
+                        alt={movie.title}
                         width={28}
                         height={40}
                         className="h-full w-full object-cover"
@@ -165,7 +165,7 @@ export default function SearchResults({
                       <Image
                         loader={cloudinaryLoader}
                         src={getPersonPhotoUrl(person.photoUrl, 'sm')!}
-                        alt=""
+                        alt={person.name}
                         width={32}
                         height={32}
                         className="h-full w-full object-cover"
