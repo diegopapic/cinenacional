@@ -22,31 +22,11 @@ export async function GET(
   if (name === 'static') {
     return xmlResponse(
       buildSitemapXml([
-        {
-          url: SITEMAP_BASE_URL,
-          changeFrequency: 'weekly',
-          priority: 1.0,
-        },
-        {
-          url: `${SITEMAP_BASE_URL}/listados/estrenos`,
-          changeFrequency: 'weekly',
-          priority: 0.9,
-        },
-        {
-          url: `${SITEMAP_BASE_URL}/listados/peliculas`,
-          changeFrequency: 'weekly',
-          priority: 0.8,
-        },
-        {
-          url: `${SITEMAP_BASE_URL}/listados/personas`,
-          changeFrequency: 'weekly',
-          priority: 0.8,
-        },
-        {
-          url: `${SITEMAP_BASE_URL}/listados/obituarios`,
-          changeFrequency: 'weekly',
-          priority: 0.7,
-        },
+        { url: SITEMAP_BASE_URL },
+        { url: `${SITEMAP_BASE_URL}/listados/estrenos` },
+        { url: `${SITEMAP_BASE_URL}/listados/peliculas` },
+        { url: `${SITEMAP_BASE_URL}/listados/personas` },
+        { url: `${SITEMAP_BASE_URL}/listados/obituarios` },
       ])
     )
   }
@@ -59,8 +39,6 @@ export async function GET(
 
     const entries: SitemapEntry[] = genres.map((genre) => ({
       url: `${SITEMAP_BASE_URL}/listados/peliculas/genero/${genre.slug}`,
-      changeFrequency: 'monthly',
-      priority: 0.7,
     }))
 
     return xmlResponse(buildSitemapXml(entries))
@@ -76,8 +54,6 @@ export async function GET(
 
     const entries: SitemapEntry[] = years.map((row) => ({
       url: `${SITEMAP_BASE_URL}/listados/obituarios/${row.deathYear}`,
-      changeFrequency: row.deathYear === new Date().getFullYear() ? 'weekly' : 'yearly',
-      priority: row.deathYear === new Date().getFullYear() ? 0.8 : 0.5,
     }))
 
     return xmlResponse(buildSitemapXml(entries))
@@ -91,16 +67,12 @@ export async function GET(
     // Próximos estrenos
     entries.push({
       url: `${SITEMAP_BASE_URL}/listados/estrenos/proximos`,
-      changeFrequency: 'daily',
-      priority: 0.9,
     })
 
     // Décadas (1890s a actual)
     for (let decade = 1890; decade <= currentDecade; decade += 10) {
       entries.push({
         url: `${SITEMAP_BASE_URL}/listados/estrenos/${decade}s`,
-        changeFrequency: decade === currentDecade ? 'weekly' : 'yearly',
-        priority: decade === currentDecade ? 0.8 : 0.5,
       })
     }
 
@@ -108,8 +80,6 @@ export async function GET(
     for (let year = 1896; year <= currentYear; year++) {
       entries.push({
         url: `${SITEMAP_BASE_URL}/listados/estrenos/${year}`,
-        changeFrequency: year === currentYear ? 'weekly' : 'yearly',
-        priority: year === currentYear ? 0.9 : 0.5,
       })
     }
 
@@ -125,8 +95,6 @@ export async function GET(
         const dd = String(day).padStart(2, '0')
         entries.push({
           url: `${SITEMAP_BASE_URL}/efemerides/${mm}-${dd}`,
-          changeFrequency: 'yearly',
-          priority: 0.5,
         })
       }
     }
@@ -146,8 +114,6 @@ export async function GET(
     const entries: SitemapEntry[] = movies.map((movie) => ({
       url: `${SITEMAP_BASE_URL}/pelicula/${movie.slug}`,
       lastModified: movie.updatedAt,
-      changeFrequency: 'monthly',
-      priority: 0.8,
     }))
 
     return xmlResponse(buildSitemapXml(entries))
@@ -166,8 +132,6 @@ export async function GET(
     const entries: SitemapEntry[] = people.map((person) => ({
       url: `${SITEMAP_BASE_URL}/persona/${person.slug}`,
       lastModified: person.updatedAt,
-      changeFrequency: 'monthly',
-      priority: 0.7,
     }))
 
     return xmlResponse(buildSitemapXml(entries))

@@ -13,8 +13,6 @@ export function escapeXml(str: string): string {
 export interface SitemapEntry {
   url: string
   lastModified?: Date | null
-  changeFrequency: string
-  priority: number
 }
 
 export function buildSitemapXml(entries: SitemapEntry[]): string {
@@ -25,8 +23,6 @@ export function buildSitemapXml(entries: SitemapEntry[]): string {
         : ''
       return `  <url>
     <loc>${escapeXml(entry.url)}</loc>${lastMod}
-    <changefreq>${entry.changeFrequency}</changefreq>
-    <priority>${entry.priority}</priority>
   </url>`
     })
     .join('\n')
