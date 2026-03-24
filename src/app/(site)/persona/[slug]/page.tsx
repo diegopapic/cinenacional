@@ -622,11 +622,81 @@ export default async function PersonPage({ params }: PageProps) {
     content: DOMPurify.sanitize(item.content)
   }))
 
+  // Build narrative paragraph for LLM citability
+  const narrativePersonParts: string[] = []
+  const rolesLower = roleBadges
+    .filter(r => !r.startsWith('Aparición'))
+    .map(r => r.toLowerCase())
+
+  // Opening: "{nombre} es un/a {roles} del cine argentino"
+  if (rolesLower.length > 0) {
+    const genderArticle = person.gender === 'FEMALE' ? 'una' : 'un'
+    narrativePersonParts.push(`${fullName} es ${genderArticle} ${rolesLower.join(', ')} del cine argentino.`)
+  } else {
+    narrativePersonParts.push(`${fullName} es una persona del cine argentino.`)
+  }
+
+  // Birth info
+  if (person.birthYear) {
+    const birthPlace = person.birthLocation?.name
+    if (birthPlace) {
+      narrativePersonParts.push(`Nació en ${birthPlace} en ${person.birthYear}.`)
+    } else {
+      narrativePersonParts.push(`Nació en ${person.birthYear}.`)
+    }
+  }
+
+  // Death info
+  if (person.deathYear) {
+    narrativePersonParts.push(`Falleció en ${person.deathYear}.`)
+  }
+
+  // Movie count and top movies
+  const allMovieIds = new Set([
+    ...castRoles.map(r => r.movie.id),
+    ...crewRoles.map(r => r.movie.id),
+  ])
+  const totalMovies = allMovieIds.size
+
+  if (totalMovies > 0) {
+    // Get top 3 movies by year (most recent, completed only)
+    const allMovies = [
+      ...castRoles.map(r => r.movie),
+      ...crewRoles.map(r => r.movie),
+    ]
+    const uniqueMovies = new Map<number, { id: number; title: string; year: number | null; releaseYear: number | null; stage: string | null }>()
+    for (const m of allMovies) {
+      if (!uniqueMovies.has(m.id)) uniqueMovies.set(m.id, m)
+    }
+    const sortedMovies = [...uniqueMovies.values()]
+      .filter(m => m.stage === 'COMPLETA')
+      .sort((a, b) => (b.releaseYear || b.year || 0) - (a.releaseYear || a.year || 0))
+      .slice(0, 3)
+
+    let moviesPart = `Ha participado en ${totalMovies} películas`
+    if (sortedMovies.length > 0) {
+      const titles = sortedMovies.map(m => {
+        const y = m.releaseYear || m.year
+        return y ? `${m.title} (${y})` : m.title
+      })
+      if (titles.length === 1) {
+        moviesPart += `, entre ellas ${titles[0]}`
+      } else {
+        moviesPart += `, entre ellas ${titles.slice(0, -1).join(', ')} y ${titles[titles.length - 1]}`
+      }
+    }
+    moviesPart += '.'
+    narrativePersonParts.push(moviesPart)
+  }
+
+  const narrativePersonParagraph = narrativePersonParts.join(' ')
+
   const photoUrlMd = person.photoUrl ? getPersonPhotoUrl(person.photoUrl, 'md') : null
   const photoUrlLg = person.photoUrl ? getPersonPhotoUrl(person.photoUrl, 'lg') : null
 
   return (
     <>
+      <p className="sr-only">{narrativePersonParagraph}</p>
       <BreadcrumbSchema items={[
         { name: 'Personas', href: '/listados/personas' },
         { name: fullName, href: `/persona/${slug}` },
