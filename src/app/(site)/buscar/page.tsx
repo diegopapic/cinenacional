@@ -1,4 +1,4 @@
-// src/app/buscar/page.tsx
+// src/app/(site)/buscar/page.tsx
 
 'use client'
 
@@ -8,89 +8,315 @@ import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import Image from 'next/image'
 import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
-import { Film, User, Calendar, Search, Loader2 } from 'lucide-react'
-import { formatPartialDate } from '@/lib/shared/dateUtils'
-import DOMPurify from 'dompurify'
+import { Search, Loader2, User } from 'lucide-react'
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils'
+import {
+  formatDuration,
+  formatReleaseDate,
+  getDisplayYear,
+  getDurationTypeLabel,
+  getStageLabel
+} from '@/lib/movies/movieListUtils'
+import { formatPartialDate } from '@/lib/people/personListUtils'
+import type { MovieListItem } from '@/lib/movies/movieListTypes'
 
-/**
- * Sanitiza HTML permitiendo solo tags de formato básico.
- * Útil para mostrar previews con itálicas, negritas, etc.
- */
-function sanitizeHtml(html: string): string {
-  if (!html) return ''
-  if (typeof window === 'undefined') {
-    // Fallback para SSR: remover tags peligrosos pero mantener formato
-    return html
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-      .replace(/on\w+="[^"]*"/gi, '')
-  }
-  return DOMPurify.sanitize(html, { 
-    ALLOWED_TAGS: ['i', 'em', 'b', 'strong', 'br'],
-    ALLOWED_ATTR: []
-  })
+// ============ Tipos de respuesta de la API ============
+
+interface SearchMovieResult {
+  id: number
+  slug: string
+  title: string
+  year: number | null
+  releaseYear: number | null
+  releaseMonth: number | null
+  releaseDay: number | null
+  posterUrl: string | null
+  synopsis: string | null
+  duration: number | null
+  tipoDuracion: string | null
+  stage: string
+  soundType: string | null
+  directors: Array<{ id: number; slug: string; name: string }>
+  genres: Array<{ id: number; name: string }>
+  countries: Array<{ id: number; name: string }>
 }
 
-interface SearchPageResult {
-  movies: Array<{
+interface SearchPersonResult {
+  id: number
+  slug: string
+  firstName: string | null
+  lastName: string | null
+  photoUrl: string | null
+  gender: string | null
+  birthYear: number | null
+  birthMonth: number | null
+  birthDay: number | null
+  deathYear: number | null
+  deathMonth: number | null
+  deathDay: number | null
+  birthLocationPath: string | null
+  deathLocationPath: string | null
+  movieCount: number
+  featuredMovie: {
     id: number
     slug: string
     title: string
-    year?: number
-    releaseYear?: number
-    releaseMonth?: number
-    releaseDay?: number
-    posterUrl?: string
-    synopsis?: string
-    directors?: Array<{
-      person: {
-        firstName?: string
-        lastName?: string
-      }
-    }>
-  }>
-  people: Array<{
-    id: number
-    slug: string
-    firstName?: string
-    lastName?: string
-    photoUrl?: string
-    birthYear?: number
-    birthMonth?: number
-    birthDay?: number
-    deathYear?: number
-    deathMonth?: number
-    deathDay?: number
-    biography?: string
-    _count?: {
-      castRoles: number
-      crewRoles: number
-    }
-  }>
+    year: number | null
+    role: string
+  } | null
+}
+
+interface SearchPageResult {
+  movies: SearchMovieResult[]
+  people: SearchPersonResult[]
   totalMovies: number
   totalPeople: number
 }
 
-/**
- * Obtiene el año a mostrar para una película.
- * Prioridad: año de producción (year) > año de estreno (releaseYear)
- * Retorna null si ambos están vacíos o son 0
- */
-function getDisplayYear(movie: { year?: number; releaseYear?: number }): number | null {
-  // Prioridad 1: año de producción
-  if (movie.year && movie.year > 0) {
-    return movie.year
-  }
-  
-  // Prioridad 2: año de estreno
-  if (movie.releaseYear && movie.releaseYear > 0) {
-    return movie.releaseYear
-  }
-  
-  // Ninguno disponible
-  return null
+// ============ Helpers ============
+
+/** Resalta todas las ocurrencias del query en el texto */
+function HighlightMatch({ text, query }: { text: string; query: string }) {
+  if (!query || query.length < 2) return <>{text}</>
+
+  const terms = query.toLowerCase().trim().split(/\s+/).filter(t => t.length > 0)
+  // Escapar regex chars y construir pattern que matchee cualquier término
+  const escaped = terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const pattern = new RegExp(`(${escaped.join('|')})`, 'gi')
+
+  const parts = text.split(pattern)
+  return (
+    <>
+      {parts.map((part, i) =>
+        pattern.test(part) ? (
+          <span key={i} className="text-accent">{part}</span>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  )
 }
+
+function formatPersonName(person: { firstName?: string | null; lastName?: string | null }): string {
+  return [person.firstName, person.lastName].filter(Boolean).join(' ') || 'Sin nombre'
+}
+
+function formatCoproduction(countries: Array<{ id: number; name: string }>): string | null {
+  const others = countries.filter(c => c.name.toLowerCase() !== 'argentina')
+  if (others.length === 0) return null
+  if (others.length === 1) return others[0].name
+  if (others.length === 2) return `${others[0].name} y ${others[1].name}`
+  const last = others[others.length - 1].name
+  const rest = others.slice(0, -1).map(c => c.name).join(', ')
+  return `${rest} y ${last}`
+}
+
+function getActorLabel(gender: string | null) {
+  if (gender === 'FEMALE') return 'Actriz'
+  if (gender === 'MALE') return 'Actor'
+  return 'Actor/Actriz'
+}
+
+function getFeaturedRole(person: SearchPersonResult) {
+  if (!person.featuredMovie) return null
+  if (person.featuredMovie.role === 'Actor') return getActorLabel(person.gender)
+  return person.featuredMovie.role
+}
+
+// ============ Componentes de resultado ============
+
+function MovieResult({ movie, query }: { movie: SearchMovieResult; query: string }) {
+  // Adaptar al tipo que espera getDisplayYear
+  const displayYear = getDisplayYear(movie as unknown as MovieListItem)
+  const releaseDateFormatted = formatReleaseDate(movie.releaseYear, movie.releaseMonth, movie.releaseDay)
+  const durationFormatted = formatDuration(movie.duration)
+  const durationTypeLabel = !movie.duration ? getDurationTypeLabel(movie.tipoDuracion) : ''
+  const stageLabel = movie.stage && movie.stage !== 'COMPLETA' ? getStageLabel(movie.stage) : null
+  const coproductionText = movie.countries.length > 1 ? formatCoproduction(movie.countries) : null
+
+  return (
+    <Link
+      href={`/pelicula/${movie.slug}`}
+      className="group flex gap-4 border-b border-border/10 py-4 last:border-b-0 md:gap-5"
+    >
+      {/* Poster */}
+      <div className="relative aspect-2/3 w-20 shrink-0 overflow-hidden rounded-xs md:w-24">
+        {movie.posterUrl ? (
+          <Image
+            loader={cloudinaryLoader}
+            fill
+            src={movie.posterUrl}
+            alt={movie.title}
+            sizes="96px"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-muted/30">
+            <svg
+              className="h-8 w-8 text-muted-foreground/20"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
+                d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"
+              />
+            </svg>
+          </div>
+        )}
+        <div className="absolute inset-0 border border-foreground/4" />
+      </div>
+
+      {/* Content */}
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+        {/* Title + Year + Stage badge */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <p className="text-[14px] font-medium leading-snug text-foreground/80 transition-colors group-hover:text-accent md:text-[15px]">
+            <HighlightMatch text={movie.title} query={query} />
+            {displayYear && (
+              <span className="ml-1.5 text-[12px] font-normal tabular-nums text-muted-foreground/40">
+                ({displayYear})
+              </span>
+            )}
+          </p>
+          {stageLabel && (
+            <span className="rounded-xs bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-widest text-amber-400/80">
+              {stageLabel}
+            </span>
+          )}
+        </div>
+
+        {/* Directors */}
+        {movie.directors.length > 0 && (
+          <p className="text-[12px] text-muted-foreground/50">
+            Dir: {movie.directors.map(d => d.name).join(', ')}
+          </p>
+        )}
+
+        {/* Metadata row: genres, duration, duration type */}
+        {(movie.genres.length > 0 || durationFormatted || durationTypeLabel) && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground/40">
+            {movie.genres.length > 0 && (
+              <span>{movie.genres.map(g => g.name).join(', ')}</span>
+            )}
+            {durationFormatted && <span>{durationFormatted}</span>}
+            {durationTypeLabel && <span>{durationTypeLabel}</span>}
+          </div>
+        )}
+
+        {/* Release date */}
+        {releaseDateFormatted && (
+          <p className="text-[11px] text-muted-foreground/40">
+            Estreno en Argentina: {releaseDateFormatted}
+          </p>
+        )}
+
+        {/* Co-production */}
+        {coproductionText && (
+          <p className="text-[11px] text-muted-foreground/35">
+            Coproducción con {coproductionText}
+          </p>
+        )}
+
+        {/* Synopsis */}
+        {movie.synopsis && (
+          <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground/45">
+            {movie.synopsis}
+          </p>
+        )}
+      </div>
+    </Link>
+  )
+}
+
+function PersonResult({ person, query }: { person: SearchPersonResult; query: string }) {
+  const personName = formatPersonName(person)
+  const photoUrl = getPersonPhotoUrl(person.photoUrl, 'sm')
+
+  const birthDateFormatted = formatPartialDate(person.birthYear, person.birthMonth, person.birthDay)
+  const isDeceased = !!person.deathYear
+
+  return (
+    <div className="flex gap-4 border-b border-border/10 py-4 last:border-b-0 md:gap-5">
+      {/* Portrait */}
+      <Link href={`/persona/${person.slug}`} className="group relative h-28 w-20 shrink-0 overflow-hidden rounded-xs md:h-32 md:w-24">
+        {photoUrl ? (
+          <Image
+            loader={cloudinaryLoader}
+            src={photoUrl}
+            alt={personName}
+            fill
+            sizes="(min-width: 768px) 96px, 80px"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-muted/50">
+            <User className="h-8 w-8 text-muted-foreground/30" />
+          </div>
+        )}
+      </Link>
+
+      {/* Info */}
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+        {/* Name */}
+        <h3 className="text-[14px] font-medium leading-snug md:text-[15px]">
+          <Link href={`/persona/${person.slug}`} className="text-foreground/80 transition-colors hover:text-accent">
+            <HighlightMatch text={personName} query={query} />
+          </Link>
+        </h3>
+
+        {/* Birth */}
+        {(birthDateFormatted || person.birthLocationPath) && (
+          <p className="text-[12px] leading-snug text-muted-foreground/50">
+            {birthDateFormatted && <span>Naci&oacute; el {birthDateFormatted}</span>}
+            {person.birthLocationPath && (
+              <span className="text-muted-foreground/40">
+                {birthDateFormatted ? ' en ' : ''}{person.birthLocationPath}
+              </span>
+            )}
+          </p>
+        )}
+
+        {/* Death */}
+        {isDeceased && (
+          <p className="text-[12px] leading-snug text-muted-foreground/50">
+            Falleci&oacute; el {formatPartialDate(person.deathYear, person.deathMonth, person.deathDay)}
+            {person.deathLocationPath && (
+              <span className="text-muted-foreground/40"> en {person.deathLocationPath}</span>
+            )}
+          </p>
+        )}
+
+        {/* Featured movie */}
+        {person.featuredMovie && (
+          <p className="text-[12px] text-muted-foreground/40">
+            {getFeaturedRole(person)}
+            {' en '}
+            <Link href={`/pelicula/${person.featuredMovie.slug}`} className="text-foreground/80 transition-colors hover:text-accent">
+              {person.featuredMovie.title}
+            </Link>
+            {person.featuredMovie.year && (
+              <span> ({person.featuredMovie.year})</span>
+            )}
+          </p>
+        )}
+
+        {/* Movie count */}
+        {person.movieCount > 0 && (
+          <p className="text-[11px] text-muted-foreground/35">
+            {person.movieCount} pel&iacute;cula{person.movieCount !== 1 ? 's' : ''}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ============ Página principal ============
 
 export default function SearchPage() {
   const searchParams = useSearchParams()
@@ -108,51 +334,6 @@ export default function SearchPage() {
   })
 
   const error = queryError ? 'Error al realizar la búsqueda. Por favor, intenta de nuevo.' : null
-
-  const getDirectorName = (movie: SearchPageResult['movies'][number]) => {
-    const director = movie.directors?.[0]?.person
-    if (!director) return null
-    return `${director.firstName || ''} ${director.lastName || ''}`.trim()
-  }
-
-  const getPersonName = (person: { firstName?: string; lastName?: string }) => {
-    return `${person.firstName || ''} ${person.lastName || ''}`.trim()
-  }
-
-  /**
-   * Formatea las fechas de vida de una persona.
-   * - Solo nacimiento: "n. 16 de enero de 1957"
-   * - Nacimiento y muerte: "(19 de abril de 1922-12 de diciembre de 2012)"
-   * - Solo muerte: "m. 26 de septiembre de 1943"
-   */
-  const getLifeDates = (person: SearchPageResult['people'][number]): string | null => {
-    const hasBirth = !!person.birthYear
-    const hasDeath = !!person.deathYear
-    
-    if (!hasBirth && !hasDeath) return null
-    
-    const formatDate = (year?: number, month?: number, day?: number): string => {
-      return formatPartialDate(
-        { year: year ?? null, month: month ?? null, day: day ?? null },
-        { monthFormat: 'long' }
-      )
-    }
-    
-    if (hasBirth && hasDeath) {
-      // Caso: nacimiento y muerte
-      const birthStr = formatDate(person.birthYear, person.birthMonth, person.birthDay)
-      const deathStr = formatDate(person.deathYear, person.deathMonth, person.deathDay)
-      return `(${birthStr}-${deathStr})`
-    } else if (hasBirth) {
-      // Caso: solo nacimiento
-      const birthStr = formatDate(person.birthYear, person.birthMonth, person.birthDay)
-      return `n. ${birthStr}`
-    } else {
-      // Caso: solo muerte
-      const deathStr = formatDate(person.deathYear, person.deathMonth, person.deathDay)
-      return `m. ${deathStr}`
-    }
-  }
 
   const filteredMovies = results?.movies || []
   const filteredPeople = results?.people || []
@@ -177,7 +358,7 @@ export default function SearchPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header de búsqueda */}
+      {/* Header */}
       <div className="mb-8">
         <h1 className="font-serif text-2xl tracking-tight text-foreground md:text-3xl lg:text-4xl">
           Resultados de búsqueda
@@ -193,7 +374,7 @@ export default function SearchPage() {
         )}
       </div>
 
-      {/* Tabs de filtrado */}
+      {/* Tabs */}
       <div className="border-b border-border/40 mb-6">
         <nav className="-mb-px flex space-x-8">
           <button
@@ -240,7 +421,7 @@ export default function SearchPage() {
         </nav>
       </div>
 
-      {/* Contenido */}
+      {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground/40 mr-3" />
@@ -260,57 +441,10 @@ export default function SearchPage() {
                   Películas ({filteredMovies.length})
                 </h2>
               )}
-              <div className="grid gap-4">
-                {filteredMovies.map((movie) => {
-                  const displayYear = getDisplayYear(movie)
-                  
-                  return (
-                    <Link
-                      key={movie.id}
-                      href={`/pelicula/${movie.slug}`}
-                      className="bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors p-4 flex gap-4 group"
-                    >
-                      <div className="shrink-0 w-20 h-28 bg-muted/50 rounded-sm overflow-hidden">
-                        {movie.posterUrl ? (
-                          <Image
-                            loader={cloudinaryLoader}
-                            src={movie.posterUrl}
-                            alt={movie.title}
-                            width={80}
-                            height={112}
-                            className="object-cover w-full h-full"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Film className="w-8 h-8 text-muted-foreground/40" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-medium text-foreground mb-1 group-hover:text-foreground/80 transition-colors">
-                          {movie.title}
-                        </h3>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                          {displayYear && (
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              {displayYear}
-                            </span>
-                          )}
-                          {getDirectorName(movie) && (
-                            <span>Dir: {getDirectorName(movie)}</span>
-                          )}
-                        </div>
-                        {movie.synopsis && (
-                          <p
-                            className="text-sm text-muted-foreground line-clamp-2"
-                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(movie.synopsis) }}
-                          />
-                        )}
-                      </div>
-                    </Link>
-                  )
-                })}
+              <div className="grid grid-cols-1 gap-0 md:grid-cols-2 md:gap-x-8">
+                {filteredMovies.map((movie) => (
+                  <MovieResult key={movie.id} movie={movie} query={query} />
+                ))}
               </div>
             </div>
           )}
@@ -323,53 +457,9 @@ export default function SearchPage() {
                   Personas ({filteredPeople.length})
                 </h2>
               )}
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-0 md:grid-cols-2 md:gap-x-8">
                 {filteredPeople.map((person) => (
-                  <Link
-                    key={person.id}
-                    href={`/persona/${person.slug}`}
-                    className="bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors p-4 flex gap-4 group"
-                  >
-                    <div className="shrink-0 w-20 h-20 bg-muted/50 rounded-full overflow-hidden">
-                      {person.photoUrl ? (
-                        <Image
-                          loader={cloudinaryLoader}
-                          src={getPersonPhotoUrl(person.photoUrl, 'sm')!}
-                          alt={getPersonName(person)}
-                          width={80}
-                          height={80}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <User className="w-8 h-8 text-muted-foreground/40" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-medium text-foreground mb-1 group-hover:text-foreground/80 transition-colors">
-                        {getPersonName(person)}
-                      </h3>
-                      {getLifeDates(person) && (
-                        <p className="text-sm text-muted-foreground mb-1">
-                          {getLifeDates(person)}
-                        </p>
-                      )}
-                      {person._count && (
-                        <p className="text-xs text-muted-foreground/60">
-                          {person._count.castRoles > 0 && `${person._count.castRoles} actuaciones`}
-                          {person._count.castRoles > 0 && person._count.crewRoles > 0 && ' • '}
-                          {person._count.crewRoles > 0 && `${person._count.crewRoles} trabajos técnicos`}
-                        </p>
-                      )}
-                      {person.biography && (
-                        <p
-                          className="text-sm text-muted-foreground line-clamp-2 mt-2"
-                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(person.biography) }}
-                        />
-                      )}
-                    </div>
-                  </Link>
+                  <PersonResult key={person.id} person={person} query={query} />
                 ))}
               </div>
             </div>
