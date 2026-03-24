@@ -3,6 +3,8 @@
 
 import { useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useDebounce } from '@/hooks/useDebounce'
+import { useValueChange } from '@/hooks/useValueChange'
 import { ArrowDownUp, SlidersHorizontal, X, ChevronDown, CalendarDays, LayoutGrid, List } from 'lucide-react'
 import { FilterSelect } from '@/components/shared/filters'
 import type { MovieFilterOptions, MovieFilters } from '@/lib/queries/peliculas'
@@ -164,11 +166,13 @@ function YearInput({
     setDraft(value ? String(value) : '')
   }
 
-  function commit() {
-    const num = parseInt(draft, 10)
+  // Auto-commit after 750ms of inactivity
+  const debouncedDraft = useDebounce(draft, 750)
+  useValueChange(debouncedDraft, (current) => {
+    const num = parseInt(current, 10)
     const parsed = isNaN(num) || num <= 0 ? undefined : num
     if (parsed !== value) onChange(parsed)
-  }
+  })
 
   return (
     <div className="space-y-1">
@@ -180,8 +184,6 @@ function YearInput({
         placeholder="Año"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => { if (e.key === 'Enter') commit() }}
         className="h-8 w-full border border-border/30 bg-transparent px-2 text-[12px] text-muted-foreground/60 outline-hidden transition-colors placeholder:text-muted-foreground/25 focus:border-accent/40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
     </div>
