@@ -13,7 +13,10 @@
  * 7. Si todas las palabras son nombres conocidos, la última es el apellido
  */
 
-import { PrismaClient } from '@prisma/client';
+import type { prisma as prismaClient } from '@/lib/prisma';
+
+/** Tipo del cliente Prisma extendido (compatible con base y extendido) */
+type PrismaInstance = typeof prismaClient;
 
 // Preposiciones comunes en nombres hispanos
 const PREPOSITIONS = new Set(['de', 'del', 'la', 'las', 'los', 'el']);
@@ -152,7 +155,7 @@ function tokenizeName(fullName: string): string[] {
 /**
  * Carga los nombres conocidos desde la base de datos (con cache)
  */
-async function loadKnownNames(prisma: PrismaClient): Promise<Set<string>> {
+async function loadKnownNames(prisma: PrismaInstance): Promise<Set<string>> {
   const now = Date.now();
   
   // Usar cache si es válido
@@ -292,7 +295,7 @@ function findLastNameStartIndex(words: string[], knownNames: Set<string>): numbe
  */
 export async function splitFullName(
   fullName: string,
-  prisma: PrismaClient
+  prisma: PrismaInstance
 ): Promise<{ firstName: string | null; lastName: string | null }> {
   const trimmed = fullName.trim();
   
