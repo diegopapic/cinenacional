@@ -36,7 +36,7 @@ interface HeroSectionProps {
 
 function getHeroImageUrl(publicId: string): string {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  return `https://res.cloudinary.com/${cloudName}/image/upload/w_1920,q_auto,f_auto/${publicId}`;
+  return `https://res.cloudinary.com/${cloudName}/image/upload/w_1920,c_limit,q_auto,f_auto/${publicId}`;
 }
 
 function getDisplayYear(movie: HeroImage['movie']): number | null {
