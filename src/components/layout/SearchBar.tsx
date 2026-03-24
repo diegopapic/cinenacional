@@ -2,8 +2,10 @@
 
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import { useClickOutside } from '@/hooks/useClickOutside'
+import { useKeydown } from '@/hooks/useKeydown'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { Search, X, Film, User, Loader2, ArrowRight } from 'lucide-react'
 import { useGlobalSearch } from '@/hooks/useGlobalSearch'
 import { useRouter } from 'next/navigation'
@@ -33,6 +35,7 @@ function formatPersonYears(birthYear?: number, deathYear?: number): string | nul
 
 export default function SearchBar() {
     const [showResults, setShowResults] = useState(false)
+    const [selectedIndex, setSelectedIndex] = useState(-1)
     const searchRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
     const router = useRouter()
@@ -46,31 +49,90 @@ export default function SearchBar() {
         hasResults
     } = useGlobalSearch(2)
 
+    // Lista plana de resultados para navegación por teclado
+    const flatItems = useMemo(() => {
+        if (!results) return []
+        const items: { type: 'movie' | 'person'; slug: string }[] = []
+        for (const movie of results.movies) {
+            items.push({ type: 'movie', slug: movie.slug })
+        }
+        for (const person of results.people) {
+            items.push({ type: 'person', slug: person.slug })
+        }
+        return items
+    }, [results])
+
     // Cerrar el dropdown cuando se hace clic fuera
-    useClickOutside(searchRef, useCallback(() => setShowResults(false), []))
+    useClickOutside(searchRef, useCallback(() => {
+        setShowResults(false)
+        setSelectedIndex(-1)
+    }, []))
+
+    // Cerrar con Escape
+    useEscapeKey(useCallback(() => {
+        setShowResults(false)
+        setSelectedIndex(-1)
+        inputRef.current?.blur()
+    }, []), showResults)
+
+    // Navegación con flechas
+    useKeydown(useCallback((e: KeyboardEvent) => {
+        if (!showResults || flatItems.length === 0) return
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            setSelectedIndex(prev => prev < flatItems.length - 1 ? prev + 1 : 0)
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            setSelectedIndex(prev => prev > 0 ? prev - 1 : flatItems.length - 1)
+        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+            e.preventDefault()
+            const item = flatItems[selectedIndex]
+            const href = item.type === 'movie' ? `/pelicula/${item.slug}` : `/persona/${item.slug}`
+            router.push(href)
+            setShowResults(false)
+            setSelectedIndex(-1)
+            clearSearch()
+        }
+    }, [showResults, flatItems, selectedIndex, router, clearSearch]), showResults)
 
     // Actualizar query y mostrar/ocultar resultados
     const handleQueryChange = useCallback((value: string) => {
         setQuery(value)
         setShowResults(value.length >= 2)
+        setSelectedIndex(-1)
     }, [setQuery])
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        if (query.trim()) {
-            router.push(`/buscar?q=${encodeURIComponent(query)}`)
+        // Si hay un item seleccionado con flechas, navegar a ese item
+        if (selectedIndex >= 0 && flatItems[selectedIndex]) {
+            const item = flatItems[selectedIndex]
+            const href = item.type === 'movie' ? `/pelicula/${item.slug}` : `/persona/${item.slug}`
+            router.push(href)
             setShowResults(false)
+            setSelectedIndex(-1)
             clearSearch()
+            return
+        }
+        if (query.trim()) {
+            const searchQuery = query.trim()
+            setShowResults(false)
+            setSelectedIndex(-1)
+            clearSearch()
+            router.push(`/buscar?q=${encodeURIComponent(searchQuery)}`)
         }
     }
 
     const handleResultClick = () => {
         setShowResults(false)
+        setSelectedIndex(-1)
         clearSearch()
     }
 
     const handleClear = () => {
         clearSearch()
+        setSelectedIndex(-1)
         inputRef.current?.focus()
     }
 
@@ -118,12 +180,13 @@ export default function SearchBar() {
                                         <div className="px-4 py-2 bg-zinc-800/50 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                                             Películas
                                         </div>
-                                        {results!.movies.map((movie) => (
+                                        {results!.movies.map((movie, i) => (
                                             <Link
                                                 key={movie.id}
                                                 href={`/pelicula/${movie.slug}`}
                                                 onClick={handleResultClick}
-                                                className="flex items-center px-4 py-3 hover:bg-zinc-800 transition-colors group"
+                                                onMouseEnter={() => setSelectedIndex(i)}
+                                                className={`flex items-center px-4 py-3 transition-colors group ${selectedIndex === i ? 'bg-zinc-800' : 'hover:bg-zinc-800'}`}
                                             >
                                                 <div className="shrink-0 w-10 h-14 bg-zinc-800 rounded-sm overflow-hidden mr-3">
                                                     {movie.posterUrl ? (
@@ -163,12 +226,15 @@ export default function SearchBar() {
                                         <div className="px-4 py-2 bg-zinc-800/50 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                                             Personas
                                         </div>
-                                        {results!.people.map((person) => (
+                                        {results!.people.map((person, i) => {
+                                            const itemIndex = (results!.movies.length) + i
+                                            return (
                                             <Link
                                                 key={person.id}
                                                 href={`/persona/${person.slug}`}
                                                 onClick={handleResultClick}
-                                                className="flex items-center px-4 py-3 hover:bg-zinc-800 transition-colors group"
+                                                onMouseEnter={() => setSelectedIndex(itemIndex)}
+                                                className={`flex items-center px-4 py-3 transition-colors group ${selectedIndex === itemIndex ? 'bg-zinc-800' : 'hover:bg-zinc-800'}`}
                                             >
                                                 <div className="shrink-0 w-10 h-10 bg-zinc-800 rounded-full overflow-hidden mr-3">
                                                     {person.photoUrl ? (
@@ -197,7 +263,8 @@ export default function SearchBar() {
                                                     )}
                                                 </div>
                                             </Link>
-                                        ))}
+                                            )
+                                        })}
                                     </div>
                                 )}
 
