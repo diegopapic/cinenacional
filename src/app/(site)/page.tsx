@@ -10,11 +10,6 @@ import type { MovieWithRelease } from '@/types/home.types'
 import Image from 'next/image'
 import Link from 'next/link'
 
-function getHeroPreloadUrl(publicId: string): string {
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-  return `https://res.cloudinary.com/${cloudName}/image/upload/w_1920,c_limit,q_auto,f_auto/${publicId}`
-}
-
 export const revalidate = 300 // 5 min ISR
 
 const MESES = [
@@ -40,22 +35,11 @@ export default async function HomePage() {
     efemerides,
   } = await getHomeFeed()
 
-  const firstHeroPublicId = heroImages[0]?.cloudinaryPublicId
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       <h1 className="sr-only">cinenacional.com — Base de datos del cine argentino</h1>
-      {/* Preload LCP image para que el browser la descubra en el HTML inicial */}
-      {firstHeroPublicId && (
-        <link
-          rel="preload"
-          as="image"
-          href={getHeroPreloadUrl(firstHeroPublicId)}
-          fetchPriority="high"
-        />
-      )}
 
-      {/* Hero Section */}
+      {/* Hero Section — next/image con priority genera el preload automáticamente */}
       {heroImages.length > 0 && (
         <HeroSection images={heroImages} />
       )}
