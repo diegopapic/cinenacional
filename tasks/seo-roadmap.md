@@ -47,21 +47,21 @@
   - Personas por género/nacionalidad → probablemente no justifica ruta propia
 - **Decisión:** Definir cuáles migrar antes de implementar canonicals, porque las rutas nuevas cambian cuál es la URL canónica.
 
-### 1.6 Agregar canonicals en todas las páginas públicas
-- **Prerequisito:** Cerrar la decisión del punto 1.5 sobre qué filtros se convierten en rutas.
-- **Páginas de detalle (canonical simple, sin dependencia de 1.5):**
-  - `src/app/(site)/page.tsx` — home: `alternates: { canonical: 'https://cinenacional.com' }`
-  - `src/app/(site)/pelicula/[slug]/page.tsx` — `alternates: { canonical: \`https://cinenacional.com/pelicula/${slug}\` }`
-  - `src/app/(site)/persona/[slug]/page.tsx` — `alternates: { canonical: \`https://cinenacional.com/persona/${slug}\` }`
-  - `src/app/(site)/efemerides/[[...date]]/page.tsx` — canonical a la URL de la fecha
-  - `src/app/(site)/pelicula/[slug]/criticas/[reviewId]/page.tsx` — canonical a la URL de la crítica
+### 1.6 Agregar canonicals en todas las páginas públicas (parcialmente completado)
+- **Páginas de detalle — ✅ COMPLETADO (`2796199`):**
+  - ~~`src/app/(site)/layout.tsx` — home: `alternates: { canonical: '/' }`~~
+  - ~~`src/app/(site)/pelicula/[slug]/page.tsx` — canonical a `/pelicula/${slug}`~~
+  - ~~`src/app/(site)/persona/[slug]/page.tsx` — canonical a `/persona/${slug}`~~
+  - ~~`src/app/(site)/efemerides/[[...date]]/page.tsx` — canonical a `/efemerides/${MM-DD}`~~
+  - `src/app/(site)/pelicula/[slug]/criticas/[reviewId]/page.tsx` — página no existe aún
 - **Páginas de listados (dependen de 1.5):**
-  - `src/app/(site)/listados/obituarios/page.tsx` — si se migra a `/obituarios/2024`, el canonical apunta ahí
-  - `src/app/(site)/listados/peliculas/page.tsx` — si se crean rutas por género, esas son las canónicas
-  - `src/app/(site)/listados/personas/page.tsx` — idem con roles
-  - Para filtros que NO se migran a ruta propia: el canonical apunta a la URL base sin query params
+  - ~~`src/app/(site)/listados/obituarios/[year]/page.tsx`~~ — ya tiene canonical
+  - ~~`src/app/(site)/listados/peliculas/genero/[genreSlug]/page.tsx`~~ — ya tiene canonical
+  - ~~`src/app/(site)/listados/estrenos/[year]/page.tsx`~~ — ya tiene canonical
+  - `src/app/(site)/listados/peliculas/page.tsx` — pendiente (canonical base sin query params)
+  - `src/app/(site)/listados/personas/page.tsx` — pendiente (canonical base sin query params)
 - **Búsqueda:** `/buscar` debería tener `noindex` en vez de canonical (no tiene sentido indexar resultados de búsqueda).
-- **Por qué:** Sin canonical, Google puede indexar la misma página con distintos query params como contenido duplicado.
+- **Páginas institucionales** — ya tienen canonical: `/contacto`, `/terminos`, `/privacidad`, `/sobre-nosotros`.
 
 ### 1.7 Agregar `generateMetadata` a páginas de listados
 - **Archivos a modificar:**
@@ -74,13 +74,9 @@
   - (B) Usar `export const metadata: Metadata = { ... }` estático (funciona en client pages en Next.js 16).
 - **Por qué:** Sin metadata propia, heredan el título genérico "cinenacional.com - Base de datos del cine argentino" en los SERPs.
 
-### 1.8 Unificar formato de marca en titles
-- **Problema:** Se usan 3 formatos distintos:
-  - `"... - cinenacional.com"` (home, película, persona)
-  - `"... | CineNacional"` (estrenos)
-  - `"... -- CineNacional"` (efemérides, obituarios)
-- **Acción:** Elegir uno (recomendación: `"... — cinenacional.com"`) y aplicarlo en todos los `generateMetadata` y `metadata` estáticos.
-- **Archivos:** Todos los `page.tsx` del sitio público que definen metadata.
+### 1.8 ~~Unificar formato de marca en titles~~ ✅ COMPLETADO (`f33977b`)
+- **Qué se hizo:** Unificado el separador de marca a `" — cinenacional.com"` (em-dash) en todos los títulos: layout, película, persona, efemérides, estrenos (año/década/próximos) y críticas.
+- **Archivos:** `layout.tsx`, `pelicula/[slug]/page.tsx`, `persona/[slug]/page.tsx`, `efemerides/[[...date]]/page.tsx`, `listados/estrenos/[year]/page.tsx`, `pelicula/[slug]/criticas/[reviewId]/page.tsx`.
 
 ---
 
@@ -91,29 +87,25 @@
 - **Qué se hizo:** JSON-LD con `@type: WebSite`, `SearchAction` (habilita sitelinks searchbox en Google), y `Organization` como publisher con logo y sameAs (X, Instagram).
 - **Commit:** `ceb28b8`
 
-### 2.2 BreadcrumbList schema
-- **Archivos a crear/modificar:**
-  - Crear `src/components/shared/BreadcrumbSchema.tsx` — componente reutilizable.
-  - Usar en `src/app/(site)/pelicula/[slug]/page.tsx`: Home > Películas > {título}
-  - Usar en `src/app/(site)/persona/[slug]/page.tsx`: Home > Personas > {nombre}
-  - Usar en `src/app/(site)/listados/estrenos/[year]/page.tsx`: Home > Estrenos > {año}
-  - Usar en `src/app/(site)/efemerides/[[...date]]/page.tsx`: Home > Efemérides > {fecha}
-- **Por qué:** Google muestra breadcrumbs en los SERPs. Mejora CTR y comprensión de estructura del sitio.
+### 2.2 ~~BreadcrumbList schema~~ ✅ COMPLETADO (`483e488`)
+- **Qué se hizo:** Creado componente reutilizable `src/components/shared/BreadcrumbSchema.tsx` con JSON-LD `BreadcrumbList`. Usado en 4 páginas:
+  - `pelicula/[slug]`: Inicio > Películas > {título}
+  - `persona/[slug]`: Inicio > Personas > {nombre}
+  - `listados/estrenos/[year]`: Inicio > Estrenos > {año/década/próximos}
+  - `efemerides/[[...date]]`: Inicio > Efemérides > {día de mes}
 
-### 2.3 Mejorar MovieSchema — agregar sameAs, trailer, inLanguage
-- **Archivo:** `src/components/movies/MovieSchema.tsx`
-- **Cambios:**
-  - Agregar `sameAs` con IMDB link (`https://www.imdb.com/title/${imdbId}/`) y links externos activos. Los datos ya se cargan de la DB.
-  - Agregar `trailer` como `VideoObject` cuando hay `trailerUrl` (especialmente YouTube).
-  - Agregar `inLanguage: "es"` (o derivar del campo si existe).
-  - Usar fecha completa ISO 8601 en `dateCreated` cuando hay mes/día disponibles (actualmente solo usa el año).
-  - Agregar `productionCompany` — los datos ya se cargan en la query pero no se pasan al schema.
-- **Archivo page.tsx:** `src/app/(site)/pelicula/[slug]/page.tsx` — pasar `trailerUrl`, `imdbId`, `links`, `productionCompanies` al componente `MovieSchema`.
+### 2.3 ~~Mejorar MovieSchema — agregar sameAs, trailer, inLanguage~~ ✅ COMPLETADO (`209f328`)
+- **Qué se hizo:** Agregados al schema JSON-LD de películas:
+  - `sameAs`: IMDB link + links externos activos
+  - `trailer`: `VideoObject` con embedUrl y thumbnailUrl para YouTube
+  - `inLanguage: "es"`
+  - `dateCreated`: fecha completa ISO 8601 cuando hay mes/día disponibles
+  - `productionCompany`: productoras como `Organization`
+- **Archivos:** `MovieSchema.tsx`, `pelicula/[slug]/page.tsx`
 
-### 2.4 Mejorar PersonSchema — agregar nationality
-- **Archivo:** `src/components/people/PersonSchema.tsx`
-- **Cambio:** Agregar `nationality` deducido de `birthLocation` o de la tabla `nationalities`.
-- **Archivo page.tsx:** `src/app/(site)/persona/[slug]/page.tsx` — pasar `nationalities` al componente.
+### 2.4 ~~Mejorar PersonSchema — agregar nationality~~ ✅ COMPLETADO (`9859e46`)
+- **Qué se hizo:** Agregado `nationality` como array de `Country` al schema JSON-LD de personas, usando los datos de la tabla `nationalities` (ya cargados en la query).
+- **Archivos:** `PersonSchema.tsx`, `persona/[slug]/page.tsx`
 
 ### 2.5 ItemList schema en listados de películas y personas
 - **Archivos:**
@@ -130,27 +122,25 @@
 - **Qué se hizo:** Agregado `<h1 className="sr-only">cinenacional.com — Base de datos del cine argentino</h1>`.
 - **Commit:** `ceb28b8`
 
-### 3.2 Activar footer links
+### 3.2 ~~Activar footer links~~ ✅ COMPLETADO
 - **Archivo:** `src/components/layout/Footer.tsx`
-- **Problema:** Los links de navegación (Explorar, Información, Legal) están todos comentados (líneas 9-101). Esto elimina internal linking sitewide.
-- **Acción:** Descomentar las secciones y crear las páginas destino que no existan (ver 3.3).
+- **Qué se hizo:** Activados links del footer para contacto, términos y privacidad.
+- **Commit:** `18589bf`
 
-### 3.3 Crear páginas institucionales
-- **Páginas a crear:**
-  - `/sobre-nosotros` — Quién está detrás del sitio. Crítico para E-E-A-T (Trustworthiness).
-  - `/contacto` — Formulario o info de contacto.
-  - ~~`/terminos` — Términos de uso.~~ ✅ COMPLETADO (`53567f3`)
-  - ~~`/privacidad` — Política de privacidad.~~ ✅ COMPLETADO (`53567f3`)
-- **Por qué:** Sin estas páginas, el puntaje de Trustworthiness cae significativamente según las Quality Rater Guidelines de Google.
+### 3.3 ~~Crear páginas institucionales~~ ✅ COMPLETADO
+- **Páginas creadas:**
+  - ~~`/sobre-nosotros`~~ ✅ COMPLETADO (`488f4d2`) — página about con stats dinámicos
+  - ~~`/contacto`~~ ✅ COMPLETADO (`e13cb00`) — página de contacto con email y redes sociales
+  - ~~`/terminos`~~ ✅ COMPLETADO (`53567f3`) — términos de uso
+  - ~~`/privacidad`~~ ✅ COMPLETADO (`53567f3`) — política de privacidad
 
-### 3.4 Fix alt text vacío en SearchResults
-- **Archivo:** `src/components/layout/SearchResults.tsx` (líneas ~117 y ~168)
-- **Bug:** Las imágenes de resultados de búsqueda tienen `alt=""`. Deberían tener `alt={movie.title}` o `alt={personName}`.
+### 3.4 ~~Fix alt text vacío en SearchResults~~ ✅ COMPLETADO (`31565c3`)
+- **Archivo:** `src/components/layout/SearchResults.tsx`
+- **Qué se hizo:** Cambiado `alt=""` a `alt={movie.title}` para películas y `alt={person.name}` para personas en los thumbnails de resultados de búsqueda.
 
-### 3.5 Mejorar fallback de description para personas
+### 3.5 ~~Mejorar fallback de description para personas~~ ✅ COMPLETADO (`d572887`)
 - **Archivo:** `src/app/(site)/persona/[slug]/page.tsx` — en `generateMetadata`
-- **Problema:** El fallback es `"{nombre}. Persona del cine argentino."` — muy genérico.
-- **Mejora:** Incluir roles: `"{nombre}, actor/director del cine argentino. Filmografía completa y biografía."` (derivar roles de los badges/ocupaciones).
+- **Qué se hizo:** Cuando la persona no tiene biografía, se hace una query ligera para obtener sus roles (actor, director, etc.) y se genera una description como `"Ricardo Darín, actor, productor del cine argentino. Filmografía completa y biografía."` en vez del genérico anterior.
 
 ---
 
@@ -289,12 +279,12 @@
 
 | Fase | Items | Impacto SEO | Esfuerzo |
 |------|-------|-------------|----------|
-| 1 — Fundamentos | 8 (4 completados) | Crítico | Bajo-Alto |
+| 1 — Fundamentos | 8 (6 completados) | Crítico | Bajo-Alto |
 | 2 — Structured Data | 5 (1 completado) | Alto | Medio |
-| 3 — Content/E-E-A-T | 5 (1 completado) | Alto | Medio-Alto |
+| 3 — Content/E-E-A-T | 5 (3 completados) | Alto | Medio-Alto |
 | 4 — AI/GEO | 5 (1 completado) | Alto | Alto |
 | 5 — Performance | 6 (1 completado) | Medio-Alto | Medio |
 | 6 — Sitemap avanzado | 4 | Bajo-Medio | Bajo |
 | 7 — Nice to have | 6 | Bajo | Bajo |
 
-**Total:** 39 items, 8 completados, 31 pendientes.
+**Total:** 39 items, 12 completados, 27 pendientes.
