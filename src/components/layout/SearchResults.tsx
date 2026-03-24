@@ -205,8 +205,10 @@ export default function SearchResults({
         <div className="border-t border-nav-foreground/8">
           <Link
             href={`/buscar?q=${encodeURIComponent(query)}`}
-            className="group flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-nav-foreground/4"
+            id={`search-result-${movies.length + people.length}`}
+            className={`group flex items-center justify-between px-4 py-2.5 transition-colors ${selectedIndex === movies.length + people.length ? 'bg-nav-foreground/10' : 'hover:bg-nav-foreground/4'}`}
             onClick={onSelect}
+            onMouseEnter={() => onHover?.(movies.length + people.length)}
           >
             <span className="text-[12px] tracking-wide text-nav-foreground/40 transition-colors group-hover:text-nav-foreground/70">
               Ver todos los resultados

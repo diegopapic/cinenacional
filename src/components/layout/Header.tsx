@@ -38,13 +38,15 @@ export default function Header() {
   // Lista plana de resultados para navegación por teclado
   const flatItems = useMemo(() => {
     if (!results) return []
-    const items: { type: 'movie' | 'person'; slug: string }[] = []
+    const items: { type: 'movie' | 'person' | 'all'; slug: string }[] = []
     for (const movie of results.movies.slice(0, 5)) {
       items.push({ type: 'movie', slug: movie.slug })
     }
     for (const person of results.people.slice(0, 5)) {
       items.push({ type: 'person', slug: person.slug })
     }
+    // "Ver todos los resultados" como último item
+    items.push({ type: 'all', slug: '' })
     return items
   }, [results])
 
@@ -74,7 +76,9 @@ export default function Header() {
       e.preventDefault()
       if (selectedIndex >= 0 && flatItems[selectedIndex]) {
         const item = flatItems[selectedIndex]
-        const href = item.type === 'movie' ? `/pelicula/${item.slug}` : `/persona/${item.slug}`
+        const href = item.type === 'movie' ? `/pelicula/${item.slug}`
+          : item.type === 'person' ? `/persona/${item.slug}`
+          : `/buscar?q=${encodeURIComponent(query.trim())}`
         router.push(href)
       } else if (query.trim()) {
         router.push(`/buscar?q=${encodeURIComponent(query.trim())}`)
