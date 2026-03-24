@@ -41,25 +41,25 @@ export default function LocationForm({ location }: LocationFormProps) {
   const [slug, setSlug] = useState(location?.slug || '')
   // isCheckingSlug is derived from the slug-check query below
   
-  // Estados para el autocomplete
-  const [parentSearch, setParentSearch] = useState('')
-  const [selectedParent, setSelectedParent] = useState<Location | null>(null)
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const autocompleteRef = useRef<HTMLDivElement>(null)
-  
-  // Usar el hook useDebounce para el término de búsqueda
-  const debouncedSearchTerm = useDebounce(parentSearch, 300)
-  const debouncedName = useDebounce(formData.name, 500)
-  
   // Obtener parentId de la URL si existe
   const urlParentId = searchParams.get('parentId')
-  
+
   const [formData, setFormData] = useState({
     name: location?.name || '',
     parentId: location?.parentId || urlParentId || '',
     latitude: location?.latitude || '',
     longitude: location?.longitude || ''
   })
+
+  // Estados para el autocomplete
+  const [parentSearch, setParentSearch] = useState('')
+  const [selectedParent, setSelectedParent] = useState<Location | null>(null)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const autocompleteRef = useRef<HTMLDivElement>(null)
+
+  // Usar el hook useDebounce para el término de búsqueda
+  const debouncedSearchTerm = useDebounce(parentSearch, 300)
+  const debouncedName = useDebounce(formData.name, 500)
 
   // Cargar el lugar padre si existe
   useMountEffect(() => {
@@ -146,7 +146,6 @@ export default function LocationForm({ location }: LocationFormProps) {
     setFormData(prev => ({ ...prev, parentId: '' }))
     
     if (!value.trim()) {
-      setSuggestions([])
       setShowSuggestions(false)
     }
   }
@@ -156,14 +155,12 @@ export default function LocationForm({ location }: LocationFormProps) {
     setParentSearch(parent.name)
     setFormData(prev => ({ ...prev, parentId: parent.id.toString() }))
     setShowSuggestions(false)
-    setSuggestions([])
   }
 
   const handleClearParent = () => {
     setSelectedParent(null)
     setParentSearch('')
     setFormData(prev => ({ ...prev, parentId: '' }))
-    setSuggestions([])
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

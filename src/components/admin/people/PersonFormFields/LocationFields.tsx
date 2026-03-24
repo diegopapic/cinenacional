@@ -63,6 +63,26 @@ function LocationAutocomplete({
     staleTime: 5 * 60 * 1000,
   });
 
+  // Formatear la ubicación para mostrar (con jerarquía)
+  const formatLocationDisplay = (location: Location): string => {
+    const parts = [location.name];
+    
+    // Si tiene path, usarlo directamente
+    if ('path' in location && location.path) {
+      return location.path;
+    }
+    
+    // Si no, construir la jerarquía
+    if (location.parent) {
+      parts.push(location.parent.name);
+      if (location.parent.parent) {
+        parts.push(location.parent.parent.name);
+      }
+    }
+    
+    return parts.join(', ');
+  };
+
   // Sync locationData → display (adjust during render)
   const prevLocationDataRef = useRef(locationData);
   if (locationData !== prevLocationDataRef.current) {
@@ -99,26 +119,6 @@ function LocationAutocomplete({
       }
     }, 300);
   }, []);
-
-  // Formatear la ubicación para mostrar (con jerarquía)
-  const formatLocationDisplay = (location: Location): string => {
-    const parts = [location.name];
-    
-    // Si tiene path, usarlo directamente
-    if ('path' in location && location.path) {
-      return location.path;
-    }
-    
-    // Si no, construir la jerarquía
-    if (location.parent) {
-      parts.push(location.parent.name);
-      if (location.parent.parent) {
-        parts.push(location.parent.parent.name);
-      }
-    }
-    
-    return parts.join(', ');
-  };
 
   // Manejar cambio en el input
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

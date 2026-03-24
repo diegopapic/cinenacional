@@ -249,6 +249,6 @@ const crewData: Prisma.MovieCrewCreateManyInput[] = crew.map(...)
 1. ~~**Crear `MovieDetail` type** — resuelve ~45 errores de un golpe~~ ✅ COMPLETADO (31ead06)
 2. ~~**Fix `splitFullName` param type** — 3 errores~~ ✅ COMPLETADO (see next commit)
 3. ~~**Unificar `CastMember` type** — ~5 errores~~ ✅ COMPLETADO (see next commit)
-4. **Reordenar `LocationForm.tsx`** — 4 errores
+4. ~~**Reordenar `LocationForm.tsx`** — 4 errores~~ ✅ COMPLETADO (see next commit)
 5. **Tipar Prisma `where` clauses** — ~10 errores
 6. **Fixes menores** (Cloudinary, NextRequest.ip, reviews, etc.) — ~10 errores restantes
