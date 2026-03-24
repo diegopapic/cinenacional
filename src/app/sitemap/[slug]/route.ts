@@ -116,6 +116,23 @@ export async function GET(
     return xmlResponse(buildSitemapXml(entries))
   }
 
+  if (name === 'efemerides') {
+    const entries: SitemapEntry[] = []
+    const months = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    for (let month = 1; month <= 12; month++) {
+      for (let day = 1; day <= months[month - 1]; day++) {
+        const mm = String(month).padStart(2, '0')
+        const dd = String(day).padStart(2, '0')
+        entries.push({
+          url: `${SITEMAP_BASE_URL}/efemerides/${mm}-${dd}`,
+          changeFrequency: 'yearly',
+          priority: 0.5,
+        })
+      }
+    }
+    return xmlResponse(buildSitemapXml(entries))
+  }
+
   const moviesMatch = name.match(/^movies-(\d+)$/)
   if (moviesMatch) {
     const page = parseInt(moviesMatch[1], 10)
