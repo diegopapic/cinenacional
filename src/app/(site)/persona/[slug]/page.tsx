@@ -100,6 +100,36 @@ async function getPersonData(slug: string) {
   }
 }
 
+async function getPersonRoleSummary(personId: number, gender: string | null): Promise<string[]> {
+  try {
+    const [hasCastActing, hasCastSelf, crewRoleNames] = await Promise.all([
+      prisma.movieCast.findFirst({
+        where: { personId, isActor: { not: false } },
+        select: { id: true },
+      }),
+      prisma.movieCast.findFirst({
+        where: { personId, isActor: false },
+        select: { id: true },
+      }),
+      prisma.movieCrew.findMany({
+        where: { personId },
+        select: { role: { select: { name: true } } },
+        distinct: ['roleId'],
+      }),
+    ])
+
+    const roles: string[] = []
+    if (hasCastActing) roles.push(gender === 'FEMALE' ? 'actriz' : 'actor')
+    if (hasCastSelf) roles.push(gender === 'FEMALE' ? 'aparición como sí misma' : 'aparición como sí mismo')
+    for (const cr of crewRoleNames) {
+      if (cr.role?.name) roles.push(cr.role.name.toLowerCase())
+    }
+    return roles
+  } catch {
+    return []
+  }
+}
+
 async function getFilmographyData(personId: number) {
   try {
     const [castRoles, crewRoles] = await Promise.all([
@@ -472,28 +502,32 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const fullName = [person.firstName, person.lastName].filter(Boolean).join(' ')
   const photoUrl = person.photoUrl ? getPersonPhotoUrl(person.photoUrl, 'lg') : null
 
+  let description: string
+  if (person.biography) {
+    description = person.biography.replace(/<[^>]*>/g, '').substring(0, 160)
+  } else {
+    const roles = await getPersonRoleSummary(person.id, person.gender)
+    description = roles.length > 0
+      ? `${fullName}, ${roles.join(', ')} del cine argentino. Filmografía completa y biografía.`
+      : `${fullName}. Persona del cine argentino. Filmografía completa y biografía.`
+  }
+
   return {
     title: `${fullName} — cinenacional.com`,
-    description: person.biography
-      ? person.biography.replace(/<[^>]*>/g, '').substring(0, 160)
-      : `${fullName}. Persona del cine argentino.`,
+    description,
     alternates: {
       canonical: `/persona/${slug}`,
     },
     openGraph: {
       title: fullName,
-      description: person.biography
-        ? person.biography.replace(/<[^>]*>/g, '').substring(0, 160)
-        : `${fullName}. Persona del cine argentino.`,
+      description,
       images: photoUrl ? [photoUrl] : [],
       type: 'profile',
     },
     twitter: {
       card: 'summary_large_image',
       title: fullName,
-      description: person.biography
-        ? person.biography.replace(/<[^>]*>/g, '').substring(0, 160)
-        : `${fullName}. Persona del cine argentino.`,
+      description,
       images: photoUrl ? [photoUrl] : [],
     }
   }
