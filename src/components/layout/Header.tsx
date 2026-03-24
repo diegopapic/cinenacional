@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import { useClickOutside } from '@/hooks/useClickOutside'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Search, Menu, X } from 'lucide-react'
@@ -19,9 +20,11 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [desktopSearchExpanded, setDesktopSearchExpanded] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
   const desktopSearchRef = useRef<HTMLInputElement>(null)
   const desktopSearchWrapperRef = useRef<HTMLDivElement>(null)
   const mobileSearchInputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
 
   const {
     query,
@@ -31,6 +34,57 @@ export default function Header() {
     clearSearch,
     hasResults,
   } = useGlobalSearch(2)
+
+  // Lista plana de resultados para navegación por teclado
+  const flatItems = useMemo(() => {
+    if (!results) return []
+    const items: { type: 'movie' | 'person'; slug: string }[] = []
+    for (const movie of results.movies.slice(0, 5)) {
+      items.push({ type: 'movie', slug: movie.slug })
+    }
+    for (const person of results.people.slice(0, 5)) {
+      items.push({ type: 'person', slug: person.slug })
+    }
+    return items
+  }, [results])
+
+  // Handler de teclado para los inputs de búsqueda
+  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setDesktopSearchExpanded(false)
+      setSearchOpen(false)
+      setSelectedIndex(-1)
+      clearSearch()
+      return
+    }
+
+    if (e.key === 'ArrowDown' && flatItems.length > 0) {
+      e.preventDefault()
+      setSelectedIndex(prev => prev < flatItems.length - 1 ? prev + 1 : 0)
+      return
+    }
+
+    if (e.key === 'ArrowUp' && flatItems.length > 0) {
+      e.preventDefault()
+      setSelectedIndex(prev => prev > 0 ? prev - 1 : flatItems.length - 1)
+      return
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (selectedIndex >= 0 && flatItems[selectedIndex]) {
+        const item = flatItems[selectedIndex]
+        const href = item.type === 'movie' ? `/pelicula/${item.slug}` : `/persona/${item.slug}`
+        router.push(href)
+      } else if (query.trim()) {
+        router.push(`/buscar?q=${encodeURIComponent(query.trim())}`)
+      }
+      setDesktopSearchExpanded(false)
+      setSearchOpen(false)
+      setSelectedIndex(-1)
+      clearSearch()
+    }
+  }, [flatItems, selectedIndex, query, router, clearSearch])
 
   // Focus helpers — called from event handlers instead of useEffect
   const expandDesktopSearch = useCallback(() => {
@@ -52,6 +106,7 @@ export default function Header() {
   // Click outside closes desktop search
   const handleClickOutsideSearch = useCallback(() => {
     setDesktopSearchExpanded(false)
+    setSelectedIndex(-1)
     clearSearch()
   }, [clearSearch])
   useClickOutside(desktopSearchWrapperRef, handleClickOutsideSearch, desktopSearchExpanded)
@@ -60,6 +115,7 @@ export default function Header() {
     setDesktopSearchExpanded(false)
     setSearchOpen(false)
     setMobileMenuOpen(false)
+    setSelectedIndex(-1)
     clearSearch()
   }
 
@@ -115,13 +171,8 @@ export default function Header() {
                     ref={desktopSearchRef}
                     type="search"
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') {
-                        setDesktopSearchExpanded(false)
-                        clearSearch()
-                      }
-                    }}
+                    onChange={(e) => { setQuery(e.target.value); setSelectedIndex(-1) }}
+                    onKeyDown={handleSearchKeyDown}
                     placeholder="Películas, personas..."
                     className="h-9 w-64 border-b border-accent/40 bg-transparent pl-9 pr-8 font-sans text-sm text-nav-foreground placeholder:text-nav-foreground/30 focus:outline-hidden lg:w-72"
                     aria-label="Buscar películas y personas"
@@ -130,6 +181,7 @@ export default function Header() {
                     aria-haspopup="listbox"
                     role="combobox"
                     autoComplete="off"
+                    aria-activedescendant={selectedIndex >= 0 ? `search-result-${selectedIndex}` : undefined}
                   />
                   <button
                     type="button"
@@ -151,6 +203,8 @@ export default function Header() {
                     hasResults={hasResults}
                     variant="desktop"
                     onSelect={handleResultSelect}
+                    selectedIndex={selectedIndex}
+                    onHover={setSelectedIndex}
                   />
                 </div>
               ) : (
@@ -208,11 +262,13 @@ export default function Header() {
                   ref={mobileSearchInputRef}
                   type="search"
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e) => { setQuery(e.target.value); setSelectedIndex(-1) }}
+                  onKeyDown={handleSearchKeyDown}
                   placeholder="Películas, personas..."
                   className="h-10 w-full border-b border-nav-foreground/10 bg-transparent pl-10 pr-3 font-sans text-base text-nav-foreground placeholder:text-nav-foreground/30 focus:border-accent/40 focus:outline-hidden"
                   aria-label="Buscar películas y personas"
                   autoComplete="off"
+                  aria-activedescendant={selectedIndex >= 0 ? `search-result-${selectedIndex}` : undefined}
                 />
               </div>
             </div>
@@ -224,6 +280,8 @@ export default function Header() {
               hasResults={hasResults}
               variant="mobile"
               onSelect={handleResultSelect}
+              selectedIndex={selectedIndex}
+              onHover={setSelectedIndex}
             />
           </div>
         )}

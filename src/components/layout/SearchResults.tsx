@@ -43,6 +43,8 @@ interface SearchResultsProps {
   hasResults: boolean
   onSelect?: () => void
   variant?: 'desktop' | 'mobile'
+  selectedIndex?: number
+  onHover?: (index: number) => void
 }
 
 export default function SearchResults({
@@ -52,6 +54,8 @@ export default function SearchResults({
   hasResults,
   onSelect,
   variant = 'desktop',
+  selectedIndex = -1,
+  onHover,
 }: SearchResultsProps) {
   if (query.length < 2) return null
 
@@ -101,12 +105,14 @@ export default function SearchResults({
               <span className="h-px flex-1 bg-nav-foreground/10" aria-hidden="true" />
             </div>
             <div>
-              {movies.slice(0, 5).map((movie) => (
+              {movies.slice(0, 5).map((movie, i) => (
                 <Link
                   key={movie.id}
+                  id={`search-result-${i}`}
                   href={`/pelicula/${movie.slug}`}
-                  className="group flex items-center gap-3 px-4 py-2 transition-colors hover:bg-nav-foreground/6"
+                  className={`group flex items-center gap-3 px-4 py-2 transition-colors ${selectedIndex === i ? 'bg-nav-foreground/10' : 'hover:bg-nav-foreground/6'}`}
                   onClick={onSelect}
+                  onMouseEnter={() => onHover?.(i)}
                 >
                   {/* Poster thumbnail */}
                   <div className="h-10 w-7 shrink-0 overflow-hidden bg-[oklch(0.22_0.005_250)]">
@@ -152,12 +158,16 @@ export default function SearchResults({
               <span className="h-px flex-1 bg-nav-foreground/10" aria-hidden="true" />
             </div>
             <div>
-              {people.slice(0, 5).map((person) => (
+              {people.slice(0, 5).map((person, i) => {
+                const itemIndex = movies.length + i
+                return (
                 <Link
                   key={person.id}
+                  id={`search-result-${itemIndex}`}
                   href={`/persona/${person.slug}`}
-                  className="group flex items-center gap-3 px-4 py-2 transition-colors hover:bg-nav-foreground/6"
+                  className={`group flex items-center gap-3 px-4 py-2 transition-colors ${selectedIndex === itemIndex ? 'bg-nav-foreground/10' : 'hover:bg-nav-foreground/6'}`}
                   onClick={onSelect}
+                  onMouseEnter={() => onHover?.(itemIndex)}
                 >
                   {/* Portrait thumbnail */}
                   <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-[oklch(0.22_0.005_250)]">
@@ -185,7 +195,8 @@ export default function SearchResults({
                     </span>
                   </div>
                 </Link>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
