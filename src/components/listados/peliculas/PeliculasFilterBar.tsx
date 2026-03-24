@@ -4,7 +4,7 @@
 import { useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowDownUp, SlidersHorizontal, X, ChevronDown, CalendarDays, LayoutGrid, List } from 'lucide-react'
-import { FilterSelect, FilterInput } from '@/components/shared/filters'
+import { FilterSelect } from '@/components/shared/filters'
 import type { MovieFilterOptions, MovieFilters } from '@/lib/queries/peliculas'
 import { MOVIE_SORT_OPTIONS } from '@/lib/movies/movieListTypes'
 import type { ViewMode } from '@/lib/shared/listTypes'
@@ -140,6 +140,50 @@ function DateInput({
           />
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── YearInput (local state, navigate on blur/Enter) ─────────────
+
+function YearInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: number | undefined
+  onChange: (v: number | undefined) => void
+}) {
+  const [draft, setDraft] = useState(value ? String(value) : '')
+  const [prevValue, setPrevValue] = useState(value)
+
+  // Sync draft when the prop changes externally (e.g. "clear filters")
+  if (value !== prevValue) {
+    setPrevValue(value)
+    setDraft(value ? String(value) : '')
+  }
+
+  function commit() {
+    const num = parseInt(draft, 10)
+    const parsed = isNaN(num) || num <= 0 ? undefined : num
+    if (parsed !== value) onChange(parsed)
+  }
+
+  return (
+    <div className="space-y-1">
+      <label className="block text-[10px] uppercase tracking-widest text-muted-foreground/40">
+        {label}
+      </label>
+      <input
+        type="number"
+        placeholder="Año"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === 'Enter') commit() }}
+        className="h-8 w-full border border-border/30 bg-transparent px-2 text-[12px] text-muted-foreground/60 outline-hidden transition-colors placeholder:text-muted-foreground/25 focus:border-accent/40 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      />
     </div>
   )
 }
@@ -335,15 +379,15 @@ export default function PeliculasFilterBar({
               value={activeFilters.releaseDateTo || ''}
               onChange={(v) => handleFilterChange('releaseDateTo', v)}
             />
-            <FilterInput
+            <YearInput
               label="Producida desde"
-              value={activeFilters.productionYearFrom || ''}
-              onChange={(v) => handleFilterChange('productionYearFrom', v ? parseInt(v) : 0)}
+              value={activeFilters.productionYearFrom}
+              onChange={(v) => handleFilterChange('productionYearFrom', v || 0)}
             />
-            <FilterInput
+            <YearInput
               label="Producida hasta"
-              value={activeFilters.productionYearTo || ''}
-              onChange={(v) => handleFilterChange('productionYearTo', v ? parseInt(v) : 0)}
+              value={activeFilters.productionYearTo}
+              onChange={(v) => handleFilterChange('productionYearTo', v || 0)}
             />
           </div>
         </div>
