@@ -1,5 +1,6 @@
 // src/app/api/analytics/pageview/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { apiHandler } from '@/lib/api/api-handler';
 import { parseIntClamped, DAYS } from '@/lib/api/parse-params';
@@ -103,7 +104,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       pageType: body.pageType,
       movieId: body.movieId || null,
       personId: body.personId || null,
-      extraData: body.extraData || null,
+      extraData: (body.extraData || null) as Prisma.InputJsonValue,
       sessionId: body.sessionId || null,
       ipHash: hashIP(clientIP),
       userAgent: userAgent?.substring(0, 500), // Truncar si es muy largo

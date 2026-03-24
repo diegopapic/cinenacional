@@ -52,7 +52,7 @@ export default function FestivalSectionForm({ editionId, templates }: FestivalSe
       const updated = { ...prev, [field]: value }
       // Auto-generate slug when name changes
       if (field === 'name') {
-        updated.slug = generateSlug(value)
+        updated.slug = generateSlug(String(value))
       }
       return updated
     })

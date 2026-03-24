@@ -34,7 +34,7 @@ interface Director {
   id: number;
   name: string;
   slug: string;
-  photoUrl?: string | null;
+  photoUrl: string | null;
 }
 
 interface MovieInfoProps {

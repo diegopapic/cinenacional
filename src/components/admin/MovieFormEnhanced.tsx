@@ -110,7 +110,7 @@ interface MovieFormEnhancedProps {
     distributionCompanies?: InitialCompanyEntry[]
     themes?: InitialThemeEntry[]
     screeningVenues?: number[]
-  }
+  } | null
   showOnlyBasicInfo?: boolean
   showOnlyCast?: boolean
   showOnlyCrew?: boolean

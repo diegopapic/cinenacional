@@ -1,5 +1,6 @@
 // src/app/api/movies/route.ts - CON REDIS CACHE
 import { NextRequest, NextResponse } from 'next/server'
+import { LinkType } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { movieSchema } from '@/lib/schemas'
 import { makeUniqueSlug } from '@/lib/api/crud-factory'
@@ -38,7 +39,7 @@ interface CastEntry {
 /** Crew entry as received from the request body */
 interface CrewEntry {
   personId: number
-  roleId: number
+  roleId?: number
   billingOrder?: number
 }
 
@@ -383,7 +384,7 @@ export async function GET(request: NextRequest) {
     // Cuando se ordena por releaseYear sin otros filtros de año, excluir películas sin fecha de estreno.
     // Reduce el dataset de ~12500 a ~5000 y evita timeouts al pedir límites altos.
     if (sortBy === 'releaseYear' && !year && !yearFrom && !yearTo && upcoming !== 'true') {
-      where.releaseYear = { ...where.releaseYear, not: null }
+      where.releaseYear = { ...(where.releaseYear as Record<string, unknown> || {}), not: null }
     }
 
     if (upcoming === 'true') {
@@ -688,9 +689,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
       ...(crew && crew.length > 0 && {
         crew: {
-          create: crew.map((item: CrewEntry) => ({
+          create: crew.filter((item: CrewEntry) => item.roleId != null).map((item: CrewEntry) => ({
             personId: item.personId,
-            roleId: item.roleId,
+            roleId: item.roleId!,
             billingOrder: item.billingOrder || 0
           }))
         }
@@ -752,7 +753,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       ...(links && links.length > 0 && {
         links: {
           create: links.map((link: LinkEntry) => ({
-            type: link.type,
+            type: link.type as LinkType,
             url: link.url,
             isActive: link.isActive !== false
           }))

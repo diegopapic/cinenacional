@@ -6,7 +6,7 @@ import { Plus, X, Edit2, Save } from 'lucide-react'
 interface AlternativeTitle {
   id?: number
   title: string
-  description?: string
+  description?: string | null
 }
 
 interface AlternativeTitlesManagerProps {

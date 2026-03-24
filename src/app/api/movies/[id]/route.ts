@@ -2,6 +2,7 @@
 // src/app/api/movies/[id]/route.ts - CON ALTERNATIVE_NAME_ID
 // ==================================================
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { movieSchema } from '@/lib/schemas'
 import RedisClient from '@/lib/redis'
@@ -559,12 +560,11 @@ export const PUT = apiHandler(async (
           data: crew.map((item, index) => ({
             movieId: id,
             personId: item.personId,
-            alternativeNameId: item.alternativeNameId || null,  // 🆕
-            role: item.role,
-            roleId: item.roleId,
+            alternativeNameId: item.alternativeNameId || null,
+            roleId: item.roleId ?? 0,
             billingOrder: item.billingOrder || index + 1,
             notes: item.notes || null
-          }))
+          } satisfies Prisma.MovieCrewCreateManyInput))
         })
       }
     }
@@ -656,14 +656,13 @@ export const PUT = apiHandler(async (
     if (links !== undefined) {
       await tx.movieLink.deleteMany({ where: { movieId: id } })
       if (links && links.length > 0) {
-        await tx.movieLink.createMany({
-          data: links.map((link: { type: string; url: string; isActive?: boolean }) => ({
+        const linkData: Prisma.MovieLinkCreateManyInput[] = links.map((link: { type: string; url: string; isActive?: boolean }) => ({
             movieId: id,
-            type: link.type,
+            type: link.type as 'INSTAGRAM' | 'TWITTER' | 'FACEBOOK' | 'TIKTOK' | 'YOUTUBE' | 'WEBSITE',
             url: link.url,
             isActive: link.isActive !== false
           }))
-        })
+        await tx.movieLink.createMany({ data: linkData })
       }
     }
 
@@ -768,8 +767,8 @@ export const PUT = apiHandler(async (
 
   // 3. Invalidar caché de Next.js (por si acaso, aunque ya no lo usamos principalmente)
   try {
-    revalidateTag('movies');
-    revalidateTag(`movie-${existingMovie.slug}`);
+    revalidateTag('movies', 'default');
+    revalidateTag(`movie-${existingMovie.slug}`, 'default');
     revalidatePath(`/pelicula/${existingMovie.slug}`);
     revalidatePath('/');
     revalidatePath('/listados/peliculas');
@@ -861,8 +860,8 @@ export async function DELETE(
 
     // 3. Invalidar caché de Next.js
     try {
-      revalidateTag('movies');
-      revalidateTag(`movie-${movie.slug}`);
+      revalidateTag('movies', 'default');
+      revalidateTag(`movie-${movie.slug}`, 'default');
       revalidatePath(`/pelicula/${movie.slug}`);
       revalidatePath('/');
       revalidatePath('/listados/peliculas');

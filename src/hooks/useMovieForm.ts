@@ -78,6 +78,7 @@ interface RatingOption {
   id: number
   name: string
   abbreviation?: string | null
+  description?: string | null
 }
 
 /** Color type option from the API */
@@ -87,7 +88,7 @@ interface ColorTypeOption {
 }
 
 /** Initial form data for movie relations */
-interface MovieFormInitialData {
+export interface MovieFormInitialData {
   genres: unknown[]
   countries: unknown[]
   productionCompanies: unknown[]
@@ -184,7 +185,7 @@ interface UseMovieFormReturn {
     reorderCrew: (oldIndex: number, newIndex: number) => void
 
     // Funciones principales
-    loadMovieData: (movie: Movie) => Promise<void>
+    loadMovieData: (movie: Movie | MovieDetail) => Promise<void>
     resetForNewMovie: () => void
 
     // Form methods

@@ -103,7 +103,7 @@ interface MoviePageClientProps {
         summary?: string | null;
         url?: string | null;
         content?: string | null;
-        language: string;
+        language?: string;
         hasPaywall: boolean;
         score?: number | null;
         publishYear?: number | null;

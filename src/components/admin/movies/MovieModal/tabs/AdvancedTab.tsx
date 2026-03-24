@@ -287,7 +287,7 @@ export default function AdvancedTab() {
           onDistributionCompaniesChange={handleDistributionCompaniesChange}
           onThemesChange={() => { }}
           onScreeningVenuesChange={() => { }}
-          initialData={movieFormInitialData}
+          initialData={movieFormInitialData as Parameters<typeof MovieFormEnhanced>[0]['initialData']}
           showOnlyCompanies={true}
         />
       </div>

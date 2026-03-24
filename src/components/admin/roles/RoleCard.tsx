@@ -3,19 +3,7 @@
 
 import { Edit, Trash2, Users, Star } from 'lucide-react';
 import { getDepartmentLabel, getDepartmentColor } from '@/lib/roles/roleUtils';
-import { Department } from '@/lib/roles/rolesTypes';
-
-interface Role {
-  id: number;
-  name: string;
-  department: string;
-  description?: string | null;
-  isMainRole: boolean;
-  isActive: boolean;
-  _count?: {
-    crewRoles: number;
-  };
-}
+import { Department, type Role } from '@/lib/roles/rolesTypes';
 
 interface RoleCardProps {
   role: Role;

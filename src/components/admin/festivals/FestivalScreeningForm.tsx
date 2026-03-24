@@ -45,7 +45,10 @@ interface Venue {
 interface FestivalScreeningFormProps {
   editionId: number
   sections: SimpleFestivalSection[]
-  screening?: FestivalScreening
+  screening?: Omit<FestivalScreening, 'createdAt' | 'updatedAt' | 'screeningDate' | 'screeningTime'> & {
+    screeningDate?: string | Date | null
+    screeningTime?: string | Date | null
+  }
   onSuccess?: () => void
   onCancel?: () => void
   compact?: boolean

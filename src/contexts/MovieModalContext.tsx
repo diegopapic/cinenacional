@@ -6,10 +6,11 @@ import type {
   CrewMemberEntry,
   AlternativeTitleEntry,
   TriviaEntry,
-  MovieLinkEntry
+  MovieLinkEntry,
+  MovieFormInitialData,
 } from '@/hooks/useMovieForm';
 import { useValueChange } from '@/hooks/useValueChange';
-import type { Movie, MovieFormData, PartialReleaseDate, PartialFilmingDate } from '@/lib/movies/movieTypes';
+import type { Movie, MovieDetail, MovieFormData, PartialReleaseDate, PartialFilmingDate } from '@/lib/movies/movieTypes';
 import type { UseFormReturn } from 'react-hook-form';
 import { createLogger } from '@/lib/logger'
 
@@ -20,6 +21,7 @@ interface RatingOption {
   id: number
   name: string
   abbreviation?: string | null
+  description?: string | null
 }
 
 /** Color type option from the API */
@@ -49,6 +51,14 @@ interface MovieModalContextValue {
   reset: UseFormReturn<MovieFormData>['reset'];
   control: UseFormReturn<MovieFormData>['control'];
   formState: UseFormReturn<MovieFormData>['formState'];
+  unregister: UseFormReturn<MovieFormData>['unregister'];
+  getValues: UseFormReturn<MovieFormData>['getValues'];
+  trigger: UseFormReturn<MovieFormData>['trigger'];
+  clearErrors: UseFormReturn<MovieFormData>['clearErrors'];
+  setError: UseFormReturn<MovieFormData>['setError'];
+  setFocus: UseFormReturn<MovieFormData>['setFocus'];
+  getFieldState: UseFormReturn<MovieFormData>['getFieldState'];
+  resetField: UseFormReturn<MovieFormData>['resetField'];
 
   // State
   activeTab: string;
@@ -78,7 +88,7 @@ interface MovieModalContextValue {
 
   // UI states
   tipoDuracionDisabled: boolean;
-  movieFormInitialData: Record<string, unknown> | null;
+  movieFormInitialData: MovieFormInitialData | null;
   alternativeTitles: AlternativeTitleEntry[];
   setAlternativeTitles: (titles: AlternativeTitleEntry[]) => void;
   trivia: TriviaEntry[];
@@ -116,7 +126,7 @@ interface MovieModalContextValue {
   reorderCrew: (oldIndex: number, newIndex: number) => void;
 
   // Functions
-  loadMovieData: (movie: Movie) => Promise<void>;
+  loadMovieData: (movie: Movie | MovieDetail) => Promise<void>;
   resetForNewMovie: () => void;
 }
 

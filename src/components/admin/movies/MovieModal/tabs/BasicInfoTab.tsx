@@ -392,7 +392,7 @@ export default function BasicInfoTab() {
         onDistributionCompaniesChange={() => { }}
         onThemesChange={handleThemesChange}
         onScreeningVenuesChange={handleScreeningVenuesChange}
-        initialData={movieFormInitialData}
+        initialData={movieFormInitialData as Parameters<typeof MovieFormEnhanced>[0]['initialData']}
         showOnlyBasicInfo={true}
       />
     </div>

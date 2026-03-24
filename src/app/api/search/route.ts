@@ -244,6 +244,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           slug: true,
           firstName: true,
           lastName: true,
+          realName: true,
           photoUrl: true,
           birthYear: true,
           deathYear: true
@@ -254,12 +255,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
           { firstName: 'asc' }
         ]
       })
-      
+
       people = peopleResults.map(p => ({
         id: p.id,
         slug: p.slug,
         first_name: p.firstName,
         last_name: p.lastName,
+        real_name: p.realName,
         photo_url: p.photoUrl,
         birth_year: p.birthYear,
         death_year: p.deathYear

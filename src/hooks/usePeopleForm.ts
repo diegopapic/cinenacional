@@ -39,8 +39,8 @@ function formatPersonForForm(person: PersonWithRelations, personId: number): Per
     if (person.alternativeNames) {
         formattedData.alternativeNames = person.alternativeNames;
     }
-    if ((person as Record<string, unknown>).trivia) {
-        formattedData.trivia = (person as Record<string, unknown>).trivia as PersonFormData['trivia'];
+    if ((person as unknown as Record<string, unknown>).trivia) {
+        formattedData.trivia = (person as unknown as Record<string, unknown>).trivia as PersonFormData['trivia'];
     }
     if (person.nationalities && Array.isArray(person.nationalities)) {
         formattedData.nationalities = person.nationalities.map((n) => {

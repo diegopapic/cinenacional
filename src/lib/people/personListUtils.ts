@@ -210,8 +210,9 @@ export function buildSubtitle(filters: PersonListFilters): string {
         ? 'Ordenado por cantidad de películas, de menor a mayor'
         : 'Ordenado por cantidad de películas, de mayor a menor';
     default: {
-      const option = SORT_OPTIONS.find(o => o.value === sortBy);
-      const label = option ? option.label.toLowerCase() : sortBy;
+      const sortByStr = sortBy as unknown as string;
+      const option = SORT_OPTIONS.find(o => o.value === sortByStr);
+      const label = option ? option.label.toLowerCase() : sortByStr;
       return `Ordenado por ${label}, ${isAsc ? 'ascendente' : 'descendente'}`;
     }
   }

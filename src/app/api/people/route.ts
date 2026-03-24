@@ -1,6 +1,7 @@
 // src/app/api/people/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { generatePersonSlug } from '@/lib/people/peopleUtils';
 import { splitFullName } from '@/lib/people/nameUtils';
@@ -263,7 +264,7 @@ export async function GET(request: NextRequest) {
           if (result.matched_alternative_id) {
             alternativeMatchMap.set(result.id, {
               id: result.matched_alternative_id,
-              name: result.matched_alternative_name
+              name: result.matched_alternative_name || ''
             });
           }
         }
@@ -719,7 +720,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     );
   }
 
-  const personData: Record<string, unknown> = {
+  const personData = {
     slug,
     firstName: data.firstName || null,
     lastName: data.lastName || null,
@@ -738,7 +739,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     gender: data.gender || null,
     hideAge: data.hideAge || false,
     isActive: data.isActive ?? true,
-    hasLinks: data.links && data.links.length > 0,
+    hasLinks: !!(data.links && data.links.length > 0),
     imdbId: data.imdbId || null,
     tmdbId: data.tmdbId ? parseInt(data.tmdbId) : null,
   };
@@ -755,7 +756,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     }
 
     const newPerson = await tx.person.create({
-      data: personData,
+      data: personData as Prisma.PersonUncheckedCreateInput,
     });
 
     if (data.links && data.links.length > 0) {

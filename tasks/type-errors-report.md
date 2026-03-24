@@ -251,4 +251,4 @@ const crewData: Prisma.MovieCrewCreateManyInput[] = crew.map(...)
 3. ~~**Unificar `CastMember` type** — ~5 errores~~ ✅ COMPLETADO (see next commit)
 4. ~~**Reordenar `LocationForm.tsx`** — 4 errores~~ ✅ COMPLETADO (see next commit)
 5. ~~**Tipar Prisma `where` clauses** — ~10 errores~~ ✅ COMPLETADO (see next commit)
-6. **Fixes menores** (Cloudinary, NextRequest.ip, reviews, etc.) — ~10 errores restantes
+6. ~~**Fixes menores** (Cloudinary, NextRequest.ip, reviews, etc.) — ~10 errores restantes~~ ✅ COMPLETADO (see next commit)

@@ -316,7 +316,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
             select: { person: { select: { id: true, slug: true, firstName: true, lastName: true } } },
             orderBy: { billingOrder: 'asc' },
           },
-          countries: { select: { country: { select: { id: true, name: true } } } },
+          movieCountries: { select: { location: { select: { id: true, name: true } } } },
         },
         orderBy: [{ popularity: 'desc' }, { title: 'asc' }],
         take: 50,
@@ -346,12 +346,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
       releaseYear: m.releaseYear, releaseMonth: m.releaseMonth, releaseDay: m.releaseDay,
       posterUrl: m.posterUrl, synopsis: m.synopsis, duration: m.duration,
       tipoDuracion: m.tipoDuracion, stage: m.stage, soundType: m.soundType,
-      directors: m.crew.map(c => ({
+      directors: (m as unknown as { crew: Array<{ person: { id: number; slug: string; firstName: string | null; lastName: string | null } }> }).crew.map(c => ({
         id: c.person.id, slug: c.person.slug,
         name: [c.person.firstName, c.person.lastName].filter(Boolean).join(' '),
       })),
-      genres: m.genres.map(g => g.genre),
-      countries: m.countries.map(c => c.country),
+      genres: (m as unknown as { genres: Array<{ genre: { id: number; name: string } }> }).genres.map(g => g.genre),
+      countries: (m as unknown as { movieCountries: Array<{ location: { id: number; name: string } }> }).movieCountries.map(c => c.location),
     }))
 
     const sortedPeople = [...peopleRaw].sort((a, b) => {

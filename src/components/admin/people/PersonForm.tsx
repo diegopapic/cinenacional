@@ -78,7 +78,7 @@ export function PersonForm({
                 ? nats.map((n: number | { locationId?: number }) => {
                     const id = typeof n === 'object' ? n.locationId : n;
                     return id;
-                })
+                }).filter((id): id is number => id != null)
                 : [];
             setNationalities(nationalityIds);
         }

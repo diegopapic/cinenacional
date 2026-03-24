@@ -2,6 +2,7 @@
 'use client'
 
 import { CldUploadWidget } from 'next-cloudinary'
+import type { CloudinaryUploadWidgetResults } from '@cloudinary-util/types'
 import { useState, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
@@ -141,11 +142,12 @@ export function CloudinaryUploadWidget({
   }, [clearSafetyTimeout])
 
   // Handler de éxito - mejorado con cleanup
-  const handleUploadSuccess = useCallback((result: { info?: { secure_url: string; public_id: string } }) => {
+  const handleUploadSuccess = useCallback((result: CloudinaryUploadWidgetResults) => {
     log.debug('Upload success')
     clearSafetyTimeout()
-    if (result.info) {
-      const { secure_url, public_id } = result.info
+    const info = result.info as { secure_url: string; public_id: string } | undefined
+    if (info) {
+      const { secure_url, public_id } = info
       setImageUrl(secure_url)
       onChange(secure_url, public_id)
       toast.success('Imagen subida exitosamente')

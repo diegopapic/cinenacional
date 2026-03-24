@@ -502,11 +502,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
       // 14. Update survivor's slug if name changed
       if (updateData.firstName !== undefined || updateData.lastName !== undefined) {
-        const newFirstName = updateData.firstName !== undefined ? updateData.firstName : survivor.firstName;
-        const newLastName = updateData.lastName !== undefined ? updateData.lastName : survivor.lastName;
+        const newFirstName = (updateData.firstName !== undefined ? updateData.firstName : survivor.firstName) as string | null;
+        const newLastName = (updateData.lastName !== undefined ? updateData.lastName : survivor.lastName) as string | null;
 
         if (newFirstName !== survivor.firstName || newLastName !== survivor.lastName) {
-          const baseSlug = generatePersonSlug(newFirstName, newLastName);
+          const baseSlug = generatePersonSlug(newFirstName ?? undefined, newLastName ?? undefined);
           let slug = baseSlug;
           let counter = 1;
 
@@ -538,7 +538,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       return {
         survivorId: survivor.id,
         absorbedId: absorbed.id,
-        survivorSlug: updateData.slug || survivor.slug,
+        survivorSlug: (updateData.slug as string | undefined) || survivor.slug,
         stats: {
           castRolesTransferred: castTransferred,
           castRolesDeleted: castDeleted,

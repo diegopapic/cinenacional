@@ -45,9 +45,9 @@ export interface PersonLink {
   displayOrder: number;
   isVerified: boolean;
   isActive: boolean;
-  lastChecked?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
+  lastChecked?: Date | string | null;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 }
 
 // Tipo para nombres alternativos

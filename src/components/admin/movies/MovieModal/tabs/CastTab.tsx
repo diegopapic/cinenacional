@@ -173,8 +173,8 @@ export default function CastTab() {
 
   // Detectar si la pelicula es documental basandose en los generos
   const isDocumental = useMemo(() => {
-    const genres = movieFormInitialData?.genres || []
-    return genres.some((g: { slug?: string; name?: string; genre?: { slug?: string; name?: string } }) => {
+    const genres = (movieFormInitialData?.genres || []) as Array<{ slug?: string; name?: string; genre?: { slug?: string; name?: string } }>
+    return genres.some((g) => {
       const slug = g.slug || g.genre?.slug || ''
       const name = g.name || g.genre?.name || ''
       return slug.toLowerCase().includes('documental') ||
