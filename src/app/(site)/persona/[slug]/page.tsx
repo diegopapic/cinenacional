@@ -22,8 +22,7 @@ import { PersonReviews } from '@/components/people/PersonReviews'
 
 const log = createLogger('page:persona')
 
-// ISR: revalidar cada 1 hora
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 interface PageProps {
   params: Promise<{ slug: string }>

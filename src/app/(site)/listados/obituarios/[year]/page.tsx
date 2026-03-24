@@ -6,8 +6,7 @@ import ObituariosYearSelector from '@/components/listados/obituarios/ObituariosY
 import ObituariosGrid from '@/app/(site)/listados/obituarios/ObituariosGrid'
 import ServerPagination from '@/components/shared/ServerPagination'
 
-// ISR: revalidar cada 1 hora
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 interface PageProps {
   params: Promise<{ year: string }>
