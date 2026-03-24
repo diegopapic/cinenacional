@@ -1,173 +1,101 @@
-# Eliminar `no-explicit-any` — 400 errores en 64 archivos
+# 5.6 Migrar listados a Server Components
 
-Objetivo: llevar ESLint a 0 errores eliminando todos los `any` explícitos.
+**Objetivo:** Convertir `/listados/peliculas` y `/listados/personas` de 100% client-side (spinner + React Query) a Server Components con data fetching directo via Prisma. Mejora SEO (HTML indexable sin JS) y LCP.
 
-Estrategia: agrupar por dominio funcional para tipar de forma coherente (los tipos fluyen entre archivos del mismo dominio). Orden de prioridad: primero los tipos base y servicios, después los componentes que los consumen.
-
----
-
-## Fase A: Tipos base, servicios y API client ✅ COMPLETADA
-
-### A1. API client y helpers ✅
-
-- [x] `src/services/api-client.ts`: `ApiError.data` → `Record<string, unknown>`, `errorData` tipado, `post/put/patch` data → `unknown`
-- [x] `src/lib/api/api-handler.ts`: `apiHandler` generic constraint con `Parameters<T>`
-
-### A2. Services ✅
-
-- [x] `src/services/movies.service.ts`: interfaces `MovieApiPayload`, `MovieApiResponse`, tipado de todos los métodos del service
-- [x] `src/services/people.service.ts`: interface `PersonApiPayload`, `NationalityEntry`, tipado de formatters y error handling
-
-### A3. CRUD factory ✅
-
-- [x] `src/lib/api/crud-factory.ts`: `PrismaArgs`, `PrismaRecord`, `PrismaInclude`, `PrismaOrderBy` types. 36→1 `any` (el restante es `Record<string, any>` para `PrismaRecord` con eslint-disable justificado — boundary type para Prisma dynamic models)
-
-### A4. Prisma y auth ✅
-
-- [x] `src/lib/prisma.ts`: `declare global` para `BigInt.toJSON`, `lastError: unknown`, Prisma error typed via assertion
-- [x] `src/auth.ts`: `user.role as string` (type augmentation en next-auth.d.ts lo soporta)
-- [x] `src/lib/auth.ts`: explicit session type cast en vez de `as any`
-
-### A5. Utilidades de dominio ✅
-
-- [x] `src/lib/movies/movieUtils.ts`: `prepared: Record<string, unknown>`, `getErrorMessage(error: unknown)`
-- [x] `src/lib/people/peopleUtils.ts`: `LocationWithParent`, `PersonBirthData`, `PersonSummaryData` interfaces, nationality filter typed
-- [x] `src/lib/roles/roleUtils.ts`: `sortRolesByDepartment(roles: Role[])`
-- [x] `src/lib/estrenos/estrenosTypes.ts`: `EstrenoMovie` interface para reemplazar `any[]`
-- [x] `src/hooks/usePageView.ts`: `extraData: Record<string, unknown>`
+**Patrón de referencia:** `listados/peliculas/genero/[genreSlug]/page.tsx` y `listados/obituarios/[year]/page.tsx` ya siguen este patrón.
 
 ---
 
-## Fase B: API routes de películas ✅ COMPLETADA
+## Fase A: Películas (`/listados/peliculas`)
 
-También se tipó `src/lib/schemas.ts` (6 `z.array(z.any())` → schemas tipados para cast, crew, alternativeTitles, trivia, links).
+### ~~A1. Crear funciones de query Prisma para películas~~ ✅ COMPLETADO
+- [x] Crear `src/lib/queries/peliculas.ts` con:
+  - `getMovies(filters, page, limit)` — replicar la lógica de `/api/movies/list` (full-text search, filtros, sort con `unaccent`, paginación)
+  - `getMovieFilters()` — replicar `/api/movies/filters` (géneros, países, ratings, etc. con counts)
+- [x] Reusar la lógica existente de los API routes, no reimplementar
 
-- [x] `src/app/api/movies/route.ts`: `RawMovieSearchResult` interface, typed where clause, typed relation map callbacks, `makeUniqueSlug` cast
-- [x] `src/app/api/movies/[id]/route.ts`: typed memory cache, filter callbacks `unknown`, relation map callbacks tipados, DELETE error typed
-- [x] `src/app/api/movies/list/route.ts`: `RawAlphabeticMovie` interface, typed params array, Prisma where casts
+### ~~A2. Crear componente client de filtros~~ ✅ COMPLETADO
+- [x] Crear `src/components/listados/peliculas/PeliculasFilterBar.tsx` ('use client')
+  - Recibe las opciones de filtros como props (server las fetchea)
+  - Recibe los filtros activos como props (desde searchParams)
+  - Al cambiar un filtro: navega con `router.push()` actualizando searchParams, reseteando page a 1
+  - Incluye toggle de vista (grid/compact) como searchParam `view`
+  - Incluye toggle show/hide filtros (estado local del client component)
 
----
+### ~~A3. Convertir page.tsx a Server Component~~ ✅ COMPLETADO
+- [x] Reescribir `src/app/(site)/listados/peliculas/page.tsx`:
+  - Quitar `'use client'`
+  - Recibir `searchParams` como prop async
+  - Parsear filtros desde searchParams
+  - Llamar `getMovies()` y `getMovieFilters()` en paralelo con `Promise.all`
+  - Renderizar la grilla de películas como HTML del server
+  - Usar `ServerPagination` con `buildHref`
+  - Pasar filtros como props a `<PeliculasFilterBar />`
+- [x] Agregar `generateMetadata()` con título y descripción (resuelve 1.7)
+- [x] Agregar canonical a `/listados/peliculas` (resuelve 1.6)
+- [x] Agregar `export const dynamic = 'force-dynamic'`
 
-## Fase C: API routes de personas ✅ COMPLETADA
+### ~~A4. Limpiar código obsoleto de películas~~ ✅ COMPLETADO
+- [x] Eliminar `PeliculasContent.tsx` (ya no se usa)
+- [x] `PeliculasGrid.tsx` se reutiliza tal cual desde el server component (con `isLoading=false`)
+- [x] `/api/movies/list` y `/api/movies/filters` se mantienen (el admin los usa via React Query)
 
-- [x] `src/app/api/people/route.ts`: `RawPersonSearchResult` interface, typed where/orderBy, `personData` tipado, callbacks de links/trivia/alternativeNames tipados
-- [x] `src/app/api/people/[id]/route.ts`: typed memory cache, `updateData` tipado, callbacks de links/trivia/alternativeNames tipados
-- [x] `src/app/api/people/list/route.ts`: `PersonWithLocations` interface para `addFeaturedMovies`
-- [x] `src/app/api/people/merge/route.ts`: generic `resolveValue<T>`, `updateData` tipado
-- [x] `src/app/api/people/merge/preview/route.ts`: `LocationNode` interface, `FieldComparison` con `unknown`
-
----
-
-## Fase D: Otras API routes ✅ COMPLETADA
-
-- [x] `search/route.ts`: `MovieSearchRow`, `PersonSearchRow` interfaces para raw SQL
-- [x] `search/full/route.ts`: `FullMovieSearchRow`, `FullPersonSearchRow` interfaces
-- [x] `festival-editions/[id]/screenings/route.ts`: typed screeningsData y results/errors
-- [x] `festivals/route.ts`, `festivals/[id]/editions/route.ts`: typed body
-- [x] `locations/route.ts`, `locations/[id]/route.ts`, `locations/check-slug/route.ts`: typed where/body, makeUniqueSlug cast
-- [x] `roles/route.ts`: `RoleWithCount` interface, typed orderBy y callbacks
-- [x] `images/route.ts`: typed error handling
-- [x] `analytics/pageview/route.ts`: `Record<string, unknown>` para extraData
-- [x] `metrics/database/route.ts`: interfaces para pg_stat queries
-- [x] `people/death-years/route.ts`: typed memory cache
-- [x] `screening-venues/route.ts`: typed extraFilters
-
----
-
-## Fase E: Movie form system (157 any) ⚠️ la más grande
-
-El sistema de formulario de películas es el más complejo. Los tipos fluyen entre `useMovieForm` → `MovieModalContext` → `MovieFormEnhanced` → tabs del modal.
-
-### E1. Hook y context ✅ COMPLETADA
-
-- [x] `src/hooks/useMovieForm.ts` (78→0): Interfaces exportadas: `CastMemberEntry`, `CrewMemberEntry`, `AlternativeTitleEntry`, `TriviaEntry`, `MovieLinkEntry`. React Hook Form methods tipados via `UseFormReturn<MovieFormData>`. Todas las relaciones, callbacks y estados tipados.
-- [x] `src/contexts/MovieModalContext.tsx` (31→0): Context value tipado con las mismas interfaces. Eliminados todos los `any` de la interfaz del context.
-
-### E2. Componentes del formulario ✅ COMPLETADA
-
-- [x] `MovieFormEnhanced.tsx` (48→0): props tipadas con interfaces de useMovieForm, RHF methods, callbacks
-- [x] `CastTab.tsx` (11→0): usa `CastMemberEntry`, genre filter tipado
-- [x] `CrewTab.tsx` (6→0): usa `CrewMemberEntry`, role type union
-- [x] `ImagesTab/index.tsx` (2→0): typed image/people queries
-- [x] `MultiImageUpload.tsx` (1→0): typed Cloudinary callback
-- [x] `MovieModalFooter.tsx` (1→0): typed formState access
-- [x] `MovieModal/index.tsx` (1→0): typed submit handler
+### ~~A5. Testing películas~~ ✅ COMPLETADO
+- [x] `npm run lint` pasa
+- [x] `npm run build` pasa — `/listados/peliculas` es `ƒ (Dynamic)`
+- [ ] Verificar en producción: HTML tiene contenido real (no spinner) — *pendiente deploy*
+- [ ] Verificar que todos los filtros funcionan — *pendiente deploy*
+- [ ] Verificar paginación con links (no JS) — *pendiente deploy*
+- [ ] Verificar búsqueda — *pendiente deploy*
 
 ---
 
-## Fase F: People form system y admin pages ✅ COMPLETADA
+## Fase B: Personas (`/listados/personas`)
 
-### F1. People form ✅
+### B1. Crear funciones de query Prisma para personas
+- [ ] Crear `src/lib/queries/personas.ts` con:
+  - `getPeople(filters, page, limit)` — replicar lógica de `/api/people/list` (búsqueda multi-término, ubicaciones con CTE recursivo, sort con `unaccent`)
+  - `getPeopleFilters()` — replicar `/api/people/filters`
 
-- [x] `PersonForm.tsx` (2→0): nationality map callbacks tipados
-- [x] `BasicInfoFields.tsx` (2→0): `value: string` en partial date handlers
-- [x] `LinksSection.tsx` (1→0): `PersonLink['type']` cast
-- [x] `PeopleTable.tsx` (2→0): typed delete handler, `PersonFilters['gender']` cast
-- [x] `usePeopleForm.ts` (1→0): typed nationality map, trivia access via Record cast
+### B2. Crear componente client de filtros
+- [ ] Crear `src/components/listados/personas/PersonasFilterBar.tsx` ('use client')
+  - Mismo patrón que PeliculasFilterBar
+  - Filtros: gender, role, nationality, birth/death location, birth/death year range, sort
 
-### F2. Admin pages ✅
+### B3. Convertir page.tsx a Server Component
+- [ ] Reescribir `src/app/(site)/listados/personas/page.tsx`:
+  - Mismo patrón que películas
+  - Parsear filtros desde searchParams
+  - Query Prisma directo
+  - `ServerPagination`
+- [ ] Agregar `generateMetadata()` (resuelve 1.7)
+- [ ] Agregar canonical a `/listados/personas` (resuelve 1.6)
 
-- [x] `merge/page.tsx` (8→0): location types, `unknown` para field values, typed error handling
-- [x] `roles/page.tsx` (1→0): `Role` type para editingRole state
+### B4. Limpiar código obsoleto de personas
+- [ ] Eliminar `PersonasContent.tsx`
+- [ ] Verificar `PersonasGrid.tsx` / `PersonCardDetailed.tsx`
 
----
-
-## Fase G: Componentes del sitio público ✅ COMPLETADA
-
-### G1. Página de película ✅
-
-- [x] `page.tsx` (21→0): interfaces para Prisma query results, typed cast/crew/review shapes
-- [x] `MoviePageClient.tsx` (1→0): typed movie prop interface
-
-### G2. Búsqueda y listados ✅
-
-- [x] `buscar/page.tsx` (3→0): typed callbacks usando `SearchPageResult` indexed access
-- [x] `PersonCardDetailed.tsx` (2→0): intersection type para location paths
-
-### G3. Otros componentes ✅
-
-- [x] `ObituariosSection.tsx` (3→0): `ObituarioPerson` interface
-- [x] `PersonSearchInput.tsx` (2→0): typed query result, removed callback `any`
-- [x] `CloudinaryUploadWidget.tsx` (2→0): typed upload result and error callback
-- [x] `EstrenosYearBar.tsx` (1→0): removed `null as any`
-- [x] `ImageGallery.tsx` (1→0): `ImageWithRelations['type']` cast
-
-### G4. Festival forms ✅
-
-- [x] `FestivalSectionForm.tsx` (1→0): `string | number | boolean` value type
-- [x] `FestivalEditionForm.tsx` (1→0): indexed access value type
-- [x] `FestivalForm.tsx` (1→0): indexed access value type
-- [x] `FestivalScreeningForm.tsx` (1→0): indexed access value type
+### B5. Testing personas
+- [ ] Mismas verificaciones que A5
 
 ---
 
-## Resumen por fase
+## Fase C: Cleanup general
 
-| Fase | Archivos | `any` | Descripción |
-|------|----------|-------|-------------|
-| A | 12 | 34 | Tipos base, servicios, API client |
-| B | 3 | 25 | API routes películas |
-| C | 5 | 26 | API routes personas |
-| D | 14 | 25 | Otras API routes |
-| E | 8 | 157 | Movie form system (⚠️ la más grande) |
-| F | 7 | 16 | People form + admin pages |
-| G | 14 | 33 | Componentes sitio público + festival forms |
-| **Total** | **64** | **400** | |
+### C1. Hook useListPage
+- [ ] Verificar si `useListPage.ts` se usa en otro lado. Si no, eliminar.
 
-## Orden recomendado
+### C2. Actualizar roadmap
+- [ ] Marcar 5.6 como completado en `tasks/seo-roadmap.md`
+- [ ] Marcar 1.6 (canonicals listados) como completado
+- [ ] Marcar 1.7 (generateMetadata listados) como completado
 
-```
-Fase A (tipos base) → desbloquea todo
-  ↓
-Fase B (API movies) + Fase C (API people) ← pueden hacerse en paralelo
-  ↓
-Fase D (otras API routes)
-  ↓
-Fase E (movie form system) ← la más grande, depende de A+B
-  ↓
-Fase F (people form + admin)
-  ↓
-Fase G (sitio público)
-```
+---
 
-Cada fase es deployable independientemente. La Fase E es la más compleja y puede subdividirse en E1 (hook+context) y E2 (componentes).
+## Notas técnicas
+
+- **Search**: La búsqueda full-text usa raw SQL con `unaccent` y `ts_rank`. Hay que replicar esa lógica en las funciones de query, no simplificar.
+- **Sort alfabético**: Usa raw SQL para ignorar artículos ("El", "La", "Los", etc.) y acentos. Copiar de `/api/movies/list`.
+- **View mode**: Mover a searchParam `view=grid|compact` para que sea server-compatible.
+- **API routes**: No eliminar — el admin puede usarlos vía React Query.
+- **Página de estrenos y búsqueda**: Fuera de scope de esta tarea.
