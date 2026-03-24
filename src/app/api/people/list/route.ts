@@ -176,14 +176,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
     // Si ordenamos por fecha de nacimiento, excluir personas sin fecha de nacimiento
     if (sortBy === 'birthDate') {
-      where.birthYear = where.birthYear || {};
-      where.birthYear.not = null;
+      const existing = typeof where.birthYear === 'object' && where.birthYear ? where.birthYear : {};
+      where.birthYear = { ...existing, not: null };
     }
 
     // Si ordenamos por fecha de muerte, excluir personas sin fecha de muerte
     if (sortBy === 'deathDate') {
-      where.deathYear = where.deathYear || {};
-      where.deathYear.not = null;
+      const existing = typeof where.deathYear === 'object' && where.deathYear ? where.deathYear : {};
+      where.deathYear = { ...existing, not: null };
     }
 
     // Construir filtros SQL para queries raw

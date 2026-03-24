@@ -1,6 +1,7 @@
 // src/app/api/festival-editions/[id]/screenings/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { festivalScreeningFormSchema } from '@/lib/festivals/festivalTypes'
 import { requireAuth } from '@/lib/auth'
@@ -34,7 +35,7 @@ export const GET = apiHandler(async (request: NextRequest, { params }: RoutePara
   const page = parseIntClamped(searchParams.get('page'), PAGES.DEFAULT, PAGES.MIN, PAGES.MAX)
   const limit = parseIntClamped(searchParams.get('limit'), 50, LIMITS.MIN, LIMITS.MAX)
 
-  const where: Record<string, unknown> = { editionId }
+  const where: Prisma.FestivalScreeningWhereInput = { editionId }
 
   if (sectionId) {
     const parsedSectionId = parsePositiveInt(sectionId)
@@ -47,7 +48,7 @@ export const GET = apiHandler(async (request: NextRequest, { params }: RoutePara
   }
 
   if (premiereType) {
-    where.premiereType = premiereType
+    where.premiereType = premiereType as Prisma.EnumPremiereTypeFilter<'FestivalScreening'>
   }
 
   if (dateFrom || dateTo) {

@@ -335,19 +335,19 @@ async function getMoviesWithAlphabeticSort(
 
   if (where.soundType) {
     whereClauses.push(`m.sound_type = $${paramIndex}`);
-    params.push(where.soundType);
+    params.push(where.soundType as string);
     paramIndex++;
   }
 
   if (where.colorTypeId) {
     whereClauses.push(`m.color_type_id = $${paramIndex}`);
-    params.push(where.colorTypeId);
+    params.push(where.colorTypeId as number);
     paramIndex++;
   }
 
   if (where.tipoDuracion) {
     whereClauses.push(`m.tipo_duracion = $${paramIndex}`);
-    params.push(where.tipoDuracion);
+    params.push(where.tipoDuracion as string);
     paramIndex++;
   }
 
@@ -367,19 +367,19 @@ async function getMoviesWithAlphabeticSort(
 
   if (where.ratingId) {
     whereClauses.push(`m.rating_id = $${paramIndex}`);
-    params.push(where.ratingId);
+    params.push(where.ratingId as number);
     paramIndex++;
   }
 
   if (where.year && typeof where.year === 'object') {
     if ('gte' in where.year) {
       whereClauses.push(`m.year >= $${paramIndex}`);
-      params.push(where.year.gte);
+      params.push(where.year.gte as number);
       paramIndex++;
     }
     if ('lte' in where.year) {
       whereClauses.push(`m.year <= $${paramIndex}`);
-      params.push(where.year.lte);
+      params.push(where.year.lte as number);
       paramIndex++;
     }
   }
@@ -462,7 +462,7 @@ async function getMoviesWithAlphabeticSort(
   // Cargar relaciones adicionales
   const [colorTypes, genres, crew, countries] = await Promise.all([
     prisma.colorType.findMany({
-      where: { id: { in: rawMovies.map(m => m.color_type_id).filter(Boolean) } },
+      where: { id: { in: rawMovies.map(m => m.color_type_id).filter((id): id is number => id != null) } },
       select: { id: true, name: true }
     }),
     prisma.movieGenre.findMany({
