@@ -11,7 +11,7 @@ interface PageProps {
   }>
 }
 
-export const dynamic = 'force-dynamic'
+// ISR: revalidar cada 1 hora
 export const revalidate = 3600
 export const dynamicParams = true
 

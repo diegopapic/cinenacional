@@ -7,8 +7,8 @@ import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import ServerPagination from '@/components/shared/ServerPagination'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 3600 // 1h
+// ISR: revalidar cada 1 hora
+export const revalidate = 3600
 
 const PAGE_SIZE = 60
 

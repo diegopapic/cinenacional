@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://cinenacional.com/sobre-nosotros' },
 }
 
-export const dynamic = 'force-dynamic'
+// ISR: revalidar cada 1 hora
 export const revalidate = 3600
 
 async function getStats() {

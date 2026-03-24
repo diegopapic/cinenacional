@@ -22,7 +22,7 @@ import { PersonReviews } from '@/components/people/PersonReviews'
 
 const log = createLogger('page:persona')
 
-export const dynamic = 'force-dynamic'
+// ISR: revalidar cada 1 hora
 export const revalidate = 3600
 
 interface PageProps {
