@@ -245,9 +245,12 @@ export default function PeliculasFilterBar({
 
   return (
     <>
-      {/* Loading overlay — dims sibling content via next-sibling selector in parent */}
+      {/* Loading indicator */}
       {isPending && (
-        <div className="pointer-events-none fixed inset-0 z-40 bg-background/30" />
+        <div className="mt-6 flex items-center gap-2 text-[12px] text-muted-foreground/50">
+          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
+          <span>Cargando...</span>
+        </div>
       )}
 
       {/* Toolbar */}
