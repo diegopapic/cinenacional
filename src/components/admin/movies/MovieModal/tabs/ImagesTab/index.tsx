@@ -5,7 +5,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
 import { useQuery } from '@tanstack/react-query'
-import { ImageIcon, Loader2 } from 'lucide-react'
+import { ImageIcon, Loader2, Trash2, X, CheckSquare } from 'lucide-react'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import { ImageWithRelations } from '@/lib/images/imageTypes'
 import { imagePresets, generateImageCaption } from '@/lib/images/imageUtils'
@@ -31,6 +31,9 @@ export default function ImagesTab() {
 
     const [localImages, setLocalImages] = useState<ImageWithRelations[] | null>(null)
     const [editingImage, setEditingImage] = useState<ImageWithRelations | null>(null)
+    const [selectionMode, setSelectionMode] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+    const [deleting, setDeleting] = useState(false)
 
     const movieId = editingMovie?.id
 
@@ -117,6 +120,45 @@ export default function ImagesTab() {
         setEditingImage(null)
     }
 
+    // Toggle selección de una imagen
+    const toggleSelection = (imageId: number) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev)
+            if (next.has(imageId)) {
+                next.delete(imageId)
+            } else {
+                next.add(imageId)
+            }
+            return next
+        })
+    }
+
+    // Salir del modo selección
+    const exitSelectionMode = () => {
+        setSelectionMode(false)
+        setSelectedIds(new Set())
+    }
+
+    // Eliminar imágenes seleccionadas
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return
+        const count = selectedIds.size
+        if (!confirm(`¿Eliminar ${count} imagen${count !== 1 ? 'es' : ''}? Esta acción no se puede deshacer.`)) return
+
+        setDeleting(true)
+        try {
+            await imagesService.deleteBulk(Array.from(selectedIds))
+            setLocalImages(prev => (prev ?? queryImages ?? []).filter(img => !selectedIds.has(img.id)))
+            toast.success(`${count} imagen${count !== 1 ? 'es' : ''} eliminada${count !== 1 ? 's' : ''}`)
+            exitSelectionMode()
+        } catch (error) {
+            log.error('Error deleting images', error)
+            toast.error('Error al eliminar imágenes')
+        } finally {
+            setDeleting(false)
+        }
+    }
+
     // Si no hay película, mostrar mensaje
     if (!movieId) {
         return (
@@ -150,46 +192,120 @@ export default function ImagesTab() {
                 <>
                     <div className="flex items-center justify-between">
                         <h4 className="text-sm font-medium text-gray-700">
-                            {images.length} imagen{images.length !== 1 ? 'es' : ''}
+                            {selectionMode && selectedIds.size > 0
+                                ? `${selectedIds.size} de ${images.length} seleccionada${selectedIds.size !== 1 ? 's' : ''}`
+                                : `${images.length} imagen${images.length !== 1 ? 'es' : ''}`
+                            }
                         </h4>
-                        <p className="text-xs text-gray-500">
-                            Click en una imagen para editarla
-                        </p>
+                        <div className="flex items-center gap-2">
+                            {selectionMode ? (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (selectedIds.size === images.length) {
+                                                setSelectedIds(new Set())
+                                            } else {
+                                                setSelectedIds(new Set(images.map(img => img.id)))
+                                            }
+                                        }}
+                                        className="text-xs text-blue-600 hover:text-blue-800"
+                                    >
+                                        {selectedIds.size === images.length ? 'Deseleccionar todas' : 'Seleccionar todas'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleBulkDelete}
+                                        disabled={selectedIds.size === 0 || deleting}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                                        Eliminar{selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={exitSelectionMode}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                                    >
+                                        <X className="w-3 h-3" />
+                                        Cancelar
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-xs text-gray-500">
+                                        Click en una imagen para editarla
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectionMode(true)}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                                    >
+                                        <CheckSquare className="w-3 h-3" />
+                                        Seleccionar
+                                    </button>
+                                </>
+                            )}
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        {images.map(image => (
-                            <div
-                                key={image.id}
-                                onClick={() => setEditingImage(image)}
-                                className="group relative aspect-3/2 rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
-                            >
-                                <Image
-                                    loader={cloudinaryLoader}
-                                    src={imagePresets.card(image.cloudinaryPublicId)}
-                                    alt={generateImageCaption(image)}
-                                    fill
-                                    sizes="200px"
-                                    className="object-cover"
-                                />
+                        {images.map(image => {
+                            const isSelected = selectedIds.has(image.id)
+                            return (
+                                <div
+                                    key={image.id}
+                                    onClick={() => selectionMode ? toggleSelection(image.id) : setEditingImage(image)}
+                                    className={`group relative aspect-3/2 rounded-lg overflow-hidden bg-gray-100 cursor-pointer transition-all ${
+                                        isSelected
+                                            ? 'ring-2 ring-blue-500 ring-offset-2'
+                                            : 'hover:ring-2 hover:ring-blue-500'
+                                    }`}
+                                >
+                                    <Image
+                                        loader={cloudinaryLoader}
+                                        src={imagePresets.card(image.cloudinaryPublicId)}
+                                        alt={generateImageCaption(image)}
+                                        fill
+                                        sizes="200px"
+                                        className={`object-cover transition-opacity ${isSelected ? 'opacity-75' : ''}`}
+                                    />
 
-                                {/* Overlay con info */}
-                                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div className="absolute bottom-0 left-0 right-0 p-2">
-                                        <p className="text-white text-xs line-clamp-2">
-                                            {generateImageCaption(image)}
-                                        </p>
+                                    {/* Checkbox de selección */}
+                                    {selectionMode && (
+                                        <div className="absolute top-2 left-2 z-10">
+                                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                                isSelected
+                                                    ? 'bg-blue-600 border-blue-600'
+                                                    : 'bg-white/80 border-gray-400'
+                                            }`}>
+                                                {isSelected && (
+                                                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Overlay con info */}
+                                    <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="absolute bottom-0 left-0 right-0 p-2">
+                                            <p className="text-white text-xs line-clamp-2">
+                                                {generateImageCaption(image)}
+                                            </p>
+                                        </div>
                                     </div>
+
+                                    {/* Badge de personas */}
+                                    {!selectionMode && image.people && image.people.length > 0 && (
+                                        <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-sm">
+                                            {image.people.length}
+                                        </div>
+                                    )}
                                 </div>
-
-                                {/* Badge de personas */}
-                                {image.people && image.people.length > 0 && (
-                                    <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-sm">
-                                        {image.people.length}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 </>
             )}
