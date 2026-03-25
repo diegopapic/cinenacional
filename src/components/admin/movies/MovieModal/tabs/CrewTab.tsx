@@ -291,7 +291,7 @@ export default function CrewTab() {
       </div>
 
       {/* Filtro por departamento */}
-      {departmentCounts.length > 1 && (
+      {crew.length > 0 && departmentCounts.length >= 1 && (
         <div className="flex flex-wrap gap-2">
           <DepartmentPill
             label="Todos"
@@ -338,7 +338,7 @@ export default function CrewTab() {
               <div className="space-y-3">
                 {visibleEntries.map(({ member, realIndex }, visibleIndex) => (
                   <SortableCrewMember
-                    key={`crew-${realIndex}`}
+                    key={member._uid}
                     member={member}
                     index={realIndex}
                     sortableId={`crew-visible-${visibleIndex}`}
