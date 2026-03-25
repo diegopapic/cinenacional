@@ -151,20 +151,20 @@ export function MovieModalProvider({
     onError
   });
 
-  // Cargar datos cuando cambia editingMovie
-  useValueChange(editingMovie, (movie, prevMovie) => {
-    if (movie) {
-      log.debug('Loading movie data for editing', { id: movie.id })
+  // Cargar datos cuando cambia la película editada (comparar por ID, no por referencia)
+  useValueChange(editingMovie?.id ?? null, (movieId, prevMovieId) => {
+    if (movieId && editingMovie) {
+      log.debug('Loading movie data for editing', { id: movieId })
 
-      movieFormData.loadMovieData(movie).then(() => {
-        log.debug('Movie data loaded successfully', { id: movie.id })
+      movieFormData.loadMovieData(editingMovie).then(() => {
+        log.debug('Movie data loaded successfully', { id: movieId })
       }).catch(error => {
         log.error('Failed to load movie data', error)
         if (onError) {
           onError(error instanceof Error ? error : new Error('Error loading movie data'))
         }
       })
-    } else if (prevMovie !== null) {
+    } else if (prevMovieId !== null) {
       log.debug('Resetting form, no editing movie')
       movieFormData.resetForNewMovie()
     }
