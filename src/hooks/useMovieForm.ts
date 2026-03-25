@@ -465,6 +465,7 @@ export function useMovieForm({
     }, [])
 
     const updateCrewMember = useCallback((index: number, updates: Partial<CrewMemberEntry>) => {
+        log.debug('[DEBUG] updateCrewMember called', { index, updateKeys: Object.keys(updates) })
         setMovieRelations(prev => ({
             ...prev,
             crew: prev.crew.map((member: CrewMemberEntry, i: number) =>
@@ -476,6 +477,7 @@ export function useMovieForm({
     }, [])
 
     const reorderCrew = useCallback((oldIndex: number, newIndex: number) => {
+        log.warn('[DEBUG] reorderCrew called!', { oldIndex, newIndex, stack: new Error().stack })
         setMovieRelations(prev => {
             const reordered = arrayMove(prev.crew, oldIndex, newIndex)
             return {
@@ -487,6 +489,7 @@ export function useMovieForm({
 
     // Función para cargar datos de película existente
     const loadMovieData = useCallback(async (movie: Movie | MovieDetail) => {
+        log.warn('[DEBUG] loadMovieData called!', { movieId: movie.id, stack: new Error().stack })
         try {
             const fullMovie = await moviesService.getById(movie.id, true)
 
