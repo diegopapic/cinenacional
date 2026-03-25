@@ -15,6 +15,10 @@ interface PersonasFilterBarProps {
   filterOptions: PersonFilterOptions
   activeFilters: PersonFilters
   viewMode: ViewMode
+  /** Base path for navigation (e.g. '/listados/personas/actores'). Defaults to '/listados/personas'. */
+  basePath?: string
+  /** When set from a [roleSlug] route, the role filter is hidden and roleId is excluded from query params. */
+  presetRoleId?: string
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────
@@ -106,6 +110,8 @@ export default function PersonasFilterBar({
   filterOptions,
   activeFilters,
   viewMode: initialViewMode,
+  basePath = '/listados/personas',
+  presetRoleId,
 }: PersonasFilterBarProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -115,10 +121,14 @@ export default function PersonasFilterBar({
   const sortBy = activeFilters.sortBy || 'id'
   const sortOrder = activeFilters.sortOrder || 'desc'
   const viewMode = initialViewMode
-  const activeCount = countActive(activeFilters)
+  const activeCount = countActive(activeFilters) - (presetRoleId && activeFilters.roleId ? 1 : 0)
 
   function navigate(newFilters: PersonFilters, newView?: ViewMode) {
-    const url = '/listados/personas' + filtersToSearchParams(newFilters, newView || viewMode)
+    // When navigating from a role slug page, exclude the preset roleId from query params
+    const filtersForUrl = presetRoleId
+      ? { ...newFilters, roleId: undefined }
+      : newFilters
+    const url = basePath + filtersToSearchParams(filtersForUrl, newView || viewMode)
     startTransition(() => {
       router.push(url, { scroll: false })
     })
@@ -130,7 +140,7 @@ export default function PersonasFilterBar({
   }
 
   function handleClearFilters() {
-    navigate({ sortBy, sortOrder })
+    navigate({ sortBy, sortOrder, roleId: presetRoleId })
   }
 
   function handleSortByChange(newSortBy: string) {
@@ -304,18 +314,20 @@ export default function PersonasFilterBar({
               ))}
             </FilterSelect>
 
-            {/* Rol */}
-            <FilterSelect
-              label="Rol"
-              value={activeFilters.roleId ? String(activeFilters.roleId) : ''}
-              onChange={(v) => handleFilterChange('roleId', v || undefined)}
-            >
-              {filterOptions.roles.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name} ({role.count})
-                </option>
-              ))}
-            </FilterSelect>
+            {/* Rol — hidden when preset from [roleSlug] route */}
+            {!presetRoleId && (
+              <FilterSelect
+                label="Rol"
+                value={activeFilters.roleId ? String(activeFilters.roleId) : ''}
+                onChange={(v) => handleFilterChange('roleId', v || undefined)}
+              >
+                {filterOptions.roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name} ({role.count})
+                  </option>
+                ))}
+              </FilterSelect>
+            )}
 
             {/* Year inputs with debounce */}
             <YearInput
