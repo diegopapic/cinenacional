@@ -235,12 +235,6 @@ export default function CrewTab() {
   // Leer crew directamente de movieRelations (fuente unica de verdad)
   const crew = movieRelations.crew
 
-  // Key estable: usa _uid si existe, sino composite key por datos del entry
-  const getEntryKey = (member: CrewMemberEntry, index: number): string => {
-    if (member._uid) return member._uid
-    return `crew-${member.personId}-${member.roleId}-${index}`
-  }
-
   // Calcular departamentos presentes con sus conteos (en orden de aparicion)
   const departmentCounts = crew.reduce<{ dept: string; count: number }[]>(
     (acc: { dept: string; count: number }[], member: CrewMemberEntry) => {
@@ -351,7 +345,7 @@ export default function CrewTab() {
               <div className="space-y-3">
                 {visibleEntries.map(({ member, realIndex }, visibleIndex) => (
                   <SortableCrewMember
-                    key={getEntryKey(member, realIndex)}
+                    key={member._uid}
                     member={member}
                     index={realIndex}
                     sortableId={`crew-visible-${visibleIndex}`}

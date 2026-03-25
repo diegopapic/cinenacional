@@ -47,7 +47,7 @@ export function generateEntryUid(): string {
 }
 
 export interface CrewMemberEntry {
-  _uid?: string
+  _uid: string
   personId: number
   personName: string
   alternativeNameId: number | null
@@ -361,7 +361,12 @@ export function useMovieForm({
     }, [])
 
     const handleCrewChange = useCallback((crew: CrewMemberEntry[]) => {
-        setMovieRelations(prev => ({ ...prev, crew }))
+        // Asegurar que cada entry tenga _uid
+        const crewWithUids = crew.map(member => ({
+            ...member,
+            _uid: member._uid || generateEntryUid()
+        }))
+        setMovieRelations(prev => ({ ...prev, crew: crewWithUids }))
     }, [])
 
     const handleCountriesChange = useCallback((countries: number[]) => {
@@ -464,7 +469,7 @@ export function useMovieForm({
             ...prev,
             crew: prev.crew.map((member: CrewMemberEntry, i: number) =>
                 i === index
-                    ? { ...member, ...updates, personId: updates.personId || member.personId || 0 }
+                    ? { ...member, ...updates, _uid: member._uid, personId: updates.personId || member.personId || 0 }
                     : member
             )
         }))
