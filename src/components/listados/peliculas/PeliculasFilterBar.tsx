@@ -1,7 +1,7 @@
 // src/components/listados/peliculas/PeliculasFilterBar.tsx
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useValueChange } from '@/hooks/useValueChange'
@@ -199,6 +199,7 @@ export default function PeliculasFilterBar({
 }: PeliculasFilterBarProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [isPending, startTransition] = useTransition()
   const [showFilters, setShowFilters] = useState(() => countActive(activeFilters) > 0)
 
   // Read current state from searchParams (source of truth)
@@ -210,7 +211,9 @@ export default function PeliculasFilterBar({
 
   function navigate(newFilters: MovieFilters, newView?: ViewMode) {
     const url = '/listados/peliculas' + filtersToSearchParams(newFilters, newView || viewMode)
-    router.push(url, { scroll: false })
+    startTransition(() => {
+      router.push(url, { scroll: false })
+    })
   }
 
   function handleFilterChange(key: keyof MovieFilters, value: string | number) {
@@ -237,12 +240,16 @@ export default function PeliculasFilterBar({
     navigate(activeFilters, mode)
   }
 
-  // Preserve showFilters in URL via a hidden param would be overkill — keep it local
-  const _ = searchParams // satisfy eslint (useSearchParams is needed for re-render on URL change)
-  void _
+  // useSearchParams needed for re-render on URL change
+  void searchParams
 
   return (
     <>
+      {/* Loading overlay — dims sibling content via next-sibling selector in parent */}
+      {isPending && (
+        <div className="pointer-events-none fixed inset-0 z-40 bg-background/30" />
+      )}
+
       {/* Toolbar */}
       <div className="mt-6 flex flex-wrap items-center gap-3 border-b border-border/20 pb-4">
         {/* Sort select */}

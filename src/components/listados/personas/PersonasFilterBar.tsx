@@ -1,7 +1,7 @@
 // src/components/listados/personas/PersonasFilterBar.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowDownUp, SlidersHorizontal, X, ChevronDown, LayoutGrid, List } from 'lucide-react'
 import { FilterSelect } from '@/components/shared/filters'
@@ -109,6 +109,7 @@ export default function PersonasFilterBar({
 }: PersonasFilterBarProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [isPending, startTransition] = useTransition()
   const [showFilters, setShowFilters] = useState(() => countActive(activeFilters) > 0)
 
   const sortBy = activeFilters.sortBy || 'id'
@@ -118,7 +119,9 @@ export default function PersonasFilterBar({
 
   function navigate(newFilters: PersonFilters, newView?: ViewMode) {
     const url = '/listados/personas' + filtersToSearchParams(newFilters, newView || viewMode)
-    router.push(url, { scroll: false })
+    startTransition(() => {
+      router.push(url, { scroll: false })
+    })
   }
 
   function handleFilterChange(key: keyof PersonFilters, value: string | number | undefined) {
@@ -149,6 +152,11 @@ export default function PersonasFilterBar({
 
   return (
     <>
+      {/* Loading overlay */}
+      {isPending && (
+        <div className="pointer-events-none fixed inset-0 z-40 bg-background/30" />
+      )}
+
       {/* Toolbar */}
       <div className="mt-6 flex flex-wrap items-center gap-3 border-b border-border/20 pb-4">
         {/* Sort select */}
