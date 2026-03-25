@@ -136,6 +136,11 @@ export default function SearchResults({
                         <span className="text-nav-foreground/30">({movie.year})</span>
                       )}
                     </span>
+                    {movie.matchedAlternativeTitle && (
+                      <span className="block truncate text-[11px] italic text-nav-foreground/30">
+                        {movie.matchedAlternativeTitle}
+                      </span>
+                    )}
                     {movie.director && (
                       <span className="block truncate text-[11px] text-nav-foreground/30">
                         {movie.director}
@@ -193,6 +198,11 @@ export default function SearchResults({
                         </span>
                       )}
                     </span>
+                    {person.matchedAlternativeName && (
+                      <span className="block truncate text-[11px] italic text-nav-foreground/30">
+                        {person.matchedAlternativeName}
+                      </span>
+                    )}
                   </div>
                 </Link>
                 )

@@ -17,6 +17,7 @@ export interface MovieSearchResult {
   posterUrl?: string
   type: 'movie'
   director?: string | null
+  matchedAlternativeTitle?: string | null
 }
 
 export interface PersonSearchResult {
@@ -27,6 +28,7 @@ export interface PersonSearchResult {
   birthYear?: number
   deathYear?: number
   type: 'person'
+  matchedAlternativeName?: string | null
 }
 
 interface UseGlobalSearchReturn {

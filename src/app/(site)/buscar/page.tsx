@@ -39,6 +39,7 @@ interface SearchMovieResult {
   directors: Array<{ id: number; slug: string; name: string }>
   genres: Array<{ id: number; name: string }>
   countries: Array<{ id: number; name: string }>
+  matchedAlternativeTitle: string | null
 }
 
 interface SearchPersonResult {
@@ -57,6 +58,7 @@ interface SearchPersonResult {
   birthLocationPath: string | null
   deathLocationPath: string | null
   movieCount: number
+  matchedAlternativeName: string | null
   featuredMovie: {
     id: number
     slug: string
@@ -190,6 +192,13 @@ function MovieResult({ movie, query }: { movie: SearchMovieResult; query: string
           )}
         </div>
 
+        {/* Título alternativo que matcheó */}
+        {movie.matchedAlternativeTitle && (
+          <p className="text-[12px] italic text-muted-foreground/50">
+            <HighlightMatch text={movie.matchedAlternativeTitle} query={query} />
+          </p>
+        )}
+
         {/* Directors */}
         {movie.directors.length > 0 && (
           <p className="text-[12px] text-muted-foreground/50">
@@ -268,6 +277,13 @@ function PersonResult({ person, query }: { person: SearchPersonResult; query: st
             <HighlightMatch text={personName} query={query} />
           </Link>
         </h3>
+
+        {/* Nombre alternativo que matcheó */}
+        {person.matchedAlternativeName && (
+          <p className="text-[12px] italic text-muted-foreground/50">
+            <HighlightMatch text={person.matchedAlternativeName} query={query} />
+          </p>
+        )}
 
         {/* Birth */}
         {(birthDateFormatted || person.birthLocationPath) && (
