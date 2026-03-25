@@ -15,6 +15,10 @@ interface PeliculasFilterBarProps {
   filterOptions: MovieFilterOptions
   activeFilters: MovieFilters
   viewMode: ViewMode
+  /** Base path for navigation (e.g. '/listados/peliculas/coproducciones/espana'). Defaults to '/listados/peliculas'. */
+  basePath?: string
+  /** When set from a coproduction route, the country filter is hidden and countryId excluded from query params. */
+  presetCountryId?: number
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────
@@ -196,6 +200,8 @@ export default function PeliculasFilterBar({
   filterOptions,
   activeFilters,
   viewMode: initialViewMode,
+  basePath = '/listados/peliculas',
+  presetCountryId,
 }: PeliculasFilterBarProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -207,10 +213,14 @@ export default function PeliculasFilterBar({
   const sortOrder = activeFilters.sortOrder || 'desc'
   const viewMode = initialViewMode
 
-  const activeCount = countActive(activeFilters)
+  const activeCount = countActive(activeFilters) - (presetCountryId && activeFilters.countryId ? 1 : 0)
 
   function navigate(newFilters: MovieFilters, newView?: ViewMode) {
-    const url = '/listados/peliculas' + filtersToSearchParams(newFilters, newView || viewMode)
+    // When on a coproduction route, exclude countryId from query params
+    const filtersForUrl = presetCountryId
+      ? { ...newFilters, countryId: undefined }
+      : newFilters
+    const url = basePath + filtersToSearchParams(filtersForUrl, newView || viewMode)
     startTransition(() => {
       router.push(url, { scroll: false })
     })
@@ -223,7 +233,7 @@ export default function PeliculasFilterBar({
   }
 
   function handleClearFilters() {
-    navigate({ sortBy, sortOrder })
+    navigate({ sortBy, sortOrder, countryId: presetCountryId })
   }
 
   function handleSortByChange(newSortBy: string) {
@@ -363,12 +373,15 @@ export default function PeliculasFilterBar({
               options={filterOptions.durationTypes}
               onChange={(v) => handleFilterChange('tipoDuracion', v)}
             />
-            <FilterSelect
-              label="Países coproductores"
-              value={activeFilters.countryId ? String(activeFilters.countryId) : ''}
-              options={filterOptions.countries}
-              onChange={(v) => handleFilterChange('countryId', v ? parseInt(v) : 0)}
-            />
+            {/* País — hidden when preset from coproduction route */}
+            {!presetCountryId && (
+              <FilterSelect
+                label="Países coproductores"
+                value={activeFilters.countryId ? String(activeFilters.countryId) : ''}
+                options={filterOptions.countries}
+                onChange={(v) => handleFilterChange('countryId', v ? parseInt(v) : 0)}
+              />
+            )}
             <FilterSelect
               label="Género"
               value={activeFilters.genreId ? String(activeFilters.genreId) : ''}

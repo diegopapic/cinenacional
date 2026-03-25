@@ -1,78 +1,82 @@
 // src/app/(site)/listados/peliculas/coproducciones/[countrySlug]/page.tsx
-// SEO-friendly routes for coproductions, e.g. /listados/peliculas/coproducciones/espana
+// SEO-friendly routes for coproductions with full filters + sort + view toggle.
 
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import Image from 'next/image'
-import cloudinaryLoader from '@/lib/images/cloudinaryLoader'
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
-import { prisma } from '@/lib/prisma'
+import { getMovies, getMovieFilters } from '@/lib/queries/peliculas'
+import type { MovieFilters } from '@/lib/queries/peliculas'
+import PeliculasFilterBar from '@/components/listados/peliculas/PeliculasFilterBar'
+import PeliculasGrid from '../../PeliculasGrid'
 import ServerPagination from '@/components/shared/ServerPagination'
+import { buildSubtitle } from '@/lib/movies/movieListUtils'
+import type { ViewMode } from '@/lib/shared/listTypes'
 import { COUNTRY_SLUG_MAP, COUNTRY_SLUGS } from '@/lib/movies/countrySlugMap'
 
 export const dynamic = 'force-dynamic'
 
-const PAGE_SIZE = 60
-
 interface PageProps {
   params: Promise<{ countrySlug: string }>
-  searchParams: Promise<{ page?: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-// ─── Static params for known slugs ─────────────────────────────
+// ─── Static params ──────────────────────────────────────────────
 
 export function generateStaticParams() {
   return COUNTRY_SLUGS.map((slug) => ({ countrySlug: slug }))
 }
 
-// ─── Data fetching ──────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────
 
-async function getMoviesByCountry(countryId: number, page: number) {
-  const skip = (page - 1) * PAGE_SIZE
+function parseSearchParams(raw: Record<string, string | string[] | undefined>): {
+  filters: Omit<MovieFilters, 'countryId'>
+  page: number
+  view: ViewMode
+} {
+  const get = (key: string): string | undefined => {
+    const v = raw[key]
+    return typeof v === 'string' ? v : undefined
+  }
 
-  const [movies, totalCount] = await Promise.all([
-    prisma.movie.findMany({
-      where: { movieCountries: { some: { countryId } } },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        year: true,
-        releaseYear: true,
-        posterUrl: true,
-        crew: {
-          where: { role: { department: 'DIRECCION' } },
-          select: {
-            person: {
-              select: { firstName: true, lastName: true },
-            },
-          },
-          orderBy: { billingOrder: 'asc' },
-          take: 1,
-        },
-      },
-      orderBy: [{ popularity: { sort: 'desc', nulls: 'last' } }, { title: 'asc' }],
-      skip,
-      take: PAGE_SIZE,
-    }),
-    prisma.movie.count({
-      where: { movieCountries: { some: { countryId } } },
-    }),
-  ])
+  const parseNum = (key: string): number | undefined => {
+    const v = get(key)
+    if (!v) return undefined
+    const n = parseInt(v, 10)
+    return isNaN(n) || n <= 0 ? undefined : n
+  }
+
+  const validSortBy = ['id', 'title', 'releaseDate', 'duration', 'popularity'] as const
+  const rawSortBy = get('sortBy')
+  const sortBy = rawSortBy && (validSortBy as readonly string[]).includes(rawSortBy)
+    ? rawSortBy
+    : 'popularity'
+
+  const rawSortOrder = get('sortOrder')
+  const sortOrder = rawSortOrder === 'asc' || rawSortOrder === 'desc'
+    ? rawSortOrder
+    : (sortBy === 'title' ? 'asc' : 'desc')
+
+  const rawView = get('view')
+  const view: ViewMode = rawView === 'detailed' ? 'detailed' : 'compact'
 
   return {
-    movies: movies.map((m) => ({
-      id: m.id,
-      slug: m.slug,
-      title: m.title,
-      year: m.releaseYear || m.year,
-      posterUrl: m.posterUrl,
-      director: m.crew[0]
-        ? [m.crew[0].person.firstName, m.crew[0].person.lastName].filter(Boolean).join(' ')
-        : null,
-    })),
-    totalCount,
-    totalPages: Math.ceil(totalCount / PAGE_SIZE),
+    filters: {
+      search: get('search'),
+      soundType: get('soundType'),
+      colorTypeId: parseNum('colorTypeId'),
+      tipoDuracion: get('tipoDuracion'),
+      // countryId excluded — comes from slug
+      genreId: parseNum('genreId'),
+      ratingId: parseNum('ratingId'),
+      releaseDateFrom: get('releaseDateFrom'),
+      releaseDateTo: get('releaseDateTo'),
+      productionYearFrom: parseNum('productionYearFrom'),
+      productionYearTo: parseNum('productionYearTo'),
+      sortBy,
+      sortOrder,
+    },
+    page: Math.max(1, parseInt(get('page') || '1', 10) || 1),
+    view,
   }
 }
 
@@ -85,7 +89,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `Coproducciones argentino-${config.demonym} — cinenacional.com`,
-    description: `Listado completo de coproducciones entre Argentina y ${config.name}. Películas argentinas con participación ${config.demonym.slice(0, -1)}a.`,
+    description: `Listado completo de coproducciones entre Argentina y ${config.name}. Filtrá por género, año, duración y más.`,
     alternates: { canonical: `https://cinenacional.com/listados/peliculas/coproducciones/${countrySlug}` },
   }
 }
@@ -97,14 +101,61 @@ export default async function CoproductionCountryPage({ params, searchParams }: 
   const config = COUNTRY_SLUG_MAP[countrySlug]
   if (!config) notFound()
 
-  const { page: pageParam } = await searchParams
-  const page = Math.max(1, Number(pageParam) || 1)
+  const raw = await searchParams
+  const { filters: baseFilters, page, view } = parseSearchParams(raw)
 
-  const { movies, totalCount, totalPages } = await getMoviesByCountry(config.countryId, page)
+  // Merge the country from the slug into the filters
+  const filters: MovieFilters = { ...baseFilters, countryId: config.countryId }
+
+  const limit = view === 'detailed' ? 12 : 60
+
+  const [moviesData, filterOptions] = await Promise.all([
+    getMovies(filters, page, limit),
+    getMovieFilters(),
+  ])
+
+  const { data: movies, totalCount, totalPages } = moviesData
+
+  const filtersForSubtitle = {
+    soundType: filters.soundType || '',
+    colorTypeId: (filters.colorTypeId || '') as number | '',
+    tipoDuracion: filters.tipoDuracion || '',
+    countryId: (filters.countryId || '') as number | '',
+    genreId: (filters.genreId || '') as number | '',
+    ratingId: (filters.ratingId || '') as number | '',
+    releaseDateFrom: filters.releaseDateFrom || '',
+    releaseDateTo: filters.releaseDateTo || '',
+    productionYearFrom: (filters.productionYearFrom || '') as number | '',
+    productionYearTo: (filters.productionYearTo || '') as number | '',
+    sortBy: (filters.sortBy || 'popularity') as 'popularity',
+    sortOrder: filters.sortOrder,
+  }
+  const subtitle = buildSubtitle(filtersForSubtitle)
+
+  const basePath = `/listados/peliculas/coproducciones/${countrySlug}`
 
   const buildPageHref = (p: number) => {
-    const base = `/listados/peliculas/coproducciones/${countrySlug}`
-    return p > 1 ? `${base}?page=${p}` : base
+    const params = new URLSearchParams()
+
+    if (baseFilters.search) params.set('search', baseFilters.search)
+    if (baseFilters.soundType) params.set('soundType', baseFilters.soundType)
+    if (baseFilters.colorTypeId) params.set('colorTypeId', String(baseFilters.colorTypeId))
+    if (baseFilters.tipoDuracion) params.set('tipoDuracion', baseFilters.tipoDuracion)
+    // countryId NOT included — it's in the URL path
+    if (baseFilters.genreId) params.set('genreId', String(baseFilters.genreId))
+    if (baseFilters.ratingId) params.set('ratingId', String(baseFilters.ratingId))
+    if (baseFilters.releaseDateFrom) params.set('releaseDateFrom', baseFilters.releaseDateFrom)
+    if (baseFilters.releaseDateTo) params.set('releaseDateTo', baseFilters.releaseDateTo)
+    if (baseFilters.productionYearFrom) params.set('productionYearFrom', String(baseFilters.productionYearFrom))
+    if (baseFilters.productionYearTo) params.set('productionYearTo', String(baseFilters.productionYearTo))
+    if (baseFilters.sortBy && baseFilters.sortBy !== 'popularity') params.set('sortBy', baseFilters.sortBy)
+    const defaultOrder = baseFilters.sortBy === 'title' ? 'asc' : 'desc'
+    if (baseFilters.sortOrder && baseFilters.sortOrder !== defaultOrder) params.set('sortOrder', baseFilters.sortOrder)
+    if (view !== 'compact') params.set('view', view)
+    if (p > 1) params.set('page', String(p))
+
+    const qs = params.toString()
+    return `${basePath}${qs ? `?${qs}` : ''}`
   }
 
   return (
@@ -114,7 +165,7 @@ export default async function CoproductionCountryPage({ params, searchParams }: 
       </h1>
 
       <p className="mt-1 text-[13px] text-muted-foreground/50 md:text-sm">
-        Películas coproducidas entre Argentina y {config.name}
+        {subtitle}
       </p>
 
       {totalCount > 0 && (
@@ -123,57 +174,21 @@ export default async function CoproductionCountryPage({ params, searchParams }: 
         </p>
       )}
 
-      {/* Grid */}
-      {movies.length > 0 ? (
-        <div className="mt-6 grid grid-cols-3 gap-x-4 gap-y-6 md:grid-cols-4 lg:grid-cols-6">
-          {movies.map((movie) => (
-            <Link
-              key={movie.id}
-              href={`/pelicula/${movie.slug}`}
-              className="group flex flex-col"
-            >
-              <div className="relative aspect-2/3 w-full overflow-hidden rounded-xs">
-                {movie.posterUrl ? (
-                  <Image
-                    loader={cloudinaryLoader}
-                    fill
-                    src={movie.posterUrl}
-                    alt={movie.title}
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    sizes="(min-width: 1024px) 16vw, (min-width: 768px) 25vw, 33vw"
-                  />
-                ) : (
-                  <div className="flex h-full w-full flex-col items-center justify-center bg-muted/30">
-                    <svg className="mb-2 h-10 w-10 text-muted-foreground/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
-                    </svg>
-                  </div>
-                )}
-                <div className="absolute inset-0 border border-foreground/4" />
-              </div>
-              <div className="mt-2">
-                <p className="line-clamp-2 text-[12px] font-medium leading-snug text-foreground/80 transition-colors group-hover:text-accent md:text-[13px]">
-                  {movie.title}
-                  {movie.year && (
-                    <span className="ml-1 text-[11px] font-normal tabular-nums text-muted-foreground/40">
-                      ({movie.year})
-                    </span>
-                  )}
-                </p>
-                {movie.director && (
-                  <p className="truncate text-[11px] text-muted-foreground/40">
-                    Dir: {movie.director}
-                  </p>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <div className="py-16 text-center">
-          <p className="text-lg text-muted-foreground/50">No se encontraron coproducciones con {config.name}</p>
-        </div>
-      )}
+      <Suspense>
+        <PeliculasFilterBar
+          filterOptions={filterOptions}
+          activeFilters={filters}
+          viewMode={view}
+          basePath={basePath}
+          presetCountryId={config.countryId}
+        />
+      </Suspense>
+
+      <PeliculasGrid
+        movies={movies}
+        isLoading={false}
+        viewMode={view}
+      />
 
       <ServerPagination
         currentPage={page}
