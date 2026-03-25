@@ -59,25 +59,22 @@ export default function MoviesTable({
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="w-full table-fixed divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-[50%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Película
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-[8%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Año
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-[18%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Director
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Estado
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-[8%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Rating
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="w-[16%] px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Acciones
               </th>
             </tr>
@@ -110,7 +107,7 @@ interface MovieRowProps {
 function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
   return (
     <tr className="hover:bg-gray-50">
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-4">
         <div className="flex items-center">
           <div className="shrink-0 h-10 w-10">
             {movie.posterUrl ? (
@@ -128,9 +125,9 @@ function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
               </div>
             )}
           </div>
-          <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
-              {movie.title}
+          <div className="ml-4 min-w-0">
+            <div className="text-sm font-medium text-gray-900 flex flex-wrap items-center gap-1.5">
+              <span className="break-words">{movie.title}</span>
               {movie.tmdbId && (
                 <a
                   href={`https://www.themoviedb.org/movie/${movie.tmdbId}`}
