@@ -361,6 +361,7 @@ export function useMovieForm({
     }, [])
 
     const handleCrewChange = useCallback((crew: CrewMemberEntry[]) => {
+        console.warn('[CREW-DEBUG] handleCrewChange called!', new Error().stack?.split('\n')[2])
         // Asegurar que cada entry tenga _uid
         const crewWithUids = crew.map(member => ({
             ...member,
@@ -465,17 +466,22 @@ export function useMovieForm({
     }, [])
 
     const updateCrewMember = useCallback((index: number, updates: Partial<CrewMemberEntry>) => {
-        setMovieRelations(prev => ({
-            ...prev,
-            crew: prev.crew.map((member: CrewMemberEntry, i: number) =>
+        setMovieRelations(prev => {
+            const before = prev.crew[index]
+            console.warn('[CREW-DEBUG] updateCrewMember', { index, updateKeys: Object.keys(updates), billingBefore: before?.billingOrder, crewLen: prev.crew.length })
+            const newCrew = prev.crew.map((member: CrewMemberEntry, i: number) =>
                 i === index
                     ? { ...member, ...updates, _uid: member._uid, personId: updates.personId || member.personId || 0 }
                     : member
             )
-        }))
+            const after = newCrew[index]
+            console.warn('[CREW-DEBUG] after map', { billingAfter: after?.billingOrder, orderChanged: before?.billingOrder !== after?.billingOrder })
+            return { ...prev, crew: newCrew }
+        })
     }, [])
 
     const reorderCrew = useCallback((oldIndex: number, newIndex: number) => {
+        console.warn('[CREW-DEBUG] reorderCrew called!', { oldIndex, newIndex }, new Error().stack?.split('\n')[2])
         setMovieRelations(prev => {
             const reordered = arrayMove(prev.crew, oldIndex, newIndex)
             return {
