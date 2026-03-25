@@ -31,13 +31,11 @@ import { CSS } from '@dnd-kit/utilities'
 function SortableCrewMember({
   member,
   index,
-  sortableId,
   updateCrewMember,
   removeCrewMember
 }: {
   member: CrewMemberEntry
   index: number
-  sortableId: string
   updateCrewMember: (index: number, updates: Partial<CrewMemberEntry>) => void
   removeCrewMember: (index: number) => void
 }) {
@@ -48,7 +46,7 @@ function SortableCrewMember({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: sortableId })
+  } = useSortable({ id: member._uid })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -250,7 +248,7 @@ export default function CrewTab() {
     []
   )
 
-  // Indices visibles (mapeados al array real)
+  // Indices visibles (mapeados al array real) — usa _uid como identificador estable
   const visibleEntries: { member: CrewMemberEntry; realIndex: number }[] = crew
     .map((member: CrewMemberEntry, index: number) => ({ member, realIndex: index }))
     .filter(({ member }: { member: CrewMemberEntry }) =>
@@ -269,21 +267,15 @@ export default function CrewTab() {
     })
   )
 
-  // Manejar el fin del drag — mapear indices visibles a indices reales
+  // Manejar el fin del drag — mapear _uid a indices reales
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
 
     if (over && active.id !== over.id) {
-      const oldVisibleIdx = visibleEntries.findIndex(
-        (_, i) => `crew-visible-${i}` === active.id
-      )
-      const newVisibleIdx = visibleEntries.findIndex(
-        (_, i) => `crew-visible-${i}` === over.id
-      )
-      if (oldVisibleIdx !== -1 && newVisibleIdx !== -1) {
-        const oldRealIdx = visibleEntries[oldVisibleIdx].realIndex
-        const newRealIdx = visibleEntries[newVisibleIdx].realIndex
-        reorderCrew(oldRealIdx, newRealIdx)
+      const oldEntry = visibleEntries.find(e => e.member._uid === active.id)
+      const newEntry = visibleEntries.find(e => e.member._uid === over.id)
+      if (oldEntry && newEntry) {
+        reorderCrew(oldEntry.realIndex, newEntry.realIndex)
       }
     }
   }
@@ -339,16 +331,15 @@ export default function CrewTab() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={visibleEntries.map((_, i) => `crew-visible-${i}`)}
+              items={visibleEntries.map(e => e.member._uid)}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-3">
-                {visibleEntries.map(({ member, realIndex }, visibleIndex) => (
+                {visibleEntries.map(({ member, realIndex }) => (
                   <SortableCrewMember
                     key={member._uid}
                     member={member}
                     index={realIndex}
-                    sortableId={`crew-visible-${visibleIndex}`}
                     updateCrewMember={updateCrewMember}
                     removeCrewMember={removeCrewMember}
                   />
