@@ -24,8 +24,13 @@ import {
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
+  type AnimateLayoutChanges,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+
+// Solo animar layout durante drag activo, no al editar props
+const animateLayoutChanges: AnimateLayoutChanges = ({ isSorting, wasDragging }) =>
+  isSorting || wasDragging
 
 // Componente para cada fila draggable
 function SortableCrewMember({
@@ -46,7 +51,7 @@ function SortableCrewMember({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: member._uid })
+  } = useSortable({ id: member._uid, animateLayoutChanges })
 
   const style = {
     transform: CSS.Transform.toString(transform),
