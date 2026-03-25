@@ -17,6 +17,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDndContext,
   DragEndEvent,
 } from '@dnd-kit/core'
 import {
@@ -24,13 +25,8 @@ import {
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
-  type AnimateLayoutChanges,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-
-// Solo animar layout durante drag activo, no al editar props
-const animateLayoutChanges: AnimateLayoutChanges = ({ isSorting, wasDragging }) =>
-  isSorting || wasDragging
 
 // Componente para cada fila draggable
 function SortableCrewMember({
@@ -51,11 +47,16 @@ function SortableCrewMember({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: member._uid, animateLayoutChanges })
+  } = useSortable({ id: member._uid })
+
+  // Solo aplicar transform/transition cuando hay un drag activo
+  // Esto evita que dnd-kit mueva visualmente los items al editar props
+  const { active } = useDndContext()
+  const isAnyDragActive = active !== null
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: isAnyDragActive ? CSS.Transform.toString(transform) : undefined,
+    transition: isAnyDragActive ? transition : undefined,
     opacity: isDragging ? 0.5 : 1,
   }
 
