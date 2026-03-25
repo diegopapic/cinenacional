@@ -44,6 +44,13 @@ interface MovieHeroProps {
   productionType?: string | null;
 }
 
+function directorSeparator(index: number, total: number, nextName: string): string {
+  if (index === 0) return '';
+  if (index < total - 1) return ', ';
+  const conjunction = /^[IiÍí]/.test(nextName) ? ' e ' : ' y ';
+  return total === 2 ? conjunction : `, ${conjunction.trim()} `;
+}
+
 // Extraer YouTube ID
 function getYouTubeId(url: string): string | null {
   const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
@@ -310,7 +317,7 @@ export function MovieHero({
                     Dir.{' '}
                     {directors.map((d, i) => (
                       <span key={d.id}>
-                        {i > 0 && ', '}
+                        {directorSeparator(i, directors.length, d.name)}
                         <Link href={`/persona/${d.slug}`} className="text-foreground/80 transition-colors hover:text-accent">
                           {d.name}
                         </Link>
@@ -378,7 +385,7 @@ export function MovieHero({
                       Dirigida por{' '}
                       {directors.map((d, i) => (
                         <span key={d.id}>
-                          {i > 0 && ', '}
+                          {directorSeparator(i, directors.length, d.name)}
                           <Link href={`/persona/${d.slug}`} className="text-foreground/80 transition-colors hover:text-accent">
                             {d.name}
                           </Link>
