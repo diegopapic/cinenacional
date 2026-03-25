@@ -85,13 +85,13 @@
 
 ## Fase C: Cleanup general
 
-### C1. Hook useListPage
-- [ ] Verificar si `useListPage.ts` se usa en otro lado. Si no, eliminar.
+### ~~C1. Hook useListPage~~ ✅ COMPLETADO
+- [x] `useListPage.ts` no se usaba en ningún lado → eliminado
 
-### C2. Actualizar roadmap
-- [ ] Marcar 5.6 como completado en `tasks/seo-roadmap.md`
-- [ ] Marcar 1.6 (canonicals listados) como completado
-- [ ] Marcar 1.7 (generateMetadata listados) como completado
+### ~~C2. Actualizar roadmap~~ ✅ COMPLETADO
+- [x] Marcar 5.6 como completado en `tasks/seo-roadmap.md`
+- [x] Marcar 1.6 (canonicals listados) como completado
+- [x] Marcar 1.7 (generateMetadata listados) como parcialmente completado (faltan estrenos y buscar)
 
 ---
 

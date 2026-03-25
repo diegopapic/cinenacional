@@ -58,21 +58,18 @@
   - ~~`src/app/(site)/listados/obituarios/[year]/page.tsx`~~ — ya tiene canonical
   - ~~`src/app/(site)/listados/peliculas/genero/[genreSlug]/page.tsx`~~ — ya tiene canonical
   - ~~`src/app/(site)/listados/estrenos/[year]/page.tsx`~~ — ya tiene canonical
-  - `src/app/(site)/listados/peliculas/page.tsx` — pendiente (canonical base sin query params)
-  - `src/app/(site)/listados/personas/page.tsx` — pendiente (canonical base sin query params)
+  - ~~`src/app/(site)/listados/peliculas/page.tsx`~~ — ✅ COMPLETADO (`585d46e`) canonical a `/listados/peliculas`
+  - ~~`src/app/(site)/listados/personas/page.tsx`~~ — ✅ COMPLETADO (`a8a312f`) canonical a `/listados/personas`
 - **Búsqueda:** `/buscar` debería tener `noindex` en vez de canonical (no tiene sentido indexar resultados de búsqueda).
 - **Páginas institucionales** — ya tienen canonical: `/contacto`, `/terminos`, `/privacidad`, `/sobre-nosotros`.
 
-### 1.7 Agregar `generateMetadata` a páginas de listados
-- **Archivos a modificar:**
-  - `src/app/(site)/listados/peliculas/page.tsx` — actualmente hereda metadata genérica del layout. Necesita título y descripción propios ("Películas argentinas — cinenacional.com").
-  - `src/app/(site)/listados/personas/page.tsx` — idem ("Personas del cine argentino — cinenacional.com").
-  - `src/app/(site)/listados/estrenos/page.tsx` — idem ("Estrenos del cine argentino — cinenacional.com").
+### 1.7 Agregar `generateMetadata` a páginas de listados (parcialmente completado)
+- **Archivos completados:**
+  - ~~`src/app/(site)/listados/peliculas/page.tsx`~~ — ✅ COMPLETADO (`585d46e`) título dinámico según filtros + descripción
+  - ~~`src/app/(site)/listados/personas/page.tsx`~~ — ✅ COMPLETADO (`a8a312f`) título dinámico según filtros + descripción
+- **Archivos pendientes:**
+  - `src/app/(site)/listados/estrenos/page.tsx` — pendiente ("Estrenos del cine argentino — cinenacional.com").
   - `src/app/(site)/buscar/page.tsx` — metadata básica ("Buscar — cinenacional.com").
-- **Problema:** Estas páginas son `'use client'`, así que `generateMetadata` no se puede usar directamente. Opciones:
-  - (A) Extraer un wrapper Server Component que defina metadata y renderice el client component como children.
-  - (B) Usar `export const metadata: Metadata = { ... }` estático (funciona en client pages en Next.js 16).
-- **Por qué:** Sin metadata propia, heredan el título genérico "cinenacional.com - Base de datos del cine argentino" en los SERPs.
 
 ### 1.8 ~~Unificar formato de marca en titles~~ ✅ COMPLETADO (`f33977b`)
 - **Qué se hizo:** Unificado el separador de marca a `" — cinenacional.com"` (em-dash) en todos los títulos: layout, película, persona, efemérides, estrenos (año/década/próximos) y críticas.
@@ -151,23 +148,17 @@
 - **Qué se hizo:** Descripción del sitio, contenido principal, estructura de URLs, datos estructurados y contacto.
 - **Commit:** `ceb28b8`
 
-### 4.2 Contenido narrativo auto-contenido en películas
-- **Archivo:** `src/app/(site)/pelicula/[slug]/page.tsx` o componente MovieHero/MoviePageClient
-- **Problema:** Las fichas son datos atómicos. Los LLMs necesitan párrafos de ~150 palabras para citar una fuente.
-- **Acción:** Generar automáticamente un párrafo introductorio con los datos de la DB:
-  > "{título} es una película argentina de {género} estrenada en {año}, dirigida por {director} y protagonizada por {actores principales}. {sinopsis breve}"
-- **Implementación:** Función server-side que construya el texto a partir de los datos ya cargados. Renderizar como `<p>` visible antes de la sinopsis, o como contenido `sr-only` si no se quiere mostrar visualmente.
+### 4.2 ~~Contenido narrativo auto-contenido en películas~~ ✅ COMPLETADO (`938fcab`)
+- **Archivo:** `src/app/(site)/pelicula/[slug]/page.tsx`
+- **Qué se hizo:** Se genera un párrafo introductorio server-side con título, género, año, directores, actores principales y primera oración de la sinopsis. Se renderiza como `<p className="sr-only">` para que los crawlers y LLMs lo puedan citar sin alterar el diseño visual.
 
-### 4.3 Contenido narrativo en personas
+### 4.3 ~~Contenido narrativo en personas~~ ✅ COMPLETADO (`691a816`)
 - **Archivo:** `src/app/(site)/persona/[slug]/page.tsx`
-- **Similar al 4.2:** Generar un párrafo tipo:
-  > "{nombre} es un/a {roles} del cine argentino, nacido/a en {lugar} en {año}. Ha participado en {N} películas, entre ellas {top 3 películas}."
+- **Qué se hizo:** Se genera un párrafo introductorio server-side con nombre, roles, lugar/año de nacimiento, fallecimiento, cantidad total de películas y top 3 películas más recientes. Se renderiza como `<p className="sr-only">` para crawlers y LLMs.
 
-### 4.4 FAQ schema en páginas clave
-- **Crear:** `src/components/shared/FAQSchema.tsx`
-- **Usar en películas:** "¿Quién dirige {título}?", "¿De qué trata {título}?", "¿Cuándo se estrenó {título}?"
-- **Usar en personas:** "¿Cuántas películas hizo {nombre}?", "¿Dónde nació {nombre}?"
-- **Datos:** Ya disponibles en la query de Prisma.
+### 4.4 ~~FAQ schema en páginas clave~~ ✅ COMPLETADO (`b520360`)
+- **Archivos:** `src/components/shared/FAQSchema.tsx`, `pelicula/[slug]/page.tsx`, `persona/[slug]/page.tsx`
+- **Qué se hizo:** Creado componente `FAQSchema` reutilizable con JSON-LD `FAQPage`. En películas: quién dirige, de qué trata, cuándo se estrenó, cuánto dura. En personas: cuántas películas hizo, dónde nació, en qué películas participó, cuándo murió (si aplica).
 
 ### 4.5 Estadísticas citables en listados
 - **Archivos:** Páginas de listados de estrenos, películas
@@ -183,63 +174,47 @@
 - **Qué se hizo:** Removido `priority` de ambas imágenes. Estaban compitiendo por bandwidth con la LCP image.
 - **Commit:** `ceb28b8`
 
-### 5.2 Fix hero preload URL mismatch
-- **Archivos:**
-  - `src/app/(site)/page.tsx` línea ~15: `getHeroPreloadUrl` genera `w_1920,c_limit,q_auto,f_auto`
-  - `src/components/home/HeroSection.tsx` línea ~38: `getHeroImageUrl` genera `w_1920,q_auto,f_auto` (sin `c_limit`)
-- **Bug:** Las URLs no coinciden → el browser descarga la imagen **dos veces** (preload inútil + carga real).
-- **Fix:** Unificar los parámetros de Cloudinary en ambas funciones.
+### 5.2 ~~Fix hero preload URL mismatch~~ ✅ COMPLETADO (`78a5879`)
+- **Archivo:** `src/components/home/HeroSection.tsx`
+- **Qué se hizo:** Agregado `c_limit` a `getHeroImageUrl` para que coincida con `getHeroPreloadUrl`. Ahora el preload es efectivo y el browser descarga la imagen una sola vez.
 
-### 5.3 Lazy load hero carousel images
-- **Archivo:** `src/components/home/HeroSection.tsx` (líneas ~250-282)
-- **Bug:** Las 5 imágenes del hero carousel se cargan simultáneamente. Solo la primera es visible.
-- **Fix:** Agregar `loading="lazy"` a las imágenes con `idx > 0`. Solo `idx === 0` debe tener `priority`.
+### 5.3 ~~Lazy load hero carousel images~~ ✅ YA RESUELTO
+- **Archivo:** `src/components/home/HeroSection.tsx`
+- **Estado:** El código existente ya aplica `priority` solo a `idx === 0`. `next/image` usa `loading="lazy"` por defecto en las demás, así que las imágenes con `idx > 0` ya son lazy. Verificado en browser.
 
-### 5.4 Resolver `force-dynamic` vs `revalidate`
-- **Archivos:**
-  - `src/app/(site)/pelicula/[slug]/page.tsx` línea 18-19
-  - `src/app/(site)/persona/[slug]/page.tsx`
-- **Bug:** `export const dynamic = 'force-dynamic'` + `export const revalidate = 3600` es contradictorio. `force-dynamic` gana → siempre SSR, el `revalidate` no aplica. Cada visita genera una query a la DB.
-- **Opciones:**
-  - (A) Quitar `force-dynamic` y usar solo `revalidate = 3600` → ISR, mucho más performante.
-  - (B) Quitar `revalidate` y dejar `force-dynamic` → siempre fresco pero más lento.
-- **Recomendación:** Opción A. Los datos de películas/personas cambian raramente.
+### 5.4 ~~Resolver `force-dynamic` vs `revalidate`~~ ✅ COMPLETADO (`3ddda5c`)
+- **Archivos:** 6 páginas: película, persona, críticas, sobre-nosotros, género, obituarios por año.
+- **Qué se hizo:** Opción B — eliminado `revalidate = 3600` (que era inútil con `force-dynamic`). Se mantiene `force-dynamic` porque las páginas usan APIs dinámicas (cookies/headers vía middleware). ISR requeriría refactorizar el middleware para no usar dynamic APIs en estas rutas.
 
-### 5.5 Mover sanitización de HTML al server
-- **Archivo:** `src/components/movies/MovieHero.tsx` (línea ~11)
-- **Problema:** `isomorphic-dompurify` (~60KB) se importa en un client component. Se ejecuta en cada render.
-- **Fix:** Sanitizar la sinopsis/biografía en el server component (`page.tsx`) y pasar el HTML ya sanitizado como prop.
+### 5.5 ~~Mover sanitización de HTML al server~~ ✅ COMPLETADO (`1183d9c`)
+- **Archivos:** `pelicula/[slug]/page.tsx`, `MoviePageClient.tsx`, `MovieHero.tsx`
+- **Qué se hizo:** Sanitización de sinopsis movida al server component. `MovieHero` ya no importa `isomorphic-dompurify` (~60KB menos en el client bundle). Persona ya lo hacía en el server. `MovieInfo.tsx` es código muerto (no se usa en ningún lado).
 
-### 5.6 Migrar listados a Server Components (o SSR parcial)
-- **Archivos:**
-  - `src/app/(site)/listados/peliculas/page.tsx`
-  - `src/app/(site)/listados/personas/page.tsx`
-- **Problema:** Son 100% `'use client'`. El HTML inicial es solo un spinner. Google puede ejecutar JS pero el LCP se degrada y la indexabilidad es menos confiable.
-- **Acción:** Migrar a Server Components con data fetching via Prisma directo (como las páginas de película/persona). Los filtros interactivos pueden quedar como client components hijos.
-- **Impacto:** Alto en SEO (contenido indexable sin JS) y en LCP.
+### ~~5.6 Migrar listados a Server Components~~ ✅ COMPLETADO (`585d46e`, `a8a312f`)
+- **Qué se hizo:** Migrados `/listados/peliculas` y `/listados/personas` de 100% client-side (spinner + React Query) a Server Components con data fetching directo via Prisma. HTML indexable sin JS, con generateMetadata, canonicals y ServerPagination. Filtros como client components hijos con useTransition.
+- **Archivos creados:** `src/lib/queries/peliculas.ts`, `src/lib/queries/personas.ts`, `PeliculasFilterBar.tsx`, `PersonasFilterBar.tsx`
+- **Archivos eliminados:** `PeliculasContent.tsx`, `PeliculasFilters.tsx`, `PersonasContent.tsx`, `PersonasFilters.tsx`, `useListPage.ts`
 
 ---
 
 ## Fase 6: Sitemap avanzado
 
-### 6.1 Agregar sitemap de efemérides
-- **Archivo:** `src/app/sitemap/[slug]/route.ts`
-- **Acción:** Agregar handler para `efemerides.xml` con 366 URLs (01-01 a 12-31).
-- **Agregar al index:** `src/app/sitemap.xml/route.ts`
+### 6.1 ~~Agregar sitemap de efemérides~~ ✅ COMPLETADO (`36deac9`)
+- **Archivos:** `src/app/sitemap/[slug]/route.ts`, `src/app/sitemap.xml/route.ts`
+- **Qué se hizo:** Agregado handler `efemerides` que genera 366 URLs (`/efemerides/01-01` a `/efemerides/12-31`) y registrado `efemerides.xml` en el sitemap index.
 
 ### 6.2 Agregar sitemap de críticas
 - **Archivo:** `src/app/sitemap/[slug]/route.ts`
 - **Acción:** Agregar handler para `criticas.xml` con URLs tipo `/pelicula/{slug}/criticas/{reviewId}`.
 - **Query:** Join reviews con movies para construir las URLs.
 
-### 6.3 Eliminar changefreq y priority del sitemap
-- **Archivo:** `src/lib/sitemap.ts`
-- **Por qué:** Google los ignora desde hace años. Solo agregan bytes innecesarios al XML.
-- **Acción:** Simplificar `SitemapEntry` a solo `url` y `lastModified`. Actualizar `buildSitemapXml`.
+### 6.3 ~~Eliminar changefreq y priority del sitemap~~ ✅ COMPLETADO (`6f29670`)
+- **Archivos:** `src/lib/sitemap.ts`, `src/app/sitemap/[slug]/route.ts`
+- **Qué se hizo:** Eliminados `changeFrequency` y `priority` de `SitemapEntry` y de todo el XML generado. Las entradas ahora solo tienen `url` y opcionalmente `lastModified`. ~45 líneas menos.
 
-### 6.4 Agregar lastmod al sitemap index
+### 6.4 ~~Agregar lastmod al sitemap index~~ ✅ COMPLETADO (`f106046`)
 - **Archivo:** `src/app/sitemap.xml/route.ts`
-- **Acción:** Consultar la fecha más reciente de cada sub-sitemap y pasarla como `lastModified`.
+- **Qué se hizo:** Se consulta el `updatedAt` más reciente de movies y people y se pasa como `lastModified` a los sub-sitemaps del index (movies, people, estrenos, obituarios, static).
 
 ---
 
