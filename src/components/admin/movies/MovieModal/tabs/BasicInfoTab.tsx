@@ -1,10 +1,12 @@
 // src/components/admin/movies/MovieModal/tabs/BasicInfoTab.tsx
+import { useWatch } from 'react-hook-form'
 import { TIPOS_DURACION, DATA_COMPLETENESS_LEVELS, SOUND_TYPES } from '@/lib/movies/movieConstants'
 import { MONTHS } from '@/lib/shared/dateUtils'
 import { getErrorMessage } from '@/lib/movies/movieUtils'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 import { DateInput } from '@/components/admin/ui/DateInput'
+import type { MovieFormData } from '@/lib/movies/movieTypes'
 
 export default function BasicInfoTab() {
   // Obtener todos los datos necesarios del context
@@ -13,6 +15,7 @@ export default function BasicInfoTab() {
     register,
     watch,
     setValue,
+    control,
     formState,
 
     // Date states
@@ -39,6 +42,7 @@ export default function BasicInfoTab() {
 
   const errors = formState?.errors || {}
   const editingMovieId = editingMovie?.id
+  const synopsisLocked = useWatch<MovieFormData, 'synopsisLocked'>({ control, name: 'synopsisLocked' })
 
   return (
     <div className="space-y-6">
@@ -293,7 +297,7 @@ export default function BasicInfoTab() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Sinopsis
-              {watch('synopsisLocked') && (
+              {synopsisLocked && (
                 <span className="ml-2 text-xs text-green-600 font-semibold">
                   🔒 BLOQUEADA
                 </span>
@@ -302,9 +306,9 @@ export default function BasicInfoTab() {
             <textarea
     {...register('synopsis')}
     rows={4}
-    readOnly={watch('synopsisLocked')}  // ✅ CAMBIO PRINCIPAL
+    readOnly={synopsisLocked}  // ✅ CAMBIO PRINCIPAL
     className={`w-full px-3 py-2 border rounded-lg transition-all duration-200 ${
-      watch('synopsisLocked')
+      synopsisLocked
         ? 'bg-gray-200 text-gray-700 border-gray-400 cursor-not-allowed shadow-inner'
         : 'bg-white text-gray-900 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent'
     }`}
@@ -315,8 +319,7 @@ export default function BasicInfoTab() {
             <label className="inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={!!watch('synopsisLocked')}
-                onChange={(e) => setValue('synopsisLocked', e.target.checked, { shouldDirty: true })}
+                {...register('synopsisLocked')}
                 className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="ml-2 text-sm text-gray-600">
