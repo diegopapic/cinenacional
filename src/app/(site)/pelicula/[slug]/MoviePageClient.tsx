@@ -204,6 +204,16 @@ export function MoviePageClient({
                     </div>
                 )}
 
+                {/* Datos adicionales */}
+                {(alternativeTitles.length > 0 || trivia.length > 0) && (
+                    <div className="mt-12">
+                        <AdditionalData
+                            alternativeTitles={alternativeTitles}
+                            trivia={trivia}
+                        />
+                    </div>
+                )}
+
                 {/* Image Gallery */}
                 {galleryImages.length > 0 && (
                     <div className="mt-12">
@@ -218,16 +228,6 @@ export function MoviePageClient({
                 {reviews.length > 0 && (
                     <div className="mt-12">
                         <ReviewsSection reviews={reviews} movieSlug={movie.slug} />
-                    </div>
-                )}
-
-                {/* Datos adicionales */}
-                {(alternativeTitles.length > 0 || trivia.length > 0) && (
-                    <div className="mt-12">
-                        <AdditionalData
-                            alternativeTitles={alternativeTitles}
-                            trivia={trivia}
-                        />
                     </div>
                 )}
 
