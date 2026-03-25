@@ -68,9 +68,49 @@ export default function EditPersonPage() {
           <div className="flex items-center gap-3">
             <Edit className="h-8 w-8 text-gray-700" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Editar Persona
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Editar Persona
+                </h1>
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium bg-gray-200 text-gray-600">
+                    ID: {person.id}
+                  </span>
+                  {person.tmdbId && (
+                    <a
+                      href={`https://www.themoviedb.org/person/${person.tmdbId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-1 py-0.5 rounded-sm text-[10px] font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
+                      title="Ver en TMDB"
+                    >
+                      TMDB
+                    </a>
+                  )}
+                  {person.imdbId && (
+                    <a
+                      href={`https://www.imdb.com/name/${person.imdbId}/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-1 py-0.5 rounded-sm text-[10px] font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors"
+                      title="Ver en IMDb"
+                    >
+                      IMDb
+                    </a>
+                  )}
+                  {person.slug && (
+                    <a
+                      href={`/persona/${person.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-1 py-0.5 rounded-sm text-[10px] font-medium bg-cyan-100 text-cyan-700 hover:bg-cyan-200 transition-colors"
+                      title="Ver en el sitio"
+                    >
+                      Web
+                    </a>
+                  )}
+                </div>
+              </div>
               <p className="text-gray-600 mt-1">
                 Modificando: {person.firstName} {person.lastName}
               </p>
