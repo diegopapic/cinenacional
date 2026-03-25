@@ -30,22 +30,14 @@
 - **Qué se hizo:** Unificado a `cinenacional.com` (sin www).
 - **Commit:** `ceb28b8`
 
-### 1.5 Evaluar qué filtros de listados merecen rutas propias (como se hizo con estrenos)
-- **Contexto:** Los estrenos ya se migraron de `?year=2024` a `/listados/estrenos/2024`, lo que mejoró la indexabilidad. Hay que evaluar si otros filtros merecen el mismo tratamiento.
-- **Filtros actuales por página:**
-  - **Películas** (`/listados/peliculas`): `search`, `genreId`, `tipoDuracion` (largo/medio/corto), `countryId`, `ratingId`, `soundType`, `colorTypeId`, `releaseDateFrom/To`, `productionYearFrom/To`, `sortBy`, `page`
-  - **Personas** (`/listados/personas`): `search`, `gender`, `roleId`, `nationalityId`, `birthLocationId`, `deathLocationId`, `birthYearFrom/To`, `deathYearFrom/To`, `sortBy`, `page`
-  - **Obituarios** (`/listados/obituarios`): `year`, `page`
-- **Criterio para migrar un filtro a ruta propia:** ¿El filtro produce contenido completamente distinto con entidad propia? (ej: "obituarios de 2024" es una página con sentido propio, igual que "estrenos de 2024").
-- **Candidatos probables:**
-  - ~~**Obituarios por año** → `/listados/obituarios/2024`~~ ✅ COMPLETADO (`95b6b7a`) — ruta nueva, canonical, sitemap, redirects legacy actualizados
-  - ~~**Películas por género** → `/listados/peliculas/genero/drama`~~ ✅ COMPLETADO (`c448f8c`) — ruta SSR nueva, canonical, sitemap genres.xml
-  - **Personas por rol** → `/listados/personas/directores`, `/listados/personas/actores` (entidades con sentido propio)
-- **Candidatos dudosos (evaluar):**
-  - Películas por tipo de duración → `/listados/peliculas/cortometrajes` (¿hay búsqueda suficiente?)
-  - Películas por país coproductor → `/listados/peliculas/coproducciones/españa` (¿volumen?)
-  - Personas por género/nacionalidad → probablemente no justifica ruta propia
-- **Decisión:** Definir cuáles migrar antes de implementar canonicals, porque las rutas nuevas cambian cuál es la URL canónica.
+### ~~1.5 Evaluar qué filtros de listados merecen rutas propias (como se hizo con estrenos)~~ ✅ COMPLETADO
+- **Contexto:** Los estrenos ya se migraron de `?year=2024` a `/listados/estrenos/2024`, lo que mejoró la indexabilidad.
+- **Rutas implementadas:**
+  - ~~**Obituarios por año** → `/listados/obituarios/2024`~~ ✅ COMPLETADO (`95b6b7a`)
+  - ~~**Películas por género** → `/listados/peliculas/genero/drama`~~ ✅ COMPLETADO (`c448f8c`)
+  - ~~**Personas por rol** → `/listados/personas/actores`, `/directores`, etc.~~ ✅ COMPLETADO (`3c4f519`) — 19 roles con rutas propias, metadata, canonical, filtros y sort completos
+  - ~~**Películas por país coproductor** → `/listados/peliculas/coproducciones/espana`~~ ✅ COMPLETADO (`0450b63`) — 10 países con 40+ coproducciones, filtros y sort completos
+- **Descartados:** Películas por tipo de duración (poco volumen de búsqueda), personas por género/nacionalidad (no justifica ruta propia).
 
 ### 1.6 Agregar canonicals en todas las páginas públicas (parcialmente completado)
 - **Páginas de detalle — ✅ COMPLETADO (`2796199`):**
