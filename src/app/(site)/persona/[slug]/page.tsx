@@ -1071,18 +1071,6 @@ export default async function PersonPage({ params }: PageProps) {
         </section>
       )}
 
-      {/* Image Gallery */}
-      {galleryImages.length > 0 && (
-        <section className="py-12 border-t border-border/10">
-          <div className="max-w-7xl mx-auto px-4 lg:px-6">
-            <ImageGallery
-              images={galleryImages}
-              movieTitle={fullName}
-            />
-          </div>
-        </section>
-      )}
-
       {/* Trivia Section */}
       {sanitizedTrivia.length > 0 && (
         <section className="py-12 border-t border-border/10">
@@ -1101,6 +1089,18 @@ export default async function PersonPage({ params }: PageProps) {
                 ))}
               </ul>
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* Image Gallery */}
+      {galleryImages.length > 0 && (
+        <section className="py-12 border-t border-border/10">
+          <div className="max-w-7xl mx-auto px-4 lg:px-6">
+            <ImageGallery
+              images={galleryImages}
+              movieTitle={fullName}
+            />
           </div>
         </section>
       )}
