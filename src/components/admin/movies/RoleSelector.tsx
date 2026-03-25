@@ -22,18 +22,24 @@ interface RoleSelectorProps {
   onChange: (roleId: number, roleName: string, department?: string) => void
   placeholder?: string
   disabled?: boolean
+  /** When set, locks the department filter and hides the dropdown */
+  fixedDepartment?: Department | null
 }
 
-export default function RoleSelector({ 
-  value, 
-  onChange, 
+export default function RoleSelector({
+  value,
+  onChange,
   placeholder = "Buscar rol...",
-  disabled = false 
+  disabled = false,
+  fixedDepartment = null,
 }: RoleSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDepartment, setSelectedDepartment] = useState<Department | ''>('')
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
+
+  // Departamento efectivo: fixedDepartment tiene prioridad
+  const effectiveDepartment = fixedDepartment || selectedDepartment || ''
 
   const containerRef = useRef<HTMLDivElement>(null)
   const debouncedSearch = useDebounce(searchTerm, 300)
@@ -59,13 +65,13 @@ export default function RoleSelector({
 
   // Buscar roles via React Query
   const { data: rolesData, isLoading: loading } = useQuery<Role[]>({
-    queryKey: ['role-search', debouncedSearch, selectedDepartment],
+    queryKey: ['role-search', debouncedSearch, effectiveDepartment],
     queryFn: async () => {
       if (debouncedSearch && debouncedSearch.length >= 2) {
-        return rolesService.search(debouncedSearch, selectedDepartment || undefined, 50)
+        return rolesService.search(debouncedSearch, effectiveDepartment || undefined, 50)
       }
       const filters: RoleFilters = {
-        department: selectedDepartment || undefined,
+        department: effectiveDepartment || undefined,
         isActive: true,
         limit: 100
       }
@@ -80,7 +86,7 @@ export default function RoleSelector({
   const handleSelectRole = (role: Role) => {
     setSelectedRole(role)
     setSearchTerm(role.name)
-    onChange(role.id, role.name, getDepartmentLabel(role.department))
+    onChange(role.id, role.name, role.department)
     setIsOpen(false)
   }
 
@@ -110,8 +116,8 @@ export default function RoleSelector({
 
   return (
     <div className="relative" ref={containerRef}>
-      {/* Filtro por Departamento (opcional) */}
-      {!disabled && (
+      {/* Filtro por Departamento (solo si no hay fixedDepartment) */}
+      {!disabled && !fixedDepartment && (
         <div className="mb-2 flex gap-2">
           <select
             value={selectedDepartment}
@@ -243,7 +249,7 @@ export default function RoleSelector({
             {!loading && !debouncedSearch && isOpen && roles.length > 0 && (
               <div className="p-3 border-t border-gray-200 bg-gray-50">
                 <p className="text-xs text-gray-500">
-                  💡 Mostrando {roles.length} roles{selectedDepartment ? ` de ${getDepartmentLabel(selectedDepartment)}` : ''}
+                  💡 Mostrando {roles.length} roles{effectiveDepartment ? ` de ${getDepartmentLabel(effectiveDepartment as Department)}` : ''}
                 </p>
               </div>
             )}

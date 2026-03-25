@@ -32,11 +32,13 @@ import { CSS } from '@dnd-kit/utilities'
 function SortableCrewMember({
   member,
   index,
+  activeDepartment,
   updateCrewMember,
   removeCrewMember
 }: {
   member: CrewMemberEntry
   index: number
+  activeDepartment: string | null
   updateCrewMember: (index: number, updates: Partial<CrewMemberEntry>) => void
   removeCrewMember: (index: number) => void
 }) {
@@ -117,6 +119,7 @@ function SortableCrewMember({
               role: roleName,
               department: department || member.department
             })}
+            fixedDepartment={activeDepartment as Department | null}
             placeholder="Buscar rol..."
           />
           {member.role && typeof member.role === 'string' && (
@@ -131,7 +134,7 @@ function SortableCrewMember({
           </label>
           <input
             type="text"
-            value={member.department || ''}
+            value={member.department ? getDepartmentLabel(member.department as Department) : ''}
             placeholder="Depto"
             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
             disabled
@@ -346,6 +349,7 @@ export default function CrewTab() {
                     key={member._uid}
                     member={member}
                     index={realIndex}
+                    activeDepartment={activeDepartment}
                     updateCrewMember={updateCrewMember}
                     removeCrewMember={removeCrewMember}
                   />
