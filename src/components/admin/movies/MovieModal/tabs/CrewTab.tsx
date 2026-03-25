@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import type { CrewMemberEntry } from '@/hooks/useMovieForm'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
+import { useValueChange } from '@/hooks/useValueChange'
 import { Trash2, Plus, GripVertical } from 'lucide-react'
 import PersonSearchInput from '@/components/admin/shared/PersonSearchInput'
 import RoleSelector from '../../RoleSelector'
@@ -223,10 +224,22 @@ export default function CrewTab() {
     reorderCrew,
   } = useMovieModalContext()
 
+  const editingMovie = useMovieModalContext().editingMovie
   const [activeDepartment, setActiveDepartment] = useState<string | null>(null)
+
+  // Resetear filtro de departamento cuando cambia la película
+  useValueChange(editingMovie?.id, () => {
+    setActiveDepartment(null)
+  })
 
   // Leer crew directamente de movieRelations (fuente unica de verdad)
   const crew = movieRelations.crew
+
+  // Key estable: usa _uid si existe, sino composite key por datos del entry
+  const getEntryKey = (member: CrewMemberEntry, index: number): string => {
+    if (member._uid) return member._uid
+    return `crew-${member.personId}-${member.roleId}-${index}`
+  }
 
   // Calcular departamentos presentes con sus conteos (en orden de aparicion)
   const departmentCounts = crew.reduce<{ dept: string; count: number }[]>(
@@ -338,7 +351,7 @@ export default function CrewTab() {
               <div className="space-y-3">
                 {visibleEntries.map(({ member, realIndex }, visibleIndex) => (
                   <SortableCrewMember
-                    key={member._uid}
+                    key={getEntryKey(member, realIndex)}
                     member={member}
                     index={realIndex}
                     sortableId={`crew-visible-${visibleIndex}`}

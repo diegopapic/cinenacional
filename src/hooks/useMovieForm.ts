@@ -38,11 +38,16 @@ export interface CastMemberEntry {
 }
 
 /** Crew member in the movie form state */
-/** Counter for generating stable unique IDs for crew entries */
-let crewUidCounter = 0
+/** Counter for generating stable unique IDs for crew/cast entries */
+let entryUidCounter = 0
+
+/** Generate a unique ID for a crew/cast entry */
+export function generateEntryUid(): string {
+  return `entry-${++entryUidCounter}-${Date.now()}`
+}
 
 export interface CrewMemberEntry {
-  _uid: string
+  _uid?: string
   personId: number
   personName: string
   alternativeNameId: number | null
@@ -429,7 +434,7 @@ export function useMovieForm({
         setMovieRelations(prev => ({
             ...prev,
             crew: [...prev.crew, {
-                _uid: `crew-${++crewUidCounter}`,
+                _uid: generateEntryUid(),
                 personId: 0,
                 personName: '',
                 alternativeNameId: null,
@@ -674,7 +679,7 @@ export function useMovieForm({
                         if (altName) alternativeName = altName.fullName
                     }
                     return {
-                        _uid: `crew-${++crewUidCounter}`,
+                        _uid: generateEntryUid(),
                         personId: c.personId || c.person?.id || 0,
                         personName,
                         alternativeNameId: c.alternativeNameId || null,
