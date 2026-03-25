@@ -102,9 +102,6 @@ function SortableCrewMember({
             })}
             placeholder="Buscar persona..."
           />
-          {member.personName && !member.alternativeName && (
-            <p className="text-xs text-gray-500 mt-1">{member.personName}</p>
-          )}
         </div>
 
         {/* Selector de Rol con busqueda */}
@@ -121,25 +118,25 @@ function SortableCrewMember({
             })}
             fixedDepartment={activeDepartment as Department | null}
             placeholder="Buscar rol..."
+            hideSelectedDisplay
           />
-          {member.role && typeof member.role === 'string' && (
-            <p className="text-xs text-gray-500 mt-1">{member.role}</p>
-          )}
         </div>
 
-        {/* Departamento (auto-completado) */}
+        {/* Departamento (badge de color) */}
         <div className="col-span-2">
           <label className="block text-xs font-medium text-gray-700 mb-1">
             Departamento
           </label>
-          <input
-            type="text"
-            value={member.department ? getDepartmentLabel(member.department as Department) : ''}
-            placeholder="Depto"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
-            disabled
-            readOnly
-          />
+          {member.department ? (
+            <span
+              className="inline-flex items-center px-2.5 py-2 rounded-md text-xs font-medium text-white"
+              style={{ backgroundColor: getDepartmentColor(member.department as Department) }}
+            >
+              {getDepartmentLabel(member.department as Department)}
+            </span>
+          ) : (
+            <span className="text-xs text-gray-400 py-2 inline-block">—</span>
+          )}
         </div>
 
         {/* Boton eliminar */}

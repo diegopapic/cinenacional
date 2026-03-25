@@ -24,6 +24,8 @@ interface RoleSelectorProps {
   disabled?: boolean
   /** When set, locks the department filter and hides the dropdown */
   fixedDepartment?: Department | null
+  /** Hide the selected role display (badge + name) below the input */
+  hideSelectedDisplay?: boolean
 }
 
 export default function RoleSelector({
@@ -32,6 +34,7 @@ export default function RoleSelector({
   placeholder = "Buscar rol...",
   disabled = false,
   fixedDepartment = null,
+  hideSelectedDisplay = false,
 }: RoleSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -276,7 +279,7 @@ export default function RoleSelector({
       </div>
 
       {/* Mostrar rol seleccionado con badge de color */}
-      {selectedRole && !isOpen && (
+      {selectedRole && !isOpen && !hideSelectedDisplay && (
         <div className="mt-2 flex items-center gap-2">
           <span 
             className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium text-white"
