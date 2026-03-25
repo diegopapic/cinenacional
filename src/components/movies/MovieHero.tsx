@@ -48,7 +48,7 @@ function directorSeparator(index: number, total: number, nextName: string): stri
   if (index === 0) return '';
   if (index < total - 1) return ', ';
   const conjunction = /^[IiÍí]/.test(nextName) ? ' e ' : ' y ';
-  return total === 2 ? conjunction : `, ${conjunction.trim()} `;
+  return total === 2 ? conjunction : conjunction;
 }
 
 // Extraer YouTube ID
