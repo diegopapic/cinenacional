@@ -1064,7 +1064,7 @@ export default async function PersonPage({ params }: PageProps) {
 
       {/* External Links */}
       {person.links && person.links.length > 0 && (
-        <section className="py-12 border-t border-border/10">
+        <section className="py-12">
           <div className="max-w-7xl mx-auto px-4 lg:px-6">
             <ExternalLinks links={person.links} />
           </div>
@@ -1073,7 +1073,7 @@ export default async function PersonPage({ params }: PageProps) {
 
       {/* Trivia Section */}
       {sanitizedTrivia.length > 0 && (
-        <section className="py-12 border-t border-border/10">
+        <section className="py-12">
           <div className="max-w-7xl mx-auto px-4 lg:px-6">
             <h2 className="font-serif text-xl tracking-tight text-foreground md:text-2xl">Trivia</h2>
             <div className="mt-4 border-t border-border/30 pt-4 md:mt-6 md:pt-6">
@@ -1095,7 +1095,7 @@ export default async function PersonPage({ params }: PageProps) {
 
       {/* Image Gallery */}
       {galleryImages.length > 0 && (
-        <section className="py-12 border-t border-border/10">
+        <section className="py-12">
           <div className="max-w-7xl mx-auto px-4 lg:px-6">
             <ImageGallery
               images={galleryImages}
