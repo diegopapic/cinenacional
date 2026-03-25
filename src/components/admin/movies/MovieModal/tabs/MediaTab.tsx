@@ -30,17 +30,6 @@ export default function MediaTab() {
         movieId={editingMovieId}
       />
 
-      <CloudinaryUploadWidget
-        value={watch('backdropUrl')}
-        onChange={(url, publicId) => {
-          setValue('backdropUrl', url)
-          setValue('backdropPublicId', publicId)
-        }}
-        label="Imagen de Fondo"
-        type="backdrop"
-        movieId={editingMovieId}
-      />
-
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           URL del Trailer
