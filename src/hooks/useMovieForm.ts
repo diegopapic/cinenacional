@@ -281,6 +281,7 @@ export function useMovieForm({
             stage: 'COMPLETA',
             dataCompleteness: 'BASIC_PRESS_KIT',
             soundType: 'Sonora',
+            synopsisLocked: false,
             metaDescription: '',
             metaKeywords: []
         }

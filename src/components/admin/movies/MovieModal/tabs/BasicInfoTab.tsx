@@ -315,7 +315,8 @@ export default function BasicInfoTab() {
             <label className="inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                {...register('synopsisLocked')}
+                checked={!!watch('synopsisLocked')}
+                onChange={(e) => setValue('synopsisLocked', e.target.checked, { shouldDirty: true })}
                 className="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="ml-2 text-sm text-gray-600">
