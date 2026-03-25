@@ -476,7 +476,6 @@ export function useMovieForm({
     }, [])
 
     const reorderCrew = useCallback((oldIndex: number, newIndex: number) => {
-        console.warn('[CREW-DEBUG] reorderCrew', { oldIndex, newIndex })
         setMovieRelations(prev => {
             const reordered = arrayMove(prev.crew, oldIndex, newIndex)
             return {
@@ -488,7 +487,6 @@ export function useMovieForm({
 
     // Función para cargar datos de película existente
     const loadMovieData = useCallback(async (movie: Movie | MovieDetail) => {
-        console.warn('[CREW-DEBUG] loadMovieData', movie.id)
         try {
             const fullMovie = await moviesService.getById(movie.id, true)
 
