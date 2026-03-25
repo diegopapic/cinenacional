@@ -203,7 +203,7 @@ function buildRawWhereClause(
     conditions.push(Prisma.sql`p.death_location_id = ANY(${deathLocationIds})`)
   }
   if (filters.gender) {
-    conditions.push(Prisma.sql`p.gender = ${filters.gender}::"Gender"`)
+    conditions.push(Prisma.sql`p.gender::text = ${filters.gender}`)
   }
   if (filters.birthYearFrom) {
     conditions.push(Prisma.sql`p.birth_year >= ${filters.birthYearFrom}`)
