@@ -1,9 +1,12 @@
 // components/admin/movies/MovieModal/tabs/CrewTab.tsx
+import { useState } from 'react'
 import type { CrewMemberEntry } from '@/hooks/useMovieForm'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import { Trash2, Plus, GripVertical } from 'lucide-react'
 import PersonSearchInput from '@/components/admin/shared/PersonSearchInput'
 import RoleSelector from '../../RoleSelector'
+import { getDepartmentLabel, getDepartmentColor } from '@/lib/roles/roleUtils'
+import type { Department } from '@/lib/roles/rolesTypes'
 
 // Imports para drag and drop
 import {
@@ -27,11 +30,13 @@ import { CSS } from '@dnd-kit/utilities'
 function SortableCrewMember({
   member,
   index,
+  sortableId,
   updateCrewMember,
   removeCrewMember
 }: {
   member: CrewMemberEntry
   index: number
+  sortableId: string
   updateCrewMember: (index: number, updates: Partial<CrewMemberEntry>) => void
   removeCrewMember: (index: number) => void
 }) {
@@ -42,7 +47,7 @@ function SortableCrewMember({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: `crew-${index}` })
+  } = useSortable({ id: sortableId })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -172,6 +177,43 @@ function SortableCrewMember({
   )
 }
 
+// Pill de filtro por departamento
+function DepartmentPill({
+  label,
+  count,
+  color,
+  isActive,
+  onClick,
+}: {
+  label: string
+  count: number
+  color: string
+  isActive: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all border ${
+        isActive
+          ? 'text-white border-transparent shadow-sm'
+          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+      }`}
+      style={isActive ? { backgroundColor: color, borderColor: color } : undefined}
+    >
+      {label}
+      <span
+        className={`inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold px-1 ${
+          isActive ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-600'
+        }`}
+      >
+        {count}
+      </span>
+    </button>
+  )
+}
+
 export default function CrewTab() {
   const {
     movieRelations,
@@ -181,8 +223,32 @@ export default function CrewTab() {
     reorderCrew,
   } = useMovieModalContext()
 
+  const [activeDepartment, setActiveDepartment] = useState<string | null>(null)
+
   // Leer crew directamente de movieRelations (fuente unica de verdad)
   const crew = movieRelations.crew
+
+  // Calcular departamentos presentes con sus conteos (en orden de aparicion)
+  const departmentCounts = crew.reduce<{ dept: string; count: number }[]>(
+    (acc: { dept: string; count: number }[], member: CrewMemberEntry) => {
+      const dept = member.department || 'OTROS'
+      const existing = acc.find((d: { dept: string }) => d.dept === dept)
+      if (existing) {
+        existing.count++
+      } else {
+        acc.push({ dept, count: 1 })
+      }
+      return acc
+    },
+    []
+  )
+
+  // Indices visibles (mapeados al array real)
+  const visibleEntries: { member: CrewMemberEntry; realIndex: number }[] = crew
+    .map((member: CrewMemberEntry, index: number) => ({ member, realIndex: index }))
+    .filter(({ member }: { member: CrewMemberEntry }) =>
+      !activeDepartment || (member.department || 'OTROS') === activeDepartment
+    )
 
   // Configurar sensores para drag and drop
   const sensors = useSensors(
@@ -196,14 +262,22 @@ export default function CrewTab() {
     })
   )
 
-  // Manejar el fin del drag
+  // Manejar el fin del drag — mapear indices visibles a indices reales
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
 
     if (over && active.id !== over.id) {
-      const oldIndex = crew.findIndex((_: CrewMemberEntry, i: number) => `crew-${i}` === active.id)
-      const newIndex = crew.findIndex((_: CrewMemberEntry, i: number) => `crew-${i}` === over.id)
-      reorderCrew(oldIndex, newIndex)
+      const oldVisibleIdx = visibleEntries.findIndex(
+        (_, i) => `crew-visible-${i}` === active.id
+      )
+      const newVisibleIdx = visibleEntries.findIndex(
+        (_, i) => `crew-visible-${i}` === over.id
+      )
+      if (oldVisibleIdx !== -1 && newVisibleIdx !== -1) {
+        const oldRealIdx = visibleEntries[oldVisibleIdx].realIndex
+        const newRealIdx = visibleEntries[newVisibleIdx].realIndex
+        reorderCrew(oldRealIdx, newRealIdx)
+      }
     }
   }
 
@@ -215,6 +289,29 @@ export default function CrewTab() {
           Arrastra para reordenar
         </span>
       </div>
+
+      {/* Filtro por departamento */}
+      {departmentCounts.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          <DepartmentPill
+            label="Todos"
+            count={crew.length}
+            color="#374151"
+            isActive={activeDepartment === null}
+            onClick={() => setActiveDepartment(null)}
+          />
+          {departmentCounts.map(({ dept, count }: { dept: string; count: number }) => (
+            <DepartmentPill
+              key={dept}
+              label={getDepartmentLabel(dept as Department)}
+              count={count}
+              color={getDepartmentColor(dept as Department)}
+              isActive={activeDepartment === dept}
+              onClick={() => setActiveDepartment(activeDepartment === dept ? null : dept)}
+            />
+          ))}
+        </div>
+      )}
 
       {crew.length === 0 ? (
         <div className="text-center py-8 bg-gray-50 rounded-lg">
@@ -235,15 +332,16 @@ export default function CrewTab() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={crew.map((_: CrewMemberEntry, i: number) => `crew-${i}`)}
+              items={visibleEntries.map((_, i) => `crew-visible-${i}`)}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-3">
-                {crew.map((member: CrewMemberEntry, index: number) => (
+                {visibleEntries.map(({ member, realIndex }, visibleIndex) => (
                   <SortableCrewMember
-                    key={`crew-${index}`}
+                    key={`crew-${realIndex}`}
                     member={member}
-                    index={index}
+                    index={realIndex}
+                    sortableId={`crew-visible-${visibleIndex}`}
                     updateCrewMember={updateCrewMember}
                     removeCrewMember={removeCrewMember}
                   />
@@ -251,6 +349,14 @@ export default function CrewTab() {
               </div>
             </SortableContext>
           </DndContext>
+
+          {visibleEntries.length === 0 && activeDepartment && (
+            <div className="text-center py-6 bg-gray-50 rounded-lg">
+              <p className="text-gray-500 text-sm">
+                No hay miembros en {getDepartmentLabel(activeDepartment as Department)}
+              </p>
+            </div>
+          )}
 
           {/* BOTON AGREGAR - DESPUES DE LA LISTA */}
           <button
@@ -269,6 +375,9 @@ export default function CrewTab() {
         <div className="mt-4 p-3 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-800">
             <strong>{crew.length}</strong> miembro{crew.length !== 1 ? 's' : ''} en el equipo tecnico
+            {activeDepartment && (
+              <> · Mostrando <strong>{visibleEntries.length}</strong> de {getDepartmentLabel(activeDepartment as Department)}</>
+            )}
           </p>
         </div>
       )}
