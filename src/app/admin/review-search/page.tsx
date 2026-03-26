@@ -517,6 +517,7 @@ export default function ReviewSearchPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getCsrfHeaders() },
         body: JSON.stringify({
+          movieId: selectedMovie.id,
           movieTitle: selectedMovie.title,
           movieYear: selectedMovie.year,
           movieDirector: selectedMovie.director

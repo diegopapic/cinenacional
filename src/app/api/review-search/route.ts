@@ -9,10 +9,20 @@ import { prisma } from '@/lib/prisma'
 
 const log = createLogger('api:review-search')
 
-function buildSystemPrompt(outlets: { name: string; url: string }[]): string {
+function buildSystemPrompt(
+  outlets: { name: string; url: string }[],
+  existingUrls: string[]
+): string {
   const outletList = outlets.map((o) => `- ${o.url} (${o.name})`).join('\n')
 
-  return `Sos un asistente especializado en búsqueda de críticas cinematográficas en medios argentinos e internacionales.
+  const excludeSection =
+    existingUrls.length > 0
+      ? `\n\nURLs YA CARGADAS (EXCLUIR siempre — no incluir en los resultados):
+${existingUrls.map((u) => `- ${u}`).join('\n')}
+Si encontrás una crítica cuya URL coincide exactamente con alguna de las anteriores, omitila del resultado.\n`
+      : ''
+
+  return `Sos un asistente especializado en búsqueda de críticas cinematográficas en medios argentinos e internacionales.${excludeSection}
 
 DEFINICIÓN DE CRÍTICA:
 Una crítica (o reseña) es un texto donde un autor evalúa la película, analiza su propuesta estética o narrativa y emite un juicio de valor. Típicamente incluye opiniones sobre la dirección, las actuaciones, la fotografía, el guion, etc.
@@ -83,7 +93,7 @@ export async function POST(request: NextRequest) {
   if (auth.error) return auth.error
 
   try {
-    const { movieTitle, movieYear, movieDirector } = await request.json()
+    const { movieTitle, movieYear, movieDirector, movieId } = await request.json()
     if (!movieTitle || typeof movieTitle !== 'string' || movieTitle.trim().length === 0) {
       return new Response(JSON.stringify({ error: 'El título de la película es requerido' }), {
         status: 400,
@@ -113,7 +123,22 @@ export async function POST(request: NextRequest) {
 
     log.info(`Found ${outletsWithUrl.length} media outlets with URLs`)
 
-    const systemPrompt = buildSystemPrompt(outletsWithUrl)
+    // Fetch existing review URLs for this movie to exclude from results
+    let existingUrls: string[] = []
+    if (movieId && typeof movieId === 'number') {
+      const existingReviews = await prisma.movieReview.findMany({
+        where: { movieId, url: { not: null } },
+        select: { url: true }
+      })
+      existingUrls = existingReviews
+        .map((r) => r.url)
+        .filter((url): url is string => url !== null)
+      if (existingUrls.length > 0) {
+        log.info(`Excluding ${existingUrls.length} existing review URLs for movie ${movieId}`)
+      }
+    }
+
+    const systemPrompt = buildSystemPrompt(outletsWithUrl, existingUrls)
 
     const client = new Anthropic({ apiKey })
 
