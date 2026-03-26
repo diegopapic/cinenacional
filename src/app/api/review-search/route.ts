@@ -34,7 +34,8 @@ CÓMO DISTINGUIR una crítica de una nota informativa:
 - Una NOTA INFORMATIVA describe la película, da contexto sobre su producción o estreno, pero NO emite un juicio evaluativo sobre su calidad
 - Si la nota habla MÁS del director/contexto que de la calidad de la película, probablemente NO es una crítica
 
-Ante la duda, NO incluyas el resultado. Es preferible omitir un texto dudoso a incluir uno que no sea una crítica.
+IMPORTANTE — Ante la duda, INCLUÍ el resultado. Si no podés determinar desde el snippet si un artículo es una crítica o una nota informativa, incluilo de todos modos: un paso posterior verificará el contenido completo y descartará las no-críticas. Es preferible incluir un resultado dudoso que omitir una crítica real.
+Solamente excluí un resultado cuando sea EVIDENTE que NO es una crítica (por ejemplo, una entrevista claramente rotulada, una nota de prensa con "comunicado" en el título, o un listado de estrenos sin evaluación).
 
 PASO 1 — Medios conocidos:
 Buscá críticas de la película en TODOS estos medios. Para cada uno, hacé una búsqueda con site: o el nombre del medio:
