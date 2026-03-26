@@ -111,6 +111,22 @@ function detectNonReviewSignals(html: string): string[] {
   return signals
 }
 
+/** Decode common HTML entities in extracted text (titles, author names) */
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex: string) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&quot;/gi, '"')
+    .replace(/&apos;/gi, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&ldquo;|&rdquo;|&laquo;|&raquo;/gi, '"')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&#(\d+);/g, (_, n: string) => String.fromCharCode(parseInt(n, 10)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n: string) => String.fromCharCode(parseInt(n, 16)))
+}
+
 // ---------------------------------------------------------------------------
 // Site-specific extraction rules
 // Each rule targets a specific media outlet whose HTML doesn't follow
@@ -133,6 +149,23 @@ const siteRules: { domain: string; extract: SiteExtractor }[] = [
     domain: 'cinefreaks.net',
     extract: (html) => {
       const m = html.match(/<(?:strong|b|em)>\s*(?:Por|By)\s+<a[^>]*>\s*([^<]{2,80})\s*<\/a>/i)
+      return m?.[1]?.trim() && isValidAuthorName(m[1].trim()) ? m[1].trim() : null
+    }
+  },
+  {
+    // OtrosCines: Author in <div class="... autor"><a><i class=""></i>Name</a> — the <i> tag
+    // inside <a> breaks generic byline patterns, which then match comment-author instead
+    domain: 'otroscines.com',
+    extract: (html) => {
+      const m = html.match(/<[^>]*class=["'][^"']*\bautor\b[^"']*["'][^>]*>[\s\S]{0,200}?<a[^>]*>(?:\s*<[^>]*>)*\s*([^<]{2,80})\s*<\/a>/i)
+      return m?.[1]?.trim() && isValidAuthorName(m[1].trim()) ? m[1].trim() : null
+    }
+  },
+  {
+    // TerrorWeekend: Blogger site — no author meta tags. Author signs at end of article: "Firma: Name.<br"
+    domain: 'terrorweekend.com',
+    extract: (html) => {
+      const m = html.match(/Firma:\s*([^<]{2,80}?)\.\s*<br/i)
       return m?.[1]?.trim() && isValidAuthorName(m[1].trim()) ? m[1].trim() : null
     }
   }
@@ -352,6 +385,8 @@ function isValidAuthorName(name: string): boolean {
   if (/\b(correo|electr[oó]nic|suscri|newsletter|cookie|privacidad|contacto|copyright|derechos|reservados)\b/i.test(name)) return false
   // Reject ALL-CAPS single words (likely section headers: "FESTIVALES", "ESTRENOS", etc.)
   if (/^[A-ZÁÉÍÓÚÑ\s]+$/.test(name) && name.split(/\s+/).length <= 2) return false
+  // Must contain at least one letter
+  if (!/[a-záéíóúñA-ZÁÉÍÓÚÑ]/.test(name)) return false
   return true
 }
 
@@ -653,11 +688,11 @@ function extractTitle(html: string, movieTitle?: string): string | null {
     const reviewHeadline = extractReviewHeadline(html)
     if (reviewHeadline) {
       log.info(`Review headline "${reviewHeadline}" found (page title "${pageTitle}" ≈ movie name)`)
-      return reviewHeadline
+      return decodeHtmlEntities(reviewHeadline)
     }
   }
 
-  return pageTitle
+  return pageTitle ? decodeHtmlEntities(pageTitle) : null
 }
 
 function extractPublishDate(html: string): string | null {
