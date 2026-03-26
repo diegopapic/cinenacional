@@ -195,7 +195,7 @@ function MovieResult({ movie, query }: { movie: SearchMovieResult; query: string
         {/* Título alternativo que matcheó */}
         {movie.matchedAlternativeTitle && (
           <p className="text-[12px] italic text-muted-foreground/50">
-            <HighlightMatch text={movie.matchedAlternativeTitle} query={query} />
+            Título alternativo: <HighlightMatch text={movie.matchedAlternativeTitle} query={query} />
           </p>
         )}
 
@@ -281,7 +281,7 @@ function PersonResult({ person, query }: { person: SearchPersonResult; query: st
         {/* Nombre alternativo que matcheó */}
         {person.matchedAlternativeName && (
           <p className="text-[12px] italic text-muted-foreground/50">
-            <HighlightMatch text={person.matchedAlternativeName} query={query} />
+            Nombre alternativo: <HighlightMatch text={person.matchedAlternativeName} query={query} />
           </p>
         )}
 

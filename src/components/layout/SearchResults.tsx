@@ -138,7 +138,7 @@ export default function SearchResults({
                     </span>
                     {movie.matchedAlternativeTitle && (
                       <span className="block truncate text-[11px] italic text-nav-foreground/30">
-                        {movie.matchedAlternativeTitle}
+                        Título alternativo: {movie.matchedAlternativeTitle}
                       </span>
                     )}
                     {movie.director && (
@@ -200,7 +200,7 @@ export default function SearchResults({
                     </span>
                     {person.matchedAlternativeName && (
                       <span className="block truncate text-[11px] italic text-nav-foreground/30">
-                        {person.matchedAlternativeName}
+                        Nombre alternativo: {person.matchedAlternativeName}
                       </span>
                     )}
                   </div>
