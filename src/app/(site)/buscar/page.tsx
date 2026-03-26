@@ -288,7 +288,7 @@ function PersonResult({ person, query }: { person: SearchPersonResult; query: st
         {/* Birth */}
         {(birthDateFormatted || person.birthLocationPath) && (
           <p className="text-[12px] leading-snug text-muted-foreground/50">
-            {birthDateFormatted && <span>Naci&oacute; el {birthDateFormatted}</span>}
+            {birthDateFormatted && <span>Naci&oacute; {person.birthDay ? 'el' : 'en'} {birthDateFormatted}</span>}
             {person.birthLocationPath && (
               <span className="text-muted-foreground/40">
                 {birthDateFormatted ? ' en ' : ''}{person.birthLocationPath}
@@ -300,7 +300,7 @@ function PersonResult({ person, query }: { person: SearchPersonResult; query: st
         {/* Death */}
         {isDeceased && (
           <p className="text-[12px] leading-snug text-muted-foreground/50">
-            Falleci&oacute; el {formatPartialDate(person.deathYear, person.deathMonth, person.deathDay)}
+            Falleci&oacute; {person.deathDay ? 'el' : 'en'} {formatPartialDate(person.deathYear, person.deathMonth, person.deathDay)}
             {person.deathLocationPath && (
               <span className="text-muted-foreground/40"> en {person.deathLocationPath}</span>
             )}

@@ -74,7 +74,7 @@ export default function PersonCardDetailed({ person }: PersonCardDetailedProps) 
         {/* Nacimiento */}
         {(birthDateFormatted || birthLocationFormatted) && (
           <p className="text-[12px] leading-snug text-muted-foreground/50">
-            {birthDateFormatted && <span>Naci&oacute; el {birthDateFormatted}</span>}
+            {birthDateFormatted && <span>Naci&oacute; {person.birthDay ? 'el' : 'en'} {birthDateFormatted}</span>}
             {birthLocationFormatted && (
               <span className="text-muted-foreground/40">
                 {birthDateFormatted ? ' en ' : ''}{birthLocationFormatted}
@@ -86,7 +86,7 @@ export default function PersonCardDetailed({ person }: PersonCardDetailedProps) 
         {/* Muerte */}
         {isDeceased && (
           <p className="text-[12px] leading-snug text-muted-foreground/50">
-            Falleci&oacute; el {formatPartialDate(person.deathYear, person.deathMonth, person.deathDay)}
+            Falleci&oacute; {person.deathDay ? 'el' : 'en'} {formatPartialDate(person.deathYear, person.deathMonth, person.deathDay)}
             {deathLocationFormatted && (
               <span className="text-muted-foreground/40"> en {deathLocationFormatted}</span>
             )}
