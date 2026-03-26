@@ -610,9 +610,62 @@ function extractReviewHeadline(html: string): string | null {
   return null
 }
 
+/**
+ * Extract article text from Arc/Fusion CMS JSON embedded in a <script> tag.
+ * Used by Página/12 and other Arc Publishing sites where the article body
+ * is in Fusion.globalContent.content_elements[], not in rendered HTML.
+ */
+function extractArcFusionText(html: string): string | null {
+  const fusionMatch = html.match(/Fusion\.globalContent\s*=\s*(\{[\s\S]*?\});\s*(?:Fusion\.|<\/script>)/)
+  if (!fusionMatch) return null
+
+  try {
+    const data = JSON.parse(fusionMatch[1]) as Record<string, unknown>
+    const elements = data.content_elements
+    if (!Array.isArray(elements)) return null
+
+    const paragraphs: string[] = []
+    for (const el of elements) {
+      if (!el || typeof el !== 'object') continue
+      const elem = el as Record<string, unknown>
+      if (elem.type === 'text' && typeof elem.content === 'string') {
+        const clean = (elem.content as string)
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/gi, ' ')
+          .replace(/&amp;/gi, '&')
+          .replace(/&lt;/gi, '<')
+          .replace(/&gt;/gi, '>')
+          .replace(/&ldquo;|&rdquo;|&laquo;|&raquo;/gi, '"')
+          .replace(/&#?\w+;/gi, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+        if (clean) paragraphs.push(clean)
+      }
+    }
+
+    return paragraphs.length > 0 ? paragraphs.join(' ') : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Extract article text from HTML, with Arc/Fusion fallback.
+ */
+function extractArticleText(html: string): string {
+  let text = stripHtmlToText(html)
+  if (text.length < 500) {
+    const fusionText = extractArcFusionText(html)
+    if (fusionText && fusionText.length > text.length) {
+      text = fusionText
+    }
+  }
+  return text
+}
+
 function detectNonReviewSignals(html: string): string[] {
   const signals: string[] = []
-  const text = stripHtmlToText(html)
+  const text = extractArticleText(html)
   if (text.length < 200) return signals
 
   const speechPatternEs = /["«"][^""«»"']{15,}["»"]\s*,?\s*(?:dice|dijo|explica|explicó|señala|señaló|afirma|afirmó|sostiene|sostuvo|cuenta|contó|relata|relataba|agrega|agregó|comenta|comentó|recuerda|recordó|advierte|asegura|aseguró|apunta|detalla|detalló|precisó|precisa|resume|describe|describió|reconoce|reconoció|confiesa|confesó|revela|reveló|plantea|planteó|destaca|destacó|subraya|subrayó|propone|propuso|analiza|reflexiona)\b/gi
@@ -988,7 +1041,7 @@ async function generateSummary(url: string): Promise<string | null> {
     const res = await fetchWithTimeout(url, 15000)
     if (!res.ok) { stats.reviewsSummaryFail++; return null }
     const html = await res.text()
-    const text = stripHtmlToText(html)
+    const text = extractArticleText(html)
     if (text.length < 200) { stats.reviewsSummaryFail++; return null }
     const truncated = text.length > 12000 ? text.slice(0, 12000) + '...' : text
 

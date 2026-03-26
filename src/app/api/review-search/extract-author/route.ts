@@ -38,11 +38,50 @@ interface ExtractionResult {
  * Detect signals that an article is NOT a review (interview, feature, etc.).
  * Returns an array of human-readable signal descriptions.
  */
+/**
+ * Extract article text from Arc/Fusion CMS JSON embedded in a <script> tag.
+ * Used by Página/12 and other Arc Publishing sites where the article body
+ * is in Fusion.globalContent.content_elements[], not in rendered HTML.
+ */
+function extractArcFusionText(html: string): string | null {
+  const fusionMatch = html.match(/Fusion\.globalContent\s*=\s*(\{[\s\S]*?\});\s*(?:Fusion\.|<\/script>)/)
+  if (!fusionMatch) return null
+
+  try {
+    const data = JSON.parse(fusionMatch[1]) as Record<string, unknown>
+    const elements = data.content_elements
+    if (!Array.isArray(elements)) return null
+
+    const paragraphs: string[] = []
+    for (const el of elements) {
+      if (!el || typeof el !== 'object') continue
+      const elem = el as Record<string, unknown>
+      if (elem.type === 'text' && typeof elem.content === 'string') {
+        const clean = (elem.content as string)
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/gi, ' ')
+          .replace(/&amp;/gi, '&')
+          .replace(/&lt;/gi, '<')
+          .replace(/&gt;/gi, '>')
+          .replace(/&ldquo;|&rdquo;|&laquo;|&raquo;/gi, '"')
+          .replace(/&#?\w+;/gi, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+        if (clean) paragraphs.push(clean)
+      }
+    }
+
+    return paragraphs.length > 0 ? paragraphs.join(' ') : null
+  } catch {
+    return null
+  }
+}
+
 function detectNonReviewSignals(html: string): string[] {
   const signals: string[] = []
 
   // Strip HTML to get plain text for analysis
-  const text = html
+  let text = html
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<[^>]+>/g, ' ')
@@ -52,6 +91,14 @@ function detectNonReviewSignals(html: string): string[] {
     .replace(/&#?\w+;/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+
+  // If standard stripping yields too little, try Arc/Fusion CMS extraction
+  if (text.length < 500) {
+    const fusionText = extractArcFusionText(html)
+    if (fusionText && fusionText.length > text.length) {
+      text = fusionText
+    }
+  }
 
   if (text.length < 200) return signals
 

@@ -52,6 +52,45 @@ function stripHtmlToText(html: string): string {
     .trim()
 }
 
+/**
+ * Extract article text from Arc/Fusion CMS JSON embedded in a <script> tag.
+ * Used by Página/12 and other Arc Publishing sites where the article body
+ * is in Fusion.globalContent.content_elements[], not in rendered HTML.
+ */
+function extractArcFusionText(html: string): string | null {
+  const fusionMatch = html.match(/Fusion\.globalContent\s*=\s*(\{[\s\S]*?\});\s*(?:Fusion\.|<\/script>)/)
+  if (!fusionMatch) return null
+
+  try {
+    const data = JSON.parse(fusionMatch[1]) as Record<string, unknown>
+    const elements = data.content_elements
+    if (!Array.isArray(elements)) return null
+
+    const paragraphs: string[] = []
+    for (const el of elements) {
+      if (!el || typeof el !== 'object') continue
+      const elem = el as Record<string, unknown>
+      if (elem.type === 'text' && typeof elem.content === 'string') {
+        const clean = (elem.content as string)
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/gi, ' ')
+          .replace(/&amp;/gi, '&')
+          .replace(/&lt;/gi, '<')
+          .replace(/&gt;/gi, '>')
+          .replace(/&ldquo;|&rdquo;|&laquo;|&raquo;/gi, '"')
+          .replace(/&#?\w+;/gi, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+        if (clean) paragraphs.push(clean)
+      }
+    }
+
+    return paragraphs.length > 0 ? paragraphs.join('\n') : null
+  } catch {
+    return null
+  }
+}
+
 export async function POST(request: NextRequest) {
   const auth = await requireAuth()
   if (auth.error) return auth.error
@@ -90,7 +129,16 @@ export async function POST(request: NextRequest) {
     }
 
     const html = await res.text()
-    const text = stripHtmlToText(html)
+    let text = stripHtmlToText(html)
+
+    // If standard stripping yields too little text, try Arc/Fusion CMS extraction
+    // (used by Página/12 and other Arc Publishing sites)
+    if (text.length < 500) {
+      const fusionText = extractArcFusionText(html)
+      if (fusionText && fusionText.length > text.length) {
+        text = fusionText
+      }
+    }
 
     if (text.length < 200) {
       return NextResponse.json({ error: 'El contenido de la página es demasiado corto para resumir' }, { status: 422 })
