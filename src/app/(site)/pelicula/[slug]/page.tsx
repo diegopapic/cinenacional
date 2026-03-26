@@ -312,7 +312,11 @@ async function getMovieData(slug: string) {
               }
             }
           },
-          orderBy: { sortOrder: 'asc' as const }
+          orderBy: [
+            { publishYear: 'asc' as const },
+            { publishMonth: 'asc' as const },
+            { publishDay: 'asc' as const }
+          ]
         },
 
         _count: {
