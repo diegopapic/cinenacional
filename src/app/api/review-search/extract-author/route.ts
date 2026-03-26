@@ -80,8 +80,9 @@ function extractArcFusionText(html: string): string | null {
 function detectNonReviewSignals(html: string): string[] {
   const signals: string[] = []
 
-  // Strip HTML to get plain text for analysis
-  let text = html
+  // Try Arc/Fusion first, fall back to generic HTML stripping
+  const fusionText = extractArcFusionText(html)
+  const text = fusionText || html
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<[^>]+>/g, ' ')
@@ -91,14 +92,6 @@ function detectNonReviewSignals(html: string): string[] {
     .replace(/&#?\w+;/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-
-  // If standard stripping yields too little, try Arc/Fusion CMS extraction
-  if (text.length < 500) {
-    const fusionText = extractArcFusionText(html)
-    if (fusionText && fusionText.length > text.length) {
-      text = fusionText
-    }
-  }
 
   if (text.length < 200) return signals
 

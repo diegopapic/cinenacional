@@ -129,16 +129,12 @@ export async function POST(request: NextRequest) {
     }
 
     const html = await res.text()
-    let text = stripHtmlToText(html)
 
-    // If standard stripping yields too little text, try Arc/Fusion CMS extraction
-    // (used by Página/12 and other Arc Publishing sites)
-    if (text.length < 500) {
-      const fusionText = extractArcFusionText(html)
-      if (fusionText && fusionText.length > text.length) {
-        text = fusionText
-      }
-    }
+    // Try Arc/Fusion CMS extraction first (Página/12 and other Arc Publishing sites).
+    // Fusion content is always higher quality than generic HTML stripping because
+    // stripHtmlToText picks up navigation, sidebar, and related articles as noise.
+    const fusionText = extractArcFusionText(html)
+    const text = fusionText || stripHtmlToText(html)
 
     if (text.length < 200) {
       return NextResponse.json({ error: 'El contenido de la página es demasiado corto para resumir' }, { status: 422 })
