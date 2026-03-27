@@ -242,6 +242,7 @@ model Person {
   festivalJury         FestivalJury[]
   festivalAwardWinners FestivalAwardWinner[]
   reviews              MovieReview[]
+  bookAuthorship       BookAuthor[]
 
   @@index([slug])
   @@index([firstName])
@@ -1252,4 +1253,33 @@ model FestivalAwardWinner {
   @@index([result])
   @@index([editionId, awardId])
   @@map("festival_award_winners")
+}
+
+model Book {
+  id            Int          @id @default(autoincrement())
+  slug          String       @unique @db.VarChar(255)
+  title         String       @db.VarChar(500)
+  publisher     String?      @map("publisher") @db.VarChar(255)
+  publishYear   Int?         @map("publish_year")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  authors       BookAuthor[]
+
+  @@index([title])
+  @@map("books")
+}
+
+model BookAuthor {
+  id       Int @id @default(autoincrement())
+  bookId   Int @map("book_id")
+  personId Int @map("person_id")
+  order    Int @default(0)
+
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, personId])
+  @@index([bookId])
+  @@index([personId])
+  @@map("book_authors")
 }

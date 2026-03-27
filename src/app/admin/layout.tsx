@@ -21,7 +21,8 @@ import {
   BarChart3,
   Calendar,
   Newspaper,
-  Search
+  Search,
+  BookOpen
 } from 'lucide-react'
 import { ReactNode, useState } from 'react'
 
@@ -46,6 +47,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Festivales', href: '/admin/festivals', icon: Calendar },
     { name: 'Lugares', href: '/admin/locations', icon: Globe },
     { name: 'Medios', href: '/admin/media-outlets', icon: Newspaper },
+    { name: 'Bibliografía', href: '/admin/books', icon: BookOpen },
     { name: 'Temas', href: '/admin/themes', icon: Tag },
     { name: 'Calificaciones', href: '/admin/calificaciones', icon: Tag },
     { name: 'Buscar Críticas', href: '/admin/review-search', icon: Search }
