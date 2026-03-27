@@ -22,11 +22,10 @@ export function generateImageCaption(image: ImageWithRelations): string {
     
     if (names.length === 1) {
       parts.push(names[0])
-    } else if (names.length === 2) {
-      parts.push(`${names[0]} y ${names[1]}`)
-    } else if (names.length > 2) {
-      const lastPerson = names.pop()
-      parts.push(`${names.join(', ')} y ${lastPerson}`)
+    } else if (names.length >= 2) {
+      const lastPerson = names.pop()!
+      const conjunction = /^(i|hi)/i.test(lastPerson) ? 'e' : 'y'
+      parts.push(`${names.join(', ')} ${conjunction} ${lastPerson}`)
     }
   }
   
