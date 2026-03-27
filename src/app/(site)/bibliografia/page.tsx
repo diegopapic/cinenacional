@@ -35,11 +35,13 @@ async function getBooks(): Promise<BookWithAuthors[]> {
     },
   })
 
-  // Sort by first author's last name (alphabetical)
+  // Sort by first author's last name, then by publish year
   return books.sort((a, b) => {
     const lastA = (a.authors[0]?.person.lastName || '').toLowerCase()
     const lastB = (b.authors[0]?.person.lastName || '').toLowerCase()
-    return lastA.localeCompare(lastB, 'es')
+    const cmp = lastA.localeCompare(lastB, 'es')
+    if (cmp !== 0) return cmp
+    return (a.publishYear || 0) - (b.publishYear || 0)
   })
 }
 
