@@ -22,20 +22,20 @@ export function BasicInfoFields({
     formData,
     updateField,
 }: BasicInfoFieldsProps) {
-    // Estados para fechas parciales
-    const [isPartialBirthDate, setIsPartialBirthDate] = useState(false);
-    const [partialBirthDate, setPartialBirthDate] = useState<PartialDate>({
-        year: null,
-        month: null,
-        day: null
-    });
-    
-    const [isPartialDeathDate, setIsPartialDeathDate] = useState(false);
-    const [partialDeathDate, setPartialDeathDate] = useState<PartialDate>({
-        year: null,
-        month: null,
-        day: null
-    });
+    // Estados para fechas parciales — inicializar desde formData para edición
+    const [isPartialBirthDate, setIsPartialBirthDate] = useState(
+        () => formData.isPartialBirthDate ?? false
+    );
+    const [partialBirthDate, setPartialBirthDate] = useState<PartialDate>(
+        () => formData.partialBirthDate ?? { year: null, month: null, day: null }
+    );
+
+    const [isPartialDeathDate, setIsPartialDeathDate] = useState(
+        () => formData.isPartialDeathDate ?? false
+    );
+    const [partialDeathDate, setPartialDeathDate] = useState<PartialDate>(
+        () => formData.partialDeathDate ?? { year: null, month: null, day: null }
+    );
 
     // Cargar estados de fechas parciales cuando formData las trae del server
     useValueChange(formData.isPartialBirthDate, (isPartial) => {
