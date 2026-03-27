@@ -418,6 +418,7 @@ export default function AdminBooksPage() {
 
                   {/* Buscador de persona */}
                   <PersonSearchInput
+                    key={`author-search-${authors.length}`}
                     onChange={(personId, personName) => handleAddAuthor(personId, personName)}
                     placeholder="Buscar autor..."
                     showAlternativeNames={false}
