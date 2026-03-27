@@ -55,6 +55,7 @@ export default function AdminBooksPage() {
   })
   const [authors, setAuthors] = useState<AuthorEntry[]>([])
   const [formErrors, setFormErrors] = useState({ title: '', authors: '' })
+  const [authorSearchKey, setAuthorSearchKey] = useState(0)
 
   const { data: books = [], isLoading: loading } = useQuery<Book[]>({
     queryKey: ['admin-books'],
@@ -133,6 +134,7 @@ export default function AdminBooksPage() {
     setAuthors([])
     setFormErrors({ title: '', authors: '' })
     setEditingBook(null)
+    setAuthorSearchKey(0)
   }
 
   const handleEdit = (book: Book) => {
@@ -179,6 +181,7 @@ export default function AdminBooksPage() {
       return
     }
     setAuthors(prev => [...prev, { personId, personName: personName || '' }])
+    setAuthorSearchKey(prev => prev + 1)
     if (formErrors.authors) {
       setFormErrors(prev => ({ ...prev, authors: '' }))
     }
@@ -418,7 +421,7 @@ export default function AdminBooksPage() {
 
                   {/* Buscador de persona */}
                   <PersonSearchInput
-                    key={`author-search-${authors.length}`}
+                    key={`author-search-${authorSearchKey}`}
                     onChange={(personId, personName) => handleAddAuthor(personId, personName)}
                     placeholder="Buscar autor..."
                     showAlternativeNames={false}
