@@ -1,7 +1,6 @@
 // components/admin/RoleSelector.tsx
 import { useState, useRef, useCallback } from 'react'
 import { useClickOutside } from '@/hooks/useClickOutside'
-import { useValueChange } from '@/hooks/useValueChange'
 import { useQuery } from '@tanstack/react-query'
 import { useDebounce } from '@/hooks/useDebounce'
 import { Search, X } from 'lucide-react'
@@ -44,6 +43,7 @@ export default function RoleSelector({
   // Departamento efectivo: fixedDepartment tiene prioridad
   const effectiveDepartment = fixedDepartment || selectedDepartment || ''
 
+  const [syncedRoleId, setSyncedRoleId] = useState<number | undefined>(undefined)
   const containerRef = useRef<HTMLDivElement>(null)
   const debouncedSearch = useDebounce(searchTerm, 300)
 
@@ -55,13 +55,15 @@ export default function RoleSelector({
     staleTime: 5 * 60 * 1000,
   })
 
-  // Sync loadedRole → local state
-  useValueChange(loadedRole, (role) => {
-    if (role) {
-      setSelectedRole(role)
-      setSearchTerm(role.name)
-    }
-  })
+  // Sync loadedRole → local state (adjust-state-during-render pattern)
+  // useValueChange no sirve aquí porque no se ejecuta en el primer render,
+  // y si React Query devuelve datos cacheados, loadedRole ya tiene valor
+  // desde el mount y el callback nunca se dispara.
+  if (loadedRole && loadedRole.id !== syncedRoleId) {
+    setSyncedRoleId(loadedRole.id)
+    setSelectedRole(loadedRole)
+    setSearchTerm(loadedRole.name)
+  }
 
   // Cerrar dropdown al hacer click fuera
   useClickOutside(containerRef, useCallback(() => setIsOpen(false), []))
