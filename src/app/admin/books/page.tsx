@@ -55,7 +55,7 @@ export default function AdminBooksPage() {
   })
   const [authors, setAuthors] = useState<AuthorEntry[]>([])
   const [formErrors, setFormErrors] = useState({ title: '', authors: '' })
-  const [authorSearchKey, setAuthorSearchKey] = useState(0)
+  const [showAuthorSearch, setShowAuthorSearch] = useState(false)
 
   const { data: books = [], isLoading: loading } = useQuery<Book[]>({
     queryKey: ['admin-books'],
@@ -134,7 +134,7 @@ export default function AdminBooksPage() {
     setAuthors([])
     setFormErrors({ title: '', authors: '' })
     setEditingBook(null)
-    setAuthorSearchKey(0)
+    setShowAuthorSearch(false)
   }
 
   const handleEdit = (book: Book) => {
@@ -181,7 +181,7 @@ export default function AdminBooksPage() {
       return
     }
     setAuthors(prev => [...prev, { personId, personName: personName || '' }])
-    setAuthorSearchKey(prev => prev + 1)
+    setShowAuthorSearch(false)
     if (formErrors.authors) {
       setFormErrors(prev => ({ ...prev, authors: '' }))
     }
@@ -419,13 +419,23 @@ export default function AdminBooksPage() {
                     </div>
                   )}
 
-                  {/* Buscador de persona */}
-                  <PersonSearchInput
-                    key={`author-search-${authorSearchKey}`}
-                    onChange={(personId, personName) => handleAddAuthor(personId, personName)}
-                    placeholder="Buscar autor..."
-                    showAlternativeNames={false}
-                  />
+                  {/* Botón o buscador de autor */}
+                  {showAuthorSearch ? (
+                    <PersonSearchInput
+                      onChange={(personId, personName) => handleAddAuthor(personId, personName)}
+                      placeholder="Buscar autor..."
+                      showAlternativeNames={false}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowAuthorSearch(true)}
+                      className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Agregar autor
+                    </button>
+                  )}
                   {formErrors.authors && (
                     <p className="mt-1 text-sm text-red-600">{formErrors.authors}</p>
                   )}
