@@ -47,21 +47,16 @@ async function getBooks(): Promise<BookWithAuthors[]> {
 
 /**
  * Format authors for bibliographic citation.
- * First author: "Apellido, Nombre", rest: "Nombre Apellido".
+ * All authors: "Apellido, Nombre".
  * Joined with " y " for two authors, ", " + " y " for three or more.
  */
 function formatAuthors(authors: BookWithAuthors['authors']): string {
   if (authors.length === 0) return ''
 
-  const names = authors.map((a, i) => {
+  const names = authors.map((a) => {
     const first = a.person.firstName || ''
     const last = a.person.lastName || ''
-    if (i === 0) {
-      // First author: "Apellido, Nombre"
-      return last ? `${last}, ${first}`.trim().replace(/,\s*$/, '') : first
-    }
-    // Subsequent authors: "Nombre Apellido"
-    return [first, last].filter(Boolean).join(' ')
+    return last ? `${last}, ${first}`.trim().replace(/,\s*$/, '') : first
   })
 
   if (names.length === 1) return names[0]
