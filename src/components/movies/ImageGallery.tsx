@@ -271,18 +271,19 @@ export function ImageGallery({ images }: ImageGalleryProps) {
           </button>
 
           {/* Image */}
-          <div onClick={(e) => e.stopPropagation()} className="relative flex flex-col items-center gap-4">
+          <div className="pointer-events-none relative flex flex-col items-center gap-4">
             <div className="relative h-[60vh] md:h-[75vh] w-[90vw]">
               <Image
                 loader={cloudinaryLoader}
                 src={images[lightbox.index].url}
                 alt={getCaption(images[lightbox.index])}
                 fill
-                className="object-contain"
+                className="pointer-events-auto object-contain"
                 sizes="90vw"
+                onClick={(e) => e.stopPropagation()}
               />
             </div>
-            <div className="text-center">
+            <div className="pointer-events-auto text-center" onClick={(e) => e.stopPropagation()}>
               <p className="text-[13px] text-white/50">{getCaption(images[lightbox.index])}</p>
               <p className="text-[11px] text-white/25 mt-1">{lightbox.index + 1} de {images.length}</p>
             </div>
