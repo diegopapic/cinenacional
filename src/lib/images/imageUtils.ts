@@ -62,7 +62,7 @@ export function generateImageCaption(image: ImageWithRelations): string {
         parts.push(hasNames ? `en el estreno de ${movieRef}` : `Estreno de ${movieRef}`)
       }
       if (image.eventName) {
-        parts.push(`(${image.eventName})`)
+        parts.push(`en el ${image.eventName}`)
       }
       break
       
