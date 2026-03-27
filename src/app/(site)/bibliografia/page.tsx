@@ -22,7 +22,7 @@ interface BookWithAuthors {
 }
 
 async function getBooks(): Promise<BookWithAuthors[]> {
-  return prisma.book.findMany({
+  const books = await prisma.book.findMany({
     include: {
       authors: {
         include: {
@@ -33,7 +33,13 @@ async function getBooks(): Promise<BookWithAuthors[]> {
         orderBy: { order: 'asc' },
       },
     },
-    orderBy: [{ publishYear: 'asc' }, { title: 'asc' }],
+  })
+
+  // Sort by first author's last name (alphabetical)
+  return books.sort((a, b) => {
+    const lastA = (a.authors[0]?.person.lastName || '').toLowerCase()
+    const lastB = (b.authors[0]?.person.lastName || '').toLowerCase()
+    return lastA.localeCompare(lastB, 'es')
   })
 }
 
@@ -74,7 +80,7 @@ export default async function BibliografiaPage() {
         {books.length === 0 ? (
           <p>No hay libros cargados todavía.</p>
         ) : (
-          <ul className="list-none p-0 space-y-3">
+          <ul className="list-disc pl-5 space-y-3">
             {books.map((book) => (
               <li key={book.id}>
                 {formatAuthors(book.authors)}
