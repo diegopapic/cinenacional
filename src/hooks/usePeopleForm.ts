@@ -69,7 +69,7 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
     const formPopulatedRef = useRef(false);
 
     // Query para cargar persona en edición
-    const { data: personData, isLoading: loading, refetch: reloadQuery } = useQuery({
+    const { data: personData, isLoading: loading, refetch: reloadQuery, dataUpdatedAt } = useQuery({
         queryKey: ['person-form', personId],
         queryFn: async () => {
             const person = await peopleService.getById(personId!);
@@ -80,14 +80,21 @@ export function usePeopleForm({ personId, onSuccess }: UsePeopleFormProps = {}) 
     });
 
     // Sync personData → formData (adjust during render)
+    // Track dataUpdatedAt to re-populate when a background refetch brings fresh data
+    // (e.g., after saving and navigating back while stale cache is served first)
     const prevPersonIdRef = useRef(personId);
+    const prevDataTimestampRef = useRef(0);
     if (personId !== prevPersonIdRef.current) {
         prevPersonIdRef.current = personId;
         formPopulatedRef.current = false;
+        prevDataTimestampRef.current = 0;
     }
-    if (personData && personId && !formPopulatedRef.current) {
-        formPopulatedRef.current = true;
-        setFormData(formatPersonForForm(personData, personId));
+    if (personData && personId && dataUpdatedAt !== prevDataTimestampRef.current) {
+        prevDataTimestampRef.current = dataUpdatedAt;
+        if (!formPopulatedRef.current || !isDirty) {
+            formPopulatedRef.current = true;
+            setFormData(formatPersonForForm(personData, personId));
+        }
     }
 
     const loadPerson = async () => {
