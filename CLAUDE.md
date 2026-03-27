@@ -40,6 +40,7 @@
 - Antes de cada commit, preguntate: "¿Aprobaría esto un ingeniero senior?"
 - Si hay TypeScript errors, ESLint warnings o build failures: arreglalos, no los ignorés.
 - Para cambios no triviales, revisá si hay una solución más simple antes de presentarla.
+- Una vez que verificaste que no hay errores de tipos (`tsc --noEmit`) ni de lint (`npm run lint`), hacé commit y push a main automáticamente. No esperar a que el usuario lo pida.
 
 ## Bucle de automejora
 - Tras cualquier corrección por parte del usuario: actualizá `tasks/lessons.md` con el patrón del error.
