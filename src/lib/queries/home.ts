@@ -211,7 +211,7 @@ export async function getHomeFeed(): Promise<HomeData> {
         lastName: true,
         photoUrl: true,
         gender: true,
-        _count: { select: { castRoles: true, crewRoles: true } },
+        _count: { select: { castRoles: true, crewRoles: true, reviews: true, bookAuthorship: true } },
         crewRoles: {
           select: {
             role: { select: { name: true } },
@@ -263,6 +263,10 @@ export async function getHomeFeed(): Promise<HomeData> {
       } else {
         role = 'Equipo técnico'
       }
+    } else if (_count.bookAuthorship > 0) {
+      role = person.gender === 'FEMALE' ? 'Autora de bibliografía' : 'Autor de bibliografía'
+    } else if (_count.reviews > 0) {
+      role = person.gender === 'FEMALE' ? 'Crítica' : 'Crítico'
     } else {
       role = 'Profesional del cine'
     }
