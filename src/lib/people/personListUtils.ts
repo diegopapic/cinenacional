@@ -136,7 +136,9 @@ export function buildTitle(
   }
 
   if (filters.birthYearFrom && filters.birthYearTo) {
-    parts.push(`nacid${sfx} entre ${filters.birthYearFrom} y ${filters.birthYearTo}`);
+    parts.push(filters.birthYearFrom === filters.birthYearTo
+      ? `nacid${sfx} en ${filters.birthYearFrom}`
+      : `nacid${sfx} entre ${filters.birthYearFrom} y ${filters.birthYearTo}`);
   } else if (filters.birthYearFrom) {
     parts.push(`nacid${sfx} desde ${filters.birthYearFrom}`);
   } else if (filters.birthYearTo) {
@@ -149,7 +151,9 @@ export function buildTitle(
   }
 
   if (filters.deathYearFrom && filters.deathYearTo) {
-    parts.push(`fallecid${sfx} entre ${filters.deathYearFrom} y ${filters.deathYearTo}`);
+    parts.push(filters.deathYearFrom === filters.deathYearTo
+      ? `fallecid${sfx} en ${filters.deathYearFrom}`
+      : `fallecid${sfx} entre ${filters.deathYearFrom} y ${filters.deathYearTo}`);
   } else if (filters.deathYearFrom) {
     parts.push(`fallecid${sfx} desde ${filters.deathYearFrom}`);
   } else if (filters.deathYearTo) {

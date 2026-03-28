@@ -151,7 +151,9 @@ export function buildTitle(
 
   // Rango de producción
   if (filters.productionYearFrom && filters.productionYearTo) {
-    parts.push(`producid${sfx} entre ${filters.productionYearFrom} y ${filters.productionYearTo}`);
+    parts.push(filters.productionYearFrom === filters.productionYearTo
+      ? `producid${sfx} en ${filters.productionYearFrom}`
+      : `producid${sfx} entre ${filters.productionYearFrom} y ${filters.productionYearTo}`);
   } else if (filters.productionYearFrom) {
     parts.push(`producid${sfx} desde ${filters.productionYearFrom}`);
   } else if (filters.productionYearTo) {
@@ -160,7 +162,9 @@ export function buildTitle(
 
   // Rango de estreno
   if (filters.releaseDateFrom && filters.releaseDateTo) {
-    parts.push(`estrenad${sfx} entre el ${formatISODateDisplay(filters.releaseDateFrom)} y el ${formatISODateDisplay(filters.releaseDateTo)}`);
+    parts.push(filters.releaseDateFrom === filters.releaseDateTo
+      ? `estrenad${sfx} el ${formatISODateDisplay(filters.releaseDateFrom)}`
+      : `estrenad${sfx} entre el ${formatISODateDisplay(filters.releaseDateFrom)} y el ${formatISODateDisplay(filters.releaseDateTo)}`);
   } else if (filters.releaseDateFrom) {
     parts.push(`estrenad${sfx} desde el ${formatISODateDisplay(filters.releaseDateFrom)}`);
   } else if (filters.releaseDateTo) {
