@@ -435,6 +435,14 @@ body {
   background-color: rgb(255 255 255) !important;
 }
 
+/* Fix para el editor markdown en admin */
+[data-admin="true"] .w-md-editor,
+[data-admin="true"] .w-md-editor .w-md-editor-text-pre,
+[data-admin="true"] .w-md-editor .w-md-editor-text-input,
+[data-admin="true"] .w-md-editor .w-md-editor-text {
+  color: rgb(17 24 39) !important;
+}
+
 /* Excepción para textarea bloqueada */
 [data-admin="true"] textarea[readonly] {
   background-color: #ECEEF1 !important; /* gray-700 */
