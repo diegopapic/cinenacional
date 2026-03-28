@@ -178,7 +178,10 @@ export function buildTitle(
   }
 
   if (parts.length > 0) {
-    return `${base}, ${parts.join(', ')}`;
+    const [first, ...rest] = parts;
+    return rest.length > 0
+      ? `${base} ${first}, ${rest.join(', ')}`
+      : `${base} ${first}`;
   }
 
   return base;
