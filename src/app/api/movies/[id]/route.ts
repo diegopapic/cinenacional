@@ -747,7 +747,7 @@ export const PUT = apiHandler(async (
   // INVALIDACION COMPLETA DE CACHES
   log.debug('Invalidating caches');
 
-  // 1. Invalidar Redis
+  // 1. Invalidar Redis (detalle + listados)
   const cacheKeysToInvalidate = [
     `movie:id:${id}:v1`,
     `movie:slug:${existingMovie.slug}:v1`,
@@ -762,8 +762,27 @@ export const PUT = apiHandler(async (
     )
   );
 
-  // 2. Invalidar caché en memoria
+  // Invalidar listados en Redis (updated_at cambió, el orden es distinto)
+  const redisClient = RedisClient.getInstance();
+  if (redisClient) {
+    try {
+      const listKeys = await redisClient.keys('movies:list:*');
+      if (listKeys.length > 0) {
+        await redisClient.del(...listKeys);
+        log.debug('List caches invalidated', { count: listKeys.length });
+      }
+    } catch (err) {
+      log.warn('Redis list invalidation error', { error: String(err) });
+    }
+  }
+
+  // 2. Invalidar caché en memoria (detalle + listados)
   cacheKeysToInvalidate.forEach(key => memoryCache.delete(key));
+  for (const key of memoryCache.keys()) {
+    if (key.startsWith('movies:list:')) {
+      memoryCache.delete(key);
+    }
+  }
 
   // 3. Invalidar caché de Next.js (por si acaso, aunque ya no lo usamos principalmente)
   try {
@@ -840,7 +859,7 @@ export async function DELETE(
     // INVALIDAR CACHES después de eliminar
     log.debug('Invalidating caches');
 
-    // 1. Invalidar Redis
+    // 1. Invalidar Redis (detalle + listados)
     const cacheKeysToInvalidate = [
       `movie:id:${id}:v1`,
       `movie:slug:${movie.slug}:v1`,
@@ -855,8 +874,27 @@ export async function DELETE(
       )
     );
 
-    // 2. Invalidar en memoria
+    // Invalidar listados en Redis
+    const redisClient = RedisClient.getInstance();
+    if (redisClient) {
+      try {
+        const listKeys = await redisClient.keys('movies:list:*');
+        if (listKeys.length > 0) {
+          await redisClient.del(...listKeys);
+          log.debug('List caches invalidated', { count: listKeys.length });
+        }
+      } catch (err) {
+        log.warn('Redis list invalidation error', { error: String(err) });
+      }
+    }
+
+    // 2. Invalidar en memoria (detalle + listados)
     cacheKeysToInvalidate.forEach(key => memoryCache.delete(key));
+    for (const key of memoryCache.keys()) {
+      if (key.startsWith('movies:list:')) {
+        memoryCache.delete(key);
+      }
+    }
 
     // 3. Invalidar caché de Next.js
     try {
