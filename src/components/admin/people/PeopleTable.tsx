@@ -273,7 +273,7 @@ export function PeopleTable() {
                           disabled={
                             (person._count?.castRoles || 0) + (person._count?.crewRoles || 0) > 0
                           }
-                          className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                           title={
                             (person._count?.castRoles || 0) + (person._count?.crewRoles || 0) > 0
                               ? "No se puede eliminar porque tiene películas asociadas"
