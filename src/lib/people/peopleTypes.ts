@@ -113,6 +113,8 @@ export interface PersonWithRelations extends Person {
     castRoles: number;
     crewRoles: number;
     awards: number;
+    reviews: number;
+    bookAuthorship: number;
   };
   // Campos de búsqueda: indican si el match fue en un nombre alternativo
   matchedAlternativeName?: string | null;

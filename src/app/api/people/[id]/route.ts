@@ -530,6 +530,8 @@ export const DELETE = apiHandler(async (
                 select: {
                     castRoles: true,
                     crewRoles: true,
+                    reviews: true,
+                    bookAuthorship: true,
                 },
             },
         }
@@ -547,6 +549,24 @@ export const DELETE = apiHandler(async (
         return NextResponse.json(
             {
                 error: `No se puede eliminar esta persona porque está asociada a ${totalRoles} película(s)`
+            },
+            { status: 400 }
+        );
+    }
+
+    if (person._count.reviews > 0) {
+        return NextResponse.json(
+            {
+                error: `No se puede eliminar esta persona porque tiene ${person._count.reviews} crítica(s) asociada(s)`
+            },
+            { status: 400 }
+        );
+    }
+
+    if (person._count.bookAuthorship > 0) {
+        return NextResponse.json(
+            {
+                error: `No se puede eliminar esta persona porque es autor(a) de ${person._count.bookAuthorship} libro(s)`
             },
             { status: 400 }
         );
