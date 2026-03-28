@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import Image from 'next/image';
 import cloudinaryLoader from '@/lib/images/cloudinaryLoader';
-import DOMPurify from 'isomorphic-dompurify';
+import { MarkdownContent } from '@/components/shared/MarkdownContent';
 import { getPersonPhotoUrl } from '@/lib/images/imageUtils';
 
 interface Person {
@@ -65,26 +65,16 @@ export function MovieInfo({ movie, onShareClick }: MovieInfoProps) {
       .filter((d): d is Director => d !== null);
   }, [movie.crew]);
 
-  // Sanitizar la sinopsis para prevenir XSS
-  const sanitizedSynopsis = movie.synopsis
-    ? DOMPurify.sanitize(movie.synopsis, {
-      ALLOWED_TAGS: ['p', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'b', 'i', 'span'],
-      ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
-      ADD_ATTR: ['target'],
-    })
-    : null;
-
   return (
     <div className="space-y-6">
       {/* Sinopsis - Solo renderizar si existe */}
-      {sanitizedSynopsis && (
+      {movie.synopsis && (
         <div className="grid grid-cols-1 gap-6">
           <div>
             <h3 className="text-[10px] uppercase tracking-wider text-muted-foreground/40 md:text-[11px] md:tracking-widest mb-3">Sinopsis</h3>
-            <div
-              className="prose-links text-sm leading-relaxed text-muted-foreground/80"
-              dangerouslySetInnerHTML={{ __html: sanitizedSynopsis }}
-            />
+            <MarkdownContent className="prose-links text-sm leading-relaxed text-muted-foreground/80">
+              {movie.synopsis}
+            </MarkdownContent>
           </div>
         </div>
       )}

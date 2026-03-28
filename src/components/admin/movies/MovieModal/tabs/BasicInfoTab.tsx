@@ -6,6 +6,7 @@ import { getErrorMessage } from '@/lib/movies/movieUtils'
 import { useMovieModalContext } from '@/contexts/MovieModalContext'
 import MovieFormEnhanced from '@/components/admin/MovieFormEnhanced'
 import { DateInput } from '@/components/admin/ui/DateInput'
+import { MarkdownEditor } from '@/components/admin/ui/MarkdownEditor'
 import type { MovieFormData } from '@/lib/movies/movieTypes'
 
 export default function BasicInfoTab() {
@@ -303,16 +304,11 @@ export default function BasicInfoTab() {
                 </span>
               )}
             </label>
-            <textarea
-    {...register('synopsis')}
-    rows={4}
-    readOnly={synopsisLocked}  // ✅ CAMBIO PRINCIPAL
-    className={`w-full px-3 py-2 border rounded-lg transition-all duration-200 ${
-      synopsisLocked
-        ? 'bg-gray-200 text-gray-700 border-gray-400 cursor-not-allowed shadow-inner'
-        : 'bg-white text-gray-900 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-    }`}
-  />
+            <MarkdownEditor<MovieFormData>
+              name="synopsis"
+              control={control}
+              readOnly={synopsisLocked}
+            />
           </div>
           {/* Checkbox para bloquear sinopsis */}
           <div className="mt-2">

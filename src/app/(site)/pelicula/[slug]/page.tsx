@@ -7,7 +7,6 @@ import { FAQSchema } from '@/components/shared/FAQSchema';
 import { MONTHS } from '@/lib/shared/dateUtils';
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
-import DOMPurify from 'isomorphic-dompurify';
 import { createLogger } from '@/lib/logger'
 
 const log = createLogger('page:pelicula')
@@ -823,7 +822,12 @@ export default async function MoviePage({ params }: PageProps) {
 
   // ¿De qué trata?
   if (movie.synopsis) {
-    const plainSynopsis = movie.synopsis.replace(/<[^>]*>/g, '').trim()
+    // Strip markdown syntax for plain text (FAQ schema)
+    const plainSynopsis = movie.synopsis
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // [text](url) → text
+      .replace(/[*_~`#>]/g, '')                   // Remove markdown chars
+      .replace(/\n{2,}/g, ' ')                    // Collapse double newlines
+      .trim()
     if (plainSynopsis.length > 0) {
       faqItems.push({
         question: `¿De qué trata ${movie.title}?`,
@@ -863,15 +867,6 @@ export default async function MoviePage({ params }: PageProps) {
     })
   }
 
-  // Sanitize synopsis on the server to avoid shipping isomorphic-dompurify to the client
-  const sanitizedSynopsis = movie.synopsis
-    ? DOMPurify.sanitize(movie.synopsis, {
-        ALLOWED_TAGS: ['p', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'b', 'i', 'span'],
-        ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
-        ADD_ATTR: ['target'],
-      })
-    : null
-
   return (
     <>
     <p className="sr-only">{narrativeParagraph}</p>
@@ -903,7 +898,7 @@ export default async function MoviePage({ params }: PageProps) {
     />
     <MoviePageClient
       movie={movie}
-      sanitizedSynopsis={sanitizedSynopsis}
+      synopsis={movie.synopsis ?? null}
       displayYear={displayYear}
       totalDuration={totalDuration}
       genres={genres}

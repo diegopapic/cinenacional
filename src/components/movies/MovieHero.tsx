@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { Play, X } from 'lucide-react';
 import { MOVIE_STAGES } from '@/lib/movies/movieConstants';
 import { BACKGROUND_PLACEHOLDER } from '@/lib/movies/movieConstants';
+import { MarkdownContent } from '@/components/shared/MarkdownContent';
 import { PosterPlaceholder } from '@/components/film/PosterPlaceholder';
 
 interface Director {
@@ -34,7 +35,7 @@ interface MovieHeroProps {
     abbreviation?: string | null;
   } | null;
   heroBackgroundImage?: string | null;
-  sanitizedSynopsis?: string | null;
+  synopsis?: string | null;
   countries?: Array<{ id: number; name: string }>;
   trailerUrl?: string | null;
   colorType?: { id: number; name: string } | null;
@@ -73,7 +74,7 @@ export function MovieHero({
   releaseDate,
   rating,
   heroBackgroundImage,
-  sanitizedSynopsis,
+  synopsis,
   countries = [],
   trailerUrl,
   stage,
@@ -352,11 +353,10 @@ export function MovieHero({
             {/* Below fold mobile: synopsis, trailer */}
             <div className="mt-5 flex flex-col gap-4">
 
-              {sanitizedSynopsis && (
-                <div
-                  className="prose-links text-[13px] leading-relaxed text-muted-foreground/70"
-                  dangerouslySetInnerHTML={{ __html: sanitizedSynopsis }}
-                />
+              {synopsis && (
+                <MarkdownContent className="prose-links text-[13px] leading-relaxed text-muted-foreground/70">
+                  {synopsis}
+                </MarkdownContent>
               )}
 
               {renderTrailerButton(true)}
@@ -413,11 +413,10 @@ export function MovieHero({
               </div>
 
               {/* Synopsis desktop */}
-              {sanitizedSynopsis && (
-                <div
-                  className="prose-links max-w-2xl text-sm leading-relaxed text-muted-foreground/80"
-                  dangerouslySetInnerHTML={{ __html: sanitizedSynopsis }}
-                />
+              {synopsis && (
+                <MarkdownContent className="prose-links max-w-2xl text-sm leading-relaxed text-muted-foreground/80">
+                  {synopsis}
+                </MarkdownContent>
               )}
 
               {/* Trailer button desktop */}
