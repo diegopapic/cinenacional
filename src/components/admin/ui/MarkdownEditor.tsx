@@ -18,26 +18,13 @@ export function MarkdownEditor<T extends FieldValues>({
 }: MarkdownEditorProps<T>) {
   const { field } = useController({ name, control })
 
-  if (readOnly) {
-    return (
-      <div data-color-mode="light">
-        <MDEditor
-          value={field.value ?? ''}
-          preview="preview"
-          hideToolbar
-          height={height}
-          visibleDragbar={false}
-        />
-      </div>
-    )
-  }
-
   return (
-    <div data-color-mode="light">
+    <div data-color-mode="light" className={readOnly ? 'opacity-60 pointer-events-none' : ''}>
       <MDEditor
         value={field.value ?? ''}
-        onChange={(val) => field.onChange(val ?? '')}
+        onChange={readOnly ? undefined : (val) => field.onChange(val ?? '')}
         preview="edit"
+        hideToolbar={readOnly}
         height={height}
         visibleDragbar={false}
         enableScroll
