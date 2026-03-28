@@ -201,7 +201,7 @@ function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
           </a>
           <button
             onClick={() => onEdit(movie)}
-            className="text-blue-600 hover:text-blue-900 transition-colors"
+            className="text-blue-600 hover:text-blue-900 transition-colors cursor-pointer"
             title="Editar"
           >
             <Edit className="w-4 h-4" />
@@ -209,7 +209,7 @@ function MovieRow({ movie, onEdit, onDelete, isDeleting }: MovieRowProps) {
           <button
             onClick={() => onDelete(movie.id)}
             disabled={isDeleting}
-            className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50"
+            className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50 cursor-pointer"
             title="Eliminar"
           >
             {isDeleting ? (
