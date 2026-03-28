@@ -11,12 +11,12 @@ import { requireAuth } from '@/lib/auth'
 import { apiHandler } from '@/lib/api/api-handler'
 import { deleteCloudinaryImage } from '@/lib/cloudinary'
 import { createLogger } from '@/lib/logger'
+import { getMemoryCache, MEMORY_CACHE_TTL, invalidateMemoryCacheByPrefix } from '@/lib/api/memory-cache'
 
 const log = createLogger('api:movies:detail')
 
-// Cache en memoria como fallback
-const memoryCache = new Map<string, { data: unknown; timestamp: number }>();
-const MEMORY_CACHE_TTL = 60 * 60 * 1000; // 1 hora en ms
+// Cache en memoria como fallback (compartido entre route handlers)
+const memoryCache = getMemoryCache();
 const REDIS_CACHE_TTL = 3600; // 1 hora en segundos
 
 // GET /api/movies/[id] - Obtener película por ID o slug
@@ -778,11 +778,7 @@ export const PUT = apiHandler(async (
 
   // 2. Invalidar caché en memoria (detalle + listados)
   cacheKeysToInvalidate.forEach(key => memoryCache.delete(key));
-  for (const key of memoryCache.keys()) {
-    if (key.startsWith('movies:list:')) {
-      memoryCache.delete(key);
-    }
-  }
+  invalidateMemoryCacheByPrefix('movies:list:');
 
   // 3. Invalidar caché de Next.js (por si acaso, aunque ya no lo usamos principalmente)
   try {
@@ -890,11 +886,7 @@ export async function DELETE(
 
     // 2. Invalidar en memoria (detalle + listados)
     cacheKeysToInvalidate.forEach(key => memoryCache.delete(key));
-    for (const key of memoryCache.keys()) {
-      if (key.startsWith('movies:list:')) {
-        memoryCache.delete(key);
-      }
-    }
+    invalidateMemoryCacheByPrefix('movies:list:');
 
     // 3. Invalidar caché de Next.js
     try {

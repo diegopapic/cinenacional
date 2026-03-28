@@ -9,6 +9,7 @@ import { requireAuth } from '@/lib/auth'
 import { apiHandler } from '@/lib/api/api-handler'
 import { parseIntClamped, LIMITS, PAGES, YEARS } from '@/lib/api/parse-params'
 import { createLogger } from '@/lib/logger'
+import { getMemoryCache, MEMORY_CACHE_TTL, invalidateMemoryCacheByPrefix } from '@/lib/api/memory-cache'
 
 const log = createLogger('api:movies')
 
@@ -73,9 +74,8 @@ interface ScreeningVenueEntry {
 // CACHE CONFIGURATION
 // ============================================
 
-// Cache en memoria como fallback
-const memoryCache = new Map<string, { data: unknown; timestamp: number }>();
-const MEMORY_CACHE_TTL = 60 * 60 * 1000; // 1 hora en ms
+// Cache en memoria como fallback (compartido entre route handlers)
+const memoryCache = getMemoryCache();
 
 // TTL diferenciado según tipo de consulta
 function getRedisTTL(searchParams: URLSearchParams): number {
@@ -807,13 +807,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   // Limpiar memoria también
-  let memoryKeysDeleted = 0;
-  for (const key of memoryCache.keys()) {
-    if (key.startsWith('movies:list:')) {
-      memoryCache.delete(key);
-      memoryKeysDeleted++;
-    }
-  }
+  const memoryKeysDeleted = invalidateMemoryCacheByPrefix('movies:list:');
   if (memoryKeysDeleted > 0) {
     log.debug('Memory list caches invalidated', { count: memoryKeysDeleted });
   }
