@@ -4,9 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { apiHandler } from '@/lib/api/api-handler'
-import { createLogger } from '@/lib/logger'
-
-const log = createLogger('api:search:full')
+import { normalizeSearch, norm } from '@/lib/api/search-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -197,223 +195,130 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return NextResponse.json({ movies: [], people: [], totalMovies: 0, totalPeople: 0 })
   }
 
-  const searchQuery = query.toLowerCase().trim()
+  const searchQuery = normalizeSearch(query)
   const searchPattern = `%${searchQuery}%`
   const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0)
 
-  try {
-    // ============ PELÍCULAS ============
-    // Busca en título principal + títulos alternativos
-    let movies: (MovieSearchRow & { matchedAlternativeTitle: string | null })[]
-    if (searchTerms.length <= 1) {
-      movies = await prisma.$queryRaw`
-        SELECT m.id, m.slug, m.title, m.year,
-          m.release_year as "releaseYear", m.release_month as "releaseMonth", m.release_day as "releaseDay",
-          m.poster_url as "posterUrl", m.synopsis, m.duration, m.tipo_duracion as "tipoDuracion",
-          m.stage, m.sound_type as "soundType", m.popularity,
-          (SELECT mat.title FROM movie_alternative_titles mat
-           WHERE mat.movie_id = m.id AND unaccent(LOWER(mat.title)) LIKE unaccent(${searchPattern})
-           LIMIT 1) as "matchedAlternativeTitle"
-        FROM movies m
-        WHERE unaccent(LOWER(m.title)) LIKE unaccent(${searchPattern})
-          OR EXISTS (
-            SELECT 1 FROM movie_alternative_titles mat
-            WHERE mat.movie_id = m.id AND unaccent(LOWER(mat.title)) LIKE unaccent(${searchPattern})
-          )
-        ORDER BY COALESCE(m.popularity, 0) DESC, m.title ASC
-        LIMIT 50
-      `
-    } else {
-      const titleTermConditions = searchTerms.map(t =>
-        Prisma.sql`unaccent(LOWER(m.title)) LIKE unaccent(${`%${t}%`})`
-      )
-      const titleWhereClause = Prisma.join(titleTermConditions, ' AND ')
-      const altTitleTermConditions = searchTerms.map(t =>
-        Prisma.sql`unaccent(LOWER(mat.title)) LIKE unaccent(${`%${t}%`})`
-      )
-      const altTitleWhereClause = Prisma.join(altTitleTermConditions, ' AND ')
-      movies = await prisma.$queryRaw`
-        SELECT m.id, m.slug, m.title, m.year,
-          m.release_year as "releaseYear", m.release_month as "releaseMonth", m.release_day as "releaseDay",
-          m.poster_url as "posterUrl", m.synopsis, m.duration, m.tipo_duracion as "tipoDuracion",
-          m.stage, m.sound_type as "soundType", m.popularity,
-          (SELECT mat2.title FROM movie_alternative_titles mat2
-           WHERE mat2.movie_id = m.id AND ${altTitleWhereClause}
-           LIMIT 1) as "matchedAlternativeTitle"
-        FROM movies m
-        WHERE (${titleWhereClause})
-          OR EXISTS (
-            SELECT 1 FROM movie_alternative_titles mat
-            WHERE mat.movie_id = m.id AND ${altTitleWhereClause}
-          )
-        ORDER BY
-          CASE WHEN unaccent(LOWER(m.title)) LIKE unaccent(${searchPattern}) THEN 0 ELSE 1 END,
-          COALESCE(m.popularity, 0) DESC, m.title ASC
-        LIMIT 50
-      `
-    }
-
-    const { directors, genres, countries } = await getMovieRelations(movies.map(m => m.id))
-
-    const formattedMovies = movies.map(movie => ({
-      id: movie.id, slug: movie.slug, title: movie.title, year: movie.year,
-      releaseYear: movie.releaseYear, releaseMonth: movie.releaseMonth, releaseDay: movie.releaseDay,
-      posterUrl: movie.posterUrl, synopsis: movie.synopsis, duration: movie.duration,
-      tipoDuracion: movie.tipoDuracion, stage: movie.stage, soundType: movie.soundType,
-      directors: directors.get(movie.id) ?? [],
-      genres: genres.get(movie.id) ?? [],
-      countries: countries.get(movie.id) ?? [],
-      matchedAlternativeTitle: movie.matchedAlternativeTitle ?? null,
-    }))
-
-    // ============ PERSONAS ============
-    // Busca en nombre principal, real name + nombres alternativos
-    const people = await prisma.$queryRaw<(PersonSearchRow & { matchedAlternativeName: string | null })[]>`
-      SELECT
-        p.id, p.slug, p.first_name as "firstName", p.last_name as "lastName",
-        p.photo_url as "photoUrl", p.gender,
-        p.birth_year as "birthYear", p.birth_month as "birthMonth", p.birth_day as "birthDay",
-        p.death_year as "deathYear", p.death_month as "deathMonth", p.death_day as "deathDay",
-        (
-          (SELECT COUNT(*)::int FROM movie_cast WHERE person_id = p.id) +
-          (SELECT COUNT(*)::int FROM movie_crew WHERE person_id = p.id)
-        ) as "movieCount",
-        (SELECT pan.full_name FROM people_alternative_names pan
-         WHERE pan.person_id = p.id AND unaccent(LOWER(pan.full_name)) LIKE unaccent(${searchPattern})
-         LIMIT 1) as "matchedAlternativeName"
-      FROM people p
-      WHERE p.is_active = true
-      AND (
-        unaccent(LOWER(COALESCE(p.first_name, ''))) LIKE unaccent(${searchPattern})
-        OR unaccent(LOWER(COALESCE(p.last_name, ''))) LIKE unaccent(${searchPattern})
-        OR unaccent(LOWER(COALESCE(p.real_name, ''))) LIKE unaccent(${searchPattern})
-        OR unaccent(LOWER(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, ''))) LIKE unaccent(${searchPattern})
+  // ============ PELÍCULAS ============
+  let movies: (MovieSearchRow & { matchedAlternativeTitle: string | null })[]
+  if (searchTerms.length <= 1) {
+    movies = await prisma.$queryRaw`
+      SELECT m.id, m.slug, m.title, m.year,
+        m.release_year as "releaseYear", m.release_month as "releaseMonth", m.release_day as "releaseDay",
+        m.poster_url as "posterUrl", m.synopsis, m.duration, m.tipo_duracion as "tipoDuracion",
+        m.stage, m.sound_type as "soundType", m.popularity,
+        (SELECT mat.title FROM movie_alternative_titles mat
+         WHERE mat.movie_id = m.id AND ${norm('mat.title')} LIKE ${searchPattern}
+         LIMIT 1) as "matchedAlternativeTitle"
+      FROM movies m
+      WHERE ${norm('m.title')} LIKE ${searchPattern}
         OR EXISTS (
-          SELECT 1 FROM people_alternative_names pan
-          WHERE pan.person_id = p.id AND unaccent(LOWER(pan.full_name)) LIKE unaccent(${searchPattern})
+          SELECT 1 FROM movie_alternative_titles mat
+          WHERE mat.movie_id = m.id AND ${norm('mat.title')} LIKE ${searchPattern}
         )
-      )
-      ORDER BY
-        (
-          (SELECT COUNT(*) FROM movie_cast WHERE person_id = p.id) +
-          (SELECT COUNT(*) FROM movie_crew WHERE person_id = p.id)
-        ) DESC,
-        p.last_name ASC NULLS LAST,
-        p.first_name ASC NULLS LAST
+      ORDER BY COALESCE(m.popularity, 0) DESC, m.title ASC
       LIMIT 50
     `
-
-    const { locations, featured } = await getPersonExtras(people.map(p => p.id))
-
-    const formattedPeople = people.map(person => {
-      const loc = locations.get(person.id)
-      const fm = featured.get(person.id)
-      return {
-        ...person,
-        birthLocationPath: loc?.birthPath ?? null,
-        deathLocationPath: loc?.deathPath ?? null,
-        matchedAlternativeName: person.matchedAlternativeName ?? null,
-        featuredMovie: fm ? {
-          id: fm.movie_id, slug: fm.movie_slug, title: fm.movie_title,
-          year: fm.movie_year, role: fm.role_name,
-        } : null,
-      }
-    })
-
-    return NextResponse.json({
-      movies: formattedMovies,
-      people: formattedPeople,
-      totalMovies: formattedMovies.length,
-      totalPeople: formattedPeople.length,
-    })
-
-  } catch {
-    log.debug('Unaccent not available, using fallback')
-
-    // Fallback sin unaccent (incluye títulos/nombres alternativos)
-    const [movies, peopleRaw] = await Promise.all([
-      prisma.movie.findMany({
-        where: {
-          OR: [
-            { AND: searchTerms.map(term => ({ title: { contains: term, mode: 'insensitive' as const } })) },
-            { alternativeTitles: { some: { AND: searchTerms.map(term => ({ title: { contains: term, mode: 'insensitive' as const } })) } } }
-          ]
-        },
-        select: {
-          id: true, slug: true, title: true, year: true,
-          releaseYear: true, releaseMonth: true, releaseDay: true,
-          posterUrl: true, synopsis: true, duration: true,
-          tipoDuracion: true, stage: true, soundType: true, popularity: true,
-          genres: { select: { genre: { select: { id: true, name: true } } } },
-          crew: {
-            where: { role: { department: 'DIRECCION', name: 'Director' } },
-            select: { person: { select: { id: true, slug: true, firstName: true, lastName: true } } },
-            orderBy: { billingOrder: 'asc' },
-          },
-          movieCountries: { select: { location: { select: { id: true, name: true } } } },
-          alternativeTitles: { select: { title: true }, take: 1 },
-        },
-        orderBy: [{ popularity: 'desc' }, { title: 'asc' }],
-        take: 50,
-      }),
-      prisma.person.findMany({
-        where: {
-          isActive: true,
-          OR: [
-            { firstName: { contains: query, mode: 'insensitive' } },
-            { lastName: { contains: query, mode: 'insensitive' } },
-            { realName: { contains: query, mode: 'insensitive' } },
-            { alternativeNames: { some: { fullName: { contains: query, mode: 'insensitive' } } } },
-          ],
-        },
-        select: {
-          id: true, slug: true, firstName: true, lastName: true,
-          photoUrl: true, gender: true,
-          birthYear: true, birthMonth: true, birthDay: true,
-          deathYear: true, deathMonth: true, deathDay: true,
-          _count: { select: { castRoles: true, crewRoles: true } },
-          alternativeNames: { select: { fullName: true }, take: 1 },
-        },
-        take: 50,
-      }),
-    ])
-
-    const formattedMovies = movies.map(m => ({
-      id: m.id, slug: m.slug, title: m.title, year: m.year,
-      releaseYear: m.releaseYear, releaseMonth: m.releaseMonth, releaseDay: m.releaseDay,
-      posterUrl: m.posterUrl, synopsis: m.synopsis, duration: m.duration,
-      tipoDuracion: m.tipoDuracion, stage: m.stage, soundType: m.soundType,
-      directors: (m as unknown as { crew: Array<{ person: { id: number; slug: string; firstName: string | null; lastName: string | null } }> }).crew.map(c => ({
-        id: c.person.id, slug: c.person.slug,
-        name: [c.person.firstName, c.person.lastName].filter(Boolean).join(' '),
-      })),
-      genres: (m as unknown as { genres: Array<{ genre: { id: number; name: string } }> }).genres.map(g => g.genre),
-      countries: (m as unknown as { movieCountries: Array<{ location: { id: number; name: string } }> }).movieCountries.map(c => c.location),
-      matchedAlternativeTitle: (m as unknown as { alternativeTitles: Array<{ title: string }> }).alternativeTitles?.[0]?.title ?? null,
-    }))
-
-    const sortedPeople = [...peopleRaw].sort((a, b) => {
-      const totalA = (a._count?.castRoles || 0) + (a._count?.crewRoles || 0)
-      const totalB = (b._count?.castRoles || 0) + (b._count?.crewRoles || 0)
-      return totalB - totalA
-    })
-
-    const formattedPeople = sortedPeople.map(p => ({
-      id: p.id, slug: p.slug, firstName: p.firstName, lastName: p.lastName,
-      photoUrl: p.photoUrl, gender: p.gender,
-      birthYear: p.birthYear, birthMonth: p.birthMonth, birthDay: p.birthDay,
-      deathYear: p.deathYear, deathMonth: p.deathMonth, deathDay: p.deathDay,
-      birthLocationPath: null, deathLocationPath: null,
-      movieCount: (p._count?.castRoles || 0) + (p._count?.crewRoles || 0),
-      matchedAlternativeName: (p as unknown as { alternativeNames: Array<{ fullName: string }> }).alternativeNames?.[0]?.fullName ?? null,
-      featuredMovie: null,
-    }))
-
-    return NextResponse.json({
-      movies: formattedMovies,
-      people: formattedPeople,
-      totalMovies: formattedMovies.length,
-      totalPeople: formattedPeople.length,
-    })
+  } else {
+    const titleTermConditions = searchTerms.map(t =>
+      Prisma.sql`${norm('m.title')} LIKE ${`%${t}%`}`
+    )
+    const titleWhereClause = Prisma.join(titleTermConditions, ' AND ')
+    const altTitleTermConditions = searchTerms.map(t =>
+      Prisma.sql`${norm('mat.title')} LIKE ${`%${t}%`}`
+    )
+    const altTitleWhereClause = Prisma.join(altTitleTermConditions, ' AND ')
+    movies = await prisma.$queryRaw`
+      SELECT m.id, m.slug, m.title, m.year,
+        m.release_year as "releaseYear", m.release_month as "releaseMonth", m.release_day as "releaseDay",
+        m.poster_url as "posterUrl", m.synopsis, m.duration, m.tipo_duracion as "tipoDuracion",
+        m.stage, m.sound_type as "soundType", m.popularity,
+        (SELECT mat2.title FROM movie_alternative_titles mat2
+         WHERE mat2.movie_id = m.id AND ${altTitleWhereClause}
+         LIMIT 1) as "matchedAlternativeTitle"
+      FROM movies m
+      WHERE (${titleWhereClause})
+        OR EXISTS (
+          SELECT 1 FROM movie_alternative_titles mat
+          WHERE mat.movie_id = m.id AND ${altTitleWhereClause}
+        )
+      ORDER BY
+        CASE WHEN ${norm('m.title')} LIKE ${searchPattern} THEN 0 ELSE 1 END,
+        COALESCE(m.popularity, 0) DESC, m.title ASC
+      LIMIT 50
+    `
   }
+
+  const { directors, genres, countries } = await getMovieRelations(movies.map(m => m.id))
+
+  const formattedMovies = movies.map(movie => ({
+    id: movie.id, slug: movie.slug, title: movie.title, year: movie.year,
+    releaseYear: movie.releaseYear, releaseMonth: movie.releaseMonth, releaseDay: movie.releaseDay,
+    posterUrl: movie.posterUrl, synopsis: movie.synopsis, duration: movie.duration,
+    tipoDuracion: movie.tipoDuracion, stage: movie.stage, soundType: movie.soundType,
+    directors: directors.get(movie.id) ?? [],
+    genres: genres.get(movie.id) ?? [],
+    countries: countries.get(movie.id) ?? [],
+    matchedAlternativeTitle: movie.matchedAlternativeTitle ?? null,
+  }))
+
+  // ============ PERSONAS ============
+  const people = await prisma.$queryRaw<(PersonSearchRow & { matchedAlternativeName: string | null })[]>`
+    SELECT
+      p.id, p.slug, p.first_name as "firstName", p.last_name as "lastName",
+      p.photo_url as "photoUrl", p.gender,
+      p.birth_year as "birthYear", p.birth_month as "birthMonth", p.birth_day as "birthDay",
+      p.death_year as "deathYear", p.death_month as "deathMonth", p.death_day as "deathDay",
+      (
+        (SELECT COUNT(*)::int FROM movie_cast WHERE person_id = p.id) +
+        (SELECT COUNT(*)::int FROM movie_crew WHERE person_id = p.id)
+      ) as "movieCount",
+      (SELECT pan.full_name FROM people_alternative_names pan
+       WHERE pan.person_id = p.id AND ${norm('pan.full_name')} LIKE ${searchPattern}
+       LIMIT 1) as "matchedAlternativeName"
+    FROM people p
+    WHERE p.is_active = true
+    AND (
+      ${norm("COALESCE(p.first_name, '')")} LIKE ${searchPattern}
+      OR ${norm("COALESCE(p.last_name, '')")} LIKE ${searchPattern}
+      OR ${norm("COALESCE(p.real_name, '')")} LIKE ${searchPattern}
+      OR ${norm("COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')")} LIKE ${searchPattern}
+      OR EXISTS (
+        SELECT 1 FROM people_alternative_names pan
+        WHERE pan.person_id = p.id AND ${norm('pan.full_name')} LIKE ${searchPattern}
+      )
+    )
+    ORDER BY
+      (
+        (SELECT COUNT(*) FROM movie_cast WHERE person_id = p.id) +
+        (SELECT COUNT(*) FROM movie_crew WHERE person_id = p.id)
+      ) DESC,
+      p.last_name ASC NULLS LAST,
+      p.first_name ASC NULLS LAST
+    LIMIT 50
+  `
+
+  const { locations, featured } = await getPersonExtras(people.map(p => p.id))
+
+  const formattedPeople = people.map(person => {
+    const loc = locations.get(person.id)
+    const fm = featured.get(person.id)
+    return {
+      ...person,
+      birthLocationPath: loc?.birthPath ?? null,
+      deathLocationPath: loc?.deathPath ?? null,
+      matchedAlternativeName: person.matchedAlternativeName ?? null,
+      featuredMovie: fm ? {
+        id: fm.movie_id, slug: fm.movie_slug, title: fm.movie_title,
+        year: fm.movie_year, role: fm.role_name,
+      } : null,
+    }
+  })
+
+  return NextResponse.json({
+    movies: formattedMovies,
+    people: formattedPeople,
+    totalMovies: formattedMovies.length,
+    totalPeople: formattedPeople.length,
+  })
 }, 'buscar')
