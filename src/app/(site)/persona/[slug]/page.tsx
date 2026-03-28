@@ -398,7 +398,7 @@ function getBirthYearUrl(year: number): string {
   return `/listados/personas?birthYearFrom=${year}&birthYearTo=${year}&sortBy=lastName&sortOrder=asc`
 }
 function getDeathYearUrl(year: number): string {
-  return `/listados/personas?deathYearFrom=${year}&deathYearTo=${year}&sortBy=deathDate&sortOrder=asc`
+  return `/listados/obituarios/${year}`
 }
 function getBirthLocationUrl(locationId: number): string {
   return `/listados/personas?birthLocationId=${locationId}&sortBy=lastName&sortOrder=asc`
