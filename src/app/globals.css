@@ -435,12 +435,28 @@ body {
   background-color: rgb(255 255 255) !important;
 }
 
-/* Fix para el editor markdown en admin */
-[data-admin="true"] .w-md-editor,
-[data-admin="true"] .w-md-editor .w-md-editor-text-pre,
-[data-admin="true"] .w-md-editor .w-md-editor-text-input,
-[data-admin="true"] .w-md-editor .w-md-editor-text {
-  color: rgb(17 24 39) !important;
+/* Fix para el editor markdown en admin — forzar theme light */
+[data-color-mode="light"] {
+  --color-fg-default: #1f2937 !important;
+  --color-canvas-default: #fff !important;
+  --color-canvas-subtle: #f6f8fa !important;
+  --color-border-default: #d1d5db !important;
+  --color-border-muted: #d1d5db !important;
+}
+
+[data-admin="true"] .w-md-editor {
+  --md-editor-font-size: 14px;
+  color: #1f2937 !important;
+  background-color: #fff !important;
+}
+
+[data-admin="true"] .w-md-editor-text-pre,
+[data-admin="true"] .w-md-editor-text-input,
+[data-admin="true"] .w-md-editor-text,
+[data-admin="true"] .w-md-editor-text-pre > code,
+[data-admin="true"] .w-md-editor-text textarea {
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
 }
 
 /* Excepción para textarea bloqueada */
