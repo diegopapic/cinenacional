@@ -200,54 +200,35 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const searchTerms = searchQuery.split(/\s+/).filter(term => term.length > 0)
 
   // ============ PELÍCULAS ============
-  let movies: (MovieSearchRow & { matchedAlternativeTitle: string | null })[]
-  if (searchTerms.length <= 1) {
-    movies = await prisma.$queryRaw`
-      SELECT m.id, m.slug, m.title, m.year,
-        m.release_year as "releaseYear", m.release_month as "releaseMonth", m.release_day as "releaseDay",
-        m.poster_url as "posterUrl", m.synopsis, m.duration, m.tipo_duracion as "tipoDuracion",
-        m.stage, m.sound_type as "soundType", m.popularity,
-        (SELECT mat.title FROM movie_alternative_titles mat
-         WHERE mat.movie_id = m.id AND ${norm('mat.title')} LIKE ${searchPattern}
-         LIMIT 1) as "matchedAlternativeTitle"
-      FROM movies m
-      WHERE ${norm('m.title')} LIKE ${searchPattern}
-        OR EXISTS (
-          SELECT 1 FROM movie_alternative_titles mat
-          WHERE mat.movie_id = m.id AND ${norm('mat.title')} LIKE ${searchPattern}
-        )
-      ORDER BY COALESCE(m.popularity, 0) DESC, m.title ASC
-      LIMIT 50
-    `
-  } else {
-    const titleTermConditions = searchTerms.map(t =>
-      Prisma.sql`${norm('m.title')} LIKE ${`%${t}%`}`
-    )
-    const titleWhereClause = Prisma.join(titleTermConditions, ' AND ')
-    const altTitleTermConditions = searchTerms.map(t =>
-      Prisma.sql`${norm('mat.title')} LIKE ${`%${t}%`}`
-    )
-    const altTitleWhereClause = Prisma.join(altTitleTermConditions, ' AND ')
-    movies = await prisma.$queryRaw`
-      SELECT m.id, m.slug, m.title, m.year,
-        m.release_year as "releaseYear", m.release_month as "releaseMonth", m.release_day as "releaseDay",
-        m.poster_url as "posterUrl", m.synopsis, m.duration, m.tipo_duracion as "tipoDuracion",
-        m.stage, m.sound_type as "soundType", m.popularity,
-        (SELECT mat2.title FROM movie_alternative_titles mat2
-         WHERE mat2.movie_id = m.id AND ${altTitleWhereClause}
-         LIMIT 1) as "matchedAlternativeTitle"
-      FROM movies m
-      WHERE (${titleWhereClause})
-        OR EXISTS (
-          SELECT 1 FROM movie_alternative_titles mat
-          WHERE mat.movie_id = m.id AND ${altTitleWhereClause}
-        )
-      ORDER BY
-        CASE WHEN ${norm('m.title')} LIKE ${searchPattern} THEN 0 ELSE 1 END,
-        COALESCE(m.popularity, 0) DESC, m.title ASC
-      LIMIT 50
-    `
-  }
+  const titleTermConditions = searchTerms.map(t =>
+    Prisma.sql`${norm('m.title')} LIKE ${`%${t}%`}`
+  )
+  const titleWhereClause = Prisma.join(titleTermConditions, ' AND ')
+
+  const altTitleTermConditions = searchTerms.map(t =>
+    Prisma.sql`${norm('mat.title')} LIKE ${`%${t}%`}`
+  )
+  const altTitleWhereClause = Prisma.join(altTitleTermConditions, ' AND ')
+
+  const movies = await prisma.$queryRaw<(MovieSearchRow & { matchedAlternativeTitle: string | null })[]>`
+    SELECT m.id, m.slug, m.title, m.year,
+      m.release_year as "releaseYear", m.release_month as "releaseMonth", m.release_day as "releaseDay",
+      m.poster_url as "posterUrl", m.synopsis, m.duration, m.tipo_duracion as "tipoDuracion",
+      m.stage, m.sound_type as "soundType", m.popularity,
+      (SELECT mat.title FROM movie_alternative_titles mat
+       WHERE mat.movie_id = m.id AND ${altTitleWhereClause}
+       LIMIT 1) as "matchedAlternativeTitle"
+    FROM movies m
+    WHERE (${titleWhereClause})
+      OR EXISTS (
+        SELECT 1 FROM movie_alternative_titles mat
+        WHERE mat.movie_id = m.id AND ${altTitleWhereClause}
+      )
+    ORDER BY
+      CASE WHEN ${norm('m.title')} LIKE ${searchPattern} THEN 0 ELSE 1 END,
+      COALESCE(m.popularity, 0) DESC, m.title ASC
+    LIMIT 50
+  `
 
   const { directors, genres, countries } = await getMovieRelations(movies.map(m => m.id))
 
@@ -263,6 +244,21 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }))
 
   // ============ PERSONAS ============
+  // Cada término debe aparecer en firstName, lastName o realName
+  const nameTermConditions = searchTerms.map(t =>
+    Prisma.sql`(
+      ${norm("COALESCE(p.first_name, '')")} LIKE ${`%${t}%`}
+      OR ${norm("COALESCE(p.last_name, '')")} LIKE ${`%${t}%`}
+      OR ${norm("COALESCE(p.real_name, '')")} LIKE ${`%${t}%`}
+    )`
+  )
+  const nameWhereClause = Prisma.join(nameTermConditions, ' AND ')
+
+  const altNameTermConditions = searchTerms.map(t =>
+    Prisma.sql`${norm('pan.full_name')} LIKE ${`%${t}%`}`
+  )
+  const altNameWhereClause = Prisma.join(altNameTermConditions, ' AND ')
+
   const people = await prisma.$queryRaw<(PersonSearchRow & { matchedAlternativeName: string | null })[]>`
     SELECT
       p.id, p.slug, p.first_name as "firstName", p.last_name as "lastName",
@@ -274,18 +270,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
         (SELECT COUNT(*)::int FROM movie_crew WHERE person_id = p.id)
       ) as "movieCount",
       (SELECT pan.full_name FROM people_alternative_names pan
-       WHERE pan.person_id = p.id AND ${norm('pan.full_name')} LIKE ${searchPattern}
+       WHERE pan.person_id = p.id AND ${altNameWhereClause}
        LIMIT 1) as "matchedAlternativeName"
     FROM people p
     WHERE p.is_active = true
     AND (
-      ${norm("COALESCE(p.first_name, '')")} LIKE ${searchPattern}
-      OR ${norm("COALESCE(p.last_name, '')")} LIKE ${searchPattern}
-      OR ${norm("COALESCE(p.real_name, '')")} LIKE ${searchPattern}
-      OR ${norm("COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')")} LIKE ${searchPattern}
+      (${nameWhereClause})
       OR EXISTS (
         SELECT 1 FROM people_alternative_names pan
-        WHERE pan.person_id = p.id AND ${norm('pan.full_name')} LIKE ${searchPattern}
+        WHERE pan.person_id = p.id AND ${altNameWhereClause}
       )
     )
     ORDER BY

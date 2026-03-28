@@ -19,9 +19,10 @@ export function normalizeSearch(text: string): string {
 }
 
 /**
- * Build a Prisma SQL fragment that normalizes a column for accent-insensitive comparison.
- * Uses translate(LOWER(col), from, to) — built-in, no extension needed.
+ * Wrap a SQL column expression in translate(LOWER(...)) for accent-insensitive comparison.
+ * Uses Prisma.raw() so ACCENT_FROM/ACCENT_TO are SQL literals (not parameters).
+ * Safe because both constants are hardcoded, not user input.
  */
-export function norm(column: string): Prisma.Sql {
-  return Prisma.sql`translate(LOWER(${Prisma.raw(column)}), ${ACCENT_FROM}, ${ACCENT_TO})`
+export function norm(column: string): ReturnType<typeof Prisma.raw> {
+  return Prisma.raw(`translate(LOWER(${column}), '${ACCENT_FROM}', '${ACCENT_TO}')`)
 }
